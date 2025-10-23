@@ -222,42 +222,56 @@ jobs:
       - name: Verify referrers present (placeholder)
         run: |
           set -euo pipefail
-          opa eval \
-            --data policies/oci_referrers.rego \
-            --input policy-inputs/referrers.json \
-            --format json \
-            '{ "allow": data.supplychain.oci_referrers.allow, "missing": [m | data.supplychain.oci_referrers.missing[m]] }' \
-            | jq .
-          opa eval \
+          RESULT=$(opa eval \
             --data policies/oci_referrers.rego \
             --input policy-inputs/referrers.json \
             --format raw \
-            'data.supplychain.oci_referrers.allow' | grep -q true
+            'data.supplychain.oci_referrers.allow')
+          if [[ "$RESULT" != "true" ]]; then
+            echo "[policy] Required referrers missing:"
+            opa eval \
+              --data policies/oci_referrers.rego \
+              --input policy-inputs/referrers.json \
+              --format json \
+              'data.supplychain.oci_referrers.missing' \
+              | jq .
+            exit 1
+          fi
+          echo "[policy] OCI referrers present"
       - name: Verify issuer/subject allowlist (placeholder)
         run: |
           set -euo pipefail
-          opa eval \
-            --data policies/issuer_subject.rego \
-            --input policy-inputs/issuer_subject.json \
-            --format json \
-            '{ "allow": data.supplychain.issuer_subject.allow, "reason": data.supplychain.issuer_subject.reason }' \
-            | jq .
-          opa eval \
+          RESULT=$(opa eval \
             --data policies/issuer_subject.rego \
             --input policy-inputs/issuer_subject.json \
             --format raw \
-            'data.supplychain.issuer_subject.allow' | grep -q true
+            'data.supplychain.issuer_subject.allow')
+          if [[ "$RESULT" != "true" ]]; then
+            echo "[policy] Issuer/subject violation:"
+            opa eval \
+              --data policies/issuer_subject.rego \
+              --input policy-inputs/issuer_subject.json \
+              --format raw \
+              'data.supplychain.issuer_subject.reason'
+            exit 1
+          fi
+          echo "[policy] Issuer/subject allowlist satisfied"
       - name: Verify SBOM + VEX policy (placeholder)
         run: |
           set -euo pipefail
-          opa eval \
-            --data policies/sbom_vex.rego \
-            --input policy-inputs/vulnerabilities.json \
-            --format json \
-            '{ "allow": data.supplychain.sbom_vex.allow, "message": data.supplychain.sbom_vex.message }' \
-            | jq .
-          opa eval \
+          RESULT=$(opa eval \
             --data policies/sbom_vex.rego \
             --input policy-inputs/vulnerabilities.json \
             --format raw \
-            'data.supplychain.sbom_vex.allow' | grep -q true
+            'data.supplychain.sbom_vex.allow')
+          if [[ "$RESULT" != "true" ]]; then
+            echo "[policy] SBOM/VEX violations:"
+            opa eval \
+              --data policies/sbom_vex.rego \
+              --input policy-inputs/vulnerabilities.json \
+              --format json \
+              'data.supplychain.sbom_vex.message' \
+              | jq .
+            exit 1
+          fi
+          echo "[policy] SBOM/VEX policy satisfied"
