@@ -11,13 +11,15 @@ permissions:
   packages: write
   actions: read
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: jguida941/learn-caesar-cipher
-
 jobs:
   build-sign-publish:
     runs-on: ubuntu-22.04
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: jguida941/learn-caesar-cipher
+    outputs:
+      digest: ${{ steps.digest.outputs.digest }}
+      subject_b64: ${{ steps.subjects.outputs.base64_subject }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -60,6 +62,14 @@ jobs:
           echo "image_ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}" >> "$GITHUB_OUTPUT"
           echo "digest=$(cosign triangulate "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}")" >> "$GITHUB_OUTPUT"
 
+      - name: Prepare SLSA subject payload
+        id: subjects
+        run: |
+          DIGEST="${{ steps.digest.outputs.digest }}"
+          SHA="${DIGEST##*:}"
+          SUBJECT="{\"name\":\"${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}\",\"digest\":{\"sha256\":\"$SHA\"}}"
+          echo "base64_subject=$(echo -n "$SUBJECT" | base64 -w0)" >> "$GITHUB_OUTPUT"
+
       - name: Prepare SLSA subjects
         id: subjects
         run: |
@@ -75,6 +85,12 @@ jobs:
           syft "$IMAGE_URI" -o spdx-json > artifacts/sbom/app.spdx.json
           syft "$IMAGE_URI" -o cyclonedx-json > artifacts/sbom/app.cdx.json
 
+      - name: Upload SBOMs
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: artifacts/sbom
+
       - name: Generate provenance predicate
         uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
         with:
@@ -87,25 +103,67 @@ jobs:
         run: |
           cosign sign --yes --keyless "${{ steps.digest.outputs.digest }}"
 
-      - name: Publish SBOM/provenance referrers
-        env:
-          COSIGN_EXPERIMENTAL: "1"
+      - name: Upload signing evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: signing-metadata
+          path: artifacts/evidence
+
+  generate-provenance:
+    needs: build-sign-publish
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      base64-subjects: ${{ needs.build-sign-publish.outputs.subject_b64 }}
+      upload-assets: true
+    secrets: inherit
+
+  collect-evidence:
+    needs:
+      - build-sign-publish
+      - generate-provenance
+    runs-on: ubuntu-22.04
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: jguida941/learn-caesar-cipher
+      COSIGN_EXPERIMENTAL: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download SBOMs
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom
+          path: artifacts/sbom
+
+      - name: Download provenance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: predicate
+          path: artifacts
+
+      - name: Prepare provenance file
         run: |
-          ./tools/publish_referrers.sh "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" "${{ steps.digest.outputs.digest }}" \
+          cp artifacts/predicate.intoto.jsonl artifacts/slsa-provenance.json
+
+      - name: Publish SBOM/provenance referrers
+        run: |
+          ./tools/publish_referrers.sh "${REGISTRY}/${IMAGE_NAME}" "${{ needs.build-sign-publish.outputs.digest }}" \
             artifacts/sbom/app.spdx.json artifacts/sbom/app.cdx.json \
             artifacts/slsa-provenance.json
 
       - name: Run Rekor monitor
         run: |
-          ./tools/rekor_monitor.sh "${{ steps.digest.outputs.digest }}" "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" artifacts/evidence
+          ./tools/rekor_monitor.sh "${{ needs.build-sign-publish.outputs.digest }}" "${REGISTRY}/${IMAGE_NAME}" artifacts/evidence
 
-      - name: Upload Evidence artifacts
+      - name: Upload Evidence bundle
         uses: actions/upload-artifact@v4
         with:
           name: release-evidence
           path: |
             artifacts/evidence
             artifacts/sbom
+            artifacts/predicate.intoto.jsonl
 
   policy-gates:
     needs: build-sign-publish

@@ -19,6 +19,9 @@ jobs:
       IMAGE_NAME: ci-intel/app
       SBOM_DIR: artifacts/sbom
       EVIDENCE_DIR: artifacts/evidence
+    outputs:
+      digest: ${{ steps.digest.outputs.digest }}
+      subject_b64: ${{ steps.subjects.outputs.base64_subject }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,7 +64,7 @@ jobs:
           echo "image_ref=${REGISTRY}/${IMAGE_NAME}:${{ steps.vars.outputs.tag }}" >> "$GITHUB_OUTPUT"
           echo "digest=$(cosign triangulate "${REGISTRY}/${IMAGE_NAME}:${{ steps.vars.outputs.tag }}")" >> "$GITHUB_OUTPUT"
 
-      - name: Prepare SLSA subjects
+      - name: Prepare SLSA subject payload
         id: subjects
         run: |
           DIGEST="${{ steps.digest.outputs.digest }}"
@@ -76,11 +79,11 @@ jobs:
           syft "$IMAGE_URI" -o spdx-json > "$SBOM_DIR/app.spdx.json"
           syft "$IMAGE_URI" -o cyclonedx-json > "$SBOM_DIR/app.cdx.json"
 
-      - name: Generate provenance predicate
-        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+      - name: Upload SBOMs
+        uses: actions/upload-artifact@v4
         with:
-          base64-subjects: ${{ steps.subjects.outputs.base64_subject }}
-          upload-assets: false
+          name: sbom
+          path: ${{ env.SBOM_DIR }}
 
       - name: Sign image with cosign (keyless)
         env:
@@ -88,25 +91,67 @@ jobs:
         run: |
           cosign sign --yes --keyless "${{ steps.digest.outputs.digest }}"
 
-      - name: Publish SBOM/provenance referrers
-        env:
-          COSIGN_EXPERIMENTAL: "1"
+      - name: Upload signing evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: signing-metadata
+          path: ${{ env.EVIDENCE_DIR }}
+
+  generate-provenance:
+    needs: build-sign-publish
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      base64-subjects: ${{ needs.build-sign-publish.outputs.subject_b64 }}
+      upload-assets: true
+    secrets: inherit
+
+  collect-evidence:
+    needs:
+      - build-sign-publish
+      - generate-provenance
+    runs-on: ubuntu-22.04
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ci-intel/app
+      COSIGN_EXPERIMENTAL: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download SBOMs
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom
+          path: artifacts/sbom
+
+      - name: Download provenance artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: predicate
+          path: artifacts
+
+      - name: Prepare provenance file
         run: |
-          ./tools/publish_referrers.sh "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" "${{ steps.digest.outputs.digest }}" \
-            "$SBOM_DIR/app.spdx.json" "$SBOM_DIR/app.cdx.json" \
-            "artifacts/slsa-provenance.json"
+          cp artifacts/predicate.intoto.jsonl artifacts/slsa-provenance.json
+
+      - name: Publish SBOM/provenance referrers
+        run: |
+          ./tools/publish_referrers.sh "${REGISTRY}/${IMAGE_NAME}" "${{ needs.build-sign-publish.outputs.digest }}" \
+            artifacts/sbom/app.spdx.json artifacts/sbom/app.cdx.json \
+            artifacts/slsa-provenance.json
 
       - name: Run Rekor monitor
         run: |
-          ./tools/rekor_monitor.sh "${{ steps.digest.outputs.digest }}" "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" "$EVIDENCE_DIR"
+          ./tools/rekor_monitor.sh "${{ needs.build-sign-publish.outputs.digest }}" "${REGISTRY}/${IMAGE_NAME}" artifacts/evidence
 
-      - name: Upload Evidence artifacts
+      - name: Upload Evidence bundle
         uses: actions/upload-artifact@v4
         with:
           name: release-evidence
           path: |
-            ${{ env.EVIDENCE_DIR }}
-            ${{ env.SBOM_DIR }}
+            artifacts/evidence
+            artifacts/sbom
+            artifacts/predicate.intoto.jsonl
 
   policy-gates:
     needs: build-sign-publish
