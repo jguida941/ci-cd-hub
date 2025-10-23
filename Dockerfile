@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git \
 
 # Clone the Caesar cipher teaching project from GitHub.
 RUN git clone --depth 1 https://github.com/jguida941/learn-caesar-cipher.git /workspace/learn-caesar-cipher
-WORKDIR /workspace/learn-caesar-cipher
+WORKDIR /workspace/learn-caesar-cipher/caesar_cli
 
 # Install dependencies if available.
 RUN pip install --no-cache-dir --upgrade pip && \
@@ -21,6 +21,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     else \
         echo "No installable metadata found; skipping dependency install"; \
     fi
+
+WORKDIR /workspace/learn-caesar-cipher
 
 FROM python:3.12-slim
 WORKDIR /app

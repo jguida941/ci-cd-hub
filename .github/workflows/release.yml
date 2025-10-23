@@ -93,11 +93,7 @@ jobs:
 
       - name: Install tooling (cosign, oras, syft)
         run: |
-          curl -sSL https://oras.land/install.sh | bash
-          echo "$HOME/.oras/bin" >> $GITHUB_PATH
-          curl -sSfL https://raw.githubusercontent.com/sigstore/cosign/main/install.sh | COSIGN_INSTALL_DIR=$HOME/.cosign sh
-          echo "$HOME/.cosign" >> $GITHUB_PATH
-          curl -sSfL https://github.com/anchore/syft/releases/download/v1.18.0/syft_1.18.0_linux_amd64.tar.gz | tar -xz -C /usr/local/bin syft
+          ./scripts/install_tools.sh
 
       - name: Compute image digest
         id: digest
@@ -159,7 +155,7 @@ jobs:
     runs-on: ubuntu-22.04
     env:
       REGISTRY: ghcr.io
-      IMAGE_NAME: ci-intel/app
+      IMAGE_NAME: ${{ github.repository_owner }}/ci-intel-app
       COSIGN_EXPERIMENTAL: "1"
     steps:
       - name: Checkout
