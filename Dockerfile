@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     elif [ -f pyproject.toml ]; then \
         pip install --no-cache-dir .; \
     else \
-        pip install --no-cache-dir .; \
+        echo "No installable metadata found; skipping dependency install"; \
     fi
 
 FROM python:3.12-slim

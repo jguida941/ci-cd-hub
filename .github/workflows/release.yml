@@ -12,7 +12,48 @@ permissions:
   actions: read
 
 jobs:
+  project-tests:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: learn-caesar-cipher
+            repository: jguida941/learn-caesar-cipher
+            path: caesar_cli
+    steps:
+      - name: Checkout automation repo
+        uses: actions/checkout@v4
+
+      - name: Checkout ${{ matrix.name }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repository }}
+          path: project
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install project
+        run: |
+          cd project/${{ matrix.path }}
+          pip install --upgrade pip
+          pip install '.[dev]' || pip install .
+
+      - name: Run project tests
+        run: |
+          cd project/${{ matrix.path }}
+          if [ -f pytest.ini ] || [ -d tests ]; then
+            pytest
+          else
+            echo "No pytest configuration found; running unit tests"
+            python -m unittest discover
+          fi
+
   build-sign-publish:
+    needs: project-tests
     runs-on: ubuntu-22.04
     env:
       REGISTRY: ghcr.io

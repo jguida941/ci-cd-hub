@@ -1,0 +1,5 @@
+projects:
+  - name: learn-caesar-cipher
+    repository: jguida941/learn-caesar-cipher
+    path: caesar_cli
+    package: true
