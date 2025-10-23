@@ -130,7 +130,7 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          cosign sign --yes --keyless "${{ steps.refs.outputs.digest_ref }}"
+          cosign sign --yes "${{ steps.refs.outputs.digest_ref }}"
 
       - name: Ensure evidence directory
         run: |

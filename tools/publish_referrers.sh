@@ -65,13 +65,13 @@ if [[ -n "$VEX_JSON" ]]; then
   push_referrer "$VEX_JSON" "application/vnd.cyclonedx+json" "vex" "$IMAGE_DIGEST"
 fi
 
-echo "[publish_referrers] Signing referrers with cosign (keyless)"
-cosign attest --predicate "$PROVENANCE" --type slsa-provenance --keyless "${IMAGE_REF}@${IMAGE_DIGEST}"
-cosign attest --predicate "$SPDX_SBOM" --type spdx --keyless "${IMAGE_REF}@${IMAGE_DIGEST}"
-cosign attest --predicate "$CYCLO_SBOM" --type cyclonedx --keyless "${IMAGE_REF}@${IMAGE_DIGEST}"
+echo "[publish_referrers] Signing referrers with cosign (OIDC)"
+cosign attest --predicate "$PROVENANCE" --type slsa-provenance "${IMAGE_REF}@${IMAGE_DIGEST}"
+cosign attest --predicate "$SPDX_SBOM" --type spdx "${IMAGE_REF}@${IMAGE_DIGEST}"
+cosign attest --predicate "$CYCLO_SBOM" --type cyclonedx "${IMAGE_REF}@${IMAGE_DIGEST}"
 
 if [[ -n "$VEX_JSON" ]]; then
-  cosign attest --predicate "$VEX_JSON" --type vex --keyless "${IMAGE_REF}@${IMAGE_DIGEST}"
+  cosign attest --predicate "$VEX_JSON" --type vex "${IMAGE_REF}@${IMAGE_DIGEST}"
 fi
 
 echo "[publish_referrers] Referrer publication completed"
