@@ -221,10 +221,43 @@ jobs:
           sudo mv opa /usr/local/bin/opa
       - name: Verify referrers present (placeholder)
         run: |
-          opa eval -d policies/oci_referrers.rego -I -i policy-inputs/referrers.json 'data.supplychain.oci_referrers.allow'
+          set -euo pipefail
+          opa eval \
+            --data policies/oci_referrers.rego \
+            --input policy-inputs/referrers.json \
+            --format json \
+            '{ "allow": data.supplychain.oci_referrers.allow, "missing": [m | data.supplychain.oci_referrers.missing[m]] }' \
+            | jq .
+          opa eval \
+            --data policies/oci_referrers.rego \
+            --input policy-inputs/referrers.json \
+            --format raw \
+            'data.supplychain.oci_referrers.allow' | grep -q true
       - name: Verify issuer/subject allowlist (placeholder)
         run: |
-          opa eval -d policies/issuer_subject.rego -I -i policy-inputs/issuer_subject.json 'data.supplychain.issuer_subject.allow'
+          set -euo pipefail
+          opa eval \
+            --data policies/issuer_subject.rego \
+            --input policy-inputs/issuer_subject.json \
+            --format json \
+            '{ "allow": data.supplychain.issuer_subject.allow, "reason": data.supplychain.issuer_subject.reason }' \
+            | jq .
+          opa eval \
+            --data policies/issuer_subject.rego \
+            --input policy-inputs/issuer_subject.json \
+            --format raw \
+            'data.supplychain.issuer_subject.allow' | grep -q true
       - name: Verify SBOM + VEX policy (placeholder)
         run: |
-          opa eval -d policies/sbom_vex.rego -I -i policy-inputs/vulnerabilities.json 'data.supplychain.sbom_vex.allow'
+          set -euo pipefail
+          opa eval \
+            --data policies/sbom_vex.rego \
+            --input policy-inputs/vulnerabilities.json \
+            --format json \
+            '{ "allow": data.supplychain.sbom_vex.allow, "message": data.supplychain.sbom_vex.message }' \
+            | jq .
+          opa eval \
+            --data policies/sbom_vex.rego \
+            --input policy-inputs/vulnerabilities.json \
+            --format raw \
+            'data.supplychain.sbom_vex.allow' | grep -q true
