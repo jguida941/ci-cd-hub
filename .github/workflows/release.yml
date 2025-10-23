@@ -70,7 +70,7 @@ jobs:
           syft "$IMAGE_URI" -o cyclonedx-json > "$SBOM_DIR/app.cdx.json"
 
       - name: Generate provenance predicate
-        uses: slsa-framework/slsa-github-generator@v2
+        uses: slsa-framework/slsa-github-generator@v2.0.0
         with:
           artifact_path: ${{ github.workspace }}/artifacts
           upload_assets: false
