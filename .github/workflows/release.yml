@@ -58,28 +58,27 @@ jobs:
       - name: Compute image digest
         id: digest
         run: |
-          export IMAGE_REF="${REGISTRY}/${IMAGE_NAME}:${{ steps.vars.outputs.tag }}"
-          DIGEST=$(cosign triangulate "$IMAGE_REF")
-          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "image_ref=${REGISTRY}/${IMAGE_NAME}:${{ steps.vars.outputs.tag }}" >> "$GITHUB_OUTPUT"
+          echo "digest=$(cosign triangulate "${REGISTRY}/${IMAGE_NAME}:${{ steps.vars.outputs.tag }}")" >> "$GITHUB_OUTPUT"
 
       - name: Generate SBOMs
         run: |
-          export IMAGE_URI="${{ steps.digest.outputs.digest }}"
+          IMAGE_URI="${{ steps.digest.outputs.digest }}"
           mkdir -p "$SBOM_DIR"
           syft "$IMAGE_URI" -o spdx-json > "$SBOM_DIR/app.spdx.json"
           syft "$IMAGE_URI" -o cyclonedx-json > "$SBOM_DIR/app.cdx.json"
 
       - name: Generate provenance predicate
-        uses: slsa-framework/slsa-github-generator@v2.0.0
+        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
         with:
-          artifact_path: ${{ github.workspace }}/artifacts
-          upload_assets: false
+          build-artifact-path: artifacts
+          upload-assets: false
 
       - name: Sign image with cosign (keyless)
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          cosign sign --yes --keyless "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.digest.outputs.digest }}"
+          cosign sign --yes --keyless "${{ steps.digest.outputs.digest }}"
 
       - name: Publish SBOM/provenance referrers
         env:
