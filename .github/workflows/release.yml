@@ -167,14 +167,16 @@ jobs:
     permissions:
       actions: read
       id-token: write
-      contents: write
+      contents: read
       packages: write
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
-      image: ${{ needs.build-sign-publish.outputs.tag_ref }}
+      image: ghcr.io/${{ github.repository_owner }}/ci-intel-app
       digest: ${{ needs.build-sign-publish.outputs.digest }}
       private-repository: ${{ github.event.repository.private }}
-    secrets: inherit
+    secrets:
+      registry-username: ${{ github.actor }}
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
 
   collect-evidence:
     needs:
@@ -188,6 +190,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install registry tooling
+        run: ./scripts/install_tools.sh
+
+      - name: Login to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download SBOMs
         uses: actions/download-artifact@v4
@@ -209,6 +221,14 @@ jobs:
           name: attestation
           path: artifacts
           if-no-files-found: warn
+
+      - name: Download provenance from registry
+        env:
+          DIGEST_REF: ${{ needs.build-sign-publish.outputs.digest_ref }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cosign download attestation "$DIGEST_REF" > artifacts/attestation.intoto.jsonl
 
       - name: Prepare provenance file
         run: |
