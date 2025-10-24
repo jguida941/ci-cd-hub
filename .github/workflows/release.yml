@@ -146,11 +146,13 @@ jobs:
 
   generate-provenance:
     needs: build-sign-publish
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@main
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
     with:
       base64-subjects: ${{ needs.build-sign-publish.outputs.subject_b64 }}
       upload-assets: true
       provenance-name: predicate
+      provenance-path: predicate
+      private-repository: ${{ github.event.repository.private }}
     secrets: inherit
 
   collect-evidence:
@@ -207,6 +209,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
       - name: Prepare policy inputs
         run: |
           mkdir -p policy-inputs
@@ -223,11 +227,14 @@ jobs:
       - name: Verify referrers present (placeholder)
         run: |
           set -euo pipefail
-          RESULT=$(opa eval \
+          if ! RESULT=$(opa eval \
             --data policies/oci_referrers.rego \
             --input policy-inputs/referrers.json \
             --format raw \
-            'data.supplychain.oci_referrers.allow')
+            'data.supplychain.oci_referrers.allow'); then
+            echo "[policy] OPA evaluation error (oci_referrers)" >&2
+            exit 1
+          fi
           if [[ "$RESULT" != "true" ]]; then
             echo "[policy] Required referrers missing:"
             opa eval \
@@ -242,11 +249,14 @@ jobs:
       - name: Verify issuer/subject allowlist (placeholder)
         run: |
           set -euo pipefail
-          RESULT=$(opa eval \
+          if ! RESULT=$(opa eval \
             --data policies/issuer_subject.rego \
             --input policy-inputs/issuer_subject.json \
             --format raw \
-            'data.supplychain.issuer_subject.allow')
+            'data.supplychain.issuer_subject.allow'); then
+            echo "[policy] OPA evaluation error (issuer_subject)" >&2
+            exit 1
+          fi
           if [[ "$RESULT" != "true" ]]; then
             echo "[policy] Issuer/subject violation:"
             opa eval \
@@ -260,11 +270,14 @@ jobs:
       - name: Verify SBOM + VEX policy (placeholder)
         run: |
           set -euo pipefail
-          RESULT=$(opa eval \
+          if ! RESULT=$(opa eval \
             --data policies/sbom_vex.rego \
             --input policy-inputs/vulnerabilities.json \
             --format raw \
-            'data.supplychain.sbom_vex.allow')
+            'data.supplychain.sbom_vex.allow'); then
+            echo "[policy] OPA evaluation error (sbom_vex)" >&2
+            exit 1
+          fi
           if [[ "$RESULT" != "true" ]]; then
             echo "[policy] SBOM/VEX violations:"
             opa eval \
