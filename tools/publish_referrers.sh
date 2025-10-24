@@ -38,22 +38,77 @@ if ! command -v oras >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v jq >/dev/null 2>&1; then
+  >&2 echo "jq CLI not found; install via https://stedolan.github.io/jq/"
+  exit 1
+fi
+
 push_referrer() {
   local artifact_path="$1"
   local artifact_type="$2"
   local annotation_name="$3"
   local digest="$4"
 
-  oras attach \
+  local attach_output
+  if ! attach_output=$(oras attach \
     --artifact-type "$artifact_type" \
     --annotation "org.opencontainers.ref.name=${annotation_name}" \
     "${IMAGE_REF}@${digest}" \
-    "$artifact_path"
-
-  if ! oras discover --artifact-type "$artifact_type" "${IMAGE_REF}@${digest}" | grep -q "$annotation_name"; then
-    >&2 echo "[publish_referrers] Failed to verify referrer ${annotation_name} of type ${artifact_type}"
+    "$artifact_path"); then
+    >&2 echo "[publish_referrers] Failed to attach ${annotation_name} (${artifact_type}) to ${IMAGE_REF}@${digest}"
     exit 1
   fi
+
+  printf '%s\n' "$attach_output"
+
+  local attached_digest
+  attached_digest=$(printf '%s\n' "$attach_output" | awk '/Digest:/ {print $2}' | tail -n1)
+  if [[ -z "$attached_digest" ]]; then
+    >&2 echo "[publish_referrers] Unable to parse attached referrer digest for ${annotation_name}"
+    exit 1
+  fi
+
+  local attempts=0
+  local max_attempts=10
+  local found=0
+  local discover_output
+  local tmp_json
+  tmp_json=$(mktemp)
+
+  while [[ $attempts -lt $max_attempts ]]; do
+    if ! discover_output=$(oras discover --output json --artifact-type "$artifact_type" "${IMAGE_REF}@${digest}"); then
+      >&2 echo "[publish_referrers] oras discover failed (attempt $((attempts + 1))) for ${annotation_name}"
+      discover_output=""
+    fi
+
+    if [[ -n "$discover_output" ]]; then
+      printf '%s\n' "$discover_output" > "$tmp_json"
+      if jq -e --arg digest "$attached_digest" \
+        '
+          [
+            (.referrers // [])[]?.digest,
+            (.manifests // [])[]?.digest
+          ] | map(select(. == $digest)) | length > 0
+        ' "$tmp_json" >/dev/null; then
+        found=1
+        break
+      fi
+    fi
+    >&2 echo "[publish_referrers] Referrer ${annotation_name} not yet visible, retrying... ($((attempts + 1))/${max_attempts})"
+    attempts=$((attempts + 1))
+    sleep 3
+  done
+
+  if [[ $found -ne 1 ]]; then
+    if [[ -s "$tmp_json" ]]; then
+      >&2 echo "[publish_referrers] Latest discovery response:"
+      >&2 cat "$tmp_json"
+    fi
+    rm -f "$tmp_json"
+    >&2 echo "[publish_referrers] Failed to verify referrer ${annotation_name} (digest ${attached_digest}) of type ${artifact_type}"
+    exit 1
+  fi
+  rm -f "$tmp_json"
 }
 
 echo "[publish_referrers] Uploading SPDX SBOM referrer"
