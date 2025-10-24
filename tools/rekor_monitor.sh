@@ -119,20 +119,16 @@ if [[ -s "$INDEX_FILE" ]]; then
           ]
           | map(select(type=="string"))
           | map(normalize)
-          | .[];
+          | map(select(. != ""));
 
         (.[$uuid].body | select(type=="string"))
         | @base64d
         | (try fromjson catch empty) as $decoded
         | if $decoded == null then empty
           else (
-            if $decoded | type == "array" then
-              [$decoded[] | gather(.)]
-            else
-              [gather($decoded)]
-            end
-            | map(select(. != null and . != ""))
-            | .[0] // empty
+            (if $decoded | type == "array" then [$decoded[]] else [$decoded] end)
+            | reduce .[] as $entry ([]; . + gather($entry))
+            | (.[0] // empty)
           )
           end
       ' "$ENTRY_PATH")
@@ -195,6 +191,30 @@ if [[ "$HAS_LOG_URL" -eq 1 ]]; then
   rekor-cli verify --uuid "$UUID" --log-url "$REKOR_LOG" --format json > "$PROOF_PATH"
 else
   rekor-cli --rekor_server "$REKOR_LOG" verify --uuid "$UUID" --format json > "$PROOF_PATH"
+fi
+
+if [[ -n "$INDEX_FILE" ]]; then
+  tmp_entry=$(mktemp)
+  fetch_ok=0
+  if [[ "$HAS_LOG_URL" -eq 1 ]]; then
+    if rekor-cli log-entry get --uuid "$UUID" --log-url "$REKOR_LOG" --format json > "$tmp_entry"; then
+      fetch_ok=1
+    fi
+  else
+    if rekor-cli --rekor_server "$REKOR_LOG" log-entry get --uuid "$UUID" --format json > "$tmp_entry"; then
+      fetch_ok=1
+    fi
+  fi
+  if [[ $fetch_ok -eq 1 ]]; then
+    log_index=$(jq -r 'keys[0] as $k | .[$k].logIndex // empty' "$tmp_entry")
+    if [[ -n "$log_index" ]]; then
+      mkdir -p "$(dirname "$INDEX_FILE")"
+      if ! { [[ -f "$INDEX_FILE" ]] && grep -q "^${log_index} " "$INDEX_FILE"; }; then
+        printf '%s %s\n' "$log_index" "$DIGEST" >> "$INDEX_FILE"
+      fi
+    fi
+  fi
+  rm -f "$tmp_entry"
 fi
 
 echo "Stored Rekor inclusion proof at $PROOF_PATH"
