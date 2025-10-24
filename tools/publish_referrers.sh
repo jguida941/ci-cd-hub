@@ -43,6 +43,32 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
+attest_provenance() {
+  local subject="$1"
+  local predicate="$2"
+  local types=()
+
+  if [[ -n "${COSIGN_PROVENANCE_TYPES:-}" ]]; then
+    local raw_types="${COSIGN_PROVENANCE_TYPES}"
+    local old_ifs="$IFS"
+    IFS=',' read -r -a types <<< "$raw_types"
+    IFS="$old_ifs"
+  else
+    types=("slsaprovenance" "slsa-provenance")
+  fi
+
+  for type in "${types[@]}"; do
+    echo "[publish_referrers] Signing provenance with cosign type '${type}'"
+    if cosign attest --predicate "$predicate" --type "$type" "$subject"; then
+      return 0
+    fi
+    >&2 echo "[publish_referrers] cosign attest failed for type '${type}'"
+  done
+
+  >&2 echo "[publish_referrers] Unable to sign provenance; tried types: ${types[*]}"
+  return 1
+}
+
 push_referrer() {
   local artifact_path="$1"
   local artifact_type="$2"
@@ -127,7 +153,7 @@ if [[ -n "$VEX_JSON" ]]; then
 fi
 
 echo "[publish_referrers] Signing referrers with cosign (OIDC)"
-cosign attest --predicate "$PROVENANCE" --type slsa-provenance "${IMAGE_REF}@${IMAGE_DIGEST}"
+attest_provenance "${IMAGE_REF}@${IMAGE_DIGEST}" "$PROVENANCE"
 cosign attest --predicate "$SPDX_SBOM" --type spdx "${IMAGE_REF}@${IMAGE_DIGEST}"
 cosign attest --predicate "$CYCLO_SBOM" --type cyclonedx "${IMAGE_REF}@${IMAGE_DIGEST}"
 
