@@ -172,8 +172,6 @@ jobs:
     with:
       image: ${{ needs.build-sign-publish.outputs.tag_ref }}
       digest: ${{ needs.build-sign-publish.outputs.digest }}
-      upload-assets: true
-      provenance-name: predicate
       private-repository: ${{ github.event.repository.private }}
     secrets: inherit
 
@@ -201,13 +199,30 @@ jobs:
         with:
           name: predicate
           path: artifacts
+          if-no-files-found: warn
+
+      - name: Download provenance artifact (attestation)
+        if: ${{ always() }}
+        uses: actions/download-artifact@v4
+        with:
+          name: attestation
+          path: artifacts
+          if-no-files-found: warn
 
       - name: Prepare provenance file
         run: |
           if [[ -f artifacts/predicate.intoto.jsonl ]]; then
             cp artifacts/predicate.intoto.jsonl artifacts/slsa-provenance.json
-          else
+          elif [[ -f artifacts/predicate/predicate.intoto.jsonl ]]; then
             cp artifacts/predicate/predicate.intoto.jsonl artifacts/slsa-provenance.json
+          elif [[ -f artifacts/attestation.intoto.jsonl ]]; then
+            cp artifacts/attestation.intoto.jsonl artifacts/slsa-provenance.json
+          elif [[ -f artifacts/attestation/attestation.intoto.jsonl ]]; then
+            cp artifacts/attestation/attestation.intoto.jsonl artifacts/slsa-provenance.json
+          else
+            echo "No provenance artifact downloaded" >&2
+            ls -R artifacts || true
+            exit 1
           fi
 
       - name: Publish SBOM/provenance referrers
