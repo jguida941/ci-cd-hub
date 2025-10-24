@@ -24,12 +24,10 @@ vex_not_affected[id] {
   record.status == "not_affected"
 }
 
-violations[id] {
-  high_risk_without_vex
+violations[vuln.id] {
   vuln := input.vulnerabilities[_]
   vuln.cvss >= input.policy.cvss_threshold
   not vex_not_affected[vuln.id]
-  id := vuln.id
 }
 
 message := {id: "Requires VEX justification" | id := violations[_]}
