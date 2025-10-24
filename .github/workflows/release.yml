@@ -301,7 +301,11 @@ jobs:
         run: |
           set -euo pipefail
           python3 <<'PY'
-import base64, json, os, pathlib
+import base64
+import json
+import os
+import pathlib
+
 
 def normalize(digest):
     if not digest:
@@ -309,15 +313,16 @@ def normalize(digest):
     digest = digest.lower()
     return digest if digest.startswith("sha256:") else f"sha256:{digest}"
 
+
 expected = normalize(os.environ.get("EXPECTED_DIGEST"))
 if not expected:
     raise SystemExit("expected digest missing")
 
-path = pathlib.Path('artifacts/slsa-provenance.json')
+path = pathlib.Path("artifacts/slsa-provenance.json")
 if not path.exists():
     raise SystemExit("provenance file missing")
 
-text = path.read_text(encoding='utf-8')
+text = path.read_text(encoding="utf-8")
 decoder = json.JSONDecoder()
 records = []
 idx = 0
@@ -339,16 +344,16 @@ if not records:
 
 subjects = []
 for envelope in records:
-    current = envelope.get('subject')
+    current = envelope.get("subject")
     if not current:
-        payload = envelope.get('payload')
+        payload = envelope.get("payload")
         if not isinstance(payload, str):
             raise SystemExit("provenance payload missing")
         try:
-            decoded = json.loads(base64.b64decode(payload + '==').decode('utf-8'))
+            decoded = json.loads(base64.b64decode(payload + "==").decode("utf-8"))
         except Exception as exc:
             raise SystemExit(f"failed to decode DSSE payload: {exc}")
-        current = decoded.get('subject')
+        current = decoded.get("subject")
 
     if current:
         subjects.extend(current)
@@ -356,15 +361,13 @@ for envelope in records:
 if not subjects:
     raise SystemExit("provenance subject missing")
 
-found = False
+# scan all subjects; break when expected digest is found
 for subj in subjects:
-    digest = normalize((subj.get('digest') or {}).get('sha256'))
+    digest = normalize((subj.get("digest") or {}).get("sha256"))
     if digest == expected:
-        found = True
         break
-
-if not found:
-    existing = [normalize((subj.get('digest') or {}).get('sha256')) for subj in subjects]
+else:
+    existing = [normalize((subj.get("digest") or {}).get("sha256")) for subj in subjects]
     raise SystemExit(f"provenance digest mismatch: expected {expected}, subjects {existing}")
 PY
 
