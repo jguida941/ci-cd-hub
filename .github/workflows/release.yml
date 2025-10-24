@@ -270,13 +270,13 @@ jobs:
           attempts=0
           max_attempts=5
           until cosign download attestation "$DIGEST_REF" > artifacts/attestation.intoto.jsonl; do
-            attempts=$((attempts + 1))
-            if [[ $attempts -ge $max_attempts ]]; then
-              echo "[collect-evidence] Failed to download attestation from registry after ${attempts} attempts" >&2
-              exit 1
-            fi
-            sleep 5
-            echo "[collect-evidence] Attestation not yet available, retrying (${attempts}/${max_attempts})..."
+                        attempts=$((attempts + 1))
+                        if [[ $attempts -ge $max_attempts ]]; then
+                          echo "[collect-evidence] Failed to download attestation from registry after ${attempts} attempts" >&2
+                          exit 1
+                        fi
+                        sleep 5
+                        echo "[collect-evidence] Attestation not yet available, retrying (${attempts}/${max_attempts})..."
           done
 
       - name: Prepare provenance file
@@ -300,7 +300,7 @@ jobs:
           EXPECTED_DIGEST: ${{ needs.build-sign-publish.outputs.digest }}
         run: |
           set -euo pipefail
-          python3 - <<'PY'
+          python3 <<'PY'
 import base64
 import json
 import os
