@@ -25,13 +25,33 @@ fi
 
 TIMESTAMP=$(date -u '+%Y%m%dT%H%M%SZ')
 PROOF_PATH="$OUTPUT_DIR/rekor-proof-${TIMESTAMP}.json"
+SEARCH_PATH="$OUTPUT_DIR/rekor-search-${TIMESTAMP}.json"
 
 if [[ "$HAS_LOG_URL" -eq 1 ]]; then
-  rekor-cli search --sha "$DIGEST" --log-url "$REKOR_LOG" --format json > "$OUTPUT_DIR/rekor-search-${TIMESTAMP}.json"
-  rekor-cli verify --uuid "$(jq -r '.[0].uuid' "$OUTPUT_DIR/rekor-search-${TIMESTAMP}.json")" --log-url "$REKOR_LOG" --format json > "$PROOF_PATH"
+  rekor-cli search --sha "$DIGEST" --log-url "$REKOR_LOG" --format json > "$SEARCH_PATH"
 else
-  rekor-cli --rekor_server "$REKOR_LOG" search --sha "$DIGEST" --format json > "$OUTPUT_DIR/rekor-search-${TIMESTAMP}.json"
-  rekor-cli --rekor_server "$REKOR_LOG" verify --uuid "$(jq -r '.[0].uuid' "$OUTPUT_DIR/rekor-search-${TIMESTAMP}.json")" --format json > "$PROOF_PATH"
+  rekor-cli --rekor_server "$REKOR_LOG" search --sha "$DIGEST" --format json > "$SEARCH_PATH"
+fi
+
+UUID=$(jq -r '
+  if type == "array" then
+    (.[0].uuid // empty)
+  elif type == "object" then
+    (.uuid // empty)
+  else
+    empty
+  end
+' "$SEARCH_PATH")
+
+if [[ -z "$UUID" ]]; then
+  >&2 echo "[rekor_monitor] No Rekor entries found for digest $DIGEST"
+  exit 1
+fi
+
+if [[ "$HAS_LOG_URL" -eq 1 ]]; then
+  rekor-cli verify --uuid "$UUID" --log-url "$REKOR_LOG" --format json > "$PROOF_PATH"
+else
+  rekor-cli --rekor_server "$REKOR_LOG" verify --uuid "$UUID" --format json > "$PROOF_PATH"
 fi
 
 echo "Stored Rekor inclusion proof at $PROOF_PATH"
