@@ -50,13 +50,47 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-OIDC_TOKEN=""
-fetch_oidc_token() {
-  if [[ -n "$OIDC_TOKEN" ]]; then
+log_token_expiry() {
+  local token="$1"
+  if [[ -z "$token" ]]; then
     return 0
   fi
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "[publish_referrers] python3 not available; skipping OIDC token expiry check"
+    return 0
+  fi
+  python3 - <<'PY' "$token"
+import base64
+import json
+import sys
+import time
+
+token = sys.argv[1]
+parts = token.split(".")
+if len(parts) < 2:
+    print("[publish_referrers] OIDC token missing payload segment")
+    sys.exit(0)
+
+segment = parts[1]
+padding = "=" * (-len(segment) % 4)
+try:
+    payload = json.loads(base64.urlsafe_b64decode(segment + padding).decode("utf-8"))
+except Exception as exc:
+    print(f"[publish_referrers] Failed to decode OIDC token payload: {exc}")
+    sys.exit(0)
+
+exp = payload.get("exp")
+if isinstance(exp, int):
+    remaining = exp - int(time.time())
+    print(f"[publish_referrers] OIDC token expires in {remaining}s (unix exp={exp})")
+else:
+    print("[publish_referrers] OIDC token missing numeric exp claim")
+PY
+}
+
+fetch_oidc_token() {
   if [[ -n "${COSIGN_IDENTITY_TOKEN:-}" ]]; then
-    OIDC_TOKEN="$COSIGN_IDENTITY_TOKEN"
+    printf '%s' "${COSIGN_IDENTITY_TOKEN}"
     return 0
   fi
   if [[ -n "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" && -n "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]]; then
@@ -67,11 +101,14 @@ fetch_oidc_token() {
       >&2 echo "[publish_referrers] Failed to fetch GitHub OIDC token"
       return 1
     fi
-    OIDC_TOKEN=$(printf '%s' "$response" | jq -r '.value // empty')
-    if [[ -z "$OIDC_TOKEN" ]]; then
+    local token
+    token=$(printf '%s' "$response" | jq -r '.value // empty')
+    if [[ -z "$token" ]]; then
       >&2 echo "[publish_referrers] Empty OIDC token fetched from GitHub"
       return 1
     fi
+    printf '%s' "$token"
+    log_token_expiry "$token" >&2
     return 0
   fi
   return 1
@@ -81,6 +118,9 @@ attest_provenance() {
   local subject="$1"
   local predicate="$2"
   local types=()
+
+  local detected_type
+  detected_type=$(jq -r '.predicateType // empty' "$predicate" 2>/dev/null || true)
 
   if [[ -n "${COSIGN_PROVENANCE_TYPES:-}" ]]; then
     local raw_types="${COSIGN_PROVENANCE_TYPES}"
@@ -99,6 +139,22 @@ attest_provenance() {
   fi
 
   local tried=()
+  if [[ -n "$detected_type" ]]; then
+    local unique_types=("$detected_type")
+    for type in "${types[@]}"; do
+      local duplicate=false
+      for existing in "${unique_types[@]}"; do
+        if [[ "$type" == "$existing" ]]; then
+          duplicate=true
+          break
+        fi
+      done
+      if [[ "$duplicate" == false ]]; then
+        unique_types+=("$type")
+      fi
+    done
+    types=("${unique_types[@]}")
+  fi
   for type in "${types[@]}"; do
     if [[ -z "$type" ]]; then
       continue
@@ -106,8 +162,18 @@ attest_provenance() {
     tried+=("$type")
     echo "[publish_referrers] Signing provenance with cosign type '${type}'"
     local args=(attest --predicate "$predicate" --type "$type")
-    if fetch_oidc_token; then
-      args+=("--identity-token" "$OIDC_TOKEN")
+    local oidc_token=""
+    if oidc_token=$(fetch_oidc_token); then
+      echo "[publish_referrers] Using GitHub OIDC token for cosign (length ${#oidc_token})"
+      log_token_expiry "$oidc_token"
+      export SIGSTORE_ID_TOKEN="$oidc_token"
+      local display_args=("${args[@]}")
+      display_args+=("--identity-token" "<redacted>")
+      echo "[publish_referrers] cosign command: cosign ${display_args[*]} $subject"
+      args+=("--identity-token" "$oidc_token")
+    else
+      >&2 echo "[publish_referrers] Proceeding without explicit identity token (fallback to device flow)"
+      echo "[publish_referrers] cosign command: cosign ${args[*]} $subject"
     fi
     if cosign "${args[@]}" "$subject"; then
       return 0
@@ -117,6 +183,27 @@ attest_provenance() {
 
   >&2 echo "[publish_referrers] Unable to sign provenance; tried types: ${tried[*]}"
   return 1
+}
+
+sign_with_token() {
+  local predicate_path="$1"
+  local predicate_type="$2"
+  local subject="$3"
+  local args=(attest --predicate "$predicate_path" --type "$predicate_type")
+  local oidc_token=""
+  if oidc_token=$(fetch_oidc_token); then
+    echo "[publish_referrers] Using GitHub OIDC token for cosign (length ${#oidc_token})"
+    log_token_expiry "$oidc_token"
+    export SIGSTORE_ID_TOKEN="$oidc_token"
+    local display_args=("${args[@]}")
+    display_args+=("--identity-token" "<redacted>")
+    echo "[publish_referrers] cosign command: cosign ${display_args[*]} $subject"
+    args+=("--identity-token" "$oidc_token")
+  else
+    >&2 echo "[publish_referrers] Proceeding without explicit identity token for type '${predicate_type}'"
+    echo "[publish_referrers] cosign command: cosign ${args[*]} $subject"
+  fi
+  cosign "${args[@]}" "$subject"
 }
 
 push_referrer() {
@@ -204,11 +291,11 @@ fi
 
 echo "[publish_referrers] Signing referrers with cosign (OIDC)"
 attest_provenance "${IMAGE_REF}@${IMAGE_DIGEST}" "$PROVENANCE"
-cosign attest --predicate "$SPDX_SBOM" --type spdx "${IMAGE_REF}@${IMAGE_DIGEST}"
-cosign attest --predicate "$CYCLO_SBOM" --type cyclonedx "${IMAGE_REF}@${IMAGE_DIGEST}"
+sign_with_token "$SPDX_SBOM" "spdx" "${IMAGE_REF}@${IMAGE_DIGEST}"
+sign_with_token "$CYCLO_SBOM" "cyclonedx" "${IMAGE_REF}@${IMAGE_DIGEST}"
 
 if [[ -n "$VEX_JSON" ]]; then
-  cosign attest --predicate "$VEX_JSON" --type vex "${IMAGE_REF}@${IMAGE_DIGEST}"
+  sign_with_token "$VEX_JSON" "vex" "${IMAGE_REF}@${IMAGE_DIGEST}"
 fi
 
 echo "[publish_referrers] Referrer publication completed"

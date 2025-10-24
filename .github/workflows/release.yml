@@ -186,6 +186,7 @@ jobs:
     permissions:
       actions: write
       contents: read
+      id-token: write
       packages: write
     env:
       REGISTRY: ghcr.io
