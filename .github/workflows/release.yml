@@ -233,15 +233,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build referrer policy input
+        env:
+          REF: ${{ needs.build-sign-publish.outputs.digest_ref }}
         run: |
           set -euo pipefail
-          REF="${{ needs.build-sign-publish.outputs.digest_ref }}"
           mkdir -p policy-inputs
           discover() {
             local type="$1"
             local out="$2"
             if ! oras discover -o json --artifact-type "$type" "$REF" > "$out"; then
-              echo '{"manifests":[]}' > "$out"
+              echo '{"referrers":[],"manifests":[]}' > "$out"
             fi
           }
           discover application/vnd.cyclonedx+json /tmp/cdx.json
@@ -251,10 +252,13 @@ jobs:
             --slurpfile cdx /tmp/cdx.json \
             --slurpfile spdx /tmp/spdx.json \
             --slurpfile prov /tmp/prov.json \
-            '{cyclonedx: ((($cdx[0] // {}).referrers // []) | length > 0),
-              spdx: ((($spdx[0] // {}).referrers // []) | length > 0),
-              provenance: ((($prov[0] // {}).referrers // []) | length > 0)}' \
+            '{
+              cyclonedx: ((($cdx[0] // {}) | (.referrers // .manifests // [])) | length > 0),
+              spdx: ((($spdx[0] // {}) | (.referrers // .manifests // [])) | length > 0),
+              provenance: ((($prov[0] // {}) | (.referrers // .manifests // [])) | length > 0)
+            }' \
             > policy-inputs/referrers.json
+          jq . policy-inputs/referrers.json
       - name: Copy placeholder policy fixtures
         run: |
           cp fixtures/supply_chain/issuer_subject.json policy-inputs/issuer_subject.json
@@ -263,6 +267,8 @@ jobs:
         run: |
           curl -L -o /usr/local/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.63.0/opa_linux_amd64_static
           chmod +x /usr/local/bin/opa
+      - name: Compile-check policies
+        run: opa check policies/*.rego
       - name: Verify referrers present
         run: |
           set -euo pipefail
@@ -271,7 +277,14 @@ jobs:
             --data policies/oci_referrers.rego \
             --input policy-inputs/referrers.json \
             --format raw \
-            'data.supplychain.oci_referrers.allow')
+            'data.supplychain.oci_referrers.allow') || {
+              echo "[policy] OPA eval failed"
+              opa eval --format pretty \
+                --data policies/oci_referrers.rego \
+                --input policy-inputs/referrers.json \
+                'data.supplychain.oci_referrers'
+              exit 1
+            }
           if [[ "$RESULT" != "true" ]]; then
             echo "[policy] Required referrers missing:"
             opa eval \
