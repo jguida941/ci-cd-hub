@@ -381,7 +381,7 @@ jobs:
           chmod +x /usr/local/bin/opa
       - name: Validate policies
         run: |
-          opa fmt --check policies
+          opa fmt --diff --fail policies
           opa check --strict policies
           opa test -v policies
       - name: Verify referrers present
