@@ -44,10 +44,16 @@ push_referrer() {
   local annotation_name="$3"
   local digest="$4"
 
-  oras push "${IMAGE_REF}@${digest}" \
+  oras attach \
     --artifact-type "$artifact_type" \
     --annotation "org.opencontainers.ref.name=${annotation_name}" \
+    "${IMAGE_REF}@${digest}" \
     "$artifact_path"
+
+  if ! oras discover --artifact-type "$artifact_type" "${IMAGE_REF}@${digest}" | grep -q "$annotation_name"; then
+    >&2 echo "[publish_referrers] Failed to verify referrer ${annotation_name} of type ${artifact_type}"
+    exit 1
+  fi
 }
 
 echo "[publish_referrers] Uploading SPDX SBOM referrer"
