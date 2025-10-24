@@ -14,7 +14,9 @@ PROVENANCE="$5"
 VEX_JSON="${6:-}"
 
 : "${COSIGN_EXPERIMENTAL:=1}"
-: "${COSIGN_YES:=1}"
+: "${COSIGN_YES:=true}"
+export COSIGN_EXPERIMENTAL
+export COSIGN_YES
 
 check_file() {
   local path="$1"
@@ -161,7 +163,7 @@ attest_provenance() {
     fi
     tried+=("$type")
     echo "[publish_referrers] Signing provenance with cosign type '${type}'"
-    local args=(attest --predicate "$predicate" --type "$type")
+    local args=(attest --predicate "$predicate" --type "$type" --yes)
     local oidc_token=""
     if oidc_token=$(fetch_oidc_token); then
       echo "[publish_referrers] Using GitHub OIDC token for cosign (length ${#oidc_token})"
@@ -189,7 +191,7 @@ sign_with_token() {
   local predicate_path="$1"
   local predicate_type="$2"
   local subject="$3"
-  local args=(attest --predicate "$predicate_path" --type "$predicate_type")
+  local args=(attest --predicate "$predicate_path" --type "$predicate_type" --yes)
   local oidc_token=""
   if oidc_token=$(fetch_oidc_token); then
     echo "[publish_referrers] Using GitHub OIDC token for cosign (length ${#oidc_token})"
