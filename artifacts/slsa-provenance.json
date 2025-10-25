@@ -1,2 +1,12 @@
-{"payloadType": "in-toto", "payload": "eyJzdWJqZWN0IjogW3siZGlnZXN0IjogeyJzaGEyNTYiOiAiYWFhIn19XX0", "signatures": []}
-{"payloadType": "in-toto", "payload": "eyJzdWJqZWN0IjogW3siZGlnZXN0IjogeyJzaGEyNTYiOiAiYmJiIn19XX0", "signatures": []}
+[
+  {
+    "payloadType": "in-toto",
+    "payload": "eyJzdWJqZWN0IjogW3siZGlnZXN0IjogeyJzaGEyNTYiOiAiYWFhIn19XX0",
+    "signatures": []
+  },
+  {
+    "payloadType": "in-toto",
+    "payload": "eyJzdWJqZWN0IjogW3siZGlnZXN0IjogeyJzaGEyNTYiOiAiYmJiIn19XX0",
+    "signatures": []
+  }
+]

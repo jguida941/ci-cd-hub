@@ -1,0 +1,39 @@
+name: tools-ci
+
+on:
+  push:
+    paths:
+      - 'tools/**'
+      - 'schema/**'
+      - 'fixtures/supply_chain/**'
+      - '.github/workflows/tools-ci.yml'
+  pull_request:
+    paths:
+      - 'tools/**'
+      - 'schema/**'
+      - 'fixtures/supply_chain/**'
+      - '.github/workflows/tools-ci.yml'
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+      - name: Run tools tests
+        run: |
+          set -euo pipefail
+          python -m unittest \
+            tools.tests.test_build_vuln_input \
+            tools.tests.test_build_issuer_subject_input \
+            tools.tests.test_generate_vex \
+            tools.tests.test_provenance_io

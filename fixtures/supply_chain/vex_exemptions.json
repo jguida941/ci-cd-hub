@@ -1,0 +1,13 @@
+[
+  {
+    "id": "CVE-2025-0001",
+    "status": "not_affected",
+    "justification": "component_not_present",
+    "impact": "Cryptographic helper is not shipped in the runtime image; only referenced during tests.",
+    "timestamp": "2024-10-01T00:00:00Z",
+    "source": {
+      "name": "Security Review",
+      "url": "https://ci-intel.dev/reviews/vex/CVE-2025-0001"
+    }
+  }
+]

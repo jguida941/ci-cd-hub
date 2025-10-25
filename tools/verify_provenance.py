@@ -4,32 +4,14 @@ import os
 import pathlib
 import sys
 
+from tools import provenance_io
+
 
 def normalize(digest):
     if not digest:
         return ""
     digest = digest.lower()
     return digest if digest.startswith("sha256:") else f"sha256:{digest}"
-
-
-def load_records(path: pathlib.Path):
-    text = path.read_text(encoding="utf-8")
-    decoder = json.JSONDecoder()
-    records = []
-    idx = 0
-    length = len(text)
-    while idx < length:
-        while idx < length and text[idx].isspace():
-            idx += 1
-        if idx >= length:
-            break
-        try:
-            obj, offset = decoder.raw_decode(text, idx)
-        except json.JSONDecodeError as exc:
-            raise SystemExit(f"provenance not valid JSON: {exc}")
-        records.append(obj)
-        idx = offset
-    return records
 
 
 def collect_subjects(records):
@@ -59,7 +41,10 @@ def main() -> None:
     if not path.exists():
         raise SystemExit("provenance file missing")
 
-    records = load_records(path)
+    try:
+        records = provenance_io.load_records(path)
+    except provenance_io.ProvenanceParseError as exc:
+        raise SystemExit(f"provenance not valid JSON: {exc}") from exc
     if not records:
         raise SystemExit("provenance file empty")
 

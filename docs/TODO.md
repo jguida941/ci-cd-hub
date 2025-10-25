@@ -7,6 +7,7 @@ This project now has real scripts and policies, but several items still need env
   - Set `REGISTRY_USERNAME`/`REGISTRY_PASSWORD` secrets; adjust `REGISTRY`/`IMAGE_NAME` if not using GHCR.
   - Provide a command to fetch the generated SLSA provenance JSON path (currently assumes `artifacts/slsa-provenance.json`).
   - Replace temporary installs with pinned versions and cache where appropriate.
+  - Populate `fixtures/supply_chain/vex_exemptions.json` (or wire it to your vulnerability management system) so the generated VEX statements reflect real approvals from your org.
 
 - `tools/publish_referrers.sh`
   - Confirm oras and cosign versions; adjust to your registries (GHCR, ECR, ACR, etc.).

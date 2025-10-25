@@ -740,7 +740,7 @@ Runtime enforcement upgrades
 - Standardize on SLSA v1.0 provenance predicate (in-toto); validate required fields before promotion.
 - Enforce secretless CI: forbid long-lived keys in job env, require OIDC subject/issuer allowlist, verify short TTLs.
 - Cross-architecture determinism checks (x86_64 vs ARM64) with base-image digests pinned via CAS; fail on ELF/PT_GNU_BUILD_ID drift.
-- Enforce VEX-aware gating: require VEX alongside SBOM; block only exploitable vulnerabilities.
+- Enforce VEX-aware gating: generate CycloneDX VEX statements from `fixtures/supply_chain/vex_exemptions.json` via `tools/generate_vex.py`, push them with the SBOM/referrers, scan the CycloneDX SBOM with Grype inside the policy-gates job, normalize the findings via `tools/build_vuln_input.py`, and require SBOM/VEX policy approval (next: source signed VEX referrers from the real vuln-management system).
 - Establish schema registry with semver, compatibility tests, ownership ADRs, and deprecation windows for every event topic.
 - Autopsy governance: record LLM model ID/digest/prompts/temperature; prohibit LLM-only gate decisions.
 - Runner isolation: ephemeral self-hosted runners with egress policy, read-only workspaces, cache restore provenance verification.

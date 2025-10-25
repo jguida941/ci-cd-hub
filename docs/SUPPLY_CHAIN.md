@@ -11,9 +11,14 @@
 ## Admission Policies
 - `supply-chain-enforce/kyverno/verify-images.yaml` enforces digest allowlists, provenance, and SBOM referrers with deny-by-default.
 - OPA policies (`policies/*.rego`) run in CI and admission to ensure issuer/subject allowlists and VEX coverage.
+- `tools/build_issuer_subject_input.py` verifies the cosign signature for each release image and materializes the issuer/subject payload consumed by `policies/issuer_subject.rego`.
 
 ## Referrer Presence Gate
 - Release workflow verifies required referrers (SPDX, CycloneDX, SLSA) via OPA before promotion.
+
+## SBOM + VEX Policy Feed
+- `build-sign-publish` now generates a CycloneDX VEX document via `tools/generate_vex.py`, sourced from `fixtures/supply_chain/vex_exemptions.json`, and stores it with the SBOM artifacts so it can be published as an OCI referrer.
+- `policy-gates` downloads the CycloneDX SBOM, scans it with Grype, and runs `tools/build_vuln_input.py` to emit `policy-inputs/vulnerabilities.json`. Any VEX file found in the SBOM bundle (for example `app.vex.json`) is ingested automatically so documented `not_affected` findings satisfy `policies/sbom_vex.rego`.
 
 ## Base Image SLO
 - Builds fail when base images introduce critical CVEs without VEX "not affected" evidence.

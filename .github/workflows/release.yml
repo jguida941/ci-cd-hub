@@ -139,6 +139,15 @@ jobs:
           mkdir -p "$SBOM_DIR"
           syft "$IMAGE_URI" -o spdx-json > "$SBOM_DIR/app.spdx.json"
           syft "$IMAGE_URI" -o cyclonedx-json > "$SBOM_DIR/app.cdx.json"
+      - name: Generate VEX document
+        run: |
+          set -euo pipefail
+          python3 tools/generate_vex.py \
+            --config fixtures/supply_chain/vex_exemptions.json \
+            --output "$SBOM_DIR/app.vex.json" \
+            --subject "${{ steps.refs.outputs.digest_ref }}" \
+            --manufacturer "${{ github.repository_owner }}" \
+            --product "${IMAGE_NAME}"
 
       - name: Upload SBOMs
         uses: actions/upload-artifact@v4
@@ -281,32 +290,49 @@ jobs:
 
       - name: Prepare provenance file
         run: |
-          if [[ -f artifacts/predicate.intoto.jsonl ]]; then
-            cp artifacts/predicate.intoto.jsonl artifacts/slsa-provenance.json
-          elif [[ -f artifacts/predicate/predicate.intoto.jsonl ]]; then
-            cp artifacts/predicate/predicate.intoto.jsonl artifacts/slsa-provenance.json
-          elif [[ -f artifacts/attestation.intoto.jsonl ]]; then
-            cp artifacts/attestation.intoto.jsonl artifacts/slsa-provenance.json
-          elif [[ -f artifacts/attestation/attestation.intoto.jsonl ]]; then
-            cp artifacts/attestation/attestation.intoto.jsonl artifacts/slsa-provenance.json
-          else
+          set -euo pipefail
+          SOURCE=""
+          for candidate in \
+            "artifacts/predicate.intoto.jsonl" \
+            "artifacts/predicate/predicate.intoto.jsonl" \
+            "artifacts/attestation.intoto.jsonl" \
+            "artifacts/attestation/attestation.intoto.jsonl" \
+            "artifacts/slsa-provenance.json"
+          do
+            if [[ -f "$candidate" ]]; then
+              SOURCE="$candidate"
+              break
+            fi
+          done
+          if [[ -z "$SOURCE" ]]; then
             echo "No provenance artifact downloaded" >&2
             ls -R artifacts || true
             exit 1
           fi
+          python3 -m tools.normalize_provenance \
+            --source "$SOURCE" \
+            --destination artifacts/slsa-provenance.json
 
       - name: Verify provenance subject digest
         env:
           EXPECTED_DIGEST: ${{ needs.build-sign-publish.outputs.digest }}
         run: |
           set -euo pipefail
-          python3 tools/verify_provenance.py
+          python3 -m tools.verify_provenance
 
       - name: Publish SBOM/provenance referrers
         run: |
-          ./tools/publish_referrers.sh "${REGISTRY}/${IMAGE_NAME}" "${{ needs.build-sign-publish.outputs.digest }}" \
-            artifacts/sbom/app.spdx.json artifacts/sbom/app.cdx.json \
-            artifacts/slsa-provenance.json
+          set -euo pipefail
+          VEX_PATH="artifacts/sbom/app.vex.json"
+          if [[ -f "$VEX_PATH" ]]; then
+            ./tools/publish_referrers.sh "${REGISTRY}/${IMAGE_NAME}" "${{ needs.build-sign-publish.outputs.digest }}" \
+              artifacts/sbom/app.spdx.json artifacts/sbom/app.cdx.json \
+              artifacts/slsa-provenance.json "$VEX_PATH"
+          else
+            ./tools/publish_referrers.sh "${REGISTRY}/${IMAGE_NAME}" "${{ needs.build-sign-publish.outputs.digest }}" \
+              artifacts/sbom/app.spdx.json artifacts/sbom/app.cdx.json \
+              artifacts/slsa-provenance.json
+          fi
 
       - name: Run Rekor monitor
         run: |
@@ -338,13 +364,47 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install jq and ORAS
+      - name: Install Python test dependencies
+        run: |
+          set -euo pipefail
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements-dev.txt
+      - name: Run tooling unit tests
+        run: |
+          set -euo pipefail
+          python3 -m unittest \
+            tools.tests.test_build_vuln_input \
+            tools.tests.test_build_issuer_subject_input \
+            tools.tests.test_generate_vex \
+            tools.tests.test_provenance_io
+      - name: Install jq, ORAS, and cosign
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
           curl -sL https://github.com/oras-project/oras/releases/download/v1.2.0/oras_1.2.0_linux_amd64.tar.gz \
             | tar -xz -f -
           sudo mv oras /usr/local/bin/oras
+          COSIGN_VERSION="v2.2.4"
+          curl -sSfL "https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/cosign-linux-amd64" \
+            -o cosign
+          sudo install -m 0755 cosign /usr/local/bin/cosign
+          rm -f cosign
+      - name: Install grype
+        env:
+          GRYPE_VERSION: v0.102.0
+        run: |
+          set -euo pipefail
+          VERSION_NUMBER="${GRYPE_VERSION#v}"
+          ARCHIVE="grype_${VERSION_NUMBER}_linux_amd64.tar.gz"
+          TMP_DIR=$(mktemp -d)
+          curl -sSfL "https://github.com/anchore/grype/releases/download/${GRYPE_VERSION}/${ARCHIVE}" \
+            -o "${TMP_DIR}/${ARCHIVE}"
+          curl -sSfL "https://github.com/anchore/grype/releases/download/${GRYPE_VERSION}/${ARCHIVE}.sha256" \
+            -o "${TMP_DIR}/${ARCHIVE}.sha256"
+          (cd "${TMP_DIR}" && sha256sum -c "${ARCHIVE}.sha256")
+          tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "${TMP_DIR}" grype
+          sudo install -m 0755 "${TMP_DIR}/grype" /usr/local/bin/grype
+          rm -rf "${TMP_DIR}"
       - name: Login to registry
         uses: docker/login-action@v3
         with:
@@ -371,21 +431,86 @@ jobs:
             --slurpfile cdx /tmp/cdx.json \
             --slurpfile spdx /tmp/spdx.json \
             --slurpfile prov /tmp/prov.json \
-            '{
-              cyclonedx: ((($cdx[0] // {}) | (.referrers // .manifests // [])) | length > 0),
-              spdx: ((($spdx[0] // {}) | (.referrers // .manifests // [])) | length > 0),
-              provenance: ((($prov[0] // {}) | (.referrers // .manifests // [])) | length > 0)
+            '
+            def refs($doc):
+              ($doc // {}) | ((.referrers // []) + (.manifests // []));
+
+            def has_named($doc; $annotation):
+              any(refs($doc)[]?;
+                ((.annotations // {})["org.opencontainers.ref.name"] // "") == $annotation
+              );
+
+            {
+              cyclonedx: has_named($cdx[0]; "sbom-cyclonedx"),
+              vex: has_named($cdx[0]; "vex"),
+              spdx: (refs($spdx[0]) | length > 0),
+              provenance: (refs($prov[0]) | length > 0)
             }' \
             > policy-inputs/referrers.json
           jq . policy-inputs/referrers.json
-      - name: Copy placeholder policy fixtures
+      - name: Prepare issuer/subject policy input
+        env:
+          IMAGE_DIGEST_REF: ${{ needs.build-sign-publish.outputs.digest_ref }}
+          EXPECTED_SUBJECT: repo:${{ github.repository }}:ref:${{ github.ref }}
+          EXPECTED_ISSUER: https://token.actions.githubusercontent.com
+          ALLOWED_SUBJECT_REGEX: "^repo:${{ github.repository }}:ref:refs/tags/.*$"
         run: |
-          cp fixtures/supply_chain/issuer_subject.json policy-inputs/issuer_subject.json
-          cp fixtures/supply_chain/vulnerabilities.json policy-inputs/vulnerabilities.json
+          set -euo pipefail
+          ALLOWED_ISSUER_REGEX="^${EXPECTED_ISSUER//./\\.}$"
+          python3 tools/build_issuer_subject_input.py \
+            --image "${IMAGE_DIGEST_REF}" \
+            --output policy-inputs/issuer_subject.json \
+            --allowed-issuer-regex "${ALLOWED_ISSUER_REGEX}" \
+            --allowed-subject-regex "${ALLOWED_SUBJECT_REGEX}" \
+            --expected-subject "${EXPECTED_SUBJECT}" \
+            --expected-issuer "${EXPECTED_ISSUER}"
       - name: Install OPA
         run: |
           curl -L -o /usr/local/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.63.0/opa_linux_amd64_static
           chmod +x /usr/local/bin/opa
+      - name: Download SBOM artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: sbom
+          path: policy-inputs/sbom
+      - name: Build SBOM vulnerability input
+        env:
+          CVSS_THRESHOLD: "7.0"
+          EPSS_THRESHOLD: "0.75"
+        run: |
+          set -euo pipefail
+          if [[ ! -d policy-inputs/sbom ]]; then
+            echo "[policy] SBOM artifact directory missing (policy-inputs/sbom)" >&2
+            exit 1
+          fi
+          SBOM_CDX=$(find policy-inputs/sbom -maxdepth 5 -type f \
+            \( -name 'app.cdx.json' -o -name '*.cdx.json' -o -name '*cyclonedx*.json' \) \
+            -print -quit)
+          if [[ -z "$SBOM_CDX" ]]; then
+            echo "[policy] Missing CycloneDX SBOM in policy-inputs/sbom" >&2
+            ls -R policy-inputs/sbom || true
+            exit 1
+          fi
+          mkdir -p policy-inputs
+          grype "sbom:${SBOM_CDX}" -o json > policy-inputs/grype-report.json
+          SBOM_VEX=$(find policy-inputs/sbom -maxdepth 5 -type f \
+            \( -iname '*vex*.json' -o -iname '*.vex' \) \
+            -print -quit)
+          PYTHON_ARGS=(
+            python3 tools/build_vuln_input.py
+            --grype-report policy-inputs/grype-report.json
+            --output policy-inputs/vulnerabilities.json
+            --cvss-threshold "${CVSS_THRESHOLD}"
+            --epss-threshold "${EPSS_THRESHOLD}"
+          )
+          if [[ -n "$SBOM_VEX" ]]; then
+            echo "[policy] Including VEX evidence from ${SBOM_VEX}"
+            PYTHON_ARGS+=(--vex "$SBOM_VEX")
+          else
+            echo "[policy] No VEX artifact detected; continuing without VEX input"
+          fi
+          "${PYTHON_ARGS[@]}"
+          jq . policy-inputs/vulnerabilities.json
       - name: Validate policies
         run: |
           opa fmt --diff --fail policies
@@ -438,7 +563,7 @@ jobs:
             exit 1
           fi
           echo "[policy] Issuer/subject allowlist satisfied"
-      - name: Verify SBOM + VEX policy (placeholder)
+      - name: Verify SBOM + VEX policy
         run: |
           set -euo pipefail
           if ! RESULT=$(opa eval \
