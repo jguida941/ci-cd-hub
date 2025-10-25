@@ -334,6 +334,14 @@ jobs:
               artifacts/slsa-provenance.json
           fi
 
+      - name: Capture determinism evidence
+        env:
+          IMAGE_DIGEST_REF: ${{ needs.build-sign-publish.outputs.digest_ref }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/evidence/determinism
+          ./tools/determinism_check.sh "${IMAGE_DIGEST_REF}" artifacts/evidence/determinism
+
       - name: Run Rekor monitor
         run: |
           ./tools/rekor_monitor.sh "${{ needs.build-sign-publish.outputs.digest }}" "${REGISTRY}/${IMAGE_NAME}" artifacts/evidence

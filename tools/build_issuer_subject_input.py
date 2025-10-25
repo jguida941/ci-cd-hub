@@ -6,12 +6,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
-import re
 from pathlib import Path
 from typing import Tuple
-
 
 ANSI_ESCAPE = re.compile(r"\x1B\[[0-9;]*[A-Za-z]")
 JSON_START_RE = re.compile(r"[\{\[]")
@@ -53,9 +52,6 @@ def _parse_json_identity(raw: str) -> Tuple[str, str] | None:
         elif isinstance(parsed, list):
             entries.extend(item for item in parsed if isinstance(item, dict))
         idx = start + end
-
-    if not entries:
-        return None
 
     for entry in entries:
         identity = entry.get("critical", {}).get("identity", {})  # type: ignore[arg-type]
@@ -111,9 +107,9 @@ def _run_cosign(
             text=True,
             env=env,
         )
-    except subprocess.CalledProcessError as exc:  # pragma: no cover - surfaced in CI logs
+    except subprocess.CalledProcessError as exc:  # pragma: no cover
         output = "\n".join(filter(None, [exc.stdout, exc.stderr]))
-        if request_json and "unknown flag" in output.lower():
+        if request_json and "unknown flag" in (output or "").lower():
             return None
         raise SystemExit(
             f"[build_issuer_subject_input] cosign verify failed: {output}"
@@ -142,7 +138,6 @@ def _verify_signature(
         if parsed := _parse_json_identity(combined_output):
             return parsed
 
-    # Fall back when JSON output unsupported or parsing failed
     text_result = _run_cosign(
         image=image,
         expected_subject=expected_subject,
@@ -227,5 +222,5 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except KeyboardInterrupt:  # pragma: no cover - developer convenience
+    except KeyboardInterrupt:  # pragma: no cover
         sys.exit(130)

@@ -20,5 +20,8 @@
 - `build-sign-publish` now generates a CycloneDX VEX document via `tools/generate_vex.py`, sourced from `fixtures/supply_chain/vex_exemptions.json`, and stores it with the SBOM artifacts so it can be published as an OCI referrer.
 - `policy-gates` downloads the CycloneDX SBOM, scans it with Grype, and runs `tools/build_vuln_input.py` to emit `policy-inputs/vulnerabilities.json`. Any VEX file found in the SBOM bundle (for example `app.vex.json`) is ingested automatically so documented `not_affected` findings satisfy `policies/sbom_vex.rego`.
 
+## Determinism Evidence
+- After publishing the image, the release workflow runs `tools/determinism_check.sh` against the immutable digest to capture the raw OCI manifest, a SHA256 over that manifest, and environment metadata. The resulting files live under `artifacts/evidence/determinism/` and prove what was pushed without relying on mutable tags.
+
 ## Base Image SLO
 - Builds fail when base images introduce critical CVEs without VEX "not affected" evidence.

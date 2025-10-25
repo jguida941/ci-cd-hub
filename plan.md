@@ -736,7 +736,8 @@ Runtime enforcement upgrades
 - Enforce keyless Cosign + SLSA provenance at cluster admission via Kyverno verifyImages with Sigstore bundle; require issuer/subject regex match (issuer/subject gate implemented, Kyverno policies pending).
 - Store SBOM and provenance as OCI 1.1 referrers; gate deploys on their presence using registry-native discovery.
 - Emit CycloneDX and SPDX SBOMs, sign and attach as referrers; verify at deploy (SPDX for license, CycloneDX for vuln workflows).
-- Monitor Rekor consistency and new entries for tracked subjects; alert on missing inclusion proofs (rekor-monitor) — TODO: wire `tools/rekor_monitor.sh` into CI and Evidence Bundle.
+- Hermetic release image ✅ (Dockerfile pinned to python:3.12-slim@sha256:e97cf9a..., project sources fixed to commit fafa48a, dependencies installed via pip==24.2) to keep builds reproducible across stages.
+- Monitor Rekor consistency and new entries for tracked subjects; alert on missing inclusion proofs (rekor-monitor) ✅ — `collect-evidence` runs `tools/rekor_monitor.sh` and stores proofs in `artifacts/evidence/`.
 - Standardize on SLSA v1.0 provenance predicate (in-toto); validate required fields before promotion.
 - Enforce secretless CI: forbid long-lived keys in job env, require OIDC subject/issuer allowlist, verify short TTLs.
 - Cross-architecture determinism checks (x86_64 vs ARM64) with base-image digests pinned via CAS; fail on ELF/PT_GNU_BUILD_ID drift.
@@ -751,7 +752,7 @@ Runtime enforcement upgrades
 - Admission policy trio: per-environment image digest allowlists, required provenance, required SBOM referrers; deny deploy on missing attestations.
 - Base-image SLO: block builds when base image gains critical CVE without VEX “not exploitable”.
 - Builder hardening: ephemeral isolated builders with OIDC identity, provenance capturing parameters, pinned source URI, reproducible toolchain versions, environment hash recorded in provenance and Evidence Bundle.
-- Determinism hardening: cross-arch and cross-time reruns (24h), fail on BUILD_ID/JAR Implementation-Version drift even if SHA identical.
+- Determinism hardening: cross-arch and cross-time reruns (24h), fail on BUILD_ID/JAR Implementation-Version drift even if SHA identical — in progress: release workflow captures manifest hashes + metadata via `tools/determinism_check.sh` for every digest, next step is automated dual-run comparison.
 - Language-specific reproducibility hooks: PYTHONHASHSEED=0 + pip --require-hashes; Go -trimpath + GOMODSUMDB=on; Java reproducible builds plugin; Node npm ci with lockfile v3; Rust --remap-path-prefix.
 - Cache integrity: sign cache manifests, verify signature/BLAKE3 before restore, quarantine on failure, emit cache_quarantine events.
 - Secretless CI gate: deny jobs with long-lived keys/plain env secrets; allow only OIDC-federated tokens with issuer/subject allowlist and short TTL.
