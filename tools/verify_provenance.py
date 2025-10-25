@@ -5,17 +5,17 @@ import pathlib
 import sys
 
 
-def normalize(digest: str | None) -> str:
+def normalize(digest):
     if not digest:
         return ""
     digest = digest.lower()
     return digest if digest.startswith("sha256:") else f"sha256:{digest}"
 
 
-def load_records(path: pathlib.Path) -> list[dict]:
+def load_records(path: pathlib.Path):
     text = path.read_text(encoding="utf-8")
     decoder = json.JSONDecoder()
-    records: list[dict] = []
+    records = []
     idx = 0
     length = len(text)
     while idx < length:
@@ -23,14 +23,17 @@ def load_records(path: pathlib.Path) -> list[dict]:
             idx += 1
         if idx >= length:
             break
-        obj, offset = decoder.raw_decode(text, idx)
+        try:
+            obj, offset = decoder.raw_decode(text, idx)
+        except json.JSONDecodeError as exc:
+            raise SystemExit(f"provenance not valid JSON: {exc}")
         records.append(obj)
         idx = offset
     return records
 
 
-def collect_subjects(records: list[dict]) -> list[dict]:
-    subjects: list[dict] = []
+def collect_subjects(records):
+    subjects = []
     for envelope in records:
         current = envelope.get("subject")
         if not current:
@@ -39,7 +42,7 @@ def collect_subjects(records: list[dict]) -> list[dict]:
                 raise SystemExit("provenance payload missing")
             try:
                 decoded = json.loads(base64.b64decode(payload + "==").decode("utf-8"))
-            except Exception as exc:  # pragma: no cover - defensive
+            except Exception as exc:
                 raise SystemExit(f"failed to decode DSSE payload: {exc}")
             current = decoded.get("subject")
         if current:
