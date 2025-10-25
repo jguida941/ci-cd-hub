@@ -438,8 +438,12 @@ def _extract_mutants_from_generic(payload: dict[str, Any]) -> list[dict[str, Any
         if not isinstance(entry, dict):
             continue
         cleaned = _normalize_mutant(entry)
-        if cleaned:
-            normalized.append(cleaned)
+        if not cleaned:
+            continue
+        status = str(cleaned.get("status") or "").lower()
+        if status in {"killed", "timeout"}:
+            continue
+        normalized.append(cleaned)
     return normalized
 
 
@@ -556,7 +560,11 @@ def build_target_result(
             "no_coverage": no_coverage,
         },
         "labels": target.labels,
-        "mutant_samples": (mutant_samples or [])[:5],
+        "mutant_samples": [
+            sample
+            for sample in (mutant_samples or [])
+            if sample.get("status") == "survived"
+        ][:5],
     }
 
 
@@ -605,7 +613,8 @@ def format_markdown(run: dict[str, Any]) -> str:
         samples = target.get("mutant_samples") or []
         if samples:
             lines.append("")
-            lines.append(f"**{name} top surviving mutants ({min(len(samples), 5)} shown):**")
+            visible = min(len(samples), 5)
+            lines.append(f"**{name} top non-killed mutants ({visible} shown):**")
             lines.append("| Mutator | File | Status | Location |")
             lines.append("| --- | --- | --- | --- |")
             for sample in samples[:5]:
@@ -651,7 +660,7 @@ def format_html(run: dict[str, Any]) -> str:
                 "</tr>"
             )
         details_html.append(
-            f"<h4>{_escape_html(target['name'])} surviving mutants (top {max_samples} shown)</h4>"
+            f"<h4>{_escape_html(target['name'])} top non-killed mutants (top {max_samples} shown)</h4>"
             "<table>"
             "<thead><tr><th>Mutator</th><th>File</th><th>Status</th><th>Location</th></tr></thead>"
             f"<tbody>{''.join(sample_rows)}</tbody>"
@@ -791,11 +800,14 @@ def print_summary(run: dict[str, Any]) -> None:
         for sample in samples[:3]:
             loc = _format_mutant_location(sample.get("location"))
             mutator = sample.get("mutator", "unknown")
+            file_path = sample.get("file", "unknown")
+            status_label = (sample.get("status") or "unknown").upper()
             print(
-                f"    • Survived: {mutator} @ {sample.get('file', 'unknown')} ({loc}) "
-                f"[status={sample.get('status', 'unknown')}]",
+                f"    • {status_label}: {mutator} @ {file_path} ({loc})",
                 file=sys.stderr,
             )
+
+
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run mutation analyzers and emit mutation_run telemetry"

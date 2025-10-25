@@ -13,9 +13,38 @@ mkdir -p "$OUTPUT_DIR"
 
 REKOR_LOG=${REKOR_LOG:-https://rekor.sigstore.dev}
 
-if ! command -v rekor-cli >/dev/null 2>&1; then
-  >&2 echo "rekor-cli not found; install via https://github.com/sigstore/rekor"
-  exit 1
+ensure_rekor_cli() {
+  if command -v rekor-cli >/dev/null 2>&1; then
+    return 0
+  fi
+  local version="${REKOR_CLI_VERSION:-v1.3.1}"
+  local os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+  local arch="$(uname -m)"
+  case "$arch" in
+    x86_64 | amd64) arch="amd64" ;;
+    arm64 | aarch64) arch="arm64" ;;
+    *) arch="amd64" ;;
+  esac
+  local filename="rekor-cli-${os}-${arch}"
+  local url="https://github.com/sigstore/rekor/releases/download/${version}/${filename}"
+  local dest="$OUTPUT_DIR/rekor-cli"
+  >&2 echo "[rekor_monitor] rekor-cli not found; downloading ${url}"
+  if ! curl -fsSL "$url" -o "$dest"; then
+    >&2 echo "[rekor_monitor] Failed to download rekor-cli from ${url}"
+    return 1
+  fi
+  chmod +x "$dest"
+  PATH="$(dirname "$dest"):$PATH"
+  export PATH
+  if ! command -v rekor-cli >/dev/null 2>&1; then
+    >&2 echo "[rekor_monitor] Unable to initialize downloaded rekor-cli binary"
+    return 1
+  fi
+}
+
+if ! ensure_rekor_cli; then
+  >&2 echo "rekor-cli not available; install via https://github.com/sigstore/rekor"
+  exit 2
 fi
 
 if ! command -v jq >/dev/null 2>&1; then
@@ -79,7 +108,7 @@ rekor_log_entry_get() {
   return 0
 }
 
-read -r -d '' REKOR_JQ_HELPERS <<'JQ'
+REKOR_JQ_HELPERS=$(cat <<'JQ'
 def is_uuid:
   (type == "string") and ((test("^[0-9a-fA-F]{64}$")) or (test("^[0-9a-fA-F]{80}$")));
 def decode_json:
@@ -106,6 +135,7 @@ def entry_items:
       end;
   gather(.);
 JQ
+)
 
 EXPECTED_DIGEST="$(normalize_digest "$DIGEST")"
 
@@ -266,12 +296,18 @@ if [[ -z "$UUID" ]]; then
   MAX_ATTEMPTS=${REKOR_MONITOR_MAX_ATTEMPTS:-10}
   SLEEP_SECONDS=${REKOR_MONITOR_SLEEP_SECONDS:-30}
 
+  >&2 echo "[rekor_monitor] MAX_ATTEMPTS: ${MAX_ATTEMPTS}"
+  >&2 echo "[rekor_monitor] SLEEP_SECONDS: ${SLEEP_SECONDS}" 
+
   for (( attempt=1; attempt<=MAX_ATTEMPTS; attempt++ )); do
+    >&2 echo "[rekor_monitor] Attempt ${attempt}/${MAX_ATTEMPTS}: Searching for digest ${EXPECTED_DIGEST}" 
     if [[ "$HAS_LOG_URL" -eq 1 ]]; then
       rekor-cli search --sha "$EXPECTED_DIGEST" --log-url "$REKOR_LOG" --format json > "$SEARCH_PATH" || true
     else
       rekor-cli --rekor_server "$REKOR_LOG" search --sha "$EXPECTED_DIGEST" --format json > "$SEARCH_PATH" || true
     fi
+    >&2 echo "[rekor_monitor] Search command finished, content of ${SEARCH_PATH}:"
+    >&2 cat "${SEARCH_PATH}" 
 
     UUID=$(jq -r '
       def is_uuid:
@@ -310,6 +346,7 @@ if [[ -z "$UUID" ]]; then
         end;
       (take_uuid(.; true) // empty)
     ' "$SEARCH_PATH")
+    >&2 echo "[rekor_monitor] Parsed UUID: ${UUID}" 
     if [[ -n "$UUID" ]] && ! is_valid_uuid "$UUID"; then
       UUID=""
     fi

@@ -89,9 +89,10 @@ jobs:
             const artifact = artifactsResponse.data.artifacts.find(
               (a) => a.name === 'mutation-observatory' && !a.expired
             );
-            const htmlLink = artifact
-              ? artifact.archive_download_url
-              : `https://github.com/${owner}/${repo}/actions/runs/${runId}`;
+            let htmlLink = `https://github.com/${owner}/${repo}/actions/runs/${runId}`;
+            if (artifact) {
+              htmlLink = htmlLink + `/artifacts/${artifact.id}`;
+            }
             const header = '🧪 **Mutation Observatory Report**';
             const body = [
               header,

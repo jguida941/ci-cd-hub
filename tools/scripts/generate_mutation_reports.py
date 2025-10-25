@@ -11,8 +11,8 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-SUMMARY_RE = re.compile(r"(?P<passed>\d+)\s+passed")
-SKIPPED_RE = re.compile(r"(?P<skipped>\d+)\s+skipped")
+SUMMARY_RE = re.compile(r"(?P<passed>\d+)\s+passed", re.IGNORECASE)
+SKIPPED_RE = re.compile(r"(?P<skipped>\d+)\s+skipped", re.IGNORECASE)
 
 
 def run_pytest(pytest_args: Sequence[str]) -> tuple[int, int, int]:
@@ -119,6 +119,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         nargs=argparse.REMAINDER,
         help="Extra arguments to pass to pytest (captured as-is after --pytest-args)",
     )
+    parser.add_argument(
+        "--allow-fail",
+        action="store_true",
+        help="Return zero even if pytest exits non-zero (default: exit with pytest code)",
+    )
     args = parser.parse_args(argv)
     if not args.stryker and not args.mutmut:
         parser.error("at least one of --stryker or --mutmut must be provided")
@@ -139,7 +144,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"[generate_mutation_reports] pytest exited {returncode}; reports generated from captured output",
             file=sys.stderr,
         )
-        return returncode
+        if not args.allow_fail:
+            return returncode
     return 0
 
 
