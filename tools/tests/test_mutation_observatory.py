@@ -37,11 +37,19 @@ def test_run_observatory_sample_config(tmp_path):
     assert frontend["status"] == "pass"
     assert backend["status"] == "fail"
     assert backend["stats"]["total_mutants"] == 6
+    assert backend["mutant_samples"], "backend should include mutant samples"
 
     output_path = tmp_path / "run.json"
     summary_path = tmp_path / "summary.md"
     ndjson_path = tmp_path / "runs.ndjson"
-    mo.write_outputs(run, output_path=output_path, ndjson_path=ndjson_path, markdown_path=summary_path)
+    html_path = tmp_path / "summary.html"
+    mo.write_outputs(
+        run,
+        output_path=output_path,
+        ndjson_path=ndjson_path,
+        markdown_path=summary_path,
+        html_path=html_path,
+    )
 
     with output_path.open() as handle:
         saved = json.load(handle)
@@ -55,6 +63,7 @@ def test_run_observatory_sample_config(tmp_path):
     with ndjson_path.open() as handle:
         line = handle.readline().strip()
     assert json.loads(line)["run_id"] == "run-test-1"
+    assert "<!DOCTYPE html>" in html_path.read_text()
 
 
 @pytest.mark.skipif(mo.yaml is None, reason="PyYAML not installed")
@@ -84,7 +93,13 @@ def test_write_outputs_markdown_escapes_special_chars(tmp_path):
     run["targets"][0]["tool"] = "stryker|js"
     output_path = tmp_path / "run.json"
     summary_path = tmp_path / "summary.md"
-    mo.write_outputs(run, output_path=output_path, ndjson_path=None, markdown_path=summary_path)
+    mo.write_outputs(
+        run,
+        output_path=output_path,
+        ndjson_path=None,
+        markdown_path=summary_path,
+        html_path=None,
+    )
     summary = summary_path.read_text()
     assert "front\\|end" in summary
     assert "stryker\\|js" in summary
@@ -107,8 +122,20 @@ def test_write_outputs_ndjson_appends(tmp_path):
         run_id="append-2",
     )
     ndjson_path = tmp_path / "runs.ndjson"
-    mo.write_outputs(run_one, output_path=tmp_path / "out1.json", ndjson_path=ndjson_path, markdown_path=None)
-    mo.write_outputs(run_two, output_path=tmp_path / "out2.json", ndjson_path=ndjson_path, markdown_path=None)
+    mo.write_outputs(
+        run_one,
+        output_path=tmp_path / "out1.json",
+        ndjson_path=ndjson_path,
+        markdown_path=None,
+        html_path=None,
+    )
+    mo.write_outputs(
+        run_two,
+        output_path=tmp_path / "out2.json",
+        ndjson_path=ndjson_path,
+        markdown_path=None,
+        html_path=None,
+    )
     with ndjson_path.open() as handle:
         lines = [json.loads(line) for line in handle.read().strip().splitlines()]
     assert [line["run_id"] for line in lines] == ["append-1", "append-2"]
@@ -125,6 +152,8 @@ def test_main_returns_nonzero_when_status_fail(tmp_path):
             str(output_path),
             "--markdown",
             str(markdown_path),
+            "--html",
+            str(tmp_path / "run.html"),
         ]
     )
     assert rc == 3
@@ -454,6 +483,6 @@ def test_parse_stryker_report_counts_all_mutant_outcomes(tmp_path):
     }
     report_path.write_text(json.dumps(payload))
 
-    metrics = mo._parse_stryker_report(report_path)
-
+    metrics, mutants = mo._parse_stryker_report(report_path, include_mutants=True)
     assert metrics["total_mutants"] == 7
+    assert isinstance(mutants, list)

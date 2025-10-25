@@ -831,7 +831,7 @@ Purpose: evolve this repo from “scripts + instructions” into a consumable to
    - Track adoption status per repo (table in README or ops board) to coordinate upgrades/rollbacks.
 6. Local-first workflows + caching strategy.
    - Ship a `docker-compose`/`devcontainer` setup so engineers can run the same analyzers locally (mutation observatory, Rekor monitor, supply-chain gates) before pushing. Provide `make` targets that mirror the CI jobs.
-   - Standardize cache usage in GitHub Actions: leverage `actions/cache` for dependency trees (pip, npm, cargo) and `docker/build-push-action` cache exports/imports to GHCR so parallel jobs share layers. Mirror the patterns from the Phoenix container example (image pull-through + cache priming) and document how to opt in per workflow.
+   - Standardize cache usage in GitHub Actions: leverage `actions/cache` for dependency trees (pip, npm, cargo) and `docker/build-push-action` cache exports/imports to GHCR so parallel jobs share layers. Document the pattern (prime cache once, export to GHCR, and import in parallel jobs) and provide snippets in `/docs/caching.md` so teams can opt in per workflow.
    - Ensure local runs honor the same cache dirs (mounted volumes) so debugging uses the cached artifacts and matches CI behavior.
 7. Structured parallelism playbook.
    - Define a default job matrix that splits “lint”, “unit test”, “integration test”, “mutation test”, and deployment stages into separate jobs so Actions runners execute them concurrently (matching the Jenkins-to-GH Actions speedup story).

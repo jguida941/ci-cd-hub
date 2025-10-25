@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import shlex
@@ -283,6 +284,23 @@ def _escape_markdown(value: Any) -> str:
     return text
 
 
+def _escape_html(value: Any) -> str:
+    text = "" if value is None else str(value)
+    return html.escape(text, quote=True)
+
+
+def _format_mutant_location(location: Any) -> str:
+    if not isinstance(location, dict):
+        return "unknown"
+    start_line = location.get("start_line")
+    end_line = location.get("end_line")
+    if start_line and end_line and start_line != end_line:
+        return f"L{start_line}–L{end_line}"
+    if start_line:
+        return f"L{start_line}"
+    return "unknown"
+
+
 def run_command(
     command: list[str],
     workdir: Optional[Path],
@@ -328,20 +346,23 @@ def run_command(
     return duration, result.returncode
 
 
-def parse_report(parser: str, report_path: Path) -> dict[str, Any]:
+def parse_report(parser: str, report_path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if parser == "stryker":
-        return _parse_stryker_report(report_path)
+        return _parse_stryker_report(report_path, include_mutants=True)
     if parser == "mutmut_json":
         return _parse_mutmut_report(report_path)
     if parser == "generic":
         data = _load_json_report(report_path, "generic report")
         if not isinstance(data, dict):
             raise MutationObservatoryError(f"generic report must be an object: {report_path}")
-        return data
+        mutants = _extract_mutants_from_generic(data)
+        return data, mutants
     raise MutationObservatoryError(f"unsupported parser '{parser}' for report {report_path}")
 
 
-def _parse_stryker_report(report_path: Path) -> dict[str, Any]:
+def _parse_stryker_report(
+    report_path: Path, *, include_mutants: bool = False
+) -> dict[str, Any] | tuple[dict[str, Any], list[dict[str, Any]]]:
     payload = _load_json_report(report_path, "stryker report")
     metrics = payload.get("metrics", payload)
     if not isinstance(metrics, dict):
@@ -361,7 +382,7 @@ def _parse_stryker_report(report_path: Path) -> dict[str, Any]:
         )
     )
 
-    return {
+    metrics_data = {
         "tool": "stryker",
         "total_mutants": total_mutants,
         "killed": killed,
@@ -371,8 +392,13 @@ def _parse_stryker_report(report_path: Path) -> dict[str, Any]:
         "mutation_score": float(metrics.get("mutationScore", 0.0)),
     }
 
+    mutants = _extract_stryker_mutants(payload)
+    if include_mutants:
+        return metrics_data, mutants
+    return metrics_data
 
-def _parse_mutmut_report(report_path: Path) -> dict[str, Any]:
+
+def _parse_mutmut_report(report_path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     payload = _load_json_report(report_path, "mutmut report")
     stats = payload.get("stats", payload)
     if not isinstance(stats, dict):
@@ -384,6 +410,7 @@ def _parse_mutmut_report(report_path: Path) -> dict[str, Any]:
     skipped = int(stats.get("skipped", stats.get("no_coverage", 0)))
     total_mutants = int(stats.get("total_mutants", killed + survived + timeout + skipped))
 
+    mutants = _extract_mutants_from_generic(payload)
     return {
         "tool": payload.get("tool", "mutmut"),
         "total_mutants": total_mutants,
@@ -392,7 +419,7 @@ def _parse_mutmut_report(report_path: Path) -> dict[str, Any]:
         "timeout": timeout,
         "no_coverage": skipped,
         "mutation_score": _safe_percent(killed, total_mutants),
-    }
+    }, mutants
 
 
 def _safe_percent(killed: int, total: int) -> float:
@@ -401,11 +428,97 @@ def _safe_percent(killed: int, total: int) -> float:
     return (killed / total) * 100.0
 
 
+def _extract_mutants_from_generic(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """Best-effort extraction of mutant details from arbitrary payloads."""
+    raw_mutants = payload.get("mutants") or payload.get("results") or []
+    if not isinstance(raw_mutants, list):
+        return []
+    normalized: list[dict[str, Any]] = []
+    for entry in raw_mutants:
+        if not isinstance(entry, dict):
+            continue
+        cleaned = _normalize_mutant(entry)
+        if cleaned:
+            normalized.append(cleaned)
+    return normalized
+
+
+def _extract_stryker_mutants(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """Collect the surviving/interesting mutants from a Stryker report."""
+    files = payload.get("files") or {}
+    if not isinstance(files, dict):
+        return []
+    mutants: list[dict[str, Any]] = []
+    for rel_path, file_info in files.items():
+        if not isinstance(file_info, dict):
+            continue
+        for mutant in file_info.get("mutants", []):
+            if not isinstance(mutant, dict):
+                continue
+            normalized = _normalize_mutant(mutant, default_file=rel_path)
+            if not normalized:
+                continue
+            status = normalized.get("status", "")
+            if status in {"killed", "timeout"}:
+                continue  # focus on actionable survivors / non-passing mutants
+            mutants.append(normalized)
+    return mutants
+
+
+def _normalize_mutant(entry: dict[str, Any], *, default_file: Optional[str] = None) -> dict[str, Any]:
+    file_path = entry.get("file") or entry.get("fileName") or default_file or entry.get("sourceFilePath")
+    status = str(entry.get("status", "")).lower()
+    location = _normalize_location(entry.get("location") or entry.get("range"))
+    mutator = entry.get("mutatorName") or entry.get("mutator") or entry.get("mutation")
+    description = entry.get("description") or entry.get("replacement")
+    normalized = {
+        "id": entry.get("id"),
+        "file": file_path,
+        "status": status or None,
+        "mutator": mutator,
+        "description": description,
+        "location": location,
+        "tests_ran": entry.get("testsRan"),
+    }
+    # Clean None values to keep payload tight
+    return {k: v for k, v in normalized.items() if v}
+
+
+def _normalize_location(raw_location: Any) -> Optional[dict[str, Optional[int]]]:
+    if not isinstance(raw_location, dict):
+        return None
+    start = raw_location.get("start") or raw_location.get("startPosition") or {}
+    end = raw_location.get("end") or raw_location.get("endPosition") or {}
+    if not isinstance(start, dict):
+        start = {}
+    if not isinstance(end, dict):
+        end = {}
+    normalized = {
+        "start_line": _safe_int(start.get("line") or start.get("lineNumber")),
+        "start_column": _safe_int(start.get("column") or start.get("columnNumber")),
+        "end_line": _safe_int(end.get("line") or end.get("lineNumber")),
+        "end_column": _safe_int(end.get("column") or end.get("columnNumber")),
+    }
+    if all(value is None for value in normalized.values()):
+        return None
+    return normalized
+
+
+def _safe_int(value: Any) -> Optional[int]:
+    try:
+        if value is None:
+            return None
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def build_target_result(
     target: TargetConfig,
     metrics: dict[str, Any],
     duration: float,
     exit_code: Optional[int],
+    mutant_samples: Optional[list[dict[str, Any]]] = None,
 ) -> dict[str, Any]:
     total_mutants = int(metrics.get("total_mutants", 0))
     killed = int(metrics.get("killed", 0))
@@ -443,6 +556,7 @@ def build_target_result(
             "no_coverage": no_coverage,
         },
         "labels": target.labels,
+        "mutant_samples": (mutant_samples or [])[:5],
     }
 
 
@@ -488,7 +602,82 @@ def format_markdown(run: dict[str, Any]) -> str:
             f"{target['threshold']:.0%} | {status} | "
             f"{stats['killed']} / {stats['total_mutants']} |"
         )
+        samples = target.get("mutant_samples") or []
+        if samples:
+            lines.append("")
+            lines.append(f"**{name} top surviving mutants ({min(len(samples), 5)} shown):**")
+            lines.append("| Mutator | File | Status | Location |")
+            lines.append("| --- | --- | --- | --- |")
+            for sample in samples[:5]:
+                mutator = _escape_markdown(sample.get("mutator", "unknown"))
+                file_path = _escape_markdown(sample.get("file", "unknown"))
+                sample_status = _escape_markdown((sample.get("status") or "unknown").upper())
+                location = _escape_markdown(_format_mutant_location(sample.get("location")))
+                lines.append(f"| {mutator} | {file_path} | {sample_status} | {location} |")
+            lines.append("")
     return "\n".join(lines)
+
+
+def format_html(run: dict[str, Any]) -> str:
+    rows = []
+    for target in run["targets"]:
+        stats = target["stats"]
+        rows.append(
+            "<tr>"
+            f"<td>{_escape_html(target['name'])}</td>"
+            f"<td>{_escape_html(target['tool'])}</td>"
+            f"<td>{target['resilience_score']:.1%}</td>"
+            f"<td>{target['threshold']:.0%}</td>"
+            f"<td>{_escape_html(target['status'].upper())}</td>"
+            f"<td>{stats['killed']} / {stats['total_mutants']}</td>"
+            "</tr>"
+        )
+    table_html = "\n".join(rows)
+    details_html = []
+    for target in run["targets"]:
+        samples = target.get("mutant_samples") or []
+        if not samples:
+            continue
+        max_samples = min(len(samples), 5)
+        sample_rows = []
+        for sample in samples[:5]:
+            location = _escape_html(_format_mutant_location(sample.get("location")))
+            sample_rows.append(
+                "<tr>"
+                f"<td>{_escape_html(sample.get('mutator', 'unknown'))}</td>"
+                f"<td>{_escape_html(sample.get('file', 'unknown'))}</td>"
+                f"<td>{_escape_html((sample.get('status') or 'unknown').upper())}</td>"
+                f"<td>{location}</td>"
+                "</tr>"
+            )
+        details_html.append(
+            f"<h4>{_escape_html(target['name'])} surviving mutants (top {max_samples} shown)</h4>"
+            "<table>"
+            "<thead><tr><th>Mutator</th><th>File</th><th>Status</th><th>Location</th></tr></thead>"
+            f"<tbody>{''.join(sample_rows)}</tbody>"
+            "</table>"
+        )
+    return (
+        "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Mutation Observatory</title>"
+        "<style>"
+        "body{font-family:Arial,Helvetica,sans-serif;margin:1.5rem;}"
+        "table{border-collapse:collapse;width:100%;margin-bottom:1rem;}"
+        "th,td{border:1px solid #ccc;padding:0.4rem;text-align:left;}"
+        "th{background:#f4f4f4;}"
+        "</style></head><body>"
+        f"<h2>Mutation Observatory</h2>"
+        f"<p><strong>Run:</strong> {_escape_html(run['run_id'])} &mdash; "
+        f"{_escape_html(run['repo'])} @ {_escape_html(run['branch'])} ({_escape_html(run['commit_sha'])})</p>"
+        f"<p><strong>Overall resilience:</strong> {run['resilience_score']:.1%} "
+        f"({_escape_html(run['status'].upper())})</p>"
+        "<table>"
+        "<thead><tr><th>Target</th><th>Tool</th><th>Resilience</th><th>Threshold</th>"
+        "<th>Status</th><th>Killed / Total</th></tr></thead>"
+        f"<tbody>{table_html}</tbody>"
+        "</table>"
+        f"{''.join(details_html)}"
+        "</body></html>"
+    )
 
 
 def run_observatory(
@@ -527,8 +716,10 @@ def run_observatory(
                     f"command for target '{target.name}' exited with code {exit_code}; "
                     "set allow_stale_report=true to reuse a previous report"
                 )
-        metrics = parse_report(target.parser, target.report_path)
-        target_results.append(build_target_result(target, metrics, duration, exit_code))
+        metrics, mutant_samples = parse_report(target.parser, target.report_path)
+        target_results.append(
+            build_target_result(target, metrics, duration, exit_code, mutant_samples)
+        )
 
     min_resilience = _coerce_float(
         meta.get("min_resilience", 0.7),
@@ -561,6 +752,7 @@ def write_outputs(
     output_path: Path,
     ndjson_path: Optional[Path],
     markdown_path: Optional[Path],
+    html_path: Optional[Path] = None,
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(run, indent=2) + "\n")
@@ -574,7 +766,36 @@ def write_outputs(
         markdown_path.parent.mkdir(parents=True, exist_ok=True)
         markdown_path.write_text(format_markdown(run) + "\n")
 
+    if html_path:
+        html_path.parent.mkdir(parents=True, exist_ok=True)
+        html_path.write_text(format_html(run))
 
+
+def print_summary(run: dict[str, Any]) -> None:
+    overall = run["resilience_score"]
+    status = run["status"].upper()
+    print(
+        f"[mutation_observatory] overall resilience {overall:.1%} ({status}); "
+        f"min resilience target {run['min_resilience']:.0%}",
+        file=sys.stderr,
+    )
+    for target in run["targets"]:
+        stats = target["stats"]
+        print(
+            f" - {target['name']}: {target['status'].upper()} "
+            f"({target['resilience_score']:.1%} vs {target['threshold']:.0%} threshold, "
+            f"{stats['killed']} killed / {stats['total_mutants']} mutants)",
+            file=sys.stderr,
+        )
+        samples = target.get("mutant_samples") or []
+        for sample in samples[:3]:
+            loc = _format_mutant_location(sample.get("location"))
+            mutator = sample.get("mutator", "unknown")
+            print(
+                f"    • Survived: {mutator} @ {sample.get('file', 'unknown')} ({loc}) "
+                f"[status={sample.get('status', 'unknown')}]",
+                file=sys.stderr,
+            )
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Run mutation analyzers and emit mutation_run telemetry"
@@ -583,6 +804,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     parser.add_argument("--output", required=True, type=Path, help="Destination JSON file")
     parser.add_argument("--ndjson", type=Path, help="Optional NDJSON append-only log")
     parser.add_argument("--markdown", type=Path, help="Optional Markdown summary output")
+    parser.add_argument("--html", type=Path, help="Optional HTML summary output")
     parser.add_argument("--repo", help="Override repo slug (owner/name)")
     parser.add_argument("--branch", help="Override git branch")
     parser.add_argument("--commit-sha", help="Override commit SHA")
@@ -605,7 +827,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             output_path=args.output,
             ndjson_path=args.ndjson,
             markdown_path=args.markdown,
+            html_path=args.html,
         )
+        print_summary(run)
         if run.get("status") != "pass":
             print(
                 "[mutation_observatory] failing gate: one or more targets fell below the configured threshold",

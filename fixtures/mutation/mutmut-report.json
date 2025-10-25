@@ -7,5 +7,21 @@
     "survived": 1,
     "timeout": 1,
     "skipped": 0
-  }
+  },
+  "mutants": [
+    {
+      "id": "M1",
+      "file": "backend/service.py",
+      "status": "survived",
+      "mutator": "replace_and_with_or",
+      "location": { "start_line": 42, "end_line": 42 }
+    },
+    {
+      "id": "M2",
+      "file": "backend/service.py",
+      "status": "killed",
+      "mutator": "remove_condition",
+      "location": { "start_line": 88, "end_line": 89 }
+    }
+  ]
 }

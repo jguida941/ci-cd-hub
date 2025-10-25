@@ -79,6 +79,34 @@ rekor_log_entry_get() {
   return 0
 }
 
+read -r -d '' REKOR_JQ_HELPERS <<'JQ'
+def is_uuid:
+  (type == "string") and ((test("^[0-9a-fA-F]{64}$")) or (test("^[0-9a-fA-F]{80}$")));
+def decode_json:
+  if (type == "string") and (test("^\\s*[\\[{]")) then
+    (try (fromjson | decode_json) catch .)
+  else
+    .
+  end;
+def entry_items:
+  def gather($value):
+    ($value | decode_json) as $decoded
+    | if $decoded == null then []
+      elif ($decoded | type) == "object" then
+        ([$decoded | keys_unsorted[] | select(is_uuid)]) as $uuid_keys
+        | if ($uuid_keys | length) > 0 then
+            [ $uuid_keys[] | { key: ., value: $decoded[.] } ]
+          else
+            [ { key: null, value: $decoded } ]
+          end
+      elif ($decoded | type) == "array" then
+        [ $decoded[] | gather(.)[] ]
+      else
+        []
+      end;
+  gather(.);
+JQ
+
 EXPECTED_DIGEST="$(normalize_digest "$DIGEST")"
 
 # Copy indices from workspace if present
@@ -123,30 +151,35 @@ if [[ -s "$INDEX_FILE" ]]; then
       continue
     fi
     echo "Stored Rekor log entry $index at $ENTRY_PATH"
-    entry_key=$(jq -r 'keys[0] // empty' "$ENTRY_PATH")
-    if [[ -z "$entry_key" ]]; then
-      continue
-    fi
-    candidate_uuid=$(jq -r --arg entry_key "$entry_key" '
-      def is_uuid:
-        (type == "string") and ((test("^[0-9a-fA-F]{64}$")) or (test("^[0-9a-fA-F]{80}$")));
+    candidate_uuid=$(jq -r "${REKOR_JQ_HELPERS}
       def pick_uuid($entry):
-        [
-          $entry.uuid,
-          $entry.UUID,
-          $entry.uuids?[0],
-          $entry.UUIDs?[0],
-          $entry.results?[0],
-          $entry.logEntry?.uuid,
-          $entry.attestation?.uuid
-        ]
-        | map(select(is_uuid))
-        | .[0];
-      (.[ $entry_key ] | pick_uuid(.)) // empty
-    ' "$ENTRY_PATH")
-    if [[ -z "$candidate_uuid" ]] && is_valid_uuid "$entry_key"; then
-      candidate_uuid="$entry_key"
-    fi
+        if ($entry | type) != "object" then empty
+        else
+          [
+            $entry.uuid,
+            $entry.UUID,
+            $entry.uuids?[0],
+            $entry.UUIDs?[0],
+            $entry.results?[0],
+            ($entry.logEntry | select(type=="object") | .uuid),
+            ($entry.attestation | select(type=="object") | .uuid)
+          ]
+          | map(select(is_uuid))
+          | .[0]
+        end;
+      (entry_items | .[0]?) as $item
+      | if $item == null then empty
+        else (
+          [
+            ($item.key // ""),
+            (pick_uuid($item.value) // "")
+          ]
+          | map(select(is_uuid))
+          | .[0]
+        )
+        end
+      // empty
+    " "$ENTRY_PATH")
     if [[ -n "$candidate_uuid" ]] && ! is_valid_uuid "$candidate_uuid"; then
       candidate_uuid=""
     fi
@@ -158,7 +191,7 @@ if [[ -s "$INDEX_FILE" ]]; then
       fi
     fi
     if [[ "$MATCHED" == false ]]; then
-      FOUND_UUID_DIGEST=$(jq -r --arg entry_key "$entry_key" '
+      FOUND_UUID_DIGEST=$(jq -r "${REKOR_JQ_HELPERS}
         def decode_payload($v):
           $v | select(type=="string") | @base64d | (try fromjson catch empty);
 
@@ -181,17 +214,30 @@ if [[ -s "$INDEX_FILE" ]]; then
           | map(normalize)
           | map(select(. != ""));
 
-        (.[$entry_key].body | select(type=="string"))
-        | @base64d
-        | (try fromjson catch empty) as $decoded
-        | if $decoded == null then empty
-          else (
-            (if $decoded | type == "array" then [$decoded[]] else [$decoded] end)
-            | reduce .[] as $entry ([]; . + gather($entry))
-            | (.[0] // empty)
-          )
-          end
-      ' "$ENTRY_PATH")
+        (entry_items | .[0]?.value) as $entry
+        | if $entry == null then empty
+          else
+            (
+              [
+                $entry.body,
+                ($entry.logEntry | select(type=="object") | .body)
+              ]
+              | map(select(type=="string"))
+              | .[0]
+            ) as $raw_body
+            | if $raw_body == null then empty
+              else
+                ($raw_body | @base64d | (try fromjson catch empty)) as $decoded
+                | if $decoded == null then empty
+                  else (
+                    (if $decoded | type == "array" then [$decoded[]] else [$decoded] end)
+                    | reduce .[] as $item ([]; . + gather($item))
+                    | (.[0] // empty)
+                  )
+                end
+            end
+        end
+      " "$ENTRY_PATH")
       found_norm="$(normalize_digest "$FOUND_UUID_DIGEST")"
       if [[ -n "$found_norm" && "$found_norm" == "$EXPECTED_DIGEST" ]]; then
         MATCHED=true
@@ -237,8 +283,8 @@ if [[ -z "$UUID" ]]; then
           $entry.uuids?[0],
           $entry.UUIDs?[0],
           $entry.results?[0],
-          $entry.logEntry?.uuid,
-          $entry.attestation?.uuid
+          ($entry.logEntry | select(type=="object") | .uuid),
+          ($entry.attestation | select(type=="object") | .uuid)
         ]
         | map(select(is_uuid))
         | .[0];
@@ -317,7 +363,9 @@ if [[ -n "$INDEX_FILE" ]]; then
     fetch_ok=1
   fi
   if [[ $fetch_ok -eq 1 ]]; then
-    log_index=$(jq -r 'keys[0] as $k | .[$k].logIndex // empty' "$tmp_entry")
+    log_index=$(jq -r "${REKOR_JQ_HELPERS}
+      (entry_items | .[0]?.value | .logIndex) // empty
+    " "$tmp_entry")
     if [[ -n "$log_index" ]]; then
       mkdir -p "$(dirname "$INDEX_FILE")"
       if ! { [[ -f "$INDEX_FILE" ]] && grep -q "^${log_index} " "$INDEX_FILE"; }; then

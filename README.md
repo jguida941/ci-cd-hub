@@ -32,7 +32,8 @@ python tools/mutation_observatory.py \
   --config mutation-observatory.ci.yaml \
   --output artifacts/mutation/run.json \
   --ndjson artifacts/mutation/run.ndjson \
-  --markdown artifacts/mutation/summary.md
+  --markdown artifacts/mutation/summary.md \
+  --html artifacts/mutation/summary.html
 ```
 
-GitHub Actions job `mutation-observatory` (see `.github/workflows/mutation.yml`) runs the same command on every push/PR, uploads the JSON/NDJSON/Markdown artifacts, and fails the build if the aggregate resilience drops below the configured thresholds.
+GitHub Actions job `mutation-observatory` (see `.github/workflows/mutation.yml`) runs the same command on every push/PR, uploads the JSON/NDJSON/Markdown/HTML artifacts, and fails the build if the aggregate resilience drops below the configured thresholds. On pull requests the workflow automatically comments with the Markdown summary and a direct link to the HTML artifact so reviewers can inspect surviving mutants without digging through the Actions UI.

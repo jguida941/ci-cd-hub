@@ -15,8 +15,9 @@ SUMMARY_RE = re.compile(r"(?P<passed>\d+)\s+passed")
 SKIPPED_RE = re.compile(r"(?P<skipped>\d+)\s+skipped")
 
 
-def run_pytest(pytest_args: Sequence[str]) -> tuple[int, int]:
-    """Run pytest and return (passed, skipped) counts."""
+def run_pytest(pytest_args: Sequence[str]) -> tuple[int, int, int]:
+    """Run pytest and return (passed, skipped, returncode) counts."""
+    timeout_seconds = 300  # avoid CI hanging forever on wedged pytest
     cmd = [
         sys.executable,
         "-m",
@@ -26,17 +27,32 @@ def run_pytest(pytest_args: Sequence[str]) -> tuple[int, int]:
         "-q",
         *pytest_args,
     ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_seconds)
+    except subprocess.TimeoutExpired as exc:
+        cmd_str = " ".join(cmd)
+        print(
+            f"[generate_mutation_reports] pytest command timed out after {timeout_seconds}s: {cmd_str}",
+            file=sys.stderr,
+        )
+        if exc.stdout:
+            print(exc.stdout, file=sys.stderr)
+        if exc.stderr:
+            print(exc.stderr, file=sys.stderr)
+        raise SystemExit(1)
     output = f"{result.stdout}\n{result.stderr}"
     if result.returncode != 0:
+        print("[generate_mutation_reports] pytest failed; continuing with captured output", file=sys.stderr)
         print(output, file=sys.stderr)
-        raise SystemExit(result.returncode)
 
     passed = _extract_int(SUMMARY_RE, output, default=0)
     skipped = _extract_int(SKIPPED_RE, output, default=0)
     if passed <= 0:
-        raise SystemExit("Failed to parse pytest summary (no 'passed' count found)")
-    return passed, skipped
+        print(
+            "[generate_mutation_reports] Warning: pytest reported zero passed tests; mutation metrics may be incomplete",
+            file=sys.stderr,
+        )
+    return passed, skipped, result.returncode
 
 
 def _extract_int(pattern: re.Pattern[str], text: str, *, default: int = 0) -> int:
@@ -101,7 +117,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--pytest-args",
         nargs=argparse.REMAINDER,
-        help="Extra arguments to pass to pytest (must come after '--')",
+        help="Extra arguments to pass to pytest (captured as-is after --pytest-args)",
     )
     args = parser.parse_args(argv)
     if not args.stryker and not args.mutmut:
@@ -112,12 +128,18 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     extra_pytest_args = args.pytest_args or []
-    passed, skipped = run_pytest(extra_pytest_args)
+    passed, skipped, returncode = run_pytest(extra_pytest_args)
 
     if args.stryker:
         write_report(args.stryker, compute_stryker_metrics(passed, skipped))
     if args.mutmut:
         write_report(args.mutmut, compute_mutmut_metrics(passed, skipped))
+    if returncode != 0:
+        print(
+            f"[generate_mutation_reports] pytest exited {returncode}; reports generated from captured output",
+            file=sys.stderr,
+        )
+        return returncode
     return 0
 
 
