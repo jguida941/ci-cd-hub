@@ -15,15 +15,49 @@ from typing import Tuple
 
 ANSI_ESCAPE = re.compile(r"\x1B\[[0-9;]*[A-Za-z]")
 IDENTITY_RE = re.compile(
-    r"certificate (?:identity|subject)\s*:?\s*(.+)", re.IGNORECASE
+    r"(?:certificate\s+)?(?:identity|subject(?!\s+url))\b[:\s]+(.+)",
+    re.IGNORECASE,
 )
 ISSUER_RE = re.compile(
-    r"certificate (?:oidc )?issuer(?: url)?\s*:?\s*(.+)", re.IGNORECASE
+    r"(?:certificate\s+)?(?:(?:oidc\s+)?issuer(?:\s+url)?|issuer\s+url)\b[:\s]+(.+)",
+    re.IGNORECASE,
 )
 
 
 def _strip_ansi(text: str) -> str:
     return ANSI_ESCAPE.sub("", text)
+
+
+def _parse_json_identity(raw: str) -> Tuple[str, str] | None:
+    raw = raw.strip()
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        entries = []
+        for line in raw.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entries.append(json.loads(line))
+            except json.JSONDecodeError:
+                return None
+    else:
+        if isinstance(payload, dict):
+            entries = [payload]
+        elif isinstance(payload, list):
+            entries = payload
+        else:
+            return None
+    for entry in entries:
+        identity = entry.get("critical", {}).get("identity", {})
+        issuer = identity.get("issuer")
+        subject = identity.get("subject")
+        if issuer and subject:
+            return issuer, subject
+    return None
 
 
 def _parse_identity(stdout: str) -> Tuple[str, str]:
@@ -74,6 +108,8 @@ def _verify_signature(
         raise SystemExit(
             f"[build_issuer_subject_input] cosign verify failed: {output}"
         ) from exc
+    if parsed := _parse_json_identity(result.stdout):
+        return parsed
     combined_output = "\n".join(filter(None, [result.stdout, result.stderr]))
     return _parse_identity(combined_output)
 
