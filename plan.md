@@ -807,3 +807,25 @@ Final three PRs
 1. `supply-chain-enforce/`: Kyverno policies + OCI referrer gate + Rekor inclusion proof upload integrated with release job.
 2. `determinism-and-repro/`: cross-arch/time checks, language-specific reproducible flags, tools/determinism_check.sh updates, Evidence Bundle additions.
 3. `data-quality-and-dr/`: dbt freshness/rowcount/null-rate tests, WORM + replication documentation, DR recall script with artifact diff.
+
+Phase 2 – Shared Tool Distribution
+----------------------------------
+Purpose: evolve this repo from “scripts + instructions” into a consumable toolkit that any repo can download and run in its own pipelines without duplicating logic.
+
+1. Package the analyzers and helpers.
+   - Ship the Python CLIs (mutation observatory, supply-chain scanners, VEX tooling) as a versioned package on PyPI and as an OCI image that contains their runtime deps (`rekor-cli`, `jq`, etc.).
+   - Provide console entrypoints and `pipx` install instructions; publish SemVer tags and changelog.
+2. Publish reusable GitHub Actions/workflows.
+   - Convert the current `.github/workflows/*.yml` files into `workflow_call` templates and/or composite actions.
+   - Downstream repos reference them via `uses: org/ci-cd-hub/.github/workflows/mutation.yml@v1` and pass repo-specific inputs/secrets.
+3. Template repo-specific configs.
+   - Maintain canonical configs (mutation observatory YAML, Rekor monitor settings, VEX fixtures) in `templates/`.
+   - Use Copier/Cookiecutter or a sync bot to stamp/update files in downstream repos; record overrides via metadata comments.
+4. Release and promotion process.
+   - For each hub release: tag git (`vX.Y.Z`), publish the PyPI/OCI artifacts, and attach a GitHub Release with upgrade notes.
+   - Encourage repos to pin to specific versions and roll forward deliberately (dev → staging → prod channels).
+5. Migration guidance.
+   - Document “drop-in” steps: install the published package/image, invoke the reusable workflow, plug in configs, and set env/secrets.
+   - Track adoption status per repo (table in README or ops board) to coordinate upgrades/rollbacks.
+
+Outcome: one centrally maintained toolchain that every repo can consume by downloading a release artifact or referencing a reusable workflow, enabling consistent CI/CD enforcement without re-implementing pipelines per project.

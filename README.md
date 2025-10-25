@@ -17,3 +17,18 @@ Install the Python dependencies needed for local tooling/tests:
 python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
 ```
+
+### Mutation Observatory workflow
+
+- Config: `fixtures/mutation/observatory-ci.yaml`
+- Run locally:
+
+```bash
+python tools/mutation_observatory.py \
+  --config fixtures/mutation/observatory-ci.yaml \
+  --output artifacts/mutation/run.json \
+  --ndjson artifacts/mutation/run.ndjson \
+  --markdown artifacts/mutation/summary.md
+```
+
+GitHub Actions job `mutation-observatory` (see `.github/workflows/mutation.yml`) runs the same command on every push/PR, uploads the JSON/NDJSON/Markdown artifacts, and fails the build if the aggregate resilience drops below the configured thresholds.

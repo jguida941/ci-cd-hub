@@ -52,6 +52,14 @@ normalize_digest() {
   printf '%s' "$value"
 }
 
+is_valid_uuid() {
+  local candidate="${1:-}"
+  if [[ "$candidate" =~ ^[[:xdigit:]]{64}$ || "$candidate" =~ ^[[:xdigit:]]{80}$ ]]; then
+    return 0
+  fi
+  return 1
+}
+
 rekor_log_entry_get() {
   local selector="$1"
   local value="$2"
@@ -83,6 +91,7 @@ fi
 
 FOUND_UUID=""
 UUID=""
+MATCHED_INDEX=""
 
 if [[ -s "$INDEX_FILE" ]]; then
   if command -v mapfile >/dev/null 2>&1; then
@@ -114,9 +123,32 @@ if [[ -s "$INDEX_FILE" ]]; then
       continue
     fi
     echo "Stored Rekor log entry $index at $ENTRY_PATH"
-    FOUND_UUID=$(jq -r 'keys[0] // empty' "$ENTRY_PATH")
-    if [[ -z "$FOUND_UUID" ]]; then
+    entry_key=$(jq -r 'keys[0] // empty' "$ENTRY_PATH")
+    if [[ -z "$entry_key" ]]; then
       continue
+    fi
+    candidate_uuid=$(jq -r --arg entry_key "$entry_key" '
+      def is_uuid:
+        (type == "string") and ((test("^[0-9a-fA-F]{64}$")) or (test("^[0-9a-fA-F]{80}$")));
+      def pick_uuid($entry):
+        [
+          $entry.uuid,
+          $entry.UUID,
+          $entry.uuids?[0],
+          $entry.UUIDs?[0],
+          $entry.results?[0],
+          $entry.logEntry?.uuid,
+          $entry.attestation?.uuid
+        ]
+        | map(select(is_uuid))
+        | .[0];
+      (.[ $entry_key ] | pick_uuid(.)) // empty
+    ' "$ENTRY_PATH")
+    if [[ -z "$candidate_uuid" ]] && is_valid_uuid "$entry_key"; then
+      candidate_uuid="$entry_key"
+    fi
+    if [[ -n "$candidate_uuid" ]] && ! is_valid_uuid "$candidate_uuid"; then
+      candidate_uuid=""
     fi
     MATCHED=false
     if [[ -n "$stored_digest" ]]; then
@@ -126,7 +158,7 @@ if [[ -s "$INDEX_FILE" ]]; then
       fi
     fi
     if [[ "$MATCHED" == false ]]; then
-      FOUND_UUID_DIGEST=$(jq -r --arg uuid "$FOUND_UUID" '
+      FOUND_UUID_DIGEST=$(jq -r --arg entry_key "$entry_key" '
         def decode_payload($v):
           $v | select(type=="string") | @base64d | (try fromjson catch empty);
 
@@ -149,7 +181,7 @@ if [[ -s "$INDEX_FILE" ]]; then
           | map(normalize)
           | map(select(. != ""));
 
-        (.[$uuid].body | select(type=="string"))
+        (.[$entry_key].body | select(type=="string"))
         | @base64d
         | (try fromjson catch empty) as $decoded
         | if $decoded == null then empty
@@ -166,6 +198,8 @@ if [[ -s "$INDEX_FILE" ]]; then
       fi
     fi
     if [[ "$MATCHED" == true ]]; then
+      FOUND_UUID="$candidate_uuid"
+      MATCHED_INDEX="$index"
       break
     fi
     FOUND_UUID=""
@@ -189,15 +223,45 @@ if [[ -z "$UUID" ]]; then
     fi
 
     UUID=$(jq -r '
-      if type=="string" then .
-      elif type=="array" then
-        (.[0]
-          | if type=="string" then .
-            else (.uuid // .UUID // empty)
-            end)
-      elif type=="object" then (.uuid // .UUID // .UUIDs?[0] // .uuids?[0] // .results?[0] // empty)
-      else empty end
+      def is_uuid:
+        (type == "string") and ((test("^[0-9a-fA-F]{64}$")) or (test("^[0-9a-fA-F]{80}$")));
+      def from_entry($entry):
+        [
+          $entry.uuid,
+          $entry.UUID,
+          $entry.uuids?[0],
+          $entry.UUIDs?[0],
+          $entry.results?[0],
+          $entry.logEntry?.uuid,
+          $entry.attestation?.uuid
+        ]
+        | map(select(is_uuid))
+        | .[0];
+      def take_uuid($value; $allow_raw):
+        if $value == null then empty
+        elif $value | type == "string" then
+          if $allow_raw and ($value | is_uuid) then $value else empty end
+        elif $value | type == "object" then
+          (
+            from_entry($value)
+          )
+          // (
+            [ $value[]? | take_uuid(.; false) ]
+            | map(select(. != ""))
+            | .[0]
+          )
+        elif $value | type == "array" then
+          [ $value[]? | take_uuid(.; $allow_raw) ]
+          | map(select(. != ""))
+          | .[0]
+        else
+          empty
+        end;
+      (take_uuid(.; true) // empty)
     ' "$SEARCH_PATH")
+    if [[ -n "$UUID" ]] && ! is_valid_uuid "$UUID"; then
+      UUID=""
+    fi
 
     if [[ -n "$UUID" ]]; then
       break
@@ -215,16 +279,29 @@ if [[ -z "$UUID" ]]; then
   fi
 fi
 
-if [[ "$HAS_LOG_URL" -eq 1 ]]; then
-  rekor-cli verify --uuid "$UUID" --log-url "$REKOR_LOG" --format json > "$PROOF_PATH"
+if [[ -n "$UUID" ]]; then
+  if [[ "$HAS_LOG_URL" -eq 1 ]]; then
+    rekor-cli verify --uuid "$UUID" --log-url "$REKOR_LOG" --format json > "$PROOF_PATH"
+  else
+    rekor-cli --rekor_server "$REKOR_LOG" verify --uuid "$UUID" --format json > "$PROOF_PATH"
+  fi
+elif [[ -n "$MATCHED_INDEX" ]]; then
+  if [[ "$HAS_LOG_URL" -eq 1 ]]; then
+    rekor-cli verify --log-index "$MATCHED_INDEX" --log-url "$REKOR_LOG" --format json > "$PROOF_PATH"
+  else
+    rekor-cli --rekor_server "$REKOR_LOG" verify --log-index "$MATCHED_INDEX" --format json > "$PROOF_PATH"
+  fi
 else
-  rekor-cli --rekor_server "$REKOR_LOG" verify --uuid "$UUID" --format json > "$PROOF_PATH"
+  >&2 echo "[rekor_monitor] Unable to determine Rekor UUID or log index for digest $DIGEST"
+  exit 1
 fi
 
 if [[ -n "$INDEX_FILE" ]]; then
   tmp_entry=$(mktemp)
   fetch_ok=0
-  if rekor_log_entry_get --uuid "$UUID" "$tmp_entry"; then
+  if [[ -n "$UUID" ]] && rekor_log_entry_get --uuid "$UUID" "$tmp_entry"; then
+    fetch_ok=1
+  elif [[ -n "$MATCHED_INDEX" ]] && rekor_log_entry_get --log-index "$MATCHED_INDEX" "$tmp_entry"; then
     fetch_ok=1
   fi
   if [[ $fetch_ok -eq 1 ]]; then

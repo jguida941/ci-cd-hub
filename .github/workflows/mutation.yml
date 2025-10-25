@@ -1,0 +1,53 @@
+name: mutation-observatory
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  observatory:
+    runs-on: ubuntu-latest
+    env:
+      MUTATION_CONFIG: fixtures/mutation/observatory-ci.yaml
+      RUN_DIR: artifacts/mutation
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Run Mutation Observatory
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUN_DIR"
+          python tools/mutation_observatory.py \
+            --config "$MUTATION_CONFIG" \
+            --output "$RUN_DIR/run.json" \
+            --ndjson "$RUN_DIR/run.ndjson" \
+            --markdown "$RUN_DIR/summary.md" \
+            --repo "${{ github.repository }}" \
+            --branch "${{ github.ref_name }}" \
+            --commit-sha "${{ github.sha }}" \
+            --run-id "${{ github.run_id }}-${{ github.run_attempt }}"
+
+      - name: Print summary
+        run: cat "$RUN_DIR/summary.md"
+
+      - name: Upload Mutation Observatory artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-observatory
+          path: ${{ env.RUN_DIR }}

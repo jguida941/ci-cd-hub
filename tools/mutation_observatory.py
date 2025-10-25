@@ -313,6 +313,11 @@ def run_command(
             f"command for target '{target_name}' "
             f"timed out after {timeout} seconds: {command}"
         ) from exc
+    except (OSError, ValueError) as exc:
+        location = workdir or os.getcwd()
+        raise MutationObservatoryError(
+            f"command for target '{target_name}' failed to start in {location}: {exc}"
+        ) from exc
 
     duration = time.monotonic() - start
     if result.returncode != 0:

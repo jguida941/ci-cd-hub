@@ -37,3 +37,7 @@ jobs:
             tools.tests.test_build_issuer_subject_input \
             tools.tests.test_generate_vex \
             tools.tests.test_provenance_io
+      - name: Run mutation observatory tests
+        run: |
+          set -euo pipefail
+          pytest tools/tests/test_mutation_observatory.py
