@@ -391,12 +391,14 @@ jobs:
           rm -f cosign
       - name: Install grype
         env:
-          GRYPE_VERSION: v0.102.0
+          GRYPE_VERSION: v0.103.0
         run: |
           set -euo pipefail
           VERSION_NUMBER="${GRYPE_VERSION#v}"
           ARCHIVE="grype_${VERSION_NUMBER}_linux_amd64.tar.gz"
           RELEASE_URL="https://github.com/anchore/grype/releases/download/${GRYPE_VERSION}/${ARCHIVE}"
+          CHECKSUMS_MANIFEST="grype_${VERSION_NUMBER}_checksums.txt"
+          CHECKSUMS_URL="https://github.com/anchore/grype/releases/download/${GRYPE_VERSION}/${CHECKSUMS_MANIFEST}"
           TMP_DIR=$(mktemp -d)
           cleanup() { rm -rf "$TMP_DIR"; }
           trap cleanup EXIT
@@ -404,11 +406,24 @@ jobs:
             echo "[policy] Grype release ${GRYPE_VERSION} not found at ${RELEASE_URL}" >&2
             exit 1
           fi
-          if ! curl -fsSL "${RELEASE_URL}.sha256" -o "${TMP_DIR}/${ARCHIVE}.sha256"; then
-            echo "[policy] Failed to download checksum for ${GRYPE_VERSION}" >&2
-            exit 1
+          CHECK_FILE="${TMP_DIR}/${ARCHIVE}.sha256"
+          if curl -fsSL "${RELEASE_URL}.sha256" -o "$CHECK_FILE"; then
+            (cd "$TMP_DIR" && sha256sum -c "$(basename "$CHECK_FILE")")
+          else
+            echo "[policy] Per-file checksum not published; falling back to manifest for ${GRYPE_VERSION}" >&2
+            if ! curl -fsSL "$CHECKSUMS_URL" -o "${TMP_DIR}/${CHECKSUMS_MANIFEST}"; then
+              echo "[policy] Failed to download checksum manifest for ${GRYPE_VERSION}" >&2
+              exit 1
+            fi
+            EXPECTED_SUM=$(awk -v file="$ARCHIVE" '$2==file { print $1 }' "${TMP_DIR}/${CHECKSUMS_MANIFEST}")
+            if [[ -z "$EXPECTED_SUM" ]]; then
+              echo "[policy] Missing checksum entry for ${ARCHIVE} in ${CHECKSUMS_MANIFEST}" >&2
+              exit 1
+            fi
+            SINGLE_CHECK="${TMP_DIR}/grype_check.sha256"
+            printf '%s  %s\n' "$EXPECTED_SUM" "$ARCHIVE" > "$SINGLE_CHECK"
+            (cd "$TMP_DIR" && sha256sum -c "$(basename "$SINGLE_CHECK")")
           fi
-          (cd "$TMP_DIR" && sha256sum -c "${ARCHIVE}.sha256")
           tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR" grype
           sudo install -m 0755 "${TMP_DIR}/grype" /usr/local/bin/grype
       - name: Login to registry
