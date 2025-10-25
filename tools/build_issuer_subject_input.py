@@ -46,7 +46,7 @@ def _verify_signature(
     expected_subject: str | None,
     expected_issuer: str | None,
 ) -> Tuple[str, str]:
-    cmd = ["cosign", "verify", image]
+    cmd = ["cosign", "verify", "--verbose", image]
     if expected_subject:
         cmd.extend(["--certificate-identity", expected_subject])
     else:
@@ -66,10 +66,12 @@ def _verify_signature(
             env=env,
         )
     except subprocess.CalledProcessError as exc:  # pragma: no cover - surfaced in CI logs
+        output = "\n".join(filter(None, [exc.stdout, exc.stderr]))
         raise SystemExit(
-            f"[build_issuer_subject_input] cosign verify failed: {exc.stderr or exc.stdout}"
+            f"[build_issuer_subject_input] cosign verify failed: {output}"
         ) from exc
-    return _parse_identity(result.stdout)
+    combined_output = "\n".join(filter(None, [result.stdout, result.stderr]))
+    return _parse_identity(combined_output)
 
 
 def build_input(

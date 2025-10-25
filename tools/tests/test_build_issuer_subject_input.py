@@ -32,6 +32,7 @@ Certificate issuer https://token.actions.githubusercontent.com
         issuer, subject = issuer_subject._parse_identity(sample)
         self.assertEqual(subject, "repo:example/app:ref:refs/heads/main")
         self.assertEqual(issuer, "https://token.actions.githubusercontent.com")
+
     def test_parse_identity_from_ansi_colored_fixture(self) -> None:
         fixture = (
             Path(__file__).with_name("fixtures") / "cosign_verify_ansi_output.txt"
