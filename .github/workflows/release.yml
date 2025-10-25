@@ -472,9 +472,9 @@ jobs:
       - name: Prepare issuer/subject policy input
         env:
           IMAGE_DIGEST_REF: ${{ needs.build-sign-publish.outputs.digest_ref }}
-          EXPECTED_SUBJECT: repo:${{ github.repository }}:ref:${{ github.ref }}
+          EXPECTED_SUBJECT: https://github.com/${{ github.workflow_ref }}
           EXPECTED_ISSUER: https://token.actions.githubusercontent.com
-          ALLOWED_SUBJECT_REGEX: "^repo:${{ github.repository }}:ref:refs/tags/.*$"
+          ALLOWED_SUBJECT_REGEX: "^https://github.com/${{ github.repository }}/\\.github/workflows/release\\.yml@refs/tags/.*$"
         run: |
           set -euo pipefail
           ALLOWED_ISSUER_REGEX="^${EXPECTED_ISSUER//./\\.}$"
