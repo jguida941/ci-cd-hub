@@ -77,6 +77,33 @@ Certificate issuer https://token.actions.githubusercontent.com
             "https://token.actions.githubusercontent.com",
         )
 
+    def test_parse_json_identity_single_object(self) -> None:
+        payload = {
+            "critical": {
+                "identity": {
+                    "issuer": "https://issuer",
+                    "subject": "repo:example/app:ref:refs/tags/v1.2.3",
+                }
+            }
+        }
+        issuer, subject = issuer_subject._parse_json_identity(json.dumps(payload))
+        self.assertEqual(issuer, "https://issuer")
+        self.assertEqual(subject, "repo:example/app:ref:refs/tags/v1.2.3")
+
+    def test_parse_json_identity_skips_non_json_lines(self) -> None:
+        payload = {
+            "critical": {
+                "identity": {
+                    "issuer": "https://issuer",
+                    "subject": "repo:example/app:ref:refs/heads/main",
+                }
+            }
+        }
+        raw = "Warning: experimental feature\n" + json.dumps(payload)
+        issuer, subject = issuer_subject._parse_json_identity(raw)
+        self.assertEqual(issuer, "https://issuer")
+        self.assertEqual(subject, "repo:example/app:ref:refs/heads/main")
+
     def test_parse_identity_raises_on_missing_fields(self) -> None:
         with self.assertRaises(ValueError):
             issuer_subject._parse_identity("Certificate identity: missing issuer")

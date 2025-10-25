@@ -14,6 +14,7 @@ from typing import Tuple
 
 
 ANSI_ESCAPE = re.compile(r"\x1B\[[0-9;]*[A-Za-z]")
+JSON_START_RE = re.compile(r"[\{\[]")
 IDENTITY_RE = re.compile(
     r"(?:certificate\s+)?(?:identity|subject(?!\s+url))\b[:\s]+(.+)",
     re.IGNORECASE,
@@ -29,34 +30,39 @@ def _strip_ansi(text: str) -> str:
 
 
 def _parse_json_identity(raw: str) -> Tuple[str, str] | None:
-    raw = raw.strip()
     if not raw:
         return None
-    try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError:
-        entries = []
-        for line in raw.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                entries.append(json.loads(line))
-            except json.JSONDecodeError:
-                return None
-    else:
-        if isinstance(payload, dict):
-            entries = [payload]
-        elif isinstance(payload, list):
-            entries = payload
-        else:
-            return None
+
+    decoder = json.JSONDecoder()
+    entries: list[dict[str, object]] = []
+    idx = 0
+    length = len(raw)
+
+    while idx < length:
+        match = JSON_START_RE.search(raw, idx)
+        if not match:
+            break
+        start = match.start()
+        try:
+            parsed, end = decoder.raw_decode(raw[start:])
+        except json.JSONDecodeError:
+            idx = start + 1
+            continue
+        if isinstance(parsed, dict):
+            entries.append(parsed)
+        elif isinstance(parsed, list):
+            entries.extend(item for item in parsed if isinstance(item, dict))
+        idx = start + end
+
+    if not entries:
+        return None
+
     for entry in entries:
-        identity = entry.get("critical", {}).get("identity", {})
-        issuer = identity.get("issuer")
-        subject = identity.get("subject")
+        identity = entry.get("critical", {}).get("identity", {})  # type: ignore[arg-type]
+        issuer = identity.get("issuer") if isinstance(identity, dict) else None
+        subject = identity.get("subject") if isinstance(identity, dict) else None
         if issuer and subject:
-            return issuer, subject
+            return str(issuer), str(subject)
     return None
 
 
@@ -79,12 +85,16 @@ def _parse_identity(stdout: str) -> Tuple[str, str]:
     return issuer, subject
 
 
-def _verify_signature(
+def _run_cosign(
     image: str,
     expected_subject: str | None,
     expected_issuer: str | None,
-) -> Tuple[str, str]:
+    env: dict[str, str],
+    request_json: bool,
+):
     cmd = ["cosign", "verify", "--verbose", image]
+    if request_json:
+        cmd.extend(["--output", "json"])
     if expected_subject:
         cmd.extend(["--certificate-identity", expected_subject])
     else:
@@ -93,10 +103,8 @@ def _verify_signature(
         cmd.extend(["--certificate-oidc-issuer", expected_issuer])
     else:
         cmd.extend(["--certificate-oidc-issuer-regexp", ".*"])
-    env = dict(os.environ)
-    env.setdefault("COSIGN_EXPERIMENTAL", "1")
     try:
-        result = subprocess.run(
+        return subprocess.run(
             cmd,
             check=True,
             capture_output=True,
@@ -105,12 +113,44 @@ def _verify_signature(
         )
     except subprocess.CalledProcessError as exc:  # pragma: no cover - surfaced in CI logs
         output = "\n".join(filter(None, [exc.stdout, exc.stderr]))
+        if request_json and "unknown flag" in output.lower():
+            return None
         raise SystemExit(
             f"[build_issuer_subject_input] cosign verify failed: {output}"
         ) from exc
-    if parsed := _parse_json_identity(result.stdout):
-        return parsed
-    combined_output = "\n".join(filter(None, [result.stdout, result.stderr]))
+
+
+def _verify_signature(
+    image: str,
+    expected_subject: str | None,
+    expected_issuer: str | None,
+) -> Tuple[str, str]:
+    env = dict(os.environ)
+    env.setdefault("COSIGN_EXPERIMENTAL", "1")
+
+    result = _run_cosign(
+        image=image,
+        expected_subject=expected_subject,
+        expected_issuer=expected_issuer,
+        env=env,
+        request_json=True,
+    )
+    if result is not None:
+        if parsed := _parse_json_identity(result.stdout):
+            return parsed
+        combined_output = "\n".join(filter(None, [result.stdout, result.stderr]))
+        if parsed := _parse_json_identity(combined_output):
+            return parsed
+
+    # Fall back when JSON output unsupported or parsing failed
+    text_result = _run_cosign(
+        image=image,
+        expected_subject=expected_subject,
+        expected_issuer=expected_issuer,
+        env=env,
+        request_json=False,
+    )
+    combined_output = "\n".join(filter(None, [text_result.stdout, text_result.stderr]))
     return _parse_identity(combined_output)
 
 
