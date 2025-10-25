@@ -1,5 +1,6 @@
 package supplychain.sbom_vex_test
 
+import future.keywords.if
 import data.supplychain.sbom_vex
 
 default policy := {

@@ -1,5 +1,8 @@
 package supplychain.sbom_vex
 
+import future.keywords.contains
+import future.keywords.if
+
 default allow := false
 
 allow if {

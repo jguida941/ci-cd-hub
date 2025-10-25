@@ -1,5 +1,6 @@
 package supplychain.issuer_subject_test
 
+import future.keywords.if
 import data.supplychain.issuer_subject
 
 allow_input := {
