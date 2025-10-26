@@ -28,7 +28,7 @@ jobs:
       COSIGN_EXPERIMENTAL: "1"
     steps:
       - name: Checkout
-        uses: actions/checkout@44c2b7b3cb5fc175201269f953959d27d2f4b8f
+        uses: actions/checkout@v4
 
       - name: Resolve image reference
         id: resolve
@@ -52,7 +52,7 @@ jobs:
           ./scripts/install_tools.sh
 
       - name: Login to registry
-        uses: docker/login-action@4656a6afd4b05fa005e675c9f3f91bd581b5a1a2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -72,7 +72,7 @@ jobs:
           ./tools/rekor_monitor.sh "${IMAGE_DIGEST}" "${IMAGE_BASE}" artifacts/evidence
 
       - name: Upload evidence bundle
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@v4
         with:
           name: manual-signing-evidence
           path: artifacts/evidence

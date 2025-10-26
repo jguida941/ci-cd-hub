@@ -19,7 +19,7 @@ jobs:
       DR_OUTPUT: artifacts/dr
     steps:
       - name: Checkout
-        uses: actions/checkout@44c2b7b3cb5fc175201269f953959d27d2f4b8f
+        uses: actions/checkout@v4
       - name: Simulate DR drill
         run: |
           set -euo pipefail
@@ -28,7 +28,7 @@ jobs:
             --output "${DR_OUTPUT}/dr-report.json" \
             --ndjson "${DR_OUTPUT}/dr-events.ndjson"
       - name: Upload DR evidence
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@v4
         with:
           name: dr-evidence
           path: ${{ env.DR_OUTPUT }}

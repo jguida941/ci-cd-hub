@@ -18,9 +18,9 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@44c2b7b3cb5fc175201269f953959d27d2f4b8f
+      - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@13f16f7b1480c8c093730837f8b6bb62a88bd3c8
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - name: Install dependencies

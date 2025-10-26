@@ -22,10 +22,10 @@ jobs:
       RUN_DIR: artifacts/mutation
     steps:
       - name: Checkout
-        uses: actions/checkout@44c2b7b3cb5fc175201269f953959d27d2f4b8f
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@13f16f7b1480c8c093730837f8b6bb62a88bd3c8
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
@@ -61,14 +61,14 @@ jobs:
         run: cat "$RUN_DIR/summary.md"
 
       - name: Upload Mutation Observatory artifacts
-        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        uses: actions/upload-artifact@v4
         with:
           name: mutation-observatory
           path: ${{ env.RUN_DIR }}
 
       - name: Comment Mutation Observatory summary
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@741b164714009d5e183c6c9f54f15e7d6f80935a
+        uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
