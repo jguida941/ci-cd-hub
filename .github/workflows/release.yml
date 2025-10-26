@@ -5,6 +5,7 @@ on:
     tags:
       - "v*.*.*"
       - "*.*.*"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -87,9 +88,32 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install blake3
 
-      - name: Extract tag
+      - name: Derive image tags
         id: vars
-        run: echo "tag=${GITHUB_REF##*/}" >> "$GITHUB_OUTPUT"
+        run: |
+          ref_name="${GITHUB_REF_NAME:-${GITHUB_REF##*/}}"
+          ref_type="${GITHUB_REF_TYPE:-}"
+          short_sha="$(printf '%s' "${GITHUB_SHA}" | cut -c1-12)"
+          primary_tag="$ref_name"
+          extra_tag=""
+          if [[ "$ref_type" == "tag" ]]; then
+            extra_tag="latest"
+          else
+            if [[ -z "$primary_tag" || "$primary_tag" == "undefined" ]]; then
+              primary_tag="main"
+            fi
+            extra_tag="sha-${short_sha}"
+          fi
+          {
+            printf 'tag=%s\n' "$primary_tag"
+            printf 'extra_tag=%s\n' "$extra_tag"
+            printf "tags<<'EOF'\n"
+            printf '%s/%s:%s\n' "${REGISTRY}" "${IMAGE_NAME}" "$primary_tag"
+            if [[ -n "$extra_tag" ]]; then
+              printf '%s/%s:%s\n' "${REGISTRY}" "${IMAGE_NAME}" "$extra_tag"
+            fi
+            printf 'EOF\n'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Log in to registry
         uses: docker/login-action@v3
@@ -112,8 +136,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
+          tags: ${{ steps.vars.outputs.tags }}
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha,scope=${{ github.workflow }}-${{ github.ref_name }}
           cache-to: type=gha,mode=max,scope=${{ github.workflow }}-${{ github.ref_name }}

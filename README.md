@@ -18,6 +18,16 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
 ```
 
+### Repairing unsigned container digests
+
+All deployable images must carry a Cosign signature plus Rekor inclusion proof. If a previously published digest is missing its `.sig` manifest (for example, an image was built outside the release workflow), trigger the reusable `sign-existing-digest` workflow:
+
+1. In GitHub → Actions → **sign-existing-digest**, click **Run workflow**.
+2. Provide the image digest (`sha256:...`). The image field is optional and defaults to `ghcr.io/<owner>/ci-intel-app`.
+3. The workflow logs in with OIDC, signs the digest with Cosign, runs `tools/rekor_monitor.sh` to capture the inclusion proof, and uploads the evidence bundle.
+
+This keeps the Trust pillar of `plan.md` enforceable even when a manual repair is required.
+
 ### Mutation Observatory workflow
 
 - Config: `mutation-observatory.ci.yaml`
