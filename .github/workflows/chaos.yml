@@ -7,16 +7,25 @@ on:
   schedule:
     - cron: "0 6 * * *"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CHAOS_KILL_SWITCH: ${{ vars.CHAOS_KILL_SWITCH || 'false' }}
+  CHAOS_LABEL: chaos-opt-in
+
 jobs:
   chaos:
+    if: env.CHAOS_KILL_SWITCH != 'true' && (github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, 'chaos-opt-in'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@44c2b7b3cb5fc175201269f953959d27d2f4b8f
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@13f16f7b1480c8c093730837f8b6bb62a88bd3c8
         with:
           python-version: '3.12'
       - name: Run chaos suite
@@ -32,7 +41,7 @@ jobs:
             --output artifacts/chaos/report.json \
             --ndjson artifacts/chaos/events.ndjson
       - name: Upload chaos artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: chaos-evidence
           path: artifacts/chaos

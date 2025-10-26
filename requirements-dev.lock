@@ -1,0 +1,5 @@
+# Locked development dependencies for CI reproducibility.
+jsonschema==4.21.1
+pyyaml==6.0.1
+pytest==7.4.4
+blake3==0.4.1

@@ -18,14 +18,20 @@ on:
       - 'mutation-observatory.ci.yaml'
       - '.github/workflows/tools-ci.yml'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   unittest:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@44c2b7b3cb5fc175201269f953959d27d2f4b8f
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@13f16f7b1480c8c093730837f8b6bb62a88bd3c8
         with:
           python-version: '3.11'
       - name: Install test dependencies
@@ -45,3 +51,6 @@ jobs:
         run: |
           set -euo pipefail
           pytest tools/tests/test_mutation_observatory.py
+      - name: Lint docs
+        run: |
+          npx --yes markdownlint-cli2 "**/*.md"

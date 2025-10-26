@@ -1,0 +1,34 @@
+name: dr-drill
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"  # weekly
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drill:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    env:
+      DR_OUTPUT: artifacts/dr
+    steps:
+      - name: Checkout
+        uses: actions/checkout@44c2b7b3cb5fc175201269f953959d27d2f4b8f
+      - name: Simulate DR drill
+        run: |
+          set -euo pipefail
+          mkdir -p "${DR_OUTPUT}"
+          python tools/run_dr_drill.py \
+            --output "${DR_OUTPUT}/dr-report.json" \
+            --ndjson "${DR_OUTPUT}/dr-events.ndjson"
+      - name: Upload DR evidence
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        with:
+          name: dr-evidence
+          path: ${{ env.DR_OUTPUT }}

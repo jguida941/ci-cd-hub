@@ -7,6 +7,10 @@ on:
       - "*.*.*"
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -24,16 +28,16 @@ jobs:
             path: caesar_cli
     steps:
       - name: Checkout automation repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@44c2b7b3cb5fc175201269f953959d27d2f4b8f
 
       - name: Checkout ${{ matrix.name }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@44c2b7b3cb5fc175201269f953959d27d2f4b8f
         with:
           repository: ${{ matrix.repository }}
           path: project
 
       - name: Cache pip
-        uses: actions/cache@v4
+        uses: actions/cache@13b0b3965d2f3d70d1750fb8d15860126a75098a
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('project/**/requirements*.txt', 'project/**/pyproject.toml') }}
@@ -41,7 +45,7 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@13f16f7b1480c8c093730837f8b6bb62a88bd3c8
         with:
           python-version: '3.12'
 
@@ -81,7 +85,7 @@ jobs:
       subject_b64: ${{ steps.subjects.outputs.base64_subject }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@44c2b7b3cb5fc175201269f953959d27d2f4b8f
 
       - name: Install Python deps (cache sentinel)
         run: |
@@ -116,18 +120,18 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Log in to registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@4656a6afd4b05fa005e675c9f3f91bd581b5a1a2
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@4091d937f9e0f45804646f85eb516b421f4a7e02
 
       - name: Build and push multi-arch image
         id: build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@2cdde99521d7aca996ca9af0c239ba1b3112c7f1
         env:
           DOCKER_BUILDKIT: 1
           BUILDKIT_RETRY_SOCKET_ERRORS: 1
@@ -178,7 +182,7 @@ jobs:
             --product "${IMAGE_NAME}"
 
       - name: Upload SBOMs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: sbom
           path: ${{ env.SBOM_DIR }}
@@ -195,7 +199,7 @@ jobs:
 
       - name: Upload signing evidence
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: signing-metadata
           path: ${{ env.EVIDENCE_DIR }}
@@ -251,11 +255,11 @@ jobs:
       COSIGN_EXPERIMENTAL: "1"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@44c2b7b3cb5fc175201269f953959d27d2f4b8f
 
       - name: Check provenance artifacts
         id: provenance_artifacts
-        uses: actions/github-script@v7
+        uses: actions/github-script@741b164714009d5e183c6c9f54f15e7d6f80935a
         with:
           script: |
             const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
@@ -272,28 +276,28 @@ jobs:
         run: ./scripts/install_tools.sh
 
       - name: Login to registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@4656a6afd4b05fa005e675c9f3f91bd581b5a1a2
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download SBOMs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3584b2fa2562488c074f3f1a242d6c148c9da2d4
         with:
           name: sbom
           path: artifacts/sbom
 
       - name: Download provenance artifact
         if: ${{ steps.provenance_artifacts.outputs.has_predicate == 'true' }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3584b2fa2562488c074f3f1a242d6c148c9da2d4
         with:
           name: predicate
           path: artifacts
 
       - name: Download provenance artifact (attestation)
         if: ${{ steps.provenance_artifacts.outputs.has_attestation == 'true' }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3584b2fa2562488c074f3f1a242d6c148c9da2d4
         with:
           name: attestation
           path: artifacts
@@ -370,6 +374,14 @@ jobs:
           mkdir -p artifacts/evidence/determinism
           ./tools/determinism_check.sh "${IMAGE_DIGEST_REF}" artifacts/evidence/determinism
 
+      - name: Simulate DR drill evidence
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/evidence/dr
+          python tools/run_dr_drill.py \
+            --output artifacts/evidence/dr/report.json \
+            --ndjson artifacts/evidence/dr/events.ndjson
+
       - name: Record cache manifest
         run: |
           set -euo pipefail
@@ -402,7 +414,7 @@ jobs:
           ./tools/rekor_monitor.sh "${{ needs.build-sign-publish.outputs.digest }}" "${REGISTRY}/${IMAGE_NAME}" artifacts/evidence
 
       - name: Upload Evidence bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
         with:
           name: release-evidence
           path: |
@@ -426,7 +438,7 @@ jobs:
       IMAGE_NAME: ${{ github.repository_owner }}/ci-intel-app
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@44c2b7b3cb5fc175201269f953959d27d2f4b8f
       - name: Install Python test dependencies
         run: |
           set -euo pipefail
@@ -490,7 +502,7 @@ jobs:
           tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR" grype
           sudo install -m 0755 "${TMP_DIR}/grype" /usr/local/bin/grype
       - name: Login to registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@4656a6afd4b05fa005e675c9f3f91bd581b5a1a2
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -553,7 +565,7 @@ jobs:
           curl -L -o /usr/local/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.63.0/opa_linux_amd64_static
           chmod +x /usr/local/bin/opa
       - name: Download SBOM artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@3584b2fa2562488c074f3f1a242d6c148c9da2d4
         with:
           name: sbom
           path: policy-inputs/sbom
@@ -669,3 +681,22 @@ jobs:
             exit 1
           fi
           echo "[policy] SBOM/VEX policy satisfied"
+
+      - name: Summarize and upload policy evidence
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p policy-inputs
+          jq -n \
+            --arg ref "${{ needs.build-sign-publish.outputs.digest_ref }}" \
+            '{image: $ref, generated_at: (now|strftime("%Y-%m-%dT%H:%M:%SZ"))}' \
+            > policy-inputs/summary.json
+        shell: bash
+
+      - name: Upload policy evidence
+        if: always()
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808
+        with:
+          name: policy-evidence
+          path: |
+            policy-inputs

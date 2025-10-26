@@ -34,11 +34,24 @@ ensure_rekor_cli() {
   mkdir -p "$cache_dir"
   if [[ ! -x "$dest" ]]; then
     >&2 echo "[rekor_monitor] rekor-cli not found; downloading ${url}"
-    if ! curl -fsSL "$url" -o "$dest"; then
+    tmp="${dest}.tmp"
+    if ! curl -fsSL "$url" -o "$tmp"; then
       >&2 echo "[rekor_monitor] Failed to download rekor-cli from ${url}"
-      rm -f "$dest"
+      rm -f "$tmp"
       return 1
     fi
+    checksum_url="${url}.sha256"
+    if curl -fsSL "$checksum_url" -o "${tmp}.sha256"; then
+      if ! (cd "$(dirname "$tmp")" && sha256sum -c "$(basename "${tmp}.sha256")"); then
+        >&2 echo "[rekor_monitor] Checksum verification failed for ${filename}"
+        rm -f "$tmp" "${tmp}.sha256"
+        return 1
+      fi
+      rm -f "${tmp}.sha256"
+    else
+      >&2 echo "[rekor_monitor] Warning: checksum file not available for ${filename}; proceeding without verification"
+    fi
+    mv "$tmp" "$dest"
     chmod +x "$dest"
   fi
   ln -sf "$dest" "${cache_dir}/rekor-cli"

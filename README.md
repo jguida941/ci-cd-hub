@@ -9,6 +9,8 @@ This repository implements the production-grade CI/CD platform defined in `plan.
 
 Refer to `plan.md` for the complete architecture, roadmap, and v1.0 exit criteria.
 
+For agent-by-agent details see [`docs/AGENTS.md`](docs/AGENTS.md). For contribution and testing guidance, read the documents under `docs/` (Overview, Testing, Contributing).
+
 ## Development setup
 
 Install the Python dependencies needed for local tooling/tests:
@@ -16,6 +18,7 @@ Install the Python dependencies needed for local tooling/tests:
 ```bash
 python -m pip install --upgrade pip
 python -m pip install -r requirements-dev.txt
+pip install -r requirements-dev.lock  # reproducible pin set
 ```
 
 ### Repairing unsigned container digests
@@ -47,3 +50,7 @@ python tools/mutation_observatory.py \
 ```
 
 GitHub Actions job `mutation-observatory` (see `.github/workflows/mutation.yml`) runs the same command on every push/PR, uploads the JSON/NDJSON/Markdown/HTML artifacts, and fails the build if the aggregate resilience drops below the configured thresholds. On pull requests the workflow automatically comments with the Markdown summary and a direct link to the HTML artifact so reviewers can inspect surviving mutants without digging through the Actions UI.
+
+## License
+
+This project is distributed under the terms of the [MIT License](LICENSE).

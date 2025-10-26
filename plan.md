@@ -707,6 +707,7 @@ Demo script
 5. Staging runs load and security scans.
 6. Prod canary at 20% -> promote or rollback with reason captured.
 7. Dashboard shows trace, DORA, cost, and carbon.
+8. Scheduled `chaos.yml` run injects faults and uploads chaos NDJSON; `dr-drill.yml` simulates backup/restore and attaches evidence.
 
 Sample configs
 ```

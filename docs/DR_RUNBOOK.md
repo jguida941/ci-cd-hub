@@ -16,6 +16,18 @@
 4. Compare digests and BUILD_ID values; record diff report in Evidence Bundle.
 5. File postmortem if differences detected.
 
+## Ingesting Drill Evidence
+- Run the ingest helper after each scheduled drill to push NDJSON into BigQuery:
+  ```bash
+  python ingest/chaos_dr_ingest.py \
+    --project <gcp-project> \
+    --dataset ci_intel \
+    --dr-ndjson artifacts/evidence/dr/events.ndjson \
+    --dr-run-id "$(date -u +dr-%Y%m%dT%H%M%SZ)"
+  ```
+- Add `--chaos-ndjson artifacts/evidence/chaos/events.ndjson` when a chaos trial and DR drill run together.
+- Use `--dry-run` first in lower environments; production runs must retain job logs with the generated `load_id`.
+
 ## Monitoring
 - Rekor inclusion proofs verified post-release.
 - Rekor monitor job stores proofs under `artifacts/evidence/` for audit.
