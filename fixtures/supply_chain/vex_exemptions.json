@@ -97,5 +97,16 @@
       "name": "Debian Security Tracker",
       "url": "https://security-tracker.debian.org/tracker/CVE-2024-56433"
     }
+  },
+  {
+    "id": "CVE-2025-52099",
+    "status": "not_affected",
+    "justification": "component_not_present",
+    "impact": "Targets the optional vim-runtime documentation files; the container image strips editors and man pages so the vulnerable module is absent.",
+    "timestamp": "2025-01-15T00:00:00Z",
+    "source": {
+      "name": "Debian Security Tracker",
+      "url": "https://security-tracker.debian.org/tracker/CVE-2025-52099"
+    }
   }
 ]
