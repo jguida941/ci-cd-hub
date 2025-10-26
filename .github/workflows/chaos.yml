@@ -20,7 +20,7 @@ env:
 
 jobs:
   chaos:
-    if: ${{ env.CHAOS_KILL_SWITCH != 'true' && (github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, env.CHAOS_LABEL)) }}
+    if: ${{ (vars.CHAOS_KILL_SWITCH || 'false') != 'true' && (github.event_name != 'pull_request_target' || contains(github.event.pull_request.labels.*.name, vars.CHAOS_LABEL || 'chaos-opt-in')) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
