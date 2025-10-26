@@ -14,6 +14,11 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  INGEST_PROJECT: ${{ vars.CI_INTEL_BQ_PROJECT || secrets.CI_INTEL_BQ_PROJECT || '' }}
+  INGEST_DATASET: ${{ vars.CI_INTEL_BQ_DATASET || secrets.CI_INTEL_BQ_DATASET || '' }}
+  INGEST_LOCATION: ${{ vars.CI_INTEL_BQ_LOCATION || '' }}
+
 jobs:
   project-tests:
     permissions:
@@ -700,3 +705,99 @@ jobs:
           name: policy-evidence
           path: |
             policy-inputs
+
+  pipeline-run-ingest:
+    name: pipeline-run-ingest
+    needs:
+      - project-tests
+      - build-sign-publish
+      - generate-provenance
+      - collect-evidence
+      - policy-gates
+    if: ${{ needs.policy-gates.result == 'success' }}
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Prepare pipeline jobs metadata
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          cat <<JSON > artifacts/pipeline_jobs.json
+          [
+            {"id":"project-tests","name":"project-tests","status":"${{ needs.project-tests.result }}","attempt":1,"duration_ms":0,"queue_ms":0},
+            {"id":"build-sign-publish","name":"build-sign-publish","status":"${{ needs.build-sign-publish.result }}","attempt":1,"duration_ms":0,"queue_ms":0},
+            {"id":"generate-provenance","name":"generate-provenance","status":"${{ needs.generate-provenance.result }}","attempt":1,"duration_ms":0,"queue_ms":0},
+            {"id":"collect-evidence","name":"collect-evidence","status":"${{ needs.collect-evidence.result }}","attempt":1,"duration_ms":0,"queue_ms":0},
+            {"id":"policy-gates","name":"policy-gates","status":"${{ needs.policy-gates.result }}","attempt":1,"duration_ms":0,"queue_ms":0}
+          ]
+          JSON
+
+      - name: Emit pipeline_run record
+        env:
+          RUN_ARTIFACTS_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts
+        run: |
+          set -euo pipefail
+          python scripts/emit_pipeline_run.py \
+            --output artifacts/pipeline_run.ndjson \
+            --status success \
+            --environment prod \
+            --image-digest "${{ needs.build-sign-publish.outputs.digest }}" \
+            --sbom-uri "$RUN_ARTIFACTS_URL" \
+            --provenance-uri "$RUN_ARTIFACTS_URL" \
+            --signature-uri "$RUN_ARTIFACTS_URL" \
+            --release-evidence-uri "$RUN_ARTIFACTS_URL" \
+            --artifact-bytes 0 \
+            --queue-ms 0 \
+            --tests-total 0 \
+            --tests-failed 0 \
+            --tests-skipped 0 \
+            --tests-duration-ms 0 \
+            --resilience-mutants 0 \
+            --resilience-killed 0 \
+            --resilience-equiv 0 \
+            --resilience-timeout 0 \
+            --resilience-score 0 \
+            --resilience-delta 0 \
+            --cost-usd 0 \
+            --cpu-seconds 0 \
+            --gpu-seconds 0 \
+            --primary-job-duration-ms 0 \
+            --jobs-file artifacts/pipeline_jobs.json
+
+      - name: Validate pipeline_run schema
+        run: |
+          python scripts/validate_schema.py artifacts/pipeline_run.ndjson
+
+      - name: Upload pipeline_run artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-run
+          path: artifacts/pipeline_run.ndjson
+
+      - name: Ingest pipeline_run record
+        if: env.INGEST_PROJECT != '' && env.INGEST_DATASET != ''
+        run: |
+          set -euo pipefail
+          cmd=(python ingest/chaos_dr_ingest.py
+            --project "$INGEST_PROJECT"
+            --dataset "$INGEST_DATASET"
+            --pipeline-run-ndjson artifacts/pipeline_run.ndjson
+          )
+          if [[ -n "$INGEST_LOCATION" ]]; then
+            cmd+=(--location "$INGEST_LOCATION")
+          fi
+          "${cmd[@]}"

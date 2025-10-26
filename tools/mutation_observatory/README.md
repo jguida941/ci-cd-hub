@@ -7,35 +7,45 @@ Run mutation analyzers (e.g., Stryker, mutmut) and emit structured resilience te
 ## Usage
 
 ```bash
+
 python tools/mutation_observatory.py \
   --config mutation-observatory.ci.yaml \
   --output artifacts/mutation/run.json \
   --ndjson artifacts/mutation/run.ndjson \
   --markdown artifacts/mutation/summary.md
-```
+
+```bash
 
 ## Configuration
 
 - `mutation-observatory.ci.yaml` defines targets (tool, parser, report path, thresholds).
+
 - Supports optional commands that generate reports relative to `workdir`.
 
 ## Testing
 
 ```bash
+
 pytest tools/tests/test_mutation_observatory.py
-```
+
+```bash
+
 Workflow: `.github/workflows/mutation-observatory.yml` runs the same suite.
 
 ## Dependencies
 
 - Python 3.12+
+
 - `pytest` for tests
+
 - Upstream workflow relies on `syft`, `grype` for SBOM inputs when running real mutators.
 
 ## Output & Artifacts
 
 - JSON: `artifacts/mutation/run.json`
+
 - NDJSON: `artifacts/mutation/run.ndjson`
+
 - Markdown summary: `artifacts/mutation/summary.md`
 
 ## Changelog

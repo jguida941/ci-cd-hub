@@ -1,0 +1,64 @@
+{
+  "source": {
+    "target": {
+      "name": "demo-image",
+      "type": "oci-image",
+      "location": "ghcr.io/example/demo:latest"
+    }
+  },
+  "matches": [
+    {
+      "vulnerability": {
+        "id": "CVE-2025-0001",
+        "severity": "critical",
+        "cvss": [
+          {
+            "metrics": {
+              "source": "NVD",
+              "type": "Primary",
+              "baseScore": 9.1
+            }
+          }
+        ]
+      },
+      "relatedVulnerabilities": [],
+      "metadata": {
+        "epss": {
+          "percentile": 0.82
+        }
+      }
+    },
+    {
+      "vulnerability": {
+        "id": "CVE-2024-9999",
+        "severity": "medium",
+        "cvss": [
+          {
+            "metrics": {
+              "source": "Vendor",
+              "type": "Secondary",
+              "baseScore": 4.9
+            }
+          }
+        ]
+      },
+      "relatedVulnerabilities": [
+        {
+          "id": "CVE-2024-9998",
+          "cvss": [
+            {
+              "metrics": {
+                "baseScore": 6.1
+              }
+            }
+          ]
+        }
+      ],
+      "metadata": {
+        "epss": {
+          "percentile": 0.2
+        }
+      }
+    }
+  ]
+}

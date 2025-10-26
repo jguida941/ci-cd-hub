@@ -7,23 +7,28 @@ Fetch Rekor log entries and inclusion proofs for a signed artifact digest, cachi
 ## Usage
 
 ```bash
+
 ./tools/rekor_monitor.sh \
   "sha256:<digest>" \
   "ghcr.io/org/image" \
   artifacts/evidence
-```
+
+```bash
 
 ## Configuration
 
 - Environment:
   - `REKOR_LOG` (default `https://rekor.sigstore.dev`).
   - `REKOR_CLI_VERSION` to pin downloaded CLI.
+
 - Requires `rekor-cli` and `jq` in PATH (script can download/pin CLI).
 
 ## Output & Artifacts
 
 - Proof: `artifacts/evidence/rekor-proof-<timestamp>.json`
+
 - Search results: `artifacts/evidence/rekor-search-<timestamp>.json`
+
 - Cached indices: `artifacts/evidence/rekor-indices.txt`
 
 ## Testing

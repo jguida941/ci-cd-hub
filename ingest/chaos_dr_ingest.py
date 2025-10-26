@@ -23,7 +23,14 @@ try:  # Optional dependency; required when not running in --dry-run mode.
     from google.cloud import bigquery
 except ModuleNotFoundError:  # pragma: no cover - handled at runtime
     bigquery = None  # type: ignore
+try:
+    import jsonschema
+except ModuleNotFoundError:  # pragma: no cover - jsonschema already required for tooling
+    jsonschema = None  # type: ignore
 
+ROOT = Path(__file__).resolve().parents[1]
+PIPELINE_SCHEMA_PATH = ROOT / "schema/pipeline_run.v1.2.json"
+PIPELINE_SCHEMA = json.loads(PIPELINE_SCHEMA_PATH.read_text())
 
 CHAOS_SCHEMA = [
     {"name": "run_id", "field_type": "STRING", "mode": "REQUIRED"},
@@ -57,8 +64,18 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--dataset", required=True, help="Target BigQuery dataset (e.g. ci_intel)")
     parser.add_argument("--chaos-ndjson", type=Path, help="Path to chaos NDJSON file")
     parser.add_argument("--dr-ndjson", type=Path, help="Path to DR drill NDJSON file")
+    parser.add_argument(
+        "--pipeline-run-ndjson",
+        type=Path,
+        help="Path to pipeline_run.v1.2 NDJSON artifact",
+    )
     parser.add_argument("--chaos-table", default="chaos_events", help="Chaos table name (default: chaos_events)")
     parser.add_argument("--dr-table", default="dr_drills", help="DR table name (default: dr_drills)")
+    parser.add_argument(
+        "--pipeline-run-table",
+        default="pipeline_runs",
+        help="Table name for pipeline_run records (default: pipeline_runs)",
+    )
     parser.add_argument("--chaos-run-id", help="Override run_id for chaos events")
     parser.add_argument("--dr-run-id", help="Override run_id for DR events")
     parser.add_argument("--load-tag", help="Optional load identifier appended to both datasets")
@@ -86,6 +103,20 @@ def _read_ndjson(path: Path) -> list[dict[str, Any]]:
                 raise SystemExit(f"[ingest] {path}:{lineno} must be an object")
             items.append(payload)
     return items
+
+
+def _load_pipeline_records(path: Path) -> list[dict[str, Any]]:
+    if jsonschema is None:
+        raise SystemExit("jsonschema is required to validate pipeline_run NDJSON")
+    records = _read_ndjson(path)
+    for lineno, record in enumerate(records, start=1):
+        try:
+            jsonschema.validate(record, PIPELINE_SCHEMA)
+        except jsonschema.ValidationError as exc:
+            raise SystemExit(
+                f"[ingest] {path}:{lineno} fails pipeline_run.v1.2 schema validation: {exc.message}"
+            ) from exc
+    return records
 
 
 def _augment_rows(
@@ -154,6 +185,7 @@ def main() -> int:
     args = _parse_args()
     chaos_rows: list[dict[str, Any]] = []
     dr_rows: list[dict[str, Any]] = []
+    pipeline_rows: list[dict[str, Any]] = []
 
     if args.chaos_ndjson:
         if not args.chaos_ndjson.exists():
@@ -173,9 +205,15 @@ def main() -> int:
             load_tag=args.load_tag,
         )
 
+    if args.pipeline_run_ndjson:
+        if not args.pipeline_run_ndjson.exists():
+            raise SystemExit(f"[ingest] pipeline_run NDJSON missing: {args.pipeline_run_ndjson}")
+        pipeline_rows = _load_pipeline_records(args.pipeline_run_ndjson)
+
     if args.dry_run:
         _summarize("chaos", chaos_rows)
         _summarize("dr", dr_rows)
+        _summarize("pipeline_run", pipeline_rows)
         return 0
 
     _ensure_bigquery_available()
@@ -189,7 +227,17 @@ def main() -> int:
         table_id = f"{args.project}.{args.dataset}.{args.dr_table}"
         _load_rows(client, table_id, dr_rows, DR_SCHEMA)
 
-    if not chaos_rows and not dr_rows:
+    if pipeline_rows:
+        table_id = f"{args.project}.{args.dataset}.{args.pipeline_run_table}"
+        job_config = bigquery.LoadJobConfig(
+            source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+            write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
+        )
+        job = client.load_table_from_json(pipeline_rows, table_id, job_config=job_config)
+        result = job.result()
+        print(f"[ingest] Loaded {result.output_rows} rows into {table_id}")
+
+    if not chaos_rows and not dr_rows and not pipeline_rows:
         print("[ingest] No files ingested; nothing to do.")
     return 0
 

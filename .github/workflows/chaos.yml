@@ -14,6 +14,9 @@ concurrency:
 env:
   CHAOS_KILL_SWITCH: ${{ vars.CHAOS_KILL_SWITCH || 'false' }}
   CHAOS_LABEL: chaos-opt-in
+  INGEST_PROJECT: ${{ vars.CI_INTEL_BQ_PROJECT || secrets.CI_INTEL_BQ_PROJECT || '' }}
+  INGEST_DATASET: ${{ vars.CI_INTEL_BQ_DATASET || secrets.CI_INTEL_BQ_DATASET || '' }}
+  INGEST_LOCATION: ${{ vars.CI_INTEL_BQ_LOCATION || '' }}
 
 jobs:
   chaos:
@@ -40,6 +43,23 @@ jobs:
             --config chaos/chaos-fixture.json \
             --output artifacts/chaos/report.json \
             --ndjson artifacts/chaos/events.ndjson
+      - name: Ingest chaos telemetry
+        if: env.INGEST_PROJECT != '' && env.INGEST_DATASET != ''
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install --quiet google-cloud-bigquery jsonschema
+          cmd=(python ingest/chaos_dr_ingest.py
+            --project "$INGEST_PROJECT"
+            --dataset "$INGEST_DATASET"
+            --chaos-ndjson artifacts/chaos/events.ndjson
+            --chaos-run-id "chaos-${GITHUB_RUN_ID}"
+            --load-tag "gha-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          )
+          if [[ -n "$INGEST_LOCATION" ]]; then
+            cmd+=(--location "$INGEST_LOCATION")
+          fi
+          "${cmd[@]}"
       - name: Upload chaos artifacts
         uses: actions/upload-artifact@v4
         with:

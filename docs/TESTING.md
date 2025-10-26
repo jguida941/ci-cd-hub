@@ -6,8 +6,28 @@
 | Schema validation | `python scripts/validate_schema.py fixtures/pipeline_run_v1_2/*.ndjson` | `schema-ci.yml` | Ensures `pipeline_run.v1.2` compatibility before ingest. |
 | Policy bundle | `opa test -v policies` | `release.yml` (policy-gates job) | Requires `policy-inputs/*` fixtures (SBOM, issuer, referrers). |
 | Mutation synthetic workflow | `pytest tools/tests/test_mutation_observatory.py` | `mutation.yml` | Exercises diff thresholds and stale report logic. |
-| Ingest dry run | `python ingest/chaos_dr_ingest.py --project fake --dataset tmp --chaos-ndjson artifacts/chaos.ndjson --dr-ndjson artifacts/dr.ndjson --dry-run` | local/ingest job | Verifies chaos/DR NDJSON parse + metadata injection without touching BigQuery. |
+| Ingest dry run (chaos/DR) | `python ingest/chaos_dr_ingest.py --project fake --dataset tmp --chaos-ndjson artifacts/chaos.ndjson --dr-ndjson artifacts/dr.ndjson --dry-run` | local/ingest job | Verifies chaos/DR NDJSON parse + metadata injection without touching BigQuery. |
+| Pipeline run emitter + ingest | `python scripts/emit_pipeline_run.py --output artifacts/pipeline_run.ndjson --status success --environment staging` then `python ingest/chaos_dr_ingest.py --project fake --dataset tmp --pipeline-run-ndjson artifacts/pipeline_run.ndjson --dry-run` | `release.yml` (pipeline-run-ingest job) | Guarantees every release publishes a schema-valid `pipeline_run.v1.2` record before loading to BigQuery. |
 | Kyverno manifest check | `kyverno apply supply-chain-enforce/kyverno/verify-images.yaml --resource <sample manifest>` | `release.yml` / ops runbook | Confirms signed images + attestations satisfy policy before rollout. |
+
+## Unified Make Targets
+
+All of the common local workflows are wired through the root `Makefile`. Examples:
+
+```bash
+make help                 # discover available targets
+make setup                # install dev requirements (pytest, mkdocs, etc.)
+make all                  # lint + docs + pytest + simulators + sample policy data
+make run-chaos            # execute chaos simulator (artifacts/chaos/*)
+make run-dr               # run DR drill simulator (artifacts/dr/*)
+make run-mutation         # run Mutation Observatory with repo config
+make run-cache-sentinel   # record+verify sample cache manifest
+make build-vex            # emit CycloneDX VEX under artifacts/sbom/
+make build-vuln-input     # turn the sample Grype report into policy-inputs JSON
+REKOR_DIGEST=sha256:<..> make run-rekor-monitor  # download Rekor proof bundle
+```
+
+Targets are composable, so CI-equivalent flows (`lint`, `docs`, `test`, etc.) can be run individually without waiting on GitHub Actions.
 
 ## Local Smoke Suite
 
@@ -19,6 +39,14 @@ python ingest/chaos_dr_ingest.py \
   --project demo --dataset ci_intel \
   --chaos-ndjson artifacts/evidence/chaos/events.ndjson \
   --dr-ndjson artifacts/evidence/dr/events.ndjson \
+  --dry-run
+python scripts/emit_pipeline_run.py \
+  --output artifacts/pipeline_run.ndjson \
+  --status success \
+  --environment staging
+python ingest/chaos_dr_ingest.py \
+  --project demo --dataset ci_intel \
+  --pipeline-run-ndjson artifacts/pipeline_run.ndjson \
   --dry-run
 opa test -v policies
 ```
@@ -36,5 +64,8 @@ mkdocs serve
 ```
 
 ## Changelog
+
 - 2025-10-26: Documentation framework initialized.
 - 2025-11-14: Added ingest + Kyverno checks to the matrix.
+- 2025-11-19: Documented Makefile-based local CI flow.
+- 2025-11-25: Added pipeline_run emitter + ingest validation steps.
