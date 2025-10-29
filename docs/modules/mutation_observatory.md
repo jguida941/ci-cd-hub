@@ -10,7 +10,7 @@ Run mutation analyzers (e.g., Stryker, mutmut) and emit structured resilience te
 
 ```bash
 python tools/mutation_observatory.py \
-  --config mutation-observatory.ci.yaml \
+  --config config/mutation-observatory.ci.yaml \
   --output artifacts/mutation/run.json \
   --ndjson artifacts/mutation/run.ndjson \
   --markdown artifacts/mutation/summary.md
@@ -18,7 +18,7 @@ python tools/mutation_observatory.py \
 
 ## Configuration
 
-- `mutation-observatory.ci.yaml` defines targets (tool, parser, report path, thresholds).
+- `config/mutation-observatory.ci.yaml` defines targets (tool, parser, report path, thresholds).
 - Supports optional commands that generate reports relative to `workdir`.
 
 ## Testing

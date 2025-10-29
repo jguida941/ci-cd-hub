@@ -4,7 +4,7 @@ from pathlib import Path
 
 import yaml
 
-PROJECTS_PATH = Path(__file__).resolve().parent.parent / "projects.yaml"
+PROJECTS_PATH = Path(__file__).resolve().parent.parent / "config" / "projects.yaml"
 
 
 def main() -> int:

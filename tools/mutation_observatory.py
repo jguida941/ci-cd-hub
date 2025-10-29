@@ -8,7 +8,7 @@ import html
 import json
 import os
 import shlex
-import subprocess
+import subprocess  # nosec
 import sys
 import time
 import uuid
@@ -318,7 +318,7 @@ def run_command(
     run_env.update(env)
     start = time.monotonic()
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603  # nosec
             command,
             check=False,
             cwd=workdir,

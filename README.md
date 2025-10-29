@@ -38,7 +38,7 @@ This keeps the Trust pillar of `plan.md` enforceable even when a manual repair i
 
 ### Mutation Observatory workflow
 
-- Config: `mutation-observatory.ci.yaml`
+- Config: `config/mutation-observatory.ci.yaml`
 
 - Run locally:
 
@@ -49,7 +49,7 @@ python tools/scripts/generate_mutation_reports.py \
   --mutmut artifacts/mutation/mutmut-report.json
 
 python tools/mutation_observatory.py \
-  --config mutation-observatory.ci.yaml \
+  --config config/mutation-observatory.ci.yaml \
   --output artifacts/mutation/run.json \
   --ndjson artifacts/mutation/run.ndjson \
   --markdown artifacts/mutation/summary.md \

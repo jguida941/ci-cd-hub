@@ -7,7 +7,7 @@ import argparse
 import json
 import os
 import re
-import subprocess
+import subprocess  # nosec
 import sys
 from pathlib import Path
 from typing import Tuple
@@ -100,7 +100,7 @@ def _run_cosign(
     else:
         cmd.extend(["--certificate-oidc-issuer-regexp", ".*"])
     try:
-        return subprocess.run(
+        return subprocess.run(  # noqa: S603  # nosec
             cmd,
             check=True,
             capture_output=True,

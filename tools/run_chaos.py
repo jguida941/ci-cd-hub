@@ -39,13 +39,13 @@ def load_config(path: Path) -> dict[str, Any]:
 def run_experiments(config: dict[str, Any]) -> list[ChaosEvent]:
     experiments = []
     for entry in config.get("experiments", []):
-        seed = entry.get("seed", random.randint(1, 999999))
+        seed = entry.get("seed", random.randint(1, 999999))  # noqa: S311  # nosec B311 - chaos seeds are for simulation only
         random.seed(seed)
-        duration = random.uniform(5, 20)
+        duration = random.uniform(5, 20)  # noqa: S311  # nosec B311 - bounded simulation timing
         started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         time.sleep(0.01)  # simulate work
         ended = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        retries = random.randint(0, 2)
+        retries = random.randint(0, 2)  # noqa: S311  # nosec B311 - non-cryptographic retry count
         experiments.append(
             ChaosEvent(
                 fault=entry.get("fault", "kill_pod"),
@@ -54,7 +54,7 @@ def run_experiments(config: dict[str, Any]) -> list[ChaosEvent]:
                 rate=entry.get("rate", 0.01),
                 started_at=started,
                 ended_at=ended,
-                outcome=random.choice(["recovered", "degraded"]),
+                outcome=random.choice(["recovered", "degraded"]),  # noqa: S311  # nosec B311 - simulated outcome selection
                 retries=retries,
             )
         )

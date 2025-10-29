@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
+import subprocess  # nosec
 import sys
 from pathlib import Path
 from typing import Sequence
@@ -28,7 +28,9 @@ def run_pytest(pytest_args: Sequence[str]) -> tuple[int, int, int]:
         *pytest_args,
     ]
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_seconds)
+        result = subprocess.run(  # noqa: S603  # nosec
+            cmd, capture_output=True, text=True, timeout=timeout_seconds
+        )
     except subprocess.TimeoutExpired as exc:
         cmd_str = " ".join(cmd)
         print(

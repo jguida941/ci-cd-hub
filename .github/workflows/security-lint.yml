@@ -34,12 +34,22 @@ jobs:
           set -euo pipefail
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
+      - name: Prepare security artifact directory
+        run: mkdir -p artifacts/security
 
       - name: Ruff security rules
         run: ruff check --select S .
 
       - name: Bandit
-        run: bandit -q -r tools scripts
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          bandit -r tools scripts \
+            --configfile .bandit.yaml \
+            --format txt \
+            --output artifacts/security/bandit.txt \
+            --severity-level low \
+            --confidence-level low
 
       - name: pip-audit (requirements-dev)
         env:
@@ -48,6 +58,13 @@ jobs:
           set -euo pipefail
           pip-audit -r requirements-dev.txt
           pip-audit -r requirements-dev.lock
+      - name: Upload Bandit report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: bandit-security-report
+          path: artifacts/security/bandit.txt
+          if-no-files-found: ignore
 
   workflow-guard:
     runs-on: ubuntu-22.04

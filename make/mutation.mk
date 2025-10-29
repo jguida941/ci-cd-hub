@@ -1,4 +1,4 @@
-MUTATION_CONFIG ?= mutation-observatory.ci.yaml
+MUTATION_CONFIG ?= config/mutation-observatory.ci.yaml
 MUTATION_JSON ?= $(MUTATION_DIR)/run.json
 MUTATION_NDJSON ?= $(MUTATION_DIR)/run.ndjson
 MUTATION_SUMMARY ?= $(MUTATION_DIR)/summary.md

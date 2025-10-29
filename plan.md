@@ -15,6 +15,7 @@ Primary outcomes
 
 Needs Update – Gap Tracker
 --------------------------
+
 Use this section as the running ledger of high-priority gaps and the precise controls we still need to land so work-in-progress items do not disappear in the longer narrative below.
 
 Highest-risk gaps
@@ -24,8 +25,8 @@ Highest-risk gaps
 - ✅ Phase 1 — Secretless pipelines: OIDC-only credentials with CI sweeps for env secrets and over-scoped `GITHUB_TOKEN` usage (`security-lint`, `policies/kyverno/secretless.yaml`).
 - ⏳ Phase 1 — Determinism proof: automate cross-arch/time dual-run diffs and fail on BUILD_ID/JAR drift before Phase 1 exit.
 - ⏳ Phase 2 — Schema discipline: enforce NDJSON ingestion gate on `pipeline_run.v1.2` and sustain v1.1 → v1.2 compatibility checks (blocks Phase 2 storage milestones).
-- ⏳ Phase 1 — Rekor anchoring: Evidence Bundle must capture UUID + inclusion proof and fail CI on missing proofs; see acceptance in [Phase 1 — Hermetic build path + CD essentials](#phase-1-%E2%80%94-hermetic-build-path-cd-essentials).
-- ⏳ Phase 4 — Runner isolation: finalize ephemeral runner playbook, egress allowlists, and disk lockdown per [Phase 4 — Reliability hardening and chaos](#phase-4-%E2%80%94-reliability-hardening-and-chaos).
+- ⏳ Phase 1 — Rekor anchoring: Evidence Bundle must capture UUID + inclusion proof and fail CI on missing proofs; see acceptance in Phase 1 — Hermetic build path + CD essentials.
+- ⏳ Phase 4 — Runner isolation: finalize ephemeral runner playbook, egress allowlists, and disk lockdown per Phase 4 — Reliability hardening and chaos.
 - ⏳ Phase 3 — Canary decision auditability: persist promote/rollback queries + windows, hash into Evidence Bundle to unblock analytics gating.
 
 Performance and ops risks
@@ -134,7 +135,8 @@ Minimal workflow/test suite to ship now
 
 Summary of additional guardrails: lean on CodeQL for AI-assisted security analysis, expand linting with ESLint and YAML linters, bring in Dependabot/Snyk plus Trivy for dependency/container coverage, and evaluate free DeepSource/Codacy reviews to keep PR feedback tight.
 
-### Security Tooling Matrix
+Security Tooling Matrix
+-----------------------
 
 | Language/Surface | Tool | Enforce as Gate | Budget/Threshold | Phase Introduced |
 | --- | --- | --- | --- | --- |
@@ -235,24 +237,26 @@ High-level architecture
                  |
              Event Bus (NATS)
                  |
-   -------------------------------
-   |             |               |
- Orchestrator  Analyzers      Sinks
-   |        (modular workers)   |
-   |    - Mutation Observatory   |--> PR Comments Service
-   |    - Pipeline Autopsy       |--> HTML Reports
-   |    - Predictive Scheduler   |--> Dashboard API
-   |    - Deterministic Auditor  |
-   |    - Chaos Injector         |
-   |    - Ephemeral Data Lab     |
-   |    - Compliance Validator   |
-   |    - Cache Sentinel         |
-   |    - Infra Replay           |
-   -------------------------------
-        |             |           |
-   Postgres      Object Store   Traces/Logs
-   (metrics,     (artifacts,    (OTel->Loki/Tempo)
-   findings)     logs, DB snaps)
+   ---------------------------------------
+   |                |                     |
+ Orchestrator     Analyzers           Sinks
+   |          (modular workers)         |
+   |    - Mutation Observatory          |--> PR Comments Service
+   |    - Pipeline Autopsy              |--> HTML Reports
+   |    - Predictive Scheduler          |--> Dashboard API
+   |    - Deterministic Auditor         |--> Evidence Registry
+   |    - Chaos Injector                |--> Warehouse Loader
+   |    - Ephemeral Data Lab            |      (BigQuery / dbt)
+   |    - Compliance Validator          |--> Alerting / ChatOps
+   |    - Cache Sentinel                |
+   |    - Infra Replay                  |
+   |    - Evidence Collector            |
+   |    - Warehouse Loader              |
+   ---------------------------------------
+        |             |           |                 |
+   Postgres      Object Store   Traces/Logs    Warehouse
+   (metrics,     (artifacts,    (OTel->        (BigQuery,
+   findings)     logs, DB snaps) Loki/Tempo)   Evidence Lake)
 ```
 
 Core components
@@ -606,6 +610,7 @@ Phase 0 — Alignment
 
 - Freeze scope until the umbrella dashboard ships.
 
+<a id="phase-1-hermetic-build-path-cd-essentials"></a>
 Phase 1 — Hermetic build path + CD essentials
 
 - Rootless/distroless builder pinned by digest; produce SBOM + provenance; register attestations in Rekor.
@@ -623,6 +628,12 @@ Phase 1 — Hermetic build path + CD essentials
 - Pin every GitHub Action by commit SHA, set least-privilege permissions/id-token scopes, enable workflow `concurrency` cancellation, and add the secret-scan CI job so unpinned steps or static secrets fail PRs immediately.
 
 - Add Black formatting enforcement (`black --check .`) to the lint lane so Python code style stays consistent before merges.
+
+- Publish reusable `workflow_call` pipelines and composite actions for lint, test, release, and security so downstream repos can consume the same gated templates without copy/paste.
+
+- Standardize dependency and secret hygiene across repos with a shared Dependabot/Renovate configuration, SPDX allowlists, and org-wide secret-scanning baselines that alert on drift.
+
+- Ship a developer onboarding kit (repo template, CI cheat sheet, runbook index) so new services adopt the hub guardrails on day one.
 
 Phase 2 — Ingestion and storage
 
@@ -648,6 +659,11 @@ Phase 3 — Policy, gates, and analytics
 
 - Layer in dynamic security coverage: schedule fuzzers against critical binaries, run OWASP ZAP active scans (and Nessus where licensed) in staging, wire Dependabot/Snyk advisory PRs with required review, and scan Terraform/Kubernetes via Checkov/tfsec before promotion. Surface results as GitHub Action reports and evaluate free AI-assisted PR feedback (CodeQL code scanning, DeepSource/Codacy) alongside ESLint/YAML lint gates for ancillary stacks.
 
+- Expand analytics marts with a repository catalogue capturing ownership, criticality, SLOs, coverage, and security posture so the warehouse can drive fleet scorecards and stale-pipeline alerts.
+
+- Institute recurring threat-model reviews and CIS/SOC2 control mapping, tying findings to policy-gate evidence bundles per repo.
+
+<a id="phase-4-reliability-hardening-and-chaos"></a>
 Phase 4 — Reliability hardening and chaos
 
 - Nightly heavy chaos; 1% PR chaos with kill-switch and fault allowlist.

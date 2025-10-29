@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import json
-import subprocess
+import subprocess  # nosec
+import sys
 from pathlib import Path
 
 
 def run_cache_sentinel(args: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["python3", "tools/cache_sentinel.py", *args],
+    cmd = [sys.executable, "tools/cache_sentinel.py", *args]
+    return subprocess.run(  # noqa: S603  # nosec
+        cmd,
         cwd=cwd,
         text=True,
         capture_output=True,

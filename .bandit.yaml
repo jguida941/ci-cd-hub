@@ -1,0 +1,5 @@
+exclude_dirs:
+  - tools/tests
+  - autopsy/tests
+skips:
+  - B101

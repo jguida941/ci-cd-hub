@@ -133,21 +133,7 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/telemetry
           MATRIX_NAME="${{ matrix.name }}"
-          OUTPUT_PATH="$(python - <<'PY'
-import hashlib
-import os
-
-name = os.environ["MATRIX_NAME"]
-safe = "".join(
-    (c.lower() if c.isalnum() or c in \"._-\" else \"_\")
-    for c in name
-).strip(\"_\")
-if not safe:
-    safe = \"job\"
-digest = hashlib.sha256(name.encode(\"utf-8\")).hexdigest()[:8]
-print(f\"artifacts/telemetry/jobs-{safe}-{digest}.ndjson\")
-PY
-)"
+          OUTPUT_PATH=$(python -c "import hashlib, os, re; name=os.environ['MATRIX_NAME']; safe=re.sub(r'[^0-9A-Za-z._-]+', '_', name).strip('_') or 'job'; digest=hashlib.sha256(name.encode('utf-8')).hexdigest()[:8]; print(f'artifacts/telemetry/jobs-{safe}-{digest}.ndjson')")
           DURATION=$(cat artifacts/logs/${{ matrix.name }}.duration 2>/dev/null || echo 0)
           CHANGED=$(cat artifacts/logs/${{ matrix.name }}.changed 2>/dev/null || echo 0)
           python scripts/record_job_telemetry.py \
@@ -259,73 +245,9 @@ PY
             fi
             cp fixtures/telemetry/baseline_jobs.ndjson "$TELEMETRY_FILE"
           fi
-          python - <<'PY'
-from __future__ import annotations
-
-import json
-import subprocess
-import sys
-from datetime import datetime, timezone
-from pathlib import Path
-
-telemetry = Path("artifacts/telemetry/jobs.ndjson")
-scheduler_dir = Path("artifacts/scheduler")
-scheduler_dir.mkdir(parents=True, exist_ok=True)
-
-if not telemetry.exists() or telemetry.stat().st_size == 0:
-    print("[scheduler] no telemetry rows available; skipping recommendations")
-    sys.exit(0)
-
-jobs: list[str] = []
-with telemetry.open(encoding="utf-8") as handle:
-    for raw in handle:
-        raw = raw.strip()
-        if not raw:
-            continue
-        payload = json.loads(raw)
-        job = str(payload.get("job", "")).strip()
-        if job:
-            jobs.append(job)
-
-jobs = sorted(set(jobs))
-if not jobs:
-    print("[scheduler] telemetry file contains no job identifiers", file=sys.stderr)
-    sys.exit(1)
-
-reports: list[dict[str, object]] = []
-for job in jobs:
-    safe_job = "".join(c if c.isalnum() or c in ("-", "_", ".") else "_" for c in job)
-    out_json = scheduler_dir / f"{safe_job}.json"
-    out_md = scheduler_dir / f"{safe_job}.md"
-    cmd = [
-        sys.executable,
-        "tools/predictive_scheduler.py",
-        "--telemetry",
-        str(telemetry),
-        "--job",
-        job,
-        "--output",
-        str(out_json),
-        "--markdown",
-        str(out_md),
-    ]
-    print(f"[scheduler] generating recommendation for {job}")
-    subprocess.run(cmd, check=True)
-    reports.append(json.loads(out_json.read_text(encoding="utf-8")))
-
-batch = {
-    "schema": "predictive_scheduler.batch.v1",
-    "generated_at": datetime.now(timezone.utc).isoformat(),
-    "jobs": reports,
-}
-(scheduler_dir / "recommendations.json").write_text(json.dumps(batch, indent=2) + "\n", encoding="utf-8")
-summary_lines = ["# Predictive Scheduler Summary", ""]
-for report in reports:
-    rec = report["recommendation"]["runner_size"]
-    summary_lines.append(f"- {report['job']}: {rec}")
-summary_lines.append("")
-(scheduler_dir / "recommendations.md").write_text("\n".join(summary_lines), encoding="utf-8")
-PY
+          python scripts/generate_scheduler_reports.py \
+            --telemetry "$TELEMETRY_FILE" \
+            --output-dir artifacts/scheduler
       - name: Upload scheduler recommendation
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

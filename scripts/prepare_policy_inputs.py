@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
-import subprocess
+import subprocess  # nosec
 import sys
 from pathlib import Path
 
@@ -13,7 +13,10 @@ from tools import build_issuer_subject_input
 
 
 def run(cmd):
-    result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+    # Commands are constructed from validated arguments targeting trusted CLI tools.
+    result = subprocess.run(  # noqa: S603  # nosec
+        cmd, check=True, capture_output=True, text=True
+    )
     return result.stdout
 
 

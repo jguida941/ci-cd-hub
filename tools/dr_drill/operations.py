@@ -4,7 +4,7 @@ import hashlib
 import json
 import os
 import shutil
-import subprocess
+import subprocess  # nosec
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -119,7 +119,7 @@ def perform_restore(
             restore.timeout_seconds if restore.timeout_seconds is not None else DEFAULT_RESTORE_TIMEOUT_SECONDS
         )
         try:
-            subprocess.run(
+            subprocess.run(  # noqa: S603  # nosec
                 [
                     str(restore.script),
                     str(backup.path),

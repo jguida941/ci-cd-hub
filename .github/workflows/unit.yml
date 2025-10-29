@@ -66,42 +66,9 @@ jobs:
         id: summarize
         run: |
           set -euo pipefail
-          python - <<'PY'
-import json
-import xml.etree.ElementTree as ET
-from pathlib import Path
-
-junit_path = Path("artifacts/unit/junit.xml")
-if not junit_path.exists():
-    raise SystemExit("JUnit report missing at artifacts/unit/junit.xml")
-tree = ET.parse(junit_path)
-root = tree.getroot()
-suites = []
-if root.tag == "testsuites":
-    suites = root.findall("testsuite")
-elif root.tag == "testsuite":
-    suites = [root]
-else:
-    suites = list(root.findall(".//testsuite"))
-
-total = failures = skipped = errors = 0
-duration = 0.0
-for suite in suites:
-    total += int(float(suite.attrib.get("tests", "0")))
-    failures += int(float(suite.attrib.get("failures", "0")))
-    skipped += int(float(suite.attrib.get("skipped", "0")))
-    errors += int(float(suite.attrib.get("errors", "0")))
-    duration += float(suite.attrib.get("time", "0") or 0)
-
-duration_ms = int(duration * 1000)
-failed = failures + errors
-
-with open("$GITHUB_OUTPUT", "a", encoding="utf-8") as handle:
-    handle.write(f"tests_total={total}\n")
-    handle.write(f"tests_failed={failed}\n")
-    handle.write(f"tests_skipped={skipped}\n")
-    handle.write(f"tests_duration_ms={duration_ms}\n")
-PY
+          python scripts/summarize_junit.py \
+            --junit artifacts/unit/junit.xml \
+            --output "$GITHUB_OUTPUT"
 
       - name: Emit pipeline run record
         if: ${{ always() }}
