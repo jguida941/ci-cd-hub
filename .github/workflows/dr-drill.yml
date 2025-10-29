@@ -38,25 +38,7 @@ jobs:
           mkdir -p "${DR_OUTPUT}"
           # Derive a deterministic observation time: backup capture plus 1 hour keeps the run inside
           # the allowed RPO window and ensures CI results are reproducible.
-          CURRENT_TIME=$(python - <<'PY'
-import json
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-
-manifest_path = Path("data/dr/manifest.json")
-with manifest_path.open("r", encoding="utf-8") as handle:
-    manifest = json.load(handle)
-captured = manifest.get("backup", {}).get("captured_at")
-if captured is None:
-    raise SystemExit("manifest backup.captured_at missing")
-try:
-    dt = datetime.fromisoformat(captured.replace("Z", "+00:00"))
-except ValueError as exc:
-    raise SystemExit(f"invalid backup.captured_at value: {captured}") from exc
-dt = dt.astimezone(timezone.utc) + timedelta(hours=1)
-print(dt.isoformat().replace("+00:00", "Z"))
-PY
-)
+          CURRENT_TIME="$(python tools/derive_dr_current_time.py --manifest data/dr/manifest.json)"
           if [[ -z "${CURRENT_TIME}" ]]; then
             echo "Error: failed to derive CURRENT_TIME from data/dr/manifest.json" >&2
             exit 1

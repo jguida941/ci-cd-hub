@@ -41,11 +41,18 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/dr
+          # Keep the simulated run time deterministic and within the RPO window so policy checks pass.
+          CURRENT_TIME="$(python tools/derive_dr_current_time.py --manifest data/dr/manifest.json)"
+          if [[ -z "${CURRENT_TIME}" ]]; then
+            echo "Error: failed to derive CURRENT_TIME from data/dr/manifest.json" >&2
+            exit 1
+          fi
           python tools/run_dr_drill.py \
             --manifest data/dr/manifest.json \
             --output artifacts/dr/dr-report.json \
             --ndjson artifacts/dr/dr-events.ndjson \
-            --evidence-dir artifacts/dr
+            --evidence-dir artifacts/dr \
+            --current-time "${CURRENT_TIME}"
       - name: Summarize DR metrics
         run: |
           set -euo pipefail
@@ -616,9 +623,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/evidence/dr
+          CURRENT_TIME="$(python tools/derive_dr_current_time.py --manifest data/dr/manifest.json)"
+          if [[ -z "${CURRENT_TIME}" ]]; then
+            echo "Error: failed to derive CURRENT_TIME from data/dr/manifest.json" >&2
+            exit 1
+          fi
           python tools/run_dr_drill.py \
             --output artifacts/evidence/dr/report.json \
-            --ndjson artifacts/evidence/dr/events.ndjson
+            --ndjson artifacts/evidence/dr/events.ndjson \
+            --current-time "${CURRENT_TIME}"
 
       - name: Record cache manifest
         run: |

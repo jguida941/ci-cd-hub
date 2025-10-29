@@ -18,7 +18,7 @@ concurrency:
 permissions:
   contents: read
   actions: read
-  security-events: write
+  security-events: read
 
 jobs:
   analyze:
@@ -31,6 +31,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
+      - name: Setup Python
+        uses: actions/setup-python@39cd14951b74fb0ff820d202e8bc933c4016f874 # v5
+        with:
+          python-version: "3.11"
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@562257dc84ee23987d348302b161ee561898ec02 # v3
         with:
@@ -40,4 +45,73 @@ jobs:
         uses: github/codeql-action/autobuild@562257dc84ee23987d348302b161ee561898ec02 # v3
 
       - name: Perform CodeQL Analysis
+        id: analyze
         uses: github/codeql-action/analyze@562257dc84ee23987d348302b161ee561898ec02 # v3
+        with:
+          category: "/language:${{ matrix.language }}"
+          upload: false
+          output: codeql-sarif
+
+      - name: Summarize CodeQL findings
+        run: |
+          python scripts/summarize_codeql.py \
+            --sarif-dir codeql-sarif \
+            --summary-out codeql-summary.md \
+            --fail-on error
+
+      - name: Publish job summary
+        if: ${{ always() }}
+        run: cat codeql-summary.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Update pull request comment
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const fs = require("fs");
+            const marker = "<!-- codeql-summary -->";
+            const body = `${marker}\n${fs.readFileSync("codeql-summary.md", "utf8")}`;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number,
+            });
+
+            const previous = comments.find(
+              (comment) =>
+                comment.user?.type === "Bot" && comment.body?.includes(marker)
+            );
+
+            if (previous) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: previous.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
+
+      - name: Upload SARIF artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@1eb3cb2a8f33ca6c8733647d60a4f5e5ca4f3a5b # v4
+        with:
+          name: codeql-sarif-${{ matrix.language }}
+          path: codeql-sarif
+          compression-level: 9
+
+      - name: Upload summary artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@1eb3cb2a8f33ca6c8733647d60a4f5e5ca4f3a5b # v4
+        with:
+          name: codeql-summary-${{ matrix.language }}
+          path: codeql-summary.md
