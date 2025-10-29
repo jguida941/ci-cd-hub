@@ -10,6 +10,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+if __package__ in {None, ""}:  # allow execution via `python tools/run_dr_drill.py`
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root) not in sys.path:
+        sys.path.insert(0, str(repo_root))
+
 from tools.dr_drill import DrDrillError, run_drill
 
 

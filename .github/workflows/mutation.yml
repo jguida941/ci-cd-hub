@@ -18,7 +18,7 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     env:
-      MUTATION_CONFIG: mutation-observatory.ci.yaml
+      MUTATION_CONFIG: config/mutation-observatory.ci.yaml
       RUN_DIR: artifacts/mutation
     steps:
       - name: Checkout

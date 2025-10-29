@@ -7,7 +7,7 @@ on:
       - 'schema/**'
       - 'fixtures/supply_chain/**'
       - 'fixtures/mutation/**'
-      - 'mutation-observatory.ci.yaml'
+      - 'config/mutation-observatory.ci.yaml'
       - '.github/workflows/tools-ci.yml'
   pull_request:
     paths:
@@ -15,7 +15,7 @@ on:
       - 'schema/**'
       - 'fixtures/supply_chain/**'
       - 'fixtures/mutation/**'
-      - 'mutation-observatory.ci.yaml'
+      - 'config/mutation-observatory.ci.yaml'
       - '.github/workflows/tools-ci.yml'
 
 concurrency:
