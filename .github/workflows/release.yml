@@ -144,7 +144,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/telemetry
-          MATRIX_NAME="${{ matrix.name }}"
+          export MATRIX_NAME="${{ matrix.name }}"
           OUTPUT_PATH=$(python -c "import hashlib, os, re; name=os.environ['MATRIX_NAME']; safe=re.sub(r'[^0-9A-Za-z._-]+', '_', name).strip('_') or 'job'; digest=hashlib.sha256(name.encode('utf-8')).hexdigest()[:8]; print(f'artifacts/telemetry/jobs-{safe}-{digest}.ndjson')")
           DURATION=$(cat artifacts/logs/${{ matrix.name }}.duration 2>/dev/null || echo 0)
           CHANGED=$(cat artifacts/logs/${{ matrix.name }}.changed 2>/dev/null || echo 0)

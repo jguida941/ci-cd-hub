@@ -21,7 +21,8 @@ permissions:
 
 env:
   REKOR_DIGEST: ${{ inputs.digest || vars.REKOR_DIGEST || secrets.REKOR_DIGEST || '' }}
-  REKOR_SUBJECT: ${{ inputs.subject || vars.REKOR_SUBJECT || secrets.REKOR_SUBJECT || '' }}
+  REKOR_SUBJECT: ${{ inputs.subject || vars.REKOR_SUBJECT || secrets.REKOR_SUBJECT || format('ghcr.io/{0}/ci-intel-app', github.repository_owner) }}
+  REKOR_TAG: ${{ vars.REKOR_TAG || 'latest' }}
 
 jobs:
   monitor:
@@ -30,7 +31,50 @@ jobs:
       - name: Checkout
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
+      - name: Resolve Rekor inputs
+        id: resolve
+        env:
+          INPUT_DIGEST: ${{ env.REKOR_DIGEST }}
+          INPUT_SUBJECT: ${{ env.REKOR_SUBJECT }}
+          INPUT_TAG: ${{ env.REKOR_TAG }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          subject="${INPUT_SUBJECT}"
+          digest="${INPUT_DIGEST}"
+          tag="${INPUT_TAG}"
+          if [[ -z "$subject" || "$subject" == "ghcr.io/example/app" ]]; then
+            echo "::warning::Rekor subject not configured; skipping monitor run."
+            {
+              echo "skip=true"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ -z "$digest" ]]; then
+            echo "[rekor-monitor] Resolving digest for ${subject}:${tag}"
+            if resolved=$(python3 ./tools/resolve_container_digest.py --subject "$subject" --tag "$tag"); then
+              digest="$resolved"
+            else
+              status=$?
+              echo "::warning::Failed to resolve digest for ${subject}:${tag} (exit ${status}); skipping run."
+              {
+                echo "skip=true"
+                echo "subject=${subject}"
+              } >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          {
+            echo "skip=false"
+            echo "subject=${subject}"
+            echo "digest=${digest}"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Ensure digest provided
+        if: steps.resolve.outputs.skip != 'true'
+        env:
+          REKOR_DIGEST: ${{ steps.resolve.outputs.digest || env.REKOR_DIGEST }}
+          REKOR_SUBJECT: ${{ steps.resolve.outputs.subject || env.REKOR_SUBJECT }}
         run: |
           set -euo pipefail
           if [ -z "${REKOR_DIGEST}" ]; then
@@ -52,6 +96,7 @@ jobs:
           echo "Monitoring Rekor entry for ${REKOR_SUBJECT}@${REKOR_DIGEST}"
 
       - name: Validate Rekor monitor script
+        if: steps.resolve.outputs.skip != 'true'
         run: |
           set -euo pipefail
           if [ ! -f "./tools/rekor_monitor.sh" ]; then
@@ -64,6 +109,10 @@ jobs:
           fi
 
       - name: Run Rekor monitor
+        if: steps.resolve.outputs.skip != 'true'
+        env:
+          REKOR_DIGEST: ${{ steps.resolve.outputs.digest || env.REKOR_DIGEST }}
+          REKOR_SUBJECT: ${{ steps.resolve.outputs.subject || env.REKOR_SUBJECT }}
         run: |
           set -euo pipefail
           mkdir -p artifacts/evidence/rekor
@@ -83,6 +132,7 @@ jobs:
           ls -l artifacts/evidence/rekor
 
       - name: Upload Rekor evidence
+        if: steps.resolve.outputs.skip != 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: rekor-evidence-${{ github.run_id }}

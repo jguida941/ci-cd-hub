@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
       - name: Setup Python
-        uses: actions/setup-python@39cd14951b74fb0ff820d202e8bc933c4016f874 # v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
 
@@ -54,7 +54,7 @@ jobs:
 
       - name: Summarize CodeQL findings
         run: |
-          python scripts/summarize_codeql.py \
+          python3 scripts/summarize_codeql.py \
             --sarif-dir codeql-sarif \
             --summary-out codeql-summary.md \
             --fail-on error
