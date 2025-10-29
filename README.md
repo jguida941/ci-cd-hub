@@ -1,4 +1,5 @@
 # CI Intelligence Hub
+
 [LICENSE](LICENSE) · [Security](docs/SECURITY.md)
 
 > Production-grade CI/CD intelligence platform that hardens the software supply chain, proves determinism, and converts pipeline telemetry into executive-grade analytics—implemented according to the blueprint in `plan.md`.
@@ -6,6 +7,7 @@
 This README gives engineers, auditors, and downstream repos an actionable entry point: how to run the core checks, what the platform guarantees, which components are stable, and where to find every artifact referenced in the plan.
 
 ## Quick start
+
 ```bash
 # 1) Setup
 python -m pip install -r requirements-dev.txt
@@ -27,6 +29,7 @@ ajv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson
 ```
 
 ## Prerequisites
+
 | Requirement | Version (tested) | Purpose |
 | --- | --- | --- |
 | Python | 3.12.1 (min 3.11) | Tooling CLI entrypoints and tests |
@@ -44,12 +47,14 @@ ajv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson
 **Optional tooling**: Kyverno CLI (1.10+), OPA (0.60+), AJV CLI (8.11+), GNU Make (4.3+), GNU tar (1.34+), rekor-cli (v1.3.1 auto-installed by `tools/rekor_monitor.sh` if absent).
 
 ## Strategic pillars
+
 - **Trust** — Signed, attestable, reproducible builds; Kyverno admission control; SBOM/VEX gates; secretless automation.
 - **Reliability** — Deterministic build harnesses, DR drills, chaos engineering, cache integrity, and runner isolation.
 - **Insight** — NDJSON telemetry, dbt marts, dashboards, and ChatOps loops for DORA, resilience, cost, and quality.
 - **Efficiency** — Predictive scheduling, cache hygiene, carbon/cost tracking, reusable workflow templates.
 
 ## Technology stack
+
 | Layer | Tooling | Notes |
 | --- | --- | --- |
 | Languages | Python 3.12, Bash, YAML, Rego | Python modules under `tools/`, Bash utilities in `tools/` and `scripts/`, policy packs in `policies/`. |
@@ -60,11 +65,13 @@ ajv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson
 | Testing & QA | pytest, Ruff, Bandit, pip-audit, CodeQL | Executed via `make` targets and workflows like `unit.yml`, `security-lint.yml`, `codeql.yml`. |
 
 ## Security boundaries & claims
+
 - **Guarantees**: Workflows pinned by SHA; OIDC-only credentials; SBOM, VEX, provenance, and signatures emitted for release artifacts; Rego + Kyverno policy evaluation blocks promotion lacking evidence; telemetry must satisfy `schema/pipeline_run.v1.2.json` before ingest. Alignment target: **SLSA Level 3**.
 - **Non-guarantees**: Downstream cluster runtime isolation, tenant secrets managed outside hub runners, third-party GitHub Action supply chain beyond pinned commits, runtime service hardening post-deploy.
 - **Proof required for SLSA L3 assertion**: Cosign verification logs, Rekor inclusion proof, signed SBOM/VEX, determinism check outputs, cache manifest signatures, and policy evaluation results—all stored in the Evidence Bundle (`artifacts/evidence/`).
 
 ## Delivery roadmap (see `plan.md`)
+
 | Phase | Outcome snapshot | Primary enablers |
 | --- | --- | --- |
 | 0 — Alignment | Personas, KPIs, dashboard guardrails locked | Executive charter, metric catalog |
@@ -75,6 +82,7 @@ ajv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson
 | 5 — Advanced analytics | Predictive insights, executive scorecards, optional gamification | `dashboards/`, `models/marts/`, `ui/` (planned portal) |
 
 ### Phase definition of done
+
 | Phase | DoD |
 | --- | --- |
 | 1 | Reproducible build harness green; SBOM/VEX/provenance emitted; policy gate denies missing referrers; Evidence Bundle uploaded. |
@@ -84,6 +92,7 @@ ajv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson
 | 5 | Predictive scheduler outputs stable insights; error budgets tracked. |
 
 ## Support & status
+
 | Area | Status | Notes |
 | --- | --- | --- |
 | Workflow guard (pinned SHAs, OIDC) | Working | `scripts/check_workflow_integrity.py` |
@@ -96,6 +105,7 @@ ajv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson
 | UI/Portal | Planned | `ui/` scaffold only |
 
 ## GitHub Actions suite
+
 | Workflow | Purpose | Key jobs |
 | --- | --- | --- |
 | `.github/workflows/unit.yml` | Runs unit tests for the Python toolchain | `pytest` over `tools/tests/`, coverage artifacts |
@@ -111,6 +121,7 @@ ajv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson
 | `.github/workflows/codeql.yml` | Static analysis via CodeQL | Language-specific security scanning |
 
 ## Minimal reusable workflow (consumer repo)
+
 A reusable workflow will ship from this repo (planned location: `.github/workflows/hub.yml`). Downstream consumers can invoke it like so:
 
 ```yaml
@@ -133,7 +144,8 @@ jobs:
 ```
 
 ## Evidence bundle layout
-```
+
+```text
 artifacts/evidence/
 ├── sbom.json
 ├── vex.json
@@ -154,7 +166,9 @@ artifacts/evidence/
 **Pass criteria**: SBOM + VEX present, Cosign attestation verifies with OIDC issuer match, determinism diff empty, Rekor inclusion proof recorded, cache manifest signed, policy gates return `allow`. Capture command transcripts in `artifacts/evidence/audit/commands.log`.
 
 ## Repository layout
+
 ### High-level topology
+
 ```text
 .
 ├── plan.md
@@ -181,6 +195,7 @@ artifacts/evidence/
 ```
 
 ### Directory reference
+
 | Path | Purpose | Representative assets |
 | --- | --- | --- |
 | `plan.md` | Canonical thesis, phased roadmap, control catalog | Gap tracker, phase objectives, control snippets |
@@ -214,7 +229,9 @@ artifacts/evidence/
 | `ui/` (planned) | Portal workspace | Becomes analytics UI in Phase 5 |
 
 ## System diagrams
+
 ### Control plane relationships
+
 ```mermaid
 graph TD
   Repo[Source Repos] -->|workflow_call| Actions[Reusable GitHub Actions]
@@ -230,6 +247,7 @@ graph TD
 ```
 
 ### Pipeline flow (Phase 1–2)
+
 ```mermaid
 flowchart LR
   Commit[Commit pushed] --> Admission[Admission control\nSHA-pinned actions · OIDC]
@@ -253,6 +271,7 @@ flowchart LR
 ```
 
 ## Pipeline walkthrough
+
 - **Admission** — GitHub Rulesets plus `scripts/check_workflow_integrity.py` enforce pinned SHAs, OIDC-only identity, and secret sweeps.
 - **Build & sign** — `tools/build_vuln_input.py`, `tools/export_provenance_envelope.py`, and `tools/publish_referrers.sh` generate SBOMs/VEX, provenance, and attach OCI referrers.
 - **Determinism** — `tools/determinism_check.sh` runs dual-build comparisons (see `plan.md` Phase 1).
@@ -262,42 +281,121 @@ flowchart LR
 - **Telemetry & analytics** — `scripts/emit_pipeline_run.py` emits NDJSON validated against `schema/pipeline_run.v1.2.json`; dbt models in `models/` publish `mutation_effectiveness` and `run_health` marts feeding dashboards.
 
 ## Operational commands & audit log
-| Control | Command | Expected evidence |
-| --- | --- | --- |
-| OCI referrers present | ```bash\noras discover \"$IMAGE\" --artifact-type application/spdx+json\noras discover \"$IMAGE\" --artifact-type application/vnd.in-toto+json\n``` | Both commands locate digests; failure blocks deploy. |
-| Provenance verification | ```bash\ncosign verify-attestation --type slsaprovenance \\\n  --certificate-oidc-issuer-regex 'https://token.actions.githubusercontent.com' \\\n  \"$IMAGE\"\n``` | Cosign exits 0; issuer matches org OIDC. |
-| SBOM + VEX policy | ```bash\ngrype sbom:sbom.json -q -o json \\\n  | ./tools/build_vuln_input.py --vex vex.json \\\n  | jq -e '.policy.allow==true'\n``` | Pipeline proceeds when policy allows release. |
-| Schema compliance | ```bash\njq -e 'select(.schema != \"pipeline_run.v1.2\") | halt_error(1)' artifacts/pipeline_run.ndjson\najv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson\n``` | NDJSON matches schema; AJV exit 0. |
-| Secretless workflows | ```bash\n! grep -R -E 'AWS_SECRET|_KEY=|TOKEN=' -n .github/workflows\n``` | Grep exits 0 with no matches. |
-| Kyverno policy regression | ```bash\npython scripts/test_kyverno_policies.py\n``` | Deny-path unit tests for `require-referrers` and `secretless`. |
-| Cache manifest integrity | ```bash\npython tools/cache_sentinel.py record --path ~/.cache/pip\npython tools/cache_sentinel.py verify --path ~/.cache/pip\n``` | Signed manifest in `artifacts/evidence/cache/`. |
-| dbt pipeline health | ```bash\npython scripts/run_dbt.py build\n``` | dbt logs at `models/logs/dbt.log`; failures gate merges. |
+
+- **OCI referrers present**  
+  Command:
+
+  ```bash
+  oras discover "$IMAGE" --artifact-type application/spdx+json
+  oras discover "$IMAGE" --artifact-type application/vnd.in-toto+json
+  ```
+
+  Expected evidence: Both commands locate digests; failure blocks deploy.
+
+- **Provenance verification**  
+  Command:
+
+  ```bash
+  cosign verify-attestation --type slsaprovenance \
+    --certificate-oidc-issuer-regex 'https://token.actions.githubusercontent.com' \
+    "$IMAGE"
+  ```
+
+  Expected evidence: Cosign exits 0; issuer matches org OIDC.
+
+- **SBOM + VEX policy**  
+  Command:
+
+  ```bash
+  grype sbom:sbom.json -q -o json \
+    | ./tools/build_vuln_input.py --vex vex.json \
+    | jq -e '.policy.allow==true'
+  ```
+
+  Expected evidence: Pipeline proceeds when policy allows release.
+
+- **Schema compliance**  
+  Command:
+
+  ```bash
+  jq -e 'select(.schema != "pipeline_run.v1.2") | halt_error(1)' artifacts/pipeline_run.ndjson
+  ajv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson
+  ```
+
+  Expected evidence: NDJSON matches schema; AJV exit 0.
+
+- **Secretless workflows**  
+  Command:
+
+  ```bash
+  ! grep -R -E 'AWS_SECRET|_KEY=|TOKEN=' -n .github/workflows
+  ```
+
+  Expected evidence: Grep exits 0 with no matches.
+
+- **Kyverno policy regression**  
+  Command:
+
+  ```bash
+  python scripts/test_kyverno_policies.py
+  ```
+
+  Expected evidence: Deny-path unit tests for `require-referrers` and `secretless`.
+
+- **Cache manifest integrity**  
+  Command:
+
+  ```bash
+  python tools/cache_sentinel.py record --path ~/.cache/pip
+  python tools/cache_sentinel.py verify --path ~/.cache/pip
+  ```
+
+  Expected evidence: Signed manifest in `artifacts/evidence/cache/`.
+
+- **dbt pipeline health**  
+  Command:
+
+  ```bash
+  python scripts/run_dbt.py build
+  ```
+
+  Expected evidence: dbt logs at `models/logs/dbt.log`; failures gate merges.
 
 Log command transcripts to `artifacts/evidence/audit/commands.log` to maintain evidentiary trail.
 
 ## Local development workflow
+
 1. **Bootstrap Python tooling**
+
    ```bash
    python -m pip install --upgrade pip
    python -m pip install -r requirements-dev.txt
    python -m pip install -r requirements-dev.lock
    ```
+
 2. **Discover available automation**
+
    ```bash
    make help
    ```
+
 3. **Static analysis & policy checks**
+
    ```bash
    make lint
    python scripts/check_workflow_integrity.py
    ```
+
 4. **Run test harnesses**
+
    ```bash
    make test
    make run-chaos
    make run-dr
    ```
+
 5. **Generate VEX / policy inputs**
+
    ```bash
    python tools/generate_vex.py --sbom artifacts/evidence/sbom.json --output vex.json
    python scripts/prepare_policy_inputs.py --referrers fixtures/supply_chain/referrers.json \
@@ -305,6 +403,7 @@ Log command transcripts to `artifacts/evidence/audit/commands.log` to maintain e
    ```
 
 ## Key `make` targets
+
 | Target | File | Description |
 | --- | --- | --- |
 | `make lint` | `make/lint.mk` | Markdown + security lint (Ruff S rules, Bandit, pip-audit, workflow guard). |
@@ -314,7 +413,9 @@ Log command transcripts to `artifacts/evidence/audit/commands.log` to maintain e
 | `make dbt` | `make/lint.mk` | Invokes `scripts/run_dbt.py build` for analytics pipeline. |
 | `make clean-*` | `make/clean.mk` | Removes generated artifacts per domain (chaos, DR, cache, etc.). |
 | `make docs` | `make/docs.mk` | Builds documentation site (MkDocs) when configured. |
+
 ## Data & analytics spine
+
 - **Ingestion** — `scripts/record_job_telemetry.py` and `ingest/event_loader.py` load NDJSON into the staging layer.
 - **Schema** — `schema/registry.json` governs payloads; `schema/pipeline_run.v1.2.json` enforced by CI.
 - **Modeling** — `models/staging/` prepares canonical tables; `models/marts/mutation_effectiveness.sql` and `run_health.sql` publish executive marts.
@@ -322,6 +423,7 @@ Log command transcripts to `artifacts/evidence/audit/commands.log` to maintain e
 - **Logs & postmortem** — `docs/POSTMORTEM.md` and `autopsy/` tooling support incident analysis; `docs/DR_RUNBOOK.md` and `docs/OPS_RUNBOOK.md` cover operations.
 
 ## Documentation map
+
 - [`docs/OVERVIEW.md`](docs/OVERVIEW.md) — architecture narrative + metadata.
 - [`docs/AGENTS.md`](docs/AGENTS.md) — agent catalog (purpose, triggers, outputs).
 - [`docs/SECURITY.md`](docs/SECURITY.md) — supply-chain posture and reviewer checklist.
@@ -331,17 +433,20 @@ Log command transcripts to `artifacts/evidence/audit/commands.log` to maintain e
 - [`docs/TODO.md`](docs/TODO.md) — documentation follow-ups.
 
 ## Contributing & support
+
 - Read [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) for branching, coding style, and review expectations.
 - Security issues follow the disclosure guidance in [`docs/SECURITY.md`](docs/SECURITY.md).
 - Operational questions start with [`docs/OPS_RUNBOOK.md`](docs/OPS_RUNBOOK.md); analytics/data issues with [`docs/DR_RUNBOOK.md`](docs/DR_RUNBOOK.md) and `docs/metrics.md`.
 - Use `make help` to discover additional automation, and open issues with structured evidence bundles for reproducibility.
 
 ## Evidence bundle expectations
+
 - Store SBOM, VEX, provenance, signatures, Rekor proof, cache manifest, determinism diff, and promote/rollback decisions under `artifacts/evidence/`.
 - Include audit command transcripts at `artifacts/evidence/audit/commands.log`.
 - Link bundle artifacts in change-management tickets to satisfy Trust & Compliance objectives in `plan.md`.
 
 ## License
+
 Distributed under the [MIT License](LICENSE).
 
 ---

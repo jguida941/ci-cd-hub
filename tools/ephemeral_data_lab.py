@@ -76,11 +76,15 @@ def load_config(path: Path) -> LabConfig:
     seed_file = data.get("seed_file")
     seed_path = None
     if seed_file:
-        seed_path = Path(seed_file)
-        if not seed_path.is_absolute():
-            seed_path = (path.parent / seed_path).resolve()
-        if not seed_path.exists():
-            raise SystemExit(f"[ephemeral] seed file not found: {seed_path}")
+        seed_candidate = Path(seed_file)
+        if not seed_candidate.is_absolute():
+            if seed_candidate.exists():
+                seed_candidate = seed_candidate.resolve()
+            else:
+                seed_candidate = (path.parent / seed_candidate).resolve()
+        if not seed_candidate.exists():
+            raise SystemExit(f"[ephemeral] seed file not found: {seed_candidate}")
+        seed_path = seed_candidate
     ttl_raw = data.get("ttl_hours", 4)
     try:
         ttl = int(ttl_raw)

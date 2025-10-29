@@ -1,8 +1,10 @@
+MARKDOWNLINT_FILES := $(shell git ls-files '*.md')
+
 .PHONY: lint lint-markdown security-lint bandit-report dbt
 lint: lint-markdown security-lint ## Run the full lint suite
 
 lint-markdown: ## Lint Markdown files with markdownlint
-	$(MARKDOWNLINT) "**/*.md"
+	@test -z "$(MARKDOWNLINT_FILES)" || $(MARKDOWNLINT) $(MARKDOWNLINT_FILES)
 
 security-lint: ## Run security static analysis (Ruff S, Bandit, pip-audit, workflow guard)
 	@mkdir -p artifacts/security
