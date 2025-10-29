@@ -23,6 +23,14 @@ class ResolutionError(RuntimeError):
     """Raised when the digest cannot be resolved."""
 
 
+def _ensure_https(url: str) -> None:
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme.lower() != "https":
+        raise ResolutionError(f"Insecure URL scheme for GitHub API request: '{url}'.")
+    if not parsed.netloc.endswith("github.com"):
+        raise ResolutionError(f"Unexpected host for GitHub API request: '{url}'.")
+
+
 @dataclass
 class Subject:
     registry: str
@@ -53,6 +61,7 @@ def _build_request(path: str, token: Optional[str], *, params: Optional[dict] = 
     url = urllib.parse.urljoin(API_ROOT, path)
     if params:
         url = f"{url}?{urllib.parse.urlencode(params)}"
+    _ensure_https(url)
     request = urllib.request.Request(url)
     request.add_header("Accept", "application/vnd.github+json")
     request.add_header("User-Agent", USER_AGENT)
@@ -181,4 +190,3 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

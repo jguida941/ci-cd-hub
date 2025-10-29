@@ -103,7 +103,7 @@ jobs:
 
       - name: Upload SARIF artifact
         if: ${{ always() }}
-        uses: actions/upload-artifact@1eb3cb2a8f33ca6c8733647d60a4f5e5ca4f3a5b # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: codeql-sarif-${{ matrix.language }}
           path: codeql-sarif
@@ -111,7 +111,7 @@ jobs:
 
       - name: Upload summary artifact
         if: ${{ always() }}
-        uses: actions/upload-artifact@1eb3cb2a8f33ca6c8733647d60a4f5e5ca4f3a5b # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: codeql-summary-${{ matrix.language }}
           path: codeql-summary.md
