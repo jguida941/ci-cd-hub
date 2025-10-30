@@ -204,7 +204,8 @@ def main() -> int:
         sys.stderr.write(f"platform '{platform_spec}' not found in manifest list for {image_ref}\n")
         return 1
 
-    manifest_ref = f"{image_ref}@{digest}"
+    base_ref = image_ref.split("@", 1)[0]
+    manifest_ref = f"{base_ref}@{digest}"
     manifest = _fetch(manifest_ref)
     json.dump(manifest, sys.stdout, indent=2)
     sys.stdout.write("\n")
