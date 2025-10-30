@@ -20,6 +20,7 @@ workflows:
       workflow-guard:
         runs_on: ubuntu-22.04
   release.yml:
+    max_in_progress: 1
     jobs:
       dr-gate:
         runs_on: ubuntu-22.04

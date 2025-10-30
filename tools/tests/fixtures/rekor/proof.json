@@ -1,0 +1,20 @@
+{
+  "verification": {
+    "inclusionProof": {
+      "logIndex": 123,
+      "rootHash": "f0a5c3a9e1d94cf178624bd5069e2b9bf1db7f2c2c0f1d8b67f6e6a5d4c1b3e5",
+      "treeSize": 456,
+      "hashes": [
+        "7b2c1d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0"
+      ]
+    },
+    "signedEntryTimestamp": "MEYCIQDN9n1ZbRoKkIHwecN+TgXcJ7hz0kN0O/jk3kYczCVWXgIhAJnOP6kZa2Lj03IAfC2P+2nUJAXNq0zT6ZYfV0GxaLtj"
+  },
+  "logEntry": {
+    "uuid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "logIndex": 123,
+    "logID": "test-log",
+    "integratedTime": 1700000000,
+    "body": "eyJhcGlWZXJzaW9uIjogIjAuMC4xIiwgImtpbmQiOiAiaGFzaGVkcmVrb3JkIiwgInNwZWMiOiB7ImRhdGEiOiB7Imhhc2giOiB7InZhbHVlIjogInNoYTI1NjpmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmIn19LCAic3ViamVjdCI6IFt7Im5hbWUiOiAiZ2hjci5pby9leGFtcGxlL2FwcCIsICJkaWdlc3QiOiB7InNoYTI1NiI6ICJmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmIn19XSwgImNvbnRlbnQiOiB7InBheWxvYWQiOiAiZXlKemRXSnFaV04wSWpvZ1czc2laR2xuWlhOMElqb2dleUp6YUdFeU5UWWlPaUFpWm1abVptWm1abVptWm1abVptWm1abVptWm1abVptWm1abVptWm1abVptWm1abVptWm1abVptWm1abVptWm1abVptWm1abVptWm1abVptWm1abVptWmlKOWZWMTkifX19"
+  }
+}

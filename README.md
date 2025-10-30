@@ -439,6 +439,7 @@ Log command transcripts to `artifacts/evidence/audit/commands.log` to maintain e
 - `CI_INTEL_BQ_LOCATION` (optional variable) pins the BigQuery location when your dataset is outside the US multi-region.
 - `CHAOS_KILL_SWITCH` (variable) overrides the chaos workflow. Set it to `true` to disable chaos runs globally; leave empty/`false` to allow opt-in jobs via PR label `chaos-opt-in` (configurable with `CHAOS_LABEL`).
 - `REKOR_DIGEST`, `REKOR_SUBJECT`, and `REKOR_TAG` (variables or secrets) configure the Rekor monitor workflow. Without them the monitor uses defaults and may skip polling if no digest is supplied.
+- Concurrency budgets live in `config/runner-isolation.yaml` (`max_in_progress`); `scripts/enforce_concurrency_budget.py` runs at the top of release jobs to prevent runner starvation.
 
 ## Linking Additional Services
 

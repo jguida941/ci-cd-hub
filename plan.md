@@ -25,15 +25,48 @@ Highest-risk gaps
 - ✅ Phase 1 — Secretless pipelines: OIDC-only credentials with CI sweeps for env secrets and over-scoped `GITHUB_TOKEN` usage (`security-lint`, `policies/kyverno/secretless.yaml`).
 - ✅ Phase 1 — Determinism proof: release workflow runs cross-arch/time manifest comparisons and fails on hash drift (`tools/determinism_check.sh`, `.github/workflows/release.yml`).
 - ✅ Phase 2 — Schema discipline: registry metadata, fixture validation, and dbt QA run in `schema-ci.yml` (`scripts/check_schema_registry.py`, `scripts/validate_schema.py`, `scripts/run_dbt.py`).
-- ⏳ Phase 1 — Rekor anchoring: Evidence Bundle must capture UUID + inclusion proof and fail CI on missing proofs; see acceptance in Phase 1 — Hermetic build path + CD essentials.
+- ✅ Phase 1 — Rekor anchoring: Evidence Bundle now captures UUID + inclusion proof and the release gate fails when proofs are missing (`tools/rekor_monitor.sh`, `tools/verify_rekor_proof.py`, `.github/workflows/release.yml`).
 - ⏳ Phase 4 — Runner isolation: optional. Current posture runs entirely on GitHub-hosted `ubuntu-22.04` runners. Self-hosted Firecracker/Vault deployment remains a stretch goal for regulated environments.
 - ✅ Phase 3 — Canary decision auditability: release workflow captures promote/rollback query evidence and embeds the decision in `pipeline_run.v1.2` (`scripts/capture_canary_decision.py`, `.github/workflows/release.yml`).
 
 Performance and ops risks
 
-- [ ] Cache poisoning: sign cache manifests, verify signature + BLAKE3 before restore, quarantine any mismatch by default.
-- [ ] Backpressure and fairness: encode per-repo concurrency budgets and deny bursts once caps are exceeded to avoid starving shared runners.
+- [ ] Cache poisoning: cache provenance is captured (`scripts/cache_provenance.sh`), but signature verification/quarantine before restore is still outstanding.
+- [ ] Backpressure and fairness: workflow concurrency is enforced; orchestration telemetry/denial logic for queue bursts still needs to ship.
+- [ ] Rekor anchoring: release workflow invokes `tools/rekor_monitor.sh`, but gating on proof inclusion is not yet active.
+- [ ] Supply-chain automation: Dependabot/Renovate configuration for weekly security updates has not been added (currently manual updates).
 
+Current security posture
+
+- ✅ CI guardrails: actions pinned by commit SHA, least-privilege permissions, OIDC-only auth, SBOM/VEX referrers, Cosign signing, determinism harness, and policy gates (Kyverno/OPA) are running today.
+- ✅ Quality/security checks: CodeQL, Ruff/Bandit, secret scanning, mutation tests, schema-ci, and dbt build/test run on every PR/tag.
+- ⏳ Rekor inclusion proofs: monitor is wired but releases do not fail yet when a proof is missing.
+- ⏳ Automated dependency updates: Dependabot/Renovate and org-wide pinning policies still need to be configured.
+- ⏳ Cache restore hardening: signature verification/quarantine prior to restore remains outstanding.
+- ⏳ Runner fairness telemetry: need queue metrics + denial logic beyond the current workflow-level concurrency.
+- ⏳ Runtime risk automation: canary decisions are recorded; SLO/feature-flag driven rollbacks still in the backlog.
+- ⏳ Validation suite: extended reproducibility/provenance/SBOM/regression tests (see "Hardening validation backlog") are defined but not yet automated.
+
+Blockers to ship v1.0
+
+1. Rekor gating is inconsistent — release must fail if inclusion proof is missing or stale. Gate stays optional until this is enforced.
+2. Cache integrity not enforced — cache manifests are emitted but not signed/verified/quarantined before restore.
+3. Admission policies are still audit-only — Kyverno verifyImages/referrer policies need to deny on missing Cosign bundle, wrong issuer, or absent SBOM/provenance referrers.
+4. Egress allowlist not enforced — CI jobs require default-deny egress with explicit allowlist (registry, GitHub, Rekor, etc.) and an audit that fails on unexpected domains.
+
+High-risk gaps to schedule next
+
+- Org-wide PAT prevention and Rulesets for "no unpinned actions" across repos.
+- Runner isolation posture: GitHub-hosted runners accepted for now; Firecracker/Vault profile remains optional for regulated workloads.
+- Dependabot/Renovate automation with SBOM diff gates and allowlists.
+- DR freshness enforcement (block release when drill > 7 days) — implementation in place; verify guard rails.
+- Analytics tamper resistance (NDJSON signatures/checksums + WORM storage) still pending.
+
+Inconsistencies to resolve in docs & code
+
+- Rekor messaging (monitor vs gate) must be consistent — implement the gate now.
+- Referrer gate is described as both "concrete" and "next step" — enforce it instead of dry-run.
+- Cross-arch determinism is enforced; cross-time reruns remain future work — clarify and separate controls.
 Concrete gates to wire immediately
 
 Referrer presence before deploy:
@@ -648,6 +681,8 @@ Phase 1 — Hermetic build path + CD essentials
 
 - Standardize dependency and secret hygiene across repos with a shared Dependabot/Renovate configuration, SPDX allowlists, and org-wide secret-scanning baselines that alert on drift.
 
+- Enforce Rekor inclusion proof check in the release gate so missing UUIDs fail the Evidence Bundle step.
+
 - Ship a developer onboarding kit (repo template, CI cheat sheet, runbook index) so new services adopt the hub guardrails on day one.
 
 Phase 2 — Ingestion and storage
@@ -719,11 +754,117 @@ Critical delivery adds
 
 - Cost/carbon telemetry: per-run cost, cache savings, region, grams CO2e surfaced in dashboards.
 
+Hardening validation backlog
+----------------------------
+
+End-state goal: every release runs these verification suites automatically. Items marked ⏳ are defined but not yet implemented.
+
+1. Determinism & reproducibility (⏳)
+   - Bit-for-bit rerun comparison (`diffoscope`, dual clean builds)
+   - Hermetic build check (egress denied except registry/cache)
+   - Locale/clock stability (consistent hashes under varied TZ/locale)
+
+2. Provenance & SLSA verification (⏳)
+   - Cosign `verify-attestation` + `slsa-verifier`
+   - Rekor inclusion proof required for promotion
+
+3. SBOM/VEX correctness (⏳)
+   - CycloneDX/SPDX schema validation and cross-tool parity
+   - VEX ↔ SBOM referential integrity checks
+
+4. Policy tests (⏳)
+   - `opa test` / `conftest` coverage
+   - `kyverno apply` simulation with golden resources
+
+5. Security scanning gates (⏳)
+   - Grype/Trivy fail-on-high scans
+   - Secret/supply-chain linters (gitleaks, pinned-action checker)
+
+6. Workflow idempotency & replay safety (⏳)
+   - Double workflow_dispatch with same inputs → identical artifacts
+   - Rerun failed job → no state leakage
+
+7. Cache integrity (⏳)
+   - Salted cache miss scenarios
+   - Malicious cache injection (fork isolation)
+
+8. Multi-arch parity (⏳)
+   - `crane manifest/digest` mapping + SBOM component parity across arches
+
+9. DR & chaos drills (⏳)
+   - Fault injection SLO assertions (latency, registry 5xx)
+   - Restore-from-evidence job producing byte-identical artifacts
+
+10. Analytics spine correctness (⏳)
+    - NDJSON schema validation (`ajv`)
+    - dbt data tests & KPI expectations
+
+11. Cost & performance regression checks (⏳)
+    - Workflow duration budgets (p95 alerting)
+    - Artifact size ceilings
+
+12. Access & OIDC trust chain (⏳)
+    - Verify no PATs/long-lived secrets; id-token scope enforcement
+
+Where AI can assist (optional stretch)
+- Generate Rego unit tests, determinism workflows, NDJSON fuzzers, SBOM/VEX diff runners, cosign/rekor verification scripts, dbt expectation seeds, chaos drill matrices, and evidence-summary reports.
+
 - DR + idempotency: backfill re-ingest pipeline, immutable artifact storage, disaster recovery runbook.
 
 - Developer experience: local pipeline emulator, Makefile targets, ChatOps /promote and /rollback commands.
 
 - Canary governance: persist the raw promote/rollback queries with their evaluation windows, hash + attach them to the Evidence Bundle, and require sign-off before altering thresholds.
+
+Minimum evidence bundle to declare "secure enough"
+--------------------------------------------------
+
+All items must be automated and attached per release before v1.0 sign-off:
+
+- Cosign `verify-attestation` output (issuer/subject regex enforced) ✅ today.
+- Rekor UUID + verified inclusion proof (⏳ gate pending).
+- OCI referrers discovered for CycloneDX/SPDX SBOM + provenance (✅ generator/run; ⏳ hard gate).
+- Determinism report: dual-build hashes, diffoscope summary, env invariants (✅ multi-arch; ⏳ cross-time).
+- Policy transcripts: OPA + Kyverno evaluation logs with inputs (✅ concept; ⏳ formalized evidence attachment).
+- SBOM scan normalized with VEX decision (✅ grype+build_vuln_input; ⏳ enforced allow check).
+- DR drill result in SLA with replay verification (✅ workflow; ensure fail on stale run >7d).
+- Schema-CI + dbt results + freshness SLA (✅ jobs; ensure metrics archived in evidence bundle).
+
+Tests to wire before calling v1.0
+---------------------------------
+
+- Supply chain: referrer presence gate, Cosign bundle verification (including Rekor inclusion), base image CVE budget with VEX overrides.
+- Determinism: cross-arch and cross-time reruns, locale/TZ variation, hermetic build with egress deny.
+- Policy: `opa test` coverage and `kyverno apply` golden resources.
+- Cache: signed manifest verification on restore, fork-isolation negative test, quarantine pipeline.
+- Access: org-wide PAT scan, Rulesets to block unpinned actions and enforce least-privilege tokens.
+- Analytics: NDJSON signature/checksum chain, `ajv` validation, dbt uniqueness/freshness expectations used as gates.
+- Cost/carbon: enforce budgets in PR gate; evidence archive.
+- Canary: store query text/window, deterministic scorer/thresholds under version control.
+
+7-day enablement checklist (GitHub-hosted runners)
+--------------------------------------------------
+
+1. Turn on Rekor gate and fail release when inclusion proof missing/stale.
+2. Enforce OCI referrer presence + Cosign bundle verification.
+3. Add iptables-based egress allowlist, with audit that fails on unexpected domains.
+4. Sign cache manifests and verify before restore; quarantine mismatches.
+5. Promote Kyverno policies from audit to enforce at deploy target.
+6. Wire cross-time determinism job (24h spaced) and attach diffoscope summary.
+7. Enable Dependabot/Renovate and dependency-review gates.
+
+30-day hardening (optional stretch)
+-----------------------------------
+
+- Self-hosted Firecracker/Vault runner profile + attestation (optional for regulated environments).
+- API diff and performance budget gates; fuzz/property testing for critical components.
+- SARIF normalization and suppression expiry automation.
+- WORM artifact storage with cross-region replication and periodic integrity checks.
+- Org-level "no unpinned actions" Ruleset + pre-receive checks.
+
+Acceptable risk statement
+-------------------------
+
+With Rekor gating, cache verification, egress allowlist, policy enforcement, and the evidence bundle finalized, the platform meets SLSA L3-equivalent integrity on GitHub-hosted runners. For regulated workloads, layer in the Firecracker/Vault profile and WORM+replication before go-live.
 
 Tightened specs
 

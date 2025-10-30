@@ -1,0 +1,8 @@
+{
+  "subject": "ghcr.io/example/app",
+  "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "proof_path": "proof.json",
+  "timestamp": "2025-01-01T00:00:00Z",
+  "uuid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "log_index": "123"
+}

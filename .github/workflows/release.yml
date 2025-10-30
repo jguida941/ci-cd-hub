@@ -26,6 +26,10 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Enforce concurrency budget
+        run: python3 scripts/enforce_concurrency_budget.py --workflow release.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Checkout
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
       - name: Set up Python
@@ -689,6 +693,9 @@ jobs:
       - name: Run Rekor monitor
         run: |
           ./tools/rekor_monitor.sh "${{ needs.build-sign-publish.outputs.digest }}" "${REGISTRY}/${IMAGE_NAME}" artifacts/evidence
+      - name: Verify Rekor evidence
+        run: |
+          python3 tools/verify_rekor_proof.py --evidence-dir artifacts/evidence --digest "${{ needs.build-sign-publish.outputs.digest }}"
 
       - name: Upload Evidence bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -1076,6 +1083,10 @@ jobs:
           if [ -f artifacts/scheduler/recommendations.json ]; then
             SCHEDULER_FLAGS+=(--scheduler-report artifacts/scheduler/recommendations.json)
           fi
+          CANARY_FLAGS=()
+          if [ -f artifacts/evidence/canary/decision.json ]; then
+            CANARY_FLAGS+=(--canary-evidence artifacts/evidence/canary/decision.json)
+          fi
           python scripts/emit_pipeline_run.py \
             --output artifacts/pipeline_run.ndjson \
             --status success \
@@ -1085,7 +1096,6 @@ jobs:
             --provenance-uri "$RUN_ARTIFACTS_URL" \
             --signature-uri "$RUN_ARTIFACTS_URL" \
             --release-evidence-uri "$RUN_ARTIFACTS_URL" \
-            --canary-evidence artifacts/evidence/canary/decision.json \
             --artifact-bytes 0 \
             --queue-ms 0 \
             --tests-total 0 \
@@ -1104,7 +1114,8 @@ jobs:
             --primary-job-duration-ms 0 \
             --jobs-file artifacts/pipeline_jobs.json \
             "${AUTOPSY_FLAGS[@]}" \
-            "${SCHEDULER_FLAGS[@]}"
+            "${SCHEDULER_FLAGS[@]}" \
+            "${CANARY_FLAGS[@]}"
 
       - name: Validate pipeline_run schema
         run: |
