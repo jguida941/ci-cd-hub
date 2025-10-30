@@ -18,9 +18,38 @@ Needs Update – Gap Tracker
 
 Use this section as the running ledger of high-priority gaps and the precise controls we still need to land so work-in-progress items do not disappear in the longer narrative below.
 
+Short Answer — Harden Now
+-------------------------
+
+Strong plan. Harden these gaps now and remove contradictions.
+
+Priority fixes (blockers)
+
+- [ ] Rekor gate regression coverage: document the enforced inclusion-proof gate, add failing-path admission and unit tests, and keep Evidence Bundle guidance in sync with `tools/verify_rekor_proof.py`.
+- [ ] Schema vs example mismatch: align the sample payloads with `schema/pipeline_run.v1.2.json`, fix typos in the example JSON, and add the canonical example as a fixture in `schema-ci.yml` to prevent drift.
+- [ ] Cache Sentinel hardening: verify signature + BLAKE3 before restore, quarantine mismatches, segregate caches for forks, and record `cache_quarantine` telemetry.
+- [ ] Secretless enforcement at runtime: extend secret scanning to live job environments (`env` + `/proc/*/environ`) and fail on high-risk keys while redacting uploads.
+- [ ] Egress control test: prove default-deny by curling only approved mirrors/registries, and fail when unexpected DNS/IP destinations respond.
+- [ ] pull_request_target policy: forbid workflows using `pull_request_target` unless on an explicit allowlist enforced via policy.
+- [ ] SLSA verification completeness: run `slsa-verifier` with `--source-uri`, `--workflow`, `--source-tag`, and pinned builder ID to assert provenance claims.
+- [ ] Admission policy depth: move Kyverno/Sigstore checks to deny-by-default with issuer/subject/rekor bundle validation plus SBOM/provenance referrers per digest.
+
+High-leverage hardening (near-term)
+
+- [ ] Single source of truth for gap status: replace duplicated tracker text with `docs/gaps.yaml` rendered into README to avoid drift.
+- [ ] Evidence Bundle attestation: sign the bundle itself as an attestation on the release digest and verify during admission.
+- [ ] KEV/EPSS-aware SBOM diff gate: incorporate KEV + EPSS risk scoring, block risk ≥ 7 unless covered by signed VEX (`not_affected` with TTL).
+- [ ] Registry compatibility fallback: support ORAS annotations when OCI 1.1 referrers are unavailable and gate promotion on either path.
+- [ ] DR drill freshness gate: enforce weekly drills with a hard fail when `now - last_drill_ts > 7d`.
+- [ ] Multi-arch parity gate: compare package inventories and SBOM component counts across manifests before promote.
+- [ ] Runner fairness: implement token-bucket throttling per repo/team and emit `queue_denials` metrics once SLOs exceed thresholds.
+- [ ] Policy test coverage: add `opa test` and `kyverno apply --audit-warn=false` fixtures in CI and report coverage.
+- [ ] SARIF hygiene: deduplicate findings by `ruleId@tool@path@commit` and expire suppressions after 30 days with an owner.
+- [ ] LLM governance: require a deterministic rule path for gates and forbid ML-only denials; continue recording model metadata.
+
 Highest-risk gaps
 
-- ✅ Phase 1 — Admission control enforced: Kyverno `verifyImages`, SBOM/provenance referrer, and secretless policies ship with fixtures + failing-path coverage (`scripts/test_kyverno_policies.py`, `tools/tests/test_kyverno_policy_checker.py`).
+- ⏳ Phase 1 — Admission control rollout: Kyverno `verifyImages`, SBOM/provenance referrer, and secretless policies have fixtures plus failing-path coverage (`scripts/test_kyverno_policies.py`, `tools/tests/test_kyverno_policy_checker.py`), but cluster enforcement remains audit-only until deny-by-default is live.
 - ✅ Phase 1 — GitHub Actions supply chain: every workflow pins action SHAs and Rulesets block drifting references (`scripts/check_workflow_integrity.py`, `.github/workflows/security-lint.yml`).
 - ✅ Phase 1 — Secretless pipelines: OIDC-only credentials with CI sweeps for env secrets and over-scoped `GITHUB_TOKEN` usage (`security-lint`, `policies/kyverno/secretless.yaml`).
 - ✅ Phase 1 — Determinism proof: release workflow runs cross-arch/time manifest comparisons and fails on hash drift (`tools/determinism_check.sh`, `.github/workflows/release.yml`).
@@ -33,14 +62,14 @@ Performance and ops risks
 
 - [ ] Cache poisoning: cache provenance is captured (`scripts/cache_provenance.sh`), but signature verification/quarantine before restore is still outstanding.
 - [ ] Backpressure and fairness: workflow concurrency is enforced; orchestration telemetry/denial logic for queue bursts still needs to ship.
-- [ ] Rekor anchoring: release workflow invokes `tools/rekor_monitor.sh`, but gating on proof inclusion is not yet active.
+- ✅ Rekor anchoring: release workflow runs `tools/verify_rekor_proof.py` and fails when inclusion proofs or UUIDs are missing; keep regression tests in place to guard the gate.
 - [ ] Supply-chain automation: Dependabot/Renovate configuration for weekly security updates has not been added (currently manual updates).
 
 Current security posture
 
 - ✅ CI guardrails: actions pinned by commit SHA, least-privilege permissions, OIDC-only auth, SBOM/VEX referrers, Cosign signing, determinism harness, and policy gates (Kyverno/OPA) are running today.
 - ✅ Quality/security checks: CodeQL, Ruff/Bandit, secret scanning, mutation tests, schema-ci, and dbt build/test run on every PR/tag.
-- ⏳ Rekor inclusion proofs: monitor is wired but releases do not fail yet when a proof is missing.
+- ✅ Rekor inclusion proofs: monitor plus `tools/verify_rekor_proof.py` now fail releases when inclusion proofs are missing or malformed.
 - ⏳ Automated dependency updates: Dependabot/Renovate and org-wide pinning policies still need to be configured.
 - ⏳ Cache restore hardening: signature verification/quarantine prior to restore remains outstanding.
 - ⏳ Runner fairness telemetry: need queue metrics + denial logic beyond the current workflow-level concurrency.
@@ -49,10 +78,12 @@ Current security posture
 
 Blockers to ship v1.0
 
-1. Rekor gating is inconsistent — release must fail if inclusion proof is missing or stale. Gate stays optional until this is enforced.
-2. Cache integrity not enforced — cache manifests are emitted but not signed/verified/quarantined before restore.
-3. Admission policies are still audit-only — Kyverno verifyImages/referrer policies need to deny on missing Cosign bundle, wrong issuer, or absent SBOM/provenance referrers.
-4. Egress allowlist not enforced — CI jobs require default-deny egress with explicit allowlist (registry, GitHub, Rekor, etc.) and an audit that fails on unexpected domains.
+1. Cache integrity not enforced — cache manifests are emitted but not signed/verified/quarantined before restore.
+2. Admission policies are still audit-only — Kyverno verifyImages/referrer policies must deny on missing Cosign bundle, wrong issuer, or absent SBOM/provenance referrers.
+3. SLSA verification is incomplete — provenance checks do not yet assert source repo, workflow path, source tag, or builder ID via `slsa-verifier`.
+4. Secretless runtime enforcement is missing — workflows scan manifests, but we do not sweep live job environments or processes for leaked secrets.
+5. Egress allowlist not enforced — CI jobs require default-deny egress with explicit allowlist (registry, GitHub, Rekor, etc.) and an audit that fails on unexpected domains.
+6. `pull_request_target` remains allowed — add policy/Ruleset guardrails or an explicit allowlist.
 
 High-risk gaps to schedule next
 
@@ -64,8 +95,8 @@ High-risk gaps to schedule next
 
 Inconsistencies to resolve in docs & code
 
-- Rekor messaging (monitor vs gate) must be consistent — implement the gate now.
-- Referrer gate is described as both "concrete" and "next step" — enforce it instead of dry-run.
+- Rekor messaging must stay aligned with the enforced gate — document the CI step, keep failing-path tests in `tools/tests/test_verify_rekor_proof.py`, and surface regression alerts.
+- Referrer gate is described as both "concrete" and "next step" — clarify the current dry-run posture and track the deny-by-default changeover.
 - Cross-arch determinism is enforced; cross-time reruns remain future work — clarify and separate controls.
 Concrete gates to wire immediately
 
@@ -104,6 +135,108 @@ Secretless CI sweep:
 
 ```bash
 ! grep -R -E 'AWS_SECRET|_KEY=|TOKEN=' -n .github/workflows || (echo "Secret found"; exit 1)
+```
+
+Rekor proof and SLSA verification (release job):
+
+```bash
+cosign verify \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  --certificate-identity-regexp "^https://github.com/ORG/REPO/.github/workflows/release.yml@refs/tags/.*$" \
+  "$IMAGE_DIGEST"
+
+python3 tools/verify_rekor_proof.py --evidence-dir artifacts/evidence --digest "$IMAGE_DIGEST"
+
+slsa-verifier verify-attestation \
+  --artifact "$IMAGE_DIGEST" \
+  --provenance "$PROVENANCE_PATH" \
+  --source-uri "github.com/ORG/REPO" \
+  --workflow ".github/workflows/release.yml" \
+  --source-tag "$GITHUB_REF_NAME" \
+  --builder-id "https://github.com/actions/runner"
+```
+
+Referrer presence with subject check:
+
+```bash
+SUBJECT=$(oras manifest fetch "$IMAGE_DIGEST" | jq -r '.subject.digest // empty')
+test -z "$SUBJECT" || { echo "subject must be empty for a top-level image"; exit 1; }
+
+oras discover "$IMAGE_DIGEST" --artifact-type application/spdx+json -o json \
+  | jq -e --arg d "$IMAGE_DIGEST" 'any(.manifests[]; .subject.digest == $d)'
+
+oras discover "$IMAGE_DIGEST" --artifact-type application/vnd.in-toto+json -o json \
+  | jq -e --arg d "$IMAGE_DIGEST" 'any(.manifests[]; .subject.digest == $d)'
+```
+
+Cache Sentinel verify-before-restore:
+
+```bash
+set -euo pipefail
+META="cache/meta.json"
+SIG="cache/meta.sig"
+KEYRING="keys/cache-pubkeys.pem"
+
+blake3 --quiet cache/archive.tar.zst | awk '{print $1}' > cache/archive.b3
+jq -e '.digest == input' "$META" < cache/archive.b3
+
+cosign verify-blob --key "$KEYRING" --signature "$SIG" --bundle cache/meta.bundle "$META"
+
+unzstd -dc cache/archive.tar.zst | tar -xf -
+```
+
+Quarantine on mismatch:
+
+```bash
+trap 'mv cache "cache.quarantine.$(date -u +%s)"; echo "{\"event\":\"cache_quarantine\"}" > artifacts/cache_quarantine.ndjson' ERR
+```
+
+Egress allowlist smoke test:
+
+```bash
+ALLOWED_DOMAINS='pypi.my-mirror.example.com npm.example.com ghcr.io'
+
+for d in pypi.org registry.npmjs.org crates.io golang.org; do
+  if curl -sSf --connect-timeout 2 "https://$d" >/dev/null; then
+    echo "Unexpected egress to $d"; exit 1
+  fi
+done
+
+for d in $ALLOWED_DOMAINS; do
+  curl -sSf "https://$d" >/dev/null
+done
+```
+
+Ban `pull_request_target` by policy:
+
+```rego
+package workflows
+
+default allow = false
+
+deny[msg] {
+  input.on == "pull_request_target"
+  msg := "pull_request_target is disallowed; use pull_request with minimal permissions"
+}
+```
+
+DR drill freshness gate:
+
+```bash
+LAST=$(jq -r '.drill.last_success_rfc3339' artifacts/evidence/summary.json)
+NOW=$(date -u +%s)
+LIMIT=$((7 * 24 * 3600))
+test $(( NOW - $(date -u -d "$LAST" +%s) )) -le "$LIMIT" || {
+  echo "DR drill older than seven days"; exit 1;
+}
+```
+
+SLO-driven auto-rollback gate:
+
+```bash
+SCORE=$(jq -r '.canary.score' artifacts/evidence/canary/decision.json)
+MIN_SCORE=95
+[ "$SCORE" -ge "$MIN_SCORE" ] || { echo "Canary score $SCORE below $MIN_SCORE"; ./scripts/rollback.sh; exit 1; }
 ```
 
 Pinning, permissions, and concurrency guardrails
@@ -156,6 +289,49 @@ DR proof
 Org-level controls
 
 - GitHub Rulesets enforcing signed commits/tags, required checks, no force pushes, CODEOWNERS, and locked release branches stay on the mandatory list.
+- Deny changes to `.github/workflows/**` unless CODEOWNERS approve through a protected path rule.
+- Require signed and annotated tags for all release patterns; reject lightweight tags.
+- Forbid untrusted third-party actions unless mirrored internally and pinned by SHA.
+
+Telemetry and traceability
+--------------------------
+
+- Enforce `OTEL_RESOURCE_ATTRIBUTES=service.name,service.version,git.sha` across jobs; propagate tracing metadata into Evidence Bundles.
+- Inject `traceparent` into PR comments and artifacts to stitch CI spans with downstream services.
+- Record kernel version, containerd build, and image layer digests in provenance; alert on skew > 100 ms or drift across redundant runners.
+
+Data-quality gates
+------------------
+
+- Add dbt expectations for rowcount deltas, null caps, and distribution checks on core marts; promote failures from warn to block for scorecard tables.
+- Integrate Great Expectations (or dbt-expectations) for metric distribution drift to detect silent dashboard regressions.
+
+Exit-criteria adjustments
+-------------------------
+
+- Add “Example fixtures validate” to the v1.0 checklist to ensure schema samples stay in sync.
+- Require admission to deny images missing both SBOM and provenance referrers whose subjects match the exact image digest.
+- Ensure cache verification/quarantine emits `cache_quarantine` telemetry and alerting before sign-off.
+- Disallow `pull_request_target` unless explicitly justified and recorded with CODEOWNERS approval.
+
+7-day plan
+----------
+
+1. Reconcile schema/example divergence and wire the canonical fixture into `schema-ci.yml`.
+2. Lock Rekor inclusion as a hard gate (release step landed) and add failing-path units for missing UUID/inclusion proofs.
+3. Wire `slsa-verifier` with explicit source, workflow, tag, and builder-ID assertions.
+4. Implement cache verify-before-restore plus quarantine workflow and surface metrics.
+5. Add the egress allowlist smoke test and enforce the `pull_request_target` ban.
+6. Sign the Evidence Bundle as an attestation targeting the release digest.
+
+30-day plan
+-----------
+
+1. Deliver token-bucket fairness with queue SLO enforcement and denial metrics.
+2. Enforce multi-arch parity gates comparing packages and SBOM component counts across manifests.
+3. Add policy coverage reporting: `opa test` and `kyverno apply --audit-warn=false` over golden fixtures.
+4. Launch KEV/EPSS-aware SBOM diff gating with signed VEX TTL enforcement.
+5. Automate DR freshness enforcement with dashboards and blocking rules.
 
 Minimal workflow/test suite to ship now
 
@@ -558,15 +734,154 @@ JSON Schema (pipeline_run.v1.2)
   }
 }
 
-```bash
-
 Example record (pipeline_run.v1.2)
 
-```bash
-
-{"schema":"pipeline_run.v1.2","run_id":"1b7c2e4a-6b54-4e3b-9f1e-4e0d9ea9b1a1","repo":"org/app","commit_sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","branch":"feature/x","pr":123,"started_at":"2025-10-23T12:00:00Z","ended_at":"2025-10-23T12:04:10Z","status":"success","queue_ms":5000,"artifact_bytes":7340032,"environment":"staging","deployment_id":"deploy-20251023-1200","rollout_step":2,"strategy":"canary","image_digest":"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd","sbom_uri":"https://gcs.example.com/sbom/aaaa.json","provenance_uri":"https://gcs.example.com/prov/aaaa.intoto","signature_uri":"https://gcs.example.com/sig/aaaa.sig","release_evidence_uri":"https://gcs.example.com/evidence/manifest.json","runner_os":"linux","runner_type":"hosted","region":"us-central1","spot":false,"carbon_g_co2e":0.07,"energy":{"kwh":0.03},"cache_keys":["pip-3.12","pytest"],"flakiness_index":0.02,"canary_metrics":{"error_rate":0.001,"success_rate":0.999,"latency_p50_ms":45,"latency_p95_ms":88,"latency_p99_ms":140,"reqs_per_s":120},"canary":{"decision":"promote","recorded_at":"2025-10-23T12:04:20Z","window":{"start":"2025-10-23T11:59:20Z","end":"2025-10-23T12:04:20Z"},"query":"SELECT * FROM canary_metrics WHERE rollout = 'prod';","metrics_uri":"https://gcs.example.com/canary/run-123.json"},"jobs":[{"id":"build","name":"build","status":"success","attempt":1,"duration_ms":70000,"queue_ms":2000,"cache":{"hit":true,"key":"pip-3.12"},"machine":{"class":"standard","cpu":"4","ram_gb":16},"logs_uri":"https://gcs.example.com/logs/build.log"},{"id":"test","name":"pytest","status":"success","attempt":1,"duration_ms":120000,"queue_ms":1000,"cache":{"hit":false","key":"pytest"},"machine":{"class":"standard","cpu":"4","ram_gb":16},"logs_uri":"https://gcs.example.com/logs/pytest.log"}],"tests":{"total":1240,"failed":2","skipped":10,"duration_ms":118000,"coverage":{"lines_pct":0.86,"branches_pct":0.79,"statements_pct":0.84},"resilience":{"mutants_total":900,"killed":810,"equiv":30,"timeout":12,"score":0.9,"delta_vs_main":0.03,"equivalent_mutants_dropped":true}},"chaos":[{"fault":"kill_job","target":"pytest","seed":42,"rate":0.01,"started_at":"2025-10-23T12:01:10Z","ended_at":"2025-10-23T12:01:30Z","outcome":"recovered","retries":1}],"autopsy":{"root_causes":[{"tool":"pytest","pattern":"AttributeError: NoneType","file":"tests/x_test.py","line":42,"message":"AttributeError: NoneType","suggestion":"ensure setup returns object or add __init__.py","severity":"warn","docs_uri":"https://docs.example.com/autopsy/attrerror"}]},"policies":[{"id":"two_person_prod","result":"allow","reason":"Distinct approvers met two-person rule"}],"cost":{"usd":1.23,"cpu_seconds":420,"gpu_seconds":0}}
-
-```bash
+```json
+{
+  "schema": "pipeline_run.v1.2",
+  "run_id": "1b7c2e4a-6b54-4e3b-9f1e-4e0d9ea9b1a1",
+  "repo": "org/app",
+  "commit_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "branch": "feature/x",
+  "pr": 123,
+  "started_at": "2025-10-23T12:00:00Z",
+  "ended_at": "2025-10-23T12:04:10Z",
+  "status": "success",
+  "queue_ms": 5000,
+  "artifact_bytes": 7340032,
+  "environment": "staging",
+  "deployment_id": "deploy-20251023-1200",
+  "rollout_step": 2,
+  "strategy": "canary",
+  "image_digest": "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd",
+  "sbom_uri": "https://gcs.example.com/sbom/aaaa.json",
+  "provenance_uri": "https://gcs.example.com/prov/aaaa.intoto",
+  "signature_uri": "https://gcs.example.com/sig/aaaa.sig",
+  "release_evidence_uri": "https://gcs.example.com/evidence/manifest.json",
+  "runner_os": "linux",
+  "runner_type": "hosted",
+  "region": "us-central1",
+  "spot": false,
+  "carbon_g_co2e": 0.07,
+  "energy": { "kwh": 0.03 },
+  "cache_keys": ["pip-3.12", "pytest"],
+  "flakiness_index": 0.02,
+  "canary_metrics": {
+    "error_rate": 0.001,
+    "success_rate": 0.999,
+    "latency_p50_ms": 45,
+    "latency_p95_ms": 88,
+    "latency_p99_ms": 140,
+    "reqs_per_s": 120
+  },
+  "canary": {
+    "decision": "promote",
+    "recorded_at": "2025-10-23T12:04:20Z",
+    "window": {
+      "start": "2025-10-23T11:59:20Z",
+      "end": "2025-10-23T12:04:20Z"
+    },
+    "query": "SELECT * FROM canary_metrics WHERE rollout = 'prod';",
+    "metrics_uri": "https://gcs.example.com/canary/run-123.json"
+  },
+  "jobs": [
+    {
+      "id": "build",
+      "name": "build",
+      "status": "success",
+      "attempt": 1,
+      "duration_ms": 70000,
+      "queue_ms": 2000,
+      "cache": {
+        "hit": true,
+        "key": "pip-3.12"
+      },
+      "machine": {
+        "class": "standard",
+        "cpu": "4",
+        "ram_gb": 16
+      },
+      "logs_uri": "https://gcs.example.com/logs/build.log"
+    },
+    {
+      "id": "test",
+      "name": "pytest",
+      "status": "success",
+      "attempt": 1,
+      "duration_ms": 120000,
+      "queue_ms": 1000,
+      "cache": {
+        "hit": false,
+        "key": "pytest"
+      },
+      "machine": {
+        "class": "standard",
+        "cpu": "4",
+        "ram_gb": 16
+      },
+      "logs_uri": "https://gcs.example.com/logs/pytest.log"
+    }
+  ],
+  "tests": {
+    "total": 1240,
+    "failed": 2,
+    "skipped": 10,
+    "duration_ms": 118000,
+    "coverage": {
+      "lines_pct": 0.86,
+      "branches_pct": 0.79,
+      "statements_pct": 0.84
+    },
+    "resilience": {
+      "mutants_total": 900,
+      "killed": 810,
+      "equiv": 30,
+      "timeout": 12,
+      "score": 0.9,
+      "delta_vs_main": 0.03,
+      "equivalent_mutants_dropped": true
+    }
+  },
+  "chaos": [
+    {
+      "fault": "kill_job",
+      "target": "pytest",
+      "seed": 42,
+      "rate": 0.01,
+      "started_at": "2025-10-23T12:01:10Z",
+      "ended_at": "2025-10-23T12:01:30Z",
+      "outcome": "recovered",
+      "retries": 1
+    }
+  ],
+  "autopsy": {
+    "root_causes": [
+      {
+        "tool": "pytest",
+        "pattern": "AttributeError: NoneType",
+        "file": "tests/x_test.py",
+        "line": 42,
+        "message": "AttributeError: NoneType",
+        "suggestion": "ensure setup returns object or add __init__.py",
+        "severity": "warn",
+        "docs_uri": "https://docs.example.com/autopsy/attrerror"
+      }
+    ]
+  },
+  "policies": [
+    {
+      "id": "two_person_prod",
+      "result": "allow",
+      "reason": "Distinct approvers met two-person rule"
+    }
+  ],
+  "cost": {
+    "usd": 1.23,
+    "cpu_seconds": 420,
+    "gpu_seconds": 0
+  }
+}
+```
 
 Metrics dictionary (docs/metrics.md)
 
@@ -821,7 +1136,7 @@ Minimum evidence bundle to declare "secure enough"
 All items must be automated and attached per release before v1.0 sign-off:
 
 - Cosign `verify-attestation` output (issuer/subject regex enforced) ✅ today.
-- Rekor UUID + verified inclusion proof (⏳ gate pending).
+- Rekor UUID + verified inclusion proof (`tools/verify_rekor_proof.py` enforces gate) ✅.
 - OCI referrers discovered for CycloneDX/SPDX SBOM + provenance (✅ generator/run; ⏳ hard gate).
 - Determinism report: dual-build hashes, diffoscope summary, env invariants (✅ multi-arch; ⏳ cross-time).
 - Policy transcripts: OPA + Kyverno evaluation logs with inputs (✅ concept; ⏳ formalized evidence attachment).
@@ -844,7 +1159,7 @@ Tests to wire before calling v1.0
 7-day enablement checklist (GitHub-hosted runners)
 --------------------------------------------------
 
-1. Turn on Rekor gate and fail release when inclusion proof missing/stale.
+1. Keep the Rekor gate enforced, add regression coverage (missing UUID/proof), and surface alerting on gate failure.
 2. Enforce OCI referrer presence + Cosign bundle verification.
 3. Add iptables-based egress allowlist, with audit that fails on unexpected domains.
 4. Sign cache manifests and verify before restore; quarantine mismatches.

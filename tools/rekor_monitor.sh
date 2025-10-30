@@ -493,5 +493,7 @@ jq -n \
   --arg digest "$DIGEST" \
   --arg proof_path "$PROOF_PATH" \
   --arg timestamp "$TIMESTAMP" \
-  '{"subject":$subject,"digest":$digest,"proof_path":$proof_path,"timestamp":$timestamp}' \
+  --arg uuid "${UUID:-}" \
+  --arg log_index "${MATCHED_INDEX:-}" \
+  '{"subject":$subject,"digest":$digest,"proof_path":$proof_path,"timestamp":$timestamp,"uuid":($uuid // ""), "log_index":($log_index // "")}' \
   > "$OUTPUT_DIR/rekor-proof-index-${TIMESTAMP}.json"

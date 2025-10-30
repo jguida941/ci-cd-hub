@@ -8,6 +8,7 @@ import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -52,7 +53,13 @@ def _load_yaml(path: Path) -> dict[str, Any]:
 
 
 def _http_get(url: str, token: str) -> dict[str, Any]:
-    request = urllib.request.Request(
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.scheme != "https":
+        raise SystemExit(f"[concurrency-budget] refusing to fetch non-HTTPS URL: {url}")
+    if parsed.netloc and not parsed.netloc.endswith("github.com"):
+        raise SystemExit(f"[concurrency-budget] refusing to contact unknown host: {parsed.netloc}")
+
+    request = urllib.request.Request(  # noqa: S310 - scheme/netloc validated above
         url,
         headers={
             "Authorization": f"Bearer {token}",
@@ -61,7 +68,7 @@ def _http_get(url: str, token: str) -> dict[str, Any]:
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=20) as response:
+        with urllib.request.urlopen(request, timeout=20) as response:  # noqa: S310 - HTTPS enforced
             payload = response.read()
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace")
@@ -81,12 +88,34 @@ def _http_get(url: str, token: str) -> dict[str, Any]:
 
 
 def _list_in_progress_runs(repo: str, workflow: str, token: str) -> list[dict[str, Any]]:
-    url = f"{API_ROOT}/repos/{repo}/actions/workflows/{workflow}/runs?status=in_progress&per_page=100"
-    data = _http_get(url, token)
-    runs = data.get("workflow_runs")
-    if not isinstance(runs, list):
-        raise SystemExit("[concurrency-budget] workflow_runs missing from GitHub response")
-    return runs
+    per_page = 100
+    all_runs: list[dict[str, Any]] = []
+    page = 1
+    total_expected: int | None = None
+    while True:
+        url = (
+            f"{API_ROOT}/repos/{repo}/actions/workflows/{workflow}"
+            f"/runs?status=in_progress&per_page={per_page}&page={page}"
+        )
+        data = _http_get(url, token)
+        runs = data.get("workflow_runs")
+        if not isinstance(runs, list):
+            raise SystemExit("[concurrency-budget] workflow_runs missing from GitHub response")
+        if total_expected is None:
+            total_count = data.get("total_count")
+            if isinstance(total_count, int) and total_count >= 0:
+                total_expected = total_count
+        if not runs:
+            break
+        all_runs.extend(runs)
+        if total_expected is not None and len(all_runs) >= total_expected:
+            break
+        if len(runs) < per_page:
+            break
+        page += 1
+        if page > 1000:
+            raise SystemExit("[concurrency-budget] pagination exceeded safe limit (1000 pages)")
+    return all_runs
 
 
 def enforce_budget(config: dict[str, Any], workflow: str, budget: int) -> None:

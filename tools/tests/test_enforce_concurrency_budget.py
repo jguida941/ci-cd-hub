@@ -82,3 +82,28 @@ def test_budget_blocks_overage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
                 str(config_path),
             ]
         )
+
+
+def test_list_in_progress_runs_paginates(monkeypatch: pytest.MonkeyPatch) -> None:
+    responses = [
+        {
+            "workflow_runs": [{"id": idx} for idx in range(100)],
+            "total_count": 150,
+        },
+        {
+            "workflow_runs": [{"id": idx} for idx in range(100, 150)],
+            "total_count": 150,
+        },
+    ]
+    seen_urls: list[str] = []
+
+    def fake_http_get(url: str, token: str) -> dict[str, Any]:
+        seen_urls.append(url)
+        if responses:
+            return responses.pop(0)
+        return {"workflow_runs": [], "total_count": 150}
+
+    monkeypatch.setattr(budget, "_http_get", fake_http_get)
+    runs = budget._list_in_progress_runs("org/repo", "release.yml", "token")
+    assert len(runs) == 150
+    assert any("page=2" in url for url in seen_urls)
