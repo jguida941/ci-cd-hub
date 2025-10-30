@@ -22,6 +22,29 @@ def _load_json(path: Path) -> Any:
         raise SystemExit(f"[verify-rekor-proof] {path} is not valid JSON: {exc}") from exc
 
 
+def _normalize_proof(document: Any) -> dict[str, Any]:
+    if isinstance(document, list):
+        if not document:
+            raise SystemExit("[verify-rekor-proof] proof JSON is an empty list")
+        document = document[0]
+    if not isinstance(document, dict):
+        raise SystemExit("[verify-rekor-proof] proof output must be a JSON object")
+    return document
+
+
+def _extract_section(document: dict[str, Any], paths: tuple[tuple[str, ...], ...]) -> dict[str, Any] | None:
+    for path in paths:
+        current: Any = document
+        for key in path:
+            if not isinstance(current, dict):
+                break
+            current = current.get(key)
+        else:
+            if isinstance(current, dict):
+                return current
+    return None
+
+
 def _normalize_digest(value: str | None) -> str:
     if not value:
         return ""
@@ -115,13 +138,12 @@ def _ensure_inclusion(verification: dict[str, Any]) -> None:
         raise SystemExit("[verify-rekor-proof] inclusion proof contains no hashes")
 
 
-def _ensure_signed_timestamp(proof: dict[str, Any]) -> None:
+def _ensure_signed_timestamp(proof: dict[str, Any], verification: dict[str, Any]) -> None:
     candidates = [
         proof.get("signedEntryTimestamp"),
         proof.get("SignedEntryTimestamp"),
-        proof.get("verification", {}).get("signedEntryTimestamp")
-        if isinstance(proof.get("verification"), dict)
-        else None,
+        verification.get("signedEntryTimestamp"),
+        verification.get("SignedEntryTimestamp"),
     ]
     for item in candidates:
         if isinstance(item, str) and item.strip():
@@ -130,17 +152,33 @@ def _ensure_signed_timestamp(proof: dict[str, Any]) -> None:
 
 
 def verify_proof(proof_path: Path, expected_digest: str | None) -> dict[str, Any]:
-    proof = _load_json(proof_path)
-    if not isinstance(proof, dict):
-        raise SystemExit("[verify-rekor-proof] proof output must be a JSON object")
+    proof = _normalize_proof(_load_json(proof_path))
 
-    verification = proof.get("verification") or proof.get("Verification")
+    verification = _extract_section(
+        proof,
+        (
+            ("verification",),
+            ("Verification",),
+            ("entry", "verification"),
+            ("entry", "Verification"),
+            ("Entry", "verification"),
+            ("Entry", "Verification"),
+        ),
+    )
     if not isinstance(verification, dict):
         raise SystemExit("[verify-rekor-proof] verification block missing from proof output")
     _ensure_inclusion(verification)
-    _ensure_signed_timestamp(proof)
+    _ensure_signed_timestamp(proof, verification)
 
-    log_entry = proof.get("logEntry") or proof.get("LogEntry")
+    log_entry = _extract_section(
+        proof,
+        (
+            ("logEntry",),
+            ("LogEntry",),
+            ("entry",),
+            ("Entry",),
+        ),
+    )
     if not isinstance(log_entry, dict):
         raise SystemExit("[verify-rekor-proof] logEntry missing from proof output")
     if "uuid" not in log_entry and "UUID" not in log_entry:

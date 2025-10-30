@@ -38,3 +38,18 @@ def test_verify_rekor_proof_missing_inclusion(tmp_path: Path) -> None:
     proof_path.write_text(json.dumps(proof), encoding="utf-8")
     with pytest.raises(SystemExit, match="inclusion proof missing"):
         verify_proof(proof_path, load_index(index_path)["digest"])
+
+
+def test_verify_rekor_proof_legacy_structure(tmp_path: Path) -> None:
+    proof_path, index_path = _prepare(tmp_path)
+    proof = json.loads(proof_path.read_text(encoding="utf-8"))
+    legacy = {"Entry": proof["logEntry"], "Verification": proof["verification"]}
+    proof_path.write_text(json.dumps(legacy), encoding="utf-8")
+    verify_proof(proof_path, load_index(index_path)["digest"])
+
+
+def test_verify_rekor_proof_list_wrapper(tmp_path: Path) -> None:
+    proof_path, index_path = _prepare(tmp_path)
+    proof = json.loads(proof_path.read_text(encoding="utf-8"))
+    proof_path.write_text(json.dumps([proof]), encoding="utf-8")
+    verify_proof(proof_path, load_index(index_path)["digest"])
