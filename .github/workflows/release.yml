@@ -196,7 +196,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: job-telemetry
+          name: job-telemetry-${{ matrix.name }}
           path: artifacts/telemetry
           if-no-files-found: warn
 
@@ -1010,6 +1010,8 @@ jobs:
     name: pipeline-run-ingest
     needs:
       - project-tests
+      - pipeline-autopsy
+      - predictive-scheduler
       - build-sign-publish
       - generate-provenance
       - collect-evidence
@@ -1086,8 +1088,8 @@ jobs:
             {"id":"generate-provenance","name":"generate-provenance","status":"${{ needs.generate-provenance.result }}","attempt":1,"duration_ms":0,"queue_ms":0},
             {"id":"collect-evidence","name":"collect-evidence","status":"${{ needs.collect-evidence.result }}","attempt":1,"duration_ms":0,"queue_ms":0},
             {"id":"policy-gates","name":"policy-gates","status":"${{ needs.policy-gates.result }}","attempt":1,"duration_ms":0,"queue_ms":0},
-            {"id":"pipeline-autopsy","name":"pipeline-autopsy","status":"not_tracked","attempt":0,"duration_ms":0,"queue_ms":0},
-            {"id":"predictive-scheduler","name":"predictive-scheduler","status":"not_tracked","attempt":0,"duration_ms":0,"queue_ms":0}
+            {"id":"pipeline-autopsy","name":"pipeline-autopsy","status":"${{ needs.pipeline-autopsy.result }}","attempt":1,"duration_ms":0,"queue_ms":0},
+            {"id":"predictive-scheduler","name":"predictive-scheduler","status":"${{ needs.predictive-scheduler.result }}","attempt":1,"duration_ms":0,"queue_ms":0}
           ]
           JSON
 

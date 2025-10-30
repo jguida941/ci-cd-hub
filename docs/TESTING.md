@@ -48,12 +48,15 @@ python ingest/chaos_dr_ingest.py \
 python scripts/emit_pipeline_run.py \
   --output artifacts/pipeline_run.ndjson \
   --status success \
-  --environment staging
+  --environment staging \
+  --autopsy-report fixtures/autopsy/sample.json
 python ingest/chaos_dr_ingest.py \
   --project demo --dataset ci_intel \
   --pipeline-run-ndjson artifacts/pipeline_run.ndjson \
   --dry-run
 opa test -v --ignore kyverno policies
+
+> **Tip**: Ensure `data/warehouse/pipeline_runs.ndjson` contains the autopsy payload (for example, copy `fixtures/pipeline_run_v1_2/sample.ndjson`) before running the dbt models so `stg_autopsy_findings` can materialize.
 
 > **Note**: The dbt `deps`/`build` steps require outbound access to `hub.getdbt.com`.
 > If they fail locally because of network restrictions, rerun them once connectivity is
