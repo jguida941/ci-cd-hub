@@ -73,6 +73,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      actions: read
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
