@@ -85,6 +85,19 @@ Blockers to ship v1.0
 5. Egress allowlist not enforced — CI jobs require default-deny egress with explicit allowlist (registry, GitHub, Rekor, etc.) and an audit that fails on unexpected domains.
 6. `pull_request_target` remains allowed — add policy/Ruleset guardrails or an explicit allowlist.
 
+## High-leverage upgrades (next)
+
+1. **Ship reusable hub workflow** (`.github/workflows/hub.yml`) with a pinned revision, documented inputs/outputs, and a conformance run proving SBOM/VEX/provenance gates fail when evidence is missing.
+2. **Enforce policy gating at CI boundary** — fail PRs when SPDX/CycloneDX/SLSA referrers are absent or VEX thresholds (CVSS/EPSS) are exceeded; Kyverno enforcement follows once cluster-side wiring lands.
+3. **Harden determinism** — standardize `SOURCE_DATE_EPOCH`, locale, timezone, umask; pin build toolchains/base images; fail the release when diff reports are non-empty.
+4. **Immutable evidence bundle** — package, sign, and publish the bundle as an OCI artifact; record its digest in release notes and promotion approvals.
+5. **DR/chaos tied to SLOs** — expand scenarios (registry outage, GH API quota, cache poisoning, flaky network), define RPO/RTO budgets, and fail the pipeline when drills exceed limits; persist drill manifests with checksums.
+6. **Provenance verification gate** — assert attestation issuer/subject against allowlists and verify `subject[].digest.sha256` matches the promoted digest.
+7. **Runner isolation budgets** — maintain concurrency throttles, document GH-hosted runner constraints, enforce OIDC-only secrets, and capture org Rulesets preventing PATs/unpinned actions.
+8. **SBOM coverage & VEX rigor** — validate component counts/transitives, require VEX states for highs/criticals, and fail on missing or stale states.
+9. **Analytics chain of custody** — sign dbt manifests, record job inputs and Git SHAs in telemetry, and treat data tests as gates.
+10. **Operational guardrails** — add promotion environments with manual approvals + digest verification, release rollback playbooks, and ChatOps commands surfacing evidence digests.
+
 High-risk gaps to schedule next
 
 - Org-wide PAT prevention and Rulesets for "no unpinned actions" across repos.
@@ -1822,3 +1835,17 @@ Hub product specification (install once, apply everywhere):
     - Bundle a `ci-intel doctor` command that inspects local environments, validates `.ci-intel/config.yml`, and reproduces CI jobs locally with the same containers.
 
 Outcome: one centrally maintained toolchain that every repo can consume by downloading a release artifact or referencing a reusable workflow, enabling consistent CI/CD enforcement without re-implementing pipelines per project.
+# Current Maturity Snapshot
+
+| Dimension | Score (0–5) | Notes |
+|-----------|-------------|-------|
+| Supply-chain trust (signing, SBOM/VEX, Rekor) | 4.0 | End-to-end evidence model is in place: SBOM, VEX, provenance, Rekor proof, digest/tag linkage, cache manifests, schema-validated telemetry. |
+| Provenance/SLSA L3 plausibility on GH-hosted | 3.5 | SLSA attestation and verifier wired; GH-hosted limitations documented. |
+| Determinism harness (dual-run, diffing) | 3.0 | Diffing present but hardening (SOURCE_DATE_EPOCH, locale, umask) not yet enforced. |
+| Policy gates (Kyverno/OPA packs + tests) | 3.0 | Policies exist and are tested; enforcement still advisory. |
+| Evidence lineage and auditability | 4.0 | Evidence bundle layout, signing, cache manifests, telemetry, and schema checks are advanced. |
+| DR/chaos and runner isolation | 2.5 | Scenarios exist but not tied to SLOs or automated rollback gates; GH-hosted runner isolation only. |
+| Reusable workflows as a hub (`workflow_call`) | 3.0 | Blueprint defined; hub workflow not yet shipped. |
+| Data/analytics spine (NDJSON → dbt) | 3.0 | Ingestion pipeline + marts working; chain of custody signatures pending. |
+| Documentation/runbooks and ops hygiene | 3.5 | Plan/README/runbooks detailed; enforcement posture docs still TODO. |
+| Overall enterprise readiness | 3.0 | Advanced for a small team; key guardrails still beta. |
