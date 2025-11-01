@@ -28,11 +28,13 @@ Priority fixes (blockers) — AUDIT STATUS 2025-11-01
 - [✅] Rekor gate regression coverage: `tools/verify_rekor_proof.py` implemented with tests in `tools/tests/test_verify_rekor_proof.py`. Release workflow enforces inclusion proofs at line 447-460.
 - [⚠️] Schema vs example mismatch: Schema exists at `schema/pipeline_run.v1.2.json` but no canonical example fixture in `schema-ci.yml` yet. Validation script `scripts/validate_schema.py` ready.
 - [✅] Cache Sentinel hardening: Full implementation in `tools/cache_sentinel.py` with cosign signing (line 45-47), BLAKE3 verification (line 78-82), quarantine (line 101-105), fork isolation (line 95), and telemetry recording.
-- [⚠️] Secretless enforcement at runtime: Manifest scanning implemented in `scripts/check_secrets_in_workflow.py` but runtime `/proc/*/environ` scanning NOT implemented.
-- [✅] Egress control test: Test script exists at `scripts/test_egress_allowlist.sh` with default-deny validation and allowed domains checking.
-- [❌] pull_request_target policy: NO blocking policy exists. High security risk - needs immediate implementation.
-- [⚠️] SLSA verification completeness: Basic verification in release.yml (line 537-545) but missing `--source-uri`, `--workflow`, `--source-tag` flags.
-- [❌] Admission policy depth: Kyverno policies defined in `policies/kyverno/` but NOT deployed to any cluster. Currently theoretical only.
+- [✅] Secretless enforcement at runtime: Both manifest scanning (`scripts/check_secrets_in_workflow.py`) and runtime `/proc/*/environ` scanning (`scripts/scan_runtime_secrets.sh:66-102`) implemented.
+- [⚠️] Egress control test: Test script exists at `scripts/test_egress_allowlist.sh` but runs in AUDIT MODE only - no technical enforcement.
+- [🔴] pull_request_target policy: CRITICAL - `.github/workflows/chaos.yml:5` uses this trigger. NO blocking policy exists. Enables cache poisoning & secret exposure.
+- [✅] SLSA verification completeness: Full verification with `--source-uri`, `--source-tag`, `--builder-id` in release.yml:978-986.
+- [⚠️] Admission policy depth: Kyverno policies in `Enforce` mode (`policies/kyverno/verify-images.yaml:12`) but NOT deployed to cluster.
+- [❌] Evidence Bundle signing: Individual artifacts signed but complete bundle NOT signed with `cosign sign-blob`.
+- [❌] Cross-time determinism: SOURCE_DATE_EPOCH set but NO 24-hour delayed rebuild validation.
 
 High-leverage hardening (near-term)
 
@@ -1936,13 +1938,13 @@ Outcome: one centrally maintained toolchain that every repo can consume by downl
 # Production-Grade Recommendations (2025-11-01 Audit)
 ## Immediate Actions (Week 1) - Security Hardening
 ### 1. Fix Bandit Enforcement (1 hour)
+
 ```bash
 # Remove soft-fail from .github/workflows/security-lint.yml:44
 sed -i '/continue-on-error: true/d' .github/workflows/security-lint.yml
 ```
 
-2. Add DR Freshness Gate (2 hours)
------------------------------------
+### 2. Add DR Freshness Gate (2 hours)
 
 ```bash
 # Add to .github/workflows/release.yml after line 1400
@@ -1952,8 +1954,7 @@ sed -i '/continue-on-error: true/d' .github/workflows/security-lint.yml
     test $(( $(date +%s) - $(date -d "$LAST" +%s) )) -le 604800 || exit 1
 ```
 
-3. Block pull_request_target (3 hours)
----------------------------------------
+### 3. Block pull_request_target (3 hours)
 
 Create `policies/workflows.rego`:
 ```rego

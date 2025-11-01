@@ -1,5 +1,15 @@
 exclude_dirs:
   - tools/tests
   - autopsy/tests
+  - .venv
+  - venv
+  - env
+  - __pycache__
+  - .git
+  - .pytest_cache
+  - .tox
+  - node_modules
+  - build
+  - dist
 skips:
   - B101
