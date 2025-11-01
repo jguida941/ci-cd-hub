@@ -23,29 +23,39 @@ jobs:
         include:
           - slug: ci-cd-hub
             repository: jguida941/ci-cd-hub
-            branch: master
           - slug: learn-caesar-cipher
             repository: jguida941/learn-caesar-cipher
-            branch: main
           - slug: vector-space
             repository: jguida941/vector_space
-            branch: main
     env:
       MUTATION_CONFIG: config/mutation-observatory.ci.yaml
       RUN_DIR: ${{ github.workspace }}/artifacts/mutation/${{ matrix.slug }}
       TARGET_REPO: ${{ matrix.repository }}
-      TARGET_BRANCH: ${{ matrix.branch }}
       MUTATION_ARTIFACT_NAME: mutation-observatory-${{ matrix.slug }}
       MATRIX_SLUG: ${{ matrix.slug }}
     steps:
       - name: Checkout
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
+      - name: Get default branch for ${{ matrix.repository }}
+        id: get_branch
+        run: |
+          set -euo pipefail
+          DEFAULT_BRANCH=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ matrix.repository }}" | \
+            jq -r '.default_branch')
+          if [ -z "$DEFAULT_BRANCH" ] || [ "$DEFAULT_BRANCH" = "null" ]; then
+            echo "::error::Failed to detect default branch for ${{ matrix.repository }} (API error, rate limit, or repo not found)"
+            exit 1
+          fi
+          echo "branch=${DEFAULT_BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "::notice::Auto-detected default branch for ${{ matrix.repository }}: ${DEFAULT_BRANCH}"
+
       - name: Checkout ${{ matrix.repository }}
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
         with:
           repository: ${{ matrix.repository }}
-          ref: ${{ matrix.branch }}
+          ref: ${{ steps.get_branch.outputs.branch }}
           path: target
           token: ${{ secrets.REPO_READ_TOKEN || github.token }}
 
@@ -92,14 +102,14 @@ jobs:
             --markdown "$RUN_DIR/summary.md" \
             --html "$RUN_DIR/summary.html" \
             --repo "${TARGET_REPO}" \
-            --branch "${TARGET_BRANCH}" \
+            --branch "${{ steps.get_branch.outputs.branch }}" \
             --commit-sha "${{ steps.target_meta.outputs.commit }}" \
             --run-id "${{ github.run_id }}-${{ github.run_attempt }}"
 
       - name: Annotate summary with repository
         run: |
           set -euo pipefail
-          printf '## Repository: %s (%s)\n\n' "$TARGET_REPO" "$TARGET_BRANCH" | cat - "$RUN_DIR/summary.md" > "$RUN_DIR/summary.tmp"
+          printf '## Repository: %s (%s)\n\n' "$TARGET_REPO" "${{ steps.get_branch.outputs.branch }}" | cat - "$RUN_DIR/summary.md" > "$RUN_DIR/summary.tmp"
           mv "$RUN_DIR/summary.tmp" "$RUN_DIR/summary.md"
 
       - name: Print summary
