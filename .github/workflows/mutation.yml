@@ -23,16 +23,20 @@ jobs:
         include:
           - slug: ci-cd-hub
             repository: jguida941/ci-cd-hub
+            path: .
           - slug: learn-caesar-cipher
             repository: jguida941/learn-caesar-cipher
+            path: caesar_cli
           - slug: vector-space
             repository: jguida941/vector_space
+            path: .
     env:
       MUTATION_CONFIG: config/mutation-observatory.ci.yaml
       RUN_DIR: ${{ github.workspace }}/artifacts/mutation/${{ matrix.slug }}
       TARGET_REPO: ${{ matrix.repository }}
       MUTATION_ARTIFACT_NAME: mutation-observatory-${{ matrix.slug }}
       MATRIX_SLUG: ${{ matrix.slug }}
+      TARGET_PATH: ${{ matrix.path }}
     steps:
       - name: Checkout
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
@@ -80,7 +84,13 @@ jobs:
       - name: Install target dependencies
         run: |
           set -euo pipefail
-          cd target
+          TARGET_SUBDIR="${{ matrix.path }}"
+          if [ -z "$TARGET_SUBDIR" ] || [ "$TARGET_SUBDIR" = "." ]; then
+            TARGET_DIR="target"
+          else
+            TARGET_DIR="target/${TARGET_SUBDIR}"
+          fi
+          cd "$TARGET_DIR"
           # Install target repo dependencies - try multiple sources
           INSTALLED=0
 
@@ -121,12 +131,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUN_DIR"
+          if [ -z "${{ matrix.path }}" ] || [ "${{ matrix.path }}" = "." ]; then
+            PYTEST_TARGET="target"
+          else
+            PYTEST_TARGET="target/${{ matrix.path }}"
+          fi
           # Run pytest against the target repo, not the hub's tests
           python tools/scripts/generate_mutation_reports.py \
             --stryker "$RUN_DIR/stryker-report.json" \
             --mutmut "$RUN_DIR/mutmut-report.json" \
             --allow-fail \
-            --pytest-args target
+            --pytest-args "$PYTEST_TARGET"
       - name: Sync reports for observatory
         run: |
           set -euo pipefail
