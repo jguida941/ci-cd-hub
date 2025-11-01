@@ -60,9 +60,17 @@ download_and_verify() {
 
 install_oras() {
   local tar="oras_${ORAS_VERSION}_${OS}_${ARCH}.tar.gz"
-  local url="https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/${tar}"
+  local base_url="https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}"
+  local url="${base_url}/${tar}"
+  local checksum_file="oras_${ORAS_VERSION}_checksums.txt"
   log "Installing oras ${ORAS_VERSION}"
-  download_and_verify "$url" "$TMP_DIR/${tar}" "${url}.sha256"
+  curl -fsSL "$url" -o "$TMP_DIR/${tar}"
+  curl -fsSL "${base_url}/${checksum_file}" -o "$TMP_DIR/${checksum_file}"
+  (
+    cd "$TMP_DIR"
+    grep -F "  ${tar}" "${checksum_file}" > "${tar}.sha256"
+    sha256sum -c "${tar}.sha256"
+  )
   tar -xzf "$TMP_DIR/${tar}" -C "$TMP_DIR" oras
   sudo install -m 0755 "$TMP_DIR/oras" /usr/local/bin/oras
   if ! oras version | grep -E "Version:\s+${ORAS_VERSION}(\+|$)" >/dev/null; then

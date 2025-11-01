@@ -27,3 +27,6 @@ target/
 
 # Temp
 tmp/
+
+# Fixtures
+fixtures/
