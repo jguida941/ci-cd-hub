@@ -1158,6 +1158,7 @@ End-state goal: every release runs these verification suites automatically. Item
     - Verify no PATs/long-lived secrets; id-token scope enforcement
 
 Where AI can assist (optional stretch)
+
 - Generate Rego unit tests, determinism workflows, NDJSON fuzzers, SBOM/VEX diff runners, cosign/rekor verification scripts, dbt expectation seeds, chaos drill matrices, and evidence-summary reports.
 
 - DR + idempotency: backfill re-ingest pipeline, immutable artifact storage, disaster recovery runbook.
@@ -1940,7 +1941,9 @@ Outcome: one centrally maintained toolchain that every repo can consume by downl
 sed -i '/continue-on-error: true/d' .github/workflows/security-lint.yml
 ```
 
-### 2. Add DR Freshness Gate (2 hours)
+2. Add DR Freshness Gate (2 hours)
+-----------------------------------
+
 ```bash
 # Add to .github/workflows/release.yml after line 1400
 - name: Verify DR drill freshness
@@ -1949,7 +1952,9 @@ sed -i '/continue-on-error: true/d' .github/workflows/security-lint.yml
     test $(( $(date +%s) - $(date -d "$LAST" +%s) )) -le 604800 || exit 1
 ```
 
-### 3. Block pull_request_target (3 hours)
+3. Block pull_request_target (3 hours)
+---------------------------------------
+
 Create `policies/workflows.rego`:
 ```rego
 package workflows
@@ -1960,13 +1965,14 @@ deny[msg] {
 }
 ```
 
-## Short-Term Actions (Weeks 2-4) - Infrastructure
-### 1. Deploy Kyverno to Cluster (16 hours)
-- Deploy policies from `policies/kyverno/` to production cluster
+Short-Term Actions (Weeks 2-4) - Infrastructure
+1. Fix Bandit Enforcement (1 hour)
+--------------------------------------
+
 - Switch from audit-only to deny-by-default mode
 - Test with known-bad images to verify enforcement
 
-### 2. Runtime Secret Scanning (4 hours)
+2. Runtime Secret Scanning (4 hours)
 Extend `scripts/check_secrets_in_workflow.py`:
 ```python
 # Add runtime environment scanning
@@ -1974,14 +1980,14 @@ for proc in Path('/proc').glob('[0-9]*/environ'):
     check_for_secrets(proc.read_bytes())
 ```
 
-### 3. Evidence Bundle Attestation (8 hours)
+3. Evidence Bundle Attestation (8 hours)
 ```bash
 # Sign the entire evidence bundle
 tar czf evidence.tar.gz artifacts/evidence/
 cosign sign-blob evidence.tar.gz --bundle evidence.bundle
 ```
 
-### 4. Automated Dependency Updates (2 hours)
+4. Automated Dependency Updates (2 hours)
 Create `.github/dependabot.yml`:
 ```yaml
 version: 2
@@ -1993,25 +1999,26 @@ updates:
     security-updates-only: true
 ```
 
-## Medium-Term Actions (Weeks 5-8) - Operational Excellence
-### 1. Multi-Arch SBOM Parity (8 hours)
-```bash
+Medium-Term Actions (Weeks 5-8) - Operational Excellence
+1. Fix Bandit Enforcement (1 hour)
+--------------------------------------
+
 # Compare SBOM component counts across architectures
 diff <(jq '.components | length' sbom-amd64.json) \
      <(jq '.components | length' sbom-arm64.json)
 ```
 
-### 2. Runner Fairness Metrics (16 hours)
+2. Runner Fairness Metrics (16 hours)
 - Implement token-bucket throttling per repo/team
 - Add queue_denials metrics when SLOs exceeded
 - Surface in Grafana dashboard
 
-### 3. Dashboard Integration (12 hours)
+3. Dashboard Integration (12 hours)
 - Wire dbt models to Looker Studio
 - Create Grafana dashboards for real-time metrics
 - Add alerting rules for SLO breaches
 
-### 4. Cross-Time Determinism (12 hours)
+4. Cross-Time Determinism (12 hours)
 ```bash
 # Add 24-hour spaced rebuild validation
 SOURCE_DATE_EPOCH=$(($(date +%s) - 86400))
@@ -2046,13 +2053,13 @@ Layer 4: Runtime Protection (adaptive)
   - Behavioral anomaly detection
 ```
 
-### Zero-Trust Supply Chain
+Zero-Trust Supply Chain
 - Binary authorization with explicit allowlists
 - SLSA Level 3 verification with all parameters
 - Attestation chain: code → build → test → scan → sign → verify → deploy
 - KEV/EPSS scoring for SBOM vulnerability assessment
 
-### Resilience & Recovery Architecture
+Resilience & Recovery Architecture
 - Circuit breakers for external dependencies
 - Retry with exponential backoff for transient failures
 - Failure injection points for chaos testing
@@ -2084,27 +2091,28 @@ Layer 4: Runtime Protection (adaptive)
 
 ## Key Success Factors for Production
 
-### 1. Enforce Everything
-- No soft failures (remove all continue-on-error)
+1. Fix Bandit Enforcement (1 hour)
+--------------------------------------
+
 - No audit-only modes (switch to deny-by-default)
 - All security tools must block on failures
 
-### 2. Automate Recovery
+2. Automate Recovery
 - Self-healing pipelines with circuit breakers
 - Automated rollback on metric degradation
 - Chaos testing with automated recovery validation
 
-### 3. Prove Compliance
+3. Prove Compliance
 - Evidence bundles with complete chain of custody
 - Signed attestations for all artifacts
 - Audit logs with tamper-proof storage
 
-### 4. Measure Everything
+4. Measure Everything
 - Security metrics (MTTR, policy violations)
 - Reliability metrics (success rate, build time)
 - Efficiency metrics (cache hits, cost per run)
 
-### 5. Test Failures
+5. Test Failures
 - Regular chaos engineering drills
 - DR drills with 7-day freshness enforcement
 - Failure injection in 1% of PR builds
@@ -2113,13 +2121,13 @@ Layer 4: Runtime Protection (adaptive)
 
 **Your CI/CD Hub has impressive sophistication but critical production gaps:**
 
-### Strengths
+Strengths
 - Excellent supply chain controls (Cosign, SBOM/VEX, Rekor)
 - Comprehensive test coverage (87 test cases)
 - Strong documentation (14 markdown files)
 - Clean architecture with good separation of concerns
 
-### Critical Gaps (Must Fix)
+Critical Gaps (Must Fix)
 1. **Bandit soft-fail** - High security risk
 2. **Kyverno not deployed** - Policies are theoretical only
 3. **No pull_request_target blocking** - Security vulnerability
@@ -2127,13 +2135,13 @@ Layer 4: Runtime Protection (adaptive)
 5. **No DR freshness gate** - Stale recovery evidence
 6. **Evidence bundle not attested** - Incomplete chain of custody
 
-### Timeline to Production
+Timeline to Production
 - **Week 1**: Fix critical security issues (Bandit, pull_request_target, DR gate)
 - **Weeks 2-4**: Deploy infrastructure (Kyverno, runtime scanning, attestations)
 - **Weeks 5-8**: Operational excellence (dashboards, metrics, cross-time determinism)
 - **Total**: 6-8 weeks to production readiness
 
-### Bottom Line
+Bottom Line
 You've built a sophisticated foundation that exceeds most industry standards in design, but enforcement is weak. The architecture is sound, tooling is comprehensive, but you need to:
 1. **Make everything a hard gate** (no soft failures)
 2. **Deploy the policies** (Kyverno to cluster)

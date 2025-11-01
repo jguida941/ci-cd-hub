@@ -73,11 +73,12 @@ def main() -> None:
             # cosign attest expects just the predicate content
             predicate = statement.get("predicate", statement)
 
-            # Ensure builder field is present (required by cosign)
+            # Ensure builder field is present (required by cosign attest for SLSA provenance)
             if isinstance(predicate, dict) and "builder" not in predicate:
-                # Fall back to a default builder if missing
+                # Fall back to GitHub Actions runner as the builder ID
+                # This is the correct builder for GitHub-hosted workflows
                 predicate["builder"] = {
-                    "id": "https://github.com/slsa-framework/slsa-github-generator@v2.1.0"
+                    "id": "https://github.com/actions/runner"
                 }
 
             args.predicate_destination.parent.mkdir(parents=True, exist_ok=True)
