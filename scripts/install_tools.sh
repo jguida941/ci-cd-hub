@@ -81,9 +81,31 @@ install_oras() {
 
 install_cosign() {
   local file="cosign-${OS}-${ARCH}"
-  local url="https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}/${file}"
+  local base_url="https://github.com/sigstore/cosign/releases/download/${COSIGN_VERSION}"
+  local url="${base_url}/${file}"
   log "Installing cosign ${COSIGN_VERSION}"
-  download_and_verify "$url" "$TMP_DIR/${file}" "${url}.sha256"
+  curl -fsSL "$url" -o "$TMP_DIR/${file}"
+  local checksum_source=""
+  local checksum_candidates=(
+    "cosign_${COSIGN_VERSION}_checksums.txt"
+    "cosign_${COSIGN_VERSION#v}_checksums.txt"
+    "cosign_checksums.txt"
+  )
+  for candidate in "${checksum_candidates[@]}"; do
+    if curl -fsSL "${base_url}/${candidate}" -o "$TMP_DIR/${candidate}"; then
+      checksum_source="$TMP_DIR/${candidate}"
+      break
+    fi
+  done
+  if [[ -z "$checksum_source" ]]; then
+    log "Unable to locate cosign checksum manifest for ${COSIGN_VERSION}"
+    exit 1
+  fi
+  (
+    cd "$TMP_DIR"
+    grep -F "  ${file}" "$(basename "$checksum_source")" > "${file}.sha256"
+    sha256sum -c "${file}.sha256"
+  )
   sudo install -m 0755 "$TMP_DIR/${file}" /usr/local/bin/cosign
   if ! cosign version --short | tr -d '\n' | grep -q "$(printf '%s' "${COSIGN_VERSION}" | tr -d '\n')"; then
     log "cosign version mismatch"
