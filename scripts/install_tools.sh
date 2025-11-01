@@ -152,11 +152,12 @@ install_rekor() {
   # Enforce version match per plan.md supply-chain pinning requirements
   # rekor-cli prints ASCII banner before version info, so capture full output
   VERSION_OUTPUT=$(rekor-cli version 2>&1 || true)
-  if ! echo "$VERSION_OUTPUT" | grep -qE "(GitVersion|Version)[:\s]+${REKOR_VERSION}"; then
+  if ! echo "$VERSION_OUTPUT" | grep -q "${REKOR_VERSION}"; then
     log "rekor-cli version mismatch (expected ${REKOR_VERSION})"
     echo "$VERSION_OUTPUT"
     exit 1
   fi
+  log "rekor-cli ${REKOR_VERSION} verified"
 }
 
 install_syft() {
