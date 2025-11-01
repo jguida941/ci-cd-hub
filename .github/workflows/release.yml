@@ -308,10 +308,15 @@ jobs:
           set -euo pipefail
           CACHE_DIR="$(python3 -m pip cache dir)"
           mkdir -p .cache-manifests
-          python3 tools/cache_sentinel.py record \
-            --cache-dir "$CACHE_DIR" \
-            --output .cache-manifests/cache-manifest.json \
-            --max-files 500
+          if [ ! -d "$CACHE_DIR" ]; then
+            echo "::notice::Cache directory does not exist, skipping manifest recording"
+            echo '{"files": [], "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "cache_dir": "'"$CACHE_DIR"'"}' > .cache-manifests/cache-manifest.json
+          else
+            python3 tools/cache_sentinel.py record \
+              --cache-dir "$CACHE_DIR" \
+              --output .cache-manifests/cache-manifest.json \
+              --max-files 500
+          fi
 
       - name: Sign cache manifest
         if: always()
