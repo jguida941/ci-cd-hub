@@ -1,4 +1,4 @@
-i t#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Verify Kyverno policy enforcement per plan.md:40,1291-1335
 # Generate evidence that admission policies deny by default
 #
