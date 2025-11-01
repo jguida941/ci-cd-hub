@@ -242,9 +242,17 @@ install_crane() {
       ;;
   esac
   local tar="go-containerregistry_${os_component}_${arch_component}.tar.gz"
-  local url="https://github.com/google/go-containerregistry/releases/download/${CRANE_VERSION}/${tar}"
+  local base_url="https://github.com/google/go-containerregistry/releases/download/${CRANE_VERSION}"
+  local url="${base_url}/${tar}"
+  local checksum_file="checksums.txt"
   log "Installing crane ${CRANE_VERSION}"
-  download_and_verify "$url" "$TMP_DIR/${tar}" "${url}.sha256"
+  curl -fsSL "$url" -o "$TMP_DIR/${tar}"
+  curl -fsSL "${base_url}/${checksum_file}" -o "$TMP_DIR/${checksum_file}"
+  (
+    cd "$TMP_DIR"
+    grep -F "  ${tar}" "${checksum_file}" > "${tar}.sha256"
+    sha256sum -c "${tar}.sha256"
+  )
   tar -xzf "$TMP_DIR/${tar}" -C "$TMP_DIR" crane
   sudo install -m 0755 "$TMP_DIR/crane" /usr/local/bin/crane
   if ! crane version | tr -d '\n' | grep -q "$(printf '%s' "${CRANE_VERSION}" | tr -d '\n')"; then
