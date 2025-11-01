@@ -555,6 +555,13 @@ jobs:
           mkdir -p artifacts/security
           ./scripts/scan_runtime_secrets.sh artifacts/security/runtime-secrets.json
 
+      - name: Test egress allowlist
+        run: |
+          set -euo pipefail
+          # Verify default-deny egress control per plan.md:32,85
+          # Only approved destinations should be reachable
+          ./scripts/test_egress_allowlist.sh
+
       - name: Install Python deps (cache sentinel)
         run: |
           python3 -m pip install --upgrade pip
