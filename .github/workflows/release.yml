@@ -700,15 +700,37 @@ jobs:
           echo "digest_ref='${{ needs.build-sign-publish.outputs.digest_ref }}'"
           test -n '${{ needs.build-sign-publish.outputs.digest }}'
 
+  provenance-pin-check:
+    needs: provenance-input-checks
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+      - name: Verify SLSA generator tag points to expected SHA
+        run: |
+          set -euo pipefail
+          EXPECTED_TAG="v2.1.0"
+          EXPECTED_SHA="f7dd8c54c2067bafc12ca7a55595d5ee9b75204a"
+          ACTUAL_SHA=$(git ls-remote https://github.com/slsa-framework/slsa-github-generator.git "refs/tags/${EXPECTED_TAG}" | awk '{print $1}')
+          if [[ "$ACTUAL_SHA" != "$EXPECTED_SHA" ]]; then
+            echo "::error::SLSA generator tag ${EXPECTED_TAG} points to ${ACTUAL_SHA} but expected ${EXPECTED_SHA}"
+            echo "::error::The tag may have been moved or compromised. Review before proceeding."
+            exit 1
+          fi
+          echo "::notice::SLSA generator ${EXPECTED_TAG} verified to point to ${EXPECTED_SHA}"
+
   generate-provenance:
     needs:
       - build-sign-publish
       - provenance-input-checks
+      - provenance-pin-check
     permissions:
       actions: read
       id-token: write
       contents: read
       packages: write
+    # Pin to v2.1.0 (verified to point to f7dd8c54c2067bafc12ca7a55595d5ee9b75204a by provenance-pin-check)
+    # Must use tag reference (not SHA) because generator downloads binaries using the ref
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
       image: ghcr.io/${{ github.repository_owner }}/ci-intel-app
