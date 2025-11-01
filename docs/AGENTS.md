@@ -45,9 +45,9 @@ Refer to `issues.md` for live tracking; key themes from `plan.md`:
 
 ---
 
-# Agent Catalog
+## Agent Catalog
 
-This catalog describes each automation “agent” that runs inside the CI Intelligence Hub. Every entry lists purpose, trigger, inputs, outputs, gates, and a link to the relevant runbook or module README.
+This catalog describes each automation "agent" that runs inside the CI Intelligence Hub. Every entry lists purpose, trigger, inputs, outputs, gates, and a link to the relevant runbook or module README.
 
 ## Release Agent
 
