@@ -709,7 +709,7 @@ jobs:
       id-token: write
       contents: read
       packages: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@f7dd8c54c2067bafc12ca7a55595d5ee9b75204a # v2.1.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
       image: ghcr.io/${{ github.repository_owner }}/ci-intel-app
       digest: ${{ needs.build-sign-publish.outputs.digest }}
@@ -913,7 +913,7 @@ jobs:
             --provenance-path artifacts/attestation-bundle.jsonl \
             --source-uri "github.com/${{ github.repository }}" \
             --source-tag "${{ github.ref_name }}" \
-            --builder-id "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v2.1.0"
+            --builder-id "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0"
 
       - name: Publish SBOM/provenance referrers
         run: |
