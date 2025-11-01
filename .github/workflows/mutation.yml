@@ -27,6 +27,9 @@ jobs:
           - slug: learn-caesar-cipher
             repository: jguida941/learn-caesar-cipher
             branch: main
+          - slug: vector-space
+            repository: jguida941/vector_space
+            branch: main
     env:
       MUTATION_CONFIG: config/mutation-observatory.ci.yaml
       RUN_DIR: ${{ github.workspace }}/artifacts/mutation/${{ matrix.slug }}
@@ -71,6 +74,12 @@ jobs:
           python tools/scripts/generate_mutation_reports.py \
             --stryker "$RUN_DIR/stryker-report.json" \
             --mutmut "$RUN_DIR/mutmut-report.json"
+      - name: Sync reports for observatory
+        run: |
+          set -euo pipefail
+          mkdir -p "config/artifacts/mutation/${{ matrix.slug }}"
+          cp "$RUN_DIR/stryker-report.json" "config/artifacts/mutation/${{ matrix.slug }}/stryker-report.json"
+          cp "$RUN_DIR/mutmut-report.json" "config/artifacts/mutation/${{ matrix.slug }}/mutmut-report.json"
 
       - name: Run Mutation Observatory
         run: |

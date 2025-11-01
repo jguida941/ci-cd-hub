@@ -5,6 +5,7 @@ __pycache__/
 .DS_Store
 # Runner artifacts
 artifacts/
+config/artifacts/
 Screenshot\ *.png
 
 # dbt build artifacts and caches
