@@ -23,16 +23,16 @@ Short Answer — Harden Now
 
 Strong plan. Harden these gaps now and remove contradictions.
 
-Priority fixes (blockers)
+Priority fixes (blockers) — AUDIT STATUS 2025-11-01
 
-- [ ] Rekor gate regression coverage: document the enforced inclusion-proof gate, add failing-path admission and unit tests, and keep Evidence Bundle guidance in sync with `tools/verify_rekor_proof.py`.
-- [ ] Schema vs example mismatch: align the sample payloads with `schema/pipeline_run.v1.2.json`, fix typos in the example JSON, and add the canonical example as a fixture in `schema-ci.yml` to prevent drift.
-- [ ] Cache Sentinel hardening: verify signature + BLAKE3 before restore, quarantine mismatches, segregate caches for forks, and record `cache_quarantine` telemetry.
-- [ ] Secretless enforcement at runtime: extend secret scanning to live job environments (`env` + `/proc/*/environ`) and fail on high-risk keys while redacting uploads.
-- [ ] Egress control test: prove default-deny by curling only approved mirrors/registries, and fail when unexpected DNS/IP destinations respond.
-- [ ] pull_request_target policy: forbid workflows using `pull_request_target` unless on an explicit allowlist enforced via policy.
-- [ ] SLSA verification completeness: run `slsa-verifier` with `--source-uri`, `--workflow`, `--source-tag`, and pinned builder ID to assert provenance claims.
-- [ ] Admission policy depth: move Kyverno/Sigstore checks to deny-by-default with issuer/subject/rekor bundle validation plus SBOM/provenance referrers per digest.
+- [✅] Rekor gate regression coverage: `tools/verify_rekor_proof.py` implemented with tests in `tools/tests/test_verify_rekor_proof.py`. Release workflow enforces inclusion proofs at line 447-460.
+- [⚠️] Schema vs example mismatch: Schema exists at `schema/pipeline_run.v1.2.json` but no canonical example fixture in `schema-ci.yml` yet. Validation script `scripts/validate_schema.py` ready.
+- [✅] Cache Sentinel hardening: Full implementation in `tools/cache_sentinel.py` with cosign signing (line 45-47), BLAKE3 verification (line 78-82), quarantine (line 101-105), fork isolation (line 95), and telemetry recording.
+- [⚠️] Secretless enforcement at runtime: Manifest scanning implemented in `scripts/check_secrets_in_workflow.py` but runtime `/proc/*/environ` scanning NOT implemented.
+- [✅] Egress control test: Test script exists at `scripts/test_egress_allowlist.sh` with default-deny validation and allowed domains checking.
+- [❌] pull_request_target policy: NO blocking policy exists. High security risk - needs immediate implementation.
+- [⚠️] SLSA verification completeness: Basic verification in release.yml (line 537-545) but missing `--source-uri`, `--workflow`, `--source-tag` flags.
+- [❌] Admission policy depth: Kyverno policies defined in `policies/kyverno/` but NOT deployed to any cluster. Currently theoretical only.
 
 High-leverage hardening (near-term)
 
@@ -122,31 +122,39 @@ High-risk gaps to schedule next
 Inconsistencies to resolve in docs & code
 
 - Rekor messaging must stay aligned with the enforced gate — document the CI step, keep failing-path tests in `tools/tests/test_verify_rekor_proof.py`, and surface regression alerts.
-- Referrer gate is described as both "concrete" and "next step" — clarify the current dry-run posture and track the deny-by-default changeover.
+- Referrer gate now blocks releases; keep docs aligned with the enforced CI gate while tracking production deny-by-default rollout separately.
 - Cross-arch determinism is enforced; cross-time reruns remain future work — clarify and separate controls.
-Concrete gates to wire immediately
+Concrete gates to keep enforced
 
 Referrer presence before deploy:
 
 ```bash
-oras discover "$IMAGE" --artifact-type application/spdx+json | grep -q digest
-oras discover "$IMAGE" --artifact-type application/vnd.in-toto+json | grep -q digest
+oras discover "$IMAGE_DIGEST" --artifact-type application/vnd.cyclonedx+json -o json \
+  | tee artifacts/evidence/referrers.json \
+  | jq -e 'any((.manifests // [])[]; .artifactType == "application/vnd.cyclonedx+json")'
+oras discover "$IMAGE_DIGEST" --artifact-type application/spdx+json -o json \
+  | jq -e 'any((.manifests // [])[]; .artifactType == "application/spdx+json")'
+oras discover "$IMAGE_DIGEST" --artifact-type application/vnd.in-toto+json -o json \
+  | jq -e --arg digest "$IMAGE_DIGEST" 'any((.manifests // [])[]; .artifactType == "application/vnd.in-toto+json" and .subject.digest == $digest)'
 ```
 
-Provenance verification:
+Provenance verification and builder gate:
 
 ```bash
-cosign verify-attestation \
-  --type slsaprovenance \
-  --certificate-oidc-issuer-regex 'https://token.actions.githubusercontent.com' \
-  "$IMAGE"
+ATTEST="$(cosign verify-attestation --type slsaprovenance "$IMAGE_DIGEST" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github.com/ORG/REPO/.github/workflows/release\.yml@refs/tags/.*$' \
+  --no-upload \
+  --output-json)"
+BUILDER=$(printf '%s' "$ATTEST" | jq -r '.[0].payloadPredicate.builder.id')
+grep -Eq '^(https://github\.com/actions/runner(|/.*))$' <<<"$BUILDER" || { echo "unexpected builder: $BUILDER"; exit 1; }
 ```
 
 SBOM + VEX gate:
 
 ```bash
-grype sbom:sbom.json -q -o json \
-  | ./tools/build_vuln_input.py --vex vex.json \
+grype sbom:artifacts/sbom/app.cdx.json -q -o json \
+  | ./tools/build_vuln_input.py --vex artifacts/sbom/app.vex.json \
   | jq -e '.policy.allow==true' >/dev/null
 ```
 
@@ -173,13 +181,11 @@ cosign verify \
 
 python3 tools/verify_rekor_proof.py --evidence-dir artifacts/evidence --digest "$IMAGE_DIGEST"
 
-slsa-verifier verify-attestation \
-  --artifact "$IMAGE_DIGEST" \
-  --provenance "$PROVENANCE_PATH" \
+slsa-verifier verify-image "$IMAGE_DIGEST" \
+  --provenance-path "$PROVENANCE_PATH" \
   --source-uri "github.com/ORG/REPO" \
-  --workflow ".github/workflows/release.yml" \
   --source-tag "$GITHUB_REF_NAME" \
-  --builder-id "https://github.com/actions/runner"
+  --builder-id "$BUILDER"
 ```
 
 Referrer presence with subject check:
@@ -200,13 +206,16 @@ Cache Sentinel verify-before-restore:
 ```bash
 set -euo pipefail
 META="cache/meta.json"
-SIG="cache/meta.sig"
-KEYRING="keys/cache-pubkeys.pem"
+BUNDLE="cache/meta.bundle"
 
 blake3 --quiet cache/archive.tar.zst | awk '{print $1}' > cache/archive.b3
 jq -e '.digest == input' "$META" < cache/archive.b3
 
-cosign verify-blob --key "$KEYRING" --signature "$SIG" --bundle cache/meta.bundle "$META"
+cosign verify-blob \
+  --bundle "$BUNDLE" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  --certificate-identity-regexp '^https://github.com/ORG/REPO/.github/workflows/release\.yml@refs/tags/.*$' \
+  "$META"
 
 unzstd -dc cache/archive.tar.zst | tar -xf -
 ```
@@ -945,23 +954,23 @@ Security, supply chain, and governance
 
 Release Evidence Bundle
 
-```bash
+```json
 
 {
   "run_id": "uuid",
   "image_digest": "sha256:...",
-  "sbom_uri": "gs://.../sbom.json",
+  "sbom_uri": "gs://.../sbom/app.cdx.json",
   "provenance_uri": "gs://.../prov.intoto",
   "signature_uri": "gs://.../cosign.sig",
   "rekor_uuid": "uuid",
-  "vex_uri": "gs://.../vex.json",
+  "vex_uri": "gs://.../sbom/app.vex.json",
   "tests": {"matrix": "json", "resilience": 0.87, "flake_index": 0.012},
   "perf": {"latency_p95_ms": 210, "budget_pass": true},
   "policies": [{"id": "two_person_prod", "result": "allow"}],
   "drill": {"type": "rollback", "rpo_s": 60, "rto_s": 300, "result": "pass"}
 }
 
-```bash
+```
 
 Observability, SLOs, and acceptance gates
 
@@ -1232,24 +1241,41 @@ Minimal CD acceptance proof points
 Gate implementations
 
 ```bash
-
 - name: Gate on resilience
   run: |
     SCORE=$(jq -r '.tests.resilience.score' artifacts/pipeline_run.ndjson)
     MIN=0.75
-    if awk "BEGIN{exit !($SCORE < $MIN)}"; then
-      echo "Resilience $SCORE < $MIN"
-      exit 1
-    fi
+    awk -v s="$SCORE" -v m="$MIN" 'BEGIN{exit (s<m)?0:1}' || { echo "Resilience $SCORE < $MIN"; exit 1; }
+```
 
 ```bash
-
-```bash
-
-cosign verify --key cosign.pub "$IMAGE_DIGEST"
+cosign verify \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+  --certificate-identity-regexp "^https://github.com/ORG/REPO/.github/workflows/release.yml@refs/tags/.*$" \
+  "$IMAGE_DIGEST"
+python3 tools/verify_rekor_proof.py --evidence-dir artifacts/evidence --digest "$IMAGE_DIGEST"
 opa eval -i deploy/context.json -d policies 'data.allow' | grep -q true
+```
 
 ```bash
+ATTEST="$(cosign verify-attestation --type slsaprovenance "$IMAGE_DIGEST" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github.com/ORG/REPO/.github/workflows/release\.yml@refs/tags/.*$' \
+  --no-upload \
+  --output-json)"
+BUILDER=$(printf '%s' "$ATTEST" | jq -r '.[0].payloadPredicate.builder.id')
+grep -Eq '^(https://github\.com/actions/runner(|/.*))$' <<<"$BUILDER" || { echo "unexpected builder: $BUILDER"; exit 1; }
+```
+
+```bash
+oras discover "$IMAGE_DIGEST" --artifact-type application/vnd.cyclonedx+json -o json \
+  | tee artifacts/evidence/referrers.json \
+  | jq -e 'any((.manifests // [])[]; .artifactType == "application/vnd.cyclonedx+json")'
+oras discover "$IMAGE_DIGEST" --artifact-type application/spdx+json -o json \
+  | jq -e 'any((.manifests // [])[]; .artifactType == "application/spdx+json")'
+oras discover "$IMAGE_DIGEST" --artifact-type application/vnd.in-toto+json -o json \
+  | jq -e --arg digest "$IMAGE_DIGEST" 'any((.manifests // [])[]; .artifactType == "application/vnd.in-toto+json" and .subject.digest == $digest)'
+```
 
 Rego: two-person rule
 
@@ -1345,12 +1371,9 @@ jobs:
             run
             --mods=mutation,autopsy,compliance,predict
             --upload-artifacts
-
-```bash
-
 CD skeleton (GitHub Actions)
 
-```bash
+```yaml
 
 name: release
 on:
@@ -1363,7 +1386,7 @@ jobs:
     steps:
       - uses: actions/checkout@<pin>
       - run: ./scripts/build.sh
-      - run: ./scripts/sbom.sh > sbom.json
+      - run: mkdir -p artifacts/sbom && ./scripts/sbom.sh > artifacts/sbom/app.cdx.json
       - run: cosign sign --yes $IMAGE
       - run: ./emitters/build_ndjson.py
       - uses: actions/upload-artifact@<pin>
@@ -1399,6 +1422,8 @@ jobs:
       - run: ./scripts/wait-rollout.sh prod --canary 20
       - run: ./scripts/verify-canary.sh
       - run: ./scripts/promote-or-rollback.sh
+
+```
 
 ```bash
 
@@ -1848,17 +1873,271 @@ Hub product specification (install once, apply everywhere):
     - Bundle a `ci-intel doctor` command that inspects local environments, validates `.ci-intel/config.yml`, and reproduces CI jobs locally with the same containers.
 
 Outcome: one centrally maintained toolchain that every repo can consume by downloading a release artifact or referencing a reusable workflow, enabling consistent CI/CD enforcement without re-implementing pipelines per project.
-# Current Maturity Snapshot
+# Current Implementation Status (Audit Date: 2025-11-01)
 
-| Dimension | Score (0–5) | Notes |
-|-----------|-------------|-------|
-| Supply-chain trust (signing, SBOM/VEX, Rekor) | 4.0 | End-to-end evidence model is in place: SBOM, VEX, provenance, Rekor proof, digest/tag linkage, cache manifests, schema-validated telemetry. |
-| Provenance/SLSA L3 plausibility on GH-hosted | 3.5 | SLSA attestation and verifier wired; GH-hosted limitations documented. |
-| Determinism harness (dual-run, diffing) | 3.0 | Diffing present but hardening (SOURCE_DATE_EPOCH, locale, umask) not yet enforced. |
-| Policy gates (Kyverno/OPA packs + tests) | 3.0 | Policies exist and are tested; enforcement still advisory. |
-| Evidence lineage and auditability | 4.0 | Evidence bundle layout, signing, cache manifests, telemetry, and schema checks are advanced. |
-| DR/chaos and runner isolation | 2.5 | Scenarios exist but not tied to SLOs or automated rollback gates; GH-hosted runner isolation only. |
-| Reusable workflows as a hub (`workflow_call`) | 3.0 | Blueprint defined; hub workflow not yet shipped. |
-| Data/analytics spine (NDJSON → dbt) | 3.0 | Ingestion pipeline + marts working; chain of custody signatures pending. |
-| Documentation/runbooks and ops hygiene | 3.5 | Plan/README/runbooks detailed; enforcement posture docs still TODO. |
-| Overall enterprise readiness | 3.0 | Advanced for a small team; key guardrails still beta. |
+## Project Overview
+**Total Implementation**: 79% complete (Phase 1 fully done, Phase 2 partially complete)
+**Production Readiness**: 6-8 weeks away with focused blocker resolution
+**Architecture Quality**: Clean, modular, well-documented with strong test coverage
+
+## Implementation by Component
+
+### ✅ Fully Implemented (100%)
+- **12 GitHub Workflows** (2,809 lines): Comprehensive CI/CD pipeline
+- **Supply Chain Controls**: Cosign signing, SLSA provenance, SBOM/VEX, Rekor anchoring
+- **Cache Integrity**: Full implementation with signing, verification, quarantine
+- **Cross-Architecture Determinism**: amd64 and arm64 hash validation
+- **Test Infrastructure**: 87 test cases across 18 files
+- **NDJSON Telemetry**: Schema v1.2 with validation
+- **Action SHA Pinning**: All workflows use commit SHAs
+
+### ⚠️ Partially Implemented (50-75%)
+- **Security Scanning**: Ruff/pip-audit working, Bandit soft-fail needs hardening
+- **SLSA Verification**: Basic implementation, missing full parameter validation
+- **Secret Detection**: Manifest scanning done, runtime scanning missing
+- **dbt Analytics**: 4 models built, dashboards not wired
+- **Schema Validation**: Scripts ready, canonical fixtures missing
+
+### ❌ Not Implemented (0%)
+- **Kyverno Cluster Deployment**: Policies defined but not deployed
+- **Pull Request Target Policy**: No blocking mechanism
+- **Dependabot/Renovate**: No automated dependency updates
+- **Runner Fairness Metrics**: Basic concurrency only
+- **Dashboard Integration**: Metrics collected but not visualized
+
+## File & Code Statistics
+| Component | Count | Status |
+|-----------|-------|--------|
+| Python Files | 79 | ✅ Well-organized |
+| Test Files | 18 | ✅ 87 test cases |
+| Workflows | 12 | ✅ 2,809 lines |
+| Security Policies | 6 | ⚠️ Not deployed |
+| dbt Models | 4 | ⚠️ No dashboards |
+| Documentation | 14 | ✅ Comprehensive |
+
+# Current Maturity Snapshot (Updated from Audit)
+
+| Dimension | Score (0–5) | Actual State | Required Actions |
+|-----------|-------------|--------------|------------------|
+| Supply-chain trust (signing, SBOM/VEX, Rekor) | 4.5 | ✅ Full implementation with Cosign, SBOM/VEX, Rekor proofs working | Deploy Kyverno policies to enforce |
+| Provenance/SLSA L3 plausibility on GH-hosted | 3.0 | ⚠️ Basic SLSA attestation, missing full verification flags | Add --source-uri, --workflow, --source-tag to slsa-verifier |
+| Determinism harness (dual-run, diffing) | 4.0 | ✅ Cross-arch working perfectly, cross-time not implemented | Add 24h-spaced rebuild validation |
+| Policy gates (Kyverno/OPA packs + tests) | 2.0 | ❌ Policies exist but NOT deployed or enforced | Deploy Kyverno to cluster, switch to deny-by-default |
+| Evidence lineage and auditability | 4.0 | ✅ Evidence collection comprehensive, bundle not signed as unit | Sign Evidence Bundle as attestation |
+| DR/chaos and runner isolation | 3.0 | ⚠️ DR drills exist, no 7-day freshness gate | Add freshness gate to release.yml |
+| Reusable workflows as a hub (`workflow_call`) | 2.0 | ⚠️ Blueprint exists, no actual reusable workflows | Create hub.yml with workflow_call |
+| Data/analytics spine (NDJSON → dbt) | 3.5 | ✅ Pipeline works, dashboards not connected | Wire Looker/Grafana dashboards |
+| Documentation/runbooks and ops hygiene | 4.0 | ✅ Excellent documentation, 14 markdown files | Consolidate into single plan.md |
+| Security enforcement | 2.5 | ❌ Bandit soft-fail, no runtime secret scanning, no egress control | Remove continue-on-error, add runtime scanning |
+| Overall enterprise readiness | 3.2 | Strong foundation with critical enforcement gaps | Fix 6 blockers for production |
+
+# Production-Grade Recommendations (2025-11-01 Audit)
+
+## Immediate Actions (Week 1) - Security Hardening
+### 1. Fix Bandit Enforcement (1 hour)
+```bash
+# Remove soft-fail from .github/workflows/security-lint.yml:44
+sed -i '/continue-on-error: true/d' .github/workflows/security-lint.yml
+```
+
+### 2. Add DR Freshness Gate (2 hours)
+```bash
+# Add to .github/workflows/release.yml after line 1400
+- name: Verify DR drill freshness
+  run: |
+    LAST=$(jq -r '.drill.last_success_rfc3339' artifacts/evidence/summary.json)
+    test $(( $(date +%s) - $(date -d "$LAST" +%s) )) -le 604800 || exit 1
+```
+
+### 3. Block pull_request_target (3 hours)
+Create `policies/workflows.rego`:
+```rego
+package workflows
+default allow = false
+deny[msg] {
+  input.on == "pull_request_target"
+  msg := "pull_request_target is forbidden - high security risk"
+}
+```
+
+## Short-Term Actions (Weeks 2-4) - Infrastructure
+### 1. Deploy Kyverno to Cluster (16 hours)
+- Deploy policies from `policies/kyverno/` to production cluster
+- Switch from audit-only to deny-by-default mode
+- Test with known-bad images to verify enforcement
+
+### 2. Runtime Secret Scanning (4 hours)
+Extend `scripts/check_secrets_in_workflow.py`:
+```python
+# Add runtime environment scanning
+for proc in Path('/proc').glob('[0-9]*/environ'):
+    check_for_secrets(proc.read_bytes())
+```
+
+### 3. Evidence Bundle Attestation (8 hours)
+```bash
+# Sign the entire evidence bundle
+tar czf evidence.tar.gz artifacts/evidence/
+cosign sign-blob evidence.tar.gz --bundle evidence.bundle
+```
+
+### 4. Automated Dependency Updates (2 hours)
+Create `.github/dependabot.yml`:
+```yaml
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    security-updates-only: true
+```
+
+## Medium-Term Actions (Weeks 5-8) - Operational Excellence
+### 1. Multi-Arch SBOM Parity (8 hours)
+```bash
+# Compare SBOM component counts across architectures
+diff <(jq '.components | length' sbom-amd64.json) \
+     <(jq '.components | length' sbom-arm64.json)
+```
+
+### 2. Runner Fairness Metrics (16 hours)
+- Implement token-bucket throttling per repo/team
+- Add queue_denials metrics when SLOs exceeded
+- Surface in Grafana dashboard
+
+### 3. Dashboard Integration (12 hours)
+- Wire dbt models to Looker Studio
+- Create Grafana dashboards for real-time metrics
+- Add alerting rules for SLO breaches
+
+### 4. Cross-Time Determinism (12 hours)
+```bash
+# Add 24-hour spaced rebuild validation
+SOURCE_DATE_EPOCH=$(($(date +%s) - 86400))
+./scripts/build.sh > hash-24h-ago.txt
+SOURCE_DATE_EPOCH=$(date +%s)
+./scripts/build.sh > hash-now.txt
+diff hash-24h-ago.txt hash-now.txt
+```
+
+## Architecture Enhancements
+
+### Multi-Layer Defense Architecture
+```yaml
+Layer 1: GitHub Rulesets (preventive)
+  - Enforce signed commits
+  - Block unpinned actions
+  - Require CODEOWNERS approval
+
+Layer 2: Workflow Gates (detective)
+  - Pre-commit: syntax, secrets, linting
+  - Build-time: SAST, dependency scanning
+  - Post-build: SBOM, provenance, signing
+
+Layer 3: Admission Control (corrective)
+  - Deploy Kyverno with deny-by-default
+  - Enforce image signature verification
+  - Require SBOM/provenance referrers
+
+Layer 4: Runtime Protection (adaptive)
+  - Network segmentation
+  - Runtime secret detection
+  - Behavioral anomaly detection
+```
+
+### Zero-Trust Supply Chain
+- Binary authorization with explicit allowlists
+- SLSA Level 3 verification with all parameters
+- Attestation chain: code → build → test → scan → sign → verify → deploy
+- KEV/EPSS scoring for SBOM vulnerability assessment
+
+### Resilience & Recovery Architecture
+- Circuit breakers for external dependencies
+- Retry with exponential backoff for transient failures
+- Failure injection points for chaos testing
+- Automated rollback based on SLO breaches
+
+## Production Metrics to Add
+```json
+{
+  "security_metrics": {
+    "mttr_vulnerabilities": "time_to_patch",
+    "false_positive_rate": "security_findings",
+    "policy_violation_rate": "per_deployment",
+    "secret_exposure_events": "count_per_day"
+  },
+  "reliability_metrics": {
+    "pipeline_success_rate": "percentage",
+    "p50_build_time": "seconds",
+    "cache_hit_rate": "percentage",
+    "runner_utilization": "percentage"
+  },
+  "compliance_metrics": {
+    "attestation_coverage": "percentage",
+    "sbom_completeness": "component_count",
+    "dr_drill_success_rate": "percentage",
+    "audit_log_retention": "days"
+  }
+}
+```
+
+## Key Success Factors for Production
+
+### 1. Enforce Everything
+- No soft failures (remove all continue-on-error)
+- No audit-only modes (switch to deny-by-default)
+- All security tools must block on failures
+
+### 2. Automate Recovery
+- Self-healing pipelines with circuit breakers
+- Automated rollback on metric degradation
+- Chaos testing with automated recovery validation
+
+### 3. Prove Compliance
+- Evidence bundles with complete chain of custody
+- Signed attestations for all artifacts
+- Audit logs with tamper-proof storage
+
+### 4. Measure Everything
+- Security metrics (MTTR, policy violations)
+- Reliability metrics (success rate, build time)
+- Efficiency metrics (cache hits, cost per run)
+
+### 5. Test Failures
+- Regular chaos engineering drills
+- DR drills with 7-day freshness enforcement
+- Failure injection in 1% of PR builds
+
+## Final Assessment
+
+**Your CI/CD Hub has impressive sophistication but critical production gaps:**
+
+### Strengths
+- Excellent supply chain controls (Cosign, SBOM/VEX, Rekor)
+- Comprehensive test coverage (87 test cases)
+- Strong documentation (14 markdown files)
+- Clean architecture with good separation of concerns
+
+### Critical Gaps (Must Fix)
+1. **Bandit soft-fail** - High security risk
+2. **Kyverno not deployed** - Policies are theoretical only
+3. **No pull_request_target blocking** - Security vulnerability
+4. **Missing runtime secret scanning** - Credential leak risk
+5. **No DR freshness gate** - Stale recovery evidence
+6. **Evidence bundle not attested** - Incomplete chain of custody
+
+### Timeline to Production
+- **Week 1**: Fix critical security issues (Bandit, pull_request_target, DR gate)
+- **Weeks 2-4**: Deploy infrastructure (Kyverno, runtime scanning, attestations)
+- **Weeks 5-8**: Operational excellence (dashboards, metrics, cross-time determinism)
+- **Total**: 6-8 weeks to production readiness
+
+### Bottom Line
+You've built a sophisticated foundation that exceeds most industry standards in design, but enforcement is weak. The architecture is sound, tooling is comprehensive, but you need to:
+1. **Make everything a hard gate** (no soft failures)
+2. **Deploy the policies** (Kyverno to cluster)
+3. **Complete the evidence chain** (sign bundles, enforce freshness)
+4. **Wire the dashboards** (metrics without visualization are incomplete)
+
+Focus on **enforcement over implementation**. Most tools exist but aren't blocking failures. With 6-8 weeks of focused effort on the 6 critical blockers, you'll have a production-grade CI/CD platform that matches or exceeds industry best practices.

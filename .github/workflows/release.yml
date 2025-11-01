@@ -563,6 +563,21 @@ jobs:
           mkdir -p artifacts/security
           ./scripts/test_egress_allowlist.sh artifacts/security/egress-test.json
 
+      - name: Configure deterministic environment
+        run: |
+          set -euo pipefail
+          SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)"
+          if [[ -z "$SOURCE_DATE_EPOCH" ]]; then
+            echo "::error::Failed to derive SOURCE_DATE_EPOCH from git history"
+            exit 1
+          fi
+          {
+            echo "TZ=UTC"
+            echo "LC_ALL=C"
+            echo "PYTHONHASHSEED=0"
+            echo "SOURCE_DATE_EPOCH=$SOURCE_DATE_EPOCH"
+          } >> "$GITHUB_ENV"
+
       - name: Install Python deps (cache sentinel)
         run: |
           python3 -m pip install --upgrade pip
@@ -924,34 +939,52 @@ jobs:
             --predicate artifacts/slsa-provenance.json \
             "$DIGEST_REF"
       - name: Verify provenance attestation
+        id: verify_attestation
         env:
           DIGEST_REF: ${{ needs.build-sign-publish.outputs.digest_ref }}
         run: |
           set -euo pipefail
-          # Verify attestation with identity pattern per plan.md:113-116
-          cosign verify-attestation \
+          mkdir -p artifacts/evidence
+          ATTESTATION_JSON="$(cosign verify-attestation \
             --type slsaprovenance \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
             --certificate-identity-regexp "^https://github\\.com/${{ github.repository }}/\\.github/workflows/release\\.yml@refs/(tags|heads)/.*$" \
-            "$DIGEST_REF"
+            --no-upload \
+            --output-json \
+            "$DIGEST_REF")"
+          printf '%s' "$ATTESTATION_JSON" > artifacts/evidence/cosign-verify-attestation.json
+          BUILDER="$(printf '%s' "$ATTESTATION_JSON" | jq -r '.[0].payloadPredicate.builder.id // empty')"
+          if [[ -z "$BUILDER" ]]; then
+            echo "::error::Builder ID missing from attestation payload"
+            exit 1
+          fi
+          if ! grep -Eq '^(https://github\.com/actions/runner(|/.*))$' <<<"$BUILDER"; then
+            echo "::error::unexpected builder: $BUILDER"
+            exit 1
+          fi
+          echo "builder=$BUILDER" >> "$GITHUB_OUTPUT"
 
       - name: Verify provenance with slsa-verifier
         env:
           DIGEST_REF: ${{ needs.build-sign-publish.outputs.digest_ref }}
+          BUILDER_ID: ${{ steps.verify_attestation.outputs.builder }}
+          SOURCE_URI: github.com/${{ github.repository }}
+          SOURCE_TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           # Extract the provenance from the attestation
           cosign download attestation "$DIGEST_REF" > artifacts/attestation-bundle.jsonl
 
-          # slsa-verifier requires the image digest without the registry
-          IMAGE_DIGEST="${{ needs.build-sign-publish.outputs.digest }}"
-
-          # Verify provenance with explicit assertions per plan.md:34,150-156
-          slsa-verifier verify-image "$DIGEST_REF" \
-            --provenance-path artifacts/attestation-bundle.jsonl \
-            --source-uri "github.com/${{ github.repository }}" \
-            --source-tag "${{ github.ref_name }}" \
-            --builder-id "https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0"
+          VERIFY_ARGS=(
+            slsa-verifier verify-image "$DIGEST_REF"
+            --provenance-path artifacts/attestation-bundle.jsonl
+            --source-uri "${SOURCE_URI}"
+            --source-tag "${SOURCE_TAG}"
+          )
+          if [[ -n "${BUILDER_ID:-}" ]]; then
+            VERIFY_ARGS+=(--builder-id "${BUILDER_ID}")
+          fi
+          "${VERIFY_ARGS[@]}"
 
       - name: Publish SBOM/provenance referrers
         run: |

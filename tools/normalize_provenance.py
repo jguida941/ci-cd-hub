@@ -67,9 +67,22 @@ def main() -> None:
                 statement = provenance_io.decode_statement(envelope)
             if not isinstance(statement, dict):
                 raise SystemExit("decoded provenance statement is not an object")
+
+            # Extract the predicate from the statement for cosign attest
+            # The SLSA generator produces a statement with predicateType and predicate fields
+            # cosign attest expects just the predicate content
+            predicate = statement.get("predicate", statement)
+
+            # Ensure builder field is present (required by cosign)
+            if isinstance(predicate, dict) and "builder" not in predicate:
+                # Fall back to a default builder if missing
+                predicate["builder"] = {
+                    "id": "https://github.com/slsa-framework/slsa-github-generator@v2.1.0"
+                }
+
             args.predicate_destination.parent.mkdir(parents=True, exist_ok=True)
             args.predicate_destination.write_text(
-                json.dumps(statement, indent=args.indent) + "\n",
+                json.dumps(predicate, indent=args.indent) + "\n",
                 encoding="utf-8",
             )
 

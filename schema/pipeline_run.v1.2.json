@@ -45,11 +45,11 @@
     "canary": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["decision", "window"],
+      "required": ["decision", "recorded_at", "window", "query", "metrics_uri"],
       "properties": {
         "decision": {
           "type": "string",
-          "enum": ["promote", "rollback", "hold"]
+          "enum": ["promote", "rollback"]
         },
         "recorded_at": { "type": "string", "format": "date-time" },
         "window": {
