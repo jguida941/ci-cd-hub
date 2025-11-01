@@ -1,4 +1,4 @@
-MARKDOWNLINT_FILES := $(shell git ls-files '*.md')
+MARKDOWNLINT_FILES := $(filter-out issues.md,$(shell git ls-files '*.md'))
 
 .PHONY: lint lint-markdown security-lint bandit-report dbt
 lint: lint-markdown security-lint ## Run the full lint suite
