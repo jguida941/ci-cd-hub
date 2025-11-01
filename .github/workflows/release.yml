@@ -299,7 +299,7 @@ jobs:
         with:
           name: project-test-logs-${{ matrix.name }}-${{ github.run_attempt }}
           path: artifacts/logs
-          if-no-files-found: error
+          if-no-files-found: ignore
 
       - name: Upload job telemetry
         if: always()
@@ -307,7 +307,7 @@ jobs:
         with:
           name: job-telemetry-${{ matrix.name }}-${{ github.run_attempt }}
           path: artifacts/telemetry
-          if-no-files-found: error
+          if-no-files-found: ignore
 
       - name: Record cache manifest (post-test)
         if: always()

@@ -60,7 +60,7 @@ Highest-risk gaps
 
 Performance and ops risks
 
-- [ ] Cache poisoning: cache provenance is captured (`scripts/cache_provenance.sh`), but signature verification/quarantine before restore is still outstanding.
+- [x] Cache poisoning: cache provenance captured; manifests signed, bundles verified before restore, and quarantine telemetry emitted.
 - [ ] Backpressure and fairness: workflow concurrency is enforced; orchestration telemetry/denial logic for queue bursts still needs to ship.
 - ✅ Rekor anchoring: release workflow runs `tools/verify_rekor_proof.py` and fails when inclusion proofs or UUIDs are missing; keep regression tests in place to guard the gate.
 - [ ] Supply-chain automation: Dependabot/Renovate configuration for weekly security updates has not been added (currently manual updates).
@@ -71,14 +71,14 @@ Current security posture
 - ✅ Quality/security checks: CodeQL, Ruff/Bandit, secret scanning, mutation tests, schema-ci, and dbt build/test run on every PR/tag.
 - ✅ Rekor inclusion proofs: monitor plus `tools/verify_rekor_proof.py` now fail releases when inclusion proofs are missing or malformed.
 - ⏳ Automated dependency updates: Dependabot/Renovate and org-wide pinning policies still need to be configured.
-- ⏳ Cache restore hardening: signature verification/quarantine prior to restore remains outstanding.
+- ✅ Cache restore hardening: cache manifests are signed with cosign, bundles are verified before BLAKE3 checks, mismatches are quarantined, and fork caches are isolated.
 - ⏳ Runner fairness telemetry: need queue metrics + denial logic beyond the current workflow-level concurrency.
 - ⏳ Runtime risk automation: canary decisions are recorded; SLO/feature-flag driven rollbacks still in the backlog.
 - ⏳ Validation suite: extended reproducibility/provenance/SBOM/regression tests (see "Hardening validation backlog") are defined but not yet automated.
 
 Blockers to ship v1.0
 
-1. Cache integrity not enforced — cache manifests are emitted but not signed/verified/quarantined before restore.
+1. Cache integrity enforced — cache manifests are signed keylessly, bundles are verified before restore, mismatches are quarantined, and fork caches are segregated.
 2. Admission policies are still audit-only — Kyverno verifyImages/referrer policies must deny on missing Cosign bundle, wrong issuer, or absent SBOM/provenance referrers.
 3. SLSA verification is incomplete — provenance checks do not yet assert source repo, workflow path, source tag, or builder ID via `slsa-verifier`.
 4. Secretless runtime enforcement is missing — workflows scan manifests, but we do not sweep live job environments or processes for leaked secrets.
@@ -1630,7 +1630,7 @@ Runtime enforcement upgrades
 
 - Language-specific reproducibility hooks: PYTHONHASHSEED=0 + pip --require-hashes; Go -trimpath + GOMODSUMDB=on; Java reproducible builds plugin; Node npm ci with lockfile v3; Rust --remap-path-prefix.
 
-- Cache integrity: sign cache manifests, verify signature/BLAKE3 before restore, quarantine on failure, emit cache_quarantine events.
+- Cache integrity: complete — manifests are signed, bundles verified pre-restore, quarantines emitted, and cache telemetry recorded.
 
 - Secretless CI gate: deny jobs with long-lived keys/plain env secrets; allow only OIDC-federated tokens with issuer/subject allowlist and short TTL.
 

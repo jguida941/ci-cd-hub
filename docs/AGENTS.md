@@ -1,4 +1,51 @@
-# Agents Catalog
+# CI/CD Intelligence Hub – Agent Guide
+
+The hub orchestrates release, security, and reliability automation across multiple downstream repositories (e.g., `learn-caesar-cipher`, `vector_space`). It packages every signal—from cache integrity to Rekor inclusion proofs—into a single promotion gate. This document gives the AI agents the context and intent behind the workflows defined in `plan.md`, and catalogs each automation component they will interact with.
+
+## Operating Model & Scope
+
+- **Mission**: deliver production-ready releases with verifiable supply-chain guarantees, deterministic builds, and policy-enforced deployments for every onboarded project.
+- **Multi-repo hub**: the automation repo (`ci-cd-hub`) pulls source from other projects, runs their pipelines, and publishes shared telemetry/evidence artifacts.
+- **Evidence-driven promotion**: the release workflow produces an evidence bundle (SBOM, VEX, provenance, Rekor proofs, cache manifests, determinism reports) that downstream promotion tooling must verify.
+- **Telemetry everywhere**: each job emits NDJSON and artifacts under `artifacts/telemetry/` so the predictive scheduler, fairness analysis, and post-incident forensics have consistent data.
+
+## Strategy & Roadmap (see `plan.md`)
+
+| Phase | Focus | Highlights |
+|-------|-------|------------|
+| Phase 0 – Gate Integrity | Cache integrity, provenance verification, runtime secret sweeps, egress allowlists, Kyverno enforcement, Bandit gating | Cache manifest integrity ✅. Remaining blockers tracked in `issues.md` and `plan.md:60-90`. |
+| Phase 1 – Hardening & Evidence | Evidence bundle attestation, DR freshness guard, SBOM parity, SARIF hygiene, LLM governance | Work in progress (`plan.md:88-120`). |
+| Phase 2 – Extended Controls | KEV/EPSS SBOM diff, fairness budgets, cost/carbon telemetry, Dependabot automation, analytics tamper resistance | Backlog priorities (`plan.md:320+`). |
+
+Agents should consult `plan.md` and `issues.md` before making changes; both files define priorities, blockers, and the 7-day/30-day action plans.
+
+## Evidence & Telemetry Requirements
+
+- **Cache manifests** (`plan.md:1633`): signed with cosign, verified before use, mismatches quarantined, telemetry emitted via `scripts/emit_cache_quarantine_event.py`.
+- **Provenance** (`plan.md:34`): SLSA attestation generated; slsa-verifier enforcement is Blocker #3.
+- **Rekor proofs**: `tools/rekor_monitor.sh` retrieves log entries and inclusion proofs; `tools/verify_rekor_proof.py` must succeed before release continues.
+- **Policy gates**: OPA/Kyverno checks evaluate issuer/subject allowlists and SBOM/VEX coverage. Proof of enforcement remains outstanding.
+- **Telemetry sinks**: NDJSON, logs, coverage summaries, and cache telemetry must be uploaded on success and failure for fairness/scheduler analytics.
+
+## Outstanding Controls & Upcoming Work
+
+Refer to `issues.md` for live tracking; key themes from `plan.md`:
+
+- **Blockers**: runtime secret sweep, provenance verification (`slsa-verifier`), default-deny egress test, Kyverno enforcement evidence, Bandit gate hardening.
+- **Hardening goals**: evidence bundle attestation, DR freshness guard, SBOM parity, SARIF dedupe, LLM governance policy, Dependabot/Renovate rollout.
+- **Extended controls**: KEV/EPSS-aware SBOM diff, queue fairness budgets, cost/CO₂ telemetry enforcement, analytics tamper resistance, org-wide Rulesets.
+- **Documentation gaps**: `docs/ENFORCEMENT_POSTURE.md`, `docs/CACHE_SECURITY.md`, `docs/ADMISSION_SETUP.md` still need to be authored after blockers close.
+
+## Agent Collaboration Rules
+
+1. **Align with plan**: Before editing workflows or scripts, confirm the change is on the critical path (Phase 0 blockers first, then Phase 1, etc.).
+2. **Preserve evidence**: Never skip or delete artifact uploads without updating the evidence model and documentation.
+3. **Document intent**: Update runbooks or this guide whenever behavior changes (e.g., new gate, new telemetry field).
+4. **Validate with lint/tests**: Use `tools-ci` linting, targeted unit tests, and workflow dry-runs before merging modifications.
+
+---
+
+# Agent Catalog
 
 This catalog describes each automation “agent” that runs inside the CI Intelligence Hub. Every entry lists purpose, trigger, inputs, outputs, gates, and a link to the relevant runbook or module README.
 
