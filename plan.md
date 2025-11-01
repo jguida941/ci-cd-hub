@@ -954,8 +954,10 @@ Security, supply chain, and governance
 
 Release Evidence Bundle
 
-```json
+iNote: This is a separate JSON structure from pipeline_run.v1.2. The pipeline_run schema
+has a field `release_evidence_uri` that points to this Evidence Bundle artifact.
 
+```json
 {
   "run_id": "uuid",
   "image_digest": "sha256:...",
@@ -969,7 +971,6 @@ Release Evidence Bundle
   "policies": [{"id": "two_person_prod", "result": "allow"}],
   "drill": {"type": "rollback", "rpo_s": 60, "rto_s": 300, "result": "pass"}
 }
-
 ```
 
 Observability, SLOs, and acceptance gates

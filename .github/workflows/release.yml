@@ -563,6 +563,14 @@ jobs:
           mkdir -p artifacts/security
           ./scripts/test_egress_allowlist.sh artifacts/security/egress-test.json
 
+      - name: Verify Kyverno enforcement evidence
+        run: |
+          set -euo pipefail
+          # Generate evidence that Kyverno policies deny by default per plan.md:40,1291-1335
+          # Note: Policies defined but NOT deployed to cluster yet
+          mkdir -p artifacts/evidence
+          ./scripts/verify_kyverno_enforcement.sh artifacts/evidence
+
       - name: Configure deterministic environment
         run: |
           set -euo pipefail
