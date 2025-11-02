@@ -24,14 +24,15 @@
    - **Status**: RESOLVED - Now uses safe `pull_request` trigger
    - **Remaining**: Add org-level Ruleset to prevent reintroduction
 
-2. **Egress Control** ✅ IMPLEMENTED (Needs CI Validation)
-   - **Finding**: Proxy-based egress control via HTTP_PROXY/HTTPS_PROXY wrapper
-   - **Status**: ENFORCED - All pip/npm commands wrapped with egress wrapper
+2. **Egress Control** ✅ COMPREHENSIVELY ENFORCED (Needs CI Validation)
+   - **Finding**: Proxy-based egress control via persistent HTTP_PROXY/HTTPS_PROXY environment variables
+   - **Status**: ENFORCED - All network commands (pip, npm, curl, wget, tests) inherit proxy settings
    - **Implementation**:
-     - Wrapper script: `scripts/github_actions_egress_wrapper.sh`
+     - Proxy vars set in GITHUB_ENV: `release.yml:149-156` (persists across all job steps)
      - Per-repo allowlists: `config/repositories.yaml` -> `matrix.settings.allowed_egress`
-     - Wrapped commands: `release.yml:254,255,262,266,283` (pip install, pytest install)
-   - **Remaining**: Validate in CI that proxy enforcement actually blocks unauthorized egress
+     - Mechanism: HTTP_PROXY=localhost:9999 (non-existent) + NO_PROXY=allowed domains
+     - All tools that respect HTTP_PROXY will fail on unauthorized egress
+   - **Remaining**: CI validation to confirm proxy enforcement blocks unauthorized domains in practice
 
 3. ~~**Evidence Bundle Not Signed**~~ ✅ Already Implemented
    - **Finding**: Bundle signing already exists in `scripts/sign_evidence_bundle.sh`
@@ -156,9 +157,10 @@ Plan.md and the current implementation describe a Phase 1–2 hybrid CI/CD hub. 
    - Workflow integration: `.github/workflows/release.yml:83-100` loads and uses matrix
 
 2. **Per-Repository Egress Control**
-   - Wrapper script: `scripts/github_actions_egress_wrapper.sh` enforces proxy-based allowlists
+   - Persistent environment variables: HTTP_PROXY/HTTPS_PROXY/NO_PROXY set in GITHUB_ENV
    - Configuration: `matrix.settings.allowed_egress` from repositories.yaml
-   - Enforcement: All pip/npm commands wrapped (lines 254, 255, 262, 266, 283)
+   - Enforcement: ALL job steps inherit proxy settings (`release.yml:149-156`)
+   - Scope: pip, npm, curl, wget, tests, and any tool respecting HTTP_PROXY
 
 3. **Resource Limits & Timeouts**
    - Job-level timeout: 60 minutes max across all repos
@@ -171,9 +173,10 @@ Plan.md and the current implementation describe a Phase 1–2 hybrid CI/CD hub. 
 
 ### ⚠️ Known Limitations
 1. **Job-level timeout is global** - GitHub Actions doesn't support per-matrix-entry timeouts, so we use max timeout (60m) for all repos
-2. **max-parallel is strategy-level** - Controls total concurrency across all repos, not per-repo
-3. **Egress enforcement untested** - Needs CI run to validate proxy wrapper actually blocks unauthorized domains
-4. **Resource limits (memory) not enforced** - `resource_limit_mb` is parsed but not applied (needs cgroup integration)
+2. **Per-repo concurrency not enforced** - `max_parallel_jobs` is parsed but GitHub Actions `strategy.max-parallel` is global (applies to all repos, not per-repo)
+3. **Memory limits not enforced** - `resource_limit_mb` is parsed but can't be applied on GitHub-hosted runners (needs cgroup/ulimit access via self-hosted runners)
+4. **Egress enforcement needs CI validation** - Proxy approach is comprehensive but untested; need to confirm it actually blocks unauthorized domains
+5. **Proxy enforcement requires tool compliance** - Only works for tools that respect HTTP_PROXY/HTTPS_PROXY environment variables (covers pip, npm, curl, wget, requests library)
 
 ### 📋 Phase 2 Roadmap (Not Yet Implemented)
 - Per-repository secret scoping (GitHub App + Vault)

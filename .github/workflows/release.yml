@@ -137,13 +137,23 @@ jobs:
 
           if [[ -n "$REPO_ALLOWLIST" ]]; then
             echo "✅ Per-repo egress allowlist: $REPO_ALLOWLIST"
-            echo "EGRESS_ALLOWLIST=$REPO_ALLOWLIST" >> "$GITHUB_ENV"
           else
             echo "⚠️  No custom egress allowlist for this repo, using defaults"
+            # Use default allowlist from wrapper script
+            REPO_ALLOWLIST="github.com,api.github.com,ghcr.io,registry.npmjs.org,pypi.org,files.pythonhosted.org,objects.githubusercontent.com"
           fi
 
-          # Make egress wrapper executable
-          chmod +x ./scripts/github_actions_egress_wrapper.sh
+          # Set proxy environment variables to persist across all job steps
+          # Tools that respect HTTP_PROXY will try to use localhost:9999 (doesn't exist) for all domains
+          # except those in NO_PROXY, causing unauthorized egress to fail
+          echo "HTTP_PROXY=http://localhost:9999" >> "$GITHUB_ENV"
+          echo "HTTPS_PROXY=http://localhost:9999" >> "$GITHUB_ENV"
+          echo "http_proxy=http://localhost:9999" >> "$GITHUB_ENV"
+          echo "https_proxy=http://localhost:9999" >> "$GITHUB_ENV"
+          echo "NO_PROXY=$REPO_ALLOWLIST" >> "$GITHUB_ENV"
+          echo "no_proxy=$REPO_ALLOWLIST" >> "$GITHUB_ENV"
+
+          echo "::notice::Egress control active - only allowed domains: $REPO_ALLOWLIST"
 
       - name: Set up Python (for cache verification)
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
@@ -251,20 +261,20 @@ jobs:
         run: |
           set -euo pipefail
           cd project/${{ matrix.path }}
-          # Wrap pip commands with egress control
-          ../../scripts/github_actions_egress_wrapper.sh "pip install --upgrade pip"
-          ../../scripts/github_actions_egress_wrapper.sh "pip install '.[dev]' || pip install ."
+          # Egress control via HTTP_PROXY env vars (set in earlier step)
+          pip install --upgrade pip
+          pip install '.[dev]' || pip install .
       - name: Install requirements
         if: ${{ matrix.package == false }}
         run: |
           set -euo pipefail
           cd project/${{ matrix.path }}
-          # Wrap pip commands with egress control
-          ../../scripts/github_actions_egress_wrapper.sh "pip install --upgrade pip"
+          # Egress control via HTTP_PROXY env vars (set in earlier step)
+          pip install --upgrade pip
           if ls requirements*.txt >/dev/null 2>&1; then
             for file in requirements*.txt; do
               echo "Installing $file"
-              ../../scripts/github_actions_egress_wrapper.sh "pip install -r '$file'"
+              pip install -r "$file"
             done
           else
             echo "No requirements*.txt files detected; skipping dependency install"
@@ -286,8 +296,8 @@ jobs:
 
           if [ -f pytest.ini ] || [ -d tests ]; then
             if ! python -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('pytest') else 1)" >/dev/null 2>&1; then
-              echo "pytest not available; installing fallback dependency"
-              ../../scripts/github_actions_egress_wrapper.sh "pip install pytest"
+              echo "pytest not available; installing fallback dependency (egress controlled via HTTP_PROXY)"
+              pip install pytest
             fi
             CMD=(timeout "${TIMEOUT_SECONDS}s" python -m pytest)
           else

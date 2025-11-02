@@ -122,15 +122,16 @@ settings:
 - Enforced via proxy wrapper
 - Prevents unauthorized network access
 
-✅ **Resource Isolation**
-- Configurable timeouts
-- Configurable resource limits
-- Configurable concurrency
+⚠️ **Resource Isolation (Partial)**
+- ✅ Per-repo test timeouts enforced (via timeout command)
+- ✅ Job-level timeout (60m max across all repos)
+- ❌ Per-repo concurrency (max_parallel_jobs parsed but not enforced - GitHub Actions limitation)
+- ❌ Memory limits (resource_limit_mb parsed but can't enforce without self-hosted runners)
 
 ✅ **Matrix-Based Execution**
 - Parallel execution of multiple repos
 - Fail-fast disabled (one repo failure doesn't stop others)
-- Max 2 parallel jobs (configurable)
+- Max 2 parallel jobs (global, not per-repo)
 
 ### What Doesn't Work Yet
 
@@ -138,6 +139,16 @@ settings:
 - Currently using shared GITHUB_TOKEN
 - Need GitHub App or Vault integration
 - Security risk for untrusted repos
+
+❌ **Per-Repository Concurrency Control**
+- max_parallel_jobs setting is parsed but not enforced
+- GitHub Actions strategy.max-parallel is global, not per-matrix-entry
+- Would need external queue/scheduler
+
+❌ **Memory Limits**
+- resource_limit_mb setting is parsed but not enforced
+- Requires cgroup/ulimit access not available on GitHub-hosted runners
+- Need self-hosted runners with privileged containers
 
 ❌ **Rate Limiting**
 - No quota enforcement
@@ -148,11 +159,6 @@ settings:
 - No per-repo cost allocation
 - No resource usage dashboards
 - Can't bill back to teams
-
-❌ **Network Policies**
-- Proxy wrapper not yet tested in CI
-- May need service mesh integration
-- Kubernetes NetworkPolicy deployment pending
 
 ---
 
