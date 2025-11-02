@@ -281,9 +281,15 @@ main() {
   # Create attestation
   create_attestation "$BUNDLE_FILE"
 
-  # Verify the signature (optional, for confidence)
+  # Verify the signature immediately after signing
   if [[ "${VERIFY_AFTER_SIGN:-true}" == "true" ]]; then
-    verify_bundle "$BUNDLE_FILE" || true
+    log "Verifying signature immediately after signing..."
+    if ! verify_bundle "$BUNDLE_FILE"; then
+      log "ERROR: Signature verification failed immediately after signing"
+      log "This indicates a critical issue with the signing process"
+      exit 1
+    fi
+    log "✅ Signature verified successfully"
   fi
 
   # Generate verification instructions

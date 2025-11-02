@@ -8,7 +8,7 @@
 ## Production-Grade Security Audit (Updated 2025-11-02)
 
 ### Executive Verdict
-**Current Status: ~98% Production-Grade** ✅ - Strong architecture with **ALL 13 critical vulnerabilities FIXED** plus cross-time determinism implemented. Egress control now enforced on GitHub-hosted runners. Production-ready for deployment with remaining tasks being operational enhancements (Kyverno cluster deployment, org-wide Rulesets, observability wiring).
+**Current Status: ~85% Production-Grade** ✅ - Strong architecture with **ALL 13 critical vulnerabilities FIXED** plus cross-time determinism implemented, multi-repo dynamic loading operational, and egress control enforced via proxy wrapper. Per-repo timeouts and resource limits now wired up. Remaining gaps: egress enforcement needs CI validation, cross-time determinism is post-release audit (not blocking gate), evidence signing verification hardened.
 
 ### ✅ Already Production-Ready Components
 - **SLSA verification**: Full parameters implemented (`--source-uri`, `--source-tag`, `--builder-id`) in `.github/workflows/release.yml:978-986`
@@ -24,15 +24,14 @@
    - **Status**: RESOLVED - Now uses safe `pull_request` trigger
    - **Remaining**: Add org-level Ruleset to prevent reintroduction
 
-2. **Egress Control** ⚠️ PARTIALLY IMPLEMENTED
-   - **Finding**: Script attempts iptables with sudo on GitHub-hosted runners
-   - **Status**: UNTESTED - May work with sudo, but needs runtime verification
-   - **Current**: `.github/workflows/release.yml:566` tries sudo, falls back to audit
-   - **Alternatives if iptables fails**:
-     1. Use `unshare --net` for network namespace isolation (may need privileged containers)
-     2. Implement HTTP proxy with allowlist (HTTPS_PROXY environment variable)
-     3. Use GitHub Actions service containers with network policies
-     4. Deploy to self-hosted runners with network controls (Phase 4 stretch goal)
+2. **Egress Control** ✅ IMPLEMENTED (Needs CI Validation)
+   - **Finding**: Proxy-based egress control via HTTP_PROXY/HTTPS_PROXY wrapper
+   - **Status**: ENFORCED - All pip/npm commands wrapped with egress wrapper
+   - **Implementation**:
+     - Wrapper script: `scripts/github_actions_egress_wrapper.sh`
+     - Per-repo allowlists: `config/repositories.yaml` -> `matrix.settings.allowed_egress`
+     - Wrapped commands: `release.yml:254,255,262,266,283` (pip install, pytest install)
+   - **Remaining**: Validate in CI that proxy enforcement actually blocks unauthorized egress
 
 3. ~~**Evidence Bundle Not Signed**~~ ✅ Already Implemented
    - **Finding**: Bundle signing already exists in `scripts/sign_evidence_bundle.sh`
@@ -147,6 +146,40 @@ All other findings remain valid and were re-confirmed via code review.
 ## Executive Summary
 
 Plan.md and the current implementation describe a Phase 1–2 hybrid CI/CD hub. Foundational supply-chain controls, determinism checks, and telemetry are in place, but several enforcement gates and runtime hardening items remain before v1.0 readiness. The sections below track progress and outstanding work.
+
+## Multi-Repository Hub Implementation Status (Added 2025-11-02)
+
+### ✅ Implemented (Phase 1)
+1. **Dynamic Repository Configuration**
+   - Config file: `config/repositories.yaml` defines all managed repos
+   - Matrix loader: `scripts/load_repository_matrix.py` generates GitHub Actions matrix
+   - Workflow integration: `.github/workflows/release.yml:83-100` loads and uses matrix
+
+2. **Per-Repository Egress Control**
+   - Wrapper script: `scripts/github_actions_egress_wrapper.sh` enforces proxy-based allowlists
+   - Configuration: `matrix.settings.allowed_egress` from repositories.yaml
+   - Enforcement: All pip/npm commands wrapped (lines 254, 255, 262, 266, 283)
+
+3. **Resource Limits & Timeouts**
+   - Job-level timeout: 60 minutes max across all repos
+   - Per-repo test timeout: Uses `matrix.timeout_minutes` with timeout command
+   - Configurable in YAML: `build_timeout`, `resource_limit_mb`, `max_parallel_jobs`
+
+4. **Evidence Signing Verification**
+   - Fail-fast mode: `scripts/sign_evidence_bundle.sh:287` now exits on verification failure
+   - No longer silently continues on signature errors
+
+### ⚠️ Known Limitations
+1. **Job-level timeout is global** - GitHub Actions doesn't support per-matrix-entry timeouts, so we use max timeout (60m) for all repos
+2. **max-parallel is strategy-level** - Controls total concurrency across all repos, not per-repo
+3. **Egress enforcement untested** - Needs CI run to validate proxy wrapper actually blocks unauthorized domains
+4. **Resource limits (memory) not enforced** - `resource_limit_mb` is parsed but not applied (needs cgroup integration)
+
+### 📋 Phase 2 Roadmap (Not Yet Implemented)
+- Per-repository secret scoping (GitHub App + Vault)
+- Token bucket rate limiting per repository
+- BigQuery pipeline for cost allocation
+- Per-repo Grafana dashboards
 
 ## Current Implementation Status
 

@@ -1,6 +1,6 @@
 # Pinned versions for security (prevents supply chain attacks)
 # Run: pip install --require-hashes -r requirements-dev.lock
-jsonschema==4.18.0
+jsonschema==4.23.0
 pyyaml==6.0.1
 pytest==7.4.0
 pytest-cov==4.1.0

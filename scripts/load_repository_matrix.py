@@ -33,18 +33,38 @@ def filter_enabled_repos(repositories: list) -> list:
     return [repo for repo in repositories if repo.get('enabled', False)]
 
 
+def parse_timeout_minutes(timeout_str: str) -> int:
+    """Parse timeout string (e.g. '30m', '1h') to minutes."""
+    if not timeout_str:
+        return 30  # default
+
+    timeout_str = timeout_str.strip().lower()
+    if timeout_str.endswith('m'):
+        return int(timeout_str[:-1])
+    elif timeout_str.endswith('h'):
+        return int(timeout_str[:-1]) * 60
+    else:
+        # Assume minutes if no unit
+        return int(timeout_str)
+
+
 def format_for_matrix(repositories: list) -> dict:
     """Format repositories for GitHub Actions matrix strategy."""
     matrix_entries = []
 
     for repo in repositories:
+        settings = repo.get('settings', {})
+        # Parse timeout to minutes for GitHub Actions
+        timeout_minutes = parse_timeout_minutes(settings.get('build_timeout', '30m'))
+
         entry = {
             'name': repo['name'],
             'repository': f"{repo['owner']}/{repo['name']}",
             'owner': repo['owner'],
-            'path': repo.get('settings', {}).get('path', '.'),
-            'package': repo.get('settings', {}).get('package', False),
-            'settings': repo.get('settings', {})
+            'path': settings.get('path', '.'),
+            'package': settings.get('package', False),
+            'timeout_minutes': timeout_minutes,
+            'settings': settings
         }
         matrix_entries.append(entry)
 

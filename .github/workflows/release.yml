@@ -92,8 +92,12 @@ jobs:
           echo "Matrix JSON:"
           echo "$MATRIX_JSON" | jq .
 
-          # Set output for next job
-          echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+          # Set output for next job (use heredoc to handle multi-line JSON)
+          {
+            echo "matrix<<EOF"
+            echo "$MATRIX_JSON"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
   project-tests:
     needs: load-repositories
@@ -102,9 +106,10 @@ jobs:
       id-token: write
       actions: read
     runs-on: ubuntu-22.04
+    timeout-minutes: 60  # Maximum timeout across all repos (Caesar: 30m, Vector: 45m)
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 2  # Limit concurrent repo builds
       matrix: ${{ fromJson(needs.load-repositories.outputs.matrix) }}
     steps:
       - name: Checkout automation repo
@@ -246,18 +251,20 @@ jobs:
         run: |
           set -euo pipefail
           cd project/${{ matrix.path }}
-          pip install --upgrade pip
-          pip install '.[dev]' || pip install .
+          # Wrap pip commands with egress control
+          ../../scripts/github_actions_egress_wrapper.sh "pip install --upgrade pip"
+          ../../scripts/github_actions_egress_wrapper.sh "pip install '.[dev]' || pip install ."
       - name: Install requirements
         if: ${{ matrix.package == false }}
         run: |
           set -euo pipefail
           cd project/${{ matrix.path }}
-          pip install --upgrade pip
+          # Wrap pip commands with egress control
+          ../../scripts/github_actions_egress_wrapper.sh "pip install --upgrade pip"
           if ls requirements*.txt >/dev/null 2>&1; then
             for file in requirements*.txt; do
               echo "Installing $file"
-              pip install -r "$file"
+              ../../scripts/github_actions_egress_wrapper.sh "pip install -r '$file'"
             done
           else
             echo "No requirements*.txt files detected; skipping dependency install"
@@ -271,20 +278,30 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/artifacts/logs"
           LOG_PATH="$GITHUB_WORKSPACE/artifacts/logs/${{ matrix.name }}.log"
           START_TIME=$(date +%s)
+
+          # Per-repo timeout from matrix settings
+          TIMEOUT_MINUTES=${{ matrix.timeout_minutes }}
+          TIMEOUT_SECONDS=$((TIMEOUT_MINUTES * 60))
+          echo "::notice::Test timeout set to ${TIMEOUT_MINUTES} minutes for ${{ matrix.name }}"
+
           if [ -f pytest.ini ] || [ -d tests ]; then
             if ! python -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('pytest') else 1)" >/dev/null 2>&1; then
               echo "pytest not available; installing fallback dependency"
-              pip install pytest
+              ../../scripts/github_actions_egress_wrapper.sh "pip install pytest"
             fi
-            CMD=(python -m pytest)
+            CMD=(timeout "${TIMEOUT_SECONDS}s" python -m pytest)
           else
             echo "No pytest configuration found; running unit tests"
-            CMD=(python -m unittest discover)
+            CMD=(timeout "${TIMEOUT_SECONDS}s" python -m unittest discover)
           fi
           if ! "${CMD[@]}" 2>&1 | tee "$LOG_PATH"; then
             TEST_STATUS=${PIPESTATUS[0]}
             TEE_STATUS=${PIPESTATUS[1]:-0}
-            if [ "$TEST_STATUS" -eq 0 ] && [ "$TEE_STATUS" -ne 0 ]; then
+            # timeout exits with 124 on timeout
+            if [ "$TEST_STATUS" -eq 124 ]; then
+              echo "::error::Tests timed out after ${TIMEOUT_MINUTES} minutes"
+              TEST_STATUS=124
+            elif [ "$TEST_STATUS" -eq 0 ] && [ "$TEE_STATUS" -ne 0 ]; then
               echo "Log capture via tee failed with status $TEE_STATUS" >&2
               TEST_STATUS=$TEE_STATUS
             fi
