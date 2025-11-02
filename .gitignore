@@ -31,3 +31,4 @@ tmp/
 
 # Fixtures
 fixtures/
+.doc-link-backup-*
