@@ -4,7 +4,7 @@ set -euo pipefail
 
 ORAS_VERSION="1.2.0"
 COSIGN_VERSION="v2.2.4"
-REKOR_VERSION="v1.3.1"
+REKOR_VERSION="v1.4.0"
 SYFT_VERSION="1.18.0"
 GRYPE_VERSION="0.102.0"
 CRANE_VERSION="v0.19.2"
@@ -128,36 +128,115 @@ install_cosign() {
   fi
 
   sudo install -m 0755 "$TMP_DIR/${file}" /usr/local/bin/cosign
-  if ! cosign version --short 2>/dev/null | tr -d '\n' | grep -q "$(printf '%s' "${COSIGN_VERSION}" | tr -d '\n')"; then
-    log "ERROR: cosign version mismatch - expected ${COSIGN_VERSION}"
+  installed_version="$(cosign version --short 2>/dev/null | tr -d '\n')"
+  if [[ "${installed_version}" != "${COSIGN_VERSION}" ]]; then
+    log "ERROR: cosign version mismatch - expected ${COSIGN_VERSION}, found ${installed_version:-unknown}"
     exit 1
   fi
 }
 
 install_rekor() {
-  local file="rekor-cli-${OS}-${ARCH}"
-  local url="https://github.com/sigstore/rekor/releases/download/${REKOR_VERSION}/${file}"
+  local base_url="https://github.com/sigstore/rekor/releases/download/${REKOR_VERSION}"
+  local version_plain="${REKOR_VERSION#v}"
+  local -a candidates
+  if [[ "$OS" == "windows" ]]; then
+    candidates=(
+      "rekor-cli-${OS}-${ARCH}.exe"
+      "rekor-cli-${version_plain}-${OS}-${ARCH}.exe"
+      "rekor-cli-${OS}-${ARCH}.zip"
+      "rekor-cli_${version_plain}_${OS}_${ARCH}.zip"
+      "rekor-cli-${version_plain}-${OS}-${ARCH}.zip"
+    )
+  else
+    candidates=(
+      "rekor-cli-${OS}-${ARCH}"
+      "rekor-cli-${version_plain}-${OS}-${ARCH}"
+      "rekor-cli-${OS}-${ARCH}.tar.gz"
+      "rekor-cli-${version_plain}-${OS}-${ARCH}.tar.gz"
+      "rekor-cli_${version_plain}_${OS}_${ARCH}.tar.gz"
+      "rekor-cli_${OS}_${ARCH}.tar.gz"
+    )
+  fi
   log "Installing rekor-cli ${REKOR_VERSION}"
 
-  # Download the binary
-  if ! curl -fsSL "$url" -o "$TMP_DIR/${file}"; then
-    log "Failed to download rekor-cli binary from ${url}"
+  local success=0
+  for candidate in "${candidates[@]}"; do
+    local url="${base_url}/${candidate}"
+    local download_path="${TMP_DIR}/${candidate}"
+    local checksum_path="${download_path}.sha256"
+    rm -f "$download_path" "$checksum_path"
+    if ! curl -fsSL "$url" -o "$download_path"; then
+      log "Failed to download rekor-cli asset from ${url}"
+      continue
+    fi
+    if ! curl -fsSL "${url}.sha256" -o "$checksum_path"; then
+      log "ERROR: No checksum file found for rekor-cli asset ${candidate}"
+      rm -f "$download_path" "$checksum_path"
+      continue
+    fi
+    if ! (cd "$TMP_DIR" && sha256sum -c "$(basename "$checksum_path")"); then
+      log "ERROR: rekor-cli checksum verification failed for ${candidate}"
+      rm -f "$download_path" "$checksum_path"
+      continue
+    fi
+    rm -f "$checksum_path"
+    if [[ "$candidate" == *.tar.gz ]]; then
+      local extract_dir
+      extract_dir="$(mktemp -d "${TMP_DIR}/rekor-cli-extract.XXXXXX")"
+      if ! tar -xzf "$download_path" -C "$extract_dir"; then
+        log "ERROR: Failed to extract ${candidate}"
+        rm -rf "$extract_dir"
+        rm -f "$download_path"
+        continue
+      fi
+      local extracted
+      extracted="$(find "$extract_dir" -type f -name 'rekor-cli*' | head -n 1)"
+      if [[ -z "$extracted" ]]; then
+        log "ERROR: Extracted rekor-cli archive missing binary (${candidate})"
+        rm -rf "$extract_dir"
+        rm -f "$download_path"
+        continue
+      fi
+      sudo install -m 0755 "$extracted" /usr/local/bin/rekor-cli
+      rm -rf "$extract_dir"
+      rm -f "$download_path"
+    elif [[ "$candidate" == *.zip ]]; then
+      if ! command -v unzip >/dev/null 2>&1; then
+        log "ERROR: unzip not available to extract ${candidate}"
+        rm -f "$download_path"
+        continue
+      fi
+      local extract_dir
+      extract_dir="$(mktemp -d "${TMP_DIR}/rekor-cli-extract.XXXXXX")"
+      if ! unzip -q "$download_path" -d "$extract_dir"; then
+        log "ERROR: Failed to extract ${candidate}"
+        rm -rf "$extract_dir"
+        rm -f "$download_path"
+        continue
+      fi
+      local extracted
+      extracted="$(find "$extract_dir" -type f -name 'rekor-cli*' | head -n 1)"
+      if [[ -z "$extracted" ]]; then
+        log "ERROR: Extracted rekor-cli archive missing binary (${candidate})"
+        rm -rf "$extract_dir"
+        rm -f "$download_path"
+        continue
+      fi
+      sudo install -m 0755 "$extracted" /usr/local/bin/rekor-cli
+      rm -rf "$extract_dir"
+      rm -f "$download_path"
+    else
+      sudo install -m 0755 "$download_path" /usr/local/bin/rekor-cli
+      rm -f "$download_path"
+    fi
+    success=1
+    break
+  done
+
+  if [[ "$success" -ne 1 ]]; then
+    log "ERROR: Unable to download a supported rekor-cli asset for ${REKOR_VERSION}"
     exit 1
   fi
-
-  # Download and verify checksum (MANDATORY for security)
-  if curl -fsSL "${url}.sha256" -o "$TMP_DIR/${file}.sha256" 2>/dev/null; then
-    (cd "$TMP_DIR" && sha256sum -c "$(basename "${file}.sha256")") || {
-      log "ERROR: rekor-cli checksum verification failed"
-      exit 1
-    }
-  else
-    log "ERROR: No checksum file found for rekor-cli ${REKOR_VERSION}"
-    log "Checksums are mandatory for all downloaded binaries"
-    exit 1
-  fi
-
-  sudo install -m 0755 "$TMP_DIR/${file}" /usr/local/bin/rekor-cli
 
   # Enforce version match per plan.md supply-chain pinning requirements
   # rekor-cli prints ASCII banner before version info, so capture full output

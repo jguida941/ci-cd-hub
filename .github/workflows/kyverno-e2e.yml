@@ -33,11 +33,13 @@ jobs:
         run: |
           set -euo pipefail
           KIND_VERSION=v0.23.0
-          GOBIN="${HOME}/.local/bin"
-          mkdir -p "${GOBIN}"
           go version
           go install "sigs.k8s.io/kind@${KIND_VERSION}"
-          sudo install -m 0755 "${GOBIN}/kind" /usr/local/bin/kind
+          KIND_BIN="$(go env GOBIN)"
+          if [ -z "${KIND_BIN}" ]; then
+            KIND_BIN="$(go env GOPATH)/bin"
+          fi
+          echo "${KIND_BIN}" >> "${GITHUB_PATH}"
 
       - name: Create kind cluster
         run: |

@@ -8,14 +8,18 @@ import html
 import json
 import os
 import shlex
-from subprocess import DEVNULL, TimeoutExpired
 import sys
 import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from subprocess import DEVNULL, TimeoutExpired
 from typing import Any, Dict, List, Optional
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from tools.safe_subprocess import run_checked
 

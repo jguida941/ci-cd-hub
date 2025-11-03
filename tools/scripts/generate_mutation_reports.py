@@ -6,10 +6,14 @@ from __future__ import annotations
 import argparse
 import json
 import re
-from subprocess import TimeoutExpired
 import sys
 from pathlib import Path
+from subprocess import TimeoutExpired
 from typing import Sequence
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from tools.safe_subprocess import run_checked
 

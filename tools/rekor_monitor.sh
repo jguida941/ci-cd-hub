@@ -17,7 +17,7 @@ ensure_rekor_cli() {
   if command -v rekor-cli >/dev/null 2>&1; then
     return 0
   fi
-  local version="${REKOR_CLI_VERSION:-v1.3.1}"
+  local version="${REKOR_CLI_VERSION:-v1.4.0}"
   local os
   os="$(uname -s | tr '[:upper:]' '[:lower:]')"
   local arch
@@ -27,35 +27,87 @@ ensure_rekor_cli() {
     arm64 | aarch64) arch="arm64" ;;
     *) arch="amd64" ;;
   esac
-  local filename="rekor-cli-${os}-${arch}"
-  local url="https://github.com/sigstore/rekor/releases/download/${version}/${filename}"
   local cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/rekor-monitor"
   local dest="${cache_dir}/rekor-cli-${version}-${os}-${arch}"
   mkdir -p "$cache_dir"
   if [[ ! -x "$dest" ]]; then
-    >&2 echo "[rekor_monitor] rekor-cli not found; downloading ${url}"
-    tmp="${dest}.tmp"
-    if ! curl -fsSL "$url" -o "$tmp"; then
-      >&2 echo "[rekor_monitor] Failed to download rekor-cli from ${url}"
-      rm -f "$tmp"
-      return 1
-    fi
-    checksum_url="${url}.sha256"
-    if curl -fsSL "$checksum_url" -o "${tmp}.sha256"; then
-      if ! (cd "$(dirname "$tmp")" && sha256sum -c "$(basename "${tmp}.sha256")"); then
-        >&2 echo "[rekor_monitor] ERROR: Checksum verification failed for ${filename}"
-        rm -f "$tmp" "${tmp}.sha256"
-        return 1
+    local base_url="https://github.com/sigstore/rekor/releases/download/${version}"
+    local version_plain="${version#v}"
+    local -a candidates=(
+      "rekor-cli-${os}-${arch}"
+      "rekor-cli-${version_plain}-${os}-${arch}"
+      "rekor-cli-${os}-${arch}.tar.gz"
+      "rekor-cli-${version_plain}-${os}-${arch}.tar.gz"
+      "rekor-cli_${version_plain}_${os}_${arch}.tar.gz"
+      "rekor-cli_${os}_${arch}.tar.gz"
+    )
+    local downloaded=0
+    for candidate in "${candidates[@]}"; do
+      local url="${base_url}/${candidate}"
+      local download_path="${cache_dir}/${candidate}"
+      local checksum_path="${download_path}.sha256"
+      rm -f "$download_path" "$checksum_path"
+      >&2 echo "[rekor_monitor] rekor-cli not found; attempting download ${url}"
+      if ! curl -fsSL "$url" -o "$download_path"; then
+        >&2 echo "[rekor_monitor] Download failed: ${url}"
+        continue
       fi
-      rm -f "${tmp}.sha256"
-    else
-      >&2 echo "[rekor_monitor] ERROR: Checksum file not available for ${filename}"
-      >&2 echo "[rekor_monitor] Checksums are required for all downloaded binaries"
-      rm -f "$tmp"
+      if ! curl -fsSL "${url}.sha256" -o "$checksum_path"; then
+        >&2 echo "[rekor_monitor] ERROR: Checksum file not available for ${candidate}"
+        >&2 echo "[rekor_monitor] Checksums are required for all downloaded binaries"
+        rm -f "$download_path" "$checksum_path"
+        continue
+      fi
+      if ! (cd "$cache_dir" && sha256sum -c "$(basename "$checksum_path")"); then
+        >&2 echo "[rekor_monitor] ERROR: Checksum verification failed for ${candidate}"
+        rm -f "$download_path" "$checksum_path"
+        continue
+      fi
+      rm -f "$checksum_path"
+      if [[ "$candidate" == *.tar.gz ]]; then
+        local extract_dir
+        extract_dir="$(mktemp -d "${cache_dir}/rekor-cli-extract.XXXXXX")"
+        if ! tar -xzf "$download_path" -C "$extract_dir"; then
+          >&2 echo "[rekor_monitor] ERROR: Failed to extract ${candidate}"
+          rm -rf "$extract_dir"
+          rm -f "$download_path"
+          continue
+        fi
+        local extracted
+        extracted="$(find "$extract_dir" -type f -name 'rekor-cli*' | head -n 1)"
+        if [[ -z "$extracted" ]]; then
+          >&2 echo "[rekor_monitor] ERROR: Extracted archive missing rekor-cli binary (${candidate})"
+          rm -rf "$extract_dir"
+          rm -f "$download_path"
+          continue
+        fi
+        if ! mv "$extracted" "$dest"; then
+          >&2 echo "[rekor_monitor] ERROR: Failed to move extracted binary for ${candidate}"
+          rm -rf "$extract_dir"
+          rm -f "$download_path"
+          continue
+        fi
+        rm -rf "$extract_dir"
+        rm -f "$download_path"
+      else
+        if ! mv "$download_path" "$dest"; then
+          >&2 echo "[rekor_monitor] ERROR: Failed to move downloaded binary for ${candidate}"
+          rm -f "$download_path"
+          continue
+        fi
+      fi
+      if ! chmod +x "$dest"; then
+        >&2 echo "[rekor_monitor] ERROR: Failed to set executable permission on ${dest}"
+        rm -f "$dest"
+        continue
+      fi
+      downloaded=1
+      break
+    done
+    if [[ "$downloaded" -ne 1 ]]; then
+      >&2 echo "[rekor_monitor] Unable to download rekor-cli ${version}; please install it manually or set REKOR_CLI_VERSION"
       return 1
     fi
-    mv "$tmp" "$dest"
-    chmod +x "$dest"
   fi
   ln -sf "$dest" "${cache_dir}/rekor-cli"
   PATH="${cache_dir}:$PATH"

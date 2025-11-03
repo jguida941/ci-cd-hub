@@ -41,7 +41,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          python -m pip install -r requirements-dev.txt
+          python -m pip install -r requirements-dev.lock
       - name: Run DR drill gate
         run: |
           set -euo pipefail
@@ -135,12 +135,13 @@ jobs:
           # Get repo-specific egress allowlist from matrix
           REPO_ALLOWLIST="${{ join(matrix.settings.allowed_egress, ',') }}"
 
+          DEFAULT_ALLOWLIST="github.com,api.github.com,ghcr.io,registry.npmjs.org,pypi.org,files.pythonhosted.org,objects.githubusercontent.com,raw.githubusercontent.com,sigstore.dev,storage.googleapis.com,kind.sigs.k8s.io,dl.k8s.io,githubusercontent.com"
           if [[ -n "$REPO_ALLOWLIST" ]]; then
             echo "✅ Per-repo egress allowlist: $REPO_ALLOWLIST"
+            REPO_ALLOWLIST="$REPO_ALLOWLIST,$DEFAULT_ALLOWLIST"
           else
             echo "⚠️  No custom egress allowlist for this repo, using defaults"
-            # Use default allowlist from wrapper script
-            REPO_ALLOWLIST="github.com,api.github.com,ghcr.io,registry.npmjs.org,pypi.org,files.pythonhosted.org,objects.githubusercontent.com"
+            REPO_ALLOWLIST="$DEFAULT_ALLOWLIST"
           fi
 
           # Set proxy environment variables to persist across all job steps

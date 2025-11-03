@@ -2,7 +2,7 @@
 
 ## Signing & Provenance
 
-- Builds use keyless cosign signing and emit SLSA v1.0 provenance. Tooling installs are pinned and checksum-verified via `scripts/install_tools.sh` (oras 1.2.0, cosign v2.2.4, rekor-cli v1.3.1, syft 1.18.0, grype 0.102.0, crane v0.19.2).
+- Builds use keyless cosign signing and emit SLSA v1.0 provenance. Tooling installs are pinned and checksum-verified via `scripts/install_tools.sh` (oras 1.2.0, cosign v2.2.4, rekor-cli v1.4.0, syft 1.18.0, grype 0.102.0, crane v0.19.2).
 
 - `tools/publish_referrers.sh` uploads CycloneDX/SPDX SBOMs and provenance as OCI 1.1 referrers and signs them.
 

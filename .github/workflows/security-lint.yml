@@ -33,7 +33,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
-          pip install -r requirements-dev.txt
+          python -m pip install -r requirements-dev.lock
       - name: Prepare security artifact directory
         run: mkdir -p artifacts/security
 
