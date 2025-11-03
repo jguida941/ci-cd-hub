@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import json
-import subprocess  # nosec
 import sys
 from pathlib import Path
 
@@ -10,12 +9,17 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from tools import build_issuer_subject_input
+from tools.safe_subprocess import run_checked
 
 
-def run(cmd):
-    # Commands are constructed from validated arguments targeting trusted CLI tools.
-    result = subprocess.run(  # noqa: S603  # nosec
-        cmd, check=True, capture_output=True, text=True
+def run(cmd: list[str], *, allowed_programs: set[str]) -> str:
+    """Execute a trusted CLI command and return stdout."""
+    result = run_checked(
+        cmd,
+        allowed_programs=allowed_programs,
+        check=True,
+        capture_output=True,
+        text=True,
     )
     return result.stdout
 
@@ -49,7 +53,10 @@ def main():
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    refs_json = run(["oras", "discover", image_ref, "--output", "json"])
+    refs_json = run(
+        ["oras", "discover", image_ref, "--output", "json"],
+        allowed_programs={"oras"},
+    )
     (output_dir / "referrers.json").write_text(refs_json)
 
     issuer, subject = build_issuer_subject_input.build_input(

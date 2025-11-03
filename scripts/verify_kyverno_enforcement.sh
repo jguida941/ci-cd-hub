@@ -13,6 +13,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+export PYTHONPATH="${REPO_ROOT}:${PYTHONPATH:-}"
+
 EVIDENCE_DIR="${1:-artifacts/evidence}"
 REPORT_FILE="${EVIDENCE_DIR}/kyverno-enforcement.json"
 mkdir -p "$EVIDENCE_DIR"
@@ -81,6 +85,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: secrets-app
+  annotations:
+    ci-intel.dev/sbom-referrer: "oci://sbom/ci-intel-app@sha256:deadbeef"
+    ci-intel.dev/provenance-referrer: "oci://provenance/ci-intel-app@sha256:deadbeef"
 spec:
   replicas: 1
   selector:
@@ -96,9 +103,15 @@ spec:
         image: ghcr.io/jguida941/ci-intel-app:latest
         env:
         - name: AWS_ACCESS_KEY_ID
-          value: "AKIAIOSFODNN7EXAMPLE"
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: access_key
         - name: DATABASE_PASSWORD
-          value: "supersecretpassword123"
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: password
 EOF
 
   # Good deployment (should pass all policies)
@@ -108,10 +121,8 @@ kind: Deployment
 metadata:
   name: good-app
   annotations:
-    cosign.sigstore.dev/signature: "verified"
-    sbom.referrers/spdx: "present"
-    sbom.referrers/cyclonedx: "present"
-    provenance.referrers/slsa: "present"
+    ci-intel.dev/sbom-referrer: "oci://sbom/ci-intel-app@sha256:cafebabe"
+    ci-intel.dev/provenance-referrer: "oci://provenance/ci-intel-app@sha256:cafebabe"
 spec:
   replicas: 1
   selector:
@@ -121,6 +132,9 @@ spec:
     metadata:
       labels:
         app: good
+      annotations:
+        ci-intel.dev/sbom-referrer: "oci://sbom/ci-intel-app@sha256:cafebabe"
+        ci-intel.dev/provenance-referrer: "oci://provenance/ci-intel-app@sha256:cafebabe"
     spec:
       containers:
       - name: app
@@ -135,28 +149,47 @@ EOF
 test_policy_enforcement() {
   local fixture="$1"
   local expected="$2"  # "deny" or "allow"
-  local policy_dir="policies/kyverno"
+  local policy_dir="${REPO_ROOT}/policies/kyverno"
 
   log "Testing ${fixture} (expecting ${expected})"
 
-  # Run Kyverno policy evaluation
-  if python3 scripts/test_kyverno_policies.py \
-    --policies "$policy_dir" \
-    --resources "$(dirname "$fixture")" 2>&1 | tee -a "${EVIDENCE_DIR}/kyverno-test.log"; then
+  if python3 - "$policy_dir" "$fixture" <<'PY' 2>&1 | tee -a "${EVIDENCE_DIR}/kyverno-test.log"
+import sys
+from pathlib import Path
+from tools.kyverno_policy_checker import evaluate_resource
+
+policies = Path(sys.argv[1])
+resource = Path(sys.argv[2])
+
+results = evaluate_resource(policies, resource)
+overall_pass = True
+
+for result in results:
+    check_name = getattr(result, "check", None) or getattr(getattr(result, "resource", None), "stem", None) or result.__class__.__name__
+    if getattr(result, "passed", False):
+        print(f"[kyverno-test] PASS {resource.name} :: {check_name}")
+    else:
+        overall_pass = False
+        for failure in getattr(result, "failures", ()):  # type: ignore[attr-defined]
+            print(f"[kyverno-test] FAIL {resource.name}: {failure}", file=sys.stderr)
+
+sys.exit(0 if overall_pass else 1)
+PY
+  then
     RESULT="allow"
   else
     RESULT="deny"
   fi
 
   if [[ "$RESULT" == "$expected" ]]; then
-    log "✓ ${fixture##*/} correctly ${expected}ed"
+    log "✓ ${fixture##*/} correctly resulted in ${expected}"
     PASSED=$((PASSED + 1))
     if [[ "$expected" == "deny" ]]; then
       BLOCKED=$((BLOCKED + 1))
     fi
     return 0
   else
-    log "✗ ${fixture##*/} incorrectly ${RESULT}ed (expected ${expected})"
+    log "✗ ${fixture##*/} incorrectly resulted in ${RESULT} (expected ${expected})"
     FAILED=$((FAILED + 1))
     return 1
   fi

@@ -1,0 +1,65 @@
+name: kyverno-e2e
+
+on:
+  pull_request:
+    paths:
+      - 'policies/kyverno/**'
+      - 'scripts/deploy_kyverno.sh'
+      - 'scripts/verify_kyverno_enforcement.sh'
+      - '.github/workflows/kyverno-e2e.yml'
+      - 'deploy/kyverno/**'
+  push:
+    branches: [ master, main ]
+    paths:
+      - 'policies/kyverno/**'
+      - 'scripts/deploy_kyverno.sh'
+      - 'scripts/verify_kyverno_enforcement.sh'
+      - '.github/workflows/kyverno-e2e.yml'
+      - 'deploy/kyverno/**'
+
+jobs:
+  kyverno-live-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      KUBECTL_CONTEXT: kind-kyverno-ci
+      KYVERNO_VERIFY_NAMESPACE: kyverno-e2e
+      KYVERNO_EVIDENCE_DIR: artifacts/evidence/kyverno-e2e
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+
+      - name: Install kind v0.23.0
+        run: |
+          set -euo pipefail
+          KIND_VERSION=v0.23.0
+          GOBIN="${HOME}/.local/bin"
+          mkdir -p "${GOBIN}"
+          go version
+          go install "sigs.k8s.io/kind@${KIND_VERSION}"
+          sudo install -m 0755 "${GOBIN}/kind" /usr/local/bin/kind
+
+      - name: Create kind cluster
+        run: |
+          kind create cluster --name kyverno-ci
+
+      - name: Deploy Kyverno
+        run: |
+          set -euo pipefail
+          make kyverno/deploy KYVERNO_DEPLOY_FLAGS="--wait-timeout 300"
+
+      - name: Verify enforcement on cluster
+        run: |
+          set -euo pipefail
+          make kyverno/verify KYVERNO_VERIFY_FLAGS="--keep-namespace"
+
+      - name: Delete kind cluster
+        if: always()
+        run: kind delete cluster --name kyverno-ci
+
+      - name: Upload Kyverno evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: kyverno-evidence
+          path: artifacts/evidence

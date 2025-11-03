@@ -6,10 +6,12 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess  # nosec
+from subprocess import TimeoutExpired
 import sys
 from pathlib import Path
 from typing import Sequence
+
+from tools.safe_subprocess import run_checked
 
 SUMMARY_RE = re.compile(r"(?P<passed>\d+)\s+passed", re.IGNORECASE)
 SKIPPED_RE = re.compile(r"(?P<skipped>\d+)\s+skipped", re.IGNORECASE)
@@ -28,10 +30,15 @@ def run_pytest(pytest_args: Sequence[str]) -> tuple[int, int, int]:
         *pytest_args,
     ]
     try:
-        result = subprocess.run(  # noqa: S603  # nosec
-            cmd, capture_output=True, text=True, timeout=timeout_seconds
+        result = run_checked(
+            cmd,
+            allowed_programs={sys.executable},
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+            check=False,
         )
-    except subprocess.TimeoutExpired as exc:
+    except TimeoutExpired as exc:
         cmd_str = " ".join(cmd)
         print(
             f"[generate_mutation_reports] pytest command timed out after {timeout_seconds}s: {cmd_str}",

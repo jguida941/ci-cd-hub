@@ -1,11 +1,22 @@
 # Shared defaults for local automation
 
-PYTHON ?= python3
-PIP ?= pip3
+PYTHON ?= $(shell command -v python 2>/dev/null)
+ifeq ($(PYTHON),)
+PYTHON := $(shell command -v python3 2>/dev/null)
+endif
+ifeq ($(PYTHON),)
+PYTHON := python3
+endif
+
+PIP ?= $(shell command -v pip 2>/dev/null)
+ifeq ($(PIP),)
+PIP := $(shell command -v pip3 2>/dev/null)
+endif
+ifeq ($(PIP),)
+PIP := pip3
+endif
 MKDOCS ?= mkdocs
-# Use Docker image instead of npx for security (no unverified downloads)
-# Alternative: vendor the tool with checksum verification
-MARKDOWNLINT ?= docker run --rm -v "$(PWD):/workdir" davidanson/markdownlint-cli2:v0.18.1
+MARKDOWNLINT ?= ./scripts/run_markdownlint.sh
 
 ARTIFACTS_DIR ?= artifacts
 SBOM_DIR ?= $(ARTIFACTS_DIR)/sbom

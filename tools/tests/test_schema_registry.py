@@ -1,23 +1,32 @@
 from __future__ import annotations
 
 import json
-import subprocess
+from subprocess import CompletedProcess
 import sys
 from pathlib import Path
+
+from tools.safe_subprocess import run_checked
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def _run_registry_check(registry: Path) -> subprocess.CompletedProcess[bytes]:
+def _run_registry_check(registry: Path) -> CompletedProcess[str]:
     cmd = [sys.executable, "scripts/check_schema_registry.py", "--registry", str(registry)]
     # Safe: invokes repository validation script with controlled arguments.
-    return subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True)  # noqa: S603
+    return run_checked(
+        cmd,
+        allowed_programs={sys.executable},
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
 
 
 def test_registry_validation_succeeds():
     registry_path = REPO_ROOT / "schema" / "registry.json"
     result = _run_registry_check(registry_path)
-    assert result.returncode == 0, result.stderr.decode()
+    assert result.returncode == 0, result.stderr
 
 
 def test_registry_validation_detects_missing_fixture(tmp_path: Path):
@@ -39,5 +48,5 @@ def test_registry_validation_detects_missing_fixture(tmp_path: Path):
 
     result = _run_registry_check(broken_registry)
     assert result.returncode != 0
-    stderr = result.stderr.decode()
+    stderr = result.stderr
     assert "missing fixture" in stderr.lower()

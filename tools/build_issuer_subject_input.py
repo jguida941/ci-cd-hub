@@ -7,10 +7,12 @@ import argparse
 import json
 import os
 import re
-import subprocess  # nosec
+from subprocess import CalledProcessError
 import sys
 from pathlib import Path
 from typing import Tuple
+
+from tools.safe_subprocess import run_checked
 
 ANSI_ESCAPE = re.compile(r"\x1B\[[0-9;]*[A-Za-z]")
 JSON_START_RE = re.compile(r"[\{\[]")
@@ -100,14 +102,15 @@ def _run_cosign(
     else:
         cmd.extend(["--certificate-oidc-issuer-regexp", ".*"])
     try:
-        return subprocess.run(  # noqa: S603  # nosec
+        return run_checked(
             cmd,
+            allowed_programs={"cosign"},
             check=True,
             capture_output=True,
             text=True,
             env=env,
         )
-    except subprocess.CalledProcessError as exc:  # pragma: no cover
+    except CalledProcessError as exc:  # pragma: no cover
         output = "\n".join(filter(None, [exc.stdout, exc.stderr]))
         if request_json and "unknown flag" in (output or "").lower():
             return None

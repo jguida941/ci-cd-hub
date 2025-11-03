@@ -70,8 +70,8 @@ def find_referenced_files(markdown_files: Set[Path]) -> Set[Path]:
                     resolved = resolve_link(md_file, link)
                     if resolved.exists() and resolved.suffix == '.md':
                         referenced.add(resolved)
-                except Exception:
-                    # Skip invalid links
+                except Exception as exc:
+                    log(f"Warning: Failed to resolve link '{link}' in {md_file}: {exc}")
                     continue
         except Exception as e:
             log(f"Warning: Could not read {md_file}: {e}")

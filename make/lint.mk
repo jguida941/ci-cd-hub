@@ -16,7 +16,11 @@ security-lint: ## Run security static analysis (Ruff S, Bandit, pip-audit, workf
 		--output artifacts/security/bandit.txt \
 		--severity-level low \
 		--confidence-level low || true
-	PIP_AUDIT_PROGRESS_BAR=off $(PYTHON) -m pip_audit -r requirements-dev.txt -r requirements-dev.lock
+	@if [ -z "$(SKIP_PIP_AUDIT)" ]; then \
+		PIP_AUDIT_PROGRESS_BAR=off $(PYTHON) -m pip_audit -r requirements-dev.txt -r requirements-dev.lock; \
+	else \
+		echo "[pip-audit] SKIP_PIP_AUDIT=1 set; skipping dependency audit."; \
+	fi
 	$(PYTHON) scripts/check_workflow_integrity.py
 
 bandit-report: ## Run a full Bandit scan (including tests) and write artifacts/security/bandit-full.txt

@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import os
 import stat
-import subprocess
+from subprocess import CompletedProcess
 from pathlib import Path
+
+from tools.safe_subprocess import run_checked
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = REPO_ROOT / "tools" / "determinism_check.sh"
@@ -108,7 +110,7 @@ def _write_docker_stub(tmp_path: Path) -> Path:
   return docker_path
 
 
-def _run_check(tmp_path: Path, extra_env: dict[str, str] | None = None) -> subprocess.CompletedProcess[bytes]:
+def _run_check(tmp_path: Path, extra_env: dict[str, str] | None = None) -> CompletedProcess[str]:
   docker_stub = _write_docker_stub(tmp_path)
   output_dir = tmp_path / "determinism"
   env = os.environ.copy()
@@ -129,12 +131,20 @@ def _run_check(tmp_path: Path, extra_env: dict[str, str] | None = None) -> subpr
     str(output_dir),
   ]
   # Safe: command is internal script with controlled args.
-  return subprocess.run(cmd, cwd=REPO_ROOT, env=env, capture_output=True)  # noqa: S603
+  return run_checked(
+    cmd,
+    allowed_programs={str(SCRIPT)},
+    cwd=REPO_ROOT,
+    env=env,
+    capture_output=True,
+    text=True,
+    check=False,
+  )
 
 
 def test_determinism_check_consistent(tmp_path: Path):
   result = _run_check(tmp_path)
-  assert result.returncode == 0, result.stderr.decode()
+  assert result.returncode == 0, result.stderr
 
   output_dir = tmp_path / "determinism"
   report_path = output_dir / "determinism-report.json"
@@ -168,5 +178,5 @@ def test_determinism_check_detects_drift(tmp_path: Path):
 def test_determinism_check_rejects_invalid_run_count(tmp_path: Path):
   result = _run_check(tmp_path, extra_env={"DETERMINISM_RUNS": "two"})
   assert result.returncode != 0
-  stderr = result.stderr.decode()
+  stderr = result.stderr
   assert "must be an integer value" in stderr

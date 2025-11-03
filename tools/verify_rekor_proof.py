@@ -6,10 +6,12 @@ from __future__ import annotations
 import argparse
 import base64
 import json
-from pathlib import Path
 import os
-import subprocess
+from pathlib import Path
+from subprocess import CalledProcessError
 from typing import Any, Iterable
+
+from tools.safe_subprocess import run_checked
 
 
 def _load_json(path: Path) -> Any:
@@ -247,10 +249,16 @@ def _fetch_verification(uuid: str, existing_log_entry: dict[str, Any]) -> dict[s
         "json",
     ]
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)  # noqa: S603
+        result = run_checked(
+            cmd,
+            allowed_programs={"rekor-cli"},
+            capture_output=True,
+            text=True,
+            check=True,
+        )
     except FileNotFoundError as exc:  # pragma: no cover - runtime dependency
         raise SystemExit("[verify-rekor-proof] rekor-cli not found; install to verify proofs") from exc
-    except subprocess.CalledProcessError as exc:
+    except CalledProcessError as exc:
         raise SystemExit(
             f"[verify-rekor-proof] failed to fetch Rekor entry {uuid}: {exc.stderr or exc.stdout}"
         ) from exc

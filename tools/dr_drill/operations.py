@@ -4,13 +4,14 @@ import hashlib
 import json
 import os
 import shutil
-import subprocess  # nosec
+from subprocess import CalledProcessError, DEVNULL, PIPE, TimeoutExpired
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict
 
 from tools import provenance_io
+from tools.safe_subprocess import run_checked
 
 from .config import BackupSpec, ProvenanceSpec, RestoreSpec, SbomSpec
 from .errors import DrDrillError
@@ -118,27 +119,34 @@ def perform_restore(
         timeout_seconds = (
             restore.timeout_seconds if restore.timeout_seconds is not None else DEFAULT_RESTORE_TIMEOUT_SECONDS
         )
+        script_path = Path(restore.script).expanduser().resolve()
+        if not script_path.exists():
+            raise DrDrillError(f"restore script not found: {restore.script}")
+        if not os.access(script_path, os.X_OK):
+            raise DrDrillError(f"restore script is not executable: {script_path}")
+
         try:
-            subprocess.run(  # noqa: S603  # nosec
+            run_checked(
                 [
-                    str(restore.script),
+                    str(script_path),
                     str(backup.path),
                     str(provenance.path),
                     str(sbom.path),
                     str(restore.output_dir),
                 ],
+                allowed_programs={script_path},
                 check=True,
                 env=env,
                 timeout=timeout_seconds,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
+                stdout=DEVNULL,
+                stderr=PIPE,
                 text=True,
             )
-        except subprocess.TimeoutExpired as exc:
+        except TimeoutExpired as exc:
             raise DrDrillError(
                 f"restore script timed out after {timeout_seconds} seconds"
             ) from exc
-        except subprocess.CalledProcessError as exc:
+        except CalledProcessError as exc:
             stderr = (exc.stderr or "").strip()
             message = f"restore script failed with exit code {exc.returncode}"
             if stderr:

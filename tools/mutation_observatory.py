@@ -8,7 +8,7 @@ import html
 import json
 import os
 import shlex
-import subprocess  # nosec
+from subprocess import DEVNULL, TimeoutExpired
 import sys
 import time
 import uuid
@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+from tools.safe_subprocess import run_checked
 
 try:  # pragma: no cover - optional dependency
     import yaml
@@ -325,15 +327,16 @@ def run_command(
     run_env.update(env)
     start = time.monotonic()
     try:
-        result = subprocess.run(  # noqa: S603  # nosec
+        result = run_checked(
             command,
+            allowed_programs={command[0]},
             check=False,
             cwd=workdir,
             env=run_env,
             timeout=timeout,
-            stdin=subprocess.DEVNULL,
+            stdin=DEVNULL,
         )
-    except subprocess.TimeoutExpired as exc:
+    except TimeoutExpired as exc:
         raise MutationObservatoryError(
             f"command for target '{target_name}' "
             f"timed out after {timeout} seconds: {command}"

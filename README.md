@@ -505,6 +505,8 @@ Log command transcripts to `artifacts/evidence/audit/commands.log` to maintain e
    make lint
    python scripts/check_workflow_integrity.py
    ```
+   > Tip: the lint target prefers Docker; if Docker isn’t available it falls back to `npx markdownlint-cli2`. Set `SKIP_MARKDOWNLINT=1` when working offline—CI still runs the full markdown lint.
+   > Tip: dependency auditing contacts PyPI. When offline, run with `SKIP_PIP_AUDIT=1`; the GitHub workflow keeps the check enforced.
 
 4. **Run test harnesses**
 

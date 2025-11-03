@@ -1,24 +1,33 @@
 from __future__ import annotations
 
-import subprocess
+from subprocess import CompletedProcess
 import sys
 from pathlib import Path
+
+from tools.safe_subprocess import run_checked
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
-def _run(config: Path, workflows_dir: Path | None = None) -> subprocess.CompletedProcess[bytes]:
+def _run(config: Path, workflows_dir: Path | None = None) -> CompletedProcess[str]:
     cmd = [sys.executable, "scripts/check_runner_isolation.py", "--config", str(config)]
     if workflows_dir is not None:
         cmd.extend(["--workflows-dir", str(workflows_dir)])
     # Safe: executes repository script with fixed arguments for test coverage.
-    return subprocess.run(cmd, cwd=REPO_ROOT, capture_output=True)  # noqa: S603
+    return run_checked(
+        cmd,
+        allowed_programs={sys.executable},
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
 
 
 def test_runner_isolation_passes_default_config():
     config = REPO_ROOT / "config" / "runner-isolation.yaml"
     result = _run(config)
-    assert result.returncode == 0, result.stderr.decode()
+    assert result.returncode == 0, result.stderr
 
 
 def test_runner_isolation_detects_missing_job(tmp_path: Path):
@@ -30,7 +39,7 @@ def test_runner_isolation_detects_missing_job(tmp_path: Path):
     )
     result = _run(broken_config)
     assert result.returncode != 0
-    assert "missing" in result.stderr.decode().lower()
+    assert "missing" in result.stderr.lower()
 
 
 def test_self_hosted_profile_requires_labels(tmp_path: Path):
@@ -88,7 +97,7 @@ self_hosted_profiles:
     )
 
     result = _run(config_path, workflows_dir)
-    assert result.returncode == 0, result.stderr.decode()
+    assert result.returncode == 0, result.stderr
 
     # Remove a required label and expect failure
     workflow_path.write_text(
@@ -104,7 +113,7 @@ jobs:
     )
     result = _run(config_path, workflows_dir)
     assert result.returncode != 0
-    assert "missing required runner labels" in result.stderr.decode()
+    assert "missing required runner labels" in result.stderr
 
 
 def test_self_hosted_profile_requires_scripts(tmp_path: Path):
@@ -151,7 +160,7 @@ self_hosted_profiles:
 
     result = _run(config_path, workflows_dir)
     assert result.returncode != 0
-    stderr = result.stderr.decode()
+    stderr = result.stderr
     assert "cache_provenance_script" in stderr or "egress_policy" in stderr
 
 
@@ -162,5 +171,5 @@ def test_runner_isolation_rejects_non_string_runner(tmp_path: Path):
     broken_config.write_text(text.replace("- ubuntu-latest", "- 123"), encoding="utf-8")
     result = _run(broken_config)
     assert result.returncode != 0
-    stderr = result.stderr.decode()
+    stderr = result.stderr
     assert "allowed_runners" in stderr.lower()
