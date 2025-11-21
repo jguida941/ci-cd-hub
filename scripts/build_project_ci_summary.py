@@ -454,6 +454,23 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
             ["**/dependency-check-report.xml", "**/dependency-check-report.html"] if java_repo else None,
         )
 
+        if not python_repo:
+            coverage_py_files = []
+            coverage_expected = False
+            bandit_files = []
+            bandit_expected = False
+            ruff_files = []
+            ruff_expected = False
+            pip_audit_files = []
+            pip_audit_expected = False
+        if not java_repo:
+            jacoco_files = []
+            jacoco_expected = False
+            spotbugs_files = []
+            spotbugs_expected = False
+            depcheck_files = []
+            depcheck_expected = False
+
         junit_stats = parse_junit(junit_files)
         line_cov = parse_jacoco(jacoco_files) if jacoco_files else None
         coverage_py = parse_coverage_py(coverage_py_files) if coverage_py_files else None
