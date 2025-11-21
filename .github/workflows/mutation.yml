@@ -85,7 +85,8 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install Python dependencies (if applicable)
+        if: matrix.language == 'python'
         run: |
           set -euo pipefail
           python -m pip install --upgrade pip
@@ -137,7 +138,15 @@ jobs:
             echo "::warning::No dependency files found (pyproject.toml, requirements*.txt)"
           fi
 
-      - name: Generate mutation reports
+      - name: Set up Java
+        if: matrix.language == 'java'
+        uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Run mutation tests (Python)
         if: matrix.language == 'python'
         run: |
           set -euo pipefail
@@ -153,17 +162,29 @@ jobs:
             --mutmut "$RUN_DIR/mutmut-report.json" \
             --allow-fail \
             --pytest-args "$PYTEST_TARGET"
-      - name: Stub mutation reports for non-Python targets
-        if: matrix.language != 'python'
+
+      - name: Run mutation tests (Java with PIT)
+        if: matrix.language == 'java'
+        env:
+          MAVEN_OPTS: "-ntp"
         run: |
           set -euo pipefail
           mkdir -p "$RUN_DIR"
-          cat > "$RUN_DIR/stryker-report.json" <<'JSON'
-{"total_mutants": 0, "killed": 0, "survived": 0, "timed_out": 0, "no_coverage": 0}
-JSON
-          cat > "$RUN_DIR/mutmut-report.json" <<'JSON'
-{"total_mutants": 0, "killed": 0, "survived": 0, "timeout": 0}
-JSON
+          TARGET_DIR="target"
+          if [ -n "${{ matrix.path }}" ] && [ "${{ matrix.path }}" != "." ]; then
+            TARGET_DIR="target/${{ matrix.path }}"
+          fi
+          cd "$TARGET_DIR"
+          mvn -B verify
+          REPORT_PATH="target/pit-reports/mutations.xml"
+          if [ ! -f "$REPORT_PATH" ]; then
+            echo "::error::PIT report not found at $REPORT_PATH"
+            exit 1
+          fi
+          python "$GITHUB_WORKSPACE/tools/scripts/pitest_to_json.py" \
+            --input "$REPORT_PATH" \
+            --stryker "$RUN_DIR/stryker-report.json" \
+            --mutmut "$RUN_DIR/mutmut-report.json"
       - name: Sync reports for observatory
         run: |
           set -euo pipefail
