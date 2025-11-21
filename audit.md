@@ -7,6 +7,7 @@ Snapshot: repository state inspected in this session (root README/plan plus docs
 - Per-repo summary records now include stable artifact names and matrix identifiers so aggregation works across all repos in `config/repositories.yaml`.
 - Mutation/CI matrices remain manifest-driven (`config/repositories.yaml`), keeping python/java repos in lockstep; PyYAML/defusedxml are installed where needed to unblock runs.
 - Remaining gaps are documented below (e.g., richer metrics parsing, unifying security/workflow lint runners, and moving more jobs to the manifest).
+- Lint outputs (ruff, bandit) are now non-blocking and captured per repo; the combined summary table shows counts so owners can remediate in their upstream repos without breaking the hub pipeline.
 
 ## Key Findings
 - Readiness/confidence signals now align between `README.md`, `docs/status/honest-status.md`, and `docs/analysis/index.md`; keep them in lockstep when numbers change.
@@ -21,6 +22,7 @@ Snapshot: repository state inspected in this session (root README/plan plus docs
 - Gaps: project summary does not yet parse coverage/mutation/SpotBugs severities per repo; Python coverage is not captured; Java dep-check relies on `NVD_API_KEY` secret; CodeQL is hub-only.
 - Duplication risk: multiple workflows run overlapping lint/test steps; need a single promotion path (lint → unit → mutation) with fan-out per repo + a shared summary artifact.
 - Artifact hygiene: summaries now publish to `project-ci-summary` but mutation summaries stay per-repo; add a roll-up once mutation + project-ci are green to show tests/coverage/mutation in one table.
+- Source-of-truth for CI outcomes: run-level summary (GITHUB_STEP_SUMMARY) plus artifacts `project-ci-summary` and `mutation-observatory-*`. Keep README/plan/ADR references aligned.
 
 ## Source-of-Truth Map (proposed)
 - Strategy/roadmap: `plan.md` (trim to controls + phased outcomes; demote gap tracker to backlog source).
