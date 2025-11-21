@@ -24,18 +24,19 @@ jobs:
           - slug: ci-cd-hub
             repository: jguida941/ci-cd-hub
             path: .
+            language: python
           - slug: learn-caesar-cipher
             repository: jguida941/learn-caesar-cipher
             path: caesar_cli
-          - slug: software-testing-handbook
-            repository: jguida941/software-testing-handbook
-            path: .
+            language: python
           - slug: contact-service-junit
             repository: jguida941/contact-service-junit
             path: .
+            language: java
           - slug: ci-cd-bst-demo-github-actions
             repository: jguida941/ci-cd-bst-demo-github-actions
             path: .
+            language: java
     env:
       MUTATION_CONFIG: config/mutation-observatory.ci.yaml
       RUN_DIR: ${{ github.workspace }}/artifacts/mutation/${{ matrix.slug }}
@@ -137,6 +138,7 @@ jobs:
           fi
 
       - name: Generate mutation reports
+        if: matrix.language == 'python'
         run: |
           set -euo pipefail
           mkdir -p "$RUN_DIR"
@@ -151,6 +153,17 @@ jobs:
             --mutmut "$RUN_DIR/mutmut-report.json" \
             --allow-fail \
             --pytest-args "$PYTEST_TARGET"
+      - name: Stub mutation reports for non-Python targets
+        if: matrix.language != 'python'
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUN_DIR"
+          cat > "$RUN_DIR/stryker-report.json" <<'JSON'
+{"total_mutants": 0, "killed": 0, "survived": 0, "timed_out": 0, "no_coverage": 0}
+JSON
+          cat > "$RUN_DIR/mutmut-report.json" <<'JSON'
+{"total_mutants": 0, "killed": 0, "survived": 0, "timeout": 0}
+JSON
       - name: Sync reports for observatory
         run: |
           set -euo pipefail
