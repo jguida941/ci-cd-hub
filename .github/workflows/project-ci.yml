@@ -223,46 +223,46 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/summary
           python - <<'PY'
-import json
-import os
+          import json
+          import os
 
-name = os.environ["MATRIX_NAME"]
-repo = os.environ["MATRIX_REPOSITORY"]
-language = os.environ.get("MATRIX_LANGUAGE", "")
-path = os.environ.get("MATRIX_PATH") or "."
+          name = os.environ["MATRIX_NAME"]
+          repo = os.environ["MATRIX_REPOSITORY"]
+          language = os.environ.get("MATRIX_LANGUAGE", "")
+          path = os.environ.get("MATRIX_PATH") or "."
 
-entry = {
-    "name": name,
-    "repo": repo,
-    "path": path,
-    "language": language,
-    "status": os.environ["JOB_STATUS"],
-    "artifact": f"project-ci-{name}",
-}
+          entry = {
+              "name": name,
+              "repo": repo,
+              "path": path,
+              "language": language,
+              "status": os.environ["JOB_STATUS"],
+              "artifact": f"project-ci-{name}",
+          }
 
-if language == "python":
-    entry.update(
-        {
-            "junit": f"artifacts/python/{name}/junit.xml",
-            "coverage_py": f"artifacts/python/{name}/coverage.xml",
-            "bandit": f"artifacts/python/{name}/bandit.json",
-            "ruff": f"artifacts/python/{name}/ruff.json",
-            "pip_audit": f"artifacts/python/{name}/pip-audit.json",
-        }
-    )
-elif language == "java":
-    entry.update(
-        {
-            "junit": "target/**/target/surefire-reports/TEST-*.xml",
-            "jacoco": "target/**/target/site/jacoco/jacoco.xml",
-            "spotbugs": "target/**/target/spotbugsXml.xml",
-            "depcheck": f"artifacts/java/{name}/dependency-check-report.xml",
-        }
-    )
+          if language == "python":
+              entry.update(
+                  {
+                      "junit": f"artifacts/python/{name}/junit.xml",
+                      "coverage_py": f"artifacts/python/{name}/coverage.xml",
+                      "bandit": f"artifacts/python/{name}/bandit.json",
+                      "ruff": f"artifacts/python/{name}/ruff.json",
+                      "pip_audit": f"artifacts/python/{name}/pip-audit.json",
+                  }
+              )
+          elif language == "java":
+              entry.update(
+                  {
+                      "junit": "target/**/target/surefire-reports/TEST-*.xml",
+                      "jacoco": "target/**/target/site/jacoco/jacoco.xml",
+                      "spotbugs": "target/**/target/spotbugsXml.xml",
+                      "depcheck": f"artifacts/java/{name}/dependency-check-report.xml",
+                  }
+              )
 
-with open(f"artifacts/summary/{name}.json", "w") as fh:
-    json.dump(entry, fh, indent=2)
-PY
+          with open(f"artifacts/summary/{name}.json", "w") as fh:
+              json.dump(entry, fh, indent=2)
+          PY
 
   summarize:
     needs: project-ci
