@@ -231,10 +231,19 @@ def parse_depcheck(files: List[Path]) -> Optional[Dict[str, int]]:
 
 def load_repo_entries(summary_dir: Path) -> List[Dict[str, object]]:
     entries = []
-    for file in sorted(summary_dir.glob("*.json")):
+    for file in sorted(summary_dir.rglob("*.json")):
         with open(file) as f:
             entries.append(json.load(f))
     return entries
+
+
+def write_empty_summary(json_output: Path, markdown_output: Path) -> None:
+    empty_msg = "No summary artifacts found."
+    with open(json_output, "w") as f:
+        json.dump([], f, indent=2)
+    with open(markdown_output, "w") as f:
+        f.write("## Project CI Summary\n\n_No summary artifacts found._\n")
+    print(empty_msg, file=sys.stderr)
 
 
 def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> List[RepoSummary]:
@@ -338,25 +347,27 @@ def main() -> int:
 
     summary_dir = Path(args.summary_dir)
     artifacts_root = Path(args.artifacts_root)
-    Path(args.json_output).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.markdown_output).parent.mkdir(parents=True, exist_ok=True)
+    json_output = Path(args.json_output)
+    markdown_output = Path(args.markdown_output)
+    json_output.parent.mkdir(parents=True, exist_ok=True)
+    markdown_output.parent.mkdir(parents=True, exist_ok=True)
 
     if not summary_dir.exists():
-        empty_msg = "No summary artifacts found."
-        json.dump([], open(args.json_output, "w"), indent=2)
-        with open(args.markdown_output, "w") as f:
-            f.write("## Project CI Summary\n\n_No summary artifacts found._\n")
-        print(empty_msg, file=sys.stderr)
+        write_empty_summary(json_output, markdown_output)
         return 0
 
     entries = load_repo_entries(summary_dir)
+    if not entries:
+        write_empty_summary(json_output, markdown_output)
+        return 0
+
     summaries = build_summaries(entries, artifacts_root)
 
-    with open(args.json_output, "w") as f:
+    with open(json_output, "w") as f:
         json.dump([s.as_dict() for s in summaries], f, indent=2)
 
     md = render_markdown(summaries)
-    with open(args.markdown_output, "w") as f:
+    with open(markdown_output, "w") as f:
         f.write(md)
 
     print(md)
