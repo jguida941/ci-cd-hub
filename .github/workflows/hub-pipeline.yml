@@ -10,11 +10,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  workflow-guard:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - name: Verify workflow pins + secretless envs
+        run: python scripts/check_workflow_integrity.py
+      - name: Validate runner isolation budgets
+        run: python scripts/check_runner_isolation.py --config config/runner-isolation.yaml
+      - name: Secret keyword sweep
+        run: |
+          set -euo pipefail
+          if grep -R -n -E 'AWS_SECRET|_KEY=|TOKEN=' \
+            --exclude='security-lint.yml' \
+            --exclude='security-lint.yaml' \
+            .github/workflows; then
+            echo "::error::Potential static secret detected in workflow definition"
+            exit 1
+          else
+            echo "No static secrets detected in workflow definitions"
+          fi
+
   project-ci:
+    needs: workflow-guard
     uses: ./.github/workflows/project-ci.yml
     secrets: inherit
 
   mutation:
-    needs: project-ci
+    needs: [workflow-guard, project-ci]
     uses: ./.github/workflows/mutation.yml
     secrets: inherit
