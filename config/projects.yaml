@@ -3,7 +3,15 @@ projects:
     repository: jguida941/learn-caesar-cipher
     path: caesar_cli
     package: true
-  - name: vector-space
-    repository: jguida941/vector_space
+  - name: software-testing-handbook
+    repository: jguida941/software-testing-handbook
+    path: .
+    package: false
+  - name: contact-service-junit
+    repository: jguida941/contact-service-junit
+    path: .
+    package: false
+  - name: ci-cd-bst-demo-github-actions
+    repository: jguida941/ci-cd-bst-demo-github-actions
     path: .
     package: false
