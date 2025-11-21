@@ -1,15 +1,9 @@
 version: v1
 min_resilience: 0.6
 targets:
-  - name: frontend-fixture
+  - name: mutation-metrics
     tool: stryker
     parser: stryker
     report_path: ${RUN_DIR}/stryker-report.json
-    workdir: ..
-    threshold: 0.55
-  - name: backend-fixture
-    tool: mutmut
-    parser: mutmut_json
-    report_path: ${RUN_DIR}/mutmut-report.json
     workdir: ..
     threshold: 0.60
