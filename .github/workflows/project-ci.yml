@@ -213,29 +213,56 @@ jobs:
       - name: Record summary entry
         if: always()
         id: summarize
+        env:
+          MATRIX_NAME: ${{ matrix.name }}
+          MATRIX_REPOSITORY: ${{ matrix.repository }}
+          MATRIX_PATH: ${{ matrix.path }}
+          MATRIX_LANGUAGE: ${{ steps.detect.outputs.language }}
+          JOB_STATUS: ${{ job.status }}
         run: |
           set -euo pipefail
           mkdir -p artifacts/summary
-          SUMMARY_ENTRY=$(cat <<'JSON'
-          {
-            "name": "${{ matrix.name }}",
-            "repo": "${{ matrix.repository }}",
-            "path": "${{ matrix.path }}",
-            "language": "${{ steps.detect.outputs.language }}",
-            "status": "${{ job.status }}",
-            "junit": "artifacts/python/${{ matrix.name }}/junit.xml",
-            "coverage_py": "artifacts/python/${{ matrix.name }}/coverage.xml",
+          python - <<'PY'
+import json
+import os
+
+name = os.environ["MATRIX_NAME"]
+repo = os.environ["MATRIX_REPOSITORY"]
+language = os.environ.get("MATRIX_LANGUAGE", "")
+path = os.environ.get("MATRIX_PATH") or "."
+
+entry = {
+    "name": name,
+    "repo": repo,
+    "path": path,
+    "language": language,
+    "status": os.environ["JOB_STATUS"],
+    "artifact": f"project-ci-{name}",
+}
+
+if language == "python":
+    entry.update(
+        {
+            "junit": f"artifacts/python/{name}/junit.xml",
+            "coverage_py": f"artifacts/python/{name}/coverage.xml",
+            "bandit": f"artifacts/python/{name}/bandit.json",
+            "ruff": f"artifacts/python/{name}/ruff.json",
+            "pip_audit": f"artifacts/python/{name}/pip-audit.json",
+        }
+    )
+elif language == "java":
+    entry.update(
+        {
+            "junit": "target/**/target/surefire-reports/TEST-*.xml",
             "jacoco": "target/**/target/site/jacoco/jacoco.xml",
             "spotbugs": "target/**/target/spotbugsXml.xml",
-            "bandit": "artifacts/python/${{ matrix.name }}/bandit.json",
-            "ruff": "artifacts/python/${{ matrix.name }}/ruff.json",
-            "pip_audit": "artifacts/python/${{ matrix.name }}/pip-audit.json",
-            "depcheck": "artifacts/java/${{ matrix.name }}/dependency-check-report.xml",
-            "artifact": "project-ci-${{ matrix.name }}"
-          }
-          JSON
-          )
-          echo "$SUMMARY_ENTRY" > "artifacts/summary/${{ matrix.name }}.json"
+            "depcheck": f"artifacts/java/{name}/dependency-check-report.xml",
+        }
+    )
+
+with open(f"artifacts/summary/{name}.json", "w") as fh:
+    json.dump(entry, fh, indent=2)
+PY
 
   summarize:
     needs: project-ci
@@ -251,7 +278,6 @@ jobs:
         with:
           path: artifacts
           pattern: project-ci-*
-          merge-multiple: true
 
       - name: Download project-ci summary artifact
         continue-on-error: true
