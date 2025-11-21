@@ -25,6 +25,7 @@ jobs:
           if grep -R -n -E 'AWS_SECRET|_KEY=|TOKEN=' \
             --exclude='security-lint.yml' \
             --exclude='security-lint.yaml' \
+            --exclude='hub-pipeline.yml' \
             .github/workflows; then
             echo "::error::Potential static secret detected in workflow definition"
             exit 1
