@@ -16,7 +16,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict
-from xml.sax.saxutils import escape
+from html import escape
 
 
 def parse_metadata(values: list[str] | None) -> dict[str, Any]:
@@ -140,7 +140,7 @@ def write_junit_report(
         testcase_status = '<skipped message="job skipped"/>'
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    job_attr = escape(job, entities={'"': "&quot;"})
+    job_attr = escape(job, quote=True)
     classname_attr = job_attr
     content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <testsuites>

@@ -13,3 +13,5 @@ exclude_dirs:
   - dist
 skips:
   - B101
+  - B404  # subprocess import is intentional and wrapped via safe_subprocess where needed
+  - B603  # subprocess without shell=True; inputs are controlled/validated

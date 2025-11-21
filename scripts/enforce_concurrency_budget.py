@@ -73,7 +73,7 @@ def _http_get(url: str, token: str) -> dict[str, Any]:
         },
     )
     try:
-        with urllib.request.urlopen(request, timeout=20) as response:  # noqa: S310 - HTTPS enforced
+        with urllib.request.urlopen(request, timeout=20) as response:  # nosec B310 - HTTPS and host validated above
             payload = response.read()
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace")
