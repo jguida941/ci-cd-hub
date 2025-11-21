@@ -18,7 +18,7 @@ import json
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from defusedxml import ElementTree as ET
 
@@ -81,7 +81,71 @@ class RepoSummary:
 
 
 def _glob_files(base: Path, pattern: str) -> List[Path]:
-    return list(base.glob(pattern))
+    pattern = (pattern or "").strip()
+    if not pattern:
+        return []
+    path_pattern = Path(pattern)
+    if path_pattern.is_absolute():
+        return [path_pattern] if path_pattern.is_file() else []
+    normalized = str(path_pattern).lstrip("./")
+    if not normalized:
+        return []
+    return [p for p in base.glob(normalized) if p.is_file()]
+
+
+def _ensure_str_list(value: object) -> List[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [str(v) for v in value if isinstance(v, str)]
+    return []
+
+
+def _dedupe_paths(paths: List[Path]) -> List[Path]:
+    seen: Set[str] = set()
+    deduped: List[Path] = []
+    for path in paths:
+        try:
+            key = str(path.resolve())
+        except OSError:
+            key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(path)
+    return deduped
+
+
+def _collect_artifact_files(
+    entry: Dict[str, object],
+    key: str,
+    artifacts_root: Path,
+    artifact_dir: Optional[Path],
+    fallback_pattern: Optional[str] = None,
+) -> tuple[List[Path], bool]:
+    matches: List[Path] = []
+    roots: List[Path] = []
+    artifact_dir_exists = artifact_dir is not None and artifact_dir.is_dir()
+    if artifact_dir_exists:
+        roots.append(artifact_dir)
+    else:
+        roots.append(artifacts_root)
+
+    patterns = _ensure_str_list(entry.get(key))
+    expected = bool(patterns)
+    for root in roots:
+        for pattern in patterns:
+            matches.extend(_glob_files(root, pattern))
+
+    if fallback_pattern and artifact_dir_exists:
+        matches.extend(_glob_files(artifact_dir, fallback_pattern))
+
+    if fallback_pattern and artifact_dir_exists:
+        expected = True
+
+    return _dedupe_paths(matches), expected
 
 
 def parse_junit(files: List[Path]) -> Optional[JUnitStats]:
@@ -250,17 +314,17 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
     summaries: List[RepoSummary] = []
     for entry in entries:
         name = entry.get("name") or entry.get("repo", "").split("/")[-1]
-        artifact = entry.get("artifact") or f"project-ci-{name}"
-        base = artifacts_root / artifact
+        artifact_name = entry.get("artifact") or f"project-ci-{name}"
+        artifact_dir = artifacts_root / artifact_name if artifact_name else None
 
-        junit_files = _glob_files(base, "**/junit.xml")
-        jacoco_files = _glob_files(base, "**/jacoco.xml")
-        coverage_py_files = _glob_files(base, "**/coverage.xml")
-        spotbugs_files = _glob_files(base, "**/spotbugsXml.xml")
-        bandit_files = _glob_files(base, "**/bandit.json")
-        ruff_files = _glob_files(base, "**/ruff.json")
-        pip_audit_files = _glob_files(base, "**/pip-audit.json")
-        depcheck_files = _glob_files(base, "**/dependency-check-report.xml")
+        junit_files, junit_expected = _collect_artifact_files(entry, "junit", artifacts_root, artifact_dir, "**/junit.xml")
+        jacoco_files, jacoco_expected = _collect_artifact_files(entry, "jacoco", artifacts_root, artifact_dir, "**/jacoco.xml")
+        coverage_py_files, coverage_expected = _collect_artifact_files(entry, "coverage_py", artifacts_root, artifact_dir, "**/coverage.xml")
+        spotbugs_files, spotbugs_expected = _collect_artifact_files(entry, "spotbugs", artifacts_root, artifact_dir, "**/spotbugsXml.xml")
+        bandit_files, bandit_expected = _collect_artifact_files(entry, "bandit", artifacts_root, artifact_dir, "**/bandit.json")
+        ruff_files, ruff_expected = _collect_artifact_files(entry, "ruff", artifacts_root, artifact_dir, "**/ruff.json")
+        pip_audit_files, pip_audit_expected = _collect_artifact_files(entry, "pip_audit", artifacts_root, artifact_dir, "**/pip-audit.json")
+        depcheck_files, depcheck_expected = _collect_artifact_files(entry, "depcheck", artifacts_root, artifact_dir, "**/dependency-check-report.xml")
 
         junit_stats = parse_junit(junit_files)
         line_cov = parse_jacoco(jacoco_files) if jacoco_files else None
@@ -271,12 +335,15 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
         pip_audit = parse_pip_audit(pip_audit_files)
         depcheck = parse_depcheck(depcheck_files)
 
+        language = entry.get("language", "unknown")
+        language_lower = language.lower() if isinstance(language, str) else "unknown"
+
         summary = RepoSummary(
             name=name,
             repo=entry.get("repo", name),
-            language=entry.get("language", "unknown"),
+            language=language,
             status=entry.get("status", "unknown"),
-            artifact=artifact,
+            artifact=artifact_name,
             junit=junit_stats,
             coverage_py=coverage_py,
             line_coverage=line_cov,
@@ -287,21 +354,21 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
             depcheck=depcheck,
         )
 
-        if not junit_files:
+        if not junit_files and (language_lower in {"python", "java"} or junit_expected):
             summary.notes.append("No JUnit XML found")
-        if entry.get("language") == "java" and not jacoco_files:
+        if not jacoco_files and (language_lower == "java" or jacoco_expected):
             summary.notes.append("Jacoco XML missing")
-        if entry.get("language") == "java" and not spotbugs_files:
+        if not spotbugs_files and (language_lower == "java" or spotbugs_expected):
             summary.notes.append("SpotBugs XML missing")
-        if entry.get("language") == "python" and not bandit_files:
+        if not bandit_files and (language_lower == "python" or bandit_expected):
             summary.notes.append("Bandit report missing")
-        if entry.get("language") == "python" and not ruff_files:
+        if not ruff_files and (language_lower == "python" or ruff_expected):
             summary.notes.append("Ruff report missing")
-        if entry.get("language") == "python" and not coverage_py_files:
+        if not coverage_py_files and (language_lower == "python" or coverage_expected):
             summary.notes.append("Coverage (coverage.py) missing")
-        if entry.get("language") == "python" and not pip_audit_files:
+        if not pip_audit_files and (language_lower == "python" or pip_audit_expected):
             summary.notes.append("pip-audit report missing")
-        if entry.get("language") == "java" and not depcheck_files:
+        if not depcheck_files and (language_lower == "java" or depcheck_expected):
             summary.notes.append("Dependency-Check report missing")
 
         summaries.append(summary)
