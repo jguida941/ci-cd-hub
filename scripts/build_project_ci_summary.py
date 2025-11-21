@@ -57,6 +57,7 @@ class RepoSummary:
     spotbugs: Optional[int] = None
     bandit: Optional[Dict[str, int]] = None
     ruff_issues: Optional[int] = None
+    pip_audit: Optional[int] = None
     notes: List[str] = field(default_factory=list)
 
     def as_dict(self) -> Dict[str, object]:
@@ -72,6 +73,7 @@ class RepoSummary:
             "spotbugs": self.spotbugs,
             "bandit": self.bandit,
             "ruff_issues": self.ruff_issues,
+            "pip_audit": self.pip_audit,
             "notes": self.notes,
         }
 
@@ -193,6 +195,22 @@ def parse_ruff(files: List[Path]) -> Optional[int]:
     return None
 
 
+def parse_pip_audit(files: List[Path]) -> Optional[int]:
+    """Return vulnerability count from pip-audit JSON."""
+    for file in files:
+        try:
+            data = json.loads(file.read_text())
+        except (json.JSONDecodeError, OSError):
+            continue
+        # pip-audit JSON is a list of packages with vulnerabilities array
+        if isinstance(data, list):
+            vulns = 0
+            for pkg in data:
+                vulns += len(pkg.get("vulns", []))
+            return vulns
+    return None
+
+
 def load_repo_entries(summary_dir: Path) -> List[Dict[str, object]]:
     entries = []
     for file in sorted(summary_dir.glob("*.json")):
@@ -214,6 +232,7 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
         spotbugs_files = _glob_files(base, "**/spotbugsXml.xml")
         bandit_files = _glob_files(base, "**/bandit.json")
         ruff_files = _glob_files(base, "**/ruff.json")
+        pip_audit_files = _glob_files(base, "**/pip-audit.json")
 
         junit_stats = parse_junit(junit_files)
         line_cov = parse_jacoco(jacoco_files) if jacoco_files else None
@@ -221,6 +240,7 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
         spotbugs = parse_spotbugs(spotbugs_files)
         bandit = parse_bandit(bandit_files)
         ruff_issues = parse_ruff(ruff_files)
+        pip_audit = parse_pip_audit(pip_audit_files)
 
         summary = RepoSummary(
             name=name,
@@ -234,6 +254,7 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
             spotbugs=spotbugs,
             bandit=bandit,
             ruff_issues=ruff_issues,
+            pip_audit=pip_audit,
         )
 
         if not junit_files:
@@ -248,6 +269,8 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
             summary.notes.append("Ruff report missing")
         if entry.get("language") == "python" and not coverage_py_files:
             summary.notes.append("Coverage (coverage.py) missing")
+        if entry.get("language") == "python" and not pip_audit_files:
+            summary.notes.append("pip-audit report missing")
 
         summaries.append(summary)
     return summaries
@@ -255,8 +278,8 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
 
 def render_markdown(summaries: List[RepoSummary]) -> str:
     lines = ["## Project CI Summary", ""]
-    lines.append("| Repo | Lang | Status | Tests (pass/fail/error/skip) | Line Cov (Java) | Line Cov (Py) | SpotBugs | Bandit | Ruff | Notes |")
-    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
+    lines.append("| Repo | Lang | Status | Tests (pass/fail/error/skip) | Line Cov (Java) | Line Cov (Py) | SpotBugs | Bandit | Ruff | pip-audit | Notes |")
+    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
     for s in summaries:
         if s.junit:
             tests_str = f"{s.junit.passed}/{s.junit.failures}/{s.junit.errors}/{s.junit.skipped} (total {s.junit.tests})"
@@ -270,9 +293,10 @@ def render_markdown(summaries: List[RepoSummary]) -> str:
         else:
             bandit_str = "n/a"
         ruff_str = str(s.ruff_issues) if s.ruff_issues is not None else "n/a"
+        pip_audit_str = str(s.pip_audit) if s.pip_audit is not None else "n/a"
         notes = "; ".join(s.notes) if s.notes else ""
         lines.append(
-            f"| {s.repo} | {s.language} | {s.status} | {tests_str} | {cov_str} | {cov_py_str} | {spotbugs_str} | {bandit_str} | {ruff_str} | {notes} |"
+            f"| {s.repo} | {s.language} | {s.status} | {tests_str} | {cov_str} | {cov_py_str} | {spotbugs_str} | {bandit_str} | {ruff_str} | {pip_audit_str} | {notes} |"
         )
     return "\n".join(lines)
 

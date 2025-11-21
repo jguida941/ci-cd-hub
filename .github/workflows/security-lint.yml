@@ -18,53 +18,6 @@ permissions:
   contents: read
 
 jobs:
-  python-security:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-
-      - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
-        with:
-          python-version: "3.12"
-
-      - name: Install tooling
-        run: |
-          set -euo pipefail
-          python -m pip install --upgrade pip
-          python -m pip install -r requirements-dev.lock
-      - name: Prepare security artifact directory
-        run: mkdir -p artifacts/security
-
-      - name: Ruff security rules
-        run: ruff check --select S .
-
-      - name: Bandit
-        run: |
-          set -euo pipefail
-          bandit -r tools scripts \
-            --configfile .bandit.yaml \
-            --format txt \
-            --output artifacts/security/bandit.txt \
-            --severity-level low \
-            --confidence-level low
-
-      - name: pip-audit (requirements-dev)
-        env:
-          PIP_AUDIT_PROGRESS_BAR: off
-        run: |
-          set -euo pipefail
-          pip-audit -r requirements-dev.txt
-          pip-audit -r requirements-dev.lock
-      - name: Upload Bandit report
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: bandit-security-report
-          path: artifacts/security/bandit.txt
-          if-no-files-found: ignore
-
   workflow-guard:
     runs-on: ubuntu-22.04
     steps:

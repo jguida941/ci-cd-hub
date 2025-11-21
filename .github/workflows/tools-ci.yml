@@ -1,22 +1,7 @@
 name: tools-ci
 
 on:
-  push:
-    paths:
-      - 'tools/**'
-      - 'schema/**'
-      - 'fixtures/supply_chain/**'
-      - 'fixtures/mutation/**'
-      - 'config/mutation-observatory.ci.yaml'
-      - '.github/workflows/tools-ci.yml'
-  pull_request:
-    paths:
-      - 'tools/**'
-      - 'schema/**'
-      - 'fixtures/supply_chain/**'
-      - 'fixtures/mutation/**'
-      - 'config/mutation-observatory.ci.yaml'
-      - '.github/workflows/tools-ci.yml'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

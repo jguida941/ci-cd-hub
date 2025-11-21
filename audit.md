@@ -23,6 +23,7 @@ Snapshot: repository state inspected in this session (root README/plan plus docs
 - Duplication risk: multiple workflows run overlapping lint/test steps; need a single promotion path (lint → unit → mutation) with fan-out per repo + a shared summary artifact.
 - Artifact hygiene: summaries now publish to `project-ci-summary` but mutation summaries stay per-repo; add a roll-up once mutation + project-ci are green to show tests/coverage/mutation in one table.
 - Source-of-truth for CI outcomes: run-level summary (GITHUB_STEP_SUMMARY) plus artifacts `project-ci-summary` and `mutation-observatory-*`. Keep README/plan/ADR references aligned.
+- Consolidation in flight: `hub-pipeline.yml` orchestrates manifest lint/test + mutation; `security-lint.yml` slimmed to workflow guard + dependency review; `unit.yml` and `tools-ci.yml` moved to manual dispatch to avoid duplication. `project-ci` now captures Python coverage, pip-audit, bandit, ruff, and (warn-only) summaries; job timeouts honor `config/repositories.yaml`.
 
 ## Source-of-Truth Map (proposed)
 - Strategy/roadmap: `plan.md` (trim to controls + phased outcomes; demote gap tracker to backlog source).

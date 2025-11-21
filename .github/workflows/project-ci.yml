@@ -37,6 +37,7 @@ jobs:
   project-ci:
     needs: load-repositories
     runs-on: ubuntu-22.04
+    timeout-minutes: ${{ matrix.timeout_minutes || 60 }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.load-repositories.outputs.matrix) }}
@@ -132,6 +133,17 @@ jobs:
           (cd "$TARGET_DIR" && bandit -r . -f json -o "$GITHUB_WORKSPACE/artifacts/python/${{ matrix.name }}/bandit.json") || true
           (cd "$TARGET_DIR" && bandit -r . > "$GITHUB_WORKSPACE/artifacts/python/${{ matrix.name }}/bandit.txt") || true
 
+      - name: Dependency audit (pip-audit)
+        if: steps.detect.outputs.language == 'python'
+        env:
+          PIP_AUDIT_PROGRESS_BAR: off
+        run: |
+          set -euo pipefail
+          TARGET_DIR="${{ steps.detect.outputs.target_dir }}"
+          mkdir -p "$GITHUB_WORKSPACE/artifacts/python/${{ matrix.name }}"
+          (cd "$TARGET_DIR" && pip-audit -r requirements.txt -f json > "$GITHUB_WORKSPACE/artifacts/python/${{ matrix.name }}/pip-audit.json") || true
+          (cd "$TARGET_DIR" && pip-audit -r requirements.txt > "$GITHUB_WORKSPACE/artifacts/python/${{ matrix.name }}/pip-audit.txt") || true
+
       - name: Test (pytest)
         if: steps.detect.outputs.language == 'python'
         run: |
@@ -201,6 +213,7 @@ jobs:
             "spotbugs": "target/**/target/spotbugsXml.xml",
             "bandit": "artifacts/python/${{ matrix.name }}/bandit.json",
             "ruff": "artifacts/python/${{ matrix.name }}/ruff.json",
+            "pip_audit": "artifacts/python/${{ matrix.name }}/pip-audit.json",
             "artifact": "project-ci-${{ matrix.name }}"
           }
           JSON
