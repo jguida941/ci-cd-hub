@@ -130,7 +130,7 @@ ajv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson
 | --- | --- | --- |
 | `.github/workflows/unit.yml` | Runs unit tests for the Python toolchain | `pytest` over `tools/tests/`, coverage artifacts |
 | `.github/workflows/security-lint.yml` | Enforces workflow pinning, Ruff security rules, Bandit, pip-audit | Security guard rails before merge |
-| `.github/workflows/mutation.yml` | Executes Mutation Observatory | Aggregates `stryker`/`mutmut` reports into NDJSON/Markdown |
+| `.github/workflows/mutation.yml` | Executes Mutation Observatory via manifest | Runs pytest or PIT per repo from `config/repositories.yaml` and aggregates mutation reports into NDJSON/Markdown artifacts |
 | `.github/workflows/chaos.yml` | Simulates chaos scenarios | Produces artifacts under `artifacts/chaos/` |
 | `.github/workflows/dr-drill.yml` | Runs disaster-recovery drills | Emits DR evidence under `artifacts/dr/` |
 | `.github/workflows/schema-ci.yml` | Validates schema compliance | Uses `scripts/validate_schema.py` and AJV |
@@ -139,6 +139,7 @@ ajv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson
 | `.github/workflows/sign-digest.yml` | Repairs unsigned images | Invoked manually to backfill signatures |
 | `.github/workflows/tools-ci.yml` | Lints/tests the tooling package | Ensures `tools/` CLI coverage |
 | `.github/workflows/codeql.yml` | Static analysis via CodeQL | Language-specific security scanning |
+| `.github/workflows/project-ci.yml` | Manifest-driven lint/test across registered repos (`config/repositories.yaml`) | Auto-detects Python/Java, runs ruff/bandit or Maven verify/SpotBugs, and publishes a combined summary (tests, coverage, SpotBugs, bandit/ruff counts) in the run summary + `project-ci-summary` artifact |
 
 ## Minimal reusable workflow (consumer repo)
 
