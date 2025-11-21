@@ -52,6 +52,7 @@ class RepoSummary:
     status: str
     artifact: str
     junit: Optional[JUnitStats] = None
+    coverage_py: Optional[float] = None
     line_coverage: Optional[float] = None
     spotbugs: Optional[int] = None
     bandit: Optional[Dict[str, int]] = None
@@ -66,6 +67,7 @@ class RepoSummary:
             "status": self.status,
             "artifact": self.artifact,
             "junit": self.junit.as_dict() if self.junit else None,
+            "coverage_py": self.coverage_py,
             "line_coverage": self.line_coverage,
             "spotbugs": self.spotbugs,
             "bandit": self.bandit,
@@ -124,6 +126,28 @@ def parse_jacoco(files: List[Path]) -> Optional[float]:
             if total == 0:
                 continue
             return round((covered / total) * 100, 1)
+    return None
+
+
+def parse_coverage_py(files: List[Path]) -> Optional[float]:
+    """
+    Return line coverage percent from coverage.py XML (first valid file).
+    """
+    for file in files:
+        try:
+            root = ET.parse(file).getroot()
+        except ET.ParseError:
+            continue
+        lines_valid = root.attrib.get("lines-valid")
+        lines_covered = root.attrib.get("lines-covered")
+        if lines_valid is None or lines_covered is None:
+            continue
+        valid = int(float(lines_valid))
+        covered = int(float(lines_covered))
+        total = valid
+        if total == 0:
+            continue
+        return round((covered / total) * 100, 1)
     return None
 
 
@@ -186,12 +210,14 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
 
         junit_files = _glob_files(base, "**/junit.xml")
         jacoco_files = _glob_files(base, "**/jacoco.xml")
+        coverage_py_files = _glob_files(base, "**/coverage.xml")
         spotbugs_files = _glob_files(base, "**/spotbugsXml.xml")
         bandit_files = _glob_files(base, "**/bandit.json")
         ruff_files = _glob_files(base, "**/ruff.json")
 
         junit_stats = parse_junit(junit_files)
         line_cov = parse_jacoco(jacoco_files) if jacoco_files else None
+        coverage_py = parse_coverage_py(coverage_py_files) if coverage_py_files else None
         spotbugs = parse_spotbugs(spotbugs_files)
         bandit = parse_bandit(bandit_files)
         ruff_issues = parse_ruff(ruff_files)
@@ -203,6 +229,7 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
             status=entry.get("status", "unknown"),
             artifact=artifact,
             junit=junit_stats,
+            coverage_py=coverage_py,
             line_coverage=line_cov,
             spotbugs=spotbugs,
             bandit=bandit,
@@ -219,6 +246,8 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
             summary.notes.append("Bandit report missing")
         if entry.get("language") == "python" and not ruff_files:
             summary.notes.append("Ruff report missing")
+        if entry.get("language") == "python" and not coverage_py_files:
+            summary.notes.append("Coverage (coverage.py) missing")
 
         summaries.append(summary)
     return summaries
@@ -226,14 +255,15 @@ def build_summaries(entries: List[Dict[str, object]], artifacts_root: Path) -> L
 
 def render_markdown(summaries: List[RepoSummary]) -> str:
     lines = ["## Project CI Summary", ""]
-    lines.append("| Repo | Lang | Status | Tests (pass/fail/error/skip) | Line Cov | SpotBugs | Bandit | Ruff | Notes |")
-    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
+    lines.append("| Repo | Lang | Status | Tests (pass/fail/error/skip) | Line Cov (Java) | Line Cov (Py) | SpotBugs | Bandit | Ruff | Notes |")
+    lines.append("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |")
     for s in summaries:
         if s.junit:
             tests_str = f"{s.junit.passed}/{s.junit.failures}/{s.junit.errors}/{s.junit.skipped} (total {s.junit.tests})"
         else:
             tests_str = "n/a"
         cov_str = f"{s.line_coverage:.1f}%" if s.line_coverage is not None else "n/a"
+        cov_py_str = f"{s.coverage_py:.1f}%" if s.coverage_py is not None else "n/a"
         spotbugs_str = str(s.spotbugs) if s.spotbugs is not None else "n/a"
         if s.bandit:
             bandit_str = f"L{s.bandit.get('LOW', 0)}/M{s.bandit.get('MEDIUM', 0)}/H{s.bandit.get('HIGH', 0)}"
@@ -242,7 +272,7 @@ def render_markdown(summaries: List[RepoSummary]) -> str:
         ruff_str = str(s.ruff_issues) if s.ruff_issues is not None else "n/a"
         notes = "; ".join(s.notes) if s.notes else ""
         lines.append(
-            f"| {s.repo} | {s.language} | {s.status} | {tests_str} | {cov_str} | {spotbugs_str} | {bandit_str} | {ruff_str} | {notes} |"
+            f"| {s.repo} | {s.language} | {s.status} | {tests_str} | {cov_str} | {cov_py_str} | {spotbugs_str} | {bandit_str} | {ruff_str} | {notes} |"
         )
     return "\n".join(lines)
 

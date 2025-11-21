@@ -4,6 +4,7 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -106,6 +107,7 @@ jobs:
           set -euo pipefail
           TARGET_DIR="${{ steps.detect.outputs.target_dir }}"
           python -m pip install --upgrade pip
+          python -m pip install pytest pytest-cov
           if [ -f "$TARGET_DIR/pyproject.toml" ]; then
             (cd "$TARGET_DIR" && python -m pip install -e '.[dev]' || python -m pip install -e .)
           fi
@@ -136,7 +138,8 @@ jobs:
           set -euo pipefail
           TARGET_DIR="${{ steps.detect.outputs.target_dir }}"
           mkdir -p artifacts/python/${{ matrix.name }}
-          if ! (cd "$TARGET_DIR" && pytest --junitxml="$GITHUB_WORKSPACE/artifacts/python/${{ matrix.name }}/junit.xml"); then
+          PYTEST_ARGS="--junitxml=$GITHUB_WORKSPACE/artifacts/python/${{ matrix.name }}/junit.xml --cov=. --cov-report=xml:$GITHUB_WORKSPACE/artifacts/python/${{ matrix.name }}/coverage.xml"
+          if ! (cd "$TARGET_DIR" && pytest $PYTEST_ARGS); then
             echo "::error::pytest failed for $TARGET_DIR"
             exit 1
           fi
@@ -193,6 +196,7 @@ jobs:
             "language": "${{ steps.detect.outputs.language }}",
             "status": "${{ job.status }}",
             "junit": "artifacts/python/${{ matrix.name }}/junit.xml",
+            "coverage_py": "artifacts/python/${{ matrix.name }}/coverage.xml",
             "jacoco": "target/**/target/site/jacoco/jacoco.xml",
             "spotbugs": "target/**/target/spotbugsXml.xml",
             "bandit": "artifacts/python/${{ matrix.name }}/bandit.json",

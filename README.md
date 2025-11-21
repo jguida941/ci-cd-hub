@@ -131,6 +131,7 @@ ajv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson
 | `.github/workflows/unit.yml` | Runs unit tests for the Python toolchain | `pytest` over `tools/tests/`, coverage artifacts |
 | `.github/workflows/security-lint.yml` | Enforces workflow pinning, Ruff security rules, Bandit, pip-audit | Security guard rails before merge |
 | `.github/workflows/mutation.yml` | Executes Mutation Observatory via manifest | Runs pytest or PIT per repo from `config/repositories.yaml` and aggregates mutation reports into NDJSON/Markdown artifacts |
+| `.github/workflows/hub-pipeline.yml` | Orchestrates manifest lint/test + mutation in one run | Calls `project-ci.yml` then `mutation.yml` so all repos run through both lanes from a single trigger |
 | `.github/workflows/chaos.yml` | Simulates chaos scenarios | Produces artifacts under `artifacts/chaos/` |
 | `.github/workflows/dr-drill.yml` | Runs disaster-recovery drills | Emits DR evidence under `artifacts/dr/` |
 | `.github/workflows/schema-ci.yml` | Validates schema compliance | Uses `scripts/validate_schema.py` and AJV |

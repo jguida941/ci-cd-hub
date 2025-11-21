@@ -1,0 +1,20 @@
+name: hub-pipeline
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  project-ci:
+    uses: ./.github/workflows/project-ci.yml
+    secrets: inherit
+
+  mutation:
+    needs: project-ci
+    uses: ./.github/workflows/mutation.yml
+    secrets: inherit
