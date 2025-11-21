@@ -187,7 +187,10 @@ jobs:
             "repo": "${{ matrix.repository }}",
             "path": "${{ matrix.path }}",
             "language": "${{ steps.detect.outputs.language }}",
-            "status": "${{ job.status }}"
+            "status": "${{ job.status }}",
+            "junit": "artifacts/python/${{ matrix.name }}/junit.xml",
+            "jacoco": "target/**/target/site/jacoco/jacoco.xml",
+            "spotbugs": "target/**/target/spotbugsXml.xml"
           }
           JSON
           )
@@ -220,9 +223,12 @@ jobs:
           {
             echo "## Project CI Summary"
             echo ""
-            echo "| Repo | Language | Status |"
-            echo "| --- | --- | --- |"
-            echo "$SUMMARY_JSON" | jq -r '.[] | "| \(.repo) | \(.language) | \(.status) |"'
+            echo "| Repo | Language | Status | Notes |"
+            echo "| --- | --- | --- | --- |"
+            echo "$SUMMARY_JSON" | jq -r '
+              .[] |
+              "| \(.repo) | \(.language) | \(.status) | JUnit: \(.junit // "n/a"), JaCoCo: \(.jacoco // "n/a"), SpotBugs: \(.spotbugs // "n/a") |"
+            '
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload combined summary
