@@ -2,6 +2,8 @@
 
 [LICENSE](LICENSE) · [Security](docs/SECURITY.md)
 
+**Work in progress, not stable or secure at the moment**
+
 > Production-grade CI/CD intelligence platform that hardens the software supply chain, proves determinism, and converts pipeline telemetry into executive-grade analytics—implemented according to the blueprint in `plan.md`.
 >
 > **Current status (2025-11-02)**: ~85 % ready for trusted single-repository use on GitHub-hosted runners. Multi-repository hub features (per-repo secrets, rate limiting, cost tracking) remain in progress. Proxy-based egress controls need validation in CI, and cross-time determinism is a post-release audit, not a merge gate.
