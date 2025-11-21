@@ -24,7 +24,7 @@ fi
 # Generate structure using tree if available
 generate_with_tree() {
   tree -L 3 \
-    -I 'node_modules|.git|__pycache__|*.pyc|.pytest_cache|.venv|venv' \
+    -I 'node_modules|.git|__pycache__|*.pyc|.pytest_cache|.venv|venv|.doc-link-backup-*' \
     --charset ascii \
     --gitignore \
     --dirsfirst \
@@ -41,6 +41,7 @@ generate_with_find() {
   # Find directories, limit depth to 3
   find . -maxdepth 3 -type d \
     ! -path "./.git*" \
+    ! -path "./.doc-link-backup*" \
     ! -path "*/node_modules*" \
     ! -path "*/__pycache__*" \
     ! -path "*/.pytest_cache*" \
@@ -60,6 +61,7 @@ generate_with_find() {
   # Find files in top 3 levels
   find . -maxdepth 3 -type f \
     ! -path "./.git*" \
+    ! -path "./.doc-link-backup*" \
     ! -path "*/node_modules*" \
     ! -path "*/__pycache__*" \
     ! -path "*/.pytest_cache*" \

@@ -1,13 +1,26 @@
 # Runner Egress Allowlist
 
-| Destination | Purpose                    | Notes |
-|-------------|----------------------------|-------|
-| dns.example.com:53 | DNS resolution | UDP and TCP; update with approved resolver |
-| registry.example.com:443 | Push/pull container images | Auth via OIDC + short-lived token |
-| artifacts.example.com:443 | Upload Evidence Bundle      | mTLS enforced |
-| vault.example.com:8200    | Fetch short-lived credentials | Bound to runner identity |
-| pool.ntp.org:123          | Time synchronization        | outbound UDP; pool rotates IPs—use hostname-based allow or internal NTP proxy |
+Source of truth: runner/proxy policy that backs `HTTP(S)_PROXY`/`NO_PROXY` in `.github/workflows/release.yml` (`DEFAULT_ALLOWLIST`) and any perimeter firewall rules. Keep this table in sync with the workflow and change-management tickets.
 
-No other outbound connections are permitted. Update this table when adding a new dependency and capture the approval in change-management records.
+### Current Allowlist (from release workflow)
+| Destination | Purpose | Notes |
+|-------------|---------|-------|
+| github.com, api.github.com | GitHub API + actions | Required for workflow/checkout. |
+| ghcr.io | OCI registry for images/referrers | Matches release publishing. |
+| registry.npmjs.org | npm registry | Tooling installs. |
+| pypi.org, files.pythonhosted.org | PyPI registry | Python deps. |
+| objects.githubusercontent.com, raw.githubusercontent.com, githubusercontent.com, actions.githubusercontent.com, pipelines.actions.githubusercontent.com, release-assets.githubusercontent.com | GitHub asset delivery | Workflow/downloads. |
+| sigstore.dev | Sigstore TUF roots | Cosign verification. |
+| storage.googleapis.com | Sigstore/Kind assets | Tool downloads. |
+| kind.sigs.k8s.io, dl.k8s.io | kind/Kubernetes binaries | Local/CI clusters. |
+| blob.core.windows.net | Action/cache backing store | Runner cache. |
 
-If you require strict IP-based allowlists, work with your network team to pin to fixed-IP NTP sources (ISP-provided or an internal relay) and document the rotation policy for the pool.
+### Environment-specific endpoints (fill these in)
+| Destination | Purpose | Notes |
+|-------------|---------|-------|
+| `<dns-hostname>:53` | DNS resolution | Prefer org DNS or resolver behind the proxy. |
+| `<artifacts-hostname>:443` | Upload Evidence Bundle | Enforce mTLS; aligns with `artifacts/evidence/*` publishing. |
+| `<secrets-hostname>:8200` | Fetch short-lived credentials | Bound to runner identity; rotate client certs/tokens regularly. |
+| `<ntp-hostname>:123` | Time synchronization | Hostname-based allow; pin to fixed-IP NTP relays if required. |
+
+No other outbound connections are permitted. When adding a dependency, update the perimeter controls first, then record the change here with a ticket/approval link.

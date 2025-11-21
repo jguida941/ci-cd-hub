@@ -1,50 +1,25 @@
 # Rekor Monitor
 
 ## Purpose
-
-Fetch Rekor log entries and inclusion proofs for a signed artifact digest, caching indices for faster lookups.
+Capture Rekor inclusion proofs for signed artifacts and surface verification results for CI gating.
 
 ## Usage
-
 ```bash
-
-./tools/rekor_monitor.sh \
-  "sha256:<digest>" \
-  "ghcr.io/org/image" \
-  artifacts/evidence
-
-```bash
+./tools/rekor_monitor.sh sha256:<digest> ghcr.io/<owner>/<image> artifacts/evidence/rekor
+```
 
 ## Configuration
-
-- Environment:
-  - `REKOR_LOG` (default `https://rekor.sigstore.dev`).
-  - `REKOR_CLI_VERSION` to pin downloaded CLI.
-
-- Requires `rekor-cli` and `jq` in PATH (script can download/pin CLI).
-
-## Output & Artifacts
-
-- Proof: `artifacts/evidence/rekor-proof-<timestamp>.json`
-
-- Search results: `artifacts/evidence/rekor-search-<timestamp>.json`
-
-- Cached indices: `artifacts/evidence/rekor-indices.txt`
+- Arguments: `<digest>` (sha256 of image), `<image>` (registry/repo), `<output-dir>` for evidence.
+- Uses Rekor public log by default; set `REKOR_URL` to override.
 
 ## Testing
-
-(Currently integration-tested via release workflow.)
+Covered in pipeline runs; add unit tests under `tools/tests/` if extending.
 
 ## Dependencies
+- Bash, `rekor-cli`, `jq`.
+- `rekor-cli` is auto-installed with checksum verification if absent.
 
-- Bash, curl, jq, rekor-cli.
+## Output & Artifacts
+- Rekor search/proof JSON files under `artifacts/evidence/rekor/`.
 
-## Changelog
-
-- 2025-10-26: Documentation framework initialized.
-
-## License
-
-See [LICENSE](../../LICENSE).
-
-**Back to:** [Overview](../../docs/OVERVIEW.md)
+**Back to:** [Overview](../../docs/OVERVIEW.md) · [Testing](../../docs/TESTING.md)

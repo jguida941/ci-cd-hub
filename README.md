@@ -2,16 +2,14 @@
 
 [LICENSE](LICENSE) · [Security](docs/SECURITY.md)
 
-> **Status:** Experimental, work in progress. CI runs may fail and controls are not yet wired end to end.  
-> **Do not use in production.** Documentation and workflows are currently being updated; some details may change.
+> Production-grade CI/CD intelligence platform that hardens the software supply chain, proves determinism, and converts pipeline telemetry into executive-grade analytics—implemented according to the blueprint in `plan.md`.
 >
-> Production-grade CI/CD intelligence platform that hardens the software supply chain, proves determinism, and converts pipeline telemetry into executive-grade analytics, implemented according to the blueprint in `plan.md`.
+> **Current status (2025-11-02)**: ~85 % ready for trusted single-repository use on GitHub-hosted runners. Multi-repository hub features (per-repo secrets, rate limiting, cost tracking) remain in progress. Proxy-based egress controls need validation in CI, and cross-time determinism is a post-release audit, not a merge gate.
 >
-> **Current status (2025-11-02):** ~85% ready for trusted single-repository use on GitHub-hosted runners. Multi-repository hub features (per-repo secrets, rate limiting, cost tracking) remain in progress. Proxy-based egress controls need validation in CI, and cross-time determinism is a post-release audit, not a merge gate.
->
-> **Use in production only after:** confirming egress enforcement in real runs, deploying Kyverno policies to the target cluster, and implementing the Phase 2 roadmap in `MULTI_REPO_IMPLEMENTATION_STATUS.md`. Track real-time readiness in [`HONEST_STATUS.md`](docs/status/honest-status.md).
-
+> **Use in production only after**: confirming egress enforcement in real runs, deploying Kyverno policies to the target cluster, and completing the Phase 2 roadmap in `docs/backlog.md`. Track real-time readiness in [`HONEST_STATUS.md`](docs/status/honest-status.md).
 This README gives engineers, auditors, and downstream repos an actionable entry point: how to run the core checks, what the platform guarantees, which components are stable, and where to find every artifact referenced in the plan.
+
+## Quick start
 
 ```bash
 # 1) Setup
@@ -83,7 +81,7 @@ ajv validate -s schema/pipeline_run.v1.2.json -d artifacts/pipeline_run.ndjson
 | Per-repo concurrency limits | ❌ Not supported on hosted runners | `settings.max_parallel_jobs` is parsed but GitHub Actions applies `strategy.max-parallel` globally. |
 | Memory limits | ❌ Not supported on hosted runners | `settings.resource_limit_mb` is informational only. |
 | Cross-time determinism | 🟡 Post-release audit | The follow-up workflow files issues on drift; gating still required. |
-| Secrets, rate limiting, cost tracking | 🚧 Planned | See `MULTI_REPO_IMPLEMENTATION_STATUS.md` Phase 2 roadmap. |
+| Secrets, rate limiting, cost tracking | 🚧 Planned | See `docs/backlog.md` (Phase 2/observability items). |
 
 ## Security boundaries & claims
 
@@ -602,7 +600,7 @@ matrix in source control or move it into a config file (for example,
 
 - [`docs/TESTING.md`](docs/TESTING.md) — local testing expectations, coverage, schema CI.
 - [`docs/SUPPLY_CHAIN.md`](docs/SUPPLY_CHAIN.md) — SBOM/provenance gate details.
-- [`docs/TODO.md`](docs/TODO.md) — documentation follow-ups.
+- Backlog and environment-specific TODOs are tracked in [`docs/backlog.md`](docs/backlog.md) and GitHub Issues.
 
 ## Contributing & support
 

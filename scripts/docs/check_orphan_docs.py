@@ -46,7 +46,7 @@ def find_all_markdown_files(root_dir: Path) -> Set[Path]:
     markdown_files = set()
 
     # Exclude certain directories
-    exclude_dirs = {'.git', 'node_modules', '.venv', 'venv', '__pycache__'}
+    exclude_dirs = {'.git', 'node_modules', '.venv', 'venv', '__pycache__', 'archive'}
 
     for md_file in root_dir.rglob('*.md'):
         # Skip files in excluded directories

@@ -8,13 +8,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 DEFAULT_VERSION="v1.12.5"
-DEFAULT_INSTALL_URL="https://raw.githubusercontent.com/kyverno/kyverno/${DEFAULT_VERSION}/config/release/install.yaml"
+DEFAULT_INSTALL_URL="https://github.com/kyverno/kyverno/releases/download/${DEFAULT_VERSION}/install.yaml"
+DEFAULT_INSTALL_MANIFEST="${REPO_ROOT}/deploy/kyverno/install.yaml"
 DEFAULT_KUSTOMIZE_DIR="${REPO_ROOT}/deploy/kyverno"
 DEFAULT_POLICY_DIR="${REPO_ROOT}/policies/kyverno"
 
 KUBE_CONTEXT="${KUBECTL_CONTEXT:-}"
 KYVERNO_NAMESPACE="kyverno"
-INSTALL_URL="$DEFAULT_INSTALL_URL"
+INSTALL_SOURCE=""
 WAIT_TIMEOUT=240
 WAIT_FOR_READY=true
 SKIP_INSTALL=false
@@ -88,12 +89,12 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --install-url)
-      INSTALL_URL="${2-}"
+      INSTALL_SOURCE="${2-}"
       shift 2
       ;;
     --version)
       VERSION="${2-}"
-      INSTALL_URL="https://raw.githubusercontent.com/kyverno/kyverno/${VERSION}/config/release/install.yaml"
+      INSTALL_SOURCE="https://github.com/kyverno/kyverno/releases/download/${VERSION}/install.yaml"
       shift 2
       ;;
     --kustomize-dir)
@@ -137,6 +138,14 @@ if [[ -z "$KUBE_CONTEXT" ]]; then
   exit 1
 fi
 
+if [[ -z "$INSTALL_SOURCE" ]]; then
+  if [[ -s "$DEFAULT_INSTALL_MANIFEST" ]]; then
+    INSTALL_SOURCE="$DEFAULT_INSTALL_MANIFEST"
+  else
+    INSTALL_SOURCE="$DEFAULT_INSTALL_URL"
+  fi
+fi
+
 if [[ ! -d "$POLICY_DIR" ]]; then
   echo "Policy directory not found: $POLICY_DIR" >&2
   exit 1
@@ -164,8 +173,16 @@ if ! kubectl_cmd auth can-i apply clusterpolicies.kyverno.io >/dev/null 2>&1; th
 fi
 
 if [[ "$SKIP_INSTALL" == false ]]; then
-  log "Installing Kyverno controllers from ${INSTALL_URL}"
-  kubectl_cmd apply -f "$INSTALL_URL"
+  if [[ "$INSTALL_SOURCE" =~ ^https?:// ]]; then
+    log "Installing Kyverno controllers from ${INSTALL_SOURCE}"
+  else
+    if [[ ! -f "$INSTALL_SOURCE" ]]; then
+      echo "Kyverno manifest not found at ${INSTALL_SOURCE}" >&2
+      exit 1
+    fi
+    log "Installing Kyverno controllers from local manifest ${INSTALL_SOURCE}"
+  fi
+  kubectl_cmd apply -f "$INSTALL_SOURCE"
 
   if $WAIT_FOR_READY; then
     log "Waiting up to ${WAIT_TIMEOUT}s for Kyverno deployments in namespace ${KYVERNO_NAMESPACE}"

@@ -21,7 +21,7 @@ _Last updated: 2025-11-02 (v1.0.10 snapshot)_
    - Update `HONEST_STATUS.md` after the first successful CI run to include observed egress behaviour and determinism outcome.
 
 4. **Plan per-repo secret delivery**
-   - Select GitHub App or Vault approach (see Phase 2 below) and capture design decisions in `MULTI_REPO_IMPLEMENTATION_STATUS.md`.
+   - Select GitHub App or Vault approach (see Phase 2 below) and capture design decisions in GitHub Issues (multi-repo/secret labels) + `docs/backlog.md`.
 
 ## Near-Term Roadmap
 
@@ -68,11 +68,11 @@ See `plan.md:1778-1856` for complete 10-week roadmap including:
 ## Documentation Structure
 
 ```
-plan.md                    - Strategic architecture & roadmap
-├── issues.md             - Security audit (13 vulnerabilities)
-├── MULTI_REPO_ANALYSIS.md - Multi-tenancy gaps (6 categories)
-├── ANALYSIS_INDEX.md     - Quick reference tables
-└── START_HERE.md         - This file (action plan)
+plan.md                            - Strategic architecture & roadmap
+├── GitHub Issues (security label) - Security audit tracker
+├── docs/analysis/multi-repo-analysis.md - Multi-tenancy gaps (6 categories)
+├── docs/analysis/index.md         - Quick reference tables
+└── docs/start-here.md             - This file (action plan)
 ```
 
 ## Decision Points
@@ -124,7 +124,7 @@ These are NOT in current plan.md:
 
 ## Contact Points
 
-- Security Issues: See `issues.md` for detailed findings
+- Security Issues: See GitHub Issues (`https://github.com/jguida941/ci-cd-hub/issues`) with `security` label
 - Architecture Questions: See `plan.md` for design rationale
-- Multi-Repo Gaps: See `MULTI_REPO_ANALYSIS.md` for analysis
-- Quick Reference: See `ANALYSIS_INDEX.md` for navigation
+- Multi-Repo Gaps: See `docs/analysis/multi-repo-analysis.md` for analysis
+- Quick Reference: See `docs/analysis/index.md` for navigation

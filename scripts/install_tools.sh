@@ -129,8 +129,12 @@ install_cosign() {
 
   sudo install -m 0755 "$TMP_DIR/${file}" /usr/local/bin/cosign
   installed_version="$(cosign version --short 2>/dev/null | tr -d '\n')"
-  if [[ "${installed_version}" != "${COSIGN_VERSION}" ]]; then
-    log "ERROR: cosign version mismatch - expected ${COSIGN_VERSION}, found ${installed_version:-unknown}"
+  log "Detected cosign version reporting as '${installed_version:-unknown}'"
+  # Accept either v-prefixed or bare semantic versions to match upstream output formats.
+  expected_normalized="${COSIGN_VERSION#v}"
+  installed_normalized="${installed_version#v}"
+  if [[ -z "${installed_normalized}" || "${installed_normalized}" != "${expected_normalized}" ]]; then
+    log "ERROR: cosign version mismatch - expected ${COSIGN_VERSION} (normalized ${expected_normalized}), found ${installed_version:-unknown}"
     exit 1
   fi
 }

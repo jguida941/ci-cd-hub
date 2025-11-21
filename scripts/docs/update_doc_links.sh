@@ -71,7 +71,7 @@ update_links() {
   # Update each mapping
   update_specific_link "$file" "START_HERE.md" "docs/start-here.md" && modified=true
   update_specific_link "$file" "HONEST_STATUS.md" "docs/status/honest-status.md" && modified=true
-  update_specific_link "$file" "MULTI_REPO_IMPLEMENTATION_STATUS.md" "docs/status/implementation.md" && modified=true
+  update_specific_link "$file" "MULTI_REPO_IMPLEMENTATION_STATUS.md" "docs/status/archive/implementation-2025-11-02.md" && modified=true
   update_specific_link "$file" "MULTI_REPO_ANALYSIS.md" "docs/analysis/multi-repo-analysis.md" && modified=true
   update_specific_link "$file" "MULTI_REPO_SCALABILITY.md" "docs/analysis/scalability.md" && modified=true
   update_specific_link "$file" "ANALYSIS_INDEX.md" "docs/analysis/index.md" && modified=true

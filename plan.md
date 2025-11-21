@@ -18,10 +18,10 @@ Primary outcomes
 Use this section as the running ledger of high-priority gaps and the precise controls we still need to land so work-in-progress items do not disappear in the longer narrative below.
 
 ### Related Documentation
-- **🚨 START HERE**: See `START_HERE.md` for prioritized action plan
-- **Security Issues**: See `issues.md` for comprehensive security audit (13 vulnerabilities found)
-- **Multi-Repo Analysis**: See `MULTI_REPO_ANALYSIS.md` for detailed multi-tenancy gaps
-- **Quick Reference**: See `ANALYSIS_INDEX.md` for navigation guide
+- **🚨 START HERE**: See `docs/start-here.md` for the prioritized action plan
+- **Security Issues**: Track in GitHub Issues (`https://github.com/jguida941/ci-cd-hub/issues`) instead of the deprecated `issues.md`
+- **Multi-Repo Analysis**: See `docs/analysis/multi-repo-analysis.md` for detailed multi-tenancy gaps
+- **Quick Reference**: See `docs/analysis/index.md` for navigation
 
 ## Short Answer — Harden Now
 
@@ -47,7 +47,7 @@ Priority fixes (blockers) — AUDIT STATUS 2025-11-02
 High-leverage hardening (near-term)
 
 - [✅] **Input validation hardening**: All workflow inputs now sanitized, paths validated, array syntax used
-- [📋] **Multi-repo scalability**: See `MULTI_REPO_IMPLEMENTATION_STATUS.md` for current progress (dynamic config, proxy egress) and Phase 2 roadmap
+- [📋] **Multi-repo scalability**: See `docs/backlog.md` for current progress (dynamic config, proxy egress) and Phase 2 roadmap, with historical snapshot in `docs/status/archive/implementation-2025-11-02.md`
 - [✅] **Tool download verification**: Mandatory checksum verification for cosign, rekor-cli, oras, syft, grype (`scripts/install_tools.sh`, `tools/rekor_monitor.sh`)
 - [🟡] **Secret handling**: CLI arguments scrubbed, but per-repository secret scoping still pending (shared `GITHUB_TOKEN`)
 - [ ] Single source of truth for gap status: replace duplicated tracker text with `docs/gaps.yaml` rendered into README to avoid drift.

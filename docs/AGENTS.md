@@ -187,7 +187,7 @@ This catalog describes each automation "agent" that runs inside the CI Intellige
 
 - **Gates**: CI fails if docs contain lint errors or TODO placeholders.
 
-- **Runbook**: [`docs/OVERVIEW.md`](./OVERVIEW.md) & `docs/documentationupdate.md`.
+- **Runbook**: [`docs/OVERVIEW.md`](./OVERVIEW.md).
 
 ## Changelog
 

@@ -1,7 +1,11 @@
-# Multi-Repository CI/CD Hub - Implementation Status
+# Multi-Repository CI/CD Hub - Implementation Status (Archived)
+
+> Archived snapshot from 2025-11-02. Do not use as current readiness; see `docs/status/honest-status.md` and README for the authoritative status and gating criteria.
 
 **Date**: 2025-11-02
 **Status**: Phase 1 Complete - Dynamic Configuration & Per-Repo Isolation
+
+> Note: This document is a Phase 1 snapshot. For current readiness and production gate criteria, see `docs/status/honest-status.md` (authoritative) and keep README status in sync. Readiness figures below align to that source of truth.
 
 ---
 
@@ -210,19 +214,20 @@ settings:
 
 ## 📈 Readiness Assessment
 
-### Single-Repository Mode: 92%
-- All security fixes applied
-- Egress control implemented
-- Evidence chain complete
-- **Ready for production**
+### Single-Repository Mode: ~85%
+- Supply-chain controls, evidence bundle, and determinism harness in place; cross-time determinism remains advisory.
+- Proxy-based egress allowlists configured but require empirical validation in CI.
+- **Ready for trusted repositories only** once proxy validation is proven; see `docs/status/honest-status.md` for current caveats.
 
-### Multi-Repository Hub: 85%
+### Multi-Repository Hub: ~70%
 - ✅ Dynamic configuration
 - ✅ Per-repo egress control
 - ✅ Resource isolation
 - ❌ Per-repo secrets (shared token okay for trusted repos)
 - ❌ Rate limiting (okay for low volume)
 - ❌ Cost tracking (can add later)
+- ❌ Fair scheduling/quota enforcement for mixed-trust tenants
+- **Pilot posture**: limited to trusted repos until secrets/fairness/cost plumbing land.
 
 **Recommendation**: **Deploy now for trusted repositories**, implement Phase 2 features as usage scales.
 

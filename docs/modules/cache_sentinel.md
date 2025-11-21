@@ -33,8 +33,7 @@ python tools/cache_sentinel.py verify \
 - Verification reads the manifest’s `algorithm` (`blake3` or `sha256`).
 
 ## Testing
-
-(Currently covered via integration in release workflow; unit tests to be added.)
+- Release workflow coverage; expand with unit tests in `tools/tests/test_cache_sentinel.py`.
 
 ## Dependencies
 
@@ -55,4 +54,4 @@ python tools/cache_sentinel.py verify \
 
 See [LICENSE](../../LICENSE).
 
-**Back to:** [Overview](../OVERVIEW.md)
+**Back to:** [Overview](../OVERVIEW.md) · [Testing](../TESTING.md)

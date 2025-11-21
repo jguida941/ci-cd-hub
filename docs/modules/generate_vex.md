@@ -23,26 +23,15 @@ python tools/generate_vex.py \
 - Output adheres to `schema/cyclonedx-vex-1.5.schema.json`.
 
 ## Testing
-
 ```bash
 pytest tools/tests/test_generate_vex.py
 ```
 
 ## Dependencies
-
 - Python 3.12+
 - `jsonschema`
 
 ## Output & Artifacts
-
 - CycloneDX VEX: `artifacts/sbom/app.vex.json`
 
-## Changelog
-
-- 2025-10-26: Documentation framework initialized.
-
-## License
-
-See [LICENSE](../../LICENSE).
-
-**Back to:** [Overview](../OVERVIEW.md)
+**Back to:** [Overview](../OVERVIEW.md) · [Testing](../TESTING.md)

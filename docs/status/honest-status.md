@@ -1,6 +1,7 @@
-﻿# CI/CD Hub – Honest Status Assessment
+# CI/CD Hub – Honest Status Assessment
 
-**Snapshot:** 2025‑11‑02 (tag v1.0.10)  
+**Snapshot:** 2025-11-02 (tag v1.0.10)  
+Last updated: 2025-11-21  
 **Audience:** Engineering leadership, auditors, and on-call responders who need an unvarnished view of platform readiness.
 
 ---
@@ -72,7 +73,7 @@ Until the open items below land and a tagged build validates enforcement in CI, 
 
 1. ✅ Trigger v1.0.10 release workflow; capture results of proxy enforcement and determinism follow-up run.  
 2. 🟡 Update `HONEST_STATUS.md` with empirical evidence once CI completes (add log references, artifacts).  
-3. 🟡 Start Phase 2 tasks in `MULTI_REPO_IMPLEMENTATION_STATUS.md` (per-repo secrets, rate limiting).  
+3. 🟡 Start Phase 2 tasks in `docs/backlog.md` (per-repo secrets, rate limiting); historical snapshot archived in `docs/status/archive/implementation-2025-11-02.md`.  
 4. 🟡 Draft GitHub org ruleset proposal (no unpinned actions, signed commits/tags, CODEOWNERS enforcement).  
 5. 🟡 Coordinate Kyverno deployment to target cluster and document runbook in `docs/OPS_RUNBOOK.md`.
 

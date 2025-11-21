@@ -27,7 +27,7 @@ python tools/mutation_observatory.py \
 pytest tools/tests/test_mutation_observatory.py
 ```
 
-Workflow: `.github/workflows/mutation-observatory.yml` runs the same suite.
+Workflow: `.github/workflows/mutation.yml` runs the same suite.
 
 ## Dependencies
 
@@ -49,4 +49,4 @@ Workflow: `.github/workflows/mutation-observatory.yml` runs the same suite.
 
 See [LICENSE](../../LICENSE).
 
-**Back to:** [Overview](../OVERVIEW.md)
+**Back to:** [Overview](../OVERVIEW.md) · [Testing](../TESTING.md)
