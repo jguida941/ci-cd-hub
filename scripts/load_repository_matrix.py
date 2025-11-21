@@ -4,6 +4,7 @@ Load repository configuration for dynamic GitHub Actions matrix.
 Reads config/repositories.yaml and outputs JSON for matrix strategy.
 """
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -64,13 +65,13 @@ def parse_timeout_minutes(timeout_str: str) -> int:
     return value
 
 
-def format_for_matrix(repositories: list) -> dict:
+def format_for_matrix(repositories: list, require_mutation: bool = False) -> dict:
     """Format repositories for GitHub Actions matrix strategy."""
     matrix_entries = []
 
     for repo in repositories:
         settings = repo.get('settings', {})
-        if settings.get('enable_mutation') is False:
+        if require_mutation and settings.get('enable_mutation') is False:
             continue
         # Parse timeout to minutes for GitHub Actions
         timeout_minutes = parse_timeout_minutes(settings.get('build_timeout', '30m'))
@@ -99,8 +100,21 @@ def format_for_matrix(repositories: list) -> dict:
 
 def main():
     """Main entry point."""
+    parser = argparse.ArgumentParser(description="Load repository matrix")
+    parser.add_argument(
+        "--config",
+        default="config/repositories.yaml",
+        help="Path to repositories YAML (default: config/repositories.yaml)",
+    )
+    parser.add_argument(
+        "--require-mutation",
+        action="store_true",
+        help="Filter to repositories with enable_mutation=true",
+    )
+    args = parser.parse_args()
+
     # Load repositories
-    all_repos = load_repositories()
+    all_repos = load_repositories(args.config)
 
     # Filter to enabled only
     enabled_repos = filter_enabled_repos(all_repos)
@@ -112,7 +126,7 @@ def main():
         sys.exit(0)
 
     # Format for GitHub Actions matrix
-    matrix = format_for_matrix(enabled_repos)
+    matrix = format_for_matrix(enabled_repos, require_mutation=args.require_mutation)
 
     # Output JSON for matrix
     print(json.dumps(matrix, indent=2))
