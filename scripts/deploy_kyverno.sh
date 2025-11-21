@@ -10,6 +10,8 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 DEFAULT_VERSION="v1.12.5"
 DEFAULT_INSTALL_URL="https://github.com/kyverno/kyverno/releases/download/${DEFAULT_VERSION}/install.yaml"
 DEFAULT_INSTALL_MANIFEST="${REPO_ROOT}/deploy/kyverno/install.yaml"
+# By default prefer the remote Kyverno manifest; set KYVERNO_USE_LOCAL_MANIFEST=true to force the vendored file.
+USE_LOCAL_MANIFEST="${KYVERNO_USE_LOCAL_MANIFEST:-false}"
 DEFAULT_KUSTOMIZE_DIR="${REPO_ROOT}/deploy/kyverno"
 DEFAULT_POLICY_DIR="${REPO_ROOT}/policies/kyverno"
 
@@ -139,7 +141,7 @@ if [[ -z "$KUBE_CONTEXT" ]]; then
 fi
 
 if [[ -z "$INSTALL_SOURCE" ]]; then
-  if [[ -s "$DEFAULT_INSTALL_MANIFEST" ]]; then
+  if [[ "$USE_LOCAL_MANIFEST" == "true" && -s "$DEFAULT_INSTALL_MANIFEST" ]]; then
     INSTALL_SOURCE="$DEFAULT_INSTALL_MANIFEST"
   else
     INSTALL_SOURCE="$DEFAULT_INSTALL_URL"

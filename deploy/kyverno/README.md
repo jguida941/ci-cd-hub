@@ -33,9 +33,12 @@ make kyverno/verify
 `scripts/deploy_kyverno.sh` (invoked by `make kyverno/deploy`) applies the pinned
 Kyverno release, waits for the controller deployments, renders `deploy/kyverno/`
 to confirm every policy stays `validationFailureAction=Enforce`, performs a server-side
-dry run, then applies the bundle. `scripts/verify_kyverno_enforcement.sh --cluster`
-(wrapped by `make kyverno/verify`) creates known-bad fixtures, runs them against the
-live cluster, and captures results under `artifacts/evidence/`.
+dry run, then applies the bundle. By default it pulls the Kyverno manifest from the
+official release URL (`DEFAULT_INSTALL_URL`). Set `KYVERNO_USE_LOCAL_MANIFEST=true`
+if you explicitly want to use the vendored `deploy/kyverno/install.yaml`.
+`scripts/verify_kyverno_enforcement.sh --cluster` (wrapped by `make kyverno/verify`)
+creates known-bad fixtures, runs them against the live cluster, and captures results
+under `artifacts/evidence/`.
 
 ## CI end-to-end verification
 
