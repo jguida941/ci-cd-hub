@@ -28,7 +28,7 @@ jobs:
         id: load
         run: |
           set -euo pipefail
-          MATRIX_JSON=$(python3 scripts/load_repository_matrix.py)
+          MATRIX_JSON=$(python3 scripts/load_repository_matrix.py --require-mutation)
           echo "$MATRIX_JSON" | jq .
           {
             echo "matrix<<EOF"
