@@ -597,26 +597,21 @@ jobs:
           # Run mutmut - it reads paths_to_mutate from pyproject.toml
           timeout 600 mutmut run 2>&1 | tee mutmut-run.log || true
 
-          # Get results from mutmut 3.x
-          if command -v mutmut &> /dev/null; then
-            mutmut results > mutmut-results.txt 2>&1 || true
-            RESULTS=$(cat mutmut-results.txt 2>/dev/null || echo "")
-            # mutmut 3.x output format: "Killed: X, Survived: Y, ..."
-            KILLED=$(echo "$RESULTS" | grep -oP 'Killed:\s*\K\d+' || echo 0)
-            SURVIVED=$(echo "$RESULTS" | grep -oP 'Survived:\s*\K\d+' || echo 0)
-            # Also try alternate format in case of different output
-            if [ "$KILLED" = "0" ] && [ "$SURVIVED" = "0" ]; then
-              KILLED=$(echo "$RESULTS" | grep -oE '[0-9]+ killed' | grep -oE '[0-9]+' | head -1 || echo 0)
-              SURVIVED=$(echo "$RESULTS" | grep -oE '[0-9]+ survived' | grep -oE '[0-9]+' | head -1 || echo 0)
-            fi
+          # Parse results from mutmut 3.x run output
+          # Format: "⠙ 73/73  🎉 73 🫥 0  ⏰ 0  🤔 0  🙁 0  🔇 0"
+          # 🎉 = killed, 🙁 = survived
+          LAST_LINE=$(grep -E '🎉.*🙁' mutmut-run.log | tail -1 || echo "")
+          if [ -n "$LAST_LINE" ]; then
+            # Extract killed (🎉) and survived (🙁) counts
+            KILLED=$(echo "$LAST_LINE" | grep -oP '🎉\s*\K\d+' || echo 0)
+            SURVIVED=$(echo "$LAST_LINE" | grep -oP '🙁\s*\K\d+' || echo 0)
+            KILLED=${KILLED:-0}
+            SURVIVED=${SURVIVED:-0}
             TOTAL=$((KILLED + SURVIVED))
             if [ "$TOTAL" -gt 0 ]; then
               SCORE=$((KILLED * 100 / TOTAL))
             fi
           fi
-
-          # Save detailed mutmut output for artifacts
-          mutmut show > mutmut-details.txt 2>&1 || true
 
           # Warn if no mutations found
           if [ "$TOTAL" -eq 0 ]; then
