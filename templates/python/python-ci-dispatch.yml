@@ -285,22 +285,29 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
         run: |
-          KILLED=0; SURVIVED=0; SCORE=0
+          KILLED=0; SURVIVED=0; SCORE=0; TOTAL=0
 
-          SRC_DIR="."
-          if [ -d "src" ]; then SRC_DIR="src"; fi
-
-          timeout 600 mutmut run --paths-to-mutate="$SRC_DIR" --runner="pytest -x -q" 2>&1 | tee mutmut-run.log || true
+          # mutmut 3.x reads config from pyproject.toml [tool.mutmut] section
+          timeout 600 mutmut run 2>&1 | tee mutmut-run.log || true
 
           if command -v mutmut &> /dev/null; then
             mutmut results > mutmut-results.txt 2>&1 || true
             RESULTS=$(cat mutmut-results.txt 2>/dev/null || echo "")
             KILLED=$(echo "$RESULTS" | grep -oP 'Killed:\s*\K\d+' || echo 0)
             SURVIVED=$(echo "$RESULTS" | grep -oP 'Survived:\s*\K\d+' || echo 0)
+            # Try alternate format
+            if [ "$KILLED" = "0" ] && [ "$SURVIVED" = "0" ]; then
+              KILLED=$(echo "$RESULTS" | grep -oE '[0-9]+ killed' | grep -oE '[0-9]+' | head -1 || echo 0)
+              SURVIVED=$(echo "$RESULTS" | grep -oE '[0-9]+ survived' | grep -oE '[0-9]+' | head -1 || echo 0)
+            fi
             TOTAL=$((KILLED + SURVIVED))
             if [ "$TOTAL" -gt 0 ]; then
               SCORE=$((KILLED * 100 / TOTAL))
             fi
+          fi
+
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "::warning::mutmut found 0 mutations. Ensure [tool.mutmut] is configured in pyproject.toml."
           fi
 
           echo "score=$SCORE" >> $GITHUB_OUTPUT
