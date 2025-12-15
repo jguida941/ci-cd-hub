@@ -1,0 +1,74 @@
+name: Hub Self Check
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "hub-release/**"
+
+permissions:
+  contents: read
+
+jobs:
+  self-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: hub-release
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+
+      - name: Verify matrix keys
+        working-directory: hub-release
+        run: python scripts/verify_hub_matrix_keys.py
+
+      - name: Verify smoke test setup
+        working-directory: hub-release
+        run: bash scripts/verify-smoke-test-setup.sh
+
+      - name: Dry-run matrix builder
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          hub_root = Path(".")
+          sys_path = __import__("sys").path
+          if str(hub_root) not in sys_path:
+              sys_path.insert(0, str(hub_root))
+
+          from scripts.load_config import ConfigValidationError, load_config, generate_workflow_inputs
+
+          repos_dir = hub_root / "config" / "repos"
+          entries = []
+
+          for config_file in sorted(repos_dir.glob("*.yaml")):
+              repo_name = config_file.stem
+              try:
+                  cfg = load_config(repo_name=repo_name, hub_root=hub_root, exit_on_validation_error=False)
+              except ConfigValidationError:
+                  continue
+              repo_info = cfg.get("repo", {})
+              owner = repo_info.get("owner")
+              name = repo_info.get("name", repo_name)
+              language = repo_info.get("language") or cfg.get("language")
+              if not (owner and name and language):
+                  continue
+              inputs = generate_workflow_inputs(cfg)
+              entries.append({"name": name, "owner": owner, "language": language, "run_group": repo_info.get("run_group", "full"), "tools": [k for k, v in inputs.items() if str(v).lower() == "true" and k.startswith("run_")]})
+
+          if not entries:
+              raise SystemExit("No repositories discovered for hub matrix.")
+
+          print(f"Discovered {len(entries)} repos:")
+          for entry in entries:
+              print(f"- {entry['owner']}/{entry['name']} ({entry['language']}) run_group={entry['run_group']} tools={','.join(entry['tools'])}")
+          PY

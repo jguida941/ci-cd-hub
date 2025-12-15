@@ -91,7 +91,7 @@ class RepoRateLimiter:
 ### Concurrency Control
 ```yaml
 concurrency:
-  group: ci-hub-${{ matrix.repository.name }}
+  group: ci-cd-hub-${{ matrix.repository.name }}
   max-parallel: ${{ matrix.repository.settings.max_parallel || 2 }}
 ```
 
