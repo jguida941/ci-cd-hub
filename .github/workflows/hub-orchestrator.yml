@@ -108,6 +108,7 @@ jobs:
               default_workflow = "java-ci-dispatch.yml" if language == "java" else "python-ci-dispatch.yml"
               entry = {
                   "config_file": str(config_file),
+                  "config_basename": config_file.stem,  # Unique per config for artifact naming
                   "name": repo_info.get("name", repo_name),
                   "owner": repo_info.get("owner", "jguida941"),
                   "language": language,
@@ -143,7 +144,7 @@ jobs:
   # Trigger Builds for Each Repo
   # ============================================================================
   trigger-builds:
-    name: Build ${{ matrix.name }}
+    name: Build ${{ matrix.config_basename }}
     runs-on: ubuntu-latest
     needs: load-config
     if: needs.load-config.outputs.repo_count > 0
@@ -411,9 +412,11 @@ jobs:
         if: always()
         run: |
           mkdir -p dispatch-results
-          cat > dispatch-results/${{ matrix.name }}.json << EOF
+          cat > dispatch-results/${{ matrix.config_basename }}.json << EOF
           {
+            "config": "${{ matrix.config_basename }}",
             "repo": "${{ matrix.owner }}/${{ matrix.name }}",
+            "subdir": "${{ matrix.subdir }}",
             "language": "${{ matrix.language }}",
             "branch": "${{ matrix.default_branch }}",
             "workflow": "${{ steps.dispatch.outputs.workflow_id }}",
@@ -426,8 +429,8 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dispatch-${{ matrix.name }}-${{ github.run_id }}
-          path: dispatch-results/${{ matrix.name }}.json
+          name: dispatch-${{ matrix.config_basename }}-${{ github.run_id }}
+          path: dispatch-results/${{ matrix.config_basename }}.json
           retention-days: 7
 
   # ============================================================================
