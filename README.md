@@ -13,12 +13,12 @@ The CI/CD Hub provides a single place to run builds, tests, code quality, and se
 
 ### Key Features
 
-- **Multi-repo orchestration** — Run CI for many repos from one central hub
-- **Two execution modes** — Central (hub clones repos) or Distributed (dispatch to repo workflows)
-- **14 pre-built profiles** — Fast, quality, security, minimal, coverage-gate, compliance
-- **Monorepo support** — Target subdirectories within repos via `repo.subdir`
-- **Schema-validated configs** — JSON Schema validation with clear error messages
-- **Comprehensive tooling** — 11 Java tools, 13 Python tools (+7 planned)
+- **Multi-repo orchestration** - Run CI for many repos from one central hub
+- **Two execution modes** - Central (hub clones repos) or Distributed (dispatch to repo workflows)
+- **14 pre-built profiles** - Fast, quality, security, minimal, coverage-gate, compliance
+- **Monorepo support** - Target subdirectories within repos via `repo.subdir`
+- **Schema-validated configs** - JSON Schema validation with clear error messages
+- **Comprehensive tooling** - 11 Java tools, 13 Python tools (+7 planned)
 
 ---
 
@@ -26,36 +26,35 @@ The CI/CD Hub provides a single place to run builds, tests, code quality, and se
 
 ```mermaid
 flowchart TB
-    subgraph Hub["CI/CD Hub"]
-        Config["config/repos/*.yaml"]
-        Defaults["config/defaults.yaml"]
-        Schema["schema/ci-hub-config.schema.json"]
+    subgraph Hub[CI/CD Hub]
+        Config[config/repos/*.yaml]
+        Defaults[config/defaults.yaml]
+        Schema[schema/ci-hub-config.schema.json]
     end
 
-    subgraph Workflows["GitHub Actions Workflows"]
-        RunAll["hub-run-all.yml\n(Central Mode)"]
-        Orchestrator["hub-orchestrator.yml\n(Distributed Mode)"]
-        JavaCI["java-ci.yml\n(Reusable)"]
-        PythonCI["python-ci.yml\n(Reusable)"]
+    subgraph Workflows[GitHub Actions]
+        RunAll[hub-run-all.yml]
+        Orchestrator[hub-orchestrator.yml]
+        JavaCI[java-ci.yml]
+        PythonCI[python-ci.yml]
     end
 
-    subgraph Tools["Quality Tools"]
-        direction LR
-        Coverage["Coverage\nJaCoCo | pytest-cov"]
-        Lint["Linting\nCheckstyle | Ruff"]
-        Security["Security\nOWASP | Bandit | Trivy"]
-        Mutation["Mutation\nPITest | mutmut"]
+    subgraph Tools[Quality Tools]
+        Coverage[JaCoCo / pytest-cov]
+        Lint[Checkstyle / Ruff]
+        Security[OWASP / Bandit / Trivy]
+        Mutation[PITest / mutmut]
     end
 
     Config --> RunAll
     Config --> Orchestrator
-    Defaults -.->|merged| Config
-    Schema -.->|validates| Config
+    Defaults -.-> Config
+    Schema -.-> Config
 
     RunAll --> JavaCI
     RunAll --> PythonCI
-    Orchestrator -->|dispatch| JavaCI
-    Orchestrator -->|dispatch| PythonCI
+    Orchestrator --> JavaCI
+    Orchestrator --> PythonCI
 
     JavaCI --> Tools
     PythonCI --> Tools
