@@ -214,7 +214,8 @@ jobs:
       max-parallel: 3
       matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
     env:
-      WORKDIR: ${{ matrix.subdir && format('repo/{0}', matrix.subdir) || 'repo' }}
+      # Always 'repo' - the subdirectory step moves subdir content to repo/
+      WORKDIR: repo
 
     steps:
       - name: Checkout Hub (for scripts)
