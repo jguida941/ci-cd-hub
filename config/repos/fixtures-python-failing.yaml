@@ -20,17 +20,19 @@ python:
       enabled: true
       fail_on_format_issues: false
     isort:
-      enabled: false
+      enabled: true
     bandit:
-      enabled: false
+      enabled: true
     pip_audit:
-      enabled: false
+      enabled: true
     mypy:
-      enabled: false
+      enabled: true
     mutmut:
-      enabled: false
+      enabled: true
+    hypothesis:
+      enabled: true
     semgrep:
-      enabled: false
+      enabled: true
     trivy:
       enabled: false
     codeql:

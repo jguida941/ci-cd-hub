@@ -13,17 +13,17 @@ java:
       enabled: true
       min_coverage: 50
     checkstyle:
-      enabled: false
+      enabled: true
     spotbugs:
-      enabled: false
+      enabled: true
     owasp:
-      enabled: false
+      enabled: true
     pmd:
-      enabled: false
+      enabled: true
     pitest:
-      enabled: false
+      enabled: true
     semgrep:
-      enabled: false
+      enabled: true
     trivy:
       enabled: false
     codeql:
