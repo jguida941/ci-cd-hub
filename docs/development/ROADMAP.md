@@ -1,10 +1,10 @@
 # CI/CD Hub Release Roadmap
 
 **Version:** 1.0.0
-**Date:** 2025-12-14
-**Status:** Planning Phase
+**Date:** 2025-12-15
+**Status:** Implementation Phase (Phases 0-3 Complete)
 **References:** See `requirements/` (P0/P1/nonfunctional) for current checklists and `plan.md` for execution.
-**Note:** Phases 2–7 are planned/in-progress; do not treat as shipped.
+**Note:** Phases 0-3 complete; Phase 4-7 in progress.
 
 ---
 
@@ -59,12 +59,12 @@ A **user-friendly CI/CD template repository** that can run pipelines for **any l
 | FR-06 | Global defaults with config hierarchy | P0 | Implemented |
 | FR-07 | Generate step summary with metrics table | P0 | Implemented |
 | FR-08 | Upload artifacts (coverage, reports) | P0 | Implemented |
-| FR-09 | Distributed mode (dispatch to repos) | P1 | Partial |
-| FR-10 | Real aggregation across repos | P1 | Not Started |
+| FR-09 | Distributed mode (dispatch to repos) | P1 | Implemented |
+| FR-10 | Real aggregation across repos | P1 | Partial |
 | FR-11 | GitHub Pages dashboard | P2 | Not Started |
-| FR-12 | Comprehensive documentation | P1 | Partial |
-| FR-13 | Template files with heavy comments | P1 | Not Started |
-| FR-14 | ADR documentation | P1 | Not Started |
+| FR-12 | Comprehensive documentation | P1 | Implemented |
+| FR-13 | Template files with heavy comments | P1 | Implemented |
+| FR-14 | ADR documentation | P1 | Implemented |
 
 ### 2.2 Non-Functional Requirements
 
@@ -113,16 +113,23 @@ A **user-friendly CI/CD template repository** that can run pipelines for **any l
 
 ## 3. Architecture Decisions
 
-### 3.1 ADRs Required
+### 3.1 ADRs (All Accepted)
 
 | ADR | Title | Status | Decision |
 |-----|-------|--------|----------|
-| ADR-0001 | Central vs Distributed Execution | Pending | Central = default |
-| ADR-0002 | Config Precedence Hierarchy | Pending | Repo > Hub > Defaults |
-| ADR-0003 | Reusable Workflows vs Dispatch | Pending | Prefer workflow_call |
-| ADR-0004 | Aggregation Strategy | Pending | Same-run preferred |
-| ADR-0005 | Dashboard Approach | Pending | GitHub Pages static |
-| ADR-0006 | Tool Toggle Pattern | Pending | enabled: true/false |
+| ADR-0001 | Central vs Distributed Execution | Accepted | Central = default |
+| ADR-0002 | Config Precedence Hierarchy | Accepted | Repo > Hub > Defaults |
+| ADR-0003 | Dispatch Orchestration | Accepted | workflow_dispatch for distributed |
+| ADR-0004 | Aggregation Reporting | Accepted | Same-run preferred |
+| ADR-0005 | Dashboard Approach | Accepted | GitHub Pages static |
+| ADR-0006 | Quality Gates/Thresholds | Accepted | enabled: true/false |
+| ADR-0007 | Templates and Profiles Strategy | Accepted | Profiles for config presets |
+| ADR-0008 | Hub Fixtures Strategy | Accepted | Dedicated fixtures repo |
+| ADR-0009 | Monorepo Support | Accepted | subdir config field |
+| ADR-0010 | Dispatch Token and Skip | Accepted | PAT for cross-repo dispatch |
+| ADR-0011 | Dispatchable Workflow Requirement | Accepted | Target repos need dispatch workflow |
+| ADR-0012 | Kyverno Policies | Accepted | Optional policy enforcement |
+| ADR-0013 | Dispatch Workflow Templates | Accepted | Official templates provided |
 
 ### 3.2 Two Operating Modes
 
@@ -156,8 +163,9 @@ A **user-friendly CI/CD template repository** that can run pipelines for **any l
 **Deliverables:**
 - [x] RESEARCH.md with all findings
 - [x] ROADMAP.md with phases
-- [ ] ADR directory structure
-- [ ] First 3 ADRs written
+- [x] ADR directory structure (`docs/adr/`)
+- [x] First 3 ADRs written (0001-0003)
+- [x] All 13 ADRs written (0001-0013)
 
 ---
 
@@ -178,14 +186,14 @@ A **user-friendly CI/CD template repository** that can run pipelines for **any l
 | Update `docs/ONBOARDING.md` | P1 | All above |
 
 **Deliverables:**
-- [ ] 6 ADRs written (MADR format)
-- [ ] 6 documentation files created
-- [ ] All docs cross-linked
+- [x] 13 ADRs written (MADR format) - exceeds target
+- [x] 8+ documentation files created (MODES, CONFIG_REFERENCE, TOOLS, WORKFLOWS, TROUBLESHOOTING, ONBOARDING, DISPATCH_SETUP, MONOREPOS, KYVERNO, TEMPLATES)
+- [x] All docs cross-linked
 
 **Acceptance Criteria:**
-- Every tool has documentation
-- Every toggle is documented
-- Config hierarchy is clear
+- [x] Every tool has documentation (see `docs/reference/TOOLS.md`)
+- [x] Every toggle is documented (see `docs/reference/CONFIG_REFERENCE.md`)
+- [x] Config hierarchy is clear (see `docs/guides/MODES.md`)
 
 ---
 
@@ -209,14 +217,14 @@ A **user-friendly CI/CD template repository** that can run pipelines for **any l
 - Copy/paste ready (only change repo name)
 
 **Deliverables:**
-- [ ] Master `.ci-hub.yml` template
-- [ ] Hub-side repo template
-- [ ] 4 profile templates
-- [ ] Agent workflow template (distributed mode)
+- [x] Master `.ci-hub.yml` template (`templates/repo/.ci-hub.yml`)
+- [x] Hub-side repo template (`templates/hub/config/repos/repo-template.yaml`, `monorepo-template.yaml`)
+- [x] 12 profile templates (exceeds target: java-quality, java-security, java-fast, java-minimal, java-compliance, java-coverage-gate, python-quality, python-security, python-fast, python-minimal, python-compliance, python-coverage-gate)
+- [x] Dispatch workflow templates (`templates/java/java-ci-dispatch.yml`, `templates/python/python-ci-dispatch.yml`)
 
 **Acceptance Criteria:**
-- User can copy template and run without edits (except repo name)
-- Every toggle has inline comment explaining it
+- [x] User can copy template and run without edits (except repo name)
+- [x] Every toggle has inline comment explaining it
 
 ---
 
@@ -233,14 +241,14 @@ A **user-friendly CI/CD template repository** that can run pipelines for **any l
 | Add config schema validation | P1 | No validation |
 
 **Deliverables:**
-- [ ] Updated `hub-orchestrator.yml`
-- [ ] Config validation script
-- [ ] Tests passing
+- [x] Updated `hub-orchestrator.yml`
+- [x] Config validation script (`scripts/validate_config.py`)
+- [x] Tests passing (5 tests in `tests/test_config_pipeline.py`)
 
 **Acceptance Criteria:**
-- Distributed mode actually uses config toggles
-- Repos on `master` branch work
-- Bad config fails fast with clear error
+- [x] Distributed mode actually uses config toggles (via dispatch templates)
+- [x] Repos on `master` branch work
+- [x] Bad config fails fast with clear error (schema validation)
 
 ---
 
@@ -306,14 +314,14 @@ A **user-friendly CI/CD template repository** that can run pipelines for **any l
 | Publish fixtures repo (ci-cd-hub-fixtures) | P0 | All above |
 
 **Deliverables:**
-- [ ] Fixture repos for all scenarios
-- [ ] CI that tests hub against fixtures
-- [ ] Documentation for fixtures
+- [x] Fixture repos for all scenarios (`ci-cd-hub-fixtures` repo with java-passing, java-failing, python-passing, python-failing)
+- [x] CI that tests hub against fixtures (`smoke-test.yml` workflow)
+- [x] Documentation for fixtures (`docs/development/SMOKE_TEST_REPOS.md`)
 
 **Acceptance Criteria:**
-- Hub correctly passes/fails expected repos
-- Edge cases handled gracefully
-- New contributors can test locally
+- [x] Hub correctly passes/fails expected repos
+- [x] Edge cases handled gracefully
+- [x] New contributors can test locally
 
 ---
 

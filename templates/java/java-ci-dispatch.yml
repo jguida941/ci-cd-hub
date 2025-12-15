@@ -6,6 +6,9 @@
 #
 # This workflow is ONLY triggered by hub dispatch - it won't run on push/PR.
 # Your existing workflows remain untouched.
+#
+# All tools are controlled by input toggles (run_*). Results are captured
+# in report.json for aggregation back to the hub.
 # ============================================================================
 
 name: "Hub: Java CI"
@@ -38,6 +41,11 @@ on:
         required: false
         type: boolean
         default: true
+      run_pmd:
+        description: 'Run PMD analysis'
+        required: false
+        type: boolean
+        default: true
       run_owasp:
         description: 'Run OWASP dependency check'
         required: false
@@ -47,22 +55,7 @@ on:
         description: 'Run PITest mutation testing'
         required: false
         type: boolean
-        default: true
-      run_codeql:
-        description: 'Run CodeQL analysis'
-        required: false
-        type: boolean
         default: false
-      run_docker:
-        description: 'Run Docker build/test'
-        required: false
-        type: boolean
-        default: false
-      run_pmd:
-        description: 'Run PMD analysis'
-        required: false
-        type: boolean
-        default: true
       run_semgrep:
         description: 'Run Semgrep SAST'
         required: false
@@ -70,6 +63,16 @@ on:
         default: false
       run_trivy:
         description: 'Run Trivy scan'
+        required: false
+        type: boolean
+        default: false
+      run_codeql:
+        description: 'Run CodeQL analysis'
+        required: false
+        type: boolean
+        default: false
+      run_docker:
+        description: 'Run Docker build/test'
         required: false
         type: boolean
         default: false
@@ -112,6 +115,7 @@ on:
 permissions:
   contents: read
   actions: read
+  security-events: write
 
 jobs:
   build-test:
@@ -131,94 +135,166 @@ jobs:
           java-version: ${{ inputs.java_version }}
           cache: ${{ inputs.build_tool }}
 
+      # ========================================================================
+      # Build and Test
+      # ========================================================================
       - name: Build and Test
         working-directory: ${{ env.WORKDIR }}
+        id: build
         run: |
           if [ "${{ inputs.build_tool }}" = "gradle" ]; then
-            ./gradlew build test
+            ./gradlew build test && echo "status=success" >> $GITHUB_OUTPUT || echo "status=failure" >> $GITHUB_OUTPUT
           else
             if [ -f "mvnw" ]; then
               chmod +x mvnw
-              ./mvnw -B -ntp verify
+              ./mvnw -B -ntp verify && echo "status=success" >> $GITHUB_OUTPUT || echo "status=failure" >> $GITHUB_OUTPUT
             else
-              mvn -B -ntp verify
+              mvn -B -ntp verify && echo "status=success" >> $GITHUB_OUTPUT || echo "status=failure" >> $GITHUB_OUTPUT
             fi
           fi
 
+      # ========================================================================
+      # JaCoCo Coverage
+      # ========================================================================
       - name: Run JaCoCo Coverage
         if: inputs.run_jacoco
         working-directory: ${{ env.WORKDIR }}
         id: jacoco
         run: |
-          # JaCoCo usually runs during verify, extract results
           COVERED=0; MISSED=0; PERCENT=0
           JACOCO=$(find . -name "jacoco.xml" -path "*/site/*" 2>/dev/null | head -1)
           if [ -n "$JACOCO" ] && [ -f "$JACOCO" ]; then
-            COVERED=$(grep -oP 'INSTRUCTION.*?covered="\K[0-9]+' "$JACOCO" 2>/dev/null | awk '{s+=$1} END {print s}' || echo 0)
-            MISSED=$(grep -oP 'INSTRUCTION.*?missed="\K[0-9]+' "$JACOCO" 2>/dev/null | awk '{s+=$1} END {print s}' || echo 0)
+            COVERED=$(grep -oP 'INSTRUCTION.*?covered="\K[0-9]+' "$JACOCO" 2>/dev/null | awk '{s+=$1} END {print s+0}')
+            MISSED=$(grep -oP 'INSTRUCTION.*?missed="\K[0-9]+' "$JACOCO" 2>/dev/null | awk '{s+=$1} END {print s+0}')
             TOTAL=$((COVERED + MISSED))
             if [ "$TOTAL" -gt 0 ]; then
               PERCENT=$((COVERED * 100 / TOTAL))
             fi
           fi
           echo "percent=$PERCENT" >> $GITHUB_OUTPUT
+          echo "ran=true" >> $GITHUB_OUTPUT
           echo "Coverage: $PERCENT%"
 
+      # ========================================================================
+      # Checkstyle
+      # ========================================================================
       - name: Run Checkstyle
         if: inputs.run_checkstyle
         working-directory: ${{ env.WORKDIR }}
+        id: checkstyle
         continue-on-error: true
         run: |
           if [ "${{ inputs.build_tool }}" = "gradle" ]; then
-            ./gradlew checkstyleMain checkstyleTest || true
+            ./gradlew checkstyleMain checkstyleTest 2>&1 || true
           else
-            mvn -B -ntp checkstyle:check || true
+            mvn -B -ntp checkstyle:checkstyle 2>&1 || true
           fi
 
+          # Count violations from XML report
+          VIOLATIONS=0
+          for xml in $(find . -name "checkstyle-result.xml" 2>/dev/null); do
+            COUNT=$(grep -c '<error ' "$xml" 2>/dev/null || echo 0)
+            VIOLATIONS=$((VIOLATIONS + COUNT))
+          done
+          echo "violations=$VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "ran=true" >> $GITHUB_OUTPUT
+          echo "Checkstyle violations: $VIOLATIONS"
+
+      # ========================================================================
+      # SpotBugs
+      # ========================================================================
       - name: Run SpotBugs
         if: inputs.run_spotbugs
         working-directory: ${{ env.WORKDIR }}
+        id: spotbugs
         continue-on-error: true
         run: |
           if [ "${{ inputs.build_tool }}" = "gradle" ]; then
-            ./gradlew spotbugsMain || true
+            ./gradlew spotbugsMain 2>&1 || true
           else
-            mvn -B -ntp com.github.spotbugs:spotbugs-maven-plugin:check || true
+            mvn -B -ntp com.github.spotbugs:spotbugs-maven-plugin:spotbugs 2>&1 || true
           fi
 
+          # Count bugs from XML report
+          BUGS=0
+          for xml in $(find . -name "spotbugsXml.xml" 2>/dev/null); do
+            COUNT=$(grep -c '<BugInstance' "$xml" 2>/dev/null || echo 0)
+            BUGS=$((BUGS + COUNT))
+          done
+          echo "bugs=$BUGS" >> $GITHUB_OUTPUT
+          echo "ran=true" >> $GITHUB_OUTPUT
+          echo "SpotBugs bugs: $BUGS"
+
+      # ========================================================================
+      # PMD
+      # ========================================================================
       - name: Run PMD
         if: inputs.run_pmd
         working-directory: ${{ env.WORKDIR }}
+        id: pmd
         continue-on-error: true
         run: |
           if [ "${{ inputs.build_tool }}" = "gradle" ]; then
-            ./gradlew pmdMain || true
+            ./gradlew pmdMain 2>&1 || true
           else
-            mvn -B -ntp pmd:check || true
+            mvn -B -ntp pmd:pmd 2>&1 || true
           fi
 
+          # Count violations from XML report
+          VIOLATIONS=0
+          for xml in $(find . -name "pmd.xml" 2>/dev/null); do
+            COUNT=$(grep -c '<violation' "$xml" 2>/dev/null || echo 0)
+            VIOLATIONS=$((VIOLATIONS + COUNT))
+          done
+          echo "violations=$VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "ran=true" >> $GITHUB_OUTPUT
+          echo "PMD violations: $VIOLATIONS"
+
+      # ========================================================================
+      # OWASP Dependency Check
+      # ========================================================================
       - name: Run OWASP Dependency Check
         if: inputs.run_owasp
         working-directory: ${{ env.WORKDIR }}
+        id: owasp
         continue-on-error: true
         run: |
           if [ "${{ inputs.build_tool }}" = "gradle" ]; then
-            ./gradlew dependencyCheckAnalyze || true
+            ./gradlew dependencyCheckAnalyze 2>&1 || true
           else
-            mvn -B -ntp org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=11 || true
+            mvn -B -ntp org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=11 -Dformat=JSON 2>&1 || true
           fi
 
+          # Count vulnerabilities by severity from JSON report
+          CRITICAL=0; HIGH=0; MEDIUM=0; LOW=0
+          REPORT=$(find . -name "dependency-check-report.json" 2>/dev/null | head -1)
+          if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
+            CRITICAL=$(jq '[.dependencies[]?.vulnerabilities[]? | select(.severity == "CRITICAL")] | length' "$REPORT" 2>/dev/null || echo 0)
+            HIGH=$(jq '[.dependencies[]?.vulnerabilities[]? | select(.severity == "HIGH")] | length' "$REPORT" 2>/dev/null || echo 0)
+            MEDIUM=$(jq '[.dependencies[]?.vulnerabilities[]? | select(.severity == "MEDIUM")] | length' "$REPORT" 2>/dev/null || echo 0)
+            LOW=$(jq '[.dependencies[]?.vulnerabilities[]? | select(.severity == "LOW")] | length' "$REPORT" 2>/dev/null || echo 0)
+          fi
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          echo "medium=$MEDIUM" >> $GITHUB_OUTPUT
+          echo "low=$LOW" >> $GITHUB_OUTPUT
+          echo "ran=true" >> $GITHUB_OUTPUT
+          echo "OWASP vulns: Critical=$CRITICAL, High=$HIGH, Medium=$MEDIUM, Low=$LOW"
+
+      # ========================================================================
+      # PITest Mutation Testing
+      # ========================================================================
       - name: Run PITest Mutation Testing
         if: inputs.run_pitest
         working-directory: ${{ env.WORKDIR }}
-        continue-on-error: true
         id: pitest
+        continue-on-error: true
         run: |
           KILLED=0; SURVIVED=0; SCORE=0
           if [ "${{ inputs.build_tool }}" = "gradle" ]; then
-            ./gradlew pitest || true
+            ./gradlew pitest 2>&1 || true
           else
-            mvn -B -ntp org.pitest:pitest-maven:mutationCoverage || true
+            mvn -B -ntp org.pitest:pitest-maven:mutationCoverage 2>&1 || true
           fi
 
           for xml in $(find . -name "mutations.xml" 2>/dev/null); do
@@ -231,25 +307,99 @@ jobs:
             SCORE=$((KILLED * 100 / TOTAL))
           fi
           echo "score=$SCORE" >> $GITHUB_OUTPUT
-          echo "Mutation Score: $SCORE%"
+          echo "killed=$KILLED" >> $GITHUB_OUTPUT
+          echo "survived=$SURVIVED" >> $GITHUB_OUTPUT
+          echo "ran=true" >> $GITHUB_OUTPUT
+          echo "Mutation Score: $SCORE% (Killed: $KILLED, Survived: $SURVIVED)"
 
+      # ========================================================================
+      # Semgrep SAST
+      # ========================================================================
+      - name: Run Semgrep
+        if: inputs.run_semgrep
+        working-directory: ${{ env.WORKDIR }}
+        id: semgrep
+        continue-on-error: true
+        run: |
+          pip install semgrep --quiet
+          semgrep --config=auto --json --output=semgrep-report.json . 2>/dev/null || true
+
+          FINDINGS=0
+          if [ -f "semgrep-report.json" ]; then
+            FINDINGS=$(jq '.results | length' semgrep-report.json 2>/dev/null || echo 0)
+          fi
+          echo "findings=$FINDINGS" >> $GITHUB_OUTPUT
+          echo "ran=true" >> $GITHUB_OUTPUT
+          echo "Semgrep findings: $FINDINGS"
+
+      # ========================================================================
+      # Trivy Filesystem Scan
+      # ========================================================================
+      - name: Run Trivy
+        if: inputs.run_trivy
+        working-directory: ${{ env.WORKDIR }}
+        id: trivy
+        continue-on-error: true
+        run: |
+          # Install Trivy
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+          trivy fs --format json --output trivy-report.json . 2>/dev/null || true
+
+          CRITICAL=0; HIGH=0
+          if [ -f "trivy-report.json" ]; then
+            CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' trivy-report.json 2>/dev/null || echo 0)
+            HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length' trivy-report.json 2>/dev/null || echo 0)
+          fi
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          echo "ran=true" >> $GITHUB_OUTPUT
+          echo "Trivy vulns: Critical=$CRITICAL, High=$HIGH"
+
+      # ========================================================================
+      # Generate CI Report (captures ALL tool results)
+      # ========================================================================
       - name: Generate CI Report
         if: always()
         run: |
           mkdir -p reports
-          cat > reports/report.json << EOF
+          cat > reports/report.json << 'JSONEOF'
           {
             "repo": "${{ github.repository }}",
             "branch": "${{ github.ref_name }}",
             "run_id": "${{ github.run_id }}",
             "language": "java",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "results": {
-              "coverage": ${{ steps.jacoco.outputs.percent || 0 }},
-              "mutation_score": ${{ steps.pitest.outputs.score || 0 }}
+              "build_status": "${{ steps.build.outputs.status || 'unknown' }}",
+              "coverage": ${{ steps.jacoco.outputs.ran == 'true' && steps.jacoco.outputs.percent || 'null' }},
+              "mutation_score": ${{ steps.pitest.outputs.ran == 'true' && steps.pitest.outputs.score || 'null' }},
+              "checkstyle_violations": ${{ steps.checkstyle.outputs.ran == 'true' && steps.checkstyle.outputs.violations || 'null' }},
+              "spotbugs_bugs": ${{ steps.spotbugs.outputs.ran == 'true' && steps.spotbugs.outputs.bugs || 'null' }},
+              "pmd_violations": ${{ steps.pmd.outputs.ran == 'true' && steps.pmd.outputs.violations || 'null' }},
+              "owasp_critical": ${{ steps.owasp.outputs.ran == 'true' && steps.owasp.outputs.critical || 'null' }},
+              "owasp_high": ${{ steps.owasp.outputs.ran == 'true' && steps.owasp.outputs.high || 'null' }},
+              "owasp_medium": ${{ steps.owasp.outputs.ran == 'true' && steps.owasp.outputs.medium || 'null' }},
+              "semgrep_findings": ${{ steps.semgrep.outputs.ran == 'true' && steps.semgrep.outputs.findings || 'null' }},
+              "trivy_critical": ${{ steps.trivy.outputs.ran == 'true' && steps.trivy.outputs.critical || 'null' }},
+              "trivy_high": ${{ steps.trivy.outputs.ran == 'true' && steps.trivy.outputs.high || 'null' }}
+            },
+            "tools_ran": {
+              "jacoco": ${{ steps.jacoco.outputs.ran == 'true' }},
+              "checkstyle": ${{ steps.checkstyle.outputs.ran == 'true' }},
+              "spotbugs": ${{ steps.spotbugs.outputs.ran == 'true' }},
+              "pmd": ${{ steps.pmd.outputs.ran == 'true' }},
+              "owasp": ${{ steps.owasp.outputs.ran == 'true' }},
+              "pitest": ${{ steps.pitest.outputs.ran == 'true' }},
+              "semgrep": ${{ steps.semgrep.outputs.ran == 'true' }},
+              "trivy": ${{ steps.trivy.outputs.ran == 'true' }}
             }
           }
-          EOF
+          JSONEOF
 
+      # ========================================================================
+      # Upload Artifacts
+      # ========================================================================
       - name: Upload CI Report
         if: always()
         uses: actions/upload-artifact@v4
@@ -264,9 +414,14 @@ jobs:
             **/target/spotbugsXml.xml
             **/target/checkstyle-result.xml
             **/target/pmd.xml
+            **/semgrep-report.json
+            **/trivy-report.json
           retention-days: ${{ inputs.retention_days }}
           if-no-files-found: ignore
 
+      # ========================================================================
+      # Generate Summary
+      # ========================================================================
       - name: Generate Summary
         if: always()
         run: |
@@ -275,17 +430,23 @@ jobs:
 
           **Branch:** \`${{ github.ref_name }}\` | **Java:** \`${{ inputs.java_version }}\` | **Build Tool:** \`${{ inputs.build_tool }}\`
 
-          ## Results
-          | Metric | Value |
-          |--------|-------|
-          | Coverage | ${{ steps.jacoco.outputs.percent || 'N/A' }}% |
-          | Mutation Score | ${{ steps.pitest.outputs.score || 'N/A' }}% |
+          ## Quality Metrics
+          | Metric | Value | Status |
+          |--------|-------|--------|
+          | Coverage | ${{ steps.jacoco.outputs.percent || '-' }}% | ${{ steps.jacoco.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
+          | Mutation Score | ${{ steps.pitest.outputs.score || '-' }}% | ${{ steps.pitest.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
 
-          ## Tools Run
-          - JaCoCo: ${{ inputs.run_jacoco }}
-          - Checkstyle: ${{ inputs.run_checkstyle }}
-          - SpotBugs: ${{ inputs.run_spotbugs }}
-          - PMD: ${{ inputs.run_pmd }}
-          - OWASP: ${{ inputs.run_owasp }}
-          - PITest: ${{ inputs.run_pitest }}
+          ## Code Quality
+          | Tool | Issues | Status |
+          |------|--------|--------|
+          | Checkstyle | ${{ steps.checkstyle.outputs.violations || '-' }} | ${{ steps.checkstyle.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
+          | SpotBugs | ${{ steps.spotbugs.outputs.bugs || '-' }} | ${{ steps.spotbugs.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
+          | PMD | ${{ steps.pmd.outputs.violations || '-' }} | ${{ steps.pmd.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
+
+          ## Security
+          | Tool | Critical | High | Medium | Status |
+          |------|----------|------|--------|--------|
+          | OWASP DC | ${{ steps.owasp.outputs.critical || '-' }} | ${{ steps.owasp.outputs.high || '-' }} | ${{ steps.owasp.outputs.medium || '-' }} | ${{ steps.owasp.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
+          | Trivy | ${{ steps.trivy.outputs.critical || '-' }} | ${{ steps.trivy.outputs.high || '-' }} | - | ${{ steps.trivy.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
+          | Semgrep | ${{ steps.semgrep.outputs.findings || '-' }} findings | - | - | ${{ steps.semgrep.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
           EOF

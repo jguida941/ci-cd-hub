@@ -563,11 +563,32 @@ jobs:
                   "run_id": run_id or "",
                   "status": "missing_run_id" if not run_id else "unknown",
                   "conclusion": "unknown",
+                  # Common quality metrics
                   "coverage": None,
                   "mutation_score": None,
-                  "critical_vulns": None,
-                  "high_vulns": None,
-                  "medium_vulns": None,
+                  # Java-specific tools
+                  "checkstyle_violations": None,
+                  "spotbugs_bugs": None,
+                  "pmd_violations": None,
+                  "owasp_critical": None,
+                  "owasp_high": None,
+                  "owasp_medium": None,
+                  # Python-specific tools
+                  "tests_passed": None,
+                  "tests_failed": None,
+                  "ruff_errors": None,
+                  "black_issues": None,
+                  "isort_issues": None,
+                  "mypy_errors": None,
+                  "bandit_high": None,
+                  "bandit_medium": None,
+                  "pip_audit_vulns": None,
+                  # Cross-language security tools
+                  "semgrep_findings": None,
+                  "trivy_critical": None,
+                  "trivy_high": None,
+                  # Track which tools ran
+                  "tools_ran": {},
               }
 
               if not run_id:
@@ -619,11 +640,32 @@ jobs:
                                       try:
                                           report_data = json.loads(report_file.read_text())
                                           results_data = report_data.get("results", {})
+                                          # Common quality metrics
                                           run_status["coverage"] = results_data.get("coverage")
                                           run_status["mutation_score"] = results_data.get("mutation_score")
-                                          run_status["critical_vulns"] = results_data.get("critical_vulns")
-                                          run_status["high_vulns"] = results_data.get("high_vulns")
-                                          run_status["medium_vulns"] = results_data.get("medium_vulns")
+                                          # Java-specific tools
+                                          run_status["checkstyle_violations"] = results_data.get("checkstyle_violations")
+                                          run_status["spotbugs_bugs"] = results_data.get("spotbugs_bugs")
+                                          run_status["pmd_violations"] = results_data.get("pmd_violations")
+                                          run_status["owasp_critical"] = results_data.get("owasp_critical")
+                                          run_status["owasp_high"] = results_data.get("owasp_high")
+                                          run_status["owasp_medium"] = results_data.get("owasp_medium")
+                                          # Python-specific tools
+                                          run_status["tests_passed"] = results_data.get("tests_passed")
+                                          run_status["tests_failed"] = results_data.get("tests_failed")
+                                          run_status["ruff_errors"] = results_data.get("ruff_errors")
+                                          run_status["black_issues"] = results_data.get("black_issues")
+                                          run_status["isort_issues"] = results_data.get("isort_issues")
+                                          run_status["mypy_errors"] = results_data.get("mypy_errors")
+                                          run_status["bandit_high"] = results_data.get("bandit_high")
+                                          run_status["bandit_medium"] = results_data.get("bandit_medium")
+                                          run_status["pip_audit_vulns"] = results_data.get("pip_audit_vulns")
+                                          # Cross-language security tools
+                                          run_status["semgrep_findings"] = results_data.get("semgrep_findings")
+                                          run_status["trivy_critical"] = results_data.get("trivy_critical")
+                                          run_status["trivy_high"] = results_data.get("trivy_high")
+                                          # Track which tools ran
+                                          run_status["tools_ran"] = report_data.get("tools_ran", {})
                                       except Exception as exc:  # noqa: PIE786
                                           print(f"Warning: could not parse report.json from {artifact['name']}: {exc}")
                   except Exception as exc:  # noqa: PIE786
@@ -653,24 +695,56 @@ jobs:
               "runs": results,
           }
 
-          # Aggregated metrics
-          coverages = [r["coverage"] for r in results if isinstance(r.get("coverage"), (int, float))]
-          mutations = [r["mutation_score"] for r in results if isinstance(r.get("mutation_score"), (int, float))]
-          critical_vulns = [r["critical_vulns"] for r in results if isinstance(r.get("critical_vulns"), (int, float))]
-          high_vulns = [r["high_vulns"] for r in results if isinstance(r.get("high_vulns"), (int, float))]
-          medium_vulns = [r["medium_vulns"] for r in results if isinstance(r.get("medium_vulns"), (int, float))]
+          # Helper to collect numeric values (ignores None)
+          def collect_values(key):
+              return [r[key] for r in results if isinstance(r.get(key), (int, float))]
+
+          # Aggregated quality metrics
+          coverages = collect_values("coverage")
+          mutations = collect_values("mutation_score")
 
           if coverages:
               report["coverage_average"] = round(sum(coverages) / len(coverages), 1)
           if mutations:
               report["mutation_average"] = round(sum(mutations) / len(mutations), 1)
 
-          # Vulnerability aggregation
-          report["total_critical_vulns"] = sum(critical_vulns) if critical_vulns else 0
-          report["total_high_vulns"] = sum(high_vulns) if high_vulns else 0
-          report["total_medium_vulns"] = sum(medium_vulns) if medium_vulns else 0
+          # Aggregated vulnerability metrics (OWASP for Java, Bandit/pip-audit for Python, Trivy/Semgrep for both)
+          owasp_critical = collect_values("owasp_critical")
+          owasp_high = collect_values("owasp_high")
+          owasp_medium = collect_values("owasp_medium")
+          bandit_high = collect_values("bandit_high")
+          bandit_medium = collect_values("bandit_medium")
+          pip_audit_vulns = collect_values("pip_audit_vulns")
+          trivy_critical = collect_values("trivy_critical")
+          trivy_high = collect_values("trivy_high")
+          semgrep_findings = collect_values("semgrep_findings")
+
+          # Total critical/high across all security tools
+          report["total_critical_vulns"] = sum(owasp_critical) + sum(trivy_critical)
+          report["total_high_vulns"] = sum(owasp_high) + sum(bandit_high) + sum(trivy_high)
+          report["total_medium_vulns"] = sum(owasp_medium) + sum(bandit_medium)
+          report["total_pip_audit_vulns"] = sum(pip_audit_vulns)
+          report["total_semgrep_findings"] = sum(semgrep_findings)
+
+          # Aggregated code quality metrics
+          checkstyle_violations = collect_values("checkstyle_violations")
+          spotbugs_bugs = collect_values("spotbugs_bugs")
+          pmd_violations = collect_values("pmd_violations")
+          ruff_errors = collect_values("ruff_errors")
+          black_issues = collect_values("black_issues")
+          isort_issues = collect_values("isort_issues")
+          mypy_errors = collect_values("mypy_errors")
+
+          report["total_code_quality_issues"] = (
+              sum(checkstyle_violations) + sum(spotbugs_bugs) + sum(pmd_violations) +
+              sum(ruff_errors) + sum(black_issues) + sum(isort_issues) + sum(mypy_errors)
+          )
 
           Path("hub-report.json").write_text(json.dumps(report, indent=2))
+
+          # Helper to format metric (None -> "-", else value)
+          def fmt(val, suffix=""):
+              return f"{val}{suffix}" if val is not None else "-"
 
           summary_lines = [
               "# CI/CD Hub Report",
@@ -684,39 +758,105 @@ jobs:
               f"- Missing metadata: {missing}",
               f"- Missing run IDs: {missing_run_id}",
               "",
-              "## Results by Config",
-              "",
-              "| Config | Repo | Status | Coverage | Mutation | Vulns (C/H/M) |",
-              "|--------|------|--------|----------|----------|---------------|",
           ]
 
-          for entry in results:
-              config = entry.get('config', entry.get('repo', 'unknown').split('/')[-1])
-              repo = entry.get('repo', 'unknown')
-              status = entry.get('conclusion', entry.get('status', 'unknown'))
-              coverage = entry.get('coverage')
-              coverage_str = f"{coverage}%" if coverage is not None else "-"
-              mutation = entry.get('mutation_score')
-              mutation_str = f"{mutation}%" if mutation is not None else "-"
-              c = entry.get('critical_vulns', '-')
-              h = entry.get('high_vulns', '-')
-              m = entry.get('medium_vulns', '-')
-              vulns_str = f"{c}/{h}/{m}"
-              status_icon = "✅" if status == "success" else "❌" if status in ("failure", "failed") else "⏳"
-              summary_lines.append(f"| {config} | {repo} | {status_icon} {status} | {coverage_str} | {mutation_str} | {vulns_str} |")
+          # Separate Java and Python results
+          java_results = [r for r in results if r.get("language") == "java"]
+          python_results = [r for r in results if r.get("language") == "python"]
 
-          # Add aggregated vulnerability metrics to summary
+          # Java Results Table
+          if java_results:
+              summary_lines.extend([
+                  "## Java Repos",
+                  "",
+                  "| Config | Status | Cov | Mut | CS | SB | PMD | OWASP | Semgrep | Trivy |",
+                  "|--------|--------|-----|-----|----|----|-----|-------|---------|-------|",
+              ])
+              for entry in java_results:
+                  config = entry.get('config', entry.get('repo', 'unknown').split('/')[-1])
+                  status = entry.get('conclusion', entry.get('status', 'unknown'))
+                  status_icon = "✅" if status == "success" else "❌" if status in ("failure", "failed") else "⏳"
+
+                  cov = fmt(entry.get('coverage'), '%')
+                  mut = fmt(entry.get('mutation_score'), '%')
+                  cs = fmt(entry.get('checkstyle_violations'))
+                  sb = fmt(entry.get('spotbugs_bugs'))
+                  pmd = fmt(entry.get('pmd_violations'))
+
+                  oc = entry.get('owasp_critical')
+                  oh = entry.get('owasp_high')
+                  om = entry.get('owasp_medium')
+                  owasp = f"{oc or 0}/{oh or 0}/{om or 0}" if any(v is not None for v in [oc, oh, om]) else "-"
+
+                  sem = fmt(entry.get('semgrep_findings'))
+
+                  tc = entry.get('trivy_critical')
+                  th = entry.get('trivy_high')
+                  trivy = f"{tc or 0}/{th or 0}" if any(v is not None for v in [tc, th]) else "-"
+
+                  summary_lines.append(f"| {config} | {status_icon} | {cov} | {mut} | {cs} | {sb} | {pmd} | {owasp} | {sem} | {trivy} |")
+              summary_lines.append("")
+
+          # Python Results Table
+          if python_results:
+              summary_lines.extend([
+                  "## Python Repos",
+                  "",
+                  "| Config | Status | Cov | Mut | Tests | Ruff | Black | isort | mypy | Bandit | pip-audit | Semgrep | Trivy |",
+                  "|--------|--------|-----|-----|-------|------|-------|-------|------|--------|-----------|---------|-------|",
+              ])
+              for entry in python_results:
+                  config = entry.get('config', entry.get('repo', 'unknown').split('/')[-1])
+                  status = entry.get('conclusion', entry.get('status', 'unknown'))
+                  status_icon = "✅" if status == "success" else "❌" if status in ("failure", "failed") else "⏳"
+
+                  cov = fmt(entry.get('coverage'), '%')
+                  mut = fmt(entry.get('mutation_score'), '%')
+
+                  tp = entry.get('tests_passed')
+                  tf = entry.get('tests_failed')
+                  tests = f"{tp or 0}✓/{tf or 0}✗" if any(v is not None for v in [tp, tf]) else "-"
+
+                  ruff = fmt(entry.get('ruff_errors'))
+                  black = fmt(entry.get('black_issues'))
+                  isort = fmt(entry.get('isort_issues'))
+                  mypy = fmt(entry.get('mypy_errors'))
+
+                  bh = entry.get('bandit_high')
+                  bm = entry.get('bandit_medium')
+                  bandit = f"{bh or 0}/{bm or 0}" if any(v is not None for v in [bh, bm]) else "-"
+
+                  pip = fmt(entry.get('pip_audit_vulns'))
+                  sem = fmt(entry.get('semgrep_findings'))
+
+                  tc = entry.get('trivy_critical')
+                  th = entry.get('trivy_high')
+                  trivy = f"{tc or 0}/{th or 0}" if any(v is not None for v in [tc, th]) else "-"
+
+                  summary_lines.append(f"| {config} | {status_icon} | {cov} | {mut} | {tests} | {ruff} | {black} | {isort} | {mypy} | {bandit} | {pip} | {sem} | {trivy} |")
+              summary_lines.append("")
+
+          # Aggregated Metrics
           summary_lines.extend([
-              "",
               "## Aggregated Metrics",
-              f"- **Total Critical Vulnerabilities:** {report['total_critical_vulns']}",
-              f"- **Total High Vulnerabilities:** {report['total_high_vulns']}",
-              f"- **Total Medium Vulnerabilities:** {report['total_medium_vulns']}",
+              "",
+              "### Quality",
           ])
           if "coverage_average" in report:
               summary_lines.append(f"- **Average Coverage:** {report['coverage_average']}%")
           if "mutation_average" in report:
               summary_lines.append(f"- **Average Mutation Score:** {report['mutation_average']}%")
+          summary_lines.append(f"- **Total Code Quality Issues:** {report['total_code_quality_issues']}")
+
+          summary_lines.extend([
+              "",
+              "### Security",
+              f"- **Critical Vulnerabilities (OWASP+Trivy):** {report['total_critical_vulns']}",
+              f"- **High Vulnerabilities (OWASP+Bandit+Trivy):** {report['total_high_vulns']}",
+              f"- **Medium Vulnerabilities (OWASP+Bandit):** {report['total_medium_vulns']}",
+              f"- **pip-audit Vulnerabilities:** {report['total_pip_audit_vulns']}",
+              f"- **Semgrep Findings:** {report['total_semgrep_findings']}",
+          ])
 
           summary_path = Path(os.environ["GITHUB_STEP_SUMMARY"])
           summary_path.write_text("\n".join(summary_lines))

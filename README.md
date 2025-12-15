@@ -37,14 +37,14 @@ flowchart LR
 ## Running the Hub (central mode)
 ```bash
 # All repos
-gh workflow run hub-run-all.yml -R jguida941/ci-hub-orchestrator
+gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub
 
 # Only fixtures or smoke sets
-gh workflow run hub-run-all.yml -R jguida941/ci-hub-orchestrator -f run_group=fixtures
-gh workflow run hub-run-all.yml -R jguida941/ci-hub-orchestrator -f run_group=smoke
+gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub -f run_group=fixtures
+gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub -f run_group=smoke
 
 # Single repo
-gh workflow run hub-run-all.yml -R jguida941/ci-hub-orchestrator -f repos=java-spring-tutorials
+gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub -f repos=java-spring-tutorials
 ```
 
 ### Dispatch mode (optional)
@@ -98,4 +98,4 @@ docs/
 Start with `docs/guides/ONBOARDING.md`, `docs/guides/WORKFLOWS.md`, and `docs/reference/CONFIG_REFERENCE.md`.
 
 ## Support
-Open issues in `ci-hub-orchestrator` with run URLs and the config file you used. Include whether you ran central (`hub-run-all.yml`) or dispatch (`hub-orchestrator.yml`).
+Open issues in `ci-cd-hub` with run URLs and the config file you used. Include whether you ran central (`hub-run-all.yml`) or dispatch (`hub-orchestrator.yml`).

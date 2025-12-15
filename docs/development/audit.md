@@ -433,16 +433,16 @@ The following issues from initial review have been confirmed resolved:
 - Workflow: `hub-run-all.yml`
 - Repos: fixtures-java-passing (subdir), fixtures-python-passing (subdir) from `jguida941/ci-cd-hub-fixtures`
 - Result: success
-- Run URL: https://github.com/jguida941/ci-hub-orchestrator/actions/runs/20221324805
+- Run URL: https://github.com/jguida941/ci-cd-hub/actions/runs/20221324805
 
 - Date: 2025-12-15
 - Workflow: `hub-run-all.yml`
 - Repos: fixtures-java-failing (subdir), fixtures-python-failing (subdir) from `jguida941/ci-cd-hub-fixtures`
 - Result: success (expected failing tests are non-blocking in current config)
-- Run URL: https://github.com/jguida941/ci-hub-orchestrator/actions/runs/20221358938
+- Run URL: https://github.com/jguida941/ci-cd-hub/actions/runs/20221358938
 
 - Date: 2025-12-15
 - Workflow: `hub-run-all.yml`
 - Repos: fixtures-java-passing (subdir), fixtures-python-passing (subdir) from `jguida941/ci-cd-hub-fixtures`
 - Result: success (subdir handling fixed in hub-run-all)
-- Run URL: https://github.com/jguida941/ci-hub-orchestrator/actions/runs/20222129715
+- Run URL: https://github.com/jguida941/ci-cd-hub/actions/runs/20222129715

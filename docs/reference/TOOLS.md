@@ -18,41 +18,41 @@ Comprehensive documentation for all quality, security, and testing tools support
 
 ### Java Tools
 
-| Tool | Central Mode | Reusable Workflow | Config Toggle | Status |
+| Tool | Central Mode | Dispatch Template | Config Toggle | Status |
 |------|--------------|-------------------|---------------|--------|
 | JaCoCo | Wired + Toggle | Wired + Toggle | `java.tools.jacoco.enabled` | Production |
 | Checkstyle | Wired + Toggle | Wired + Toggle | `java.tools.checkstyle.enabled` | Production |
 | SpotBugs | Wired + Toggle | Wired + Toggle | `java.tools.spotbugs.enabled` | Production |
-| PMD | Wired + Toggle | Not Wired | `java.tools.pmd.enabled` | Central-only |
+| PMD | Wired + Toggle | Wired + Toggle | `java.tools.pmd.enabled` | Production |
 | OWASP DC | Wired + Toggle | Wired + Toggle | `java.tools.owasp.enabled` | Production |
 | PITest | Wired + Toggle | Wired + Toggle | `java.tools.pitest.enabled` | Production |
-| CodeQL | Not Wired | Wired + Toggle | `java.tools.codeql.enabled` | Reusable-only |
-| Semgrep | Wired + Toggle | Not Wired | `java.tools.semgrep.enabled` | Central-only |
-| Trivy | Wired + Toggle | Not Wired | `java.tools.trivy.enabled` | Central-only |
+| CodeQL | Not Wired | Input only | `java.tools.codeql.enabled` | Input-only |
+| Semgrep | Wired + Toggle | Wired + Toggle | `java.tools.semgrep.enabled` | Production |
+| Trivy | Wired + Toggle | Wired + Toggle | `java.tools.trivy.enabled` | Production |
 
 ### Python Tools
 
-| Tool | Central Mode | Reusable Workflow | Config Toggle | Status |
+| Tool | Central Mode | Dispatch Template | Config Toggle | Status |
 |------|--------------|-------------------|---------------|--------|
 | pytest + coverage | Wired + Toggle | Wired + Toggle | `python.tools.pytest.enabled` | Production |
 | Ruff | Wired + Toggle | Wired + Toggle | `python.tools.ruff.enabled` | Production |
 | Bandit | Wired + Toggle | Wired + Toggle | `python.tools.bandit.enabled` | Production |
 | pip-audit | Wired + Toggle | Wired + Toggle | `python.tools.pip_audit.enabled` | Production |
-| Black | Wired + Toggle | Not Wired | `python.tools.black.enabled` | Central-only |
-| isort | Wired + Toggle | Not Wired | `python.tools.isort.enabled` | Central-only |
+| Black | Wired + Toggle | Wired + Toggle | `python.tools.black.enabled` | Production |
+| isort | Wired + Toggle | Wired + Toggle | `python.tools.isort.enabled` | Production |
 | mypy | Wired + Toggle | Wired + Toggle | `python.tools.mypy.enabled` | Production |
-| mutmut | Wired + Toggle | Not Wired | `python.tools.mutmut.enabled` | Central-only |
+| mutmut | Wired + Toggle | Wired + Toggle | `python.tools.mutmut.enabled` | Production |
 | Hypothesis | Wired + Toggle | Not Wired | `python.tools.hypothesis.enabled` | Central-only |
-| Semgrep | Wired + Toggle | Not Wired | `python.tools.semgrep.enabled` | Central-only |
-| Trivy | Wired + Toggle | Not Wired | `python.tools.trivy.enabled` | Central-only |
-| CodeQL | Not Wired | Wired + Toggle | `python.tools.codeql.enabled` | Reusable-only |
+| Semgrep | Wired + Toggle | Wired + Toggle | `python.tools.semgrep.enabled` | Production |
+| Trivy | Wired + Toggle | Wired + Toggle | `python.tools.trivy.enabled` | Production |
+| CodeQL | Not Wired | Input only | `python.tools.codeql.enabled` | Input-only |
 
-### Universal Tools (Central Mode Only)
+### Universal Tools
 
-| Tool | Central Mode | Reusable Workflow | When Runs | Status |
+| Tool | Central Mode | Dispatch Template | When Runs | Status |
 |------|--------------|-------------------|-----------|--------|
-| Semgrep | Wired + Toggle | Not Wired | If `*.tools.semgrep.enabled` | Central-only |
-| Trivy | Wired + Toggle | Not Wired | If `*.tools.trivy.enabled` + Dockerfile exists | Central-only |
+| Semgrep | Wired + Toggle | Wired + Toggle | If `*.tools.semgrep.enabled` | Production |
+| Trivy | Wired + Toggle | Wired + Toggle | If `*.tools.trivy.enabled` | Production |
 
 ---
 
@@ -587,30 +587,42 @@ thresholds:
   max_high_vulns: 0
 ```
 
-> **Note:** Vulnerability rollup (aggregating vuln counts across repos) is not yet implemented in hub-report.json.
+> **Note:** Vulnerability rollup is now implemented in hub-report.json (as of 2025-12-15). The orchestrator aggregates critical/high/medium vuln counts across all repos and tools.
 
 ---
 
 ## Gaps and TODO
 
-### Tools Not Yet Wired to Reusable Workflows
-These tools run in central mode (`hub-run-all.yml`) with config toggles, but are NOT available in reusable workflows (`java-ci.yml`, `python-ci.yml`):
+### Dispatch Templates - Complete (Updated 2025-12-15)
 
-> **Note:** Config keys exist in `config/defaults.yaml` and work in central mode. To enable these tools in distributed/reusable mode, workflow inputs and steps need to be added.
+The dispatch workflow templates (`java-ci-dispatch.yml`, `python-ci-dispatch.yml`) now include ALL tools with full metric capture and aggregation. Tools that were previously "Central-only" are now available in dispatch mode.
 
-| Tool | Reusable Workflow | Config Key (exists) | Workflow Input Needed |
-|------|-------------------|---------------------|----------------------|
-| PMD | java-ci.yml | `java.tools.pmd.enabled` | `run_pmd` |
-| Black | python-ci.yml | `python.tools.black.enabled` | `run_black` |
-| isort | python-ci.yml | `python.tools.isort.enabled` | `run_isort` |
-| mutmut | python-ci.yml | `python.tools.mutmut.enabled` | `run_mutmut` |
-| Hypothesis | python-ci.yml | `python.tools.hypothesis.enabled` | `run_hypothesis` |
-| Semgrep | both | `*.tools.semgrep.enabled` | `run_semgrep` |
-| Trivy | both | `*.tools.trivy.enabled` | `run_trivy` |
+**Fully Wired in Dispatch Templates:**
+- PMD (Java)
+- Black (Python)
+- isort (Python)
+- mutmut (Python)
+- Semgrep (both)
+- Trivy (both)
 
-### Missing Aggregation
-- Vulnerability counts not rolled up in hub-report.json
-- Per-tool metrics not yet aggregated across repos
+**Still Central-Only:**
+- Hypothesis (Python property-based testing) - not typically needed in dispatch mode
+
+### Aggregation - Complete (Updated 2025-12-15)
+
+The orchestrator now aggregates ALL tool metrics:
+- Vulnerability counts rolled up from OWASP, Bandit, pip-audit, Trivy, Semgrep
+- Per-tool metrics (checkstyle, spotbugs, pmd, ruff, black, isort, mypy) tracked per repo
+- Separate summary tables for Java and Python repos
+- Total counts for security posture across all repos
+
+### Remaining Gaps
+
+| Gap | Status | Notes |
+|-----|--------|-------|
+| CodeQL in templates | Input-only | Uses GitHub's native CodeQL action, no custom metrics |
+| Hypothesis in dispatch | Not implemented | Central-mode only; property-based testing not typical for dispatch |
+| Docker build/test | Input exists | Requires repo-specific Dockerfile; implementation varies |
 
 ---
 

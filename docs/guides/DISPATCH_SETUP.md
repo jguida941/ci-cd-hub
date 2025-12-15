@@ -49,20 +49,77 @@ The hub provides official dispatch workflow templates. Copy these to target repo
 The templates:
 - Only trigger on `workflow_dispatch` (won't affect existing push/PR workflows)
 - Accept all inputs the orchestrator sends
-- Generate `ci-report` artifacts for hub aggregation
+- Run ALL available tools (controlled by config toggles)
+- Generate comprehensive `ci-report` artifacts for hub aggregation
+- Produce `report.json` with full tool metrics
+
+### What Tools Are Included
+
+**Java template tools:**
+- JaCoCo (coverage)
+- Checkstyle (code style violations)
+- SpotBugs (bug detection)
+- PMD (static analysis)
+- OWASP Dependency Check (vulnerability scanning)
+- PITest (mutation testing)
+- Semgrep (SAST)
+- Trivy (container/filesystem scanning)
+
+**Python template tools:**
+- pytest + coverage (tests & coverage)
+- Ruff (linting)
+- Black (formatting check)
+- isort (import sorting)
+- mypy (type checking)
+- Bandit (security scanning)
+- pip-audit (dependency vulnerabilities)
+- mutmut (mutation testing)
+- Semgrep (SAST)
+- Trivy (container/filesystem scanning)
+
+All tools are toggle-controlled via config. See [TOOLS.md](../reference/TOOLS.md) for details.
+
+### report.json Format
+
+The templates generate a `report.json` artifact that the hub aggregates:
+
+```json
+{
+  "repo": "owner/repo",
+  "language": "java|python",
+  "results": {
+    "coverage": 85,           // % or null if not run
+    "mutation_score": 70,     // % or null if not run
+    "checkstyle_violations": 5,
+    "spotbugs_bugs": 0,
+    // ... all tool metrics
+  },
+  "tools_ran": {
+    "jacoco": true,
+    "checkstyle": true,
+    "spotbugs": false,        // Tool was disabled
+    // ...
+  }
+}
+```
+
+- **`null`** = tool didn't run (shows `-` in summary)
+- **`0`** = tool ran, found nothing (shows `0` in summary)
+
+See [ADR-0013](../adr/0013-dispatch-workflow-templates.md#comprehensive-reporting-updated-2025-12-15) for complete schema
 
 ## Create a token (PAT)
 1. Go to GitHub → Settings → Developer settings → Personal access tokens.
 2. Classic PAT (simple): Generate new token (classic) → scopes: check `repo` and `workflow`.
    Fine-grained PAT (stricter):
    - Resource owner: your account
-   - Repository access: include `ci-hub-orchestrator` and all target repos
+   - Repository access: include `ci-cd-hub` and all target repos
    - Permissions: Actions Read/Write, Contents Read, Metadata Read
 3. Generate and copy the token.
 
 ## Add the secret to the hub repo
-- GitHub UI: `ci-hub-orchestrator` → Settings → Secrets and variables → Actions → New repository secret → Name `HUB_DISPATCH_TOKEN` → paste token.
-- CLI: `gh secret set HUB_DISPATCH_TOKEN -R jguida941/ci-hub-orchestrator`
+- GitHub UI: `ci-cd-hub` → Settings → Secrets and variables → Actions → New repository secret → Name `HUB_DISPATCH_TOKEN` → paste token.
+- CLI: `gh secret set HUB_DISPATCH_TOKEN -R jguida941/ci-cd-hub`
 
 ## Configure repos
 - Hub config: set `repo.dispatch_enabled: false` for central-only repos (e.g., fixtures). Default is true.

@@ -118,6 +118,79 @@ This ensures:
 
 4. Run orchestrator - it will dispatch to the new workflow
 
+## Comprehensive Reporting (Updated 2025-12-15)
+
+### report.json Schema
+
+The dispatch templates generate a comprehensive `report.json` artifact that the orchestrator aggregates. The schema captures ALL tool results:
+
+```json
+{
+  "repo": "owner/repo-name",
+  "branch": "main",
+  "run_id": "12345678",
+  "language": "java|python",
+  "timestamp": "2025-12-15T14:00:00Z",
+  "results": {
+    // Common quality metrics
+    "coverage": <number|null>,
+    "mutation_score": <number|null>,
+
+    // Java-specific tools
+    "checkstyle_violations": <number|null>,
+    "spotbugs_bugs": <number|null>,
+    "pmd_violations": <number|null>,
+    "owasp_critical": <number|null>,
+    "owasp_high": <number|null>,
+    "owasp_medium": <number|null>,
+
+    // Python-specific tools
+    "tests_passed": <number|null>,
+    "tests_failed": <number|null>,
+    "ruff_errors": <number|null>,
+    "black_issues": <number|null>,
+    "isort_issues": <number|null>,
+    "mypy_errors": <number|null>,
+    "bandit_high": <number|null>,
+    "bandit_medium": <number|null>,
+    "pip_audit_vulns": <number|null>,
+
+    // Cross-language security tools
+    "semgrep_findings": <number|null>,
+    "trivy_critical": <number|null>,
+    "trivy_high": <number|null>
+  },
+  "tools_ran": {
+    // Booleans indicating which tools executed
+    "jacoco": true,
+    "checkstyle": false,
+    // ... etc
+  }
+}
+```
+
+### Key Design Decisions
+
+1. **`null` vs `0`**: Fields are `null` if the tool didn't run, `0` if it ran and found nothing. This allows the summary to show `-` for skipped tools.
+
+2. **`tools_ran` section**: Explicitly tracks which tools executed, independent of results.
+
+3. **Language-specific sections**: Java and Python repos have different tool sets, reported in separate tables in the hub summary.
+
+4. **Aggregation**: The orchestrator sums all vulnerability counts across repos and tools to provide total security posture.
+
+### Hub Summary Output
+
+The orchestrator generates separate tables for Java and Python repos:
+
+**Java:**
+| Config | Status | Cov | Mut | CS | SB | PMD | OWASP | Semgrep | Trivy |
+
+**Python:**
+| Config | Status | Cov | Mut | Tests | Ruff | Black | isort | mypy | Bandit | pip-audit | Semgrep | Trivy |
+
+Tools that didn't run show `-` in the table.
+
 ## Related ADRs
 
 - ADR-0001: Central vs. Distributed Execution
