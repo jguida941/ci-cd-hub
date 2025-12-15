@@ -8,7 +8,8 @@ import re
 import sys
 from pathlib import Path
 
-WF = Path("hub-release/.github/workflows/hub-run-all.yml")
+ROOT = Path(__file__).resolve().parents[1]
+WF = ROOT / ".github" / "workflows" / "hub-run-all.yml"
 
 MATRIX_REF_RE = re.compile(r"\bmatrix\.([A-Za-z_][A-Za-z0-9_]*)\b")
 ENTRY_LITERAL_KEY_RE = re.compile(r'\n\s*"([A-Za-z_][A-Za-z0-9_]*)"\s*:\s*')
