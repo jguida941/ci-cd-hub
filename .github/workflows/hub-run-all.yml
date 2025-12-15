@@ -64,12 +64,14 @@ jobs:
 
           for config in config/repos/*.yaml; do
             if [ -f "$config" ]; then
+              BASENAME=$(basename "$config" .yaml)
               NAME=$(grep -E "^\s+name:" "$config" | head -1 | sed 's/.*name:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'")
               OWNER=$(grep -E "^\s+owner:" "$config" | head -1 | sed 's/.*owner:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'")
               LANG=$(grep -E "^\s+language:" "$config" | head -1 | sed 's/.*language:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'")
               BRANCH=$(grep -E "^\s+default_branch:" "$config" | head -1 | sed 's/.*default_branch:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'" || echo "main")
               SUBDIR=$(grep -E "^\s+subdir:" "$config" | head -1 | sed 's/.*subdir:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'" || echo "")
               DISPATCH=$(grep -E "^\s+dispatch_enabled:" "$config" | head -1 | sed 's/.*dispatch_enabled:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'" || echo "true")
+              RUN_GROUP=$(grep -E "^\s+run_group:" "$config" | head -1 | sed 's/.*run_group:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'" || echo "full")
 
               if [ -n "$NAME" ] && [ -n "$OWNER" ]; then
                 # Filter if specific repos requested
@@ -79,14 +81,12 @@ jobs:
                   fi
                 fi
 
-                # Skip central run if dispatch disabled? No, central always runs; dispatch flag ignored here.
-
                 if [ "$FIRST" = true ]; then
                   FIRST=false
                 else
                   REPOS+=','
                 fi
-                REPOS+="{\"name\":\"$NAME\",\"owner\":\"$OWNER\",\"language\":\"${LANG:-java}\",\"branch\":\"${BRANCH:-main}\",\"subdir\":\"${SUBDIR:-}\"}"
+                REPOS+="{\"name\":\"$NAME\",\"owner\":\"$OWNER\",\"language\":\"${LANG:-java}\",\"branch\":\"${BRANCH:-main}\",\"subdir\":\"${SUBDIR:-}\",\"config_basename\":\"${BASENAME}\",\"run_group\":\"${RUN_GROUP:-full}\"}"
                 COUNT=$((COUNT + 1))
               fi
             fi
@@ -106,7 +106,7 @@ jobs:
   # Run CI for Each Repo
   # ============================================================================
   test-repo:
-    name: "Test: ${{ matrix.name }}${{ matrix.subdir != '' && format(' ({0})', matrix.subdir) || '' }}"
+    name: "Test: ${{ matrix.config_basename }} (${{ matrix.owner }}/${{ matrix.name }}${{ matrix.subdir != '' && format(':{0}', matrix.subdir) || '' }})"
     runs-on: ubuntu-latest
     needs: discover
     if: needs.discover.outputs.count > 0
@@ -669,7 +669,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: reports-${{ matrix.name }}${{ matrix.subdir != '' && format('-{0}', matrix.subdir) || '' }}
+          name: reports-${{ matrix.config_basename }}${{ matrix.subdir != '' && format('-{0}', matrix.subdir) || '' }}
           path: |
             repo/**/target/surefire-reports/
             repo/**/target/site/jacoco/
