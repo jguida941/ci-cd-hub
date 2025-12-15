@@ -19,6 +19,13 @@ Pre-configured tool combinations for common CI/CD scenarios.
 | `python-compliance.yaml` | Python | Security/compliance focus | ~15-30 min |
 | `python-security.yaml` | Python | Full security scanning | ~15-30 min |
 
+_Expected runtimes are rough estimates and depend on repo size and runner speed._
+
+## Precedence and merge rules
+- Profile values are merged into hub config (`config/repos/*.yaml`), then overridden by a repo’s `.ci-hub.yml` (repo wins).
+- Use one source of truth for thresholds: prefer `thresholds.*`; tool-level `min_*` defaults are just starting points.
+- Only the language block matching `repo.language` is used; ignore/remove the other language block.
+
 ## When to Use Each Profile
 
 ### Minimal Profile
@@ -28,7 +35,7 @@ Pre-configured tool combinations for common CI/CD scenarios.
 
 ### Fast Profile
 - **Use for:** PR checks, development iteration, quick feedback
-- **Enables:** Core lint/test/coverage only
+- **Enables:** Lint, tests, coverage, and formatting (black/isort on Python)
 - **Disables:** Mutation testing, SAST, container scanning
 
 ### Quality Profile
@@ -38,18 +45,18 @@ Pre-configured tool combinations for common CI/CD scenarios.
 
 ### Coverage Gate Profile
 - **Use for:** Release branches that must meet bars
-- **Enables:** High coverage/mutation thresholds, lint
+- **Enables:** High coverage/mutation thresholds, lint (e.g., coverage 90%, mutation 80%)
 - **Disables:** Security tools (pair with security/compliance profiles)
 
 ### Compliance Profile
-- **Use for:** Security/compliance gates where scan coverage matters most
+- **Use for:** Compliance gates where scan coverage/reporting matter most
 - **Enables:** Dependency + SAST + container scanning with stricter thresholds
 - **Disables:** Most quality-focused tools (coverage, mutation)
 
 ### Security Profile
-- **Use for:** Security audits, compliance checks, release gates
+- **Use for:** Security-only runs (pair with Fast/Quality on another branch)
 - **Enables:** All security scanners (SAST, SCA, container)
-- **Disables:** Quality-focused tools (coverage, formatting)
+- **Disables:** Coverage/formatting; intended to complement Fast/Quality
 
 ## How to Apply a Profile
 
@@ -66,13 +73,8 @@ python scripts/validate_config.py config/repos/my-repo.yaml
 # Copy profile as your repo config
 cp templates/profiles/python-fast.yaml config/repos/my-repo.yaml
 
-# Edit to add repo details
-cat >> config/repos/my-repo.yaml << 'EOF'
-repo:
-  owner: your-username
-  name: my-repo
-  language: python
-EOF
+# Edit the repo: section at the top with your owner/name/language (and subdir if needed)
+$EDITOR config/repos/my-repo.yaml
 ```
 
 ### Option 2: Merge Profile with Existing Config
@@ -132,3 +134,9 @@ python:
 | Semgrep | N | N | N | N | Y | Y |
 | Trivy | N | N | N | N | Y | Y |
 | CodeQL | N | N | N | N | Y | Y |
+
+Notes:
+- CodeQL is heavy and may require org permissions; enable intentionally.
+- Use the `pip_audit` key (underscore) consistently in configs; tool names in text may show hyphens.
+- Consider omitting hardcoded PITest threads; defaults adapt better to runner cores.
+- Thresholds: use `thresholds.coverage_min` and `thresholds.mutation_score_min` as the source of truth; tool-level `min_*` values are defaults only.
