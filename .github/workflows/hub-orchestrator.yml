@@ -465,7 +465,8 @@ jobs:
           TOTAL_REPOS: ${{ needs.load-config.outputs.repo_count }}
           HUB_RUN_ID: ${{ github.run_id }}
           HUB_EVENT: ${{ github.event_name }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Use HUB_DISPATCH_TOKEN for cross-repo artifact access, fallback to GITHUB_TOKEN
+          GITHUB_TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           python << 'EOF'
           import json
@@ -553,7 +554,9 @@ jobs:
               workflow = entry.get("workflow")
 
               run_status = {
+                  "config": entry.get("config", repo),
                   "repo": repo_full,
+                  "subdir": entry.get("subdir", ""),
                   "language": language,
                   "branch": branch,
                   "workflow": workflow,
@@ -676,18 +679,31 @@ jobs:
               f"**Timestamp:** {report['timestamp']}",
               "",
               "## Dispatch Status",
-              f"- Total repos (matrix): {total_repos}",
-              f"- Dispatch metadata received: {dispatched}",
-              f"- Missing metadata files: {missing}",
-              f"- Runs without run_id: {missing_run_id}",
+              f"- Total configs: {total_repos}",
+              f"- Successfully dispatched: {dispatched}",
+              f"- Missing metadata: {missing}",
+              f"- Missing run IDs: {missing_run_id}",
               "",
-              "### Runs",
+              "## Results by Config",
+              "",
+              "| Config | Repo | Status | Coverage | Mutation | Vulns (C/H/M) |",
+              "|--------|------|--------|----------|----------|---------------|",
           ]
 
           for entry in results:
-              line = f"- {entry.get('repo', 'unknown')} ({entry.get('language', '-')}) "
-              line += f"branch `{entry.get('branch', '-')}`, workflow `{entry.get('workflow', '-')}`, run_id `{entry.get('run_id', '') or 'pending'}`, status `{entry.get('status', '-')}`, conclusion `{entry.get('conclusion', '-')}`, coverage `{entry.get('coverage', '-')}`, mutation `{entry.get('mutation_score', '-')}`, vulns(C/H/M) `{entry.get('critical_vulns', '-')}/{entry.get('high_vulns', '-')}/{entry.get('medium_vulns', '-')}`"
-              summary_lines.append(line)
+              config = entry.get('config', entry.get('repo', 'unknown').split('/')[-1])
+              repo = entry.get('repo', 'unknown')
+              status = entry.get('conclusion', entry.get('status', 'unknown'))
+              coverage = entry.get('coverage')
+              coverage_str = f"{coverage}%" if coverage is not None else "-"
+              mutation = entry.get('mutation_score')
+              mutation_str = f"{mutation}%" if mutation is not None else "-"
+              c = entry.get('critical_vulns', '-')
+              h = entry.get('high_vulns', '-')
+              m = entry.get('medium_vulns', '-')
+              vulns_str = f"{c}/{h}/{m}"
+              status_icon = "✅" if status == "success" else "❌" if status in ("failure", "failed") else "⏳"
+              summary_lines.append(f"| {config} | {repo} | {status_icon} {status} | {coverage_str} | {mutation_str} | {vulns_str} |")
 
           # Add aggregated vulnerability metrics to summary
           summary_lines.extend([
