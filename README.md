@@ -1,4 +1,4 @@
-# CI/CD Hub Orchestrator
+# CI/CD Hub
 
 Centralized CI/CD for many repositories without copying workflow files into every project. The hub pulls configs from `config/repos/*.yaml`, runs quality and security tools for Java and Python, and publishes reports in one place.
 
