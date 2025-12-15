@@ -23,6 +23,7 @@ Use this guide to enable cross-repo dispatch from the hub orchestrator.
 ## Configure repos
 - Hub config: set `repo.dispatch_enabled: false` for central-only repos (e.g., fixtures). Default is true.
 - Dispatchable repos must have a workflow with `workflow_dispatch` that calls the reusable workflow and accepts inputs (including `workdir` for monorepos).
+- Use `repo.run_group` (full/fixtures/smoke) and the `run_group` workflow input to limit which configs the hub runs.
 
 ## Artifact naming
 - Orchestrator uploads artifacts with repo-specific names to avoid collisions; keep unique names if adding artifacts.
@@ -31,3 +32,4 @@ Use this guide to enable cross-repo dispatch from the hub orchestrator.
 - `Resource not accessible by integration`: token lacks `actions:write`/`contents:read` on target repo.
 - `404 workflow`: target repo has no dispatchable workflow.
 - Artifact `409 Conflict`: artifacts are now named with repo/run id; keep names unique if adding more.
+- Multiple entries for same repo: hub-run-all and orchestrator include `config_basename` and `subdir` in job/artifact names to disambiguate when multiple configs point to the same repo.

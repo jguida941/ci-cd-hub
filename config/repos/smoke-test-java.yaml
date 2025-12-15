@@ -10,6 +10,7 @@ repo:
   name: java-spring-tutorials  # Using existing repo
   language: java
   default_branch: main
+  run_group: smoke
 
 java:
   version: "21"

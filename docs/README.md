@@ -56,6 +56,8 @@ User-facing tutorials and how-to guides:
 | [TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md) | Common issues and solutions |
 | [MONOREPOS.md](guides/MONOREPOS.md) | Monorepo support guide |
 | [DISPATCH_SETUP.md](guides/DISPATCH_SETUP.md) | How to set up tokens and dispatchable repos |
+| run_group filter | Use `run_group` to include only `full`, `fixtures`, or `smoke` configs when running the hub |
+| Job naming | Matrix jobs and artifacts include config basename/subdir to avoid collisions |
 
 ---
 

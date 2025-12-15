@@ -22,6 +22,10 @@ on:
         description: 'Specific repos (comma-separated, empty=all)'
         required: false
         type: string
+      run_group:
+        description: 'Run group filter (full, smoke, fixtures, or comma-separated)'
+        required: false
+        type: string
       skip_mutation:
         description: 'Skip mutation testing (faster)'
         required: false
@@ -61,6 +65,7 @@ jobs:
           REPOS='{"include":['
           FIRST=true
           COUNT=0
+          RUN_GROUP_FILTER="${{ inputs.run_group }}"
 
           for config in config/repos/*.yaml; do
             if [ -f "$config" ]; then
@@ -77,6 +82,21 @@ jobs:
                 # Filter if specific repos requested
                 if [ -n "${{ inputs.repos }}" ]; then
                   if ! echo "${{ inputs.repos }}" | grep -q "$NAME"; then
+                    continue
+                  fi
+                fi
+
+                # Filter by run_group if provided
+                if [ -n "$RUN_GROUP_FILTER" ]; then
+                  MATCHED=false
+                  IFS=',' read -ra GROUPS <<< "$RUN_GROUP_FILTER"
+                  for g in "${GROUPS[@]}"; do
+                    if [ "$RUN_GROUP" = "$g" ]; then
+                      MATCHED=true
+                      break
+                    fi
+                  done
+                  if [ "$MATCHED" = false ]; then
                     continue
                   fi
                 fi
@@ -222,18 +242,41 @@ jobs:
         run: |
           KILLED=0; SURVIVED=0; SCORE=0
 
-          if [ -f "mvnw" ]; then
-            ./mvnw -B -ntp test-compile org.pitest:pitest-maven:mutationCoverage -DskipTests 2>/dev/null || true
+          # Identify modules with PITest configured (root or modules/*)
+          MODULES=()
+          if [ -f "pom.xml" ] && grep -q "pitest-maven" pom.xml; then
+            MODULES+=(".")
+          fi
+          while IFS= read -r module_pom; do
+            if grep -q "pitest-maven" "$module_pom"; then
+              MODULE_DIR=$(dirname "$module_pom")
+              MODULES+=("${MODULE_DIR#./}")
+            fi
+          done < <(find modules -maxdepth 2 -name pom.xml 2>/dev/null || true)
+
+          echo "PITest modules detected: ${MODULES[*]:-none}"
+
+          if [ ${#MODULES[@]} -eq 0 ]; then
+            echo "No modules with PITest configuration found; skipping execution."
+          else
+            for mod in "${MODULES[@]}"; do
+              if [ "$mod" = "." ]; then
+                mvn -B -ntp org.pitest:pitest-maven:mutationCoverage -DskipTests || true
+              else
+                mvn -B -ntp -pl "$mod" -am org.pitest:pitest-maven:mutationCoverage -DskipTests || true
+              fi
+            done
           fi
 
-          MUTATIONS=$(find . -name "mutations.xml" 2>/dev/null | head -1)
-          if [ -n "$MUTATIONS" ] && [ -f "$MUTATIONS" ]; then
-            KILLED=$(grep -c 'status="KILLED"' "$MUTATIONS" 2>/dev/null || echo 0)
-            SURVIVED=$(grep -c 'status="SURVIVED"' "$MUTATIONS" 2>/dev/null || echo 0)
-            TOTAL=$((KILLED + SURVIVED))
-            if [ "$TOTAL" -gt 0 ]; then
-              SCORE=$((KILLED * 100 / TOTAL))
-            fi
+          # Aggregate mutation results across all modules
+          for xml in $(find . -name "mutations.xml" 2>/dev/null); do
+            KILLED=$((KILLED + $(grep -c 'status="KILLED"' "$xml" 2>/dev/null || echo 0)))
+            SURVIVED=$((SURVIVED + $(grep -c 'status="SURVIVED"' "$xml" 2>/dev/null || echo 0)))
+          done
+
+          TOTAL=$((KILLED + SURVIVED))
+          if [ "$TOTAL" -gt 0 ]; then
+            SCORE=$((KILLED * 100 / TOTAL))
           fi
 
           echo "killed=$KILLED" >> $GITHUB_OUTPUT
@@ -338,7 +381,7 @@ jobs:
         id: python-tests
         working-directory: repo
         run: |
-          pytest --cov=. --cov-report=xml --cov-report=term -v 2>&1 | tee test-output.txt || true
+          pytest --cov=. --cov-report=xml --cov-report=term --junitxml=pytest-junit.xml -v 2>&1 | tee test-output.txt || true
 
           TOTAL=$(grep -oP '\d+ passed' test-output.txt | grep -oP '\d+' || echo 0)
           FAILED=$(grep -oP '\d+ failed' test-output.txt | grep -oP '\d+' || echo 0)
@@ -446,13 +489,14 @@ jobs:
           if [ -d "src" ]; then SRC_DIR="src"; fi
 
           # Run mutmut (limited for speed)
-          timeout 600 mutmut run --paths-to-mutate="$SRC_DIR" --runner="pytest -x -q" 2>/dev/null || true
+          timeout 600 mutmut run --paths-to-mutate="$SRC_DIR" --runner="pytest -x -q" 2>&1 | tee mutmut-run.log || true
 
           # Get results
           if command -v mutmut &> /dev/null; then
-            RESULTS=$(mutmut results 2>/dev/null || echo "")
-            KILLED=$(echo "$RESULTS" | grep -oP 'Killed: \K\d+' || echo 0)
-            SURVIVED=$(echo "$RESULTS" | grep -oP 'Survived: \K\d+' || echo 0)
+            mutmut results > mutmut-results.txt 2>&1 || true
+            RESULTS=$(cat mutmut-results.txt 2>/dev/null || echo "")
+            KILLED=$(echo "$RESULTS" | grep -oP 'Killed:\s*\K\d+' || echo 0)
+            SURVIVED=$(echo "$RESULTS" | grep -oP 'Survived:\s*\K\d+' || echo 0)
             TOTAL=$((KILLED + SURVIVED))
             if [ "$TOTAL" -gt 0 ]; then
               SCORE=$((KILLED * 100 / TOTAL))
@@ -680,6 +724,15 @@ jobs:
             repo/coverage.xml
             repo/htmlcov/
             repo/*-report.json
+            repo/mutmut-*.log
+            repo/mutmut-results.txt
+            repo/mutmut-run.log
+            repo/pytest-junit.xml
+            repo/test-output.txt
+            repo/hypothesis-output.txt
+            repo/black-output.txt
+            repo/isort-output.txt
+            repo/mypy-output.txt
           retention-days: 30
           if-no-files-found: ignore
 

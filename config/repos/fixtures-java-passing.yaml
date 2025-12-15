@@ -5,6 +5,7 @@ repo:
   default_branch: main
   subdir: java-passing
   dispatch_enabled: false
+  run_group: fixtures
 
 java:
   version: "21"

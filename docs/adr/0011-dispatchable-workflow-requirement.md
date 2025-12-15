@@ -12,7 +12,7 @@ Dispatch mode only works if the target repo has a `workflow_dispatch` entry poin
 - Orchestrator requires target repos to host a dispatchable workflow (e.g., calling reusable `java-ci.yml`/`python-ci.yml`).
 - Hub configs can set `repo.dispatch_enabled: false` to skip dispatch for central-only repos.
 - A dispatch token (`HUB_DISPATCH_TOKEN`) with `repo`+`workflow` scopes is required for cross-repo dispatch; otherwise, run in central mode.
-- Artifact names include the repo/run id to avoid collisions in dispatch runs.
+- Artifact names include the repo/run id to avoid collisions in dispatch runs. Matrix entries carry `config_basename` to disambiguate configs pointing at the same repo.
 
 ## Consequences
 

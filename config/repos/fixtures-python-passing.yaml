@@ -5,6 +5,7 @@ repo:
   default_branch: main
   subdir: python-passing
   dispatch_enabled: false
+  run_group: fixtures
 
 python:
   version: "3.12"
