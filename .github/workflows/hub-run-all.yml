@@ -261,9 +261,9 @@ jobs:
           else
             for mod in "${MODULES[@]}"; do
               if [ "$mod" = "." ]; then
-                mvn -B -ntp org.pitest:pitest-maven:mutationCoverage -DskipTests || true
+                mvn -B -ntp org.pitest:pitest-maven:mutationCoverage || true
               else
-                mvn -B -ntp -pl "$mod" -am org.pitest:pitest-maven:mutationCoverage -DskipTests || true
+                mvn -B -ntp -pl "$mod" -am org.pitest:pitest-maven:mutationCoverage || true
               fi
             done
           fi
@@ -274,14 +274,19 @@ jobs:
             SURVIVED=$((SURVIVED + $(grep -c 'status="SURVIVED"' "$xml" 2>/dev/null || echo 0)))
           done
 
-          TOTAL=$((KILLED + SURVIVED))
+          KILLED=${KILLED:-0}; SURVIVED=${SURVIVED:-0}
+          KNUM=$(printf '%s' "$KILLED" | tr -cd '0-9')
+          SNUM=$(printf '%s' "$SURVIVED" | tr -cd '0-9')
+          [ -z "$KNUM" ] && KNUM=0
+          [ -z "$SNUM" ] && SNUM=0
+          TOTAL=$((KNUM + SNUM))
           if [ "$TOTAL" -gt 0 ]; then
-            SCORE=$((KILLED * 100 / TOTAL))
+            SCORE=$((KNUM * 100 / TOTAL))
           fi
 
-          echo "killed=$KILLED" >> $GITHUB_OUTPUT
-          echo "survived=$SURVIVED" >> $GITHUB_OUTPUT
-          echo "score=$SCORE" >> $GITHUB_OUTPUT
+          echo "killed=$KNUM" >> $GITHUB_OUTPUT
+          echo "survived=$SNUM" >> $GITHUB_OUTPUT
+          echo "score=${SCORE:-0}" >> $GITHUB_OUTPUT
         continue-on-error: true
 
       - name: "[Java] OWASP Dependency Check"
