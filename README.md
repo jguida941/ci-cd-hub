@@ -30,19 +30,82 @@ The CI/CD Hub provides a single place to run builds, tests, code quality, and se
 
 ## How It Works
 
+### Workflow Architecture
+
 ```mermaid
 flowchart LR
-    A[Your Repo Config] --> B{Hub}
-    B --> C[Java CI]
-    B --> D[Python CI]
-    C --> E[Reports]
-    D --> E
+    Profiles[14 Profiles] --> Config[config/repos/*.yaml]
+    Config --> RunAll[hub-run-all.yml]
+    Config --> Orch[hub-orchestrator.yml]
+    Config --> Security[hub-security.yml]
+    Config --> Smoke[smoke-test.yml]
+    Config --> Validate[config-validate.yml]
+    RunAll --> JavaCI[java-ci.yml]
+    RunAll --> PythonCI[python-ci.yml]
+    Orch --> JavaCI
+    Orch --> PythonCI
+    Security --> JavaCI
+    Security --> PythonCI
 ```
 
-1. **Configure** - Add `config/repos/your-repo.yaml` with repo details and tool toggles
-2. **Run** - Hub executes `hub-run-all.yml` (clones your repo) or dispatches to your repo
-3. **Analyze** - Java/Python pipelines run 20+ quality tools (coverage, linting, security, etc.)
-4. **Report** - Artifacts, summaries, and metrics uploaded to GitHub Actions
+### Java Tool Pipeline
+
+```mermaid
+flowchart LR
+    JUnit[JUnit Tests] --> JaCoCo[JaCoCo Coverage]
+    JUnit --> Checkstyle[Checkstyle]
+    JUnit --> SpotBugs[SpotBugs]
+    JUnit --> PMD[PMD]
+    JaCoCo --> OWASP[OWASP DC]
+    Checkstyle --> OWASP
+    SpotBugs --> OWASP
+    PMD --> OWASP
+    OWASP --> Semgrep[Semgrep]
+    OWASP --> Trivy[Trivy]
+    OWASP --> CodeQL[CodeQL]
+    Semgrep --> PITest[PITest Mutation]
+    Trivy --> PITest
+    CodeQL --> PITest
+    PITest --> Docker[Docker Build]
+```
+
+### Python Tool Pipeline
+
+```mermaid
+flowchart LR
+    Pytest[pytest-cov] --> Ruff[Ruff Linter]
+    Pytest --> Black[Black Format]
+    Pytest --> isort[isort Imports]
+    Hypothesis[Hypothesis] --> Ruff
+    Hypothesis --> Black
+    Hypothesis --> isort
+    Ruff --> mypy[mypy Types]
+    Black --> mypy
+    isort --> mypy
+    mypy --> Bandit[Bandit SAST]
+    mypy --> PipAudit[pip-audit]
+    mypy --> Semgrep[Semgrep]
+    mypy --> Trivy[Trivy]
+    mypy --> CodeQL[CodeQL]
+    Bandit --> mutmut[mutmut Mutation]
+    PipAudit --> mutmut
+    Semgrep --> mutmut
+    Trivy --> mutmut
+    CodeQL --> mutmut
+    mutmut --> Docker[Docker Build]
+```
+
+### Config Hierarchy
+
+```mermaid
+flowchart TB
+    Defaults[config/defaults.yaml] --> Merged[Merged Config]
+    RepoConfig[config/repos/your-repo.yaml] --> Merged
+    LocalConfig[.ci-hub.yml in target repo] --> Merged
+    Merged --> Pipeline[CI Pipeline Execution]
+```
+
+**Priority:** Local `.ci-hub.yml` > Hub `config/repos/*.yaml` > `config/defaults.yaml`
 
 ---
 

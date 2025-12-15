@@ -64,11 +64,12 @@ jobs:
 
           for config in config/repos/*.yaml; do
             if [ -f "$config" ]; then
-              NAME=$(grep -E "^\s+name:" "$config" | head -1 | sed 's/.*name:\s*//' | tr -d '"' | tr -d "'")
-              OWNER=$(grep -E "^\s+owner:" "$config" | head -1 | sed 's/.*owner:\s*//' | tr -d '"' | tr -d "'")
-              LANG=$(grep -E "^\s+language:" "$config" | head -1 | sed 's/.*language:\s*//' | tr -d '"' | tr -d "'")
-              BRANCH=$(grep -E "^\s+default_branch:" "$config" | head -1 | sed 's/.*default_branch:\s*//' | tr -d '"' | tr -d "'" || echo "main")
-              SUBDIR=$(grep -E "^\s+subdir:" "$config" | head -1 | sed 's/.*subdir:\s*//' | tr -d '"' | tr -d "'" || echo "")
+              NAME=$(grep -E "^\s+name:" "$config" | head -1 | sed 's/.*name:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'")
+              OWNER=$(grep -E "^\s+owner:" "$config" | head -1 | sed 's/.*owner:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'")
+              LANG=$(grep -E "^\s+language:" "$config" | head -1 | sed 's/.*language:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'")
+              BRANCH=$(grep -E "^\s+default_branch:" "$config" | head -1 | sed 's/.*default_branch:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'" || echo "main")
+              SUBDIR=$(grep -E "^\s+subdir:" "$config" | head -1 | sed 's/.*subdir:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'" || echo "")
+              DISPATCH=$(grep -E "^\s+dispatch_enabled:" "$config" | head -1 | sed 's/.*dispatch_enabled:\s*//' | sed 's/#.*$//' | tr -d '"' | tr -d "'" || echo "true")
 
               if [ -n "$NAME" ] && [ -n "$OWNER" ]; then
                 # Filter if specific repos requested
@@ -77,6 +78,8 @@ jobs:
                     continue
                   fi
                 fi
+
+                # Skip central run if dispatch disabled? No, central always runs; dispatch flag ignored here.
 
                 if [ "$FIRST" = true ]; then
                   FIRST=false
@@ -93,6 +96,10 @@ jobs:
           echo "matrix=$REPOS" >> $GITHUB_OUTPUT
           echo "count=$COUNT" >> $GITHUB_OUTPUT
           echo "Found $COUNT repositories"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No repositories found after filtering. Exiting." >&2
+            exit 1
+          fi
 
   # ============================================================================
   # Run CI for Each Repo
@@ -132,7 +139,6 @@ jobs:
           mv "repo/${{ matrix.subdir }}" repo_subdir
           rm -rf repo
           mv repo_subdir repo
-          fetch-depth: 0
 
       - name: Create Reports Directory
         run: mkdir -p reports
@@ -616,7 +622,7 @@ jobs:
           | **Trivy** | ${{ steps.trivy.outputs.critical || 0 }} crit, ${{ steps.trivy.outputs.high || 0 }} high | Container scan |
 
           ### Security Summary
-          🔴 High: ${{ steps.python-bandit.outputs.high || 0 }} | 🟡 Medium: ${{ steps.python-bandit.outputs.medium || 0 }} | 🟢 Low: ${{ steps.python-bandit.outputs.low || 0 }}
+          High: ${{ steps.python-bandit.outputs.high || 0 }} | Medium: ${{ steps.python-bandit.outputs.medium || 0 }} | Low: ${{ steps.python-bandit.outputs.low || 0 }}
 
           EOF
           fi
@@ -633,26 +639,26 @@ jobs:
           EOF
 
           if [ "${{ matrix.language }}" = "java" ]; then
-            echo "| Unit Tests | ${{ steps.java-tests.outputs.failed == '0' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| JaCoCo Coverage | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
-            echo "| PITest Mutation | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
-            echo "| Checkstyle | ${{ steps.java-checkstyle.outputs.violations == '0' && '✅ Passed' || '⚠️ Violations' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| SpotBugs | ${{ steps.java-spotbugs.outputs.count == '0' && '✅ Passed' || '⚠️ Bugs found' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| PMD | ${{ steps.java-pmd.outputs.violations == '0' && '✅ Passed' || '⚠️ Violations' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| OWASP Check | ${{ steps.java-owasp.outputs.critical == '0' && steps.java-owasp.outputs.high == '0' && '✅ Passed' || '⚠️ Vulnerabilities' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Semgrep | ${{ steps.semgrep.outputs.findings == '0' && '✅ Passed' || '⚠️ Findings' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Unit Tests | ${{ steps.java-tests.outputs.failed == '0' && 'Passed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| JaCoCo Coverage | Generated |" >> $GITHUB_STEP_SUMMARY
+            echo "| PITest Mutation | Generated |" >> $GITHUB_STEP_SUMMARY
+            echo "| Checkstyle | ${{ steps.java-checkstyle.outputs.violations == '0' && 'Passed' || 'Violations' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| SpotBugs | ${{ steps.java-spotbugs.outputs.count == '0' && 'Passed' || 'Bugs found' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| PMD | ${{ steps.java-pmd.outputs.violations == '0' && 'Passed' || 'Violations' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| OWASP Check | ${{ steps.java-owasp.outputs.critical == '0' && steps.java-owasp.outputs.high == '0' && 'Passed' || 'Vulnerabilities' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Semgrep | ${{ steps.semgrep.outputs.findings == '0' && 'Passed' || 'Findings' }} |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| pytest | ${{ steps.python-tests.outputs.failed == '0' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Coverage | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
-            echo "| mutmut Mutation | ✅ Generated |" >> $GITHUB_STEP_SUMMARY
-            echo "| Hypothesis | ✅ Complete |" >> $GITHUB_STEP_SUMMARY
-            echo "| Ruff | ${{ steps.python-ruff.outputs.errors == '0' && '✅ Passed' || '⚠️ Issues' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Bandit | ${{ steps.python-bandit.outputs.high == '0' && '✅ Passed' || '⚠️ Security issues' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| pip-audit | ${{ steps.python-pipaudit.outputs.vulnerabilities == '0' && '✅ Passed' || '⚠️ Vulnerabilities' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Black | ${{ steps.python-black.outputs.issues == '0' && '✅ Passed' || '⚠️ Format issues' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| isort | ${{ steps.python-isort.outputs.issues == '0' && '✅ Passed' || '⚠️ Import issues' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| mypy | ${{ steps.python-mypy.outputs.errors == '0' && '✅ Passed' || '⚠️ Type errors' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Semgrep | ${{ steps.semgrep.outputs.findings == '0' && '✅ Passed' || '⚠️ Findings' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| pytest | ${{ steps.python-tests.outputs.failed == '0' && 'Passed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Coverage | Generated |" >> $GITHUB_STEP_SUMMARY
+            echo "| mutmut Mutation | Generated |" >> $GITHUB_STEP_SUMMARY
+            echo "| Hypothesis | Complete |" >> $GITHUB_STEP_SUMMARY
+            echo "| Ruff | ${{ steps.python-ruff.outputs.errors == '0' && 'Passed' || 'Issues' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Bandit | ${{ steps.python-bandit.outputs.high == '0' && 'Passed' || 'Security issues' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| pip-audit | ${{ steps.python-pipaudit.outputs.vulnerabilities == '0' && 'Passed' || 'Vulnerabilities' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Black | ${{ steps.python-black.outputs.issues == '0' && 'Passed' || 'Format issues' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| isort | ${{ steps.python-isort.outputs.issues == '0' && 'Passed' || 'Import issues' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| mypy | ${{ steps.python-mypy.outputs.errors == '0' && 'Passed' || 'Type errors' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Semgrep | ${{ steps.semgrep.outputs.findings == '0' && 'Passed' || 'Findings' }} |" >> $GITHUB_STEP_SUMMARY
           fi
 
       # ========================================
@@ -689,7 +695,7 @@ jobs:
       - name: Generate Hub Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << EOF
-          # 🏠 CI/CD Hub Summary
+          # CI/CD Hub Summary
 
           **Total Repositories:** ${{ needs.discover.outputs.count }}
           **Run:** #${{ github.run_number }}

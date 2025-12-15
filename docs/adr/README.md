@@ -11,6 +11,9 @@ Existing:
 - [ADR-0006: Quality Gates and Thresholds](0006-quality-gates-thresholds.md)
 - [ADR-0007: Templates and Profiles Strategy](0007-templates-and-profiles-strategy.md)
 - [ADR-0008: Hub Fixtures Strategy](0008-hub-fixtures-strategy.md)
+- [ADR-0009: Monorepo Support via repo.subdir](0009-monorepo-support.md)
+- [ADR-0010: Dispatch Token and Skip Flag](0010-dispatch-token-and-skip.md)
+- [ADR-0011: Dispatchable Workflow Requirement](0011-dispatchable-workflow-requirement.md)
 
 Template starter:
 ```markdown

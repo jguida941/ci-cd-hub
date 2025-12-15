@@ -3,7 +3,8 @@ repo:
   name: ci-cd-hub-fixtures
   language: python
   default_branch: main
-  subdir: python-passing  # project lives in this subfolder
+  subdir: python-passing
+  dispatch_enabled: false
 
 python:
   version: "3.12"

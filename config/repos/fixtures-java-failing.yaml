@@ -3,7 +3,8 @@ repo:
   name: ci-cd-hub-fixtures
   language: java
   default_branch: main
-  subdir: java-failing  # project lives in this subfolder
+  subdir: java-failing
+  dispatch_enabled: false
 
 java:
   version: "21"

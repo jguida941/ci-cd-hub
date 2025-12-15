@@ -55,6 +55,7 @@ User-facing tutorials and how-to guides:
 | [TEMPLATES.md](guides/TEMPLATES.md) | Ready-to-use config templates |
 | [TROUBLESHOOTING.md](guides/TROUBLESHOOTING.md) | Common issues and solutions |
 | [MONOREPOS.md](guides/MONOREPOS.md) | Monorepo support guide |
+| [DISPATCH_SETUP.md](guides/DISPATCH_SETUP.md) | How to set up tokens and dispatchable repos |
 
 ---
 
