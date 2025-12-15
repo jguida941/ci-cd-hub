@@ -31,76 +31,40 @@ The CI/CD Hub provides a single place to run builds, tests, code quality, and se
 ## Architecture
 
 ```mermaid
-flowchart TB
-    subgraph Config[Configuration Layer]
-        Defaults[defaults.yaml]
-        RepoConfigs[config/repos/*.yaml]
-        Schema[JSON Schema]
-        Profiles[12 Profiles]
+flowchart LR
+    subgraph Input
+        Config[config/repos/*.yaml]
     end
 
-    subgraph Workflows[7 GitHub Actions Workflows]
-        direction TB
-        RunAll[hub-run-all.yml]
-        Orchestrator[hub-orchestrator.yml]
-        Security[hub-security.yml]
-        Smoke[smoke-test.yml]
-        Validate[config-validate.yml]
-        JavaCI[java-ci.yml]
-        PythonCI[python-ci.yml]
+    subgraph Hub[CI/CD Hub]
+        Central[hub-run-all.yml]
+        Distributed[hub-orchestrator.yml]
     end
 
-    subgraph Scripts[5 Python Scripts]
-        ApplyProfile[apply_profile.py]
-        ValidateConfig[validate_config.py]
-        LoadConfig[load_config.py]
-        Aggregate[aggregate_reports.py]
+    subgraph Pipelines
+        Java[java-ci.yml]
+        Python[python-ci.yml]
     end
 
-    subgraph JavaTools[Java Tools - 11]
-        JUnit[JUnit]
-        JaCoCo[JaCoCo]
-        Checkstyle[Checkstyle]
-        SpotBugs[SpotBugs]
-        PMD[PMD]
-        OWASP[OWASP DC]
-        PITest[PITest]
+    subgraph Output
+        Reports[Artifacts & Reports]
     end
 
-    subgraph PythonTools[Python Tools - 13]
-        Pytest[pytest-cov]
-        Hypothesis[Hypothesis]
-        Ruff[Ruff]
-        Black[Black]
-        Bandit[Bandit]
-        PipAudit[pip-audit]
-        Mypy[mypy]
-        Mutmut[mutmut]
-    end
-
-    subgraph Universal[Universal Tools]
-        Semgrep[Semgrep]
-        Trivy[Trivy]
-        CodeQL[CodeQL]
-        Docker[Docker]
-    end
-
-    Profiles --> RepoConfigs
-    Defaults --> RepoConfigs
-    Schema --> ValidateConfig
-    RepoConfigs --> RunAll
-    RepoConfigs --> Orchestrator
-
-    RunAll --> JavaCI
-    RunAll --> PythonCI
-    Orchestrator --> JavaCI
-    Orchestrator --> PythonCI
-
-    JavaCI --> JavaTools
-    JavaCI --> Universal
-    PythonCI --> PythonTools
-    PythonCI --> Universal
+    Config --> Central
+    Config --> Distributed
+    Central --> Java
+    Central --> Python
+    Distributed --> Java
+    Distributed --> Python
+    Java --> Reports
+    Python --> Reports
 ```
+
+**How it works:**
+1. Add your repo to `config/repos/*.yaml`
+2. Hub runs `hub-run-all.yml` (central) or `hub-orchestrator.yml` (distributed)
+3. Reusable `java-ci.yml` / `python-ci.yml` pipelines execute tools
+4. Reports and artifacts uploaded to GitHub Actions
 
 ---
 
