@@ -1,134 +1,257 @@
 # CI/CD Hub
 
-Centralized CI/CD for Java and Python repos, with optional dispatch to reusable workflows. Repos stay clean; the hub does the work.
+> Centralized CI/CD orchestration for Java and Python repositories. Run quality tools across many repos from one hub—target repos stay clean.
 
-## Purpose
+[![Hub Run All](https://github.com/jguida941/ci-hub-orchestrator/actions/workflows/hub-run-all.yml/badge.svg)](https://github.com/jguida941/ci-hub-orchestrator/actions/workflows/hub-run-all.yml)
+[![Config Validation](https://github.com/jguida941/ci-hub-orchestrator/actions/workflows/config-validate.yml/badge.svg)](https://github.com/jguida941/ci-hub-orchestrator/actions/workflows/config-validate.yml)
 
-Provide one hub that can run full CI/security across many repos (central mode) or trigger reusable workflows in target repos (distributed mode), with predictable fixtures for validation and schema-validated configs.
+---
+
+## Overview
+
+The CI/CD Hub provides a single place to run builds, tests, code quality, and security scans across multiple repositories without cluttering target repos with workflow files.
+
+### Key Features
+
+- **Multi-repo orchestration** — Run CI for many repos from one central hub
+- **Two execution modes** — Central (hub clones repos) or Distributed (dispatch to repo workflows)
+- **14 pre-built profiles** — Fast, quality, security, minimal, coverage-gate, compliance
+- **Monorepo support** — Target subdirectories within repos via `repo.subdir`
+- **Schema-validated configs** — JSON Schema validation with clear error messages
+- **Comprehensive tooling** — 10+ Java tools, 12+ Python tools
+
+---
 
 ## Architecture
 
 ```mermaid
-flowchart TD
-    Configs[config/repos/*.yaml<br/>(repo, subdir, toggles)] --> RunAll[hub-run-all.yml<br/>(central)]
-    Configs --> Orchestrator[hub-orchestrator.yml<br/>(dispatch)]
-    RunAll --> Java[Reusable java-ci.yml]
-    RunAll --> Py[Reusable python-ci.yml]
-    Orchestrator --> Java
-    Orchestrator --> Py
-    Fixtures[ci-cd-hub-fixtures<br/>(java/passing, java/failing,<br/>python/passing, python/failing)] --> Configs
+flowchart TB
+    subgraph Hub["CI/CD Hub"]
+        Config["config/repos/*.yaml"]
+        Defaults["config/defaults.yaml"]
+        Schema["schema/ci-hub-config.schema.json"]
+    end
+
+    subgraph Workflows["GitHub Actions Workflows"]
+        RunAll["hub-run-all.yml\n(Central Mode)"]
+        Orchestrator["hub-orchestrator.yml\n(Distributed Mode)"]
+        JavaCI["java-ci.yml\n(Reusable)"]
+        PythonCI["python-ci.yml\n(Reusable)"]
+    end
+
+    subgraph Tools["Quality Tools"]
+        direction LR
+        Coverage["Coverage\nJaCoCo | pytest-cov"]
+        Lint["Linting\nCheckstyle | Ruff"]
+        Security["Security\nOWASP | Bandit | Trivy"]
+        Mutation["Mutation\nPITest | mutmut"]
+    end
+
+    Config --> RunAll
+    Config --> Orchestrator
+    Defaults -.->|merged| Config
+    Schema -.->|validates| Config
+
+    RunAll --> JavaCI
+    RunAll --> PythonCI
+    Orchestrator -->|dispatch| JavaCI
+    Orchestrator -->|dispatch| PythonCI
+
+    JavaCI --> Tools
+    PythonCI --> Tools
 ```
 
-## Capabilities
+---
 
-- **Languages:** Java, Python
-- **Modes:** Central (hub clones and runs CI) and Distributed (dispatch to reusable workflows)
-- **Monorepo:** `repo.subdir` supported for projects in subfolders
-- **Fixtures:** Deterministic test repos at `https://github.com/jguida941/ci-cd-hub-fixtures`
-- **Reporting:** Step summaries, artifacts, aggregation, smoke tests
-- **Profiles/Templates:** Fast/quality/security/minimal/coverage/compliance profiles; repo/hub templates
-- **Validation:** JSON Schema for configs; `scripts/validate_config.py`
-- **Docs:** Guides, reference, development, ADRs under `docs/`
+## Tools
 
 ### Java Tools
-JaCoCo, Checkstyle, SpotBugs, PMD, OWASP Dependency-Check, PITest, Semgrep, Trivy, CodeQL, Docker (optional)
+
+| Category | Tool | Purpose | Default |
+|----------|------|---------|---------|
+| **Coverage** | JaCoCo | Line/branch coverage | Enabled |
+| **Style** | Checkstyle | Code style enforcement | Enabled |
+| **Bugs** | SpotBugs | Static bug detection | Enabled |
+| **Bugs** | PMD | Code smell detection | Enabled |
+| **Security** | OWASP Dependency-Check | Vulnerability scanning | Enabled |
+| **Mutation** | PITest | Mutation testing | Disabled* |
+| **SAST** | Semgrep | Pattern-based security | Disabled* |
+| **Container** | Trivy | Container/filesystem scan | Disabled* |
+| **SAST** | CodeQL | Semantic code analysis | Disabled* |
+| **Build** | Docker | Container build/test | Disabled |
 
 ### Python Tools
-pytest-cov, Ruff, Black, isort, Bandit, pip-audit, mypy, mutmut, Semgrep, Trivy, CodeQL, Docker (optional)
+
+| Category | Tool | Purpose | Default |
+|----------|------|---------|---------|
+| **Coverage** | pytest-cov | Test coverage | Enabled |
+| **Linting** | Ruff | Fast linter (replaces flake8) | Enabled |
+| **Format** | Black | Code formatter | Enabled |
+| **Format** | isort | Import sorting | Enabled |
+| **Security** | Bandit | Security linter | Enabled |
+| **Security** | pip-audit | Dependency vulnerabilities | Enabled |
+| **Types** | mypy | Static type checking | Disabled |
+| **Mutation** | mutmut | Mutation testing | Disabled* |
+| **SAST** | Semgrep | Pattern-based security | Disabled* |
+| **Container** | Trivy | Container/filesystem scan | Disabled* |
+| **SAST** | CodeQL | Semantic code analysis | Disabled* |
+| **Build** | Docker | Container build/test | Disabled |
+
+> *Disabled by default due to longer execution time. Enable in config when needed.
+
+---
+
+## Profiles
+
+Pre-configured tool sets for common scenarios:
+
+| Profile | Java | Python | Description |
+|---------|------|--------|-------------|
+| **fast** | `java-fast.yaml` | `python-fast.yaml` | Core tools only, fastest execution |
+| **quality** | `java-quality.yaml` | `python-quality.yaml` | All quality tools enabled |
+| **security** | `java-security.yaml` | `python-security.yaml` | Security-focused (OWASP, Bandit, etc.) |
+| **minimal** | `java-minimal.yaml` | `python-minimal.yaml` | Build + test only |
+| **coverage-gate** | `java-coverage-gate.yaml` | `python-coverage-gate.yaml` | Strict coverage thresholds |
+| **compliance** | `java-compliance.yaml` | `python-compliance.yaml` | Full audit trail |
+
+Apply a profile:
+```bash
+python scripts/apply_profile.py templates/profiles/java-fast.yaml config/repos/my-repo.yaml
+```
+
+---
 
 ## Workflows
 
-- `.github/workflows/hub-run-all.yml` - Central execution over `config/repos/*.yaml` (honors `repo.subdir`)
-- `.github/workflows/hub-orchestrator.yml` - Dispatch to reusable workflows (passes `workdir` to subdir projects)
-- `.github/workflows/java-ci.yml` - Reusable Java CI (supports `workdir`)
-- `.github/workflows/python-ci.yml` - Reusable Python CI (supports `workdir`)
-- `.github/workflows/smoke-test.yml` - Smoke validation using fixture configs
-- `.github/workflows/config-validate.yml` - Schema validation
+| Workflow | File | Purpose | Trigger |
+|----------|------|---------|---------|
+| **Hub Run All** | `hub-run-all.yml` | Central execution for all configured repos | Manual, Schedule, Push |
+| **Hub Orchestrator** | `hub-orchestrator.yml` | Dispatch to target repo workflows | Manual |
+| **Hub Security** | `hub-security.yml` | Security-focused scanning | Manual, Schedule |
+| **Java CI** | `java-ci.yml` | Reusable Java pipeline | `workflow_call` |
+| **Python CI** | `python-ci.yml` | Reusable Python pipeline | `workflow_call` |
+| **Smoke Test** | `smoke-test.yml` | Validation with fixture repos | Manual, PR |
+| **Config Validate** | `config-validate.yml` | Schema validation | Push, PR |
 
-## Profiles and Templates
+---
 
-- Profiles (fast, quality, security, minimal, coverage-gate, compliance for Java/Python) live in `templates/profiles/`.
-- Apply a profile: `python scripts/apply_profile.py templates/profiles/java-fast.yaml config/repos/my-repo.yaml`
-- Validate configs: `python scripts/validate_config.py config/repos/my-repo.yaml`
-- Monorepo template: `templates/hub/config/repos/monorepo-template.yaml`
+## Quick Start
 
-## Getting Started (Central Mode)
+### 1. Add a Repository (Central Mode)
 
-1) Add a config: `config/repos/my-repo.yaml`
+Create `config/repos/my-repo.yaml`:
+
 ```yaml
 repo:
-  owner: your-github-username
+  owner: your-username
   name: your-repo
-  language: java   # or python
+  language: java          # or python
   default_branch: main
-  # subdir: path/inside/monorepo   # optional
+  # subdir: services/api  # for monorepos
 ```
 
-2) Optionally start from a profile:
+### 2. Apply a Profile (Optional)
+
 ```bash
+# Start with a fast profile
 python scripts/apply_profile.py templates/profiles/java-fast.yaml config/repos/my-repo.yaml
+
+# Validate
 python scripts/validate_config.py config/repos/my-repo.yaml
 ```
 
-3) Run hub-run-all:
+### 3. Run the Hub
+
 ```bash
-gh workflow run hub-run-all.yml -R jguida941/ci-hub-orchestrator \
-  -f repos="fixtures-java-passing,fixtures-python-passing"
+gh workflow run hub-run-all.yml
 ```
 
-## Distributed Mode
+---
 
-In a target repo, call the reusable workflow and pass `workdir` if using a subfolder:
+## Configuration
+
+### Config Hierarchy
+
+Configs merge with this precedence (highest wins):
+
+```
+1. Target repo's .ci-hub.yml     (repo-local overrides)
+2. Hub's config/repos/<name>.yaml (hub-side per-repo)
+3. Hub's config/defaults.yaml     (global defaults)
+```
+
+### Tool Toggle Pattern
+
 ```yaml
-jobs:
-  ci:
-    uses: jguida941/ci-hub-orchestrator/.github/workflows/java-ci.yml@main
-    with:
-      java_version: '21'
-      run_jacoco: true
-      run_pitest: false
-      run_trivy: false
-      workdir: .        # set to subdir for monorepo
-    secrets: inherit
+java:
+  tools:
+    jacoco:
+      enabled: true
+      min_coverage: 80
+    pitest:
+      enabled: false  # expensive, enable when needed
 ```
 
-## Monorepo Support
+---
 
-- Set `repo.subdir` in `config/repos/*.yaml`
-- Hub central workflow rewrites checkout into that subdir
-- Orchestrator passes `workdir` to reusable workflows
-- Template: `templates/hub/config/repos/monorepo-template.yaml`
-- Guide: `docs/guides/MONOREPOS.md`
+## Scripts
 
-## Fixtures and Smoke Tests
+| Script | Purpose |
+|--------|---------|
+| `apply_profile.py` | Apply/merge a profile into a repo config |
+| `validate_config.py` | Validate config against JSON schema |
+| `load_config.py` | Load and merge config hierarchy |
+| `aggregate_reports.py` | Aggregate reports from multiple repos |
+| `verify-smoke-test-setup.sh` | Verify smoke test configuration |
 
-- Fixtures repo: `https://github.com/jguida941/ci-cd-hub-fixtures` (subdirs for passing/failing Java/Python)
-- Fixture configs: `config/repos/fixtures-*.yaml` (use `subdir`)
-- Smoke test guide: `docs/development/SMOKE_TEST.md`
-- Smoke repos info: `docs/development/SMOKE_TEST_REPOS.md`
+---
 
-## Documentation Map
-
-- Guides: `docs/guides/` (ONBOARDING, WORKFLOWS, MODES, TEMPLATES, TROUBLESHOOTING, MONOREPOS)
-- Reference: `docs/reference/` (CONFIG_REFERENCE, TOOLS, example.ci-hub.yml)
-- Development: `docs/development/` (ROADMAP, RESEARCH, SMOKE_TEST*, audit)
-- ADRs: `docs/adr/` (0001-0009)
-
-## Repo Structure (top-level)
+## Project Structure
 
 ```
 hub-release/
-├── .github/workflows/    # hub-run-all, hub-orchestrator, reusable java/python, smoke-test
-├── config/               # defaults and per-repo configs (supports subdir)
-├── docs/                 # guides, reference, development, adr
-├── templates/            # repo/hub configs, profiles, monorepo template
-├── scripts/              # apply_profile.py, validate_config.py, load_config.py
-├── schema/               # JSON schema (includes repo.subdir)
-└── fixtures/             # local fixture source (primary fixtures hosted in ci-cd-hub-fixtures)
+├── .github/workflows/     # 7 workflows (hub-run-all, orchestrator, security, etc.)
+├── config/
+│   ├── defaults.yaml      # Global tool defaults
+│   ├── repos/             # Per-repo configurations
+│   └── optional/          # Optional feature configs
+├── docs/
+│   ├── guides/            # User guides (ONBOARDING, WORKFLOWS, etc.)
+│   ├── reference/         # Reference docs (CONFIG_REFERENCE, TOOLS)
+│   ├── development/       # Internal docs (ROADMAP, RESEARCH)
+│   └── adr/               # Architecture Decision Records (9 ADRs)
+├── templates/
+│   ├── profiles/          # 14 pre-built profiles
+│   ├── hub/config/repos/  # Hub config templates
+│   └── repo/              # Repo-local config template
+├── scripts/               # 5 utility scripts
+├── schema/                # JSON Schema definitions
+└── requirements/          # P0/P1 acceptance criteria
 ```
 
-## Links
+---
 
-- Hub repo: `https://github.com/jguida941/ci-hub-orchestrator`
-- Fixtures repo: `https://github.com/jguida941/ci-cd-hub-fixtures`
-- Primary docs index: `docs/README.md`
+## Documentation
+
+| Category | Documents |
+|----------|-----------|
+| **Getting Started** | [ONBOARDING](docs/guides/ONBOARDING.md), [MODES](docs/guides/MODES.md) |
+| **Guides** | [WORKFLOWS](docs/guides/WORKFLOWS.md), [TEMPLATES](docs/guides/TEMPLATES.md), [MONOREPOS](docs/guides/MONOREPOS.md), [TROUBLESHOOTING](docs/guides/TROUBLESHOOTING.md) |
+| **Reference** | [CONFIG_REFERENCE](docs/reference/CONFIG_REFERENCE.md), [TOOLS](docs/reference/TOOLS.md) |
+| **Development** | [ROADMAP](docs/development/ROADMAP.md), [RESEARCH](docs/development/RESEARCH.md) |
+| **ADRs** | [9 Architecture Decision Records](docs/adr/) |
+
+---
+
+## Related Repositories
+
+| Repository | Purpose |
+|------------|---------|
+| [ci-hub-orchestrator](https://github.com/jguida941/ci-hub-orchestrator) | This hub (production) |
+| [ci-cd-hub-fixtures](https://github.com/jguida941/ci-cd-hub-fixtures) | Test fixtures (java/python passing/failing) |
+
+---
+
+## License
+
+MIT
