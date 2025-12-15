@@ -36,7 +36,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install -e .
+        run: pip install -r requirements-dev.txt
 
       - name: Validate all repo configs
         run: |

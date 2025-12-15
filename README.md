@@ -111,53 +111,34 @@ flowchart TB
 
 ## Tools
 
-### Java Tools
+> **24 tools** across 8 categories with simple `enabled: true/false` toggles.
 
-| Category | Tool | Purpose | Default |
-|----------|------|---------|---------|
-| **Testing** | JUnit | Unit test framework | Built-in |
-| **Coverage** | JaCoCo | Line/branch coverage | Enabled |
-| **Style** | Checkstyle | Code style enforcement | Enabled |
-| **Bugs** | SpotBugs | Static bug detection | Enabled |
-| **Bugs** | PMD | Code smell detection | Enabled |
-| **Security** | OWASP Dependency-Check | Vulnerability scanning | Enabled |
-| **Mutation** | PITest | Mutation testing | Disabled* |
-| **SAST** | Semgrep | Pattern-based security | Disabled* |
-| **Container** | Trivy | Container/filesystem scan | Disabled* |
-| **SAST** | CodeQL | Semantic code analysis | Disabled* |
-| **Build** | Docker | Container build/test | Disabled |
+| Category | Java | Python | Default |
+|----------|------|--------|:-------:|
+| **Testing** | JUnit | pytest, Hypothesis | ✅ |
+| **Coverage** | JaCoCo | pytest-cov | ✅ |
+| **Style & Format** | Checkstyle | Ruff, Black, isort | ✅ |
+| **Static Analysis** | SpotBugs, PMD | mypy | ✅ / ⚙️ |
+| **Security (Deps)** | OWASP DC | Bandit, pip-audit | ✅ |
+| **Security (SAST)** | Semgrep, CodeQL | Semgrep, CodeQL | ⚙️ |
+| **Container Scan** | Trivy | Trivy | ⚙️ |
+| **Mutation Testing** | PITest | mutmut | ⚙️ |
+| **Container Build** | Docker | Docker | ⚙️ |
 
-### Python Tools
+> ✅ Enabled by default  •  ⚙️ Opt-in (longer execution)
 
-| Category | Tool | Purpose | Default |
-|----------|------|---------|---------|
-| **Testing** | pytest-cov | Test coverage | Enabled |
-| **Testing** | Hypothesis | Property-based testing | Enabled |
-| **Linting** | Ruff | Fast linter (replaces flake8) | Enabled |
-| **Format** | Black | Code formatter | Enabled |
-| **Format** | isort | Import sorting | Enabled |
-| **Security** | Bandit | Security linter | Enabled |
-| **Security** | pip-audit | Dependency vulnerabilities | Enabled |
-| **Types** | mypy | Static type checking | Disabled |
-| **Mutation** | mutmut | Mutation testing | Disabled* |
-| **SAST** | Semgrep | Pattern-based security | Disabled* |
-| **Container** | Trivy | Container/filesystem scan | Disabled* |
-| **SAST** | CodeQL | Semantic code analysis | Disabled* |
-| **Build** | Docker | Container build/test | Disabled |
+<details>
+<summary><strong>Coming Soon</strong></summary>
 
-> *Disabled by default due to longer execution time. Enable in config when needed.
+| Tool | Category | Languages |
+|------|----------|-----------|
+| jqwik | Property Testing | Java |
+| cosmic-ray | Mutation | Python |
+| OWASP ZAP | DAST | All |
+| k6, Locust | Load Testing | All |
+| Gatling, JMeter | Load Testing | Java |
 
-### Planned Tools (Future Releases)
-
-| Category | Tool | Language | Status |
-|----------|------|----------|--------|
-| **Property Testing** | jqwik | Java | Planned |
-| **Mutation** | cosmic-ray | Python | Planned |
-| **DAST** | OWASP ZAP | All | Planned |
-| **Load Testing** | k6 | All | Planned |
-| **Load Testing** | Gatling | Java | Planned |
-| **Load Testing** | JMeter | Java | Planned |
-| **Load Testing** | Locust | Python | Planned |
+</details>
 
 ---
 
