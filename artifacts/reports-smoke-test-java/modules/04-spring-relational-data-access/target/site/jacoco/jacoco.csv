@@ -1,0 +1,3 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+Relational Data Access,com.example.relationaldataaccess,RelationalDataAccessApplication,5,104,0,0,2,17,1,7,1,7
+Relational Data Access,com.example.relationaldataaccess,Customer,0,33,0,0,0,2,0,2,0,2

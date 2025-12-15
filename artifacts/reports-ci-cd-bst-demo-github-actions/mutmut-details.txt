@@ -1,0 +1,4 @@
+Usage: mutmut show [OPTIONS] MUTANT_NAME
+Try 'mutmut show --help' for help.
+
+Error: Missing argument 'MUTANT_NAME'.

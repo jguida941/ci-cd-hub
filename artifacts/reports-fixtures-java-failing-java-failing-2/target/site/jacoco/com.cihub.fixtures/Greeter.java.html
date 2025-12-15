@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Greeter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">CI/CD Hub Java Failing Fixture</a> &gt; <a href="index.source.html" class="el_package">com.cihub.fixtures</a> &gt; <span class="el_source">Greeter.java</span></div><h1>Greeter.java</h1><pre class="source lang-java linenums">package com.cihub.fixtures;
+
+import java.io.*;  // PMD: Avoid star imports
+import java.util.List;
+import java.util.ArrayList;  // Checkstyle: Import order issue
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+/**
+ * Greeter class with intentional bugs and code quality issues.
+ * Designed to trigger failures in various static analysis tools.
+ */
+<span class="fc" id="L14">public class Greeter {</span>
+
+    // SpotBugs: Hardcoded password
+    private static final String DB_PASSWORD = &quot;admin123&quot;;
+    private static final String API_KEY = &quot;sk-secret-key-12345&quot;;
+
+    // PMD: Unused field
+<span class="fc" id="L21">    private String unusedField = &quot;never used&quot;;</span>
+
+    public String greet(String name) {
+<span class="fc" id="L24">        return &quot;Hello, &quot; + name;</span>
+    }
+
+    // BUG: subtract is implemented as add
+    public int subtract(int a, int b) {
+<span class="fc" id="L29">        return a + b;  // BUG: should be a - b</span>
+    }
+
+    // BUG: isPositive returns true for zero
+    public boolean isPositive(int n) {
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        return n &gt;= 0;  // BUG: 0 is not positive</span>
+    }
+
+    // SpotBugs: Null pointer dereference possible
+    public int getLength(String str) {
+<span class="nc" id="L39">        return str.length();  // No null check</span>
+    }
+
+    // SpotBugs: Resource leak - stream not closed
+    public String readFile(String filename) throws IOException {
+<span class="nc" id="L44">        FileInputStream fis = new FileInputStream(filename);  // Resource leak</span>
+<span class="nc" id="L45">        BufferedReader reader = new BufferedReader(new InputStreamReader(fis));</span>
+<span class="nc" id="L46">        return reader.readLine();  // Reader never closed</span>
+    }
+
+    // SpotBugs: SQL Injection vulnerability
+    public void unsafeQuery(Connection conn, String userInput) throws SQLException {
+<span class="nc" id="L51">        String query = &quot;SELECT * FROM users WHERE name = '&quot; + userInput + &quot;'&quot;;  // SQL Injection!</span>
+<span class="nc" id="L52">        conn.createStatement().execute(query);</span>
+<span class="nc" id="L53">    }</span>
+
+    // PMD: Method too long, too many statements
+    public int complexMethod(int input) {
+<span class="fc" id="L57">        int result = 0;</span>
+<span class="fc" id="L58">        result = result + 1;</span>
+<span class="fc" id="L59">        result = result + 2;</span>
+<span class="fc" id="L60">        result = result + 3;</span>
+<span class="fc" id="L61">        result = result + 4;</span>
+<span class="fc" id="L62">        result = result + 5;</span>
+<span class="fc" id="L63">        result = result + 6;</span>
+<span class="fc" id="L64">        result = result + 7;</span>
+<span class="fc" id="L65">        result = result + 8;</span>
+<span class="fc" id="L66">        result = result + 9;</span>
+<span class="fc" id="L67">        result = result + 10;</span>
+<span class="fc" id="L68">        result = result + input;</span>
+<span class="fc" id="L69">        result = result * 2;</span>
+<span class="fc" id="L70">        result = result - 5;</span>
+<span class="fc" id="L71">        result = result / 2;</span>
+<span class="fc" id="L72">        return result;</span>
+    }
+
+    // BUG: sum doesn't accumulate, just assigns
+    public int sum(List&lt;Integer&gt; numbers) {
+<span class="fc" id="L77">        int total = 0;</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        for (int num : numbers) {</span>
+<span class="fc" id="L79">            total = num;  // BUG: should be total += num</span>
+<span class="fc" id="L80">        }</span>
+<span class="fc" id="L81">        return total;</span>
+    }
+
+    // BUG: factorial doesn't multiply all numbers
+    public long factorial(int n) {
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        if (n &lt; 0) {</span>
+<span class="nc" id="L87">            throw new IllegalArgumentException(&quot;Negative&quot;);</span>
+        }
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (n == 0) {</span>
+<span class="fc" id="L90">            return 1;</span>
+        }
+<span class="fc" id="L92">        long result = 1;</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        for (int i = 1; i &lt; n; i++) {  // BUG: should be i &lt;= n</span>
+<span class="fc" id="L94">            result *= i;</span>
+        }
+<span class="fc" id="L96">        return result;</span>
+    }
+
+    // BUG: isPrime doesn't check even numbers correctly
+    public boolean isPrime(int n) {
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (n &lt; 2) return false;</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        if (n == 2) return true;</span>
+        // BUG: Missing check for n % 2 == 0
+<span class="pc bfc" id="L104" title="All 2 branches covered.">        for (int i = 3; i &lt;= Math.sqrt(n); i += 2) {</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">            if (n % i == 0) return false;</span>
+        }
+<span class="fc" id="L107">        return true;  // BUG: Returns true for 4, 6, 8, etc.</span>
+    }
+
+    // SpotBugs: Empty catch block
+    public void silentException() {
+        try {
+<span class="nc" id="L113">            int x = 1 / 0;</span>
+<span class="nc" id="L114">        } catch (Exception e) {</span>
+            // SpotBugs: Empty catch block - bad practice
+<span class="nc" id="L116">        }</span>
+<span class="nc" id="L117">    }</span>
+
+    // PMD: Avoid using + in loops for strings
+    public String concatenateInLoop(String[] items) {
+<span class="nc" id="L121">        String result = &quot;&quot;;</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        for (String item : items) {</span>
+<span class="nc" id="L123">            result = result + item;  // PMD: Use StringBuilder instead</span>
+        }
+<span class="nc" id="L125">        return result;</span>
+    }
+
+    // SpotBugs: Comparison of String objects using == or !=
+    public boolean unsafeStringCompare(String a, String b) {
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        return a == b;  // SpotBugs: Should use .equals()</span>
+    }
+
+    // PMD: Avoid instantiating Boolean objects
+    public Boolean getBooleanObject(boolean value) {
+<span class="nc" id="L135">        return new Boolean(value);  // PMD: Use Boolean.valueOf()</span>
+    }
+
+    // Checkstyle: Line too long, magic numbers
+<span class="nc" id="L139">    public int calculateSomething(int x) { int result = x * 42 + 17 * 3 - 99 / 3 + 123456789; return result * 2 + 55 - 33 + x * x * x; }</span>
+
+    // SpotBugs: Synchronization on boxed primitive
+<span class="fc" id="L142">    private Integer counter = 0;</span>
+    public void incrementCounter() {
+<span class="nc" id="L144">        synchronized(counter) {  // SpotBugs: Bad synchronization</span>
+<span class="nc" id="L145">            counter++;</span>
+<span class="nc" id="L146">        }</span>
+<span class="nc" id="L147">    }</span>
+
+    // PMD: Unnecessary local before return
+    public int unnecessaryLocal(int a, int b) {
+<span class="fc" id="L151">        int sum = a + b;</span>
+<span class="fc" id="L152">        return sum;</span>
+    }
+
+    // SpotBugs: Exposed internal representation
+<span class="fc" id="L156">    private String[] internalArray = {&quot;a&quot;, &quot;b&quot;, &quot;c&quot;};</span>
+    public String[] getInternalArray() {
+<span class="fc" id="L158">        return internalArray;  // SpotBugs: Exposes internal representation</span>
+    }
+
+    // Checkstyle: Missing braces
+    public int missingBraces(int x) {
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        if (x &gt; 0)</span>
+<span class="fc" id="L164">            return 1;</span>
+        else
+<span class="fc" id="L166">            return -1;</span>
+    }
+
+    // PMD: Avoid reassigning parameters
+    public int reassignParameter(int value) {
+<span class="fc" id="L171">        value = value * 2;  // PMD: Don't reassign parameters</span>
+<span class="fc" id="L172">        return value;</span>
+    }
+
+    // SpotBugs: Inefficient use of keySet iterator
+    public void inefficientMapIteration(java.util.Map&lt;String, Integer&gt; map) {
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        for (String key : map.keySet()) {</span>
+<span class="nc" id="L178">            Integer value = map.get(key);  // SpotBugs: Use entrySet() instead</span>
+<span class="nc" id="L179">            System.out.println(key + &quot;=&quot; + value);</span>
+<span class="nc" id="L180">        }</span>
+<span class="nc" id="L181">    }</span>
+
+    // Database connection with hardcoded credentials
+    public Connection getConnection() throws SQLException {
+<span class="nc" id="L185">        String url = &quot;jdbc:mysql://localhost:3306/db&quot;;</span>
+<span class="nc" id="L186">        String user = &quot;root&quot;;</span>
+<span class="nc" id="L187">        String password = &quot;password123&quot;;  // SpotBugs: Hardcoded password</span>
+<span class="nc" id="L188">        return DriverManager.getConnection(url, user, password);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

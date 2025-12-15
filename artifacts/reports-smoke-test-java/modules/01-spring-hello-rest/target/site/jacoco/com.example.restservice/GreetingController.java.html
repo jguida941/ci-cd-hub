@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GreetingController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">rest_service</a> &gt; <a href="index.source.html" class="el_package">com.example.restservice</a> &gt; <span class="el_source">GreetingController.java</span></div><h1>GreetingController.java</h1><pre class="source lang-java linenums">package com.example.restservice;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.concurrent.atomic.AtomicLong;
+
+/**
+ * Handles HTTP requests to create a simple greeting message.
+ *
+ * &lt;p&gt;When a client calls {@code /greeting}, this controller returns
+ * a {@link Greeting} object with a unique id and a message like
+ * {@code &quot;Hello, World!&quot;} or {@code &quot;Hello, Justin!&quot;}.&lt;/p&gt;
+ */
+@RestController
+<span class="fc" id="L17">public class GreetingController {</span>
+
+    /** Text template used to build the greeting message. */
+    public static final String TEMPLATE = &quot;Hello, %s!&quot;;
+
+    /** Counter used to give each greeting a unique id. */
+<span class="fc" id="L23">    private static final AtomicLong counter = new AtomicLong();</span>
+
+    /**
+     * Handles {@code GET /greeting} requests.
+     *
+     * &lt;p&gt;If the {@code name} query parameter is missing, {@code &quot;World&quot;} is used.&lt;/p&gt;
+     *
+     * @param name optional name from the query string, for example {@code /greeting?name=Justin}
+     * @return a new {@link Greeting} with a unique id and formatted greeting text
+     */
+    @GetMapping(&quot;/greeting&quot;)
+    public Greeting greeting(@RequestParam(defaultValue = &quot;World&quot;) String name) {
+<span class="fc" id="L35">        return new Greeting(counter.incrementAndGet(), TEMPLATE.formatted(name));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.14.202510111229</span></div></body></html>

@@ -1,0 +1,53 @@
+ERROR: /home/runner/work/ci-cd-hub/ci-cd-hub/repo/mutants/bst/binary_search.py Imports are incorrectly sorted and/or formatted.
+ERROR: /home/runner/work/ci-cd-hub/ci-cd-hub/repo/mutants/bst/__init__.py Imports are incorrectly sorted and/or formatted.
+ERROR: /home/runner/work/ci-cd-hub/ci-cd-hub/repo/mutants/tests/test_fuzz_invariants.py Imports are incorrectly sorted and/or formatted.
+ERROR: /home/runner/work/ci-cd-hub/ci-cd-hub/repo/tests/test_fuzz_invariants.py Imports are incorrectly sorted and/or formatted.
+--- /home/runner/work/ci-cd-hub/ci-cd-hub/repo/mutants/bst/binary_search.py:before	2025-12-15 23:25:58.161469
++++ /home/runner/work/ci-cd-hub/ci-cd-hub/repo/mutants/bst/binary_search.py:after	2025-12-15 23:26:42.458197
+@@ -18,10 +18,7 @@
+     Delete → handle 3 cases (0, 1, 2 children).
+ """
+ from inspect import signature as _mutmut_signature
+-from typing import Annotated
+-from typing import Callable
+-from typing import ClassVar
+-
++from typing import Annotated, Callable, ClassVar
+ 
+ MutantDict = Annotated[dict[str, Callable], "Mutant"]
+ 
+--- /home/runner/work/ci-cd-hub/ci-cd-hub/repo/mutants/bst/__init__.py:before	2025-12-15 23:25:58.161469
++++ /home/runner/work/ci-cd-hub/ci-cd-hub/repo/mutants/bst/__init__.py:after	2025-12-15 23:26:42.462266
+@@ -1,8 +1,5 @@
+ from inspect import signature as _mutmut_signature
+-from typing import Annotated
+-from typing import Callable
+-from typing import ClassVar
+-
++from typing import Annotated, Callable, ClassVar
+ 
+ MutantDict = Annotated[dict[str, Callable], "Mutant"]
+ 
+--- /home/runner/work/ci-cd-hub/ci-cd-hub/repo/mutants/tests/test_fuzz_invariants.py:before	2025-12-15 23:25:58.162469
++++ /home/runner/work/ci-cd-hub/ci-cd-hub/repo/mutants/tests/test_fuzz_invariants.py:after	2025-12-15 23:26:42.465202
+@@ -1,5 +1,7 @@
++from hypothesis import given, settings
++from hypothesis import strategies as st
++
+ from bst.binary_search import BinarySearchTree
+-from hypothesis import given, settings, strategies as st
+ 
+ 
+ @settings(deadline=None, max_examples=200, derandomize=True)
+--- /home/runner/work/ci-cd-hub/ci-cd-hub/repo/tests/test_fuzz_invariants.py:before	2025-12-15 23:25:58.162469
++++ /home/runner/work/ci-cd-hub/ci-cd-hub/repo/tests/test_fuzz_invariants.py:after	2025-12-15 23:26:42.472828
+@@ -1,5 +1,7 @@
++from hypothesis import given, settings
++from hypothesis import strategies as st
++
+ from bst.binary_search import BinarySearchTree
+-from hypothesis import given, settings, strategies as st
+ 
+ 
+ @settings(deadline=None, max_examples=200, derandomize=True)
+Skipped 2 files

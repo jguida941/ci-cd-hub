@@ -1,0 +1,4 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+rest_service,com.example.restservice,RestServiceApplication,5,3,0,0,2,1,1,1,1,1
+rest_service,com.example.restservice,Greeting,0,9,0,0,0,1,0,1,0,1
+rest_service,com.example.restservice,GreetingController,0,22,0,0,0,3,0,3,0,3

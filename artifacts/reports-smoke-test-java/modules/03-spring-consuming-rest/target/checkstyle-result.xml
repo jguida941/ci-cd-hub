@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<checkstyle version="9.3">
+<file name="/home/runner/work/ci-cd-hub/ci-cd-hub/repo/modules/03-spring-consuming-rest/src/main/java/com/example/consumingrest/QuoteController.java">
+<error line="25" column="33" severity="warning" message="Name &apos;log&apos; must match pattern &apos;^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$&apos;." source="com.puppycrawl.tools.checkstyle.checks.naming.ConstantNameCheck"/>
+</file>
+<file name="/home/runner/work/ci-cd-hub/ci-cd-hub/repo/modules/03-spring-consuming-rest/src/main/java/com/example/consumingrest/Quote.java">
+</file>
+<file name="/home/runner/work/ci-cd-hub/ci-cd-hub/repo/modules/03-spring-consuming-rest/src/main/java/com/example/consumingrest/ConsumingRestApplication.java">
+<error line="14" column="1" severity="warning" message="Utility classes should not have a public or default constructor." source="com.puppycrawl.tools.checkstyle.checks.design.HideUtilityClassConstructorCheck"/>
+</file>
+<file name="/home/runner/work/ci-cd-hub/ci-cd-hub/repo/modules/03-spring-consuming-rest/src/main/java/com/example/consumingrest/Value.java">
+</file>
+</checkstyle>

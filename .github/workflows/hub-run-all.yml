@@ -598,13 +598,15 @@ jobs:
           timeout 600 mutmut run 2>&1 | tee mutmut-run.log || true
 
           # Parse results from mutmut 3.x run output
-          # Format: "⠙ 73/73  🎉 73 🫥 0  ⏰ 0  🤔 0  🙁 0  🔇 0"
-          # 🎉 = killed, 🙁 = survived
-          LAST_LINE=$(grep -E '🎉.*🙁' mutmut-run.log | tail -1 || echo "")
-          if [ -n "$LAST_LINE" ]; then
-            # Extract killed (🎉) and survived (🙁) counts
-            KILLED=$(echo "$LAST_LINE" | grep -oP '🎉\s*\K\d+' || echo 0)
-            SURVIVED=$(echo "$LAST_LINE" | grep -oP '🙁\s*\K\d+' || echo 0)
+          # Final line format: "⠙ 73/73  🎉 73 🫥 0  ⏰ 0  🤔 0  🙁 0  🔇 0"
+          # Look for "mutations/second" line (appears at end) and get the line before it
+          if grep -q "mutations/second" mutmut-run.log; then
+            # Get the line with final counts (contains X/X pattern at start)
+            FINAL=$(grep -E '[0-9]+/[0-9]+' mutmut-run.log | tail -1)
+            # Extract numbers: killed is after party emoji, survived is after frown emoji
+            # Use sed to extract - format is "🎉 NN" and "🙁 NN"
+            KILLED=$(echo "$FINAL" | sed -n 's/.*🎉[[:space:]]*\([0-9]*\).*/\1/p' | head -1)
+            SURVIVED=$(echo "$FINAL" | sed -n 's/.*🙁[[:space:]]*\([0-9]*\).*/\1/p' | head -1)
             KILLED=${KILLED:-0}
             SURVIVED=${SURVIVED:-0}
             TOTAL=$((KILLED + SURVIVED))

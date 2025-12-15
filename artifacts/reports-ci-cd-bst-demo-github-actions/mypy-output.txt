@@ -1,0 +1,2 @@
+scripts/pip_audit_to_sarif.py:197: error: Argument 2 to "ensure_rule" has incompatible type "Sequence[str]"; expected "list[dict[str, Any]]"  [arg-type]
+Found 1 error in 1 file (checked 15 source files)
