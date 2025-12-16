@@ -32,3 +32,8 @@ tmp/
 # Fixtures
 fixtures/
 .doc-link-backup-*
+
+# Cloned repos (separate git repos)
+hub-release/
+hub-fixtures/
+ci-cd-hub-fixtures/
