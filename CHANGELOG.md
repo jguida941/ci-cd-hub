@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-12-15 (Night)
+
+### Bug Fixes
+- **Fixed PITest mutation score showing 0%** - PITest XML uses single quotes (`status='KILLED'`) but grep patterns were looking for double quotes (`status="KILLED"`). Updated regex to match both quote styles: `grep -cE "status=['\"]KILLED['\"]"`
+- Fixed in: `hub-run-all.yml`, `java-ci.yml`, `java-ci-dispatch.yml` (template and fixtures)
+
+### Repository Cleanup
+- Added `artifacts/` to `.gitignore` and removed from git tracking
+- Added `hub-fixtures/` and `ci-cd-hub-fixtures/` to `.gitignore` (cloned fixture repos)
+
+---
+
 ## 2025-12-15 (Evening)
 
 ### Bug Fixes
