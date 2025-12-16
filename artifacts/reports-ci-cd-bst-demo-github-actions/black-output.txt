@@ -1,5 +1,0 @@
-would reformat /home/runner/work/ci-cd-hub/ci-cd-hub/repo/bst/binary_search.py
-would reformat /home/runner/work/ci-cd-hub/ci-cd-hub/repo/scripts/pip_audit_to_sarif.py
-
-Oh no! 💥 💔 💥
-2 files would be reformatted, 13 files would be left unchanged.
