@@ -2276,6 +2276,13 @@ These policy decisions should be formalized in ADRs before v1.0.0 release:
    - Rationale for expensive tool gating
    - Guidance for repos enabling optional scanners
 
+4. **ADR-0018: Fixtures & Testing Strategy**
+   - Branching: keep fixtures workflows on long-lived test branch (`test-phase1b-schema`), trigger via `--ref`
+   - Fixture intent: pass/fail variants per language, dedicated docker fixtures, document expected failures
+   - Caller config: pin to hub tag/branch, set workdir per fixture, which tools enabled for each
+   - Validation criteria: what to check in ci-report (schema_version, test counts, tool_metrics, acceptable skips)
+   - Change control: when to update fixtures, how to avoid breaking default branch
+
 ---
 
 ### Part 1: Reusable Workflows
