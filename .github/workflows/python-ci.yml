@@ -469,15 +469,28 @@ jobs:
           SURVIVED=0
           SCORE=0
 
-          # Find source directory
-          SRC_DIR="."
-          if [ -d "src" ]; then SRC_DIR="src"; fi
+          # Check if pyproject.toml has [tool.mutmut] config
+          HAS_MUTMUT_CONFIG=false
+          if [ -f "pyproject.toml" ] && grep -q '\[tool\.mutmut\]' pyproject.toml; then
+            HAS_MUTMUT_CONFIG=true
+            echo "Found [tool.mutmut] in pyproject.toml - using project config"
+          fi
 
-          echo "Running mutmut on: $SRC_DIR"
-          ls -la "$SRC_DIR" || echo "Cannot list $SRC_DIR"
+          # Build mutmut command
+          MUTMUT_CMD="mutmut run --runner=\"pytest -x -q\""
+          if [ "$HAS_MUTMUT_CONFIG" = "false" ]; then
+            # No config in pyproject.toml - try to detect source dir
+            SRC_DIR="."
+            if [ -d "src" ]; then
+              SRC_DIR="src"
+            fi
+            echo "No mutmut config found - using detected source dir: $SRC_DIR"
+            ls -la "$SRC_DIR" || echo "Cannot list $SRC_DIR"
+            MUTMUT_CMD="mutmut run --paths-to-mutate=\"$SRC_DIR\" --runner=\"pytest -x -q\""
+          fi
 
-          # Run mutmut - show output for debugging
-          timeout 600 mutmut run --paths-to-mutate="$SRC_DIR" --runner="pytest -x -q" || {
+          echo "Running: $MUTMUT_CMD"
+          timeout 600 bash -c "$MUTMUT_CMD" || {
             echo "::warning::mutmut run failed or timed out"
           }
 
