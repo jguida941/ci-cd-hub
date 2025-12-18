@@ -1,0 +1,122 @@
+# ============================================================================
+# CI/CD Hub - Python CI Caller Template
+# ============================================================================
+# Copy this file to your repo: .github/workflows/hub-python-ci.yml
+# All inputs can be overridden via workflow_dispatch.
+#
+# For monorepos: set workdir to the subfolder containing your Python project.
+#
+# NOTE: Update the @ref below to match your desired hub version:
+#   - Use @v1 (recommended) for stable releases
+#   - Use @main for latest (may have breaking changes)
+#
+# To run on push/PR, add triggers and hardcode your preferred defaults.
+# ============================================================================
+
+name: "Hub: Python CI"
+
+on:
+  workflow_dispatch:
+    inputs:
+      python_version:
+        description: 'Python version'
+        type: string
+        default: '3.12'
+      workdir:
+        description: 'Working directory (for monorepos)'
+        type: string
+        default: '.'
+      run_pytest:
+        description: 'Run pytest'
+        type: boolean
+        default: true
+      run_ruff:
+        description: 'Run Ruff linter'
+        type: boolean
+        default: true
+      run_bandit:
+        description: 'Run Bandit'
+        type: boolean
+        default: true
+      run_pip_audit:
+        description: 'Run pip-audit'
+        type: boolean
+        default: true
+      run_mypy:
+        description: 'Run mypy'
+        type: boolean
+        default: false
+      run_black:
+        description: 'Run Black'
+        type: boolean
+        default: true
+      run_isort:
+        description: 'Run isort'
+        type: boolean
+        default: true
+      run_mutmut:
+        description: 'Run mutmut mutation testing'
+        type: boolean
+        default: true
+      run_semgrep:
+        description: 'Run Semgrep SAST'
+        type: boolean
+        default: false
+      run_trivy:
+        description: 'Run Trivy container scan'
+        type: boolean
+        default: false
+      run_docker:
+        description: 'Build and test Docker'
+        type: boolean
+        default: false
+      run_codeql:
+        description: 'Run CodeQL analysis'
+        type: boolean
+        default: false
+      coverage_min:
+        description: 'Minimum coverage %'
+        type: number
+        default: 70
+      mutation_score_min:
+        description: 'Minimum mutation score %'
+        type: number
+        default: 70
+      max_critical_vulns:
+        description: 'Max critical vulns allowed'
+        type: number
+        default: 0
+      max_high_vulns:
+        description: 'Max high vulns allowed'
+        type: number
+        default: 0
+      retention_days:
+        description: 'Artifact retention days'
+        type: number
+        default: 30
+
+jobs:
+  ci:
+    # TODO: Change to @v1 after tagging release
+    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@phase1b-workflow-schema
+    with:
+      python_version: ${{ inputs.python_version }}
+      workdir: ${{ inputs.workdir }}
+      run_pytest: ${{ inputs.run_pytest }}
+      run_ruff: ${{ inputs.run_ruff }}
+      run_bandit: ${{ inputs.run_bandit }}
+      run_pip_audit: ${{ inputs.run_pip_audit }}
+      run_mypy: ${{ inputs.run_mypy }}
+      run_black: ${{ inputs.run_black }}
+      run_isort: ${{ inputs.run_isort }}
+      run_mutmut: ${{ inputs.run_mutmut }}
+      run_semgrep: ${{ inputs.run_semgrep }}
+      run_trivy: ${{ inputs.run_trivy }}
+      run_docker: ${{ inputs.run_docker }}
+      run_codeql: ${{ inputs.run_codeql }}
+      coverage_min: ${{ inputs.coverage_min }}
+      mutation_score_min: ${{ inputs.mutation_score_min }}
+      max_critical_vulns: ${{ inputs.max_critical_vulns }}
+      max_high_vulns: ${{ inputs.max_high_vulns }}
+      retention_days: ${{ inputs.retention_days }}
+    secrets: inherit

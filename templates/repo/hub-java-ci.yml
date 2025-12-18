@@ -1,0 +1,132 @@
+# ============================================================================
+# CI/CD Hub - Java CI Caller Template
+# ============================================================================
+# Copy this file to your repo: .github/workflows/hub-java-ci.yml
+# All inputs can be overridden via workflow_dispatch.
+#
+# For monorepos: set workdir to the subfolder containing your Java project.
+#
+# NOTE: Update the @ref below to match your desired hub version:
+#   - Use @v1 (recommended) for stable releases
+#   - Use @main for latest (may have breaking changes)
+#
+# To run on push/PR, add triggers and hardcode your preferred defaults.
+# ============================================================================
+
+name: "Hub: Java CI"
+
+on:
+  workflow_dispatch:
+    inputs:
+      java_version:
+        description: 'Java version'
+        type: string
+        default: '21'
+      build_tool:
+        description: 'Build tool (maven or gradle)'
+        type: string
+        default: 'maven'
+      workdir:
+        description: 'Working directory (for monorepos)'
+        type: string
+        default: '.'
+      run_jacoco:
+        description: 'Run JaCoCo coverage'
+        type: boolean
+        default: true
+      run_checkstyle:
+        description: 'Run Checkstyle'
+        type: boolean
+        default: true
+      run_spotbugs:
+        description: 'Run SpotBugs'
+        type: boolean
+        default: true
+      run_owasp:
+        description: 'Run OWASP Dependency Check'
+        type: boolean
+        default: true
+      run_pmd:
+        description: 'Run PMD'
+        type: boolean
+        default: true
+      run_pitest:
+        description: 'Run PITest mutation testing'
+        type: boolean
+        default: true
+      run_semgrep:
+        description: 'Run Semgrep SAST'
+        type: boolean
+        default: false
+      run_trivy:
+        description: 'Run Trivy container scan'
+        type: boolean
+        default: false
+      run_docker:
+        description: 'Build and test Docker'
+        type: boolean
+        default: false
+      run_codeql:
+        description: 'Run CodeQL analysis'
+        type: boolean
+        default: false
+      coverage_min:
+        description: 'Minimum coverage %'
+        type: number
+        default: 70
+      mutation_score_min:
+        description: 'Minimum mutation score %'
+        type: number
+        default: 70
+      owasp_cvss_fail:
+        description: 'CVSS score to fail on'
+        type: number
+        default: 7
+      max_critical_vulns:
+        description: 'Max critical vulns allowed'
+        type: number
+        default: 0
+      max_high_vulns:
+        description: 'Max high vulns allowed'
+        type: number
+        default: 0
+      docker_compose_file:
+        description: 'Docker compose file path'
+        type: string
+        default: 'docker-compose.yml'
+      docker_health_endpoint:
+        description: 'Health check endpoint'
+        type: string
+        default: '/actuator/health'
+      retention_days:
+        description: 'Artifact retention days'
+        type: number
+        default: 30
+
+jobs:
+  ci:
+    # TODO: Change to @v1 after tagging release
+    uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@phase1b-workflow-schema
+    with:
+      java_version: ${{ inputs.java_version }}
+      build_tool: ${{ inputs.build_tool }}
+      workdir: ${{ inputs.workdir }}
+      run_jacoco: ${{ inputs.run_jacoco }}
+      run_checkstyle: ${{ inputs.run_checkstyle }}
+      run_spotbugs: ${{ inputs.run_spotbugs }}
+      run_owasp: ${{ inputs.run_owasp }}
+      run_pmd: ${{ inputs.run_pmd }}
+      run_pitest: ${{ inputs.run_pitest }}
+      run_semgrep: ${{ inputs.run_semgrep }}
+      run_trivy: ${{ inputs.run_trivy }}
+      run_docker: ${{ inputs.run_docker }}
+      run_codeql: ${{ inputs.run_codeql }}
+      coverage_min: ${{ inputs.coverage_min }}
+      mutation_score_min: ${{ inputs.mutation_score_min }}
+      owasp_cvss_fail: ${{ inputs.owasp_cvss_fail }}
+      max_critical_vulns: ${{ inputs.max_critical_vulns }}
+      max_high_vulns: ${{ inputs.max_high_vulns }}
+      docker_compose_file: ${{ inputs.docker_compose_file }}
+      docker_health_endpoint: ${{ inputs.docker_health_endpoint }}
+      retention_days: ${{ inputs.retention_days }}
+    secrets: inherit
