@@ -541,6 +541,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'fs'
+          scan-ref: ${{ inputs.workdir }}
           format: 'json'
           output: 'trivy-report.json'
         continue-on-error: true
@@ -551,9 +552,11 @@ jobs:
         run: |
           CRITICAL=0
           HIGH=0
-          if [ -f "trivy-report.json" ]; then
-            CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' trivy-report.json 2>/dev/null || echo 0)
-            HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length' trivy-report.json 2>/dev/null || echo 0)
+          # trivy-action outputs to workspace root, not working-directory
+          REPORT="${{ github.workspace }}/trivy-report.json"
+          if [ -f "$REPORT" ]; then
+            CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "CRITICAL")] | length' "$REPORT" 2>/dev/null || echo 0)
+            HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH")] | length' "$REPORT" 2>/dev/null || echo 0)
           fi
           echo "critical=$CRITICAL" >> "$GITHUB_OUTPUT"
           echo "high=$HIGH" >> "$GITHUB_OUTPUT"
@@ -574,7 +577,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.artifact_prefix }}trivy-report
-          path: trivy-report.json
+          path: ${{ github.workspace }}/trivy-report.json
           retention-days: ${{ inputs.retention_days }}
           if-no-files-found: ignore
 

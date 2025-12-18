@@ -51,9 +51,34 @@ CodeQL requires explicit `source-root` to scope analysis:
 
 Without `source-root`, CodeQL scans the entire checkout (all fixtures instead of just one).
 
+### Trivy Action Output Path
+
+The `trivy-action` outputs files to **workspace root**, ignoring `working-directory`. Use `scan-ref` to scope the scan and reference output via `${{ github.workspace }}`:
+
+```yaml
+- name: Run Trivy Scan
+  uses: aquasecurity/trivy-action@0.28.0
+  with:
+    scan-type: 'fs'
+    scan-ref: ${{ inputs.workdir }}  # Scope scan to workdir
+    format: 'json'
+    output: 'trivy-report.json'      # Outputs to workspace root
+
+- name: Parse Trivy Results
+  run: |
+    # trivy-action outputs to workspace root, not working-directory
+    REPORT="${{ github.workspace }}/trivy-report.json"
+    if [ -f "$REPORT" ]; then
+      CRITICAL=$(jq '...' "$REPORT")
+    fi
+```
+
+**Gotcha**: Without `scan-ref`, Trivy scans entire repo. Without `${{ github.workspace }}` path, parsing fails silently (reports 0 findings).
+
 ### Update History
 
 - 2025-12-18: Added `working-directory` to lint and codeql jobs in both Python and Java workflows. Previously lint and CodeQL scanned entire repo root, causing failures when multiple fixtures shared a repo.
+- 2025-12-18: Fixed Trivy action to use `scan-ref` and `${{ github.workspace }}` path. Previously Trivy reported 0 findings because output file was written to workspace root but parsing looked in workdir.
 
 ## Consequences
 
