@@ -94,6 +94,10 @@ on:
         description: 'Max Semgrep findings allowed'
         type: number
         default: 0
+      max_pmd_violations:
+        description: 'Max PMD violations allowed'
+        type: number
+        default: 0
       artifact_prefix:
         description: 'Artifact name prefix (for multiple jobs)'
         type: string
@@ -135,6 +139,7 @@ jobs:
       max_critical_vulns: ${{ inputs.max_critical_vulns }}
       max_high_vulns: ${{ inputs.max_high_vulns }}
       max_semgrep_findings: ${{ inputs.max_semgrep_findings }}
+      max_pmd_violations: ${{ inputs.max_pmd_violations }}
       artifact_prefix: ${{ inputs.artifact_prefix }}
       docker_compose_file: ${{ inputs.docker_compose_file }}
       docker_health_endpoint: ${{ inputs.docker_health_endpoint }}

@@ -200,6 +200,7 @@ owasp_cvss_fail: 11       # 11 > max CVSS (10), so never fails - allows capturin
 max_critical_vulns: 999   # Allow findings to be captured
 max_high_vulns: 999       # Allow findings to be captured
 max_semgrep_findings: 999 # Semgrep finds issues - we want to see them, not fail
+max_pmd_violations: 999   # PMD finds violations - we want to see them, not fail
 ```
 
 **java-with-docker:**
@@ -211,14 +212,14 @@ max_semgrep_findings: 10  # Focus is Docker/Trivy, not code quality
 
 ### Summary Table
 
-| Fixture | coverage | mutation | critical | high | semgrep | owasp |
-|---------|----------|----------|----------|------|---------|-------|
-| python-passing | 70 | 0* | 0 | 0 | 0 | N/A |
-| python-failing | 0 | 0 | 999 | 999 | 999 | N/A |
-| python-docker | 70 | N/A | 0 | 10 | 10 | N/A |
-| java-passing | 70 | 0* | 0 | 0 | 0 | 7 |
-| java-failing | 0 | 0 | 999 | 999 | 999 | 11 |
-| java-docker | 70 | N/A | 0 | 10 | 10 | 7 |
+| Fixture | coverage | mutation | critical | high | semgrep | pmd | owasp |
+|---------|----------|----------|----------|------|---------|-----|-------|
+| python-passing | 70 | 0* | 0 | 0 | 0 | N/A | N/A |
+| python-failing | 0 | 0 | 999 | 999 | 999 | N/A | N/A |
+| python-docker | 70 | N/A | 0 | 10 | 10 | N/A | N/A |
+| java-passing | 70 | 0* | 0 | 0 | 0 | 0 | 7 |
+| java-failing | 0 | 0 | 999 | 999 | 999 | 999 | 11 |
+| java-docker | 70 | N/A | 0 | 10 | 10 | 0 | 7 |
 
 `*` = Relaxed due to tool configuration issues (TODO: restore to 70 when fixed)
 `N/A` = Tool disabled for this fixture

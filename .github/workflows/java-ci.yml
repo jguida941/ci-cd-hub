@@ -96,6 +96,10 @@ on:
         description: 'Maximum allowed Semgrep findings (default: 0 = fail on any)'
         type: number
         default: 0
+      max_pmd_violations:
+        description: 'Maximum allowed PMD violations (default: 0 = fail on any)'
+        type: number
+        default: 0
 
       # ---- Docker Settings ----
       docker_compose_file:
@@ -442,8 +446,9 @@ jobs:
       - name: Enforce PMD Violations
         run: |
           VIOLATIONS=${{ steps.pmd.outputs.violations || 0 }}
-          if [ "$VIOLATIONS" -gt 0 ]; then
-            echo "::error::PMD reported $VIOLATIONS violations"
+          MAX_VIOLATIONS=${{ inputs.max_pmd_violations || 0 }}
+          if [ "$VIOLATIONS" -gt "$MAX_VIOLATIONS" ]; then
+            echo "::error::PMD reported $VIOLATIONS violations (max: $MAX_VIOLATIONS)"
             exit 1
           fi
 
@@ -912,7 +917,8 @@ jobs:
             "thresholds": {
               "coverage_min": ${{ inputs.coverage_min }},
               "mutation_score_min": ${{ inputs.mutation_score_min }},
-              "owasp_cvss_fail": ${{ inputs.owasp_cvss_fail }}
+              "owasp_cvss_fail": ${{ inputs.owasp_cvss_fail }},
+              "max_pmd_violations": ${{ inputs.max_pmd_violations }}
             }
           }
           EOF
