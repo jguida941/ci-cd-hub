@@ -17,6 +17,10 @@ Existing:
 - [ADR-0012: Kyverno Policies](0012-kyverno-policies.md)
 - [ADR-0013: Dispatch Workflow Templates](0013-dispatch-workflow-templates.md) *(Superseded by ADR-0014)*
 - [ADR-0014: Reusable Workflow Migration](0014-reusable-workflow-migration.md)
+- [ADR-0015: Workflow Versioning & Release Policy](0015-workflow-versioning-release-policy.md)
+- [ADR-0016: Mutation Testing Policy](0016-mutation-testing-policy.md)
+- [ADR-0017: Scanner Tool Defaults](0017-scanner-tool-defaults.md)
+- [ADR-0018: Fixtures & Testing Strategy](0018-fixtures-testing-strategy.md)
 
 Template starter:
 ```markdown
