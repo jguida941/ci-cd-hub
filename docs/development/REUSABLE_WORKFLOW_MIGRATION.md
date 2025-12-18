@@ -1572,8 +1572,8 @@ grep "uses:.*java-ci.yml@v1" templates/repo/hub-java-ci.yml
 
 | # | Task | File | Status |
 |---|------|------|--------|
-| 2.1 | Create Python caller (20+ inputs, pin to `@v1`) | `templates/repo/hub-python-ci.yml` | [ ] |
-| 2.2 | Create Java caller (all inputs, pin to `@v1`) | `templates/repo/hub-java-ci.yml` | [ ] |
+| 2.1 | Create Python caller (20+ inputs, pin to `@v1`) | `templates/repo/hub-python-ci.yml` | [x] |
+| 2.2 | Create Java caller (all inputs, pin to `@v1`) | `templates/repo/hub-java-ci.yml` | [x] |
 | 2.3 | Update existing file: add `dispatch_workflow: hub-ci.yml` | `templates/repo/.ci-hub.yml` | [ ] |
 | 2.4 | Document caller usage, @v1 pinning, migration | `templates/README.md` | [ ] |
 
@@ -2139,7 +2139,96 @@ Add a new section to docs with:
 
 ## Progress Tracking
 
-**Last Updated:** 2025-12-17
+**Last Updated:** 2025-12-18
+
+---
+
+## Known Issues & Relaxed Thresholds (TODO: Fix Later)
+
+**Status:** These are temporary workarounds to allow testing to proceed. Must be revisited before production release.
+
+### Mutation Testing Issues
+
+| Fixture | Issue | Relaxation | Root Cause | TODO |
+|---------|-------|------------|------------|------|
+| `python-passing` | Mutation score always 0% | `mutation_score_min: 0` | `mutmut` not detecting/running tests properly - needs debugging | Fix mutmut config and restore `mutation_score_min: 70` |
+| `python-failing` | Mutation score always 0% | `mutation_score_min: 0` | Same as above | Same fix needed |
+| `java-passing` | PITest not running | `mutation_score_min: 0` in workflow | PITest needs proper configuration | Verify PITest plugin is configured correctly |
+| `java-failing` | PITest not running | `mutation_score_min: 0` in workflow | Same as above | Same fix needed |
+
+**mutmut Investigation Needed:**
+- `mutmut run` appears to exit with 0 but shows no mutations
+- Likely issue: test discovery not working, or source path detection broken
+- Need to add more debug output to see what files mutmut is analyzing
+- May need explicit `--paths-to-mutate` with absolute paths
+
+### Security Scanner Thresholds
+
+| Fixture | Issue | Relaxation | Rationale |
+|---------|-------|------------|-----------|
+| `java-failing` | Semgrep finds issues | `max_semgrep_findings: 999` | Intentional - failing fixture should have findings, we want to capture them not fail |
+| `python-failing` | Semgrep finds issues | `max_semgrep_findings: 999` | Same - allows capturing findings without failing the build |
+| `java-failing` | OWASP finds vulnerabilities | `owasp_cvss_fail: 11` | 11 > max possible CVSS score (10), so never fails |
+| Both failing | High vulnerability counts | `max_critical_vulns: 999`, `max_high_vulns: 999` | Allow findings to be captured without failing |
+
+### Docker/Trivy Skipping
+
+| Fixture | Issue | Behavior | TODO |
+|---------|-------|----------|------|
+| All fixtures | No Dockerfile present | Trivy/Docker steps skip automatically | Create dedicated `python-docker/` and `java-docker/` fixtures later |
+
+### New Inputs Added (Phase 1B)
+
+| Input | Added To | Default | Purpose |
+|-------|----------|---------|---------|
+| `artifact_prefix` | Java CI, Python CI | `''` | Prevents artifact name collisions when multiple jobs call same reusable workflow |
+| `max_semgrep_findings` | Java CI, Python CI | `0` | Configurable threshold for Semgrep findings (previously hardcoded to fail on any) |
+
+### Fixture Caller Workflow Relaxations
+
+**File: `ci-cd-hub-fixtures/.github/workflows/hub-java-ci.yml`**
+```yaml
+ci-passing:
+  # Uses default thresholds except mutation_score_min (mutmut broken)
+  artifact_prefix: 'java-passing-'
+
+ci-failing:
+  # All thresholds relaxed to capture findings without failing:
+  coverage_min: 0
+  mutation_score_min: 0
+  owasp_cvss_fail: 11
+  max_critical_vulns: 999
+  max_high_vulns: 999
+  max_semgrep_findings: 999
+  artifact_prefix: 'java-failing-'
+```
+
+**File: `ci-cd-hub-fixtures/.github/workflows/hub-python-ci.yml`**
+```yaml
+ci-passing:
+  # mutation_score_min: 0 because mutmut broken
+  mutation_score_min: 0
+  artifact_prefix: 'python-passing-'
+
+ci-failing:
+  # All thresholds relaxed:
+  coverage_min: 0
+  mutation_score_min: 0
+  max_critical_vulns: 999
+  max_high_vulns: 999
+  max_semgrep_findings: 999
+  artifact_prefix: 'python-failing-'
+```
+
+### Action Items After Testing Complete
+
+1. **Debug mutmut** - Get mutation testing working for Python fixtures
+2. **Debug PITest** - Get mutation testing working for Java fixtures
+3. **Restore thresholds** - Once tools work, set appropriate thresholds for passing fixtures
+4. **Create Docker fixtures** - Add `python-docker/` and `java-docker/` directories with Dockerfiles
+5. **Update documentation** - Remove relaxation notes when issues fixed
+
+---
 
 ### Part 1: Reusable Workflows
 
