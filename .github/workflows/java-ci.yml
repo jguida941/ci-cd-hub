@@ -206,13 +206,16 @@ jobs:
               ANALYSIS_GOALS="$ANALYSIS_GOALS spotbugs:spotbugs"
             fi
             if [ "${{ inputs.run_owasp }}" = "true" ]; then
-              # -Ddependencycheck.failOnError=false allows report generation even if NVD unavailable
               ANALYSIS_GOALS="$ANALYSIS_GOALS dependency-check:check"
             fi
 
             if [ -n "$ANALYSIS_GOALS" ]; then
-              echo "Running analysis tools: $MVN_CMD -B -ntp -DskipTests -Ddependencycheck.failOnError=false $ANALYSIS_GOALS"
-              $MVN_CMD -B -ntp -DskipTests -Ddependencycheck.failOnError=false $ANALYSIS_GOALS || echo "Some analysis tools completed with errors"
+              # OWASP flags:
+              #   -DnvdApiDelay=2500 - 2.5s delay between NVD API calls to avoid 403 rate limiting
+              #   -DnvdMaxRetryCount=10 - retry failed API calls
+              #   -Ddependencycheck.failOnError=false - don't fail build on vulnerabilities found
+              echo "Running analysis tools: $MVN_CMD -B -ntp -DskipTests -DnvdApiDelay=2500 -DnvdMaxRetryCount=10 -Ddependencycheck.failOnError=false $ANALYSIS_GOALS"
+              $MVN_CMD -B -ntp -DskipTests -DnvdApiDelay=2500 -DnvdMaxRetryCount=10 -Ddependencycheck.failOnError=false $ANALYSIS_GOALS || echo "Some analysis tools completed with errors"
             fi
           else
             if [ -f "gradlew" ]; then

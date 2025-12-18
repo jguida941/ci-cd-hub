@@ -166,21 +166,30 @@ mvn verify checkstyle:checkstyle spotbugs:spotbugs dependency-check:check
 
 **Rationale**: CI should capture all findings (test failures, static analysis issues, vulnerabilities) even when some checks fail. Threshold enforcement happens in later steps.
 
-### 7a. OWASP NVD API Handling
+### 7a. OWASP NVD API Rate Limiting
 
-**Problem**: OWASP Dependency Check requires NVD (National Vulnerability Database) updates. Without an API key, the NVD returns 403/404 errors, causing the plugin to fail.
+**Problem**: OWASP Dependency Check downloads vulnerability data from the NVD API. Without rate limiting, bulk downloads trigger 403 errors due to NVD rate limits (even without an API key).
 
-**Solution**: Use `-Ddependencycheck.failOnError=false` to allow report generation even with NVD issues:
+**Solution**: Add delay and retry parameters to avoid rate limiting:
 
 ```yaml
-mvn -B -ntp -DskipTests -Ddependencycheck.failOnError=false dependency-check:check
+mvn -B -ntp -DskipTests \
+  -DnvdApiDelay=2500 \
+  -DnvdMaxRetryCount=10 \
+  -Ddependencycheck.failOnError=false \
+  dependency-check:check
 ```
 
+**Flag explanations**:
+- `-DnvdApiDelay=2500`: 2.5 second delay between NVD API calls (avoids rate limiting)
+- `-DnvdMaxRetryCount=10`: Retry failed API calls up to 10 times
+- `-Ddependencycheck.failOnError=false`: Don't fail the build if vulnerabilities are found
+
 **Notes**:
-- Without an NVD API key, the database may be stale or empty
-- The report will still be generated with whatever data is available
-- For production CI, obtain an NVD API key (free) and set as `NVD_API_KEY` secret
+- This works without an NVD API key, just slower due to rate limiting
+- With an NVD API key (set as `NVD_API_KEY` secret), downloads are faster
 - See: https://nvd.nist.gov/developers/request-an-api-key
+- Reference: https://github.com/dependency-check/DependencyCheck/issues/6330
 
 ### 7b. PITest and -DskipTests
 
