@@ -90,6 +90,14 @@ on:
         description: 'Max high vulns allowed'
         type: number
         default: 0
+      max_semgrep_findings:
+        description: 'Max Semgrep findings allowed'
+        type: number
+        default: 0
+      artifact_prefix:
+        description: 'Artifact name prefix (for multiple jobs)'
+        type: string
+        default: ''
       retention_days:
         description: 'Artifact retention days'
         type: number
@@ -118,5 +126,7 @@ jobs:
       mutation_score_min: ${{ inputs.mutation_score_min }}
       max_critical_vulns: ${{ inputs.max_critical_vulns }}
       max_high_vulns: ${{ inputs.max_high_vulns }}
+      max_semgrep_findings: ${{ inputs.max_semgrep_findings }}
+      artifact_prefix: ${{ inputs.artifact_prefix }}
       retention_days: ${{ inputs.retention_days }}
     secrets: inherit
