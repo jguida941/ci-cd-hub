@@ -75,10 +75,31 @@ The `trivy-action` outputs files to **workspace root**, ignoring `working-direct
 
 **Gotcha**: Without `scan-ref`, Trivy scans entire repo. Without `${{ github.workspace }}` path, parsing fails silently (reports 0 findings).
 
+### Artifact Name Collisions
+
+When multiple fixture jobs call the same reusable workflow, artifacts collide (409 Conflict). Use `artifact_prefix` to namespace:
+
+```yaml
+jobs:
+  ci-passing:
+    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
+    with:
+      workdir: 'python-passing'
+      artifact_prefix: 'python-passing-'  # Prevents collision
+
+  ci-failing:
+    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
+    with:
+      workdir: 'python-failing'
+      artifact_prefix: 'python-failing-'  # Different prefix
+```
+
 ### Update History
 
 - 2025-12-18: Added `working-directory` to lint and codeql jobs in both Python and Java workflows. Previously lint and CodeQL scanned entire repo root, causing failures when multiple fixtures shared a repo.
 - 2025-12-18: Fixed Trivy action to use `scan-ref` and `${{ github.workspace }}` path. Previously Trivy reported 0 findings because output file was written to workspace root but parsing looked in workdir.
+- 2025-12-18: Added `artifact_prefix` input to prevent artifact name collisions when multiple jobs call the same workflow.
+- 2025-12-18: Updated caller templates with `max_semgrep_findings` and `artifact_prefix` inputs.
 
 ## Consequences
 
