@@ -178,10 +178,13 @@ jobs:
           ruff check . --output-format=json --output-file=ruff-report.json || true
           ruff check . --output-format=github || true
 
-          # Count errors
+          # Count errors safely
           ERRORS=0
           if [ -f "ruff-report.json" ]; then
-            ERRORS=$(jq '. | length' ruff-report.json 2>/dev/null || echo 0)
+            COUNT=$(jq '. | length' ruff-report.json 2>/dev/null || true)
+            if [ -n "$COUNT" ] && [ "$COUNT" -gt 0 ] 2>/dev/null; then
+              ERRORS=$COUNT
+            fi
           fi
           echo "errors=$ERRORS" >> "$GITHUB_OUTPUT"
 
@@ -201,9 +204,19 @@ jobs:
         run: |
           # Exclude test directories - assert statements in tests are expected (B101 false positives)
           bandit -r . --exclude ./tests,./test -f json -o bandit-report.json || true
-          HIGH=$(jq '[.results[] | select(.issue_severity == "HIGH")] | length' bandit-report.json 2>/dev/null || echo 0)
-          MEDIUM=$(jq '[.results[] | select(.issue_severity == "MEDIUM")] | length' bandit-report.json 2>/dev/null || echo 0)
-          LOW=$(jq '[.results[] | select(.issue_severity == "LOW")] | length' bandit-report.json 2>/dev/null || echo 0)
+
+          # Count issues safely
+          HIGH=0
+          MEDIUM=0
+          LOW=0
+          if [ -f "bandit-report.json" ]; then
+            H=$(jq '[.results[] | select(.issue_severity == "HIGH")] | length' bandit-report.json 2>/dev/null || true)
+            M=$(jq '[.results[] | select(.issue_severity == "MEDIUM")] | length' bandit-report.json 2>/dev/null || true)
+            L=$(jq '[.results[] | select(.issue_severity == "LOW")] | length' bandit-report.json 2>/dev/null || true)
+            [ -n "$H" ] && [ "$H" -ge 0 ] 2>/dev/null && HIGH=$H
+            [ -n "$M" ] && [ "$M" -ge 0 ] 2>/dev/null && MEDIUM=$M
+            [ -n "$L" ] && [ "$L" -ge 0 ] 2>/dev/null && LOW=$L
+          fi
           {
             echo "high=$HIGH"
             echo "medium=$MEDIUM"
@@ -234,8 +247,14 @@ jobs:
         id: black
         run: |
           black --check . 2>&1 | tee black-output.txt || true
-          WOULD_REFORMAT=$(grep -c "would reformat" black-output.txt 2>/dev/null || echo 0)
-          echo "issues=$WOULD_REFORMAT" >> "$GITHUB_OUTPUT"
+          ISSUES=0
+          if [ -f black-output.txt ]; then
+            COUNT=$(grep -c "would reformat" black-output.txt 2>/dev/null || true)
+            if [ -n "$COUNT" ] && [ "$COUNT" -gt 0 ] 2>/dev/null; then
+              ISSUES=$COUNT
+            fi
+          fi
+          echo "issues=$ISSUES" >> "$GITHUB_OUTPUT"
 
       - name: Enforce Black Threshold
         if: inputs.run_black
