@@ -519,13 +519,27 @@ jobs:
           MUTMUT_CMD="mutmut run --runner=\"pytest -x -q\""
           if [ "$HAS_MUTMUT_CONFIG" = "false" ]; then
             # No config in pyproject.toml - try to detect source dir
-            SRC_DIR="."
+            SRC_DIR=""
             if [ -d "src" ]; then
               SRC_DIR="src"
+            else
+              # Look for Python packages (dirs with __init__.py), excluding tests/venv
+              for dir in */; do
+                dir="${dir%/}"
+                if [ -f "$dir/__init__.py" ] && [[ ! "$dir" =~ ^(tests?|venv|\.venv|build|dist)$ ]]; then
+                  SRC_DIR="$dir"
+                  break
+                fi
+              done
+            fi
+
+            if [ -z "$SRC_DIR" ]; then
+              SRC_DIR="."
             fi
             echo "No mutmut config found - using detected source dir: $SRC_DIR"
             ls -la "$SRC_DIR" || echo "Cannot list $SRC_DIR"
-            MUTMUT_CMD="mutmut run --paths-to-mutate=\"$SRC_DIR\" --runner=\"pytest -x -q\""
+            # Pass paths as positional args (--paths-to-mutate deprecated in newer mutmut)
+            MUTMUT_CMD="mutmut run \"$SRC_DIR\" --runner=\"pytest -x -q\""
           fi
 
           echo "Running: $MUTMUT_CMD"

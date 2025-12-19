@@ -624,9 +624,36 @@ jobs:
         run: |
           KILLED=0; SURVIVED=0; SCORE=0; TOTAL=0
 
-          # mutmut 3.x reads config from pyproject.toml [tool.mutmut] section
-          # Run mutmut - it reads paths_to_mutate from pyproject.toml
-          timeout 600 mutmut run 2>&1 | tee mutmut-run.log || true
+          # Check if pyproject.toml has [tool.mutmut] config
+          HAS_MUTMUT_CONFIG=false
+          if [ -f "pyproject.toml" ] && grep -q '\[tool\.mutmut\]' pyproject.toml; then
+            HAS_MUTMUT_CONFIG=true
+            echo "Found [tool.mutmut] in pyproject.toml - using project config"
+            MUTMUT_CMD="mutmut run"
+          else
+            # No config - detect source directory
+            SRC_DIR=""
+            if [ -d "src" ]; then
+              SRC_DIR="src"
+            else
+              # Look for Python packages (dirs with __init__.py), excluding tests/venv
+              for dir in */; do
+                dir="${dir%/}"
+                if [ -f "$dir/__init__.py" ] && [[ ! "$dir" =~ ^(tests?|venv|\.venv|build|dist)$ ]]; then
+                  SRC_DIR="$dir"
+                  break
+                fi
+              done
+            fi
+            if [ -z "$SRC_DIR" ]; then
+              SRC_DIR="."
+            fi
+            echo "No mutmut config found - using detected source dir: $SRC_DIR"
+            MUTMUT_CMD="mutmut run \"$SRC_DIR\""
+          fi
+
+          echo "Running: $MUTMUT_CMD"
+          timeout 600 bash -c "$MUTMUT_CMD" 2>&1 | tee mutmut-run.log || true
 
           # Parse results from mutmut 3.x run output
           # Final line format: "⠙ 73/73  🎉 73 🫥 0  ⏰ 0  🤔 0  🙁 0  🔇 0"
