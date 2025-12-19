@@ -50,6 +50,10 @@ on:
         description: 'Run PITest mutation testing'
         type: boolean
         default: true
+      run_jqwik:
+        description: 'Run jqwik property-based testing'
+        type: boolean
+        default: false
       run_codeql:
         description: 'Run CodeQL analysis (expensive)'
         type: boolean
@@ -198,6 +202,7 @@ jobs:
             echo "| Build | ${{ inputs.build_tool }} | true |"
             echo "| Testing | JaCoCo Coverage | ${{ inputs.run_jacoco }} |"
             echo "| Testing | PITest | ${{ inputs.run_pitest }} |"
+            echo "| Testing | jqwik | ${{ inputs.run_jqwik }} |"
             echo "| Linting | Checkstyle | ${{ inputs.run_checkstyle }} |"
             echo "| Linting | PMD | ${{ inputs.run_pmd }} |"
             echo "| Linting | SpotBugs | ${{ inputs.run_spotbugs }} |"
@@ -313,6 +318,24 @@ jobs:
           echo "passed=$PASSED" >> "$GITHUB_OUTPUT"
           echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
           echo "Tests: $PASSED passed, $FAILED failed"
+
+      - name: Extract jqwik Property Test Results
+        id: jqwik-results
+        if: always() && inputs.run_jqwik
+        run: |
+          # jqwik runs with JUnit 5, extract property test stats from surefire output
+          # Look for jqwik test output patterns
+          JQWIK_TRIES=0
+          JQWIK_TESTS=0
+          while IFS= read -r report; do
+            if [ -f "$report" ]; then
+              # Count jqwik property tests (they show in test reports)
+              COUNT=$(grep -c "net.jqwik" "$report" 2>/dev/null || echo 0)
+              JQWIK_TESTS=$((JQWIK_TESTS + COUNT))
+            fi
+          done < <(find . -path "*/surefire-reports/*.xml" -name "TEST-*.xml" 2>/dev/null)
+          echo "tests=${JQWIK_TESTS:-0}" >> "$GITHUB_OUTPUT"
+          echo "jqwik: ${JQWIK_TESTS:-0} property tests"
 
       - name: Extract Lint Results
         id: lint-results
@@ -449,6 +472,11 @@ jobs:
             echo "| Tests Passed | ${{ steps.test-counts.outputs.passed }} |"
             echo "| Tests Failed | ${{ steps.test-counts.outputs.failed }} |"
             echo "| Total Coverage | ${{ steps.coverage.outputs.percentage }}% |"
+
+            # jqwik property tests (if enabled)
+            if [ "${{ inputs.run_jqwik }}" = "true" ]; then
+              echo "| jqwik Property Tests | ${{ steps.jqwik-results.outputs.tests }} |"
+            fi
 
             # Show per-module breakdown for multi-module projects
             MODULE_COUNT="${{ steps.coverage.outputs.module_count }}"

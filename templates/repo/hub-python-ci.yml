@@ -58,6 +58,10 @@ on:
         description: 'Run mutmut mutation testing'
         type: boolean
         default: true
+      run_hypothesis:
+        description: 'Run Hypothesis property-based testing'
+        type: boolean
+        default: true
       run_semgrep:
         description: 'Run Semgrep SAST'
         type: boolean
@@ -135,6 +139,7 @@ jobs:
       run_black: ${{ inputs.run_black }}
       run_isort: ${{ inputs.run_isort }}
       run_mutmut: ${{ inputs.run_mutmut }}
+      run_hypothesis: ${{ inputs.run_hypothesis }}
       run_semgrep: ${{ inputs.run_semgrep }}
       run_trivy: ${{ inputs.run_trivy }}
       run_docker: ${{ inputs.run_docker }}

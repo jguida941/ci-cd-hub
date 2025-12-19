@@ -57,6 +57,10 @@ on:
         description: 'Run mutmut mutation testing'
         type: boolean
         default: true
+      run_hypothesis:
+        description: 'Run Hypothesis property-based testing'
+        type: boolean
+        default: true
       run_semgrep:
         description: 'Run Semgrep SAST (expensive)'
         type: boolean
@@ -181,6 +185,7 @@ jobs:
             echo "|----------|------|---------|"
             echo "| Testing | pytest | ${{ inputs.run_pytest }} |"
             echo "| Testing | mutmut | ${{ inputs.run_mutmut }} |"
+            echo "| Testing | Hypothesis | ${{ inputs.run_hypothesis }} |"
             echo "| Linting | Ruff | ${{ inputs.run_ruff }} |"
             echo "| Linting | Black | ${{ inputs.run_black }} |"
             echo "| Linting | isort | ${{ inputs.run_isort }} |"
@@ -489,8 +494,6 @@ jobs:
         id: test
         if: inputs.run_pytest
         run: |
-          # NOTE: Hypothesis property-based tests run automatically with pytest
-          # No separate step needed - if your tests use @given decorators, they run here
           pytest --cov=. --cov-report=xml --cov-report=html --cov-report=term --junitxml=test-results.xml -v || true
 
           # Extract test counts from JUnit XML
@@ -505,6 +508,16 @@ jobs:
           fi
           echo "tests_passed=$PASSED" >> "$GITHUB_OUTPUT"
           echo "tests_failed=$FAILED" >> "$GITHUB_OUTPUT"
+
+      - name: Run Hypothesis Property Tests
+        id: hypothesis
+        if: inputs.run_hypothesis
+        run: |
+          # Run with hypothesis statistics to capture example counts
+          pytest --hypothesis-show-statistics -v 2>&1 | tee hypothesis-output.txt || true
+          EXAMPLES=$(grep -oP '\d+(?= passing examples)' hypothesis-output.txt | tail -1 || echo 0)
+          echo "examples=${EXAMPLES:-0}" >> "$GITHUB_OUTPUT"
+          echo "Hypothesis: ${EXAMPLES:-0} passing examples"
 
       - name: Extract Coverage
         id: coverage
@@ -538,6 +551,11 @@ jobs:
             echo "| Tests Passed | ${{ steps.test.outputs.tests_passed }} |"
             echo "| Tests Failed | ${{ steps.test.outputs.tests_failed }} |"
             echo "| Total Coverage | ${{ steps.coverage.outputs.percentage }}% |"
+
+            # Hypothesis examples (if enabled)
+            if [ "${{ inputs.run_hypothesis }}" = "true" ]; then
+              echo "| Hypothesis Examples | ${{ steps.hypothesis.outputs.examples }} |"
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Coverage Reports
