@@ -508,42 +508,51 @@ jobs:
           SURVIVED=0
           SCORE=0
 
-          # Check if pyproject.toml has [tool.mutmut] config
+          # mutmut 3.x requires config in pyproject.toml or setup.cfg (no CLI options)
+          # Check if config exists, if not create a temporary one
           HAS_MUTMUT_CONFIG=false
           if [ -f "pyproject.toml" ] && grep -q '\[tool\.mutmut\]' pyproject.toml; then
             HAS_MUTMUT_CONFIG=true
             echo "Found [tool.mutmut] in pyproject.toml - using project config"
+          elif [ -f "setup.cfg" ] && grep -q '\[mutmut\]' setup.cfg; then
+            HAS_MUTMUT_CONFIG=true
+            echo "Found [mutmut] in setup.cfg - using project config"
           fi
 
-          # Build mutmut command
-          MUTMUT_CMD="mutmut run --runner=\"pytest -x -q\""
           if [ "$HAS_MUTMUT_CONFIG" = "false" ]; then
-            # No config in pyproject.toml - try to detect source dir
+            # No config - detect source dir and create temporary config
             SRC_DIR=""
             if [ -d "src" ]; then
-              SRC_DIR="src"
+              SRC_DIR="src/"
             else
               # Look for Python packages (dirs with __init__.py), excluding tests/venv
               for dir in */; do
                 dir="${dir%/}"
                 if [ -f "$dir/__init__.py" ] && [[ ! "$dir" =~ ^(tests?|venv|\.venv|build|dist)$ ]]; then
-                  SRC_DIR="$dir"
+                  SRC_DIR="$dir/"
                   break
                 fi
               done
             fi
 
             if [ -z "$SRC_DIR" ]; then
-              SRC_DIR="."
+              SRC_DIR="./"
             fi
-            echo "No mutmut config found - using detected source dir: $SRC_DIR"
-            ls -la "$SRC_DIR" || echo "Cannot list $SRC_DIR"
-            # Pass paths as positional args (--paths-to-mutate deprecated in newer mutmut)
-            MUTMUT_CMD="mutmut run \"$SRC_DIR\" --runner=\"pytest -x -q\""
+            echo "No mutmut config found - creating temporary config for: $SRC_DIR"
+            ls -la "${SRC_DIR%/}" || echo "Cannot list $SRC_DIR"
+
+            # Create setup.cfg with mutmut config (mutmut 3.x reads this)
+            if [ -f "setup.cfg" ]; then
+              # Append to existing setup.cfg
+              echo -e "\n[mutmut]\npaths_to_mutate=$SRC_DIR" >> setup.cfg
+            else
+              echo -e "[mutmut]\npaths_to_mutate=$SRC_DIR" > setup.cfg
+            fi
+            echo "Created [mutmut] section in setup.cfg with paths_to_mutate=$SRC_DIR"
           fi
 
-          echo "Running: $MUTMUT_CMD"
-          timeout 600 bash -c "$MUTMUT_CMD" || {
+          echo "Running: mutmut run"
+          timeout 600 mutmut run || {
             echo "::warning::mutmut run failed or timed out"
           }
 
