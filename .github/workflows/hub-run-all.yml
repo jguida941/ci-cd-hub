@@ -41,6 +41,12 @@ on:
     paths:
       - 'config/repos/*.yaml'
 
+# Required permissions for all features
+permissions:
+  contents: read
+  security-events: write  # For CodeQL
+  actions: read
+
 env:
   REPORTS_DIR: ${{ github.workspace }}/all-reports
 
@@ -148,6 +154,7 @@ jobs:
                   "run_group": run_group,
               }
 
+              # Java tool flags
               for key in (
                   "run_jacoco",
                   "run_checkstyle",
@@ -157,10 +164,13 @@ jobs:
                   "run_pmd",
                   "run_semgrep",
                   "run_trivy",
+                  "run_codeql",
+                  "run_docker",
               ):
                   if key in inputs:
                       entry[key] = inputs[key]
 
+              # Python tool flags
               for key in (
                   "run_pytest",
                   "run_ruff",
@@ -173,6 +183,8 @@ jobs:
                   "run_hypothesis",
                   "run_semgrep",
                   "run_trivy",
+                  "run_codeql",
+                  "run_docker",
               ):
                   if key in inputs:
                       entry[key] = inputs[key]
@@ -720,6 +732,47 @@ jobs:
           fi
 
           echo "findings=$FINDINGS" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      # ========================================
+      # DOCKER BUILD
+      # ========================================
+      - name: "[All] Docker Build"
+        if: matrix.run_docker == true
+        id: docker-build
+        working-directory: ${{ env.WORKDIR }}
+        run: |
+          if [ -f "Dockerfile" ]; then
+            echo "Building Docker image..."
+            docker build -t ${{ matrix.owner }}/${{ matrix.name }}:ci-test . 2>&1 | tee docker-build.log || true
+
+            if docker images | grep -q "ci-test"; then
+              echo "status=success" >> $GITHUB_OUTPUT
+              echo "Docker image built successfully"
+            else
+              echo "status=failed" >> $GITHUB_OUTPUT
+              echo "Docker build failed"
+            fi
+          else
+            echo "No Dockerfile found, skipping"
+            echo "status=skipped" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      # ========================================
+      # CODEQL ANALYSIS
+      # ========================================
+      - name: "[All] Initialize CodeQL"
+        if: matrix.run_codeql == true
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          source-root: ${{ env.WORKDIR }}
+
+      - name: "[All] Perform CodeQL Analysis"
+        if: matrix.run_codeql == true
+        id: codeql
+        uses: github/codeql-action/analyze@v3
         continue-on-error: true
 
       # ========================================

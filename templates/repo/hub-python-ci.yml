@@ -139,14 +139,14 @@ jobs:
       run_trivy: ${{ inputs.run_trivy }}
       run_docker: ${{ inputs.run_docker }}
       run_codeql: ${{ inputs.run_codeql }}
-      coverage_min: ${{ inputs.coverage_min }}
-      mutation_score_min: ${{ inputs.mutation_score_min }}
-      max_critical_vulns: ${{ inputs.max_critical_vulns }}
-      max_high_vulns: ${{ inputs.max_high_vulns }}
-      max_semgrep_findings: ${{ inputs.max_semgrep_findings }}
-      max_black_issues: ${{ inputs.max_black_issues }}
-      max_isort_issues: ${{ inputs.max_isort_issues }}
-      max_ruff_errors: ${{ inputs.max_ruff_errors }}
+      coverage_min: ${{ fromJSON(inputs.coverage_min) }}
+      mutation_score_min: ${{ fromJSON(inputs.mutation_score_min) }}
+      max_critical_vulns: ${{ fromJSON(inputs.max_critical_vulns) }}
+      max_high_vulns: ${{ fromJSON(inputs.max_high_vulns) }}
+      max_semgrep_findings: ${{ fromJSON(inputs.max_semgrep_findings) }}
+      max_black_issues: ${{ fromJSON(inputs.max_black_issues) }}
+      max_isort_issues: ${{ fromJSON(inputs.max_isort_issues) }}
+      max_ruff_errors: ${{ fromJSON(inputs.max_ruff_errors) }}
       artifact_prefix: ${{ inputs.artifact_prefix }}
-      retention_days: ${{ inputs.retention_days }}
+      retention_days: ${{ fromJSON(inputs.retention_days) }}
     secrets: inherit
