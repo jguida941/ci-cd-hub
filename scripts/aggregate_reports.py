@@ -10,6 +10,7 @@ Usage:
 """
 
 import argparse
+import html
 import json
 from datetime import datetime
 from pathlib import Path
@@ -168,20 +169,26 @@ def generate_html_dashboard(summary: dict) -> str:
         tests_passed = repo.get("tests_passed", 0)
         tests_failed = repo.get("tests_failed", 0)
         tests_class = "success" if tests_failed == 0 else "failure"
+        # Escape user-controlled values to prevent XSS
+        name = html.escape(str(repo['name']))
+        language = html.escape(str(repo.get('language', 'unknown')))
+        branch = html.escape(str(repo['branch']))
+        status = html.escape(str(repo['status']))
+        timestamp = html.escape(str(repo['timestamp']))
         repos_html += f"""
         <tr>
-            <td>{repo['name']}</td>
-            <td>{repo.get('language', 'unknown')}</td>
-            <td>{repo['branch']}</td>
-            <td class="{status_class}">{repo['status']}</td>
+            <td>{name}</td>
+            <td>{language}</td>
+            <td>{branch}</td>
+            <td class="{status_class}">{status}</td>
             <td>{repo['coverage']}%</td>
             <td class="{tests_class}">{tests_passed}/{tests_passed + tests_failed}</td>
             <td>{repo['mutation_score']}%</td>
-            <td>{repo['timestamp']}</td>
+            <td>{timestamp}</td>
         </tr>
         """
 
-    html = f"""<!DOCTYPE html>
+    html_output = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -285,7 +292,7 @@ def generate_html_dashboard(summary: dict) -> str:
 </body>
 </html>
 """
-    return html
+    return html_output
 
 
 def main():

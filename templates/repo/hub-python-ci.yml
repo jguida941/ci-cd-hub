@@ -94,6 +94,18 @@ on:
         description: 'Max Semgrep findings allowed'
         type: number
         default: 0
+      max_black_issues:
+        description: 'Max Black formatting issues allowed'
+        type: number
+        default: 0
+      max_isort_issues:
+        description: 'Max isort import issues allowed'
+        type: number
+        default: 0
+      max_ruff_errors:
+        description: 'Max Ruff errors allowed'
+        type: number
+        default: 0
       artifact_prefix:
         description: 'Artifact name prefix (for multiple jobs)'
         type: string
@@ -126,6 +138,9 @@ jobs:
       max_critical_vulns: ${{ inputs.max_critical_vulns }}
       max_high_vulns: ${{ inputs.max_high_vulns }}
       max_semgrep_findings: ${{ inputs.max_semgrep_findings }}
+      max_black_issues: ${{ inputs.max_black_issues }}
+      max_isort_issues: ${{ inputs.max_isort_issues }}
+      max_ruff_errors: ${{ inputs.max_ruff_errors }}
       artifact_prefix: ${{ inputs.artifact_prefix }}
       retention_days: ${{ inputs.retention_days }}
     secrets: inherit

@@ -480,11 +480,11 @@ Update each connected repo to use the new minimal caller workflow.
 4. Verify report.json has all expected fields
 
 **Repos to migrate:**
-- [ ] `ci-cd-hub-fixtures` (monorepo - python-passing, python-failing, java-passing, java-failing)
-- [ ] `ci-cd-bst-demo-github-actions`
-- [ ] `java-spring-tutorials`
-- [ ] `smoke-test-python`
-- [ ] `smoke-test-java`
+- [x] `ci-cd-hub-fixtures` (monorepo - python-passing, python-failing, java-passing, java-failing)
+- [x] `ci-cd-bst-demo-github-actions`
+- [x] `java-spring-tutorials`
+- [x] `smoke-test-python`
+- [x] `smoke-test-java`
 - [ ] (add others as needed)
 
 ---
