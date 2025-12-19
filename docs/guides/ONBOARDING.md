@@ -237,7 +237,7 @@ For Java projects, ensure your `pom.xml` has the necessary plugins:
 | "Workflow file not found" | Ensure hub repo is public or you have access |
 | "PITest fails" | Ensure test classes exist; disable pitest first |
 | "OWASP is slow" | Add `NVD_API_KEY` secret ([get free key](https://nvd.nist.gov/developers/request-an-api-key)) |
-| "Docker build fails" | Ensure Dockerfile exists; set `run_docker: true` only if needed |
+| "Docker build fails" | Docker inputs removed from CI templates (25 input limit). Use separate `hub-*-docker.yml` template or hardcode in `with:` block |
 | "Coverage is 0%" | Check test files are running; verify pytest/JaCoCo setup |
 
 For more issues, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).

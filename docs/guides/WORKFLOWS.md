@@ -169,7 +169,6 @@ Reusable workflow that a repo can call via `workflow_call`. Useful for distribut
 | `run_owasp` | boolean | Enable OWASP Dependency-Check |
 | `run_pitest` | boolean | Enable PITest mutation testing |
 | `run_codeql` | boolean | Enable CodeQL analysis |
-| `run_docker` | boolean | Enable Docker build and health checks |
 | `coverage_min` | number | Coverage minimum (warn or fail, depending on policy) |
 | `mutation_score_min` | number | Mutation score minimum (warn or fail) |
 | `owasp_cvss_fail` | number | Fail threshold for CVSS scores |
@@ -181,6 +180,7 @@ Reusable workflow that a repo can call via `workflow_call`. Useful for distribut
 
 ### Notes
 - Some tools require Maven or Gradle plugins configured in the repo (especially JaCoCo and PITest)
+- **Docker testing**: `run_docker`, `docker_compose_file`, `docker_health_endpoint` are available in the reusable workflow but removed from caller templates (GitHub's 25 input limit). Separate `hub-*-docker.yml` templates planned for Docker integration testing.
 
 ---
 

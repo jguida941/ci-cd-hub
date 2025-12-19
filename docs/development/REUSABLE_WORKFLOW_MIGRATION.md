@@ -15,12 +15,14 @@
 - Report schema 2.0 with `tool_metrics`, `tools_ran`
 - Release workflow with actionlint validation
 - Semantic versioning with floating tags (`v1` → latest `v1.x.x`)
+- Property-based testing: `run_hypothesis` (Python), `run_jqwik` (Java)
 
 **Deferred to v1.1.0:**
 - Profile templates (`templates/profiles/*.yaml`) - not validated for v1
 - CLI tool (`cihub`) for auto-onboarding
 - Phase 4: Full fixture repo migration
 - Dashboard/GitHub Pages
+- **Docker templates**: `hub-java-docker.yml`, `hub-python-docker.yml` (Docker inputs removed from CI templates due to GitHub's 25 input limit)
 
 ## Quick Status
 
