@@ -20,6 +20,13 @@ All notable changes to this project will be documented in this file.
 - Both `hub-python-ci.yml` and `hub-java-ci.yml` caller templates updated with matching inputs
 - Pushed to `ci-cd-hub-fixtures` and `java-spring-tutorials` repos
 
+### Docker Inputs Removed from CI Templates
+- **Removed from workflow_dispatch**: `run_docker`, `docker_compose_file`, `docker_health_endpoint`
+- **Reason**: GitHub limits workflow_dispatch to 25 inputs; Docker testing is a separate concern
+- **Future**: Separate `hub-java-docker.yml` and `hub-python-docker.yml` templates planned
+- **Note**: Trivy scanning (`run_trivy`) still works - it doesn't require Docker inputs
+- **Reusable workflows still accept these inputs** - repos can hardcode in `with:` block if needed
+
 ---
 
 ## 2025-12-19 - Job Summary Improvements & Multi-Module Support

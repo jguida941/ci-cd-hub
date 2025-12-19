@@ -70,10 +70,6 @@ on:
         description: 'Run Trivy container scan'
         type: boolean
         default: false
-      run_docker:
-        description: 'Build and test Docker'
-        type: boolean
-        default: false
       run_codeql:
         description: 'Run CodeQL analysis'
         type: boolean
@@ -142,7 +138,6 @@ jobs:
       run_hypothesis: ${{ inputs.run_hypothesis }}
       run_semgrep: ${{ inputs.run_semgrep }}
       run_trivy: ${{ inputs.run_trivy }}
-      run_docker: ${{ inputs.run_docker }}
       run_codeql: ${{ inputs.run_codeql }}
       coverage_min: ${{ fromJSON(inputs.coverage_min) }}
       mutation_score_min: ${{ fromJSON(inputs.mutation_score_min) }}
