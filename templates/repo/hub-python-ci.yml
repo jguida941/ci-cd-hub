@@ -115,6 +115,12 @@ on:
         type: number
         default: 30
 
+# Required permissions for reusable workflow features
+permissions:
+  contents: read
+  security-events: write  # For CodeQL (must be declared even if disabled)
+  actions: read
+
 jobs:
   ci:
     uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
