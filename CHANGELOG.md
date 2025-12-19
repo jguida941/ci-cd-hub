@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-12-19 - Job Summary Improvements & Multi-Module Support
+
+### Configuration Summary
+- **Configuration Summary at top of job output** - Shows all enabled tools, thresholds, and environment settings at a glance
+- **Project type detection** - Shows "Single module" or "Multi-module (N modules)" for Java projects
+- **Workdir display** - Shows `. (repo root)` when workdir is "."
+
+### Multi-Module Maven Support
+- **JaCoCo aggregation** - Automatically finds and aggregates coverage from all modules' `jacoco.xml` files
+- **PITest aggregation** - Automatically finds and aggregates mutation scores from all modules' `mutations.xml` files
+- **Per-module breakdown** - Shows coverage/mutation score for each module (only when >1 module)
+- **Backwards compatible** - Single-module projects work unchanged
+
+### Lint Summary Improvements
+- **Consistent table format** - All tools show in markdown table with Status/Issues/Max Allowed columns
+- **Disabled reason shown** - When a tool is disabled, shows why (e.g., `run_ruff=false`)
+- **Fixed empty values** - All values default to 0 to prevent display issues
+
+### Mutation Testing Fixes (Python)
+- **mutmut 3.x compatibility** - Fixed deprecated CLI options (`--paths-to-mutate`, `--runner`)
+- **Result parsing** - Parse emoji output (🎉 = killed, 🙁 = survived) instead of `mutmut results`
+- **Auto config** - Creates temp `setup.cfg` with mutmut config if not present
+
+### New Java Inputs
+- Added `max_checkstyle_errors` threshold
+- Added `max_spotbugs_bugs` threshold
+- Updated caller templates to include new inputs
+
+---
+
 ## 2025-12-18 - Schema 2.0 & Reusable Workflow Migration
 
 ### Schema 2.0 Report Format
