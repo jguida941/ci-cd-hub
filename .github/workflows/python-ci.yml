@@ -177,7 +177,6 @@ jobs:
         run: |
           ruff check . --output-format=json --output-file=ruff-report.json || true
           ruff check . --output-format=github || true
-          ruff check . --statistics >> "$GITHUB_STEP_SUMMARY" || true
 
           # Count errors
           ERRORS=0
@@ -202,7 +201,6 @@ jobs:
         run: |
           # Exclude test directories - assert statements in tests are expected (B101 false positives)
           bandit -r . --exclude ./tests,./test -f json -o bandit-report.json || true
-          bandit -r . --exclude ./tests,./test -f txt >> "$GITHUB_STEP_SUMMARY" || true
           HIGH=$(jq '[.results[] | select(.issue_severity == "HIGH")] | length' bandit-report.json 2>/dev/null || echo 0)
           MEDIUM=$(jq '[.results[] | select(.issue_severity == "MEDIUM")] | length' bandit-report.json 2>/dev/null || echo 0)
           LOW=$(jq '[.results[] | select(.issue_severity == "LOW")] | length' bandit-report.json 2>/dev/null || echo 0)
@@ -238,7 +236,6 @@ jobs:
           black --check . 2>&1 | tee black-output.txt || true
           WOULD_REFORMAT=$(grep -c "would reformat" black-output.txt 2>/dev/null || echo 0)
           echo "issues=$WOULD_REFORMAT" >> "$GITHUB_OUTPUT"
-          echo "Black format check: $WOULD_REFORMAT files would be reformatted" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Enforce Black Threshold
         if: inputs.run_black
@@ -258,7 +255,6 @@ jobs:
           # Count ERROR lines (isort says "ERROR: <file> Imports are incorrectly sorted")
           ISSUES=$(grep -c "^ERROR:" isort-output.txt 2>/dev/null || echo 0)
           echo "issues=$ISSUES" >> "$GITHUB_OUTPUT"
-          echo "isort import check: $ISSUES files have incorrect imports" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Enforce isort Threshold
         if: inputs.run_isort
@@ -269,6 +265,61 @@ jobs:
             echo "::error::isort import issues ($ISSUES) exceed max_isort_issues $MAX"
             exit 1
           fi
+
+      - name: Generate Lint Summary
+        if: always()
+        run: |
+          {
+            echo "## Lint Results"
+            echo ""
+            echo "| Tool | Status | Issues | Threshold |"
+            echo "|------|--------|--------|-----------|"
+
+            # Ruff
+            RUFF_ISSUES="${{ steps.ruff.outputs.errors || 'N/A' }}"
+            RUFF_MAX="${{ inputs.max_ruff_errors }}"
+            if [ "$RUFF_ISSUES" = "N/A" ] || [ "${{ inputs.run_ruff }}" != "true" ]; then
+              echo "| Ruff | ⏭️ Skipped | - | - |"
+            elif [ "$RUFF_ISSUES" -le "$RUFF_MAX" ]; then
+              echo "| Ruff | ✅ Pass | $RUFF_ISSUES | $RUFF_MAX |"
+            else
+              echo "| Ruff | ❌ Fail | $RUFF_ISSUES | $RUFF_MAX |"
+            fi
+
+            # Bandit
+            BANDIT_HIGH="${{ steps.bandit.outputs.high || 'N/A' }}"
+            BANDIT_MED="${{ steps.bandit.outputs.medium || '0' }}"
+            BANDIT_LOW="${{ steps.bandit.outputs.low || '0' }}"
+            if [ "$BANDIT_HIGH" = "N/A" ] || [ "${{ inputs.run_bandit }}" != "true" ]; then
+              echo "| Bandit | ⏭️ Skipped | - | - |"
+            elif [ "$BANDIT_HIGH" -le "${{ inputs.max_high_vulns }}" ]; then
+              echo "| Bandit | ✅ Pass | H:$BANDIT_HIGH M:$BANDIT_MED L:$BANDIT_LOW | H≤${{ inputs.max_high_vulns }} |"
+            else
+              echo "| Bandit | ❌ Fail | H:$BANDIT_HIGH M:$BANDIT_MED L:$BANDIT_LOW | H≤${{ inputs.max_high_vulns }} |"
+            fi
+
+            # Black
+            BLACK_ISSUES="${{ steps.black.outputs.issues || 'N/A' }}"
+            BLACK_MAX="${{ inputs.max_black_issues }}"
+            if [ "$BLACK_ISSUES" = "N/A" ] || [ "${{ inputs.run_black }}" != "true" ]; then
+              echo "| Black | ⏭️ Skipped | - | - |"
+            elif [ "$BLACK_ISSUES" -le "$BLACK_MAX" ]; then
+              echo "| Black | ✅ Pass | $BLACK_ISSUES | $BLACK_MAX |"
+            else
+              echo "| Black | ❌ Fail | $BLACK_ISSUES | $BLACK_MAX |"
+            fi
+
+            # isort
+            ISORT_ISSUES="${{ steps.isort.outputs.issues || 'N/A' }}"
+            ISORT_MAX="${{ inputs.max_isort_issues }}"
+            if [ "$ISORT_ISSUES" = "N/A" ] || [ "${{ inputs.run_isort }}" != "true" ]; then
+              echo "| isort | ⏭️ Skipped | - | - |"
+            elif [ "$ISORT_ISSUES" -le "$ISORT_MAX" ]; then
+              echo "| isort | ✅ Pass | $ISORT_ISSUES | $ISORT_MAX |"
+            else
+              echo "| isort | ❌ Fail | $ISORT_ISSUES | $ISORT_MAX |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ============================================================================
   # Test
