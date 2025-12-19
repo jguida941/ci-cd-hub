@@ -461,11 +461,11 @@ jobs:
 ```
 
 **Tasks:**
-- [ ] Create `.github/workflows/release.yml`
+- [x] Create `.github/workflows/release.yml` (pinned actionlint with checksum)
 - [ ] Cut initial tag `v1.0.0` after Phase 1 complete
 - [ ] Create floating `v1` tag
 - [ ] Document version policy in README
-- [ ] Update caller templates to use `@v1` not `@main`
+- [x] Update caller templates to use `@v1` not `@main`
 
 ---
 
@@ -1665,7 +1665,7 @@ grep "uses:.*java-ci.yml@v1" templates/repo/hub-java-ci.yml
 
 | # | Task | File | Status |
 |---|------|------|--------|
-| 3.9 | Create release workflow (actionlint, gh-release, floating tag) | `.github/workflows/release.yml` | [ ] |
+| 3.9 | Create release workflow (actionlint, gh-release, floating tag) | `.github/workflows/release.yml` | [x] |
 | 3.10 | Tag `v1.0.0` after Phase 1-2 complete and tested | Git tag | [ ] |
 | 3.11 | Create floating `v1` tag pointing to latest v1.x.x | Git tag | [ ] |
 
@@ -2293,7 +2293,7 @@ These policy decisions should be formalized in ADRs before v1.0.0 release:
 
 | ADR Topic | Current State | Decision Needed |
 |-----------|---------------|-----------------|
-| **Pinning/versioning strategy** | Callers use `@phase1b-workflow-schema` branch | When to move `@main` → `@v1`, how to handle breaking changes, floating tags policy |
+| **Pinning/versioning strategy** | Callers use `@v1` tag (floating major) | How to handle breaking changes, floating tags policy |
 | **Mutation testing policy** | `continue-on-error: true`, failures warn only | Should mutmut/pitest failures block the build or just warn? Default `run_mutmut`/`run_pitest` value? |
 | **Docker/Trivy fixture scope** | Dedicated docker fixtures created | Keep non-docker fixtures clean vs add Dockerfiles everywhere |
 | **Default tool gates** | Expensive scanners (`semgrep`, `trivy`, `codeql`) opt-in (default: false) | Lock in current defaults or change policy |

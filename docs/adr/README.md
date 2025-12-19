@@ -21,6 +21,8 @@ Existing:
 - [ADR-0016: Mutation Testing Policy](0016-mutation-testing-policy.md)
 - [ADR-0017: Scanner Tool Defaults](0017-scanner-tool-defaults.md)
 - [ADR-0018: Fixtures & Testing Strategy](0018-fixtures-testing-strategy.md)
+- [ADR-0019: Report Validation Policy](0019-report-validation-policy.md)
+- [ADR-0020: Schema Backward Compatibility](0020-schema-backward-compatibility.md)
 
 Template starter:
 ```markdown

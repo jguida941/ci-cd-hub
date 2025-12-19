@@ -65,7 +65,7 @@ Each caller workflow tests multiple fixtures with appropriate configurations:
 jobs:
   ci-passing:
     name: "Python Passing"
-    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@phase1b-workflow-schema
+    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
     with:
       workdir: 'python-passing'
       artifact_prefix: 'python-passing-'

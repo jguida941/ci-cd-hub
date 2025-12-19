@@ -12,7 +12,7 @@ With the migration to reusable workflows (ADR-0014), we need a clear policy for:
 4. When breaking changes warrant major version bumps
 5. Deprecation timeline for old versions
 
-Currently, workflows are referenced by branch (`@phase1b-workflow-schema`), which is not suitable for production use.
+Callers should pin to tagged releases (`@v1` floating or exact tag), not branches.
 
 ## Decision
 
