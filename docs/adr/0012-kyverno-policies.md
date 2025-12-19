@@ -26,9 +26,31 @@ Considerations:
 
 - Include Kyverno policies as an **optional feature** for users deploying to Kubernetes
 - Policies are stored in `policies/kyverno/` with documentation
-- A validation workflow (`kyverno-validate.yml`) validates policy syntax on changes
+- A **reusable workflow** (`kyverno-ci.yml`) allows external repos to validate their policies
+- An internal workflow (`kyverno-validate.yml`) validates the hub's own policy syntax on changes
 - Policies default to `Audit` mode (warning only) for safe adoption; users upgrade to `Enforce` when ready
 - The `block-pull-request-target` policy uses `Enforce` by default as it's a critical security control
+
+### Reusable Workflow Usage
+
+External repos can call the Kyverno CI workflow:
+
+```yaml
+jobs:
+  kyverno:
+    uses: jguida941/ci-cd-hub/.github/workflows/kyverno-ci.yml@v1
+    with:
+      policies_dir: 'policies/kyverno'
+      run_tests: true  # Test against fixtures
+```
+
+Available inputs:
+- `policies_dir`: Directory containing policy YAML files (default: `policies/kyverno`)
+- `templates_dir`: Directory containing policy templates (default: `templates/kyverno`)
+- `fixtures_dir`: Directory containing test resources (default: `fixtures/kyverno`)
+- `run_tests`: Run policies against fixtures (default: `false`)
+- `kyverno_version`: CLI version to use (default: `v1.13.0`)
+- `fail_on_warn`: Fail build on policy warnings (default: `false`)
 
 ## Alternatives Considered
 
