@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-12-19 - Property-Based Testing Support
+
+### Hypothesis (Python)
+- **New `run_hypothesis` input** (boolean, default: `true`) - Enable Hypothesis property-based testing
+- **Pass/fail gate** - Property tests fail the build if any test fails
+- **Example count tracking** - Shows "Hypothesis Examples: N" in Build Summary
+- **Installed automatically** - `hypothesis` package added when running pytest
+
+### jqwik (Java)
+- **New `run_jqwik` input** (boolean, default: `false`) - Enable jqwik property-based testing
+- **Integrated with Maven** - jqwik tests run via JUnit 5 during normal test phase
+- **Property test count tracking** - Shows "jqwik Property Tests: N" in Build Summary
+- **Pass/fail gate** - Property test failures fail the Maven build
+
+### Template Updates
+- Both `hub-python-ci.yml` and `hub-java-ci.yml` caller templates updated with matching inputs
+- Pushed to `ci-cd-hub-fixtures` and `java-spring-tutorials` repos
+
+---
+
 ## 2025-12-19 - Job Summary Improvements & Multi-Module Support
 
 ### Configuration Summary
