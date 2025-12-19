@@ -460,6 +460,26 @@ jobs:
             exit 1
           fi
 
+      - name: Enforce Checkstyle Threshold
+        if: always() && inputs.run_checkstyle
+        run: |
+          ISSUES="${{ steps.lint-results.outputs.checkstyle }}"
+          MAX="${{ inputs.max_checkstyle_errors }}"
+          if [ "${ISSUES:-0}" -gt "${MAX:-0}" ]; then
+            echo "::error::Checkstyle errors ($ISSUES) exceed max_checkstyle_errors ($MAX)"
+            exit 1
+          fi
+
+      - name: Enforce SpotBugs Threshold
+        if: always() && inputs.run_spotbugs
+        run: |
+          ISSUES="${{ steps.lint-results.outputs.spotbugs }}"
+          MAX="${{ inputs.max_spotbugs_bugs }}"
+          if [ "${ISSUES:-0}" -gt "${MAX:-0}" ]; then
+            echo "::error::SpotBugs bugs ($ISSUES) exceed max_spotbugs_bugs ($MAX)"
+            exit 1
+          fi
+
       # ---- Generate Summary ----
       - name: Generate Build Summary
         if: always()
@@ -645,7 +665,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Enforce OWASP Thresholds
-        if: inputs.run_owasp
+        if: always() && inputs.run_owasp
         run: |
           REPORT=$(find . -name "dependency-check-report.json" -print -quit)
           CRITICAL=0
