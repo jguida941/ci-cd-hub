@@ -231,6 +231,13 @@ jobs:
             else
               echo "| Working Directory | \`$WORKDIR\` |"
             fi
+            # Detect multi-module project
+            if [ -f "pom.xml" ] && grep -q "<modules>" pom.xml 2>/dev/null; then
+              MODULE_COUNT=$(grep -c "<module>" pom.xml 2>/dev/null || echo "0")
+              echo "| Project Type | Multi-module ($MODULE_COUNT modules) |"
+            else
+              echo "| Project Type | Single module |"
+            fi
             echo "| Artifact Retention | ${{ inputs.retention_days }} days |"
             echo ""
             echo "---"
@@ -311,15 +318,31 @@ jobs:
         id: coverage
         if: inputs.run_jacoco
         run: |
-          # Find JaCoCo report and extract coverage
-          COVERAGE=0
-          if [ -f "target/site/jacoco/jacoco.xml" ]; then
-            COVERAGE=$(grep -oP 'INSTRUCTION.*?counter.*?covered="\K[0-9]+' target/site/jacoco/jacoco.xml | head -1 || echo "0")
-            MISSED=$(grep -oP 'INSTRUCTION.*?counter.*?missed="\K[0-9]+' target/site/jacoco/jacoco.xml | head -1 || echo "0")
-            if [ $((COVERAGE + MISSED)) -gt 0 ]; then
-              COVERAGE=$((COVERAGE * 100 / (COVERAGE + MISSED)))
+          # Find ALL JaCoCo reports (supports single-module and multi-module projects)
+          TOTAL_COVERED=0
+          TOTAL_MISSED=0
+          FOUND_REPORTS=0
+
+          # Search recursively for all jacoco.xml files
+          while IFS= read -r REPORT; do
+            if [ -f "$REPORT" ]; then
+              FOUND_REPORTS=$((FOUND_REPORTS + 1))
+              COVERED=$(grep -oP 'INSTRUCTION.*?counter.*?covered="\K[0-9]+' "$REPORT" | head -1 || echo "0")
+              MISSED=$(grep -oP 'INSTRUCTION.*?counter.*?missed="\K[0-9]+' "$REPORT" | head -1 || echo "0")
+              TOTAL_COVERED=$((TOTAL_COVERED + ${COVERED:-0}))
+              TOTAL_MISSED=$((TOTAL_MISSED + ${MISSED:-0}))
+              echo "Found: $REPORT (covered=$COVERED, missed=$MISSED)"
             fi
+          done < <(find . -path "*/target/site/jacoco/jacoco.xml" -type f 2>/dev/null)
+
+          # Calculate overall coverage
+          COVERAGE=0
+          if [ $((TOTAL_COVERED + TOTAL_MISSED)) -gt 0 ]; then
+            COVERAGE=$((TOTAL_COVERED * 100 / (TOTAL_COVERED + TOTAL_MISSED)))
           fi
+
+          echo "Found $FOUND_REPORTS JaCoCo report(s)"
+          echo "Total: covered=$TOTAL_COVERED, missed=$TOTAL_MISSED"
           echo "percentage=$COVERAGE" >> "$GITHUB_OUTPUT"
           echo "Coverage: $COVERAGE%"
 
@@ -714,24 +737,37 @@ jobs:
             echo "::warning::PITest exited with code $PITEST_EXIT"
           fi
 
-          # Extract mutation score
+          # Extract mutation score from ALL modules (supports multi-module projects)
           # Note: PITest uses single quotes in XML (status='KILLED'), so we match both quote styles
-          SCORE=0
-          echo "Looking for pit-reports/mutations.xml..."
-          find . -name "mutations.xml" -type f 2>/dev/null || echo "No mutations.xml found"
+          TOTAL_KILLED=0
+          TOTAL_SURVIVED=0
+          FOUND_REPORTS=0
 
-          if [ -f "target/pit-reports/mutations.xml" ]; then
-            echo "Found mutations.xml"
-            KILLED=$(grep -cE "status=['\"]KILLED['\"]" target/pit-reports/mutations.xml || echo "0")
-            SURVIVED=$(grep -cE "status=['\"]SURVIVED['\"]" target/pit-reports/mutations.xml || echo "0")
-            TOTAL=$((KILLED + SURVIVED))
-            if [ "$TOTAL" -gt 0 ]; then
-              SCORE=$((KILLED * 100 / TOTAL))
+          echo "Looking for pit-reports/mutations.xml..."
+          while IFS= read -r REPORT; do
+            if [ -f "$REPORT" ]; then
+              FOUND_REPORTS=$((FOUND_REPORTS + 1))
+              KILLED=$(grep -cE "status=['\"]KILLED['\"]" "$REPORT" || echo "0")
+              SURVIVED=$(grep -cE "status=['\"]SURVIVED['\"]" "$REPORT" || echo "0")
+              TOTAL_KILLED=$((TOTAL_KILLED + ${KILLED:-0}))
+              TOTAL_SURVIVED=$((TOTAL_SURVIVED + ${SURVIVED:-0}))
+              echo "Found: $REPORT (killed=$KILLED, survived=$SURVIVED)"
             fi
-            echo "Killed: $KILLED, Survived: $SURVIVED"
-          else
-            echo "::warning::mutations.xml not found - PITest may not have run"
+          done < <(find . -path "*/target/pit-reports/mutations.xml" -type f 2>/dev/null)
+
+          # Calculate overall mutation score
+          SCORE=0
+          TOTAL=$((TOTAL_KILLED + TOTAL_SURVIVED))
+          if [ "$TOTAL" -gt 0 ]; then
+            SCORE=$((TOTAL_KILLED * 100 / TOTAL))
           fi
+
+          if [ "$FOUND_REPORTS" -eq 0 ]; then
+            echo "::warning::No mutations.xml found - PITest may not have run"
+          else
+            echo "Found $FOUND_REPORTS PITest report(s)"
+          fi
+          echo "Total: killed=$TOTAL_KILLED, survived=$TOTAL_SURVIVED"
           echo "score=$SCORE" >> "$GITHUB_OUTPUT"
           echo "Mutation Score: $SCORE%"
 
