@@ -100,6 +100,14 @@ on:
         description: 'Maximum allowed PMD violations (default: 0 = fail on any)'
         type: number
         default: 0
+      max_checkstyle_errors:
+        description: 'Maximum allowed Checkstyle errors (default: 0 = fail on any)'
+        type: number
+        default: 0
+      max_spotbugs_bugs:
+        description: 'Maximum allowed SpotBugs bugs (default: 0 = fail on any)'
+        type: number
+        default: 0
 
       # ---- Docker Settings ----
       docker_compose_file:
@@ -178,6 +186,56 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
+      - name: Configuration Summary
+        run: |
+          {
+            echo "# 🔧 Configuration Summary"
+            echo ""
+            echo "## Tools Enabled"
+            echo "| Category | Tool | Enabled |"
+            echo "|----------|------|---------|"
+            echo "| Build | ${{ inputs.build_tool }} | true |"
+            echo "| Testing | JaCoCo Coverage | ${{ inputs.run_jacoco }} |"
+            echo "| Testing | PITest | ${{ inputs.run_pitest }} |"
+            echo "| Linting | Checkstyle | ${{ inputs.run_checkstyle }} |"
+            echo "| Linting | PMD | ${{ inputs.run_pmd }} |"
+            echo "| Linting | SpotBugs | ${{ inputs.run_spotbugs }} |"
+            echo "| Security | OWASP Dependency-Check | ${{ inputs.run_owasp }} |"
+            echo "| Security | Semgrep | ${{ inputs.run_semgrep }} |"
+            echo "| Security | Trivy | ${{ inputs.run_trivy }} |"
+            echo "| Security | CodeQL | ${{ inputs.run_codeql }} |"
+            echo "| Container | Docker | ${{ inputs.run_docker }} |"
+            echo ""
+            echo "## Thresholds"
+            echo "| Setting | Value |"
+            echo "|---------|-------|"
+            echo "| Min Coverage | ${{ inputs.coverage_min }}% |"
+            echo "| Min Mutation Score | ${{ inputs.mutation_score_min }}% |"
+            echo "| OWASP CVSS Fail | ${{ inputs.owasp_cvss_fail }} |"
+            echo "| Max Critical Vulns | ${{ inputs.max_critical_vulns }} |"
+            echo "| Max High Vulns | ${{ inputs.max_high_vulns }} |"
+            echo "| Max Semgrep Findings | ${{ inputs.max_semgrep_findings }} |"
+            echo "| Max PMD Violations | ${{ inputs.max_pmd_violations }} |"
+            echo "| Max Checkstyle Errors | ${{ inputs.max_checkstyle_errors }} |"
+            echo "| Max SpotBugs Bugs | ${{ inputs.max_spotbugs_bugs }} |"
+            echo ""
+            echo "## Environment"
+            echo "| Setting | Value |"
+            echo "|---------|-------|"
+            echo "| Java Version | ${{ inputs.java_version }} |"
+            echo "| Build Tool | ${{ inputs.build_tool }} |"
+            WORKDIR="${{ inputs.workdir }}"
+            if [ "$WORKDIR" = "." ] || [ -z "$WORKDIR" ]; then
+              echo "| Working Directory | \`.\` (repo root) |"
+            else
+              echo "| Working Directory | \`$WORKDIR\` |"
+            fi
+            echo "| Artifact Retention | ${{ inputs.retention_days }} days |"
+            echo ""
+            echo "---"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build and Test
         id: build
@@ -819,45 +877,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: all-reports/
-
-      - name: Generate Configuration Summary
-        run: |
-          {
-            echo "## Configuration Summary"
-            echo ""
-            echo "### Tools Enabled"
-            echo "| Tool | Enabled |"
-            echo "|------|---------|"
-            echo "| jacoco | ${{ inputs.run_jacoco }} |"
-            echo "| checkstyle | ${{ inputs.run_checkstyle }} |"
-            echo "| spotbugs | ${{ inputs.run_spotbugs }} |"
-            echo "| pmd | ${{ inputs.run_pmd }} |"
-            echo "| owasp | ${{ inputs.run_owasp }} |"
-            echo "| pitest | ${{ inputs.run_pitest }} |"
-            echo "| semgrep | ${{ inputs.run_semgrep }} |"
-            echo "| trivy | ${{ inputs.run_trivy }} |"
-            echo "| docker | ${{ inputs.run_docker }} |"
-            echo "| codeql | ${{ inputs.run_codeql }} |"
-            echo ""
-            echo "### Thresholds"
-            echo "| Setting | Value |"
-            echo "|---------|-------|"
-            echo "| coverage_min | ${{ inputs.coverage_min }}% |"
-            echo "| mutation_score_min | ${{ inputs.mutation_score_min }}% |"
-            echo "| owasp_cvss_fail | ${{ inputs.owasp_cvss_fail }} |"
-            echo "| max_critical_vulns | ${{ inputs.max_critical_vulns }} |"
-            echo "| max_high_vulns | ${{ inputs.max_high_vulns }} |"
-            echo "| max_semgrep_findings | ${{ inputs.max_semgrep_findings }} |"
-            echo "| max_pmd_violations | ${{ inputs.max_pmd_violations }} |"
-            echo ""
-            echo "### Environment"
-            echo "| Setting | Value |"
-            echo "|---------|-------|"
-            echo "| java_version | ${{ inputs.java_version }} |"
-            echo "| build_tool | ${{ inputs.build_tool }} |"
-            echo "| workdir | ${{ inputs.workdir }} |"
-            echo "| retention_days | ${{ inputs.retention_days }} |"
-          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generate Combined Report
         run: |
