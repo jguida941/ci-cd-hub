@@ -214,7 +214,9 @@ jobs:
               #   -DnvdApiDelay=2500 - 2.5s delay between NVD API calls to avoid 403 rate limiting
               #   -DnvdMaxRetryCount=10 - retry failed API calls
               #   -Ddependencycheck.failOnError=false - don't fail build on vulnerabilities found
+              # shellcheck disable=SC2086 # ANALYSIS_GOALS intentionally unquoted for word splitting
               echo "Running analysis tools: $MVN_CMD -B -ntp -DskipTests -DnvdApiDelay=2500 -DnvdMaxRetryCount=10 -Ddependencycheck.failOnError=false $ANALYSIS_GOALS"
+              # shellcheck disable=SC2086 # ANALYSIS_GOALS intentionally unquoted for word splitting
               $MVN_CMD -B -ntp -DskipTests -DnvdApiDelay=2500 -DnvdMaxRetryCount=10 -Ddependencycheck.failOnError=false $ANALYSIS_GOALS || echo "Some analysis tools completed with errors"
             fi
           else

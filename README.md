@@ -29,10 +29,21 @@ flowchart LR
 | Workflow | Purpose | Trigger |
 |----------|---------|---------|
 | `hub-run-all.yml` | Central mode: clone each repo, run all tools, upload reports | push to main, schedule, manual |
-| `hub-orchestrator.yml` | Dispatch mode: trigger reusable workflows (`hub-*.yml`) in target repos | manual |
+| `hub-orchestrator.yml` | Dispatch mode: trigger reusable workflows in target repos | manual |
 | `smoke-test.yml` | Sanity check fast profiles against fixture repos | manual |
 | `config-validate.yml` | Validate `config/repos/*.yaml` against schema | push/PR |
-| `java-ci.yml` / `python-ci.yml` | Reusable workflows for dispatch mode | called by orchestrator |
+| `hub-self-check.yml` | Validate hub workflows and configs | push to main |
+| `release.yml` | Create GitHub releases and manage version tags | tag push `v*.*.*` |
+
+### Reusable Workflows
+
+External repos call these via `uses:` in their caller workflows:
+
+| Workflow | Purpose |
+|----------|---------|
+| `java-ci.yml` | Full Java CI: build, test, coverage, mutation, security scans |
+| `python-ci.yml` | Full Python CI: pytest, coverage, mutation, linting, security scans |
+| `kyverno-ci.yml` | Kubernetes policy validation (optional, for K8s deployments) |
 
 ## Running the Hub (central mode)
 ```bash
@@ -86,6 +97,48 @@ thresholds:
 - Mutation testing:
   - Java: runs PITest across all modules containing the plugin; aggregates all `mutations.xml` files.
   - Python: runs mutmut with coverage-driven selection; reports killed/survived counts.
+
+## Releases
+
+The hub uses semantic versioning. To create a release:
+
+```bash
+# Tag a new version
+git tag v1.0.0
+git push origin v1.0.0
+
+# This triggers release.yml which:
+# 1. Validates reusable workflows with actionlint
+# 2. Runs tests
+# 3. Creates a GitHub Release
+# 4. Updates floating major tag (v1 -> latest v1.x.x)
+```
+
+External repos should pin to the major version (e.g., `@v1`) for automatic minor/patch updates, or pin to exact version (e.g., `@v1.0.0`) for stability.
+
+## Kyverno Policies (Optional)
+
+For Kubernetes deployments, the hub includes Kyverno policies for runtime admission control:
+
+| Policy | Purpose |
+|--------|---------|
+| `block-pull-request-target` | Block dangerous GHA trigger |
+| `require-referrers` | Require SBOM/provenance annotations |
+| `secretless` | Block static secrets, enforce OIDC |
+| `verify-images` | Verify Cosign keyless signatures |
+
+Use the reusable `kyverno-ci.yml` workflow to validate your policies:
+
+```yaml
+jobs:
+  kyverno:
+    uses: jguida941/ci-cd-hub/.github/workflows/kyverno-ci.yml@v1
+    with:
+      policies_dir: 'policies/kyverno'
+      run_tests: true
+```
+
+See `docs/adr/0012-kyverno-policies.md` for details.
 
 ## Documentation
 Documentation is under `docs/` with the structure:
