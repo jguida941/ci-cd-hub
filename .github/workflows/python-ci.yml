@@ -353,12 +353,12 @@ jobs:
             if [ "${{ inputs.run_ruff }}" != "true" ]; then
               echo "| Ruff | ⏭️ Disabled | run_ruff=false | - |"
             else
-              RUFF_ISSUES="${{ steps.ruff.outputs.errors }}"
+              RUFF_ISSUES="${{ steps.ruff.outputs.errors || 0 }}"
               RUFF_MAX="${{ inputs.max_ruff_errors }}"
-              if [ "$RUFF_ISSUES" -le "$RUFF_MAX" ] 2>/dev/null; then
-                echo "| Ruff | ✅ Pass | $RUFF_ISSUES errors | $RUFF_MAX |"
+              if [ "${RUFF_ISSUES:-0}" -le "${RUFF_MAX:-0}" ] 2>/dev/null; then
+                echo "| Ruff | ✅ Pass | ${RUFF_ISSUES:-0} | ${RUFF_MAX:-0} |"
               else
-                echo "| Ruff | ❌ Fail | $RUFF_ISSUES errors | $RUFF_MAX |"
+                echo "| Ruff | ❌ Fail | ${RUFF_ISSUES:-0} | ${RUFF_MAX:-0} |"
               fi
             fi
 
@@ -366,14 +366,14 @@ jobs:
             if [ "${{ inputs.run_bandit }}" != "true" ]; then
               echo "| Bandit | ⏭️ Disabled | run_bandit=false | - |"
             else
-              BANDIT_HIGH="${{ steps.bandit.outputs.high }}"
-              BANDIT_MED="${{ steps.bandit.outputs.medium }}"
-              BANDIT_LOW="${{ steps.bandit.outputs.low }}"
+              BANDIT_HIGH="${{ steps.bandit.outputs.high || 0 }}"
+              BANDIT_MED="${{ steps.bandit.outputs.medium || 0 }}"
+              BANDIT_LOW="${{ steps.bandit.outputs.low || 0 }}"
               BANDIT_MAX="${{ inputs.max_high_vulns }}"
-              if [ "$BANDIT_HIGH" -le "$BANDIT_MAX" ] 2>/dev/null; then
-                echo "| Bandit | ✅ Pass | High:$BANDIT_HIGH Med:$BANDIT_MED Low:$BANDIT_LOW | High≤$BANDIT_MAX |"
+              if [ "${BANDIT_HIGH:-0}" -le "${BANDIT_MAX:-0}" ] 2>/dev/null; then
+                echo "| Bandit | ✅ Pass | ${BANDIT_HIGH:-0} high, ${BANDIT_MED:-0} med, ${BANDIT_LOW:-0} low | ${BANDIT_MAX:-0} |"
               else
-                echo "| Bandit | ❌ Fail | High:$BANDIT_HIGH Med:$BANDIT_MED Low:$BANDIT_LOW | High≤$BANDIT_MAX |"
+                echo "| Bandit | ❌ Fail | ${BANDIT_HIGH:-0} high, ${BANDIT_MED:-0} med, ${BANDIT_LOW:-0} low | ${BANDIT_MAX:-0} |"
               fi
             fi
 
@@ -381,12 +381,12 @@ jobs:
             if [ "${{ inputs.run_black }}" != "true" ]; then
               echo "| Black | ⏭️ Disabled | run_black=false | - |"
             else
-              BLACK_ISSUES="${{ steps.black.outputs.issues }}"
+              BLACK_ISSUES="${{ steps.black.outputs.issues || 0 }}"
               BLACK_MAX="${{ inputs.max_black_issues }}"
-              if [ "$BLACK_ISSUES" -le "$BLACK_MAX" ] 2>/dev/null; then
-                echo "| Black | ✅ Pass | $BLACK_ISSUES files | $BLACK_MAX |"
+              if [ "${BLACK_ISSUES:-0}" -le "${BLACK_MAX:-0}" ] 2>/dev/null; then
+                echo "| Black | ✅ Pass | ${BLACK_ISSUES:-0} | ${BLACK_MAX:-0} |"
               else
-                echo "| Black | ❌ Fail | $BLACK_ISSUES files | $BLACK_MAX |"
+                echo "| Black | ❌ Fail | ${BLACK_ISSUES:-0} | ${BLACK_MAX:-0} |"
               fi
             fi
 
@@ -394,12 +394,12 @@ jobs:
             if [ "${{ inputs.run_isort }}" != "true" ]; then
               echo "| isort | ⏭️ Disabled | run_isort=false | - |"
             else
-              ISORT_ISSUES="${{ steps.isort.outputs.issues }}"
+              ISORT_ISSUES="${{ steps.isort.outputs.issues || 0 }}"
               ISORT_MAX="${{ inputs.max_isort_issues }}"
-              if [ "$ISORT_ISSUES" -le "$ISORT_MAX" ] 2>/dev/null; then
-                echo "| isort | ✅ Pass | $ISORT_ISSUES files | $ISORT_MAX |"
+              if [ "${ISORT_ISSUES:-0}" -le "${ISORT_MAX:-0}" ] 2>/dev/null; then
+                echo "| isort | ✅ Pass | ${ISORT_ISSUES:-0} | ${ISORT_MAX:-0} |"
               else
-                echo "| isort | ❌ Fail | $ISORT_ISSUES files | $ISORT_MAX |"
+                echo "| isort | ❌ Fail | ${ISORT_ISSUES:-0} | ${ISORT_MAX:-0} |"
               fi
             fi
           } >> "$GITHUB_STEP_SUMMARY"
