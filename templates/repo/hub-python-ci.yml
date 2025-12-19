@@ -105,8 +105,7 @@ on:
 
 jobs:
   ci:
-    # TODO: Change to @v1 after tagging release
-    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@phase1b-workflow-schema
+    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
     with:
       python_version: ${{ inputs.python_version }}
       workdir: ${{ inputs.workdir }}

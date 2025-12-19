@@ -117,8 +117,7 @@ on:
 
 jobs:
   ci:
-    # TODO: Change to @v1 after tagging release
-    uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@phase1b-workflow-schema
+    uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@v1
     with:
       java_version: ${{ inputs.java_version }}
       build_tool: ${{ inputs.build_tool }}
