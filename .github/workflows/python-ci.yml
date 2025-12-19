@@ -514,10 +514,13 @@ jobs:
         if: inputs.run_hypothesis
         run: |
           # Run with hypothesis statistics to capture example counts
-          pytest --hypothesis-show-statistics -v 2>&1 | tee hypothesis-output.txt || true
+          # Property tests gate on pass/fail - build fails if any property test fails
+          pytest --hypothesis-show-statistics -v 2>&1 | tee hypothesis-output.txt
+          EXIT_CODE=${PIPESTATUS[0]}
           EXAMPLES=$(grep -oP '\d+(?= passing examples)' hypothesis-output.txt | tail -1 || echo 0)
           echo "examples=${EXAMPLES:-0}" >> "$GITHUB_OUTPUT"
           echo "Hypothesis: ${EXAMPLES:-0} passing examples"
+          exit $EXIT_CODE
 
       - name: Extract Coverage
         id: coverage
