@@ -1,0 +1,116 @@
+# ============================================================================
+# CI/CD Hub - Release Workflow
+# ============================================================================
+# Creates GitHub releases and manages version tags.
+#
+# Trigger: Push to tags matching v*.*.* (e.g., v1.0.0, v1.2.3)
+#
+# Actions:
+# 1. Validate reusable workflows with actionlint
+# 2. Run tests to ensure release quality
+# 3. Create GitHub Release with auto-generated notes
+# 4. Update floating major version tag (v1 -> latest v1.x.x)
+# ============================================================================
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install actionlint
+        run: |
+          bash <(curl -s https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          sudo mv actionlint /usr/local/bin/
+
+      - name: Validate reusable workflows
+        run: |
+          echo "Validating python-ci.yml..."
+          actionlint .github/workflows/python-ci.yml
+          echo "Validating java-ci.yml..."
+          actionlint .github/workflows/java-ci.yml
+          echo "All workflows valid!"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install pytest
+
+      - name: Run tests
+        run: |
+          pytest tests/ -v
+
+  release:
+    name: Create Release
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION (major: $MAJOR)"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          name: "CI/CD Hub ${{ steps.version.outputs.version }}"
+          body: |
+            ## What's New
+
+            See the [CHANGELOG](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for detailed changes.
+
+            ## Usage
+
+            Reference this release in your caller workflows:
+
+            ```yaml
+            uses: ${{ github.repository }}/.github/workflows/python-ci.yml@${{ steps.version.outputs.major }}
+            ```
+
+            Or pin to exact version:
+
+            ```yaml
+            uses: ${{ github.repository }}/.github/workflows/python-ci.yml@${{ steps.version.outputs.version }}
+            ```
+
+      - name: Update floating major tag
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          MAJOR=${{ steps.version.outputs.major }}
+
+          echo "Updating floating tag $MAJOR to point to $VERSION..."
+
+          # Delete local tag if exists
+          git tag -d $MAJOR 2>/dev/null || true
+
+          # Create new tag pointing to current commit
+          git tag $MAJOR
+
+          # Force push to update remote
+          git push -f origin $MAJOR
+
+          echo "Floating tag $MAJOR now points to $VERSION"
