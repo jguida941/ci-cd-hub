@@ -282,7 +282,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
     return 0
 
 
-def get_connected_repos() -> list[str]:
+def get_connected_repos(only_dispatch_enabled: bool = True) -> list[str]:
     """Get unique repos from hub config/repos/*.yaml."""
     repos_dir = hub_root() / "config" / "repos"
     seen: set[str] = set()
@@ -293,6 +293,8 @@ def get_connected_repos() -> list[str]:
         try:
             data = read_yaml(cfg_file)
             repo = data.get("repo", {})
+            if only_dispatch_enabled and repo.get("dispatch_enabled", True) is False:
+                continue
             owner = repo.get("owner", "")
             name = repo.get("name", "")
             if owner and name:
@@ -319,15 +321,22 @@ def cmd_setup_secrets(args: argparse.Namespace) -> int:
         print("Error: No token provided", file=sys.stderr)
         return 1
 
+    def set_secret(repo: str) -> tuple[bool, str]:
+        result = subprocess.run(
+            ["gh", "secret", "set", "HUB_DISPATCH_TOKEN", "-R", repo, "--body", "-"],
+            input=f"{token}\n",
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return False, result.stderr.strip()
+        return True, ""
+
     # Set on hub repo
     print(f"Setting HUB_DISPATCH_TOKEN on {hub_repo}...")
-    result = subprocess.run(
-        ["gh", "secret", "set", "HUB_DISPATCH_TOKEN", "-R", hub_repo, "--body", token],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        print(f"Failed: {result.stderr}", file=sys.stderr)
+    ok, error = set_secret(hub_repo)
+    if not ok:
+        print(f"Failed: {error}", file=sys.stderr)
         return 1
     print(f"  ✅ {hub_repo}")
 
@@ -337,17 +346,16 @@ def cmd_setup_secrets(args: argparse.Namespace) -> int:
         for repo in repos:
             if repo == hub_repo:
                 continue
-            result = subprocess.run(
-                ["gh", "secret", "set", "HUB_DISPATCH_TOKEN", "-R", repo, "--body", token],
-                capture_output=True,
-                text=True,
-            )
-            if result.returncode == 0:
+            ok, error = set_secret(repo)
+            if ok:
                 print(f"  ✅ {repo}")
             else:
-                print(f"  ❌ {repo} (no admin access)")
+                suffix = " (no admin access)"
+                if error:
+                    suffix = f" ({error})"
+                print(f"  ❌ {repo}{suffix}")
 
-    print("\nConnected repos requiring artifact access:")
+    print("\nConnected dispatch-enabled repos:")
     for repo in get_connected_repos():
         print(f"  - {repo}")
     print("\nEnsure PAT has 'repo' scope (classic) or Actions R/W (fine-grained) on all repos.")
