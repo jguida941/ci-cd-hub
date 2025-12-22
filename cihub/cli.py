@@ -1,0 +1,322 @@
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+import yaml
+from jsonschema import Draft7Validator
+
+from cihub import __version__
+
+
+GIT_REMOTE_RE = re.compile(
+    r"(?:github\.com[:/])(?P<owner>[^/]+)/(?P<repo>[^/.]+)(?:\.git)?$"
+)
+
+
+def hub_root() -> Path:
+    return Path(__file__).resolve().parents[1]
+
+
+def read_yaml(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} must be a mapping at top level")
+    return data
+
+
+def write_yaml(path: Path, data: dict[str, Any], dry_run: bool) -> None:
+    payload = yaml.safe_dump(
+        data, sort_keys=False, default_flow_style=False, allow_unicode=True
+    )
+    if dry_run:
+        print(f"# Would write: {path}")
+        print(payload)
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(payload, encoding="utf-8")
+
+
+def write_text(path: Path, content: str, dry_run: bool) -> None:
+    if dry_run:
+        print(f"# Would write: {path}")
+        print(content)
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+
+
+def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key in base:
+        if key in override:
+            b, o = base[key], override[key]
+            if isinstance(b, dict) and isinstance(o, dict):
+                result[key] = deep_merge(b, o)
+            else:
+                result[key] = o
+        else:
+            result[key] = base[key]
+    for key in override:
+        if key not in base:
+            result[key] = override[key]
+    return result
+
+
+def detect_language(repo_path: Path) -> tuple[str | None, list[str]]:
+    checks = {
+        "java": ["pom.xml", "build.gradle", "build.gradle.kts"],
+        "python": ["pyproject.toml", "requirements.txt", "setup.py"],
+    }
+    matches: dict[str, list[str]] = {"java": [], "python": []}
+    for language, files in checks.items():
+        for name in files:
+            if (repo_path / name).exists():
+                matches[language].append(name)
+
+    java_found = bool(matches["java"])
+    python_found = bool(matches["python"])
+
+    if java_found and not python_found:
+        return "java", matches["java"]
+    if python_found and not java_found:
+        return "python", matches["python"]
+    if java_found and python_found:
+        return None, matches["java"] + matches["python"]
+    return None, []
+
+
+def parse_repo_from_remote(url: str) -> tuple[str | None, str | None]:
+    match = GIT_REMOTE_RE.search(url)
+    if not match:
+        return None, None
+    return match.group("owner"), match.group("repo")
+
+
+def get_git_remote(repo_path: Path) -> str | None:
+    try:
+        output = subprocess.check_output(
+            ["git", "-C", str(repo_path), "config", "--get", "remote.origin.url"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        return output.strip() or None
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+
+def get_git_branch(repo_path: Path) -> str | None:
+    try:
+        output = subprocess.check_output(
+            ["git", "-C", str(repo_path), "symbolic-ref", "--short", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        return output.strip() or None
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+
+def build_repo_config(
+    language: str,
+    owner: str,
+    name: str,
+    branch: str,
+) -> dict[str, Any]:
+    template_path = hub_root() / "templates" / "repo" / ".ci-hub.yml"
+    base = read_yaml(template_path)
+
+    repo_block = base.get("repo", {}) if isinstance(base.get("repo"), dict) else {}
+    repo_block["owner"] = owner
+    repo_block["name"] = name
+    repo_block["language"] = language
+    repo_block["default_branch"] = branch
+    repo_block.setdefault("dispatch_workflow", "hub-ci.yml")
+    base["repo"] = repo_block
+
+    base["language"] = language
+
+    if language == "java":
+        base.pop("python", None)
+    elif language == "python":
+        base.pop("java", None)
+
+    base.setdefault("version", "1.0")
+    return base
+
+
+def render_caller_workflow(language: str) -> str:
+    templates_dir = hub_root() / "templates" / "repo"
+    if language == "java":
+        template_path = templates_dir / "hub-java-ci.yml"
+        replacement = "hub-java-ci.yml"
+    else:
+        template_path = templates_dir / "hub-python-ci.yml"
+        replacement = "hub-python-ci.yml"
+
+    content = template_path.read_text(encoding="utf-8")
+    content = content.replace(replacement, "hub-ci.yml")
+    header = "# Generated by cihub init - DO NOT EDIT\n"
+    return header + content
+
+
+def validate_config(config: dict[str, Any]) -> list[str]:
+    schema_path = hub_root() / "schema" / "ci-hub-config.schema.json"
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    validator = Draft7Validator(schema)
+    errors = []
+    for err in validator.iter_errors(config):
+        path = ".".join([str(p) for p in err.path]) or "<root>"
+        errors.append(f"{path}: {err.message}")
+    return sorted(errors)
+
+
+def resolve_language(repo_path: Path, override: str | None) -> tuple[str, list[str]]:
+    if override:
+        return override, []
+    detected, reasons = detect_language(repo_path)
+    if not detected:
+        reason_text = ", ".join(reasons) if reasons else "no language markers found"
+        raise ValueError(f"Unable to detect language ({reason_text}); use --language.")
+    return detected, reasons
+
+
+def cmd_detect(args: argparse.Namespace) -> int:
+    repo_path = Path(args.repo).resolve()
+    language, reasons = resolve_language(repo_path, args.language)
+    payload: dict[str, Any] = {"language": language}
+    if args.explain:
+        payload["reasons"] = reasons
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    repo_path = Path(args.repo).resolve()
+    language, _ = resolve_language(repo_path, args.language)
+
+    owner = args.owner or ""
+    name = args.name or ""
+    if not owner or not name:
+        remote = get_git_remote(repo_path)
+        if remote:
+            git_owner, git_name = parse_repo_from_remote(remote)
+            owner = owner or (git_owner or "")
+            name = name or (git_name or "")
+
+    if not name:
+        name = repo_path.name
+    if not owner:
+        owner = "unknown"
+        print("Warning: could not detect repo owner; set repo.owner manually.", file=sys.stderr)
+
+    branch = args.branch or get_git_branch(repo_path) or "main"
+
+    config = build_repo_config(language, owner, name, branch)
+    config_path = repo_path / ".ci-hub.yml"
+    write_yaml(config_path, config, args.dry_run)
+
+    workflow_path = repo_path / ".github" / "workflows" / "hub-ci.yml"
+    workflow_content = render_caller_workflow(language)
+    write_text(workflow_path, workflow_content, args.dry_run)
+
+    return 0
+
+
+def cmd_update(args: argparse.Namespace) -> int:
+    repo_path = Path(args.repo).resolve()
+    config_path = repo_path / ".ci-hub.yml"
+    existing = read_yaml(config_path) if config_path.exists() else {}
+
+    language = args.language or existing.get("language")
+    if not language:
+        language, _ = resolve_language(repo_path, None)
+
+    owner = args.owner or existing.get("repo", {}).get("owner", "")
+    name = args.name or existing.get("repo", {}).get("name", "")
+    branch = args.branch or existing.get("repo", {}).get("default_branch", "main")
+
+    if not name:
+        name = repo_path.name
+    if not owner:
+        owner = "unknown"
+        print("Warning: could not detect repo owner; set repo.owner manually.", file=sys.stderr)
+
+    base = build_repo_config(language, owner, name, branch)
+    merged = deep_merge(base, existing)
+    write_yaml(config_path, merged, args.dry_run)
+
+    workflow_path = repo_path / ".github" / "workflows" / "hub-ci.yml"
+    workflow_content = render_caller_workflow(language)
+    write_text(workflow_path, workflow_content, args.dry_run)
+    return 0
+
+
+def cmd_validate(args: argparse.Namespace) -> int:
+    repo_path = Path(args.repo).resolve()
+    config_path = repo_path / ".ci-hub.yml"
+    if not config_path.exists():
+        print(f"Config not found: {config_path}", file=sys.stderr)
+        return 2
+    config = read_yaml(config_path)
+    errors = validate_config(config)
+    if errors:
+        print("Validation failed:")
+        for err in errors:
+            print(f"  - {err}")
+        return 1
+    print("Config OK")
+    return 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="cihub", description="CI/CD Hub CLI")
+    parser.add_argument("--version", action="version", version=f"cihub {__version__}")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    detect = subparsers.add_parser("detect", help="Detect repo language and tools")
+    detect.add_argument("--repo", required=True, help="Path to repo")
+    detect.add_argument("--language", choices=["java", "python"], help="Override detection")
+    detect.add_argument("--explain", action="store_true", help="Show detection reasons")
+    detect.set_defaults(func=cmd_detect)
+
+    init = subparsers.add_parser("init", help="Generate .ci-hub.yml and hub-ci.yml")
+    init.add_argument("--repo", required=True, help="Path to repo")
+    init.add_argument("--language", choices=["java", "python"], help="Override detection")
+    init.add_argument("--owner", help="Repo owner (GitHub user/org)")
+    init.add_argument("--name", help="Repo name")
+    init.add_argument("--branch", help="Default branch (e.g., main)")
+    init.add_argument("--dry-run", action="store_true", help="Print output instead of writing")
+    init.set_defaults(func=cmd_init)
+
+    update = subparsers.add_parser("update", help="Refresh hub-ci.yml and .ci-hub.yml")
+    update.add_argument("--repo", required=True, help="Path to repo")
+    update.add_argument("--language", choices=["java", "python"], help="Override detection")
+    update.add_argument("--owner", help="Repo owner (GitHub user/org)")
+    update.add_argument("--name", help="Repo name")
+    update.add_argument("--branch", help="Default branch (e.g., main)")
+    update.add_argument("--dry-run", action="store_true", help="Print output instead of writing")
+    update.set_defaults(func=cmd_update)
+
+    validate = subparsers.add_parser("validate", help="Validate .ci-hub.yml against schema")
+    validate.add_argument("--repo", required=True, help="Path to repo")
+    validate.set_defaults(func=cmd_validate)
+
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

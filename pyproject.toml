@@ -24,6 +24,7 @@ dev = [
 [project.scripts]
 hub-config = "scripts.load_config:main"
 hub-report = "scripts.aggregate_reports:main"
+cihub = "cihub.__main__:main"
 
 [tool.ruff]
 line-length = 88

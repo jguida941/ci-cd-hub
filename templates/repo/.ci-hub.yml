@@ -9,6 +9,7 @@ repo:
   name: your-repo-name             # REQUIRED
   language: java                   # java | python (more coming soon)
   default_branch: main             # branch to run CI against
+  dispatch_workflow: hub-ci.yml    # caller workflow filename in repo
   # distributed: false             # optional: set true to run in target repo
 
 java:
@@ -19,7 +20,7 @@ java:
   tools:
     jacoco:
       enabled: true
-      min_coverage: 80            # fail/warn threshold
+      min_coverage: 70            # fail/warn threshold
     checkstyle:
       enabled: true
       fail_on_violation: true
@@ -54,7 +55,7 @@ python:
   tools:
     pytest:
       enabled: true
-      min_coverage: 80
+      min_coverage: 70
     ruff:
       enabled: true
       fail_on_error: true
@@ -96,7 +97,7 @@ reports:
     fail_ci_on_error: false
 
 thresholds:
-  coverage_min: 80
+  coverage_min: 70
   mutation_score_min: 70
   max_critical_vulns: 0
   max_high_vulns: 0

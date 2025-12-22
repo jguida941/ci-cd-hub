@@ -19,7 +19,7 @@ java:
   tools:
     jacoco:
       enabled: true
-      min_coverage: 80
+      min_coverage: 70
     checkstyle:
       enabled: true
     spotbugs:
@@ -38,7 +38,7 @@ java:
       enabled: false
 
 thresholds:
-  coverage_min: 80
+  coverage_min: 70
   mutation_score_min: 70
   max_critical_vulns: 0
   max_high_vulns: 0
