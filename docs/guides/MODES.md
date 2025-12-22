@@ -131,10 +131,10 @@ The hub dispatches `workflow_dispatch` events to each target repo, triggering th
 
 3. **Target Repos:**
    - Must have a workflow file with `workflow_dispatch` trigger that accepts hub inputs
-   - **Option A (Recommended):** Use official templates from `templates/java/java-ci-dispatch.yml` or `templates/python/python-ci-dispatch.yml`
+   - **Option A (Recommended):** Use `python -m cihub init --repo .` to generate `.ci-hub.yml` + `.github/workflows/hub-ci.yml`
    - **Option B:** Create your own workflow calling hub's reusable workflows
    - Workflow must produce `ci-report` artifact for aggregation
-   - Configure workflow filename via `repo.dispatch_workflow` (defaults: `java-ci-dispatch.yml` / `python-ci-dispatch.yml`)
+   - Configure workflow filename via `repo.dispatch_workflow` (default when using CLI: `hub-ci.yml`)
 
 4. **Hub Workflow:**
    - `hub-orchestrator.yml` permissions block:
@@ -146,12 +146,12 @@ The hub dispatches `workflow_dispatch` events to each target repo, triggering th
 
 ### Tools Available
 
-Distributed mode uses REUSABLE WORKFLOWS, which have fewer tools:
+Distributed mode uses the same reusable workflows as central mode and supports the full toolset:
 
-**Java:** JaCoCo, Checkstyle, SpotBugs, OWASP DC, PITest, CodeQL
-**Python:** pytest, Ruff, Bandit, pip-audit, mypy, CodeQL
+**Java:** JaCoCo, Checkstyle, SpotBugs, PMD, OWASP DC, PITest, jqwik, Semgrep, Trivy, CodeQL  
+**Python:** pytest, Ruff, Black, isort, mypy, Bandit, pip-audit, mutmut, Hypothesis, Semgrep, Trivy, CodeQL
 
-**NOT available in distributed:** PMD, Black, isort, mutmut, Hypothesis, Semgrep, Trivy
+**Limitation:** Docker inputs are not exposed in the standard caller due to GitHub’s 25‑input limit. Use central mode or a docker‑specific caller when needed.
 
 ### When to Use
 
@@ -163,28 +163,37 @@ Distributed mode uses REUSABLE WORKFLOWS, which have fewer tools:
 
 ### Setup Instructions
 
-1. **In each target repo**, add a dispatch workflow:
+1. **In each target repo**, add a caller workflow:
 
-   **Option A (Recommended):** Copy the official template:
+   **Option A (Recommended):** Generate with the CLI:
    ```bash
-   # Java
-   cp templates/java/java-ci-dispatch.yml /path/to/repo/.github/workflows/
-   # Python
-   cp templates/python/python-ci-dispatch.yml /path/to/repo/.github/workflows/
+   cd /path/to/repo
+   python -m cihub init --repo .
+   git add .ci-hub.yml .github/workflows/hub-ci.yml
+   git commit -m "Add hub CI caller"
+   git push
    ```
 
-   **Option B:** Create your own workflow calling hub's reusable workflows:
+   **Option B:** Copy the caller template and rename it:
+   ```bash
+   # Java
+   cp templates/repo/hub-java-ci.yml /path/to/repo/.github/workflows/hub-ci.yml
+   # Python
+   cp templates/repo/hub-python-ci.yml /path/to/repo/.github/workflows/hub-ci.yml
+   ```
+
+   **Option C:** Create your own workflow calling hub's reusable workflows:
    ```yaml
-   # .github/workflows/java-ci-dispatch.yml
+   # .github/workflows/hub-ci.yml
    name: Hub CI
    on:
      workflow_dispatch:
        inputs:
-         # ... (see templates/java/java-ci-dispatch.yml for full inputs)
+         # ... (see templates/repo/hub-java-ci.yml or hub-python-ci.yml for full inputs)
 
    jobs:
      ci:
-       uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@main
+       uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@v1
        with:
          java_version: ${{ inputs.java_version || '21' }}
          # ...
@@ -200,12 +209,12 @@ Distributed mode uses REUSABLE WORKFLOWS, which have fewer tools:
      language: java
      default_branch: main  # IMPORTANT: must be correct
      dispatch_enabled: true
-     dispatch_workflow: java-ci-dispatch.yml  # or python-ci-dispatch.yml
+     dispatch_workflow: hub-ci.yml
    ```
 
 3. **Set up permissions:**
    - Create a PAT with `repo` and `workflow` scopes
-   - Add as `HUB_DISPATCH_TOKEN` secret in hub repo
+   - Set `HUB_DISPATCH_TOKEN` via `python -m cihub setup-secrets --all` (recommended) or add manually
 
 4. **Run the orchestrator:**
    - Manually: Actions → `Hub Orchestrator` → Run workflow

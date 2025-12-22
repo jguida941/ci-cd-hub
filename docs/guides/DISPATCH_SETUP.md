@@ -8,50 +8,44 @@ Use this guide to enable cross-repo dispatch from the hub orchestrator.
 - Target repos have custom build requirements beyond hub capabilities.
 - If a repo is central-only (no workflows), set `repo.dispatch_enabled: false` in its hub config.
 
-## Dispatch Workflow Templates (Recommended)
+## Dispatch Workflow Callers (Recommended)
 
-The hub provides official dispatch workflow templates. Copy these to target repos to enable orchestrator dispatch without modifying existing workflows.
+The hub now uses a thin caller workflow (`hub-ci.yml`) that invokes the reusable workflows. This prevents drift and keeps inputs consistent.
 
-### Available Templates
+### Recommended: cihub CLI
 
-| Template | Location | For |
-|----------|----------|-----|
-| Java | `templates/java/java-ci-dispatch.yml` | Java/Maven/Gradle repos |
-| Python | `templates/python/python-ci-dispatch.yml` | Python repos |
-
-### Setup Steps
-
-1. **Copy template to target repo:**
-   ```bash
-   # Java
-   cp templates/java/java-ci-dispatch.yml /path/to/your-repo/.github/workflows/
-
-   # Python
-   cp templates/python/python-ci-dispatch.yml /path/to/your-repo/.github/workflows/
-   ```
-
-2. **Push to target repo:**
+1. **Generate caller + config in the target repo:**
    ```bash
    cd /path/to/your-repo
-   git add .github/workflows/*-ci-dispatch.yml
-   git commit -m "Add hub dispatch workflow"
+   python -m cihub init --repo .
+   ```
+   This creates:
+   - `.ci-hub.yml`
+   - `.github/workflows/hub-ci.yml`
+
+2. **Commit and push:**
+   ```bash
+   git add .ci-hub.yml .github/workflows/hub-ci.yml
+   git commit -m "Add hub CI caller"
    git push
    ```
 
-3. **Configure hub (optional - defaults work):**
-   ```yaml
-   # config/repos/your-repo.yaml
-   repo:
-     dispatch_enabled: true
-     dispatch_workflow: java-ci-dispatch.yml  # or python-ci-dispatch.yml
-   ```
+### Manual fallback (same result)
 
-The templates:
-- Only trigger on `workflow_dispatch` (won't affect existing push/PR workflows)
-- Accept all inputs the orchestrator sends
-- Run ALL available tools (controlled by config toggles)
-- Generate comprehensive `ci-report` artifacts for hub aggregation
-- Produce `report.json` with full tool metrics
+Copy the caller template and rename it to `hub-ci.yml`:
+```bash
+# Java
+cp templates/repo/hub-java-ci.yml /path/to/your-repo/.github/workflows/hub-ci.yml
+
+# Python
+cp templates/repo/hub-python-ci.yml /path/to/your-repo/.github/workflows/hub-ci.yml
+```
+
+### Legacy dispatch templates (deprecated)
+
+These are still present for migration but should not be used for new repos:
+- `templates/java/java-ci-dispatch.yml`
+- `templates/python/python-ci-dispatch.yml`
 
 ### What Tools Are Included
 
@@ -81,7 +75,7 @@ All tools are toggle-controlled via config. See [TOOLS.md](../reference/TOOLS.md
 
 ### report.json Format
 
-The templates generate a `report.json` artifact that the hub aggregates:
+The caller workflow generates a `report.json` artifact that the hub aggregates:
 
 ```json
 {
@@ -127,8 +121,8 @@ cihub setup-secrets
 # Set on hub + all connected repos
 cihub setup-secrets --all
 
-# Non-interactive
-cihub setup-secrets --token ghp_xxxx --all
+# Non-interactive (not recommended; exposes token in shell history)
+cihub setup-secrets --token <PAT> --all
 ```
 
 **Manual methods:**
@@ -137,16 +131,16 @@ cihub setup-secrets --token ghp_xxxx --all
 
 ## Configure repos
 - Hub config: set `repo.dispatch_enabled: false` for central-only repos (e.g., fixtures). Default is true.
-- Set `repo.dispatch_workflow` to specify the workflow file to dispatch to (default: `java-ci-dispatch.yml` or `python-ci-dispatch.yml` based on language).
-- Dispatchable repos must have a workflow with `workflow_dispatch` that accepts the hub inputs (use the official templates).
+- Set `repo.dispatch_workflow` to specify the workflow file to dispatch to (default when using CLI: `hub-ci.yml`).
+- Dispatchable repos must have a workflow with `workflow_dispatch` that accepts the hub inputs (use the caller templates).
 - Use `repo.run_group` (full/fixtures/smoke) and the `run_group` workflow input to limit which configs the hub runs.
 
 ## Artifact naming
 - Orchestrator uploads artifacts with repo-specific names to avoid collisions; keep unique names if adding artifacts.
 
 ## Troubleshooting
-- `Workflow does not have 'workflow_dispatch' trigger`: Target repo workflow missing `workflow_dispatch` trigger. Copy the official template to the target repo.
-- `Unexpected inputs provided`: Target workflow doesn't accept the inputs the hub sends. Use the official templates which accept all hub inputs.
+- `Workflow does not have 'workflow_dispatch' trigger`: Target repo workflow missing `workflow_dispatch` trigger. Copy the caller template to the target repo.
+- `Unexpected inputs provided`: Target workflow doesn't accept the inputs the hub sends. Use the caller templates which accept all hub inputs.
 - `Resource not accessible by integration`: token lacks `actions:write`/`contents:read` on target repo.
 - `404 workflow` / `Not Found`: target repo has no dispatchable workflow, or `dispatch_workflow` config points to wrong filename.
 - Artifact `409 Conflict`: artifacts are now named with repo/run id; keep names unique if adding more.
@@ -154,4 +148,5 @@ cihub setup-secrets --token ghp_xxxx --all
 
 ## Related
 - [ADR-0013: Dispatch Workflow Templates](../adr/0013-dispatch-workflow-templates.md)
+- [ADR-0014: Reusable Workflow Migration](../adr/0014-reusable-workflow-migration.md)
 - [TEMPLATES.md](TEMPLATES.md) - All available templates

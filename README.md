@@ -8,6 +8,7 @@ Centralized CI/CD for many repositories without copying workflow files into ever
 - Monorepo support via `repo.subdir`
 - Profiles and templates for fast, quality, security, minimal, coverage-gate, and compliance modes
 - Schema-validated configs with defaults and opt-in heavy tools
+- CLI (`cihub`) to generate `.ci-hub.yml` + `hub-ci.yml` and manage dispatch secrets
 - Fixture repos for continuous smoke coverage
 
 ## Architecture
@@ -60,10 +61,11 @@ gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub -f repos=java-spring-tuto
 
 ### Dispatch mode (optional)
 1) Create a PAT with scopes `repo` and `workflow`.  
-2) Add it as secret `HUB_DISPATCH_TOKEN` in the hub repo.  
-3) Ensure the target repo has a thin caller workflow (`.github/workflows/hub-python-ci.yml` or `hub-java-ci.yml`) pointing to `@v1`.  
-4) Set `repo.dispatch_workflow: hub-python-ci.yml` (or `hub-java-ci.yml`) in `config/repos/<repo>.yaml` and `dispatch_enabled: true`.  
-5) The orchestrator defaults to `hub-*.yml` and falls back only if a different `dispatch_workflow` is set.
+2) Set it as `HUB_DISPATCH_TOKEN` (recommended: `python -m cihub setup-secrets --all`).  
+3) In each target repo, generate the caller workflow:
+   - `python -m cihub init --repo .` (creates `.ci-hub.yml` + `.github/workflows/hub-ci.yml`)  
+4) Ensure `dispatch_enabled: true` in `config/repos/<repo>.yaml`. If the repo has `.ci-hub.yml`, its `dispatch_workflow` (default `hub-ci.yml`) is used; otherwise, set `dispatch_workflow: hub-ci.yml` in the hub config.  
+5) Legacy callers `hub-java-ci.yml` / `hub-python-ci.yml` are still supported during migration; set `dispatch_workflow` accordingly if used.
 
 ## Adding a Repository
 Create `config/repos/<name>.yaml`:

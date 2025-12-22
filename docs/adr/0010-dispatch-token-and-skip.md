@@ -24,7 +24,7 @@ cihub setup-secrets
 cihub setup-secrets --all
 
 # Non-interactive with token
-cihub setup-secrets --token ghp_xxxx --all
+cihub setup-secrets --token <PAT> --all  # Not recommended (token in shell history)
 ```
 
 The CLI reads connected repos from `config/repos/*.yaml` and sets the secret on each.

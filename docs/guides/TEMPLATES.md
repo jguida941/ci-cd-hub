@@ -6,16 +6,17 @@ Copy/paste starters that align with current workflows and schema.
 - Hub-side configs live in `config/repos/` (this repo).
 - Repo-local overrides live in `.ci-hub.yml` inside each target repo (highest precedence).
 - Profiles and examples are under `templates/`.
-- Dispatch workflow templates are under `templates/java/` and `templates/python/`.
+- Repo caller templates are under `templates/repo/` (recommended).
+- Legacy dispatch templates are under `templates/java/` and `templates/python/` (deprecated).
 
-## Dispatch Workflow Templates (NEW)
+## Repo Caller Templates (Recommended)
 
-For orchestrator mode, copy these to target repos to enable hub dispatch:
+For orchestrator mode, copy these to target repos and name the workflow `hub-ci.yml`:
 
 | Template | Location | Usage |
 |----------|----------|-------|
-| Java dispatch | `templates/java/java-ci-dispatch.yml` | Copy to `.github/workflows/` in Java repos |
-| Python dispatch | `templates/python/python-ci-dispatch.yml` | Copy to `.github/workflows/` in Python repos |
+| Java caller | `templates/repo/hub-java-ci.yml` | Copy to `.github/workflows/hub-ci.yml` in Java repos |
+| Python caller | `templates/repo/hub-python-ci.yml` | Copy to `.github/workflows/hub-ci.yml` in Python repos |
 
 These templates:
 - Only trigger on `workflow_dispatch` (won't affect existing CI)
@@ -23,6 +24,12 @@ These templates:
 - Generate `ci-report` artifacts for aggregation
 
 See [DISPATCH_SETUP.md](DISPATCH_SETUP.md) for full setup instructions.
+
+## Legacy Dispatch Templates (Deprecated)
+
+These full dispatch workflows are still present for migration but should not be used for new repos:
+- `templates/java/java-ci-dispatch.yml`
+- `templates/python/python-ci-dispatch.yml`
 
 ## Hub-side Repo Config Template
 `templates/hub/config/repos/repo-template.yaml` → copy to `config/repos/<repo>.yaml`

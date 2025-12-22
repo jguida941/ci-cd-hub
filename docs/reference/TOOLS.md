@@ -593,20 +593,21 @@ thresholds:
 
 ## Gaps and TODO
 
-### Dispatch Templates - Complete (Updated 2025-12-15)
+### Dispatch Callers - Current (Updated 2025-12-22)
 
-The dispatch workflow templates (`java-ci-dispatch.yml`, `python-ci-dispatch.yml`) now include ALL tools with full metric capture and aggregation. Tools that were previously "Central-only" are now available in dispatch mode.
+The caller workflow (`hub-ci.yml`) invokes the reusable workflows and exposes the full toolset for dispatch mode.
 
-**Fully Wired in Dispatch Templates:**
+**Fully supported in dispatch callers:**
 - PMD (Java)
 - Black (Python)
 - isort (Python)
 - mutmut (Python)
+- Hypothesis (Python)
 - Semgrep (both)
 - Trivy (both)
 
-**Still Central-Only:**
-- Hypothesis (Python property-based testing) - not typically needed in dispatch mode
+**Limitation:**
+- Docker inputs are not exposed in the standard caller due to GitHub’s 25-input limit. Use central mode or a docker-specific caller when needed.
 
 ### Aggregation - Complete (Updated 2025-12-15)
 

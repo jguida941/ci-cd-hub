@@ -55,27 +55,18 @@ gh workflow run hub-run-all.yml
 
 Use this if your repo needs its own runners, secrets, or you prefer repo-controlled CI.
 
-### Option A: Use Hub Dispatch Templates (Recommended - 5 minutes)
+### Option A: Use cihub CLI (Recommended - 5 minutes)
 
-Copy the official dispatch workflow template to your repo:
-
-```bash
-# For Java repos
-cp templates/java/java-ci-dispatch.yml /path/to/your-repo/.github/workflows/
-
-# For Python repos
-cp templates/python/python-ci-dispatch.yml /path/to/your-repo/.github/workflows/
-```
-
-Then push to your repo:
+Generate the caller workflow and repo-local config:
 ```bash
 cd /path/to/your-repo
-git add .github/workflows/*-ci-dispatch.yml
-git commit -m "Add hub dispatch workflow"
+python -m cihub init --repo .
+git add .ci-hub.yml .github/workflows/hub-ci.yml
+git commit -m "Add hub CI caller"
 git push
 ```
 
-Configure hub to dispatch to this repo:
+Configure hub to dispatch to this repo (if you are not relying on repo-local config):
 ```yaml
 # config/repos/my-repo.yaml
 repo:
@@ -83,10 +74,10 @@ repo:
   name: your-repo-name
   language: java
   dispatch_enabled: true
-  dispatch_workflow: java-ci-dispatch.yml
+  dispatch_workflow: hub-ci.yml
 ```
 
-**Benefits:** Templates accept all hub inputs, won't interfere with existing workflows, and generate proper artifacts for aggregation.
+**Benefits:** The generated caller accepts all hub inputs, stays in sync with the hub templates, and produces consistent artifacts for aggregation.
 
 ### Option B: Call Reusable Workflows (15 minutes)
 
