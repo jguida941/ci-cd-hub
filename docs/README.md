@@ -155,6 +155,6 @@ When adding new documentation:
 
 ## Precedence reminder
 - defaults.yaml -> config/repos/<repo>.yaml -> repo-local .ci-hub.yml (repo wins).
-- Dispatch mode (current): hub config is authoritative; repo-local .ci-hub.yml is ignored until a safe merge path is added.
+- Dispatch mode: hub config is merged with repo-local `.ci-hub.yml` (repo wins).
 - Profiles seed hub configs; they are not a runtime layer.
 - run_group can filter hub runs (full/fixtures/smoke).

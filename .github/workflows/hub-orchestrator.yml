@@ -172,11 +172,19 @@ jobs:
           MATRIX_CONFIG_FILE: ${{ matrix.config_file }}
           MATRIX_LANGUAGE: ${{ matrix.language }}
           MATRIX_SUBDIR: ${{ matrix.subdir }}
+          MATRIX_OWNER: ${{ matrix.owner }}
+          MATRIX_REPO: ${{ matrix.name }}
+          MATRIX_BRANCH: ${{ matrix.default_branch }}
+          MATRIX_DISPATCH_WORKFLOW: ${{ matrix.dispatch_workflow }}
           MATRIX_DISPATCH_ENABLED: ${{ matrix.dispatch_enabled }}
+          REPO_TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           python << 'EOF'
+          import base64
           import json
           import os
+          import urllib.error
+          import urllib.request
           import yaml
           from pathlib import Path
 
@@ -194,6 +202,47 @@ jobs:
               with open(config_file) as f:
                   repo_config = yaml.safe_load(f) or {}
 
+          # Load repo-local .ci-hub.yml (highest precedence) via GitHub API
+          repo_local = {}
+          owner = os.environ.get("MATRIX_OWNER", "").strip()
+          repo = os.environ.get("MATRIX_REPO", "").strip()
+          branch = os.environ.get("MATRIX_BRANCH", "").strip() or "main"
+          token = os.environ.get("REPO_TOKEN", "").strip()
+          if owner and repo and token:
+              url = f"https://api.github.com/repos/{owner}/{repo}/contents/.ci-hub.yml?ref={branch}"
+              req = urllib.request.Request(
+                  url,
+                  headers={
+                      "Authorization": f"token {token}",
+                      "Accept": "application/vnd.github+json",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=10) as resp:
+                      data = json.loads(resp.read().decode("utf-8"))
+                      content = data.get("content", "")
+                      if content:
+                          decoded = base64.b64decode(content).decode("utf-8")
+                          repo_local = yaml.safe_load(decoded) or {}
+              except urllib.error.HTTPError as exc:
+                  if exc.code != 404:
+                      print(f"Warning: failed to fetch .ci-hub.yml from {owner}/{repo}: {exc}")
+              except Exception as exc:
+                  print(f"Warning: error reading repo-local .ci-hub.yml: {exc}")
+
+          if repo_local and not isinstance(repo_local, dict):
+              print("Warning: repo-local .ci-hub.yml is not a mapping; ignoring.")
+              repo_local = {}
+
+          # Prevent repo-local config from overriding repo identity
+          if isinstance(repo_local, dict):
+              repo_block = repo_local.get("repo")
+              if isinstance(repo_block, dict):
+                  repo_block.pop("owner", None)
+                  repo_block.pop("name", None)
+                  repo_block.pop("language", None)
+                  repo_local["repo"] = repo_block
+
           # Deep merge (repo overrides defaults)
           def deep_merge(base, override):
               result = base.copy()
@@ -205,13 +254,17 @@ jobs:
               return result
 
           merged = deep_merge(defaults, repo_config)
+          if repo_local:
+              merged = deep_merge(merged, repo_local)
           language = os.environ.get("MATRIX_LANGUAGE", "java")
+          merged["language"] = language
 
           # Extract workflow inputs based on language
           inputs = {"language": language}
 
           # Optional subdir for monorepos
-          subdir = os.environ.get("MATRIX_SUBDIR", "").strip()
+          repo_meta = merged.get("repo", {}) if isinstance(merged.get("repo"), dict) else {}
+          subdir = (repo_meta.get("subdir") or os.environ.get("MATRIX_SUBDIR", "")).strip()
           if subdir:
               inputs["workdir"] = subdir
 
@@ -282,6 +335,9 @@ jobs:
           reports = merged.get("reports", {})
           inputs["retention_days"] = reports.get("retention_days", 30)
 
+          dispatch_workflow = repo_meta.get("dispatch_workflow") or os.environ.get("MATRIX_DISPATCH_WORKFLOW", "")
+          dispatch_enabled = repo_meta.get("dispatch_enabled", os.environ.get("MATRIX_DISPATCH_ENABLED", "true"))
+
           # Write outputs
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               for key, value in inputs.items():
@@ -289,6 +345,8 @@ jobs:
                       f.write(f"{key}={str(value).lower()}\n")
                   else:
                       f.write(f"{key}={value}\n")
+              f.write(f"dispatch_workflow={dispatch_workflow}\n")
+              f.write(f"dispatch_enabled={str(dispatch_enabled).lower()}\n")
 
           print(f"Config for ${{ matrix.name }}:")
           print(json.dumps(inputs, indent=2))
@@ -304,8 +362,8 @@ jobs:
             const repo = '${{ matrix.name }}';
             const language = '${{ matrix.language }}';
             const branch = '${{ matrix.default_branch }}';
-            const subdir = '${{ matrix.subdir || '' }}';
-            const dispatchEnabled = '${{ matrix.dispatch_enabled || '' }}'.toLowerCase() !== 'false';
+            const workdir = '${{ steps.repo-config.outputs.workdir }}';
+            const dispatchEnabled = '${{ steps.repo-config.outputs.dispatch_enabled || '' }}'.toLowerCase() !== 'false';
 
             if (!dispatchEnabled) {
               core.info(`Dispatch disabled for ${owner}/${repo}; skipping dispatch.`);
@@ -351,7 +409,9 @@ jobs:
               inputs.max_pmd_violations = asNumber('${{ steps.repo-config.outputs.max_pmd_violations }}', 0);
               inputs.max_semgrep_findings = asNumber('${{ steps.repo-config.outputs.max_semgrep_findings }}', 0);
               inputs.retention_days = asNumber('${{ steps.repo-config.outputs.retention_days }}', 30);
-              inputs.workdir = subdir || '';
+              if (workdir) {
+                inputs.workdir = workdir;
+              }
             } else {
               inputs.python_version = '${{ steps.repo-config.outputs.python_version }}' || '3.12';
               inputs.run_pytest = asBool('${{ steps.repo-config.outputs.run_pytest }}');
@@ -376,11 +436,13 @@ jobs:
               inputs.max_isort_issues = asNumber('${{ steps.repo-config.outputs.max_isort_issues }}', 0);
               inputs.max_semgrep_findings = asNumber('${{ steps.repo-config.outputs.max_semgrep_findings }}', 0);
               inputs.retention_days = asNumber('${{ steps.repo-config.outputs.retention_days }}', 30);
-              inputs.workdir = subdir || '';
+              if (workdir) {
+                inputs.workdir = workdir;
+              }
             }
 
             // Use configurable workflow name from matrix, with fallback to new hub-*-ci.yml (reusable workflow callers)
-            const workflowId = '${{ matrix.dispatch_workflow }}' || (language === 'java' ? 'hub-java-ci.yml' : 'hub-python-ci.yml');
+            const workflowId = '${{ steps.repo-config.outputs.dispatch_workflow }}' || (language === 'java' ? 'hub-java-ci.yml' : 'hub-python-ci.yml');
             const startedAt = Date.now();
 
             core.info(`Dispatching ${workflowId} on ${owner}/${repo}@${branch}`);

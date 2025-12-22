@@ -54,7 +54,7 @@ Configuration is merged with the following precedence (highest wins):
 3. Hub config/defaults.yaml     (global defaults)
 Profiles: templates/profiles/*.yaml are starting points; apply them into config/repos, then repo-local overrides win.
 
-Dispatch mode (current behavior): only hub-side config is used; repo-local `.ci-hub.yml` is ignored unless we add a safe checkout+merge path.
+Dispatch mode: repo-local `.ci-hub.yml` is merged over hub config when present (repo wins).
 ```
 
 **Example:** If `defaults.yaml` sets `java.tools.jacoco.min_coverage: 70` but `config/repos/my-app.yaml` sets it to `80`, the merged value is `80`.

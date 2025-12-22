@@ -236,5 +236,5 @@ If you use distributed execution (dispatching workflows in other repos), aggrega
 ## Gating and run groups
 - Tool execution is driven by config run_* flags.
 - Use run_group (full/fixtures/smoke/...) to filter hub runs.
-- Central mode: hub-run-all merges defaults + config/repos + repo-local .ci-hub.yml.
-- Dispatch mode (current): hub config is the source of truth; repo-local .ci-hub.yml is ignored unless we later add a safe checkout+merge path.
+- Central mode: hub-run-all currently uses defaults + config/repos (repo-local merge planned).
+- Dispatch mode: hub config is merged with repo-local `.ci-hub.yml` (repo wins).

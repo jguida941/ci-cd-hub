@@ -40,7 +40,7 @@
 
 ## Design Decisions Documented
 
-- **Dispatch mode**: Repo-local `.ci-hub.yml` is **not** honored in dispatch mode - hub inputs are authoritative. See ADR-0011 and ADR-0013.
+- **Dispatch mode**: Repo-local `.ci-hub.yml` is merged over hub config (repo wins). See ADR-0011 and ADR-0013.
 - **Kyverno**: Optional feature for Kubernetes policy enforcement. See `docs/guides/KYVERNO.md` and ADR-0012.
 - **Config precedence**: defaults.yaml → config/repos/*.yaml → .ci-hub.yml (repo wins). See ADR-0002.
 
