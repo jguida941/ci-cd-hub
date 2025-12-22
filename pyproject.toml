@@ -26,6 +26,9 @@ hub-config = "scripts.load_config:main"
 hub-report = "scripts.aggregate_reports:main"
 cihub = "cihub.__main__:main"
 
+[tool.setuptools]
+packages = ["cihub"]
+
 [tool.ruff]
 line-length = 88
 target-version = "py310"

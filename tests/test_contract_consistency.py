@@ -2,6 +2,7 @@ import copy
 import sys
 from pathlib import Path
 
+import json
 import yaml
 
 # Allow importing scripts as modules
@@ -10,6 +11,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.load_config import generate_workflow_inputs
+from scripts.validate_config import validate_config
 
 PYTHON_WORKFLOW = ROOT / ".github" / "workflows" / "python-ci.yml"
 JAVA_WORKFLOW = ROOT / ".github" / "workflows" / "java-ci.yml"
@@ -49,6 +51,19 @@ def build_config(language: str) -> dict:
     cfg["repo"] = {"owner": "test", "name": "example", "language": language}
     cfg["language"] = language
     return cfg
+
+
+def validate_against_schema(config: dict) -> list[str]:
+    schema_path = ROOT / "schema" / "ci-hub-config.schema.json"
+    schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    return validate_config(config, schema)
+
+
+def test_defaults_merge_validate_schema():
+    for language in ("java", "python"):
+        cfg = build_config(language)
+        errors = validate_against_schema(cfg)
+        assert not errors, f"Defaults+repo should validate for {language}: {errors}"
 
 
 def collect_generated_inputs(cfg: dict, include_java_docker: bool = False) -> set[str]:
