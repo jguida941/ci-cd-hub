@@ -4,6 +4,13 @@ This document summarizes the smoke test setup completed on 2025-12-14.
 
 ---
 
+## Latest Smoke Test Run
+
+- Status: Success
+- Run URL: https://github.com/jguida941/ci-cd-hub/actions/runs/20424144678
+
+---
+
 ## What Was Created
 
 ### 1. Documentation
@@ -72,9 +79,9 @@ Existing smoke test configs verified:
 - Threshold: 50% coverage
 
 Both repositories verified as:
-- ✅ Publicly accessible
-- ✅ Default branch is `main`
-- ✅ Ready for testing
+- Publicly accessible
+- Default branch is `main`
+- Ready for testing
 
 ### 4. Updated Documentation
 
@@ -111,13 +118,13 @@ Both repositories verified as:
 
 A successful smoke test will:
 
-1. ✅ Discover 2 repositories (Java + Python)
-2. ✅ Execute tests for both languages
-3. ✅ Generate coverage reports
-4. ✅ Run linting/style checks
-5. ✅ Upload artifacts
-6. ✅ Generate step summaries
-7. ✅ Complete with overall success status
+1. Discover 2 repositories (Java + Python)
+2. Execute tests for both languages
+3. Generate coverage reports
+4. Run linting/style checks
+5. Upload artifacts
+6. Generate step summaries
+7. Complete with overall success status
 
 ---
 
@@ -125,30 +132,29 @@ A successful smoke test will:
 
 After running smoke test:
 
-- [ ] Workflow status shows "Success"
-- [ ] Both test-repo jobs completed
-- [ ] Java job shows:
-  - [ ] Tests executed (count > 0)
-  - [ ] Coverage calculated (% > 0)
-  - [ ] Checkstyle ran
-  - [ ] SpotBugs ran
-- [ ] Python job shows:
-  - [ ] pytest ran (count > 0)
-  - [ ] Coverage calculated (% > 0)
-  - [ ] Ruff linting ran
-  - [ ] Black format check ran
-- [ ] Artifacts uploaded for both repos
-- [ ] Step summaries show metrics tables
-- [ ] Summary job shows total repo count = 2
+- [x] Workflow status shows "Success"
+- [x] Both test-repo jobs completed
+- [x] Java job shows:
+  - [x] Tests executed (count > 0)
+  - [x] Coverage calculated (% > 0)
+  - [x] Checkstyle ran
+  - [x] SpotBugs ran
+- [x] Python job shows:
+  - [x] pytest ran (count > 0)
+  - [x] Coverage calculated (% > 0)
+  - [x] Ruff linting ran
+  - [x] Black format check ran
+- [x] Artifacts uploaded for both repos
+- [x] Step summaries show metrics tables
+- [x] Summary job shows total repo count = 2
 
 ---
 
 ## Next Steps
 
 ### Immediate
-1. Run the smoke test workflow to verify everything works
-2. Check results against verification checklist
-3. Mark smoke test checkbox in `requirements/P0.md` if successful
+1. Record the run URL in this summary (done)
+2. Mark smoke test checkbox in `requirements/P0.md` if successful
 
 ### Future Improvements
 1. Consider creating dedicated fixture repositories for more predictable results
@@ -192,10 +198,10 @@ From `requirements/P0.md`:
 ```
 ## 4. Smoke Test
 
-- [ ] Run hub against 2-3 fixture repos (Java + Python)
-- [ ] Verify pass/fail detection works
-- [ ] Verify artifacts generated
-- [ ] Verify step summary accurate
+- [x] Run hub against 2-3 fixture repos (Java + Python)
+- [x] Verify pass/fail detection works
+- [x] Verify artifacts generated
+- [x] Verify step summary accurate
 ```
 
 **Status:** Ready to test
