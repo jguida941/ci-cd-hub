@@ -1,6 +1,6 @@
 # Workflows Reference
 
-> Extracted from plan.md. TODO: Verify against actual workflow files.
+> Verified against `.github/workflows/*.yml`. Update this doc when workflow triggers or inputs change.
 
 **Templates & Profiles:** For ready-made repo configs and tool profiles, see `templates/README.md` (apply via `python scripts/apply_profile.py ...`).
 
@@ -14,14 +14,17 @@ Clones each configured repository and runs build, tests, and quality tools in th
 
 ### Triggers
 - `workflow_dispatch` (manual)
-- `schedule` (nightly)
-- `push` to hub repo when `config/repos/*.yaml` changes
+- `schedule` (daily at 02:00 UTC)
+- `push` to main/master on `config/**` or `.github/workflows/hub-orchestrator.yml` changes
+- `schedule` (daily at 02:00 UTC)
+- `push` to main/master when `config/repos/*.yaml` changes
 
 ### Inputs
 
 | Input | Type | Meaning |
 |-------|------|---------|
 | `repos` | string | Comma-separated repo names to run. Empty means all repos in `config/repos/`. |
+| `run_group` | string | Filter by run group (`full`, `fixtures`, `smoke`, or comma-separated). |
 | `skip_mutation` | boolean | If true, skip mutation testing steps for faster execution. |
 
 ### Outputs and Artifacts
@@ -43,7 +46,7 @@ Runs security scanning across repos. Intended for periodic checks and higher cos
 
 ### Triggers
 - `workflow_dispatch` (manual)
-- `schedule` (weekly)
+- `schedule` (weekly, Sunday 03:00 UTC)
 
 ### Inputs
 
@@ -108,9 +111,30 @@ Validates all hub repo configs against the JSON schema on config/schema/script c
 - `workflow_dispatch`
 
 ### Steps (summary)
-- Install dependencies (`pip install -e .`)
-- Iterate `config/repos/*.yaml` and run `scripts/load_config.py --repo <name>` (schema validation)
-- Validate defaults via load_config
+- Install dependencies from `requirements-dev.txt` or `requirements.txt` (fallback to `pyyaml` + `jsonschema`)
+- Iterate `config/repos/*.yaml` and run `scripts/load_config.py --repo <name> --output workflow-inputs` (schema validation)
+- Validate defaults via `scripts/load_config.py --repo dummy --hub-root . --output workflow-inputs`
+
+---
+
+## Hub: Self-Check
+
+**File:** `.github/workflows/hub-self-check.yml`
+
+Validates hub scripts, tests, templates, and config integrity.
+
+### Triggers
+- `push` to main/master on `scripts/**`, `tests/**`, `templates/**`, `config/**`, `schema/**`, `pyproject.toml`, `requirements*.txt`, or the workflow file
+- `pull_request` touching the same paths
+- `workflow_dispatch`
+
+### Steps (summary)
+- Python syntax check (`scripts/*.py`)
+- Unit tests (`pytest tests/`)
+- Template validation (`tests/test_templates.py`)
+- Config validation (schema + defaults)
+- Matrix key verification
+- Combined summary
 
 ---
 
@@ -147,6 +171,38 @@ Quick validation test using minimal Java and Python repos to verify hub function
 
 ---
 
+## Kyverno: Validate Policies (Internal)
+
+**File:** `.github/workflows/kyverno-validate.yml`
+
+Validates Kyverno policy and template syntax for the hub repository. For external repos, use the reusable `kyverno-ci.yml` workflow.
+
+### Triggers
+- `push`/`pull_request` on `policies/kyverno/**` or `templates/kyverno/**`
+- `workflow_dispatch`
+
+### Outputs
+- Step summary with validated counts and failures
+
+---
+
+## Release
+
+**File:** `.github/workflows/release.yml`
+
+Creates GitHub releases and updates floating major tags (e.g., `v1`).
+
+### Triggers
+- `push` to tags matching `v*.*.*`
+
+### Steps (summary)
+- Validate reusable workflows with actionlint
+- Run tests
+- Create a GitHub Release with notes
+- Update floating major tag
+
+---
+
 ## Reusable Workflow: Java CI Pipeline
 
 **File:** `.github/workflows/java-ci.yml`
@@ -157,22 +213,12 @@ Reusable workflow that a repo can call via `workflow_call`. Useful for distribut
 - `workflow_call` (called from another workflow)
 
 ### Inputs
+See [CONFIG_REFERENCE.md](../reference/CONFIG_REFERENCE.md) for the full config field list, and `.github/workflows/java-ci.yml` for the authoritative workflow inputs. Categories include:
 
-| Input | Type | Meaning |
-|-------|------|---------|
-| `java_version` | string | JDK version for builds |
-| `build_tool` | string | `maven` or `gradle` |
-| `run_jacoco` | boolean | Enable JaCoCo coverage extraction |
-| `run_checkstyle` | boolean | Enable Checkstyle |
-| `run_spotbugs` | boolean | Enable SpotBugs |
-| `run_pmd` | boolean | Enable PMD |
-| `run_owasp` | boolean | Enable OWASP Dependency-Check |
-| `run_pitest` | boolean | Enable PITest mutation testing |
-| `run_codeql` | boolean | Enable CodeQL analysis |
-| `coverage_min` | number | Coverage minimum (warn or fail, depending on policy) |
-| `mutation_score_min` | number | Mutation score minimum (warn or fail) |
-| `owasp_cvss_fail` | number | Fail threshold for CVSS scores |
-| `retention_days` | number | Artifact retention period |
+- Environment: `java_version`, `build_tool`, `workdir`, `artifact_prefix`, `retention_days`
+- Tool flags: `run_*` (jacoco, checkstyle, spotbugs, owasp, pitest, jqwik, pmd, semgrep, trivy, codeql, docker)
+- Thresholds: `coverage_min`, `mutation_score_min`, `owasp_cvss_fail`, `max_*` (vulns, checkstyle errors, spotbugs bugs, pmd violations, semgrep findings)
+- Docker: `run_docker`, `docker_compose_file`, `docker_health_endpoint`
 
 ### Outputs and Artifacts
 - Artifacts: test reports, coverage reports, and tool-specific outputs
@@ -194,18 +240,11 @@ Reusable workflow that a repo can call via `workflow_call`. Runs lint, tests wit
 - `workflow_call` (called from another workflow)
 
 ### Inputs
+See [CONFIG_REFERENCE.md](../reference/CONFIG_REFERENCE.md) for the full config field list, and `.github/workflows/python-ci.yml` for the authoritative workflow inputs. Categories include:
 
-| Input | Type | Meaning |
-|-------|------|---------|
-| `python_version` | string | Python version to use |
-| `run_pytest` | boolean | Enable pytest and coverage report generation |
-| `run_ruff` | boolean | Enable Ruff lint |
-| `run_bandit` | boolean | Enable Bandit security scan |
-| `run_pip_audit` | boolean | Enable pip-audit dependency scan |
-| `run_mypy` | boolean | Enable mypy type checking |
-| `run_codeql` | boolean | Enable CodeQL analysis |
-| `coverage_min` | number | Coverage minimum (warn or fail) |
-| `retention_days` | number | Artifact retention period |
+- Environment: `python_version`, `workdir`, `artifact_prefix`, `retention_days`
+- Tool flags: `run_*` (pytest, mutmut, hypothesis, ruff, black, isort, mypy, bandit, pip_audit, semgrep, trivy, codeql, docker)
+- Thresholds: `coverage_min`, `mutation_score_min`, `max_*` (vulns, ruff errors, black issues, isort issues, semgrep findings)
 
 ### Outputs and Artifacts
 - Artifacts: `coverage.xml`, `htmlcov/`, `bandit-report.json`, pip-audit output

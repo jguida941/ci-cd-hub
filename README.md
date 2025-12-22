@@ -29,11 +29,13 @@ flowchart LR
 
 | Workflow | Purpose | Trigger |
 |----------|---------|---------|
-| `hub-run-all.yml` | Central mode: clone each repo, run all tools, upload reports | push to main, schedule, manual |
-| `hub-orchestrator.yml` | Dispatch mode: trigger reusable workflows in target repos | manual |
-| `smoke-test.yml` | Sanity check fast profiles against fixture repos | manual |
-| `config-validate.yml` | Validate `config/repos/*.yaml` against schema | push/PR |
-| `hub-self-check.yml` | Validate hub workflows and configs | push to main |
+| `hub-run-all.yml` | Central mode: clone each repo, run all tools, upload reports | workflow_dispatch; schedule (daily 02:00 UTC); push to main/master on `config/repos/*.yaml` changes |
+| `hub-orchestrator.yml` | Dispatch mode: trigger reusable workflows in target repos | workflow_dispatch; schedule (daily 02:00 UTC); push to main/master on `config/**` or workflow changes |
+| `hub-security.yml` | Security & supply chain scans across repos | workflow_dispatch; schedule (weekly, Sun 03:00 UTC) |
+| `smoke-test.yml` | Sanity check fast profiles against fixture repos | workflow_dispatch; PR on `config/repos/smoke-test-*.yaml` or workflow changes |
+| `config-validate.yml` | Validate `config/repos/*.yaml` against schema | push/PR on `config/**`, `schema/**`, `scripts/load_config.py`, workflow; workflow_dispatch |
+| `hub-self-check.yml` | Validate hub scripts/tests/templates/configs | push/PR on hub code paths; workflow_dispatch |
+| `kyverno-validate.yml` | Validate hub Kyverno policies and templates | push/PR on `policies/kyverno/**` or `templates/kyverno/**`; workflow_dispatch |
 | `release.yml` | Create GitHub releases and manage version tags | tag push `v*.*.*` |
 
 ### Reusable Workflows
