@@ -118,8 +118,22 @@ See [ADR-0013](../adr/0013-dispatch-workflow-templates.md#comprehensive-reportin
 3. Generate and copy the token.
 
 ## Add the secret to the hub repo
+
+**Using cihub CLI (recommended):**
+```bash
+# Set on hub repo only (prompts for PAT)
+cihub setup-secrets
+
+# Set on hub + all connected repos
+cihub setup-secrets --all
+
+# Non-interactive
+cihub setup-secrets --token ghp_xxxx --all
+```
+
+**Manual methods:**
 - GitHub UI: `ci-cd-hub` → Settings → Secrets and variables → Actions → New repository secret → Name `HUB_DISPATCH_TOKEN` → paste token.
-- CLI: `gh secret set HUB_DISPATCH_TOKEN -R jguida941/ci-cd-hub`
+- gh CLI: `gh secret set HUB_DISPATCH_TOKEN -R jguida941/ci-cd-hub`
 
 ## Configure repos
 - Hub config: set `repo.dispatch_enabled: false` for central-only repos (e.g., fixtures). Default is true.

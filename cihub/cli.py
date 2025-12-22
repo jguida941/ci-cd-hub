@@ -282,6 +282,78 @@ def cmd_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+def get_connected_repos() -> list[str]:
+    """Get unique repos from hub config/repos/*.yaml."""
+    repos_dir = hub_root() / "config" / "repos"
+    seen: set[str] = set()
+    repos: list[str] = []
+    for cfg_file in repos_dir.glob("*.yaml"):
+        if cfg_file.name.endswith(".disabled"):
+            continue
+        try:
+            data = read_yaml(cfg_file)
+            repo = data.get("repo", {})
+            owner = repo.get("owner", "")
+            name = repo.get("name", "")
+            if owner and name:
+                full = f"{owner}/{name}"
+                if full not in seen:
+                    seen.add(full)
+                    repos.append(full)
+        except Exception:
+            pass
+    return repos
+
+
+def cmd_setup_secrets(args: argparse.Namespace) -> int:
+    """Set HUB_DISPATCH_TOKEN on hub and optionally all connected repos."""
+    import getpass
+
+    hub_repo = args.hub_repo
+    token = args.token
+
+    if not token:
+        token = getpass.getpass("Enter GitHub PAT: ")
+
+    if not token:
+        print("Error: No token provided", file=sys.stderr)
+        return 1
+
+    # Set on hub repo
+    print(f"Setting HUB_DISPATCH_TOKEN on {hub_repo}...")
+    result = subprocess.run(
+        ["gh", "secret", "set", "HUB_DISPATCH_TOKEN", "-R", hub_repo, "--body", token],
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        print(f"Failed: {result.stderr}", file=sys.stderr)
+        return 1
+    print(f"  ✅ {hub_repo}")
+
+    if args.all:
+        print("\nSetting on connected repos...")
+        repos = get_connected_repos()
+        for repo in repos:
+            if repo == hub_repo:
+                continue
+            result = subprocess.run(
+                ["gh", "secret", "set", "HUB_DISPATCH_TOKEN", "-R", repo, "--body", token],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode == 0:
+                print(f"  ✅ {repo}")
+            else:
+                print(f"  ❌ {repo} (no admin access)")
+
+    print("\nConnected repos requiring artifact access:")
+    for repo in get_connected_repos():
+        print(f"  - {repo}")
+    print("\nEnsure PAT has 'repo' scope (classic) or Actions R/W (fine-grained) on all repos.")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="cihub", description="CI/CD Hub CLI")
     parser.add_argument("--version", action="version", version=f"cihub {__version__}")
@@ -318,6 +390,20 @@ def build_parser() -> argparse.ArgumentParser:
     validate = subparsers.add_parser("validate", help="Validate .ci-hub.yml against schema")
     validate.add_argument("--repo", required=True, help="Path to repo")
     validate.set_defaults(func=cmd_validate)
+
+    setup_secrets = subparsers.add_parser(
+        "setup-secrets", help="Set HUB_DISPATCH_TOKEN on hub and connected repos"
+    )
+    setup_secrets.add_argument(
+        "--hub-repo",
+        default="jguida941/ci-cd-hub",
+        help="Hub repository (default: jguida941/ci-cd-hub)",
+    )
+    setup_secrets.add_argument("--token", help="GitHub PAT (prompts if not provided)")
+    setup_secrets.add_argument(
+        "--all", action="store_true", help="Also set on all connected repos"
+    )
+    setup_secrets.set_defaults(func=cmd_setup_secrets)
 
     return parser
 
