@@ -22,7 +22,7 @@ Links: requirements/P0.md (must-have), requirements/P1.md (should-have), require
 - [x] Script injection vulnerability fixed (orchestrator uses env vars instead of direct interpolation)
 - [x] Trivy curl-pipe-shell replaced with official action (aquasecurity/trivy-action@0.28.0)
 - [x] Concurrency control added to hub-orchestrator.yml
-- [x] Expensive tools defaulted to false (mutmut, semgrep, trivy, codeql, pitest)
+- [x] Tool defaults documented and aligned with `config/defaults.yaml`
 - [x] hashFiles() bug fixed (moved Dockerfile check to step level)
 
 ## Nonfunctional (measure as we go)
@@ -34,15 +34,7 @@ Links: requirements/P0.md (must-have), requirements/P1.md (should-have), require
 ## Notes
 - Keep checkboxes honest; only mark `[x]` after verification.
 - ROADMAP should link to requirements; AGENTS should reflect current focus.
-- Smoke test plan: run `smoke-test.yml` or `hub-run-all.yml` against fixtures-*.yaml configs; capture run URLs and summaries in `audit.md` before flipping the P0 checkbox.
+- Smoke test run recorded in `docs/development/SMOKE_TEST_SETUP_SUMMARY.md`.
 
-## Remaining P0 Blocker
-**Smoke test execution** - Run hub against fixtures repo and record results:
-```bash
-# Option 1: Run smoke-test workflow
-gh workflow run smoke-test.yml -R jguida941/ci-cd-hub
-
-# Option 2: Run hub-run-all with fixtures filter
-gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub -f repos="fixtures-java-passing,fixtures-python-passing"
-```
-Then record run URLs in `audit.md` and mark smoke test complete.
+## P0 Blockers
+None. Smoke test completed: https://github.com/jguida941/ci-cd-hub/actions/runs/20424144678
