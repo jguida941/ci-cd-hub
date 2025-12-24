@@ -185,6 +185,9 @@ def generate_workflow_inputs(config: dict) -> dict:
         inputs["run_checkstyle"] = tools.get("checkstyle", {}).get("enabled", True)
         inputs["run_spotbugs"] = tools.get("spotbugs", {}).get("enabled", True)
         inputs["run_owasp"] = tools.get("owasp", {}).get("enabled", True)
+        inputs["use_nvd_api_key"] = tools.get("owasp", {}).get(
+            "use_nvd_api_key", True
+        )
         inputs["run_pitest"] = tools.get("pitest", {}).get("enabled", True)
         inputs["run_jqwik"] = tools.get("jqwik", {}).get("enabled", False)
         inputs["run_pmd"] = tools.get("pmd", {}).get("enabled", True)

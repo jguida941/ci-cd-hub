@@ -46,6 +46,10 @@ on:
         description: 'Run OWASP Dependency Check'
         type: boolean
         default: true
+      use_nvd_api_key:
+        description: 'Use NVD API key for faster OWASP scans'
+        type: boolean
+        default: true
       run_pmd:
         description: 'Run PMD'
         type: boolean
@@ -132,6 +136,7 @@ jobs:
       run_checkstyle: ${{ inputs.run_checkstyle }}
       run_spotbugs: ${{ inputs.run_spotbugs }}
       run_owasp: ${{ inputs.run_owasp }}
+      use_nvd_api_key: ${{ inputs.use_nvd_api_key }}
       run_pmd: ${{ inputs.run_pmd }}
       run_pitest: ${{ inputs.run_pitest }}
       run_jqwik: ${{ inputs.run_jqwik }}

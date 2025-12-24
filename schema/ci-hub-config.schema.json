@@ -168,7 +168,7 @@
           "properties": {
             "enabled": { "type": "boolean", "default": true },
             "fail_on_cvss": { "type": "integer", "minimum": 0, "maximum": 10, "default": 7 },
-            "nvd_api_key_required": { "type": "boolean", "default": false }
+            "use_nvd_api_key": { "type": "boolean", "default": true }
           }
         },
         "pitest": {
