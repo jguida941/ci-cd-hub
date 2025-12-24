@@ -46,6 +46,10 @@ on:
         description: 'Run OWASP Dependency Check'
         type: boolean
         default: true
+      use_nvd_api_key:
+        description: 'Use NVD API key for faster OWASP scans (requires NVD_API_KEY secret)'
+        type: boolean
+        default: true
       run_pitest:
         description: 'Run PITest mutation testing'
         type: boolean
@@ -228,11 +232,13 @@ jobs:
               #   -DnvdMaxRetryCount=10 - retry failed API calls
               #   -Ddependencycheck.failOnError=false - don't fail build on vulnerabilities found
               NVD_FLAGS=""
-              if [ -n "$NVD_API_KEY" ]; then
+              if [ "${{ inputs.use_nvd_api_key }}" = "true" ] && [ -n "$NVD_API_KEY" ]; then
                 NVD_FLAGS="-DnvdApiKey=$NVD_API_KEY"
                 echo "NVD API key configured - using accelerated vulnerability updates"
+              elif [ "${{ inputs.use_nvd_api_key }}" = "true" ]; then
+                echo "Warning: use_nvd_api_key=true but NVD_API_KEY secret not set - vulnerability updates will be slow"
               else
-                echo "Warning: No NVD API key - vulnerability updates will be slow"
+                echo "NVD API key disabled via config"
               fi
               # shellcheck disable=SC2086 # ANALYSIS_GOALS and NVD_FLAGS intentionally unquoted for word splitting
               echo "Running analysis tools: $MVN_CMD -B -ntp -DskipTests $NVD_FLAGS -DnvdApiDelay=2500 -DnvdMaxRetryCount=10 -Ddependencycheck.failOnError=false $ANALYSIS_GOALS"

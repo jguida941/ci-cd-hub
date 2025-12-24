@@ -44,7 +44,7 @@ java:
     owasp:
       enabled: true
       fail_on_cvss: 7  # fail if any vuln >= this score
-      nvd_api_key_required: true
+      use_nvd_api_key: true  # use NVD API key for faster scans (requires NVD_API_KEY secret)
 
     # Mutation Testing (expensive - disabled by default)
     pitest:
