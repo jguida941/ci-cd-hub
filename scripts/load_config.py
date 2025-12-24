@@ -164,16 +164,27 @@ def get_tool_config(config: dict, language: str, tool: str) -> dict:
 
 def generate_workflow_inputs(config: dict) -> dict:
     """
-    Generate inputs for GitHub Actions workflow based on config.
+    Generate inputs for GitHub Actions workflow dispatch.
 
-    Returns a flat dict suitable for workflow inputs.
+    Per ADR-0024, this returns:
+    - Dispatch inputs: tool toggles, essential settings, threshold_overrides_yaml
+    - Internal metadata: _dispatch_enabled, _run_group, _force_all_tools (prefixed with _)
+
+    Thresholds are bundled into 'threshold_overrides_yaml' to stay under
+    GitHub's 25-input limit.
+
+    Returns a flat dict. Keys prefixed with _ are for internal use, not dispatch.
     """
     # Determine language
     language = config.get("language") or config.get("repo", {}).get("language", "java")
 
-    inputs = {
+    inputs: dict[str, Any] = {
         "language": language,
+        "hub_correlation_id": "",
     }
+
+    # Collect thresholds to bundle into threshold_overrides_yaml
+    thresholds: dict[str, Any] = {}
 
     if language == "java":
         java = config.get("java", {})
@@ -181,13 +192,13 @@ def generate_workflow_inputs(config: dict) -> dict:
         inputs["build_tool"] = java.get("build_tool", "maven")
 
         tools = java.get("tools", {})
+
+        # Tool toggles (dispatch inputs)
         inputs["run_jacoco"] = tools.get("jacoco", {}).get("enabled", True)
         inputs["run_checkstyle"] = tools.get("checkstyle", {}).get("enabled", True)
         inputs["run_spotbugs"] = tools.get("spotbugs", {}).get("enabled", True)
         inputs["run_owasp"] = tools.get("owasp", {}).get("enabled", True)
-        inputs["use_nvd_api_key"] = tools.get("owasp", {}).get(
-            "use_nvd_api_key", True
-        )
+        inputs["use_nvd_api_key"] = tools.get("owasp", {}).get("use_nvd_api_key", True)
         inputs["run_pitest"] = tools.get("pitest", {}).get("enabled", True)
         inputs["run_jqwik"] = tools.get("jqwik", {}).get("enabled", False)
         inputs["run_pmd"] = tools.get("pmd", {}).get("enabled", True)
@@ -196,36 +207,28 @@ def generate_workflow_inputs(config: dict) -> dict:
         inputs["run_codeql"] = tools.get("codeql", {}).get("enabled", False)
         inputs["run_docker"] = tools.get("docker", {}).get("enabled", False)
 
-        # Thresholds
-        inputs["coverage_min"] = tools.get("jacoco", {}).get("min_coverage", 70)
-        inputs["mutation_score_min"] = tools.get("pitest", {}).get(
+        # Thresholds (bundled into threshold_overrides_yaml, not dispatch inputs)
+        thresholds["coverage_min"] = tools.get("jacoco", {}).get("min_coverage", 70)
+        thresholds["mutation_score_min"] = tools.get("pitest", {}).get(
             "min_mutation_score", 70
         )
-        inputs["owasp_cvss_fail"] = tools.get("owasp", {}).get("fail_on_cvss", 7)
-        inputs["max_checkstyle_errors"] = tools.get("checkstyle", {}).get(
+        thresholds["owasp_cvss_fail"] = tools.get("owasp", {}).get("fail_on_cvss", 7)
+        thresholds["max_checkstyle_errors"] = tools.get("checkstyle", {}).get(
             "max_errors", 0
         )
-        inputs["max_spotbugs_bugs"] = tools.get("spotbugs", {}).get("max_bugs", 0)
-        inputs["max_pmd_violations"] = tools.get("pmd", {}).get("max_violations", 0)
-        inputs["max_semgrep_findings"] = tools.get("semgrep", {}).get(
+        thresholds["max_spotbugs_bugs"] = tools.get("spotbugs", {}).get("max_bugs", 0)
+        thresholds["max_pmd_violations"] = tools.get("pmd", {}).get("max_violations", 0)
+        thresholds["max_semgrep_findings"] = tools.get("semgrep", {}).get(
             "max_findings", 0
         )
-
-        # Docker settings
-        if inputs["run_docker"]:
-            docker = tools.get("docker", {})
-            inputs["docker_compose_file"] = docker.get(
-                "compose_file", "docker-compose.yml"
-            )
-            inputs["docker_health_endpoint"] = docker.get(
-                "health_endpoint", "/actuator/health"
-            )
 
     elif language == "python":
         python = config.get("python", {})
         inputs["python_version"] = python.get("version", "3.12")
 
         tools = python.get("tools", {})
+
+        # Tool toggles (dispatch inputs)
         inputs["run_pytest"] = tools.get("pytest", {}).get("enabled", True)
         inputs["run_ruff"] = tools.get("ruff", {}).get("enabled", True)
         inputs["run_bandit"] = tools.get("bandit", {}).get("enabled", True)
@@ -240,44 +243,39 @@ def generate_workflow_inputs(config: dict) -> dict:
         inputs["run_codeql"] = tools.get("codeql", {}).get("enabled", False)
         inputs["run_docker"] = tools.get("docker", {}).get("enabled", False)
 
-        inputs["coverage_min"] = tools.get("pytest", {}).get("min_coverage", 70)
-        inputs["mutation_score_min"] = tools.get("mutmut", {}).get(
+        # Thresholds (bundled into threshold_overrides_yaml, not dispatch inputs)
+        thresholds["coverage_min"] = tools.get("pytest", {}).get("min_coverage", 70)
+        thresholds["mutation_score_min"] = tools.get("mutmut", {}).get(
             "min_mutation_score", 70
         )
-        inputs["max_ruff_errors"] = tools.get("ruff", {}).get("max_errors", 0)
-        inputs["max_black_issues"] = tools.get("black", {}).get("max_issues", 0)
-        inputs["max_isort_issues"] = tools.get("isort", {}).get("max_issues", 0)
-        inputs["max_semgrep_findings"] = tools.get("semgrep", {}).get(
+        # For Trivy CVSS gate - check trivy config, global thresholds, or default to 7
+        thresholds["owasp_cvss_fail"] = tools.get("trivy", {}).get("fail_on_cvss", 7)
+        thresholds["max_ruff_errors"] = tools.get("ruff", {}).get("max_errors", 0)
+        thresholds["max_black_issues"] = tools.get("black", {}).get("max_issues", 0)
+        thresholds["max_isort_issues"] = tools.get("isort", {}).get("max_issues", 0)
+        thresholds["max_semgrep_findings"] = tools.get("semgrep", {}).get(
             "max_findings", 0
         )
 
-    # Global thresholds (override tool defaults if provided)
-    thresholds = config.get("thresholds", {})
-    if "coverage_min" in thresholds:
-        inputs["coverage_min"] = thresholds.get(
-            "coverage_min",
-            inputs.get("coverage_min", 0),
-        )
-    if "mutation_score_min" in thresholds:
-        inputs["mutation_score_min"] = thresholds.get(
-            "mutation_score_min",
-            inputs.get("mutation_score_min", 0),
-        )
-    inputs["max_critical_vulns"] = thresholds.get("max_critical_vulns", 0)
-    inputs["max_high_vulns"] = thresholds.get("max_high_vulns", 0)
+    # Global thresholds override tool-specific ones
+    global_thresholds = config.get("thresholds", {})
+    if "coverage_min" in global_thresholds:
+        thresholds["coverage_min"] = global_thresholds["coverage_min"]
+    if "mutation_score_min" in global_thresholds:
+        thresholds["mutation_score_min"] = global_thresholds["mutation_score_min"]
+    if "owasp_cvss_fail" in global_thresholds:
+        thresholds["owasp_cvss_fail"] = global_thresholds["owasp_cvss_fail"]
+    thresholds["max_critical_vulns"] = global_thresholds.get("max_critical_vulns", 0)
+    thresholds["max_high_vulns"] = global_thresholds.get("max_high_vulns", 0)
 
-    # Dispatch flags and grouping
+    # Bundle thresholds into threshold_overrides_yaml (ADR-0024 escape hatch)
+    inputs["threshold_overrides_yaml"] = yaml.dump(thresholds, default_flow_style=False)
+
+    # Metadata for internal use (not dispatch inputs)
     repo = config.get("repo", {})
-    inputs["dispatch_enabled"] = repo.get("dispatch_enabled", True)
-    inputs["run_group"] = repo.get("run_group", "full")
-    inputs["force_all_tools"] = repo.get("force_all_tools", False)
-    inputs["hub_correlation_id"] = ""
-
-    # Reports
-    reports = config.get("reports", {})
-    inputs["retention_days"] = reports.get("retention_days", 30)
-    inputs["badges_enabled"] = reports.get("badges", {}).get("enabled", True)
-    inputs["codecov_enabled"] = reports.get("codecov", {}).get("enabled", True)
+    inputs["_dispatch_enabled"] = repo.get("dispatch_enabled", True)
+    inputs["_run_group"] = repo.get("run_group", "full")
+    inputs["_force_all_tools"] = repo.get("force_all_tools", False)
 
     return inputs
 

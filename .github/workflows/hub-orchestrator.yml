@@ -263,10 +263,16 @@ jobs:
           if subdir:
               inputs["workdir"] = subdir
 
+          # Bundle thresholds into threshold_overrides_yaml (ADR-0024)
+          global_thresholds = merged.get("thresholds", {})
+          threshold_bundle = {
+              "max_critical_vulns": global_thresholds.get("max_critical_vulns", 0),
+              "max_high_vulns": global_thresholds.get("max_high_vulns", 0),
+          }
+
           if language == "java":
               java = merged.get("java", {})
               tools = java.get("tools", {})
-              thresholds = merged.get("thresholds", {})
 
               inputs["java_version"] = java.get("version", "21")
               inputs["build_tool"] = java.get("build_tool", "maven")
@@ -281,13 +287,20 @@ jobs:
               inputs["run_pmd"] = tools.get("pmd", {}).get("enabled", True)
               inputs["run_semgrep"] = tools.get("semgrep", {}).get("enabled", True)
               inputs["run_trivy"] = tools.get("trivy", {}).get("enabled", True)
-              # NOTE: Thresholds removed from dispatch - set in caller template or .ci-hub.yml
-              # See ADR-0024 for rationale (GitHub 25-input limit)
+              inputs["run_docker"] = tools.get("docker", {}).get("enabled", False)
+
+              # Java-specific thresholds
+              threshold_bundle["coverage_min"] = tools.get("jacoco", {}).get("min_coverage", 70)
+              threshold_bundle["mutation_score_min"] = tools.get("pitest", {}).get("min_mutation_score", 70)
+              threshold_bundle["owasp_cvss_fail"] = tools.get("owasp", {}).get("fail_on_cvss", 7)
+              threshold_bundle["max_checkstyle_errors"] = tools.get("checkstyle", {}).get("max_errors", 0)
+              threshold_bundle["max_spotbugs_bugs"] = tools.get("spotbugs", {}).get("max_bugs", 0)
+              threshold_bundle["max_pmd_violations"] = tools.get("pmd", {}).get("max_violations", 0)
+              threshold_bundle["max_semgrep_findings"] = tools.get("semgrep", {}).get("max_findings", 0)
 
           elif language == "python":
               python = merged.get("python", {})
               tools = python.get("tools", {})
-              thresholds = merged.get("thresholds", {})
 
               inputs["python_version"] = python.get("version", "3.12")
               inputs["run_pytest"] = tools.get("pytest", {}).get("enabled", True)
@@ -302,8 +315,28 @@ jobs:
               inputs["run_hypothesis"] = tools.get("hypothesis", {}).get("enabled", True)
               inputs["run_semgrep"] = tools.get("semgrep", {}).get("enabled", True)
               inputs["run_trivy"] = tools.get("trivy", {}).get("enabled", True)
-              # NOTE: Thresholds removed from dispatch - set in caller template or .ci-hub.yml
-              # See ADR-0024 for rationale (GitHub 25-input limit)
+              inputs["run_docker"] = tools.get("docker", {}).get("enabled", False)
+
+              # Python-specific thresholds
+              threshold_bundle["coverage_min"] = tools.get("pytest", {}).get("min_coverage", 70)
+              threshold_bundle["mutation_score_min"] = tools.get("mutmut", {}).get("min_mutation_score", 70)
+              # For Trivy CVSS gate - check trivy config or default to 7
+              threshold_bundle["owasp_cvss_fail"] = tools.get("trivy", {}).get("fail_on_cvss", 7)
+              threshold_bundle["max_ruff_errors"] = tools.get("ruff", {}).get("max_errors", 0)
+              threshold_bundle["max_black_issues"] = tools.get("black", {}).get("max_issues", 0)
+              threshold_bundle["max_isort_issues"] = tools.get("isort", {}).get("max_issues", 0)
+              threshold_bundle["max_semgrep_findings"] = tools.get("semgrep", {}).get("max_findings", 0)
+
+          # Global thresholds override tool-specific (ADR-0024)
+          if "coverage_min" in global_thresholds:
+              threshold_bundle["coverage_min"] = global_thresholds["coverage_min"]
+          if "mutation_score_min" in global_thresholds:
+              threshold_bundle["mutation_score_min"] = global_thresholds["mutation_score_min"]
+          if "owasp_cvss_fail" in global_thresholds:
+              threshold_bundle["owasp_cvss_fail"] = global_thresholds["owasp_cvss_fail"]
+
+          # Bundle as YAML string for dispatch
+          inputs["threshold_overrides_yaml"] = yaml.dump(threshold_bundle, default_flow_style=False)
 
           # NOTE: retention_days and artifact_prefix removed from dispatch
           # Caller template has sensible defaults; edit there if needed
@@ -345,10 +378,13 @@ jobs:
                   ]:
                       inputs[key] = True
 
-          # Write outputs
+          # Write outputs - use heredoc for multi-line values (threshold_overrides_yaml)
           with open(os.environ["GITHUB_OUTPUT"], "a") as f:
               for key, value in inputs.items():
-                  if isinstance(value, bool):
+                  if key == "threshold_overrides_yaml":
+                      # Multi-line YAML requires heredoc syntax
+                      f.write(f"{key}<<EOF\n{value}EOF\n")
+                  elif isinstance(value, bool):
                       f.write(f"{key}={str(value).lower()}\n")
                   else:
                       f.write(f"{key}={value}\n")
@@ -394,6 +430,13 @@ jobs:
               return;
             }
 
+            // Threshold overrides bundled as YAML (ADR-0024)
+            // Use template literal for multi-line YAML (heredoc output preserves newlines)
+            const thresholdOverrides = `${{ steps.repo-config.outputs.threshold_overrides_yaml }}`.trim();
+            if (thresholdOverrides) {
+              inputs.threshold_overrides_yaml = thresholdOverrides;
+            }
+
             if (language === 'java') {
               inputs.java_version = '${{ steps.repo-config.outputs.java_version }}' || '21';
               inputs.build_tool = '${{ steps.repo-config.outputs.build_tool }}' || 'maven';
@@ -408,8 +451,7 @@ jobs:
               inputs.run_pmd = asBool('${{ steps.repo-config.outputs.run_pmd }}');
               inputs.run_semgrep = asBool('${{ steps.repo-config.outputs.run_semgrep }}');
               inputs.run_trivy = asBool('${{ steps.repo-config.outputs.run_trivy }}');
-              // NOTE: Thresholds removed from dispatch - set in caller template or .ci-hub.yml
-              // See ADR-0024 for rationale (GitHub 25-input limit)
+              inputs.run_docker = asBool('${{ steps.repo-config.outputs.run_docker }}');
               if (workdir) {
                 inputs.workdir = workdir;
               }
@@ -425,6 +467,7 @@ jobs:
                   "run_pmd",
                   "run_semgrep",
                   "run_trivy",
+                  "run_docker",
                 ].forEach((key) => {
                   inputs[key] = 'true';
                 });
@@ -443,8 +486,7 @@ jobs:
               inputs.run_hypothesis = asBool('${{ steps.repo-config.outputs.run_hypothesis }}');
               inputs.run_semgrep = asBool('${{ steps.repo-config.outputs.run_semgrep }}');
               inputs.run_trivy = asBool('${{ steps.repo-config.outputs.run_trivy }}');
-              // NOTE: Thresholds removed from dispatch - set in caller template or .ci-hub.yml
-              // See ADR-0024 for rationale (GitHub 25-input limit)
+              inputs.run_docker = asBool('${{ steps.repo-config.outputs.run_docker }}');
               if (workdir) {
                 inputs.workdir = workdir;
               }
@@ -462,6 +504,7 @@ jobs:
                   "run_hypothesis",
                   "run_semgrep",
                   "run_trivy",
+                  "run_docker",
                 ].forEach((key) => {
                   inputs[key] = 'true';
                 });

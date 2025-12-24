@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import pytest
+import yaml
 
 # Allow importing scripts as modules
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,15 +32,21 @@ def test_generate_workflow_inputs_java():
 
     inputs = generate_workflow_inputs(cfg)
 
-    assert inputs["language"] == "java"
-    assert inputs["java_version"] == "17"
-    assert inputs["build_tool"] == "maven"
-    assert inputs["run_pitest"] is True
-    assert inputs["run_semgrep"] is True
-    assert inputs["coverage_min"] == 80
-    assert inputs["mutation_score_min"] == 75
-    assert inputs["max_critical_vulns"] == 1
-    assert inputs["max_high_vulns"] == 2
+    # Tool toggles and essential settings - verify config drives behavior
+    assert inputs["language"] == cfg["language"]
+    assert inputs["java_version"] == cfg["java"]["version"]
+    assert inputs["build_tool"] == cfg["java"]["build_tool"]
+    assert inputs["run_pitest"] == cfg["java"]["tools"]["pitest"]["enabled"]
+    assert inputs["run_semgrep"] == cfg["java"]["tools"]["semgrep"]["enabled"]
+
+    # Thresholds are bundled into threshold_overrides_yaml (ADR-0024)
+    # Verify bundling respects config values, not hardcoded defaults
+    assert "threshold_overrides_yaml" in inputs
+    thresholds = yaml.safe_load(inputs["threshold_overrides_yaml"])
+    assert thresholds["coverage_min"] == cfg["java"]["tools"]["jacoco"]["min_coverage"]
+    assert thresholds["mutation_score_min"] == cfg["java"]["tools"]["pitest"]["min_mutation_score"]
+    assert thresholds["max_critical_vulns"] == cfg["thresholds"]["max_critical_vulns"]
+    assert thresholds["max_high_vulns"] == cfg["thresholds"]["max_high_vulns"]
 
 
 def test_generate_workflow_inputs_python():
@@ -59,14 +66,20 @@ def test_generate_workflow_inputs_python():
 
     inputs = generate_workflow_inputs(cfg)
 
-    assert inputs["language"] == "python"
-    assert inputs["python_version"] == "3.11"
-    assert inputs["run_mutmut"] is True
-    assert inputs["run_trivy"] is True
-    assert inputs["coverage_min"] == 85
-    assert inputs["mutation_score_min"] == 70
-    assert inputs["max_critical_vulns"] == 0
-    assert inputs["max_high_vulns"] == 0
+    # Tool toggles and essential settings - verify config drives behavior
+    assert inputs["language"] == cfg["language"]
+    assert inputs["python_version"] == cfg["python"]["version"]
+    assert inputs["run_mutmut"] == cfg["python"]["tools"]["mutmut"]["enabled"]
+    assert inputs["run_trivy"] == cfg["python"]["tools"]["trivy"]["enabled"]
+
+    # Thresholds are bundled into threshold_overrides_yaml (ADR-0024)
+    # Verify bundling respects config values, not hardcoded defaults
+    assert "threshold_overrides_yaml" in inputs
+    thresholds = yaml.safe_load(inputs["threshold_overrides_yaml"])
+    assert thresholds["coverage_min"] == cfg["python"]["tools"]["pytest"]["min_coverage"]
+    assert thresholds["mutation_score_min"] == cfg["python"]["tools"]["mutmut"]["min_mutation_score"]
+    assert thresholds["max_critical_vulns"] == cfg["thresholds"]["max_critical_vulns"]
+    assert thresholds["max_high_vulns"] == cfg["thresholds"]["max_high_vulns"]
 
 
 def test_load_config_merge_and_no_exit(tmp_path: Path):
