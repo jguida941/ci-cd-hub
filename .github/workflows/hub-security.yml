@@ -102,8 +102,6 @@ jobs:
           path: repo
           fetch-depth: 0
           token: ${{ secrets.HUB_DISPATCH_TOKEN || github.token }}
-          fetch-depth: 0
-          token: ${{ secrets.HUB_DISPATCH_TOKEN || github.token }}
 
       # ========================================
       # CODEQL ANALYSIS

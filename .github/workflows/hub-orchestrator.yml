@@ -332,7 +332,8 @@ jobs:
           inputs["retention_days"] = reports.get("retention_days", 30)
           config_basename = config_file.stem if config_file.exists() else repo
           inputs["artifact_prefix"] = f"{config_basename}-"
-          inputs["force_all_tools"] = repo_meta.get("force_all_tools", False)
+          force_all_tools = repo_meta.get("force_all_tools", False)
+          inputs["force_all_tools"] = force_all_tools
 
           dispatch_workflow = repo_meta.get("dispatch_workflow") or os.environ.get("MATRIX_DISPATCH_WORKFLOW", "")
           dispatch_enabled = repo_meta.get("dispatch_enabled", os.environ.get("MATRIX_DISPATCH_ENABLED", "true"))
