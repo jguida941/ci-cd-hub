@@ -102,32 +102,64 @@ The caller workflow generates a `report.json` artifact that the hub aggregates:
 
 See [ADR-0013](../adr/0013-dispatch-workflow-templates.md#comprehensive-reporting-updated-2025-12-15) for complete schema
 
-## Create a token (PAT)
-1. Go to GitHub → Settings → Developer settings → Personal access tokens.
-2. Classic PAT (simple): Generate new token (classic) → scopes: check `repo` and `workflow`.
-   Fine-grained PAT (stricter):
-   - Resource owner: your account
-   - Repository access: include `ci-cd-hub` and all target repos
-   - Permissions: Actions Read/Write, Contents Read, Metadata Read
-3. Generate and copy the token.
+## Secrets Setup
 
-## Add the secret to the hub repo
+The hub requires two secrets for full functionality:
+
+| Secret | Required For | Scope |
+|--------|--------------|-------|
+| `HUB_DISPATCH_TOKEN` | Distributed mode (cross-repo dispatch + artifact download) | Hub repo |
+| `NVD_API_KEY` | Fast OWASP Dependency Check scans (Java repos) | Java repos |
+
+### Step 1: Create a GitHub PAT
+
+1. Go to GitHub → Settings → Developer settings → Personal access tokens
+2. **Classic PAT (recommended):** Generate new token (classic) → scopes: `repo` + `workflow`
+3. **Fine-grained PAT (stricter):**
+   - Resource owner: your account
+   - Repository access: include hub + all target repos
+   - Permissions: Actions Read/Write, Contents Read, Metadata Read
+4. Generate and copy the token
+
+### Step 2: Set HUB_DISPATCH_TOKEN
 
 **Using cihub CLI (recommended):**
 ```bash
-# Set on hub repo only (prompts for PAT)
-cihub setup-secrets
+# Set on hub repo with verification (recommended)
+cihub setup-secrets --hub-repo owner/hub-repo --verify
 
-# Set on hub + all connected repos
-cihub setup-secrets --all
-
-# Non-interactive (not recommended; exposes token in shell history)
-cihub setup-secrets --token <PAT> --all
+# Also set on all connected repos
+cihub setup-secrets --hub-repo owner/hub-repo --all --verify
 ```
 
-**Manual methods:**
-- GitHub UI: `ci-cd-hub` → Settings → Secrets and variables → Actions → New repository secret → Name `HUB_DISPATCH_TOKEN` → paste token.
-- gh CLI: `gh secret set HUB_DISPATCH_TOKEN -R jguida941/ci-cd-hub`
+The CLI verifies:
+1. Token authenticates successfully
+2. Token has cross-repo access (can read artifacts from connected repos)
+
+**Manual method:**
+```bash
+gh secret set HUB_DISPATCH_TOKEN -R owner/hub-repo
+```
+
+### Step 3: Set NVD_API_KEY (Java repos)
+
+Without an NVD API key, OWASP Dependency Check downloads 300K+ vulnerability records without rate limiting, taking 30+ minutes. With a key, it takes ~2-3 minutes.
+
+1. Get a free key at: https://nvd.nist.gov/developers/request-an-api-key
+2. Set the secret on all Java repos:
+
+```bash
+# Using CLI (recommended) - automatically detects Java repos
+cihub setup-nvd --verify
+
+# Manual method
+gh secret set NVD_API_KEY -R owner/java-repo
+```
+
+The CLI:
+- Reads `config/repos/*.yaml` to find Java repos
+- Verifies the NVD key works before storing
+- Sets `NVD_API_KEY` on each Java repo
 
 ## Configure repos
 - Hub config: set `repo.dispatch_enabled: false` for central-only repos (e.g., fixtures). Default is true.

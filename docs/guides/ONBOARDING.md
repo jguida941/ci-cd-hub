@@ -55,6 +55,8 @@ gh workflow run hub-run-all.yml
 
 Use this if your repo needs its own runners, secrets, or you prefer repo-controlled CI.
 
+> **Important:** Distributed mode requires secrets setup. See [Secrets Setup](#secrets-setup) below.
+
 ### Option A: Use cihub CLI (Recommended - 5 minutes)
 
 Generate the caller workflow and repo-local config:
@@ -209,6 +211,33 @@ For Java projects, ensure your `pom.xml` has the necessary plugins:
   </plugins>
 </build>
 ```
+
+---
+
+## Secrets Setup
+
+For distributed mode and fast OWASP scans, set up these secrets:
+
+### HUB_DISPATCH_TOKEN (Distributed Mode)
+
+Required for cross-repo dispatch and artifact aggregation:
+
+```bash
+# Create a Classic PAT with 'repo' + 'workflow' scopes
+# Then set it on the hub:
+cihub setup-secrets --hub-repo owner/hub-repo --verify
+```
+
+### NVD_API_KEY (Java Repos)
+
+Without this, OWASP Dependency Check takes 30+ minutes. With it: 2-3 minutes.
+
+```bash
+# Get free key: https://nvd.nist.gov/developers/request-an-api-key
+cihub setup-nvd --verify
+```
+
+For complete setup instructions, see [DISPATCH_SETUP.md](DISPATCH_SETUP.md#secrets-setup).
 
 ---
 

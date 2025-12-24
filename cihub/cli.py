@@ -282,8 +282,16 @@ def cmd_validate(args: argparse.Namespace) -> int:
     return 0
 
 
-def get_connected_repos(only_dispatch_enabled: bool = True) -> list[str]:
-    """Get unique repos from hub config/repos/*.yaml."""
+def get_connected_repos(
+    only_dispatch_enabled: bool = True,
+    language_filter: str | None = None,
+) -> list[str]:
+    """Get unique repos from hub config/repos/*.yaml.
+
+    Args:
+        only_dispatch_enabled: If True, skip repos with dispatch_enabled=False
+        language_filter: If set, only return repos with this language (java/python)
+    """
     repos_dir = hub_root() / "config" / "repos"
     seen: set[str] = set()
     repos: list[str] = []
@@ -295,6 +303,10 @@ def get_connected_repos(only_dispatch_enabled: bool = True) -> list[str]:
             repo = data.get("repo", {})
             if only_dispatch_enabled and repo.get("dispatch_enabled", True) is False:
                 continue
+            if language_filter:
+                repo_lang = repo.get("language", "")
+                if repo_lang != language_filter:
+                    continue
             owner = repo.get("owner", "")
             name = repo.get("name", "")
             if owner and name:
@@ -436,6 +448,100 @@ def cmd_setup_secrets(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_setup_nvd(args: argparse.Namespace) -> int:
+    """Set NVD_API_KEY on Java repos for OWASP Dependency Check."""
+    import getpass
+    import urllib.error
+    import urllib.request
+
+    nvd_key = args.nvd_key
+
+    if not nvd_key:
+        print("NVD API Key is required for fast OWASP Dependency Check scans.")
+        print("Get a free key at: https://nvd.nist.gov/developers/request-an-api-key")
+        print()
+        nvd_key = getpass.getpass("Enter NVD API Key: ")
+
+    nvd_key = nvd_key.strip()
+
+    if not nvd_key:
+        print("Error: No NVD API key provided", file=sys.stderr)
+        return 1
+
+    if any(ch.isspace() for ch in nvd_key):
+        print("Error: Key contains whitespace; paste the raw key value.", file=sys.stderr)
+        return 1
+
+    def verify_nvd_key(key: str) -> tuple[bool, str]:
+        """Verify NVD API key by making a test request."""
+        # NVD API test - fetch a known CVE
+        test_url = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2021-44228"
+        req = urllib.request.Request(
+            test_url,
+            headers={
+                "apiKey": key,
+                "User-Agent": "cihub",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                if resp.status == 200:
+                    return True, "NVD API key is valid"
+        except urllib.error.HTTPError as exc:
+            if exc.code == 403:
+                return False, "invalid or expired API key"
+            if exc.code == 404:
+                return True, "API key accepted (test CVE not found)"
+            return False, f"HTTP {exc.code} {exc.reason}"
+        except Exception as exc:
+            return False, str(exc)
+        return True, "API key accepted"
+
+    if args.verify:
+        print("Verifying NVD API key...")
+        ok, message = verify_nvd_key(nvd_key)
+        if not ok:
+            print(f"NVD API key verification failed: {message}", file=sys.stderr)
+            return 1
+        print(f"NVD API key verified: {message}")
+
+    def set_secret(repo: str, secret_name: str, secret_value: str) -> tuple[bool, str]:
+        result = subprocess.run(
+            ["gh", "secret", "set", secret_name, "-R", repo],
+            input=secret_value,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return False, result.stderr.strip()
+        return True, ""
+
+    # Get Java repos
+    java_repos = get_connected_repos(only_dispatch_enabled=False, language_filter="java")
+
+    if not java_repos:
+        print("No Java repos found in config/repos/*.yaml")
+        print("NVD_API_KEY is only needed for Java repos (OWASP Dependency Check).")
+        return 0
+
+    print(f"\nSetting NVD_API_KEY on {len(java_repos)} Java repo(s)...")
+    success_count = 0
+    for repo in java_repos:
+        ok, error = set_secret(repo, "NVD_API_KEY", nvd_key)
+        if ok:
+            print(f"  ✅ {repo}")
+            success_count += 1
+        else:
+            suffix = " (no admin access)" if not error else f" ({error})"
+            print(f"  ❌ {repo}{suffix}")
+
+    print(f"\nSet NVD_API_KEY on {success_count}/{len(java_repos)} Java repos.")
+    if success_count < len(java_repos):
+        print("For repos you don't have admin access to, set the secret manually:")
+        print("  gh secret set NVD_API_KEY -R owner/repo")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="cihub", description="CI/CD Hub CLI")
     parser.add_argument("--version", action="version", version=f"cihub {__version__}")
@@ -491,6 +597,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Verify token with GitHub API before setting secrets",
     )
     setup_secrets.set_defaults(func=cmd_setup_secrets)
+
+    setup_nvd = subparsers.add_parser(
+        "setup-nvd", help="Set NVD_API_KEY on Java repos for OWASP Dependency Check"
+    )
+    setup_nvd.add_argument(
+        "--nvd-key", help="NVD API key (prompts if not provided)"
+    )
+    setup_nvd.add_argument(
+        "--verify",
+        action="store_true",
+        help="Verify NVD API key before setting secrets",
+    )
+    setup_nvd.set_defaults(func=cmd_setup_nvd)
 
     return parser
 
