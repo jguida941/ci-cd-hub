@@ -138,6 +138,11 @@ Test against fixture repos:
 - `ci-cd-hub-fixtures` - Contains Java passing/failing configs
 - `java-spring-tutorials` - Multi-module Maven project
 
+CLI integration tests:
+- `tests/test_cli_integration.py` exercises `cihub init/update/fix-pom` against a local clone of `ci-cd-hub-fixtures`
+- Tests copy a fixture subdir into a temp repo, then run CLI commands and assert plugin/dependency insertion
+- Set `CIHUB_FIXTURES_PATH=/path/to/ci-cd-hub-fixtures` if the repo isn't located next to `hub-release`
+
 Verification steps:
 1. `cihub validate --repo .` detects missing plugins
 2. `cihub fix-pom --repo . --dry-run` shows correct changes
