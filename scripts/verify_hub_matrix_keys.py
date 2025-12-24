@@ -13,6 +13,7 @@ WF = ROOT / ".github" / "workflows" / "hub-run-all.yml"
 
 MATRIX_REF_RE = re.compile(r"\bmatrix\.([A-Za-z_][A-Za-z0-9_]*)\b")
 ENTRY_LITERAL_KEY_RE = re.compile(r'\n\s*"([A-Za-z_][A-Za-z0-9_]*)"\s*:\s*')
+ENTRY_ASSIGN_RE = re.compile(r'\bentry\[\s*"([A-Za-z_][A-Za-z0-9_]*)"\s*\]')
 FOR_KEY_TUPLE_RE = re.compile(r"for key in\s*\(\s*(.*?)\s*\)\s*:", re.S)
 QUOTED_KEY_RE = re.compile(r'"([A-Za-z_][A-Za-z0-9_]*)"')
 
@@ -27,6 +28,7 @@ def main() -> int:
     referenced = set(MATRIX_REF_RE.findall(text))
 
     emitted = set(ENTRY_LITERAL_KEY_RE.findall(text))
+    emitted.update(ENTRY_ASSIGN_RE.findall(text))
 
     for match in FOR_KEY_TUPLE_RE.finditer(text):
         emitted.update(QUOTED_KEY_RE.findall(match.group(1)))

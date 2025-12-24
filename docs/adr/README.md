@@ -23,6 +23,7 @@ Existing:
 - [ADR-0018: Fixtures & Testing Strategy](0018-fixtures-testing-strategy.md)
 - [ADR-0019: Report Validation Policy](0019-report-validation-policy.md)
 - [ADR-0020: Schema Backward Compatibility](0020-schema-backward-compatibility.md)
+- [ADR-0021: Java POM Compatibility and CLI Enforcement](0021-java-pom-compatibility.md)
 
 Template starter:
 ```markdown

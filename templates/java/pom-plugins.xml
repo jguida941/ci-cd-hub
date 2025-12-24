@@ -1,0 +1,95 @@
+<!--
+  CI/CD Hub - Maven Plugin Snippets (config-driven)
+  ================================================
+  Add only the plugins for tools enabled in .ci-hub.yml.
+
+  For multi-module projects: add to the PARENT pom.xml under <build><plugins>.
+
+  IMPORTANT: <pluginManagement> only defines configuration; <plugins> executes.
+  Keep repo-specific rules in the repo (e.g., checkstyle.xml, PMD ruleset).
+-->
+
+<!-- JaCoCo - Code Coverage (enabled by default) -->
+<plugin>
+  <groupId>org.jacoco</groupId>
+  <artifactId>jacoco-maven-plugin</artifactId>
+  <version>0.8.11</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>prepare-agent</goal>
+      </goals>
+    </execution>
+    <execution>
+      <id>report</id>
+      <phase>test</phase>
+      <goals>
+        <goal>report</goal>
+      </goals>
+    </execution>
+  </executions>
+</plugin>
+
+<!-- Checkstyle - Code Style (enabled by default) -->
+<!-- Optional: add <configuration><configLocation>path/to/checkstyle.xml</configLocation></configuration> -->
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-checkstyle-plugin</artifactId>
+  <version>3.3.1</version>
+</plugin>
+
+<!-- SpotBugs - Bug Detection (enabled by default) -->
+<plugin>
+  <groupId>com.github.spotbugs</groupId>
+  <artifactId>spotbugs-maven-plugin</artifactId>
+  <version>4.8.3.1</version>
+  <configuration>
+    <xmlOutput>true</xmlOutput>
+  </configuration>
+</plugin>
+
+<!-- PMD - Static Analysis (enabled by default) -->
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-pmd-plugin</artifactId>
+  <version>3.23.0</version>
+  <configuration>
+    <rulesets>
+      <ruleset>rulesets/java/quickstart.xml</ruleset>
+    </rulesets>
+  </configuration>
+</plugin>
+
+<!-- OWASP Dependency Check - Vulnerability Scanning (enabled by default) -->
+<plugin>
+  <groupId>org.owasp</groupId>
+  <artifactId>dependency-check-maven</artifactId>
+  <version>9.0.9</version>
+  <configuration>
+    <formats>
+      <format>HTML</format>
+      <format>JSON</format>
+    </formats>
+  </configuration>
+</plugin>
+
+<!-- PITest - Mutation Testing (enabled by default, expensive) -->
+<!-- Optional: set targetClasses/targetTests to your base package -->
+<plugin>
+  <groupId>org.pitest</groupId>
+  <artifactId>pitest-maven</artifactId>
+  <version>1.15.3</version>
+  <dependencies>
+    <dependency>
+      <groupId>org.pitest</groupId>
+      <artifactId>pitest-junit5-plugin</artifactId>
+      <version>1.2.1</version>
+    </dependency>
+  </dependencies>
+</plugin>
+
+<!--
+  Tools that do NOT require pom.xml changes:
+  - CodeQL, Semgrep, Trivy, Docker (run in GitHub Actions)
+  - jqwik is a dependency, not a Maven plugin
+-->

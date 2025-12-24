@@ -169,48 +169,16 @@ java:
 
 ## Java: Required Maven Plugins
 
-For Java projects, ensure your `pom.xml` has the necessary plugins:
+For Java projects, ensure your parent `pom.xml` has the necessary plugins in `<build><plugins>` (not just `<pluginManagement>`).
 
-```xml
-<build>
-  <plugins>
-    <!-- JaCoCo for coverage -->
-    <plugin>
-      <groupId>org.jacoco</groupId>
-      <artifactId>jacoco-maven-plugin</artifactId>
-      <version>0.8.11</version>
-    </plugin>
+Use the config-driven snippets in `templates/java/pom-plugins.xml` and include only the plugins for tools you enable in `.ci-hub.yml`.
+For jqwik, use `templates/java/pom-dependencies.xml` and add the dependency to module `pom.xml` files.
 
-    <!-- Checkstyle -->
-    <plugin>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-checkstyle-plugin</artifactId>
-      <version>3.3.1</version>
-    </plugin>
-
-    <!-- SpotBugs -->
-    <plugin>
-      <groupId>com.github.spotbugs</groupId>
-      <artifactId>spotbugs-maven-plugin</artifactId>
-      <version>4.8.3.1</version>
-    </plugin>
-
-    <!-- OWASP Dependency Check (optional) -->
-    <plugin>
-      <groupId>org.owasp</groupId>
-      <artifactId>dependency-check-maven</artifactId>
-      <version>9.0.9</version>
-    </plugin>
-
-    <!-- PITest Mutation Testing (optional) -->
-    <plugin>
-      <groupId>org.pitest</groupId>
-      <artifactId>pitest-maven</artifactId>
-      <version>1.15.3</version>
-    </plugin>
-  </plugins>
-</build>
-```
+Notes:
+- If you use Checkstyle with a repo-specific ruleset, add a `checkstyle.xml` and set `configLocation` in the plugin config.
+- PMD requires a ruleset; the snippet uses `rulesets/java/quickstart.xml` as a baseline.
+- PITest typically needs `targetClasses/targetTests` set to your base package.
+- You can also run `cihub fix-pom --repo .` and `cihub fix-deps --repo .` (dry-run by default) to generate diffs.
 
 ---
 

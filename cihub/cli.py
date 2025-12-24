@@ -6,6 +6,8 @@ import json
 import re
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
+import textwrap
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +20,19 @@ from cihub import __version__
 GIT_REMOTE_RE = re.compile(
     r"(?:github\.com[:/])(?P<owner>[^/]+)/(?P<repo>[^/.]+)(?:\.git)?$"
 )
+
+JAVA_TOOL_PLUGINS = {
+    "jacoco": ("org.jacoco", "jacoco-maven-plugin"),
+    "checkstyle": ("org.apache.maven.plugins", "maven-checkstyle-plugin"),
+    "spotbugs": ("com.github.spotbugs", "spotbugs-maven-plugin"),
+    "pmd": ("org.apache.maven.plugins", "maven-pmd-plugin"),
+    "owasp": ("org.owasp", "dependency-check-maven"),
+    "pitest": ("org.pitest", "pitest-maven"),
+}
+
+JAVA_TOOL_DEPENDENCIES = {
+    "jqwik": ("net.jqwik", "jqwik"),
+}
 
 
 def hub_root() -> Path:
@@ -92,6 +107,409 @@ def detect_language(repo_path: Path) -> tuple[str | None, list[str]]:
     if java_found and python_found:
         return None, matches["java"] + matches["python"]
     return None, []
+
+
+def load_effective_config(repo_path: Path) -> dict[str, Any]:
+    defaults_path = hub_root() / "config" / "defaults.yaml"
+    defaults = read_yaml(defaults_path)
+    local_path = repo_path / ".ci-hub.yml"
+    local_config = read_yaml(local_path)
+    merged = deep_merge(defaults, local_config)
+    repo_info = merged.get("repo", {})
+    if repo_info.get("language"):
+        merged["language"] = repo_info["language"]
+    return merged
+
+
+def get_java_tool_flags(config: dict[str, Any]) -> dict[str, bool]:
+    tools = config.get("java", {}).get("tools", {})
+    enabled: dict[str, bool] = {}
+    for tool in JAVA_TOOL_PLUGINS:
+        enabled[tool] = tools.get(tool, {}).get("enabled", False)
+    enabled["jqwik"] = tools.get("jqwik", {}).get("enabled", False)
+    return enabled
+
+
+def get_xml_namespace(root: ET.Element) -> str:
+    if root.tag.startswith("{"):
+        return root.tag.split("}")[0][1:]
+    return ""
+
+
+def ns_tag(namespace: str, tag: str) -> str:
+    if not namespace:
+        return tag
+    return f"{{{namespace}}}{tag}"
+
+
+def elem_text(elem: ET.Element | None) -> str:
+    if elem is None or elem.text is None:
+        return ""
+    return elem.text.strip()
+
+
+def parse_pom_plugins(
+    pom_path: Path,
+) -> tuple[set[tuple[str, str]], set[tuple[str, str]], bool, str | None]:
+    try:
+        tree = ET.parse(pom_path)
+    except ET.ParseError as exc:
+        return set(), set(), False, f"Invalid pom.xml: {exc}"
+
+    root = tree.getroot()
+    namespace = get_xml_namespace(root)
+
+    def find_child(parent: ET.Element | None, tag: str) -> ET.Element | None:
+        if parent is None:
+            return None
+        return parent.find(ns_tag(namespace, tag))
+
+    def plugin_ids(parent: ET.Element | None) -> set[tuple[str, str]]:
+        ids: set[tuple[str, str]] = set()
+        if parent is None:
+            return ids
+        for plugin in parent.findall(ns_tag(namespace, "plugin")):
+            group_id = elem_text(plugin.find(ns_tag(namespace, "groupId")))
+            artifact_id = elem_text(plugin.find(ns_tag(namespace, "artifactId")))
+            if artifact_id:
+                ids.add((group_id, artifact_id))
+        return ids
+
+    build = find_child(root, "build")
+    plugins = plugin_ids(find_child(build, "plugins"))
+
+    plugin_mgmt = find_child(build, "pluginManagement")
+    plugins_mgmt = plugin_ids(find_child(plugin_mgmt, "plugins"))
+
+    has_modules = find_child(root, "modules") is not None
+    return plugins, plugins_mgmt, has_modules, None
+
+
+def parse_pom_modules(pom_path: Path) -> tuple[list[str], str | None]:
+    try:
+        tree = ET.parse(pom_path)
+    except ET.ParseError as exc:
+        return [], f"Invalid pom.xml: {exc}"
+
+    root = tree.getroot()
+    namespace = get_xml_namespace(root)
+    modules_elem = root.find(ns_tag(namespace, "modules"))
+    modules: list[str] = []
+    if modules_elem is None:
+        return modules, None
+    for module in modules_elem.findall(ns_tag(namespace, "module")):
+        if module.text:
+            modules.append(module.text.strip())
+    return modules, None
+
+
+def parse_pom_dependencies(
+    pom_path: Path,
+) -> tuple[set[tuple[str, str]], set[tuple[str, str]], str | None]:
+    try:
+        tree = ET.parse(pom_path)
+    except ET.ParseError as exc:
+        return set(), set(), f"Invalid pom.xml: {exc}"
+
+    root = tree.getroot()
+    namespace = get_xml_namespace(root)
+
+    def deps_from(parent: ET.Element | None) -> set[tuple[str, str]]:
+        deps: set[tuple[str, str]] = set()
+        if parent is None:
+            return deps
+        for dep in parent.findall(ns_tag(namespace, "dependency")):
+            group_id = elem_text(dep.find(ns_tag(namespace, "groupId")))
+            artifact_id = elem_text(dep.find(ns_tag(namespace, "artifactId")))
+            if artifact_id:
+                deps.add((group_id, artifact_id))
+        return deps
+
+    deps = deps_from(root.find(ns_tag(namespace, "dependencies")))
+    dep_mgmt = root.find(ns_tag(namespace, "dependencyManagement"))
+    deps_mgmt = set()
+    if dep_mgmt is not None:
+        deps_mgmt = deps_from(dep_mgmt.find(ns_tag(namespace, "dependencies")))
+    return deps, deps_mgmt, None
+
+
+def plugin_matches(
+    plugins: set[tuple[str, str]], group_id: str, artifact_id: str
+) -> bool:
+    for group, artifact in plugins:
+        if artifact != artifact_id:
+            continue
+        if not group or group == group_id:
+            return True
+    return False
+
+
+def collect_java_pom_warnings(
+    repo_path: Path, config: dict[str, Any]
+) -> tuple[list[str], list[tuple[str, str]]]:
+    warnings: list[str] = []
+    missing_plugins: list[tuple[str, str]] = []
+
+    subdir = config.get("repo", {}).get("subdir") or ""
+    root_path = repo_path / subdir if subdir else repo_path
+    pom_path = root_path / "pom.xml"
+    if not pom_path.exists():
+        warnings.append("pom.xml not found")
+        return warnings, missing_plugins
+
+    build_tool = config.get("java", {}).get("build_tool", "maven")
+    if build_tool != "maven":
+        return warnings, missing_plugins
+
+    plugins, plugins_mgmt, has_modules, error = parse_pom_plugins(pom_path)
+    if error:
+        warnings.append(error)
+        return warnings, missing_plugins
+
+    tool_flags = get_java_tool_flags(config)
+    checkstyle_config = (
+        config.get("java", {})
+        .get("tools", {})
+        .get("checkstyle", {})
+        .get("config_file")
+    )
+    if checkstyle_config:
+        config_path = repo_path / checkstyle_config
+        if not config_path.exists():
+            alt_path = root_path / checkstyle_config
+            if not alt_path.exists():
+                warnings.append(
+                    f"checkstyle config file not found: {checkstyle_config}"
+                )
+    for tool, enabled in tool_flags.items():
+        if tool not in JAVA_TOOL_PLUGINS or not enabled:
+            continue
+        group_id, artifact_id = JAVA_TOOL_PLUGINS[tool]
+        if plugin_matches(plugins, group_id, artifact_id):
+            continue
+        if plugin_matches(plugins_mgmt, group_id, artifact_id):
+            warnings.append(
+                f"pom.xml: {tool} plugin is only in <pluginManagement>; move to <build><plugins>"
+            )
+        else:
+            warnings.append(
+                f"pom.xml: missing plugin for enabled tool '{tool}' ({group_id}:{artifact_id})"
+            )
+        missing_plugins.append((group_id, artifact_id))
+
+    if has_modules and missing_plugins:
+        warnings.append(
+            "pom.xml: multi-module project detected; add plugins to parent <build><plugins>"
+        )
+
+    return warnings, missing_plugins
+
+
+def dependency_matches(
+    dependencies: set[tuple[str, str]], group_id: str, artifact_id: str
+) -> bool:
+    for group, artifact in dependencies:
+        if artifact != artifact_id:
+            continue
+        if not group or group == group_id:
+            return True
+    return False
+
+
+def collect_java_dependency_warnings(
+    repo_path: Path, config: dict[str, Any]
+) -> tuple[list[str], list[tuple[Path, tuple[str, str]]]]:
+    warnings: list[str] = []
+    missing: list[tuple[Path, tuple[str, str]]] = []
+
+    subdir = config.get("repo", {}).get("subdir") or ""
+    root_path = repo_path / subdir if subdir else repo_path
+    pom_path = root_path / "pom.xml"
+    if not pom_path.exists():
+        return warnings, missing
+
+    build_tool = config.get("java", {}).get("build_tool", "maven")
+    if build_tool != "maven":
+        return warnings, missing
+
+    modules, error = parse_pom_modules(pom_path)
+    if error:
+        warnings.append(error)
+        return warnings, missing
+
+    targets: list[Path] = []
+    if modules:
+        for module in modules:
+            module_pom = root_path / module / "pom.xml"
+            if module_pom.exists():
+                targets.append(module_pom)
+            else:
+                warnings.append(f"pom.xml not found for module: {module}")
+    else:
+        targets.append(pom_path)
+
+    tool_flags = get_java_tool_flags(config)
+    for tool, dep in JAVA_TOOL_DEPENDENCIES.items():
+        if not tool_flags.get(tool, False):
+            continue
+        group_id, artifact_id = dep
+        for target in targets:
+            deps, deps_mgmt, error = parse_pom_dependencies(target)
+            if error:
+                warnings.append(f"{target}: {error}")
+                continue
+            if dependency_matches(deps, group_id, artifact_id):
+                continue
+            if dependency_matches(deps_mgmt, group_id, artifact_id):
+                warnings.append(
+                    f"{target}: {tool} dependency only in <dependencyManagement>; add to <dependencies>"
+                )
+            else:
+                warnings.append(
+                    f"{target}: missing dependency for enabled tool '{tool}' ({group_id}:{artifact_id})"
+                )
+            missing.append((target, (group_id, artifact_id)))
+
+    return warnings, missing
+
+
+def load_plugin_snippets() -> dict[tuple[str, str], str]:
+    snippets_path = hub_root() / "templates" / "java" / "pom-plugins.xml"
+    content = snippets_path.read_text(encoding="utf-8")
+    blocks = re.findall(r"<plugin>.*?</plugin>", content, flags=re.DOTALL)
+    snippets: dict[tuple[str, str], str] = {}
+    for block in blocks:
+        try:
+            elem = ET.fromstring(block)
+        except ET.ParseError:
+            continue
+        group_id = elem_text(elem.find("groupId"))
+        artifact_id = elem_text(elem.find("artifactId"))
+        if artifact_id:
+            snippets[(group_id, artifact_id)] = block.strip()
+    return snippets
+
+
+def load_dependency_snippets() -> dict[tuple[str, str], str]:
+    snippets_path = hub_root() / "templates" / "java" / "pom-dependencies.xml"
+    content = snippets_path.read_text(encoding="utf-8")
+    blocks = re.findall(r"<dependency>.*?</dependency>", content, flags=re.DOTALL)
+    snippets: dict[tuple[str, str], str] = {}
+    for block in blocks:
+        try:
+            elem = ET.fromstring(block)
+        except ET.ParseError:
+            continue
+        group_id = elem_text(elem.find("groupId"))
+        artifact_id = elem_text(elem.find("artifactId"))
+        if artifact_id:
+            snippets[(group_id, artifact_id)] = block.strip()
+    return snippets
+
+
+def line_indent(text: str, index: int) -> str:
+    line_start = text.rfind("\n", 0, index) + 1
+    match = re.match(r"[ \t]*", text[line_start:])
+    return match.group(0) if match else ""
+
+
+def indent_block(block: str, indent: str) -> str:
+    block = textwrap.dedent(block).strip("\n")
+    lines = block.splitlines()
+    return "\n".join((indent + line) if line.strip() else line for line in lines)
+
+
+def insert_plugins_into_pom(pom_text: str, plugin_block: str) -> tuple[str, bool]:
+    build_match = re.search(r"<build[^>]*>", pom_text)
+    if build_match:
+        build_close = pom_text.find("</build>", build_match.end())
+        if build_close == -1:
+            return pom_text, False
+        build_section = pom_text[build_match.end():build_close]
+        plugins_match = re.search(r"<plugins[^>]*>", build_section)
+        if plugins_match:
+            plugins_close = build_section.find("</plugins>", plugins_match.end())
+            if plugins_close == -1:
+                return pom_text, False
+            plugins_index = build_match.end() + plugins_match.start()
+            plugins_indent = line_indent(pom_text, plugins_index)
+            plugin_indent = plugins_indent + "  "
+            block = indent_block(plugin_block, plugin_indent)
+            insert_at = build_match.end() + plugins_close
+            insert_text = f"\n{block}\n{plugins_indent}"
+            return pom_text[:insert_at] + insert_text + pom_text[insert_at:], True
+
+        build_indent = line_indent(pom_text, build_match.start())
+        plugins_indent = build_indent + "  "
+        plugin_indent = plugins_indent + "  "
+        block = indent_block(plugin_block, plugin_indent)
+        insert_at = build_close
+        plugins_block = (
+            f"\n{plugins_indent}<plugins>\n{block}\n{plugins_indent}</plugins>\n{build_indent}"
+        )
+        return pom_text[:insert_at] + plugins_block + pom_text[insert_at:], True
+
+    project_close = pom_text.find("</project>")
+    if project_close == -1:
+        return pom_text, False
+    project_indent = line_indent(pom_text, project_close)
+    build_indent = project_indent + "  "
+    plugins_indent = build_indent + "  "
+    plugin_indent = plugins_indent + "  "
+    block = indent_block(plugin_block, plugin_indent)
+    build_block = (
+        f"\n{build_indent}<build>\n{plugins_indent}<plugins>\n{block}\n"
+        f"{plugins_indent}</plugins>\n{build_indent}</build>\n{project_indent}"
+    )
+    return pom_text[:project_close] + build_block + pom_text[project_close:], True
+
+
+def find_tag_spans(text: str, tag: str) -> list[tuple[int, int]]:
+    spans: list[tuple[int, int]] = []
+    for match in re.finditer(rf"<{tag}[^>]*>", text):
+        close = text.find(f"</{tag}>", match.end())
+        if close == -1:
+            continue
+        spans.append((match.start(), close + len(f"</{tag}>")))
+    return spans
+
+
+def insert_dependencies_into_pom(
+    pom_text: str, dependency_block: str
+) -> tuple[str, bool]:
+    dep_mgmt_spans = find_tag_spans(pom_text, "dependencyManagement")
+    build_spans = find_tag_spans(pom_text, "build")
+
+    def in_spans(index: int, spans: list[tuple[int, int]]) -> bool:
+        return any(start <= index < end for start, end in spans)
+
+    for match in re.finditer(r"<dependencies[^>]*>", pom_text):
+        if in_spans(match.start(), dep_mgmt_spans) or in_spans(
+            match.start(), build_spans
+        ):
+            continue
+        deps_close = pom_text.find("</dependencies>", match.end())
+        if deps_close == -1:
+            return pom_text, False
+        deps_indent = line_indent(pom_text, match.start())
+        dep_indent = deps_indent + "  "
+        block = indent_block(dependency_block, dep_indent)
+        insert_at = deps_close
+        insert_text = f"\n{block}\n{deps_indent}"
+        return pom_text[:insert_at] + insert_text + pom_text[insert_at:], True
+
+    project_close = pom_text.find("</project>")
+    if project_close == -1:
+        return pom_text, False
+    project_indent = line_indent(pom_text, project_close)
+    deps_indent = project_indent + "  "
+    dep_indent = deps_indent + "  "
+    block = indent_block(dependency_block, dep_indent)
+    deps_block = (
+        f"\n{deps_indent}<dependencies>\n{block}\n{deps_indent}</dependencies>\n"
+        f"{project_indent}"
+    )
+    return pom_text[:project_close] + deps_block + pom_text[project_close:], True
 
 
 def parse_repo_from_remote(url: str) -> tuple[str | None, str | None]:
@@ -263,6 +681,21 @@ def cmd_update(args: argparse.Namespace) -> int:
     workflow_path = repo_path / ".github" / "workflows" / "hub-ci.yml"
     workflow_content = render_caller_workflow(language)
     write_text(workflow_path, workflow_content, args.dry_run)
+
+    if language == "java" and not args.dry_run:
+        effective = load_effective_config(repo_path)
+        pom_warnings, _ = collect_java_pom_warnings(repo_path, effective)
+        dep_warnings, _ = collect_java_dependency_warnings(repo_path, effective)
+        warnings = pom_warnings + dep_warnings
+        if warnings:
+            print("POM warnings:")
+            for warning in warnings:
+                print(f"  - {warning}")
+            if args.fix_pom:
+                apply_pom_fixes(repo_path, effective, apply=True)
+                apply_dependency_fixes(repo_path, effective, apply=True)
+            else:
+                print("Run: cihub fix-pom --repo . --apply")
     return 0
 
 
@@ -280,7 +713,164 @@ def cmd_validate(args: argparse.Namespace) -> int:
             print(f"  - {err}")
         return 1
     print("Config OK")
+    effective = load_effective_config(repo_path)
+    if effective.get("language") == "java":
+        pom_warnings, _ = collect_java_pom_warnings(repo_path, effective)
+        dep_warnings, _ = collect_java_dependency_warnings(repo_path, effective)
+        warnings = pom_warnings + dep_warnings
+        if warnings:
+            print("POM warnings:")
+            for warning in warnings:
+                print(f"  - {warning}")
+            if args.strict:
+                return 1
+        else:
+            print("POM OK")
     return 0
+
+
+def apply_pom_fixes(
+    repo_path: Path, config: dict[str, Any], apply: bool
+) -> int:
+    subdir = config.get("repo", {}).get("subdir") or ""
+    root_path = repo_path / subdir if subdir else repo_path
+    pom_path = root_path / "pom.xml"
+    if not pom_path.exists():
+        print("pom.xml not found", file=sys.stderr)
+        return 1
+
+    warnings, missing_plugins = collect_java_pom_warnings(repo_path, config)
+    if warnings:
+        print("POM warnings:")
+        for warning in warnings:
+            print(f"  - {warning}")
+    if not missing_plugins:
+        print("No pom.xml changes needed.")
+        return 0
+
+    snippets = load_plugin_snippets()
+    blocks = []
+    for plugin_id in missing_plugins:
+        snippet = snippets.get(plugin_id)
+        if snippet:
+            blocks.append(snippet)
+        else:
+            group_id, artifact_id = plugin_id
+            warnings.append(
+                f"Missing snippet for plugin {group_id}:{artifact_id}"
+            )
+    if not blocks:
+        for warning in warnings:
+            print(f"  - {warning}")
+        return 1
+
+    pom_text = pom_path.read_text(encoding="utf-8")
+    plugin_block = "\n\n".join(blocks)
+    updated_text, inserted = insert_plugins_into_pom(pom_text, plugin_block)
+    if not inserted:
+        print("Failed to update pom.xml - unable to find insertion point.", file=sys.stderr)
+        return 1
+
+    if not apply:
+        import difflib
+
+        diff = difflib.unified_diff(
+            pom_text.splitlines(),
+            updated_text.splitlines(),
+            fromfile=str(pom_path),
+            tofile=str(pom_path),
+            lineterm="",
+        )
+        print("\n".join(diff))
+        return 0
+
+    pom_path.write_text(updated_text, encoding="utf-8")
+    print("pom.xml updated.")
+    return 0
+
+
+def apply_dependency_fixes(
+    repo_path: Path, config: dict[str, Any], apply: bool
+) -> int:
+    warnings, missing = collect_java_dependency_warnings(repo_path, config)
+    if warnings:
+        print("Dependency warnings:")
+        for warning in warnings:
+            print(f"  - {warning}")
+
+    if not missing:
+        print("No dependency changes needed.")
+        return 0
+
+    snippets = load_dependency_snippets()
+    per_pom: dict[Path, list[str]] = {}
+    for pom_path, dep_id in missing:
+        snippet = snippets.get(dep_id)
+        if not snippet:
+            group_id, artifact_id = dep_id
+            print(f"Missing snippet for dependency {group_id}:{artifact_id}")
+            continue
+        per_pom.setdefault(pom_path, []).append(snippet)
+
+    if not per_pom:
+        return 1
+
+    for pom_path, blocks in per_pom.items():
+        pom_text = pom_path.read_text(encoding="utf-8")
+        dep_block = "\n\n".join(blocks)
+        updated_text, inserted = insert_dependencies_into_pom(pom_text, dep_block)
+        if not inserted:
+            print(f"Failed to update {pom_path} - unable to find insertion point.")
+            return 1
+        if not apply:
+            import difflib
+
+            diff = difflib.unified_diff(
+                pom_text.splitlines(),
+                updated_text.splitlines(),
+                fromfile=str(pom_path),
+                tofile=str(pom_path),
+                lineterm="",
+            )
+            print("\n".join(diff))
+        else:
+            pom_path.write_text(updated_text, encoding="utf-8")
+            print(f"{pom_path} updated.")
+    return 0
+
+
+def cmd_fix_pom(args: argparse.Namespace) -> int:
+    repo_path = Path(args.repo).resolve()
+    config_path = repo_path / ".ci-hub.yml"
+    if not config_path.exists():
+        print(f"Config not found: {config_path}", file=sys.stderr)
+        return 2
+    config = load_effective_config(repo_path)
+    if config.get("language") != "java":
+        print("fix-pom is only supported for Java repos.")
+        return 0
+    if config.get("java", {}).get("build_tool", "maven") != "maven":
+        print("fix-pom only supports Maven repos.")
+        return 0
+    status = apply_pom_fixes(repo_path, config, apply=args.apply)
+    status = max(status, apply_dependency_fixes(repo_path, config, apply=args.apply))
+    return status
+
+
+def cmd_fix_deps(args: argparse.Namespace) -> int:
+    repo_path = Path(args.repo).resolve()
+    config_path = repo_path / ".ci-hub.yml"
+    if not config_path.exists():
+        print(f"Config not found: {config_path}", file=sys.stderr)
+        return 2
+    config = load_effective_config(repo_path)
+    if config.get("language") != "java":
+        print("fix-deps is only supported for Java repos.")
+        return 0
+    if config.get("java", {}).get("build_tool", "maven") != "maven":
+        print("fix-deps only supports Maven repos.")
+        return 0
+    return apply_dependency_fixes(repo_path, config, apply=args.apply)
 
 
 def get_connected_repos(
@@ -739,6 +1329,11 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("--branch", help="Default branch (e.g., main)")
     init.add_argument("--subdir", help="Subdirectory for monorepos (repo.subdir)")
     init.add_argument("--workdir", dest="subdir", help="Alias for --subdir")
+    init.add_argument(
+        "--fix-pom",
+        action="store_true",
+        help="Fix pom.xml for Java repos (adds missing plugins)",
+    )
     init.add_argument("--dry-run", action="store_true", help="Print output instead of writing")
     init.set_defaults(func=cmd_init)
 
@@ -755,6 +1350,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     validate = subparsers.add_parser("validate", help="Validate .ci-hub.yml against schema")
     validate.add_argument("--repo", required=True, help="Path to repo")
+    validate.add_argument(
+        "--strict", action="store_true", help="Fail if pom.xml warnings are found"
+    )
     validate.set_defaults(func=cmd_validate)
 
     setup_secrets = subparsers.add_parser(
@@ -788,6 +1386,29 @@ def build_parser() -> argparse.ArgumentParser:
         help="Verify NVD API key before setting secrets",
     )
     setup_nvd.set_defaults(func=cmd_setup_nvd)
+
+    fix_pom = subparsers.add_parser(
+        "fix-pom",
+        help="Add missing Maven plugins/dependencies to pom.xml for Java repos",
+    )
+    fix_pom.add_argument("--repo", required=True, help="Path to repo")
+    fix_pom.add_argument(
+        "--apply",
+        action="store_true",
+        help="Apply changes (default: dry-run diff)",
+    )
+    fix_pom.set_defaults(func=cmd_fix_pom)
+
+    fix_deps = subparsers.add_parser(
+        "fix-deps", help="Add missing Maven dependencies for Java repos"
+    )
+    fix_deps.add_argument("--repo", required=True, help="Path to repo")
+    fix_deps.add_argument(
+        "--apply",
+        action="store_true",
+        help="Apply changes (default: dry-run diff)",
+    )
+    fix_deps.set_defaults(func=cmd_fix_deps)
 
     sync_templates = subparsers.add_parser(
         "sync-templates",

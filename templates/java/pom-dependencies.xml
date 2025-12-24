@@ -1,0 +1,15 @@
+<!--
+  CI/CD Hub - Maven Dependency Snippets (config-driven)
+  =====================================================
+  Add only the dependencies for tools enabled in .ci-hub.yml.
+
+  For multi-module projects: add to module pom.xml files.
+-->
+
+<!-- jqwik - Property-based Testing (java.tools.jqwik.enabled) -->
+<dependency>
+  <groupId>net.jqwik</groupId>
+  <artifactId>jqwik</artifactId>
+  <version>1.8.4</version>
+  <scope>test</scope>
+</dependency>
