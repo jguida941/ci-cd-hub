@@ -861,69 +861,75 @@ jobs:
       - name: Generate QA Metrics Report
         id: report
         run: |
-          # Configuration Summary (matches reusable workflow format)
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          # Configuration Summary
+          # Create reports directory for this config
+          REPORT_SUFFIX="${{ matrix.config_basename }}${{ matrix.subdir != '' && format('-{0}', matrix.subdir) || '' }}"
+          REPORT_DIR="reports/${REPORT_SUFFIX}"
+          mkdir -p "$REPORT_DIR"
+          SUMMARY_FILE="$REPORT_DIR/summary.md"
 
-          EOF
+          # Write to summary.md first, then copy to GITHUB_STEP_SUMMARY
+          cat > "$SUMMARY_FILE" << 'HEADER'
+# Configuration Summary
+
+HEADER
 
           if [ "${{ matrix.language }}" = "java" ]; then
-            cat >> $GITHUB_STEP_SUMMARY << EOF
-          ## Tools Enabled
-          | Category | Tool | Configured | Ran |
-          |----------|------|------------|-----|
-          | Build | maven | true | true |
-          | Testing | JaCoCo Coverage | ${{ matrix.run_jacoco }} | ${{ steps.java-coverage.outcome == 'success' || steps.java-coverage.outcome == 'failure' }} |
-          | Testing | PITest | ${{ matrix.run_pitest }} | ${{ steps.java-mutation.outcome == 'success' || steps.java-mutation.outcome == 'failure' }} |
-          | Linting | Checkstyle | ${{ matrix.run_checkstyle }} | ${{ steps.java-checkstyle.outcome == 'success' || steps.java-checkstyle.outcome == 'failure' }} |
-          | Linting | PMD | ${{ matrix.run_pmd }} | ${{ steps.java-pmd.outcome == 'success' || steps.java-pmd.outcome == 'failure' }} |
-          | Linting | SpotBugs | ${{ matrix.run_spotbugs }} | ${{ steps.java-spotbugs.outcome == 'success' || steps.java-spotbugs.outcome == 'failure' }} |
-          | Security | OWASP Dependency-Check | ${{ matrix.run_owasp }} | ${{ steps.java-owasp.outcome == 'success' || steps.java-owasp.outcome == 'failure' }} |
-          | Security | Semgrep | ${{ matrix.run_semgrep }} | ${{ steps.semgrep.outcome == 'success' || steps.semgrep.outcome == 'failure' }} |
-          | Security | Trivy | ${{ matrix.run_trivy }} | ${{ steps.trivy.outcome == 'success' || steps.trivy.outcome == 'failure' }} |
+            cat >> "$SUMMARY_FILE" << EOF
+## Tools Enabled
+| Category | Tool | Configured | Ran |
+|----------|------|------------|-----|
+| Build | maven | true | true |
+| Testing | JaCoCo Coverage | ${{ matrix.run_jacoco }} | ${{ steps.java-coverage.outcome == 'success' || steps.java-coverage.outcome == 'failure' }} |
+| Testing | PITest | ${{ matrix.run_pitest }} | ${{ steps.java-mutation.outcome == 'success' || steps.java-mutation.outcome == 'failure' }} |
+| Linting | Checkstyle | ${{ matrix.run_checkstyle }} | ${{ steps.java-checkstyle.outcome == 'success' || steps.java-checkstyle.outcome == 'failure' }} |
+| Linting | PMD | ${{ matrix.run_pmd }} | ${{ steps.java-pmd.outcome == 'success' || steps.java-pmd.outcome == 'failure' }} |
+| Linting | SpotBugs | ${{ matrix.run_spotbugs }} | ${{ steps.java-spotbugs.outcome == 'success' || steps.java-spotbugs.outcome == 'failure' }} |
+| Security | OWASP Dependency-Check | ${{ matrix.run_owasp }} | ${{ steps.java-owasp.outcome == 'success' || steps.java-owasp.outcome == 'failure' }} |
+| Security | Semgrep | ${{ matrix.run_semgrep }} | ${{ steps.semgrep.outcome == 'success' || steps.semgrep.outcome == 'failure' }} |
+| Security | Trivy | ${{ matrix.run_trivy }} | ${{ steps.trivy.outcome == 'success' || steps.trivy.outcome == 'failure' }} |
 
-          ## Environment
-          | Setting | Value |
-          |---------|-------|
-          | Config | ${{ matrix.config_basename }} |
-          | Run Group | ${{ matrix.run_group }} |
-          | Repository | ${{ matrix.owner }}/${{ matrix.name }} |
-          | Branch | ${{ matrix.branch }} |
-          | Language | Java |
-          | Run Number | #${{ github.run_number }} |
+## Environment
+| Setting | Value |
+|---------|-------|
+| Config | ${{ matrix.config_basename }} |
+| Run Group | ${{ matrix.run_group }} |
+| Repository | ${{ matrix.owner }}/${{ matrix.name }} |
+| Branch | ${{ matrix.branch }} |
+| Language | Java |
+| Run Number | #${{ github.run_number }} |
 
-          ---
+---
 
-          EOF
+EOF
           else
-            cat >> $GITHUB_STEP_SUMMARY << EOF
-          ## Tools Enabled
-          | Category | Tool | Configured | Ran |
-          |----------|------|------------|-----|
-          | Testing | pytest | ${{ matrix.run_pytest }} | ${{ steps.python-tests.outcome == 'success' || steps.python-tests.outcome == 'failure' }} |
-          | Testing | mutmut | ${{ matrix.run_mutmut }} | ${{ steps.python-mutmut.outcome == 'success' || steps.python-mutmut.outcome == 'failure' }} |
-          | Linting | Ruff | ${{ matrix.run_ruff }} | ${{ steps.python-ruff.outcome == 'success' || steps.python-ruff.outcome == 'failure' }} |
-          | Linting | Black | ${{ matrix.run_black }} | ${{ steps.python-black.outcome == 'success' || steps.python-black.outcome == 'failure' }} |
-          | Linting | isort | ${{ matrix.run_isort }} | ${{ steps.python-isort.outcome == 'success' || steps.python-isort.outcome == 'failure' }} |
-          | Linting | mypy | ${{ matrix.run_mypy }} | ${{ steps.python-mypy.outcome == 'success' || steps.python-mypy.outcome == 'failure' }} |
-          | Security | Bandit | ${{ matrix.run_bandit }} | ${{ steps.python-bandit.outcome == 'success' || steps.python-bandit.outcome == 'failure' }} |
-          | Security | pip-audit | ${{ matrix.run_pip_audit }} | ${{ steps.python-pipaudit.outcome == 'success' || steps.python-pipaudit.outcome == 'failure' }} |
-          | Security | Semgrep | ${{ matrix.run_semgrep }} | ${{ steps.semgrep.outcome == 'success' || steps.semgrep.outcome == 'failure' }} |
-          | Security | Trivy | ${{ matrix.run_trivy }} | ${{ steps.trivy.outcome == 'success' || steps.trivy.outcome == 'failure' }} |
+            cat >> "$SUMMARY_FILE" << EOF
+## Tools Enabled
+| Category | Tool | Configured | Ran |
+|----------|------|------------|-----|
+| Testing | pytest | ${{ matrix.run_pytest }} | ${{ steps.python-tests.outcome == 'success' || steps.python-tests.outcome == 'failure' }} |
+| Testing | mutmut | ${{ matrix.run_mutmut }} | ${{ steps.python-mutmut.outcome == 'success' || steps.python-mutmut.outcome == 'failure' }} |
+| Linting | Ruff | ${{ matrix.run_ruff }} | ${{ steps.python-ruff.outcome == 'success' || steps.python-ruff.outcome == 'failure' }} |
+| Linting | Black | ${{ matrix.run_black }} | ${{ steps.python-black.outcome == 'success' || steps.python-black.outcome == 'failure' }} |
+| Linting | isort | ${{ matrix.run_isort }} | ${{ steps.python-isort.outcome == 'success' || steps.python-isort.outcome == 'failure' }} |
+| Linting | mypy | ${{ matrix.run_mypy }} | ${{ steps.python-mypy.outcome == 'success' || steps.python-mypy.outcome == 'failure' }} |
+| Security | Bandit | ${{ matrix.run_bandit }} | ${{ steps.python-bandit.outcome == 'success' || steps.python-bandit.outcome == 'failure' }} |
+| Security | pip-audit | ${{ matrix.run_pip_audit }} | ${{ steps.python-pipaudit.outcome == 'success' || steps.python-pipaudit.outcome == 'failure' }} |
+| Security | Semgrep | ${{ matrix.run_semgrep }} | ${{ steps.semgrep.outcome == 'success' || steps.semgrep.outcome == 'failure' }} |
+| Security | Trivy | ${{ matrix.run_trivy }} | ${{ steps.trivy.outcome == 'success' || steps.trivy.outcome == 'failure' }} |
 
-          ## Environment
-          | Setting | Value |
-          |---------|-------|
-          | Config | ${{ matrix.config_basename }} |
-          | Run Group | ${{ matrix.run_group }} |
-          | Repository | ${{ matrix.owner }}/${{ matrix.name }} |
-          | Branch | ${{ matrix.branch }} |
-          | Language | Python |
-          | Run Number | #${{ github.run_number }} |
+## Environment
+| Setting | Value |
+|---------|-------|
+| Config | ${{ matrix.config_basename }} |
+| Run Group | ${{ matrix.run_group }} |
+| Repository | ${{ matrix.owner }}/${{ matrix.name }} |
+| Branch | ${{ matrix.branch }} |
+| Language | Python |
+| Run Number | #${{ github.run_number }} |
 
-          ---
+---
 
-          EOF
+EOF
           fi
 
           if [ "${{ matrix.language }}" = "java" ]; then
@@ -933,108 +939,113 @@ jobs:
             COV_BAR=$(printf '█%.0s' $(seq 1 $((COV / 5))) 2>/dev/null; printf '░%.0s' $(seq 1 $((20 - COV / 5))) 2>/dev/null)
             MUT_BAR=$(printf '█%.0s' $(seq 1 $((MUT / 5))) 2>/dev/null; printf '░%.0s' $(seq 1 $((20 - MUT / 5))) 2>/dev/null)
 
-            cat >> $GITHUB_STEP_SUMMARY << EOF
-          ## QA Metrics (Java)
+            cat >> "$SUMMARY_FILE" << EOF
+## QA Metrics (Java)
 
-          | Metric | Result | Details |
-          |--------|--------|---------|
-          | **Tests** | ${{ steps.java-tests.outputs.total || 0 }} executed | Runtime: ${{ steps.java-tests.outputs.runtime || '0s' }}, Failures: ${{ steps.java-tests.outputs.failed || 0 }}, Skipped: ${{ steps.java-tests.outputs.skipped || 0 }} |
-          | **Line Coverage (JaCoCo)** | ${COV}% ${COV_BAR} | ${{ steps.java-coverage.outputs.lines || '0 / 0' }} lines covered |
-          | **Mutation Score (PITest)** | ${MUT}% ${MUT_BAR} | ${{ steps.java-mutation.outputs.killed || 0 }} killed, ${{ steps.java-mutation.outputs.survived || 0 }} survived |
-          | **Dependency-Check** | scan complete | ${{ steps.java-owasp.outputs.critical || 0 }} crit, ${{ steps.java-owasp.outputs.high || 0 }} high, ${{ steps.java-owasp.outputs.medium || 0 }} med |
-          | **SpotBugs** | ${{ steps.java-spotbugs.outputs.count || 0 }} bugs | Static analysis |
-          | **PMD** | ${{ steps.java-pmd.outputs.violations || 0 }} violations | Code analysis |
-          | **Checkstyle** | ${{ steps.java-checkstyle.outputs.violations || 0 }} violations | Code style |
-          | **Semgrep** | ${{ steps.semgrep.outputs.findings || 0 }} findings | SAST analysis |
-          | **Trivy** | ${{ steps.trivy.outputs.critical || 0 }} crit, ${{ steps.trivy.outputs.high || 0 }} high | Container scan |
+| Metric | Result | Details |
+|--------|--------|---------|
+| **Tests** | ${{ steps.java-tests.outputs.total || 0 }} executed | Runtime: ${{ steps.java-tests.outputs.runtime || '0s' }}, Failures: ${{ steps.java-tests.outputs.failed || 0 }}, Skipped: ${{ steps.java-tests.outputs.skipped || 0 }} |
+| **Line Coverage (JaCoCo)** | ${COV}% ${COV_BAR} | ${{ steps.java-coverage.outputs.lines || '0 / 0' }} lines covered |
+| **Mutation Score (PITest)** | ${MUT}% ${MUT_BAR} | ${{ steps.java-mutation.outputs.killed || 0 }} killed, ${{ steps.java-mutation.outputs.survived || 0 }} survived |
+| **Dependency-Check** | scan complete | ${{ steps.java-owasp.outputs.critical || 0 }} crit, ${{ steps.java-owasp.outputs.high || 0 }} high, ${{ steps.java-owasp.outputs.medium || 0 }} med |
+| **SpotBugs** | ${{ steps.java-spotbugs.outputs.count || 0 }} bugs | Static analysis |
+| **PMD** | ${{ steps.java-pmd.outputs.violations || 0 }} violations | Code analysis |
+| **Checkstyle** | ${{ steps.java-checkstyle.outputs.violations || 0 }} violations | Code style |
+| **Semgrep** | ${{ steps.semgrep.outputs.findings || 0 }} findings | SAST analysis |
+| **Trivy** | ${{ steps.trivy.outputs.critical || 0 }} crit, ${{ steps.trivy.outputs.high || 0 }} high | Container scan |
 
-          ### Dependency Severity
-          | Severity | Count |
-          |----------|-------|
-          | 🔴 Critical | ${{ steps.java-owasp.outputs.critical || 0 }} |
-          | 🟠 High | ${{ steps.java-owasp.outputs.high || 0 }} |
-          | 🟡 Medium | ${{ steps.java-owasp.outputs.medium || 0 }} |
-          | 🟢 Low | ${{ steps.java-owasp.outputs.low || 0 }} |
+### Dependency Severity
+| Severity | Count |
+|----------|-------|
+| 🔴 Critical | ${{ steps.java-owasp.outputs.critical || 0 }} |
+| 🟠 High | ${{ steps.java-owasp.outputs.high || 0 }} |
+| 🟡 Medium | ${{ steps.java-owasp.outputs.medium || 0 }} |
+| 🟢 Low | ${{ steps.java-owasp.outputs.low || 0 }} |
 
-          EOF
+EOF
 
           else
             # Python report
             COV=${{ steps.python-tests.outputs.coverage || 0 }}
             COV_BAR=$(printf '█%.0s' $(seq 1 $((COV / 5))) 2>/dev/null; printf '░%.0s' $(seq 1 $((20 - COV / 5))) 2>/dev/null)
 
-            cat >> $GITHUB_STEP_SUMMARY << EOF
-          ## QA Metrics (Python)
+            cat >> "$SUMMARY_FILE" << EOF
+## QA Metrics (Python)
 
-          | Metric | Result | Details |
-          |--------|--------|---------|
-          | **Tests (pytest)** | ${{ steps.python-tests.outputs.total || 0 }} executed | Passed: ${{ steps.python-tests.outputs.passed || 0 }}, Failed: ${{ steps.python-tests.outputs.failed || 0 }}, Skipped: ${{ steps.python-tests.outputs.skipped || 0 }} |
-          | **Line Coverage** | ${COV}% ${COV_BAR} | pytest-cov |
-          | **Mutation (mutmut)** | ${{ steps.python-mutmut.outputs.score || 0 }}% | ${{ steps.python-mutmut.outputs.killed || 0 }} killed, ${{ steps.python-mutmut.outputs.survived || 0 }} survived |
-          | **Hypothesis** | ${{ steps.python-hypothesis.outputs.examples || 0 }} examples | Property-based testing |
-          | **Ruff Lint** | ${{ steps.python-ruff.outputs.errors || 0 }} issues | Security rules: ${{ steps.python-ruff.outputs.security || 0 }} |
-          | **Bandit Security** | scan complete | High: ${{ steps.python-bandit.outputs.high || 0 }}, Med: ${{ steps.python-bandit.outputs.medium || 0 }}, Low: ${{ steps.python-bandit.outputs.low || 0 }} |
-          | **pip-audit** | ${{ steps.python-pipaudit.outputs.vulnerabilities || 0 }} vulns | Dependency check |
-          | **Black** | ${{ steps.python-black.outputs.issues || 0 }} files | Format check |
-          | **isort** | ${{ steps.python-isort.outputs.issues || 0 }} files | Import ordering |
-          | **mypy** | ${{ steps.python-mypy.outputs.errors || 0 }} errors | Type check |
-          | **Semgrep** | ${{ steps.semgrep.outputs.findings || 0 }} findings | SAST analysis |
-          | **Trivy** | ${{ steps.trivy.outputs.critical || 0 }} crit, ${{ steps.trivy.outputs.high || 0 }} high | Container scan |
+| Metric | Result | Details |
+|--------|--------|---------|
+| **Tests (pytest)** | ${{ steps.python-tests.outputs.total || 0 }} executed | Passed: ${{ steps.python-tests.outputs.passed || 0 }}, Failed: ${{ steps.python-tests.outputs.failed || 0 }}, Skipped: ${{ steps.python-tests.outputs.skipped || 0 }} |
+| **Line Coverage** | ${COV}% ${COV_BAR} | pytest-cov |
+| **Mutation (mutmut)** | ${{ steps.python-mutmut.outputs.score || 0 }}% | ${{ steps.python-mutmut.outputs.killed || 0 }} killed, ${{ steps.python-mutmut.outputs.survived || 0 }} survived |
+| **Hypothesis** | ${{ steps.python-hypothesis.outputs.examples || 0 }} examples | Property-based testing |
+| **Ruff Lint** | ${{ steps.python-ruff.outputs.errors || 0 }} issues | Security rules: ${{ steps.python-ruff.outputs.security || 0 }} |
+| **Bandit Security** | scan complete | High: ${{ steps.python-bandit.outputs.high || 0 }}, Med: ${{ steps.python-bandit.outputs.medium || 0 }}, Low: ${{ steps.python-bandit.outputs.low || 0 }} |
+| **pip-audit** | ${{ steps.python-pipaudit.outputs.vulnerabilities || 0 }} vulns | Dependency check |
+| **Black** | ${{ steps.python-black.outputs.issues || 0 }} files | Format check |
+| **isort** | ${{ steps.python-isort.outputs.issues || 0 }} files | Import ordering |
+| **mypy** | ${{ steps.python-mypy.outputs.errors || 0 }} errors | Type check |
+| **Semgrep** | ${{ steps.semgrep.outputs.findings || 0 }} findings | SAST analysis |
+| **Trivy** | ${{ steps.trivy.outputs.critical || 0 }} crit, ${{ steps.trivy.outputs.high || 0 }} high | Container scan |
 
-          ### Security Summary
-          | Severity | Count |
-          |----------|-------|
-          | 🔴 High | ${{ steps.python-bandit.outputs.high || 0 }} |
-          | 🟡 Medium | ${{ steps.python-bandit.outputs.medium || 0 }} |
-          | 🟢 Low | ${{ steps.python-bandit.outputs.low || 0 }} |
+### Security Summary
+| Severity | Count |
+|----------|-------|
+| 🔴 High | ${{ steps.python-bandit.outputs.high || 0 }} |
+| 🟡 Medium | ${{ steps.python-bandit.outputs.medium || 0 }} |
+| 🟢 Low | ${{ steps.python-bandit.outputs.low || 0 }} |
 
-          EOF
+EOF
           fi
 
           # Quality Gates
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> "$SUMMARY_FILE" << 'EOF'
 
-          ---
+---
 
-          ### Quality Gates
+### Quality Gates
 
-          | Check | Status |
-          |-------|--------|
-          EOF
+| Check | Status |
+|-------|--------|
+EOF
 
           if [ "${{ matrix.language }}" = "java" ]; then
-            echo "| Unit Tests | ${{ steps.java-tests.outputs.failed == '0' && 'Passed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| JaCoCo Coverage | Generated |" >> $GITHUB_STEP_SUMMARY
-            echo "| PITest Mutation | Generated |" >> $GITHUB_STEP_SUMMARY
-            echo "| Checkstyle | ${{ steps.java-checkstyle.outputs.violations == '0' && 'Passed' || 'Violations' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| SpotBugs | ${{ steps.java-spotbugs.outputs.count == '0' && 'Passed' || 'Bugs found' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| PMD | ${{ steps.java-pmd.outputs.violations == '0' && 'Passed' || 'Violations' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| OWASP Check | ${{ steps.java-owasp.outputs.critical == '0' && steps.java-owasp.outputs.high == '0' && 'Passed' || 'Vulnerabilities' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Semgrep | ${{ steps.semgrep.outputs.findings == '0' && 'Passed' || 'Findings' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| Unit Tests | ${{ steps.java-tests.outputs.failed == '0' && 'Passed' || 'Failed' }} |" >> "$SUMMARY_FILE"
+            echo "| JaCoCo Coverage | Generated |" >> "$SUMMARY_FILE"
+            echo "| PITest Mutation | Generated |" >> "$SUMMARY_FILE"
+            echo "| Checkstyle | ${{ steps.java-checkstyle.outputs.violations == '0' && 'Passed' || 'Violations' }} |" >> "$SUMMARY_FILE"
+            echo "| SpotBugs | ${{ steps.java-spotbugs.outputs.count == '0' && 'Passed' || 'Bugs found' }} |" >> "$SUMMARY_FILE"
+            echo "| PMD | ${{ steps.java-pmd.outputs.violations == '0' && 'Passed' || 'Violations' }} |" >> "$SUMMARY_FILE"
+            echo "| OWASP Check | ${{ steps.java-owasp.outputs.critical == '0' && steps.java-owasp.outputs.high == '0' && 'Passed' || 'Vulnerabilities' }} |" >> "$SUMMARY_FILE"
+            echo "| Semgrep | ${{ steps.semgrep.outputs.findings == '0' && 'Passed' || 'Findings' }} |" >> "$SUMMARY_FILE"
           else
-            echo "| pytest | ${{ steps.python-tests.outputs.failed == '0' && 'Passed' || 'Failed' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Coverage | Generated |" >> $GITHUB_STEP_SUMMARY
-            echo "| mutmut Mutation | Generated |" >> $GITHUB_STEP_SUMMARY
-            echo "| Hypothesis | Complete |" >> $GITHUB_STEP_SUMMARY
-            echo "| Ruff | ${{ steps.python-ruff.outputs.errors == '0' && 'Passed' || 'Issues' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Bandit | ${{ steps.python-bandit.outputs.high == '0' && 'Passed' || 'Security issues' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| pip-audit | ${{ steps.python-pipaudit.outputs.vulnerabilities == '0' && 'Passed' || 'Vulnerabilities' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Black | ${{ steps.python-black.outputs.issues == '0' && 'Passed' || 'Format issues' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| isort | ${{ steps.python-isort.outputs.issues == '0' && 'Passed' || 'Import issues' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| mypy | ${{ steps.python-mypy.outputs.errors == '0' && 'Passed' || 'Type errors' }} |" >> $GITHUB_STEP_SUMMARY
-            echo "| Semgrep | ${{ steps.semgrep.outputs.findings == '0' && 'Passed' || 'Findings' }} |" >> $GITHUB_STEP_SUMMARY
+            echo "| pytest | ${{ steps.python-tests.outputs.failed == '0' && 'Passed' || 'Failed' }} |" >> "$SUMMARY_FILE"
+            echo "| Coverage | Generated |" >> "$SUMMARY_FILE"
+            echo "| mutmut Mutation | Generated |" >> "$SUMMARY_FILE"
+            echo "| Hypothesis | Complete |" >> "$SUMMARY_FILE"
+            echo "| Ruff | ${{ steps.python-ruff.outputs.errors == '0' && 'Passed' || 'Issues' }} |" >> "$SUMMARY_FILE"
+            echo "| Bandit | ${{ steps.python-bandit.outputs.high == '0' && 'Passed' || 'Security issues' }} |" >> "$SUMMARY_FILE"
+            echo "| pip-audit | ${{ steps.python-pipaudit.outputs.vulnerabilities == '0' && 'Passed' || 'Vulnerabilities' }} |" >> "$SUMMARY_FILE"
+            echo "| Black | ${{ steps.python-black.outputs.issues == '0' && 'Passed' || 'Format issues' }} |" >> "$SUMMARY_FILE"
+            echo "| isort | ${{ steps.python-isort.outputs.issues == '0' && 'Passed' || 'Import issues' }} |" >> "$SUMMARY_FILE"
+            echo "| mypy | ${{ steps.python-mypy.outputs.errors == '0' && 'Passed' || 'Type errors' }} |" >> "$SUMMARY_FILE"
+            echo "| Semgrep | ${{ steps.semgrep.outputs.findings == '0' && 'Passed' || 'Findings' }} |" >> "$SUMMARY_FILE"
           fi
 
-      - name: Write Summary and Report JSON
+          echo "" >> "$SUMMARY_FILE"
+          echo "Job summary generated at run-time" >> "$SUMMARY_FILE"
+
+          # Copy summary to GitHub Step Summary for display
+          cat "$SUMMARY_FILE" >> $GITHUB_STEP_SUMMARY
+
+      - name: Write Report JSON
         if: always()
         run: |
+          # Use same REPORT_DIR as Generate QA Metrics Report step
           REPORT_SUFFIX="${{ matrix.config_basename }}${{ matrix.subdir != '' && format('-{0}', matrix.subdir) || '' }}"
           REPORT_DIR="reports/${REPORT_SUFFIX}"
           mkdir -p "$REPORT_DIR"
 
-          if [ -f "$GITHUB_STEP_SUMMARY" ]; then
-            cp "$GITHUB_STEP_SUMMARY" "$REPORT_DIR/summary.md"
-          fi
+          # Summary was already written to $REPORT_DIR/summary.md in the previous step
 
           COMMIT_SHA=$(git -C repo rev-parse HEAD 2>/dev/null || echo "")
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
