@@ -411,13 +411,26 @@ jobs:
         if: matrix.language == 'java' && matrix.run_owasp == true
         id: java-owasp
         working-directory: ${{ env.WORKDIR }}
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
           CRITICAL=0; HIGH=0; MEDIUM=0; LOW=0
 
-          if [ -f "mvnw" ]; then
-            ./mvnw -B -ntp org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=11 2>/dev/null || true
+          # Build NVD API key flag if secret is set
+          NVD_FLAGS=""
+          if [ -n "$NVD_API_KEY" ]; then
+            NVD_FLAGS="-DnvdApiKey=$NVD_API_KEY"
+            echo "NVD API key configured - using accelerated vulnerability updates"
           else
-            mvn -B -ntp org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=11 2>/dev/null || true
+            echo "Warning: No NVD API key - vulnerability updates will be slow"
+          fi
+
+          if [ -f "mvnw" ]; then
+            # shellcheck disable=SC2086
+            ./mvnw -B -ntp org.owasp:dependency-check-maven:check $NVD_FLAGS -DfailBuildOnCVSS=11 2>/dev/null || true
+          else
+            # shellcheck disable=SC2086
+            mvn -B -ntp org.owasp:dependency-check-maven:check $NVD_FLAGS -DfailBuildOnCVSS=11 2>/dev/null || true
           fi
 
           REPORT=$(find . -name "dependency-check-report.json" 2>/dev/null | head -1)
