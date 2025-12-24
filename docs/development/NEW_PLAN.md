@@ -10,6 +10,20 @@ This document outlines a comprehensive **Self-Validating CLI + Central Hub** arc
 
 ---
 
+## Current Blockers
+
+> **Fix these before proceeding with later phases.**
+
+| Workflow | Status | Notes |
+|----------|--------|-------|
+| `hub-orchestrator.yml` | ❌ FAILING | Needs investigation |
+| `hub-security.yml` | ❌ FAILING | Needs investigation |
+| `hub-run-all.yml` | ✅ PASSING | Central mode works |
+
+See `_quarantine/` and `INTEGRATION_STATUS.md` for file graduation tracking.
+
+---
+
 ## Core Principles
 
 ### Single Source of Truth
