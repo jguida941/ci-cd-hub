@@ -437,7 +437,7 @@ jacoco:
 | Mutation Testing | **mutmut** | Python | Mutation testing for Python | Run in hub-run-all |
 | Mutation Testing | **cosmic-ray** | Python | Alternative Python mutation tester | Not implemented |
 | Property Testing | **Hypothesis** | Python | Generates randomized test cases from properties | Run in hub-run-all |
-| Property Testing | **jqwik** | Java | Property-based testing for JVM | Not implemented |
+| Property Testing | **jqwik** | Java | Property-based testing for JVM | ✅ Implemented (run_jqwik input) |
 | Integration Tests | **Testcontainers** | Java/Python | Tests with real containers (DB, Redis, etc.) | Requires Docker |
 | Contract Tests | **Pact** | Java | Consumer-driven contract testing | Not implemented |
 | Contract Tests | **pact-python** | Python | Consumer-driven contract testing | Not implemented |

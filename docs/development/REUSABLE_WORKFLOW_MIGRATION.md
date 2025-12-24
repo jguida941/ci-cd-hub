@@ -1,86 +1,57 @@
 # Reusable Workflow Migration Plan
 
 > **This is the primary execution plan for CI/CD Hub.** Supersedes ROADMAP.md phases 4-8.
+>
+> **See also:** `plan.md` for high-level status and checklists.
 
-**Status:** Phase 1B - Reusable Workflows (BLOCKING)
+**Status:** Phase 2 - Polish & Stabilization
 **Created:** 2025-12-15
-**Last Updated:** 2025-12-21
+**Last Updated:** 2025-12-23
 **Goal:** Migrate from dispatch templates to GitHub reusable workflows + CLI tool for automatic repo onboarding
 
 ---
 
-## ⚠️ HONEST STATUS (Updated 2025-12-21)
+## Current Status (Audited 2025-12-23)
 
-**We are NOT at Phase 3.5.** Audit revealed significant gaps blocking v1.0.0:
-
-### What's Actually Working ✅
-- Reusable workflows exist (`python-ci.yml`, `java-ci.yml`) with `workflow_call`
-- Central mode (`hub-run-all.yml`) works with full tool coverage
-- Caller templates exist (`hub-python-ci.yml`, `hub-java-ci.yml`)
-- Report schema 2.0 structure implemented
-- Enforcement steps for Checkstyle/SpotBugs/OWASP fixed (2025-12-21)
+### What's Working ✅
+- Reusable workflows exist (`python-ci.yml`, `java-ci.yml`, `kyverno-ci.yml`) with `workflow_call`
+- Central mode (`hub-run-all.yml`) works with full tool coverage - **PASSING**
+- Caller templates exist (`hub-python-ci.yml`, `hub-java-ci.yml`) in `templates/repo/`
+- Report schema 2.0 structure implemented (confirmed in workflow lines 1434/1519)
+- Orchestrator input passthrough complete (mutation_score_min, run_hypothesis, run_jqwik, all max_* thresholds)
+- CLI tool (`cihub`) v0.1.0 with 5 commands: detect, init, update, validate, setup-secrets
+- 80 tests across 6 test files
+- 20 ADRs complete
 
 ### What's Broken ❌
 
-#### 1. Orchestrator Input Passthrough Gap
-`hub-orchestrator.yml` does NOT pass to distributed workflows:
-```
-PYTHON MISSING:
-- mutation_score_min (only Java has it!)
-- run_hypothesis
-- All max_* thresholds (max_ruff_errors, max_black_issues, etc.)
+#### 1. Hub Orchestrator Workflow Failing
+The `hub-orchestrator.yml` workflow fails on schedule and push triggers.
+- Last failure: 2025-12-23
+- Central mode (`hub-run-all.yml`) works fine
+- Needs investigation
 
-JAVA MISSING:
-- run_jqwik
-- max_checkstyle_errors
-- max_spotbugs_bugs
-- max_pmd_violations
-- max_critical_vulns
-- max_high_vulns
-- max_semgrep_findings
-```
+#### 2. Hub Security Workflow Failing
+The `hub-security.yml` workflow is also failing.
 
-**Impact:** Distributed mode uses hardcoded defaults instead of config-driven thresholds.
+#### 3. Report Schema ✅ Complete
+All fields now implemented in workflows:
+- `tools_ran` includes hypothesis (python-ci.yml:1470) and jqwik (java-ci.yml:1557)
+- `tool_metrics` includes mypy_errors (python-ci.yml:1457)
+- Schema version 2.0 emitted by both workflows
 
-**Note:** External repos DO have caller workflows and work correctly. Recent failures in fixtures (java-spring-tutorials, etc.) were actual gate failures (coverage/mutation/ruff/hypothesis), not missing workflows - this validates the enforcement is working.
-
-#### 2. Report Schema Incomplete
-`tools_ran` missing entries:
-- Python: `hypothesis` (input exists, not in report)
-- Java: `jqwik` (input exists, not in report)
-
-`tool_metrics` missing entries:
-- Python: `mypy_errors` (mypy runs but errors not captured in metrics)
-
-**Impact:** Reports don't reflect all tools that ran or their metrics.
-
-#### 3. Caller Template Capability Gap (Intentional Constraint)
+#### 4. Caller Template Capability Gap (Intentional Constraint)
 Due to GitHub's **25-input limit** for `workflow_dispatch`:
 - Caller templates currently at 24 inputs each
-- Adding Docker inputs (run_docker, docker_compose_file, docker_health_endpoint) would exceed 25
 - Docker inputs removed from callers; reusable workflows still support them
 - Planned solution: Separate `hub-*-docker.yml` templates (deferred to v1.1.0)
 
 **This is a known constraint, not a bug.**
 
-#### 4. Documentation Drift
-- `docs/guides/TEMPLATES.md` recommends old dispatch templates
-- `docs/guides/MODES.md` describes reduced distributed toolset
-- `requirements/P0.md`, `requirements/P1.md` show items unverified
-- `CONFIG_REFERENCE.md` now reflects defaults.yaml tool enablement
-
-### Blocking Issues for v1.0.0
-1. **Fix orchestrator input passthrough:**
-   - Add `mutation_score_min` for Python
-   - Add `run_hypothesis` (Python), `run_jqwik` (Java)
-   - Add all `max_*` thresholds for both languages
-2. **Complete report schema:**
-   - Add `hypothesis` to Python `tools_ran`
-   - Add `jqwik` to Java `tools_ran`
-   - Add `mypy_errors` to Python `tool_metrics`
-3. **Docker strategy:** Already decided - separate templates in v1.1.0 (25-input limit constraint)
-4. **Update all docs:** Remove references to old dispatch templates, update MODES.md
-5. **Fixtures validated:** ✅ External repos work, failures are real gate failures (good!)
+### Remaining Work for v1.0.0
+1. **Fix hub-orchestrator.yml** - Investigate and fix failures
+2. **Fix hub-security.yml** - Investigate and fix failures
+3. **Docker strategy:** Already decided - separate templates in v1.1.0
 
 ---
 
@@ -93,29 +64,29 @@ Due to GitHub's **25-input limit** for `workflow_dispatch`:
 - Release workflow with actionlint validation
 - Semantic versioning with floating tags (`v1` → latest `v1.x.x`)
 - Property-based testing: `run_hypothesis` (Python), `run_jqwik` (Java)
+- CLI tool (`cihub`) v0.1.0 with detect/init/update/validate/setup-secrets
+- 80 tests, 20 ADRs
 
 **Deferred to v1.1.0:**
-- Profile templates (`templates/profiles/*.yaml`) - not validated for v1
-- CLI tool (`cihub`) for auto-onboarding
-- Phase 4: Full fixture repo migration
-- Dashboard/GitHub Pages
-- **Docker templates**: `hub-java-docker.yml`, `hub-python-docker.yml` (Docker inputs removed from CI templates due to GitHub's 25 input limit)
+- CLI commands: `add`, `list`, `lint`, `apply`
+- Dashboard/GitHub Pages deployment
+- Docker templates: `hub-java-docker.yml`, `hub-python-docker.yml`
+- Full fixture repo expansion (16+ planned)
 
 ## Quick Status
 
-| Part | Description | Status | Blocking Issues |
-|------|-------------|--------|-----------------|
-| **Part 1** | Reusable Workflows | 🔴 **BLOCKING** | Orchestrator missing inputs, report schema incomplete |
-| **Part 2** | CLI Tool (`cihub`) | ⚪ Not started | Depends on Part 1 |
-| **Part 3** | Test Fixtures Expansion | ⚪ Not started | 6 fixtures exist, 16+ planned |
-| **Part 4** | Aggregation | 🟡 Partial | Works but distributed mode drops thresholds |
-| **Part 5** | Dashboard | 🟡 Partial | HTML exists, needs GitHub Pages |
-| **Part 6** | Polish & Release | ⚪ Not started | Docs drift, old templates not deprecated |
+| Part | Description | Status | Notes |
+|------|-------------|--------|-------|
+| **Part 1** | Reusable Workflows | ✅ **Done** | python-ci, java-ci, kyverno-ci all working |
+| **Part 2** | CLI Tool (`cihub`) | 🟡 **Partial** | v0.1.0 with 5 commands; add/list/lint/apply TODO |
+| **Part 3** | Test Fixtures | 🟡 **Partial** | 4 fixture configs (java/python passing/failing); 80 unit tests |
+| **Part 4** | Aggregation | ✅ **Done** | Input passthrough complete |
+| **Part 5** | Dashboard | 🟡 **Partial** | HTML exists, needs GitHub Pages |
+| **Part 6** | Polish & Release | 🔴 **Blocking** | Orchestrator/Security workflows failing |
 
-**Critical Path:**
-1. Fix Part 1 (orchestrator inputs + report schema) → Distributed mode works
-2. Part 4 aggregation validates → Reports are complete
-3. Part 6 polish (docs + deprecation) → Ready for v1.0.0
+**Current Blockers:**
+1. Fix hub-orchestrator.yml failures
+2. Fix hub-security.yml failures
 
 ---
 
@@ -175,40 +146,16 @@ The hub already has reusable workflows with `workflow_call`:
 - `.github/workflows/python-ci.yml`
 - `.github/workflows/java-ci.yml`
 
-**CRITICAL: Report Schema Mismatch**
+**✅ Report Schema 2.0 - COMPLETE**
 
-Current reusable workflows emit lightweight `report.json`:
-```json
-{ "coverage": 87, "mutation_score": 0, "high_vulns": 0, "dependency_vulns": 0 }
-```
+Both reusable workflows now emit the full schema:
+- `schema_version: "2.0"` for future compatibility
+- All `tool_metrics` fields (ruff_errors, mypy_errors, checkstyle_issues, etc.)
+- `tools_ran` object tracking which tools executed
+- `tests_passed`, `tests_failed` counts
+- Vulnerability counts (critical, high, medium)
 
-But orchestrator aggregator expects the richer schema (12+ fields):
-```json
-{
-  "schema_version": "2.0",  // ADD THIS for future compatibility
-  "coverage": 87,
-  "tests_passed": 10, "tests_failed": 0,
-  "mutation_score": 72,
-  "ruff_errors": 0, "black_issues": 0, "isort_issues": 0, "mypy_errors": 0,
-  "bandit_high": 0, "bandit_medium": 2,
-  "pip_audit_vulns": 0,
-  "semgrep_findings": 0,
-  "trivy_critical": 0, "trivy_high": 0,
-  "tools_ran": { "pytest": true, "ruff": true, ... }
-}
-```
-
-**NOTE: Add `schema_version` field** to guard aggregator against future changes. Aggregator can check version and handle old/new formats gracefully.
-
-**Tasks:**
-- [ ] Audit `python-ci.yml` - expand report.json to include ALL 12+ fields
-- [ ] Audit `java-ci.yml` - same expansion (checkstyle, spotbugs, pmd, pitest, owasp)
-- [ ] Ensure `tools_ran` object is included
-- [ ] Match thresholds/defaults with dispatch templates (mutation gate off by default in python-ci.yml - fix this)
-- [ ] Align semgrep/trivy/codeql defaults between reusable and dispatch
-- [ ] Run actionlint on reusable workflows
-- [ ] Test with fixtures to prove 12+ fields are populated
-- [ ] Ensure both upload `ci-report` artifact with correct structure
+See `python-ci.yml:1434-1480` and `java-ci.yml:1519-1575` for implementation.
 
 **Verification:**
 ```yaml
@@ -616,48 +563,66 @@ A CLI that automates repo onboarding by detecting structure and generating confi
 
 ### Phase 6: CLI Core Commands
 
-**Command Set:**
+**Current (v0.1.0):**
 
 | Command | Description |
 |---------|-------------|
-| `cihub detect --repo <path>` | Scan repo, print detected settings (no writes) |
-| `cihub detect --repo <path> --explain` | Show which files triggered which decisions |
-| `cihub init --repo <path>` | Interactive setup, generates `.ci-hub.yml` + `hub-ci.yml` |
-| `cihub init --repo <path> --non-interactive` | Use flags for all options |
-| `cihub preflight --repo <path>` | Run local validation and tool checks |
-| `cihub verify-github --repo <path>` | Push temp branch, run CI, verify it works |
-| `cihub validate --repo <path>` | Validate existing config against schema |
+| `cihub detect --repo <path>` | Detect language (no writes) |
+| `cihub detect --repo <path> --explain` | Show which files triggered detection |
+| `cihub init --repo <path>` | Generate `.ci-hub.yml` + `hub-ci.yml` (non-interactive) |
+| `cihub update --repo <path>` | Refresh `.ci-hub.yml` + `hub-ci.yml` |
+| `cihub validate --repo <path>` | Validate `.ci-hub.yml` against schema |
+| `cihub setup-secrets` | Set HUB_DISPATCH_TOKEN on hub/connected repos |
+
+**Planned (v0.2+):**
+| Command/Flag | Description |
+|--------------|-------------|
+| `cihub init --interactive` | Guided onboarding with prompts |
+| `cihub init --profile <name>` | Apply a profile preset |
+| `cihub preflight` | Local validation + tool checks |
+| `cihub verify-github` | Push temp branch, run CI, verify it works |
 
 **Example Usage:**
 ```bash
 # Detect what the CLI would do
 cihub detect --repo /path/to/my-python-app --explain
 
-# Interactive init
-cihub init --repo /path/to/my-python-app
+# Init (current, non-interactive)
+cihub init --repo /path/to/my-python-app --language python
 
-# Non-interactive with flags
-cihub init --repo /path/to/my-python-app \
-  --non-interactive \
-  --lang python \
-  --coverage-min 80 \
-  --mutation-min 70 \
-  --enable semgrep,trivy
+# Update config + caller workflow
+cihub update --repo /path/to/my-python-app
 
-# Test locally before pushing
-cihub preflight --repo /path/to/my-python-app
-
-# Full end-to-end verification on GitHub
-cihub verify-github --repo /path/to/my-python-app --branch cihub/verify
+# Validate config
+cihub validate --repo /path/to/my-python-app
 ```
 
 **Tasks:**
-- [ ] Create CLI scaffold with typer
-- [ ] Implement `detect` command
-- [ ] Implement `init` command
-- [ ] Implement `validate` command
+- [x] Implement `detect` (language-only)
+- [x] Implement `init` (non-interactive)
+- [x] Implement `update`
+- [x] Implement `validate`
+- [x] Implement `setup-secrets`
+- [ ] Add `--interactive` prompts (profile, toggles, thresholds, mode)
+- [ ] Add `--profile` preset selection
+- [ ] Add hub config output (for distributed mode)
+- [ ] Implement `preflight` + `verify-github`
 
 ---
+
+### Interactive Onboarding UX (Planned v0.2)
+
+**Goal:** one command to scan a repo, prompt for toggles/thresholds, and write the right config(s).
+
+**Flow:**
+1. Detect language(s) and repo layout (monorepo/subdir)
+2. Choose mode: central, distributed, or both
+3. Select profile (optional), then override tool toggles
+4. Set thresholds (coverage/mutation + max_* limits)
+5. Write outputs (`.ci-hub.yml`, `hub-ci.yml`, optional `config/repos/<repo>.yaml`)
+
+**Open questions:**
+- Should hub workflows merge `.ci-hub.yml` at runtime, or should hub configs remain the only runtime source?
 
 ### Phase 7: Repo Detection Engine
 
@@ -708,7 +673,8 @@ The CLI scans for common "signals" to infer settings.
 
 **Outputs Generated:**
 
-1. **`.ci-hub.yml`** - Repo-local config read by hub
+1. **`.ci-hub.yml`** - Repo-local override (not yet consumed by hub workflows)
+2. **`config/repos/<repo>.yaml`** - Hub-side config for orchestrator (distributed mode)
 
 **CRITICAL: Must include required `repo` block per schema**
 
@@ -729,7 +695,7 @@ language: python  # REQUIRED at top level
 python:
   version: "3.12"
   tools:
-    pytest: { enabled: true, min_coverage: 80 }
+    pytest: { enabled: true, min_coverage: 70 }
     ruff: { enabled: true }
     black: { enabled: true }
     bandit: { enabled: true }
@@ -747,7 +713,7 @@ reports:
   retention_days: 30
 ```
 
-2. **`.github/workflows/hub-ci.yml`** - Full dispatch workflow (must match Phase 2)
+3. **`.github/workflows/hub-ci.yml`** - Caller workflow (must match Phase 2 templates)
 
 **NOTE: This must pass ALL inputs, matching Phase 2 caller template exactly.**
 
@@ -1605,28 +1571,28 @@ done
 
 ### Defaults Alignment
 
-All examples, templates, and defaults will use `coverage_min: 70` to match `defaults.yaml` and workflow code.
+All examples, templates, and defaults use `coverage_min: 70` to match `defaults.yaml` and workflow code.
 
-**Files requiring `coverage_min: 80` → `70` change:**
-- [ ] `templates/repo/.ci-hub.yml`
-- [ ] `templates/hub/config/repos/monorepo-template.yaml`
-- [ ] `templates/hub/config/repos/repo-template.yaml`
-- [ ] `docs/reference/CONFIG_REFERENCE.md`
-- [ ] `config/optional/extra-tests.yaml`
-- [ ] Any examples in this migration doc
+**Completed alignment:**
+- [x] `templates/repo/.ci-hub.yml`
+- [x] `templates/hub/config/repos/monorepo-template.yaml`
+- [x] `templates/hub/config/repos/repo-template.yaml`
+- [x] `docs/reference/CONFIG_REFERENCE.md`
+- [x] `config/optional/extra-tests.yaml`
+- [x] Examples in this migration doc
 
 ---
 
 ### Caller Templates Deliverable
 
-**Current state:** `templates/repo/` contains only `.ci-hub.yml` - no caller workflows exist yet.
+**Current state:** `templates/repo/` contains all required caller templates. ✅ COMPLETE
 
-**Required deliverables:**
+**Deliverables:**
 | File | Status | Description |
 |------|--------|-------------|
-| `templates/repo/hub-python-ci.yml` | ❌ Missing | Python caller with full 20+ input passthrough |
-| `templates/repo/hub-java-ci.yml` | ❌ Missing | Java caller with full input passthrough |
-| `templates/repo/.ci-hub.yml` | ⚠️ Needs update | Add `dispatch_workflow: hub-ci.yml` |
+| `templates/repo/hub-python-ci.yml` | ✅ Done | Python caller with full 20+ input passthrough |
+| `templates/repo/hub-java-ci.yml` | ✅ Done | Java caller with full input passthrough |
+| `templates/repo/.ci-hub.yml` | ✅ Done | Has `dispatch_workflow: hub-ci.yml` (line 12) |
 
 **Validation after creation:**
 ```bash
@@ -1672,12 +1638,12 @@ grep "uses:.*java-ci.yml@v1" templates/repo/hub-java-ci.yml
 
 | # | Task | File | Status |
 |---|------|------|--------|
-| 1.8 | Change `coverage_min: 80` → `70` | `templates/repo/.ci-hub.yml` | [ ] |
-| 1.9 | Change `coverage_min: 80` → `70` | `templates/hub/config/repos/monorepo-template.yaml` | [ ] |
-| 1.10 | Change `coverage_min: 80` → `70` | `templates/hub/config/repos/repo-template.yaml` | [ ] |
-| 1.11 | Change `coverage_min: 80` → `70` | `docs/reference/CONFIG_REFERENCE.md` | [ ] |
-| 1.12 | Change `coverage_min: 80` → `70` | `config/optional/extra-tests.yaml` | [ ] |
-| 1.13 | Verify all examples use `70` | This document | [ ] |
+| 1.8 | Change `coverage_min: 80` → `70` | `templates/repo/.ci-hub.yml` | [x] |
+| 1.9 | Change `coverage_min: 80` → `70` | `templates/hub/config/repos/monorepo-template.yaml` | [x] |
+| 1.10 | Change `coverage_min: 80` → `70` | `templates/hub/config/repos/repo-template.yaml` | [x] |
+| 1.11 | Change `coverage_min: 80` → `70` | `docs/reference/CONFIG_REFERENCE.md` | [x] |
+| 1.12 | Change `coverage_min: 80` → `70` | `config/optional/extra-tests.yaml` | [x] |
+| 1.13 | Verify all examples use `70` | This document | [x] |
 
 ---
 
@@ -2431,7 +2397,7 @@ These policy decisions should be formalized in ADRs before v1.0.0 release:
 | 1A: ADR-0014 | ✅ Complete | 2025-12-17: Created ADR-0014, updated index |
 | 1A+: ADRs 0015-0018 | ✅ Complete | 2025-12-18: Versioning, mutation, scanner defaults, fixtures strategy |
 | 1B: Workflow Code | 🔄 Active | See detailed status below |
-| 1C: Defaults Fix | ⚪ Not Started | `coverage_min: 80` → `70` |
+| 1C: Defaults Fix | ✅ Complete | `coverage_min: 80` → `70` |
 | 2: Caller Templates | ⚪ Not Started | |
 | 3: Docs Cleanup | ⚪ Not Started | 12 files to update |
 | 3.5a: Docs Walkthrough | ⚪ Not Started | 8 docs to validate end-to-end |

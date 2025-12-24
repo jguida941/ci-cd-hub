@@ -445,7 +445,7 @@ reports:
     enabled: true
 
 thresholds:
-  coverage_min: 80
+  coverage_min: 70
   mutation_score_min: 75
 ```
 

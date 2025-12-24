@@ -5,6 +5,8 @@
 # These run IN ADDITION to the standard tools.
 #
 # Use this to add repo-specific tests, integration tests, or any custom commands.
+# NOTE: Keep thresholds in repo configs (`config/repos/*.yaml` or `.ci-hub.yml`),
+# not here, to avoid drift.
 # ============================================================================
 
 extra_tests:
@@ -56,17 +58,3 @@ extra_tests:
       - name: "Make all targets"
         command: "make lint test"
         enabled: true
-
-# Custom quality thresholds per repo
-thresholds:
-  contact-suite-spring-react:
-    coverage_min: 80
-    mutation_score_min: 75
-
-  java-spring-tutorials:
-    coverage_min: 70
-    mutation_score_min: 70
-
-  ci-cd-bst-demo-github-actions:
-    coverage_min: 95  # This repo requires 95%!
-    mutation_score_min: 80

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-12-23 - CLI Dispatch Token Handling
+
+### CLI (cihub)
+- Trim whitespace from PAT input and reject tokens that contain embedded whitespace
+- `setup-secrets` now sends the raw token to `gh` (no trailing newline)
+- Added optional `--verify` preflight to confirm token validity before setting secrets
+
 ## 2025-12-19 - Property-Based Testing Support
 
 ### Hypothesis (Python)
