@@ -154,15 +154,13 @@ jobs:
                   "run_group": run_group,
               }
 
-              if "use_nvd_api_key" in inputs:
-                  entry["use_nvd_api_key"] = inputs["use_nvd_api_key"]
-
-              # Java tool flags
+              # Java tool flags (including use_nvd_api_key for OWASP)
               for key in (
                   "run_jacoco",
                   "run_checkstyle",
                   "run_spotbugs",
                   "run_owasp",
+                  "use_nvd_api_key",
                   "run_pitest",
                   "run_pmd",
                   "run_semgrep",

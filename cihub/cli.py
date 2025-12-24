@@ -122,11 +122,25 @@ def load_effective_config(repo_path: Path) -> dict[str, Any]:
 
 
 def get_java_tool_flags(config: dict[str, Any]) -> dict[str, bool]:
+    """Get enabled status for Java tools per ADR-0017 defaults."""
     tools = config.get("java", {}).get("tools", {})
+    # Defaults per ADR-0017: Core tools enabled, expensive tools disabled
+    defaults = {
+        "jacoco": True,
+        "checkstyle": True,
+        "spotbugs": True,
+        "pmd": True,
+        "owasp": True,
+        "pitest": True,
+        "jqwik": False,  # opt-in
+        "semgrep": False,  # expensive
+        "trivy": False,  # expensive
+        "codeql": False,  # expensive
+        "docker": False,  # requires Dockerfile
+    }
     enabled: dict[str, bool] = {}
-    for tool in JAVA_TOOL_PLUGINS:
-        enabled[tool] = tools.get(tool, {}).get("enabled", False)
-    enabled["jqwik"] = tools.get("jqwik", {}).get("enabled", False)
+    for tool, default in defaults.items():
+        enabled[tool] = tools.get(tool, {}).get("enabled", default)
     return enabled
 
 
@@ -1345,6 +1359,11 @@ def build_parser() -> argparse.ArgumentParser:
     update.add_argument("--branch", help="Default branch (e.g., main)")
     update.add_argument("--subdir", help="Subdirectory for monorepos (repo.subdir)")
     update.add_argument("--workdir", dest="subdir", help="Alias for --subdir")
+    update.add_argument(
+        "--fix-pom",
+        action="store_true",
+        help="Fix pom.xml for Java repos (adds missing plugins)",
+    )
     update.add_argument("--dry-run", action="store_true", help="Print output instead of writing")
     update.set_defaults(func=cmd_update)
 
