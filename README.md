@@ -27,26 +27,26 @@ flowchart LR
 
 ## Workflows
 
-| Workflow | Purpose | Trigger |
-|----------|---------|---------|
-| `hub-run-all.yml` | Central mode: clone each repo, run all tools, upload reports | workflow_dispatch; schedule (daily 02:00 UTC); push to main/master on `config/repos/*.yaml` changes |
-| `hub-orchestrator.yml` | Dispatch mode: trigger reusable workflows in target repos | workflow_dispatch; schedule (daily 02:00 UTC); push to main/master on `config/**` or workflow changes |
-| `hub-security.yml` | Security & supply chain scans across repos | workflow_dispatch; schedule (weekly, Sun 03:00 UTC) |
-| `smoke-test.yml` | Sanity check fast profiles against fixture repos | workflow_dispatch; PR on `config/repos/smoke-test-*.yaml` or workflow changes |
-| `config-validate.yml` | Validate `config/repos/*.yaml` against schema | push/PR on `config/**`, `schema/**`, `scripts/load_config.py`, workflow; workflow_dispatch |
-| `hub-self-check.yml` | Validate hub scripts/tests/templates/configs | push/PR on hub code paths; workflow_dispatch |
-| `kyverno-validate.yml` | Validate hub Kyverno policies and templates | push/PR on `policies/kyverno/**` or `templates/kyverno/**`; workflow_dispatch |
-| `release.yml` | Create GitHub releases and manage version tags | tag push `v*.*.*` |
+| Workflow               | Purpose                                                      | Trigger                                                                                               |
+|------------------------|--------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| `hub-run-all.yml`      | Central mode: clone each repo, run all tools, upload reports | workflow_dispatch; schedule (daily 02:00 UTC); push to main/master on `config/repos/*.yaml` changes   |
+| `hub-orchestrator.yml` | Dispatch mode: trigger reusable workflows in target repos    | workflow_dispatch; schedule (daily 02:00 UTC); push to main/master on `config/**` or workflow changes |
+| `hub-security.yml`     | Security & supply chain scans across repos                   | workflow_dispatch; schedule (weekly, Sun 03:00 UTC)                                                   |
+| `smoke-test.yml`       | Sanity check fast profiles against fixture repos             | workflow_dispatch; PR on `config/repos/smoke-test-*.yaml` or workflow changes                         |
+| `config-validate.yml`  | Validate `config/repos/*.yaml` against schema                | push/PR on `config/**`, `schema/**`, `scripts/load_config.py`, workflow; workflow_dispatch            |
+| `hub-self-check.yml`   | Validate hub scripts/tests/templates/configs                 | push/PR on hub code paths; workflow_dispatch                                                          |
+| `kyverno-validate.yml` | Validate hub Kyverno policies and templates                  | push/PR on `policies/kyverno/**` or `templates/kyverno/**`; workflow_dispatch                         |
+| `release.yml`          | Create GitHub releases and manage version tags               | tag push `v*.*.*`                                                                                     |
 
 ### Reusable Workflows
 
 External repos call these via `uses:` in their caller workflows:
 
-| Workflow | Purpose |
-|----------|---------|
-| `java-ci.yml` | Full Java CI: build, test, coverage, mutation, security scans |
-| `python-ci.yml` | Full Python CI: pytest, coverage, mutation, linting, security scans |
-| `kyverno-ci.yml` | Kubernetes policy validation (optional, for K8s deployments) |
+| Workflow         | Purpose                                                             |
+|------------------|---------------------------------------------------------------------|
+| `java-ci.yml`    | Full Java CI: build, test, coverage, mutation, security scans       |
+| `python-ci.yml`  | Full Python CI: pytest, coverage, mutation, linting, security scans |
+| `kyverno-ci.yml` | Kubernetes policy validation (optional, for K8s deployments)        |
 
 ## Running the Hub (central mode)
 ```bash
@@ -124,12 +124,12 @@ External repos should pin to the major version (e.g., `@v1`) for automatic minor
 
 For Kubernetes deployments, the hub includes Kyverno policies for runtime admission control:
 
-| Policy | Purpose |
-|--------|---------|
-| `block-pull-request-target` | Block dangerous GHA trigger |
-| `require-referrers` | Require SBOM/provenance annotations |
-| `secretless` | Block static secrets, enforce OIDC |
-| `verify-images` | Verify Cosign keyless signatures |
+| Policy                      | Purpose                             |
+|-----------------------------|-------------------------------------|
+| `block-pull-request-target` | Block dangerous GHA trigger         |
+| `require-referrers`         | Require SBOM/provenance annotations |
+| `secretless`                | Block static secrets, enforce OIDC  |
+| `verify-images`             | Verify Cosign keyless signatures    |
 
 Use the reusable `kyverno-ci.yml` workflow to validate your policies:
 
@@ -156,6 +156,28 @@ docs/
 ```
 
 Start with `docs/guides/ONBOARDING.md`, `docs/guides/WORKFLOWS.md`, and `docs/reference/CONFIG_REFERENCE.md`.
+
+## Development
+
+```bash
+# Clone and setup
+git clone https://github.com/jguida941/ci-cd-hub.git
+cd ci-cd-hub
+
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements-dev.txt  # Core + dev (pytest, ruff)
+# OR: pip install -r requirements.txt  # Core only
+
+# Run tests
+pytest tests/
+
+# Lint
+ruff check .
+```
 
 ## Support
 Open issues in `ci-cd-hub` with run URLs and the config file you used. Include whether you ran central (`hub-run-all.yml`) or dispatch (`hub-orchestrator.yml`).

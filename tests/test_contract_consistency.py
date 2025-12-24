@@ -18,7 +18,7 @@ JAVA_WORKFLOW = ROOT / ".github" / "workflows" / "java-ci.yml"
 PYTHON_TEMPLATE = ROOT / "templates" / "repo" / "hub-python-ci.yml"
 JAVA_TEMPLATE = ROOT / "templates" / "repo" / "hub-java-ci.yml"
 
-WORKFLOW_ONLY_INPUTS = {"workdir", "artifact_prefix"}
+WORKFLOW_ONLY_INPUTS = {"workdir", "artifact_prefix", "threshold_overrides_yaml"}
 ALLOWED_NON_WORKFLOW_INPUTS = {
     "language",
     "dispatch_enabled",
@@ -108,7 +108,13 @@ def test_java_workflow_inputs_are_config_driven():
 def test_python_caller_template_matches_workflow():
     workflow_inputs = load_inputs(PYTHON_WORKFLOW, "workflow_call")
     template_inputs = load_inputs(PYTHON_TEMPLATE, "workflow_dispatch")
-    allowed_missing = {"run_docker"}
+    # Per ADR-0024: thresholds and metadata are hardcoded in with: block, not dispatch inputs
+    allowed_missing = {
+        "run_docker", "artifact_prefix", "retention_days",
+        "coverage_min", "mutation_score_min",
+        "max_critical_vulns", "max_high_vulns", "max_semgrep_findings",
+        "max_black_issues", "max_isort_issues", "max_ruff_errors",
+    }
 
     missing = sorted((workflow_inputs - allowed_missing) - template_inputs)
     assert not missing, f"Python caller missing workflow inputs: {missing}"
@@ -120,7 +126,14 @@ def test_python_caller_template_matches_workflow():
 def test_java_caller_template_matches_workflow():
     workflow_inputs = load_inputs(JAVA_WORKFLOW, "workflow_call")
     template_inputs = load_inputs(JAVA_TEMPLATE, "workflow_dispatch")
-    allowed_missing = {"run_docker", "docker_compose_file", "docker_health_endpoint"}
+    # Per ADR-0024: thresholds and metadata are hardcoded in with: block, not dispatch inputs
+    allowed_missing = {
+        "run_docker", "docker_compose_file", "docker_health_endpoint",
+        "artifact_prefix", "retention_days",
+        "coverage_min", "mutation_score_min", "owasp_cvss_fail",
+        "max_critical_vulns", "max_high_vulns", "max_semgrep_findings",
+        "max_checkstyle_errors", "max_spotbugs_bugs", "max_pmd_violations",
+    }
 
     missing = sorted((workflow_inputs - allowed_missing) - template_inputs)
     assert not missing, f"Java caller missing workflow inputs: {missing}"

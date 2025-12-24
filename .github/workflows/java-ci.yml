@@ -80,6 +80,8 @@ on:
         default: false
 
       # ---- Thresholds ----
+      # Individual threshold inputs kept for backward compatibility
+      # Prefer using threshold_overrides_yaml for new callers (see ADR-0024)
       coverage_min:
         description: 'Minimum coverage percentage'
         type: number
@@ -116,6 +118,15 @@ on:
         description: 'Maximum allowed SpotBugs bugs (default: 0 = fail on any)'
         type: number
         default: 0
+
+      # ---- Threshold Override (single input, all thresholds) ----
+      # YAML string containing thresholds from .ci-hub.yml or orchestrator
+      # Takes precedence over individual threshold inputs above
+      # Format: "coverage_min: 80\nmax_critical_vulns: 0\n..."
+      threshold_overrides_yaml:
+        description: 'YAML string with threshold overrides (from .ci-hub.yml)'
+        type: string
+        default: ''
 
       # ---- Docker Settings ----
       docker_compose_file:
@@ -177,6 +188,16 @@ jobs:
       coverage: ${{ steps.coverage.outputs.percentage }}
       tests_passed: ${{ steps.test-counts.outputs.passed }}
       tests_failed: ${{ steps.test-counts.outputs.failed }}
+      # Effective thresholds (from .ci-hub.yml or inputs)
+      eff_coverage_min: ${{ steps.thresholds.outputs.coverage_min }}
+      eff_mutation_score_min: ${{ steps.thresholds.outputs.mutation_score_min }}
+      eff_owasp_cvss_fail: ${{ steps.thresholds.outputs.owasp_cvss_fail }}
+      eff_max_critical_vulns: ${{ steps.thresholds.outputs.max_critical_vulns }}
+      eff_max_high_vulns: ${{ steps.thresholds.outputs.max_high_vulns }}
+      eff_max_semgrep_findings: ${{ steps.thresholds.outputs.max_semgrep_findings }}
+      eff_max_pmd_violations: ${{ steps.thresholds.outputs.max_pmd_violations }}
+      eff_max_checkstyle_errors: ${{ steps.thresholds.outputs.max_checkstyle_errors }}
+      eff_max_spotbugs_bugs: ${{ steps.thresholds.outputs.max_spotbugs_bugs }}
 
     steps:
       - name: Checkout
@@ -186,6 +207,110 @@ jobs:
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
+
+      # ========================================
+      # RESOLVE EFFECTIVE THRESHOLDS
+      # Priority: threshold_overrides_yaml > .ci-hub.yml > inputs
+      # See ADR-0024 for rationale
+      # ========================================
+      - name: Resolve Thresholds
+        id: thresholds
+        run: |
+          # Start with input defaults
+          COVERAGE_MIN="${{ inputs.coverage_min }}"
+          MUTATION_SCORE_MIN="${{ inputs.mutation_score_min }}"
+          OWASP_CVSS_FAIL="${{ inputs.owasp_cvss_fail }}"
+          MAX_CRITICAL_VULNS="${{ inputs.max_critical_vulns }}"
+          MAX_HIGH_VULNS="${{ inputs.max_high_vulns }}"
+          MAX_SEMGREP_FINDINGS="${{ inputs.max_semgrep_findings }}"
+          MAX_PMD_VIOLATIONS="${{ inputs.max_pmd_violations }}"
+          MAX_CHECKSTYLE_ERRORS="${{ inputs.max_checkstyle_errors }}"
+          MAX_SPOTBUGS_BUGS="${{ inputs.max_spotbugs_bugs }}"
+
+          # Check for .ci-hub.yml in repo
+          if [ -f ".ci-hub.yml" ]; then
+            echo "Found .ci-hub.yml, loading thresholds..."
+            python3 << 'PYEOF'
+          import yaml
+          import os
+
+          try:
+              with open('.ci-hub.yml') as f:
+                  data = yaml.safe_load(f) or {}
+              thresholds = data.get('thresholds', {})
+              if thresholds:
+                  print(f"Loaded thresholds from .ci-hub.yml: {thresholds}")
+                  # Write to env file for shell to pick up
+                  with open('_thresholds_from_config.env', 'w') as ef:
+                      for k, v in thresholds.items():
+                          ef.write(f"{k.upper()}={v}\n")
+          except Exception as e:
+              print(f"Warning: could not read .ci-hub.yml: {e}")
+          PYEOF
+            if [ -f "_thresholds_from_config.env" ]; then
+              source _thresholds_from_config.env
+              [ -n "$COVERAGE_MIN" ] && COVERAGE_MIN="$COVERAGE_MIN"
+              [ -n "$MUTATION_SCORE_MIN" ] && MUTATION_SCORE_MIN="$MUTATION_SCORE_MIN"
+              [ -n "$OWASP_CVSS_FAIL" ] && OWASP_CVSS_FAIL="$OWASP_CVSS_FAIL"
+              [ -n "$MAX_CRITICAL_VULNS" ] && MAX_CRITICAL_VULNS="$MAX_CRITICAL_VULNS"
+              [ -n "$MAX_HIGH_VULNS" ] && MAX_HIGH_VULNS="$MAX_HIGH_VULNS"
+              [ -n "$MAX_SEMGREP_FINDINGS" ] && MAX_SEMGREP_FINDINGS="$MAX_SEMGREP_FINDINGS"
+              [ -n "$MAX_PMD_VIOLATIONS" ] && MAX_PMD_VIOLATIONS="$MAX_PMD_VIOLATIONS"
+              [ -n "$MAX_CHECKSTYLE_ERRORS" ] && MAX_CHECKSTYLE_ERRORS="$MAX_CHECKSTYLE_ERRORS"
+              [ -n "$MAX_SPOTBUGS_BUGS" ] && MAX_SPOTBUGS_BUGS="$MAX_SPOTBUGS_BUGS"
+              rm -f _thresholds_from_config.env
+            fi
+          fi
+
+          # Override with threshold_overrides_yaml if provided (highest precedence)
+          OVERRIDES='${{ inputs.threshold_overrides_yaml }}'
+          if [ -n "$OVERRIDES" ]; then
+            echo "Applying threshold_overrides_yaml..."
+            echo "$OVERRIDES" | python3 << 'PYEOF'
+          import yaml
+          import sys
+
+          try:
+              data = yaml.safe_load(sys.stdin.read()) or {}
+              with open('_thresholds_override.env', 'w') as ef:
+                  for k, v in data.items():
+                      ef.write(f"{k.upper()}={v}\n")
+              print(f"Applied overrides: {data}")
+          except Exception as e:
+              print(f"Warning: could not parse threshold_overrides_yaml: {e}")
+          PYEOF
+            if [ -f "_thresholds_override.env" ]; then
+              source _thresholds_override.env
+              [ -n "$COVERAGE_MIN" ] && COVERAGE_MIN="$COVERAGE_MIN"
+              [ -n "$MUTATION_SCORE_MIN" ] && MUTATION_SCORE_MIN="$MUTATION_SCORE_MIN"
+              [ -n "$OWASP_CVSS_FAIL" ] && OWASP_CVSS_FAIL="$OWASP_CVSS_FAIL"
+              [ -n "$MAX_CRITICAL_VULNS" ] && MAX_CRITICAL_VULNS="$MAX_CRITICAL_VULNS"
+              [ -n "$MAX_HIGH_VULNS" ] && MAX_HIGH_VULNS="$MAX_HIGH_VULNS"
+              [ -n "$MAX_SEMGREP_FINDINGS" ] && MAX_SEMGREP_FINDINGS="$MAX_SEMGREP_FINDINGS"
+              [ -n "$MAX_PMD_VIOLATIONS" ] && MAX_PMD_VIOLATIONS="$MAX_PMD_VIOLATIONS"
+              [ -n "$MAX_CHECKSTYLE_ERRORS" ] && MAX_CHECKSTYLE_ERRORS="$MAX_CHECKSTYLE_ERRORS"
+              [ -n "$MAX_SPOTBUGS_BUGS" ] && MAX_SPOTBUGS_BUGS="$MAX_SPOTBUGS_BUGS"
+              rm -f _thresholds_override.env
+            fi
+          fi
+
+          # Export effective thresholds as outputs
+          echo "coverage_min=$COVERAGE_MIN" >> $GITHUB_OUTPUT
+          echo "mutation_score_min=$MUTATION_SCORE_MIN" >> $GITHUB_OUTPUT
+          echo "owasp_cvss_fail=$OWASP_CVSS_FAIL" >> $GITHUB_OUTPUT
+          echo "max_critical_vulns=$MAX_CRITICAL_VULNS" >> $GITHUB_OUTPUT
+          echo "max_high_vulns=$MAX_HIGH_VULNS" >> $GITHUB_OUTPUT
+          echo "max_semgrep_findings=$MAX_SEMGREP_FINDINGS" >> $GITHUB_OUTPUT
+          echo "max_pmd_violations=$MAX_PMD_VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "max_checkstyle_errors=$MAX_CHECKSTYLE_ERRORS" >> $GITHUB_OUTPUT
+          echo "max_spotbugs_bugs=$MAX_SPOTBUGS_BUGS" >> $GITHUB_OUTPUT
+
+          echo "Effective thresholds:"
+          echo "  coverage_min: $COVERAGE_MIN"
+          echo "  mutation_score_min: $MUTATION_SCORE_MIN"
+          echo "  owasp_cvss_fail: $OWASP_CVSS_FAIL"
+          echo "  max_critical_vulns: $MAX_CRITICAL_VULNS"
+          echo "  max_high_vulns: $MAX_HIGH_VULNS"
 
       - name: Set up JDK ${{ inputs.java_version }}
         uses: actions/setup-java@v4
@@ -418,7 +543,7 @@ jobs:
         if: inputs.run_jacoco
         run: |
           COVERAGE=${{ steps.coverage.outputs.percentage }}
-          MIN=${{ inputs.coverage_min }}
+          MIN=${{ steps.thresholds.outputs.coverage_min }}
           if [ "$COVERAGE" -lt "$MIN" ]; then
             echo "::error::Coverage $COVERAGE% is below minimum $MIN%"
             exit 1
@@ -428,7 +553,7 @@ jobs:
         if: always() && inputs.run_checkstyle
         run: |
           ISSUES="${{ steps.lint-results.outputs.checkstyle }}"
-          MAX="${{ inputs.max_checkstyle_errors }}"
+          MAX="${{ steps.thresholds.outputs.max_checkstyle_errors }}"
           if [ "${ISSUES:-0}" -gt "${MAX:-0}" ]; then
             echo "::error::Checkstyle errors ($ISSUES) exceed max_checkstyle_errors ($MAX)"
             exit 1
@@ -438,7 +563,7 @@ jobs:
         if: always() && inputs.run_spotbugs
         run: |
           ISSUES="${{ steps.lint-results.outputs.spotbugs }}"
-          MAX="${{ inputs.max_spotbugs_bugs }}"
+          MAX="${{ steps.thresholds.outputs.max_spotbugs_bugs }}"
           if [ "${ISSUES:-0}" -gt "${MAX:-0}" ]; then
             echo "::error::SpotBugs bugs ($ISSUES) exceed max_spotbugs_bugs ($MAX)"
             exit 1
@@ -466,18 +591,18 @@ jobs:
             echo "| Security | CodeQL | ${{ inputs.run_codeql }} |"
             echo "| Container | Docker | ${{ inputs.run_docker }} |"
             echo ""
-            echo "### Thresholds"
+            echo "### Thresholds (effective)"
             echo "| Setting | Value |"
             echo "|---------|-------|"
-            echo "| Min Coverage | ${{ inputs.coverage_min }}% |"
-            echo "| Min Mutation Score | ${{ inputs.mutation_score_min }}% |"
-            echo "| OWASP CVSS Fail | ${{ inputs.owasp_cvss_fail }} |"
-            echo "| Max Critical Vulns | ${{ inputs.max_critical_vulns }} |"
-            echo "| Max High Vulns | ${{ inputs.max_high_vulns }} |"
-            echo "| Max Semgrep Findings | ${{ inputs.max_semgrep_findings }} |"
-            echo "| Max PMD Violations | ${{ inputs.max_pmd_violations }} |"
-            echo "| Max Checkstyle Errors | ${{ inputs.max_checkstyle_errors }} |"
-            echo "| Max SpotBugs Bugs | ${{ inputs.max_spotbugs_bugs }} |"
+            echo "| Min Coverage | ${{ steps.thresholds.outputs.coverage_min }}% |"
+            echo "| Min Mutation Score | ${{ steps.thresholds.outputs.mutation_score_min }}% |"
+            echo "| OWASP CVSS Fail | ${{ steps.thresholds.outputs.owasp_cvss_fail }} |"
+            echo "| Max Critical Vulns | ${{ steps.thresholds.outputs.max_critical_vulns }} |"
+            echo "| Max High Vulns | ${{ steps.thresholds.outputs.max_high_vulns }} |"
+            echo "| Max Semgrep Findings | ${{ steps.thresholds.outputs.max_semgrep_findings }} |"
+            echo "| Max PMD Violations | ${{ steps.thresholds.outputs.max_pmd_violations }} |"
+            echo "| Max Checkstyle Errors | ${{ steps.thresholds.outputs.max_checkstyle_errors }} |"
+            echo "| Max SpotBugs Bugs | ${{ steps.thresholds.outputs.max_spotbugs_bugs }} |"
             echo ""
             echo "### Environment"
             echo "| Setting | Value |"
@@ -513,7 +638,7 @@ jobs:
             echo "|------|--------|---------|"
 
             TESTS_FAILED="${{ steps.test-counts.outputs.failed || 0 }}"
-            MIN_COVERAGE="${{ inputs.coverage_min }}"
+            MIN_COVERAGE="${{ steps.thresholds.outputs.coverage_min }}"
             STATUS="PASS"
             if [ "${TESTS_FAILED:-0}" -gt 0 ]; then
               STATUS="FAIL"
@@ -548,7 +673,7 @@ jobs:
 
             if [ "${{ inputs.run_checkstyle }}" = "true" ]; then
               ISSUES="${{ steps.lint-results.outputs.checkstyle }}"
-              MAX="${{ inputs.max_checkstyle_errors || 0 }}"
+              MAX="${{ steps.thresholds.outputs.max_checkstyle_errors || 0 }}"
               if [ "${ISSUES:-0}" -le "${MAX:-0}" ] 2>/dev/null; then
                 STATUS="PASS"
               else
@@ -561,7 +686,7 @@ jobs:
 
             if [ "${{ inputs.run_spotbugs }}" = "true" ]; then
               ISSUES="${{ steps.lint-results.outputs.spotbugs }}"
-              MAX="${{ inputs.max_spotbugs_bugs || 0 }}"
+              MAX="${{ steps.thresholds.outputs.max_spotbugs_bugs || 0 }}"
               if [ "${ISSUES:-0}" -le "${MAX:-0}" ] 2>/dev/null; then
                 STATUS="PASS"
               else
@@ -587,8 +712,8 @@ jobs:
               CRITICAL="${{ steps.security-results.outputs.owasp_critical }}"
               HIGH="${{ steps.security-results.outputs.owasp_high }}"
               MEDIUM="${{ steps.security-results.outputs.owasp_medium }}"
-              MAX_CRIT="${{ inputs.max_critical_vulns || 0 }}"
-              MAX_HIGH="${{ inputs.max_high_vulns || 0 }}"
+              MAX_CRIT="${{ steps.thresholds.outputs.max_critical_vulns || 0 }}"
+              MAX_HIGH="${{ steps.thresholds.outputs.max_high_vulns || 0 }}"
               if [ "${CRITICAL:-0}" -le "${MAX_CRIT:-0}" ] && [ "${HIGH:-0}" -le "${MAX_HIGH:-0}" ] 2>/dev/null; then
                 STATUS="PASS"
               else
@@ -689,8 +814,8 @@ jobs:
           REPORT=$(find . -name "dependency-check-report.json" -print -quit)
           CRITICAL=0
           HIGH=0
-          MAX_CRITICAL="${{ inputs.max_critical_vulns || 0 }}"
-          MAX_HIGH="${{ inputs.max_high_vulns || 0 }}"
+          MAX_CRITICAL="${{ steps.thresholds.outputs.max_critical_vulns || 0 }}"
+          MAX_HIGH="${{ steps.thresholds.outputs.max_high_vulns || 0 }}"
           if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
             CRITICAL=$(jq '[.dependencies[]?.vulnerabilities[]? | select(.severity == "CRITICAL")] | length' "$REPORT" 2>/dev/null || echo 0)
             HIGH=$(jq '[.dependencies[]?.vulnerabilities[]? | select(.severity == "HIGH")] | length' "$REPORT" 2>/dev/null || echo 0)
@@ -705,6 +830,23 @@ jobs:
           if [ "$HIGH" -gt "$MAX_HIGH" ]; then
             echo "::error::High vulnerabilities ($HIGH) exceed max_high_vulns $MAX_HIGH"
             exit 1
+          fi
+
+          # CVSS-based enforcement
+          CVSS_THRESHOLD="${{ steps.thresholds.outputs.owasp_cvss_fail }}"
+          if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
+            MAX_CVSS=$(jq '
+              [.dependencies[]?.vulnerabilities[]? |
+               (.cvssv3?.baseScore // .cvssv2?.score // .cvssData?.baseScore // 0)] | max // 0
+            ' "$REPORT" 2>/dev/null || echo 0)
+
+            # Default to 0 if empty to avoid awk errors
+            MAX_CVSS="${MAX_CVSS:-0}"
+
+            if awk "BEGIN {exit !($MAX_CVSS >= $CVSS_THRESHOLD)}"; then
+              echo "::error::OWASP found vulnerability with CVSS $MAX_CVSS >= threshold $CVSS_THRESHOLD"
+              exit 1
+            fi
           fi
 
       - name: Upload to Codecov
@@ -778,7 +920,7 @@ jobs:
             echo "### Thresholds"
             echo "| Setting | Value |"
             echo "|---------|-------|"
-            echo "| Max PMD Violations | ${{ inputs.max_pmd_violations }} |"
+            echo "| Max PMD Violations | ${{ needs.build-test.outputs.eff_max_pmd_violations }} |"
             echo ""
             echo "### Environment"
             echo "| Setting | Value |"
@@ -805,7 +947,7 @@ jobs:
             echo "| Tool | Status | Details |"
             echo "|------|--------|---------|"
             VIOLATIONS="${{ steps.pmd.outputs.violations || 0 }}"
-            MAX_VIOLATIONS="${{ inputs.max_pmd_violations || 0 }}"
+            MAX_VIOLATIONS="${{ needs.build-test.outputs.eff_max_pmd_violations || 0 }}"
             if [ "${VIOLATIONS:-0}" -le "${MAX_VIOLATIONS:-0}" ]; then
               STATUS="PASS"
             else
@@ -826,7 +968,7 @@ jobs:
       - name: Enforce PMD Violations
         run: |
           VIOLATIONS=${{ steps.pmd.outputs.violations || 0 }}
-          MAX_VIOLATIONS=${{ inputs.max_pmd_violations || 0 }}
+          MAX_VIOLATIONS=${{ needs.build-test.outputs.eff_max_pmd_violations || 0 }}
           if [ "$VIOLATIONS" -gt "$MAX_VIOLATIONS" ]; then
             echo "::error::PMD reported $VIOLATIONS violations (max: $MAX_VIOLATIONS)"
             exit 1
@@ -889,7 +1031,7 @@ jobs:
             echo "### Thresholds"
             echo "| Setting | Value |"
             echo "|---------|-------|"
-            echo "| Max Semgrep Findings | ${{ inputs.max_semgrep_findings }} |"
+            echo "| Max Semgrep Findings | ${{ needs.build-test.outputs.eff_max_semgrep_findings }} |"
             echo ""
             echo "### Environment"
             echo "| Setting | Value |"
@@ -916,7 +1058,7 @@ jobs:
             echo "| Tool | Status | Details |"
             echo "|------|--------|---------|"
             FINDINGS="${{ steps.semgrep.outputs.findings || 0 }}"
-            MAX_FINDINGS="${{ inputs.max_semgrep_findings || 0 }}"
+            MAX_FINDINGS="${{ needs.build-test.outputs.eff_max_semgrep_findings || 0 }}"
             if [ "${FINDINGS:-0}" -le "${MAX_FINDINGS:-0}" ]; then
               STATUS="PASS"
             else
@@ -937,7 +1079,7 @@ jobs:
       - name: Enforce Semgrep Threshold
         run: |
           FINDINGS=${{ steps.semgrep.outputs.findings || 0 }}
-          MAX_FINDINGS=${{ inputs.max_semgrep_findings || 0 }}
+          MAX_FINDINGS=${{ needs.build-test.outputs.eff_max_semgrep_findings || 0 }}
           if [ "$FINDINGS" -gt "$MAX_FINDINGS" ]; then
             echo "::error::Semgrep reported $FINDINGS findings (max: $MAX_FINDINGS)"
             exit 1
@@ -1016,8 +1158,8 @@ jobs:
             echo "### Thresholds"
             echo "| Setting | Value |"
             echo "|---------|-------|"
-            echo "| Max Critical Vulns | ${{ inputs.max_critical_vulns }} |"
-            echo "| Max High Vulns | ${{ inputs.max_high_vulns }} |"
+            echo "| Max Critical Vulns | ${{ needs.build-test.outputs.eff_max_critical_vulns }} |"
+            echo "| Max High Vulns | ${{ needs.build-test.outputs.eff_max_high_vulns }} |"
             echo ""
             echo "### Environment"
             echo "| Setting | Value |"
@@ -1049,8 +1191,8 @@ jobs:
             else
               CRIT="${{ steps.trivy-parse.outputs.critical || 0 }}"
               HIGH="${{ steps.trivy-parse.outputs.high || 0 }}"
-              MAX_CRIT="${{ inputs.max_critical_vulns || 0 }}"
-              MAX_HIGH="${{ inputs.max_high_vulns || 0 }}"
+              MAX_CRIT="${{ needs.build-test.outputs.eff_max_critical_vulns || 0 }}"
+              MAX_HIGH="${{ needs.build-test.outputs.eff_max_high_vulns || 0 }}"
               if [ "${CRIT:-0}" -le "${MAX_CRIT:-0}" ] && [ "${HIGH:-0}" -le "${MAX_HIGH:-0}" ]; then
                 STATUS="PASS"
               else
@@ -1074,8 +1216,8 @@ jobs:
         run: |
           CRIT="${{ steps.trivy-parse.outputs.critical || 0 }}"
           HIGH="${{ steps.trivy-parse.outputs.high || 0 }}"
-          MAX_CRITICAL="${{ inputs.max_critical_vulns || 0 }}"
-          MAX_HIGH="${{ inputs.max_high_vulns || 0 }}"
+          MAX_CRITICAL="${{ needs.build-test.outputs.eff_max_critical_vulns || 0 }}"
+          MAX_HIGH="${{ needs.build-test.outputs.eff_max_high_vulns || 0 }}"
           if [ "$CRIT" -gt "$MAX_CRITICAL" ]; then
             echo "::error::Trivy critical findings ($CRIT) exceed max_critical_vulns $MAX_CRITICAL"
             exit 1
@@ -1083,6 +1225,24 @@ jobs:
           if [ "$HIGH" -gt "$MAX_HIGH" ]; then
             echo "::error::Trivy high findings ($HIGH) exceed max_high_vulns $MAX_HIGH"
             exit 1
+          fi
+
+          # CVSS-based enforcement
+          CVSS_THRESHOLD="${{ needs.build-test.outputs.eff_owasp_cvss_fail }}"
+          REPORT="${{ github.workspace }}/trivy-report.json"
+          if [ -f "$REPORT" ]; then
+            MAX_CVSS=$(jq '
+              [.Results[]?.Vulnerabilities[]?.CVSS | to_entries[]?.value |
+               (.V3Score // .V2Score // 0)] | max // 0
+            ' "$REPORT" 2>/dev/null || echo 0)
+
+            # Default to 0 if empty to avoid awk errors
+            MAX_CVSS="${MAX_CVSS:-0}"
+
+            if awk "BEGIN {exit !($MAX_CVSS >= $CVSS_THRESHOLD)}"; then
+              echo "::error::Trivy found vulnerability with CVSS $MAX_CVSS >= threshold $CVSS_THRESHOLD"
+              exit 1
+            fi
           fi
 
   # ============================================================================
@@ -1183,7 +1343,7 @@ jobs:
       - name: Check Mutation Threshold
         run: |
           SCORE=${{ steps.pitest.outputs.score }}
-          MIN=${{ inputs.mutation_score_min }}
+          MIN=${{ needs.build-test.outputs.eff_mutation_score_min }}
           if [ "$SCORE" -lt "$MIN" ]; then
             echo "::error::Mutation score $SCORE% is below minimum $MIN%"
             exit 1
@@ -1203,7 +1363,7 @@ jobs:
             echo "### Thresholds"
             echo "| Setting | Value |"
             echo "|---------|-------|"
-            echo "| Min Mutation Score | ${{ inputs.mutation_score_min }}% |"
+            echo "| Min Mutation Score | ${{ needs.build-test.outputs.eff_mutation_score_min }}% |"
             echo ""
             echo "### Environment"
             echo "| Setting | Value |"
@@ -1231,7 +1391,7 @@ jobs:
             echo "|------|--------|---------|"
 
             SCORE="${{ steps.pitest.outputs.score || 0 }}"
-            MIN_SCORE="${{ inputs.mutation_score_min }}"
+            MIN_SCORE="${{ needs.build-test.outputs.eff_mutation_score_min }}"
             if [ "${SCORE:-0}" -ge "${MIN_SCORE:-0}" ]; then
               STATUS="PASS"
             else
@@ -1586,10 +1746,15 @@ jobs:
               "docker": ${{ inputs.run_docker }}
             },
             "thresholds": {
-              "coverage_min": ${{ inputs.coverage_min }},
-              "mutation_score_min": ${{ inputs.mutation_score_min }},
-              "owasp_cvss_fail": ${{ inputs.owasp_cvss_fail }},
-              "max_pmd_violations": ${{ inputs.max_pmd_violations }}
+              "coverage_min": ${{ needs.build-test.outputs.eff_coverage_min }},
+              "mutation_score_min": ${{ needs.build-test.outputs.eff_mutation_score_min }},
+              "owasp_cvss_fail": ${{ needs.build-test.outputs.eff_owasp_cvss_fail }},
+              "max_pmd_violations": ${{ needs.build-test.outputs.eff_max_pmd_violations }},
+              "max_critical_vulns": ${{ needs.build-test.outputs.eff_max_critical_vulns }},
+              "max_high_vulns": ${{ needs.build-test.outputs.eff_max_high_vulns }},
+              "max_semgrep_findings": ${{ needs.build-test.outputs.eff_max_semgrep_findings }},
+              "max_checkstyle_errors": ${{ needs.build-test.outputs.eff_max_checkstyle_errors }},
+              "max_spotbugs_bugs": ${{ needs.build-test.outputs.eff_max_spotbugs_bugs }}
             }
           }
           EOF

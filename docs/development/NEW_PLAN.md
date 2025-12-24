@@ -3548,6 +3548,65 @@ These are explicitly deferred to maintain focus:
 
 ---
 
+## Multi-Language Expansion Strategy
+
+> **Future scope** — Add after current blockers (hub-orchestrator, hub-security) are resolved.
+
+Production-grade approach to add more languages without exceeding the GitHub Actions 25-input dispatch limit (see ADR-0024):
+
+### Architecture Principles
+
+| Principle | Implementation |
+|-----------|----------------|
+| Per-language workflows | Each language gets its own reusable workflow + caller template |
+| Lean caller inputs | Keep to ~20 inputs max: version, workdir, correlation_id, tool booleans |
+| Config-first thresholds | Thresholds stay in `config/.ci-hub.yml`; single `threshold_overrides_yaml` input |
+| No mega-dispatch | Route via orchestrator to per-language callers, not a single shared caller |
+| Hardcode defaults | If a tool is always on, hardcode it in the workflow instead of adding an input |
+
+### Adding a New Language Checklist
+
+1. **Schema/Config**
+   - Add language fields under `language.tools.*` in schema
+   - Set defaults in `config/defaults.yaml`
+
+2. **Workflows**
+   - Create `.github/workflows/<lang>-ci.yml` (reusable workflow)
+   - Create `templates/repo/hub-<lang>-ci.yml` (caller template)
+   - Keep caller inputs lean (essential booleans + workdir + version)
+
+3. **Orchestrator**
+   - Update orchestrator to route to new language workflow
+   - Pass only booleans and essentials (no thresholds)
+
+4. **Gating/Reports**
+   - Reuse existing enforcement/summary/report patterns
+   - Share `scripts/` helpers to avoid divergence
+
+5. **Docs/Tests**
+   - Update CONFIG_REFERENCE, TOOLS documentation
+   - Add template tests to `tests/test_templates.py`
+   - Update ONBOARDING guide
+
+### Input Budget Per Caller
+
+| Category | Max Inputs | Examples |
+|----------|------------|----------|
+| Core | 3 | version, workdir, correlation_id |
+| Tool booleans | ~15 | run_tests, run_lint, run_security, etc. |
+| Override | 1 | threshold_overrides_yaml |
+| Reserved | ~1 | Future expansion |
+| **Total** | **~20** | Stay under 25 limit |
+
+### What NOT to Do
+
+- ❌ Create a single mega-dispatch with all languages
+- ❌ Add per-language threshold inputs to dispatch
+- ❌ Add tool toggles that are always on (hardcode instead)
+- ❌ Skip schema/config/docs updates when adding a language
+
+---
+
 ## Drift Prevention
 
 | Check | Script/Tool | Catches |

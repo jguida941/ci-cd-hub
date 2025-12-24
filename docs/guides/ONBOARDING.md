@@ -248,3 +248,16 @@ For more issues, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 - Central mode currently uses hub config only; repo-local merge is planned.
 - Profiles are generation helpers only; they are merged into hub config, then repo overrides win.
 - Tool steps are gated by config run_* flags (central mode) and will be once dispatch workflows are updated.
+
+### Threshold Overrides (Advanced)
+
+For one-off threshold adjustments without editing `.ci-hub.yml`, the orchestrator can pass a `threshold_overrides_yaml` dispatch input:
+
+```yaml
+# Example: pass resolved thresholds to workflow
+threshold_overrides_yaml: |
+  owasp_cvss_fail: 7
+  coverage_min: 70
+```
+
+This is an **escape hatch** outside the normal config hierarchy. See [CONFIG_REFERENCE.md](../reference/CONFIG_REFERENCE.md#dispatch-time-threshold-override-escape-hatch) for details.

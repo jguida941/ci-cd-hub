@@ -56,3 +56,7 @@ Three-tier hierarchy (highest precedence wins):
 - `load_config.py` uses recursive dict merge
 - Validation runs on merged config, not individual sources
 - Config hierarchy documented in CONFIG_REFERENCE.md
+
+**Dispatch-time escape hatch (outside hierarchy):**
+
+The `threshold_overrides_yaml` workflow dispatch input exists as an escape hatch for the orchestrator to pass resolved thresholds at dispatch time. This is NOT a config tier - it's how the orchestrator passes the already-resolved values to the workflow. See ADR-0024 for details.

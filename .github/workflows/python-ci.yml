@@ -116,6 +116,15 @@ on:
         type: number
         default: 0
 
+      # ---- Threshold Override (single input, all thresholds) ----
+      # YAML string containing thresholds from .ci-hub.yml or orchestrator
+      # Takes precedence over individual threshold inputs above
+      # Format: "coverage_min: 80\nmax_critical_vulns: 0\n..."
+      threshold_overrides_yaml:
+        description: 'YAML string with threshold overrides (from .ci-hub.yml)'
+        type: string
+        default: ''
+
       # ---- Reports ----
       retention_days:
         description: 'Artifact retention days'
@@ -158,6 +167,16 @@ jobs:
       bandit_medium: ${{ steps.bandit.outputs.medium }}
       black_issues: ${{ steps.black.outputs.issues }}
       isort_issues: ${{ steps.isort.outputs.issues }}
+      # Effective thresholds (from .ci-hub.yml or inputs)
+      eff_coverage_min: ${{ steps.thresholds.outputs.coverage_min }}
+      eff_mutation_score_min: ${{ steps.thresholds.outputs.mutation_score_min }}
+      eff_max_critical_vulns: ${{ steps.thresholds.outputs.max_critical_vulns }}
+      eff_max_high_vulns: ${{ steps.thresholds.outputs.max_high_vulns }}
+      eff_max_semgrep_findings: ${{ steps.thresholds.outputs.max_semgrep_findings }}
+      eff_max_black_issues: ${{ steps.thresholds.outputs.max_black_issues }}
+      eff_max_isort_issues: ${{ steps.thresholds.outputs.max_isort_issues }}
+      eff_max_ruff_errors: ${{ steps.thresholds.outputs.max_ruff_errors }}
+      eff_owasp_cvss_fail: ${{ steps.thresholds.outputs.owasp_cvss_fail }}
     defaults:
       run:
         working-directory: ${{ inputs.workdir }}
@@ -168,6 +187,110 @@ jobs:
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
+
+      # ========================================
+      # RESOLVE EFFECTIVE THRESHOLDS
+      # Priority: threshold_overrides_yaml > .ci-hub.yml > inputs
+      # See ADR-0024 for rationale
+      # ========================================
+      - name: Resolve Thresholds
+        id: thresholds
+        run: |
+          # Start with input defaults
+          COVERAGE_MIN="${{ inputs.coverage_min }}"
+          MUTATION_SCORE_MIN="${{ inputs.mutation_score_min }}"
+          MAX_CRITICAL_VULNS="${{ inputs.max_critical_vulns }}"
+          MAX_HIGH_VULNS="${{ inputs.max_high_vulns }}"
+          MAX_SEMGREP_FINDINGS="${{ inputs.max_semgrep_findings }}"
+          MAX_BLACK_ISSUES="${{ inputs.max_black_issues }}"
+          MAX_ISORT_ISSUES="${{ inputs.max_isort_issues }}"
+          MAX_RUFF_ERRORS="${{ inputs.max_ruff_errors }}"
+          # CVSS threshold for Trivy - named owasp_cvss_fail for consistency with Java (default: 7)
+          OWASP_CVSS_FAIL=7
+
+          # Check for .ci-hub.yml in repo
+          if [ -f ".ci-hub.yml" ]; then
+            echo "Found .ci-hub.yml, loading thresholds..."
+            python3 << 'PYEOF'
+          import yaml
+          import os
+
+          try:
+              with open('.ci-hub.yml') as f:
+                  data = yaml.safe_load(f) or {}
+              thresholds = data.get('thresholds', {})
+              if thresholds:
+                  print(f"Loaded thresholds from .ci-hub.yml: {thresholds}")
+                  # Write to env file for shell to pick up
+                  with open('_thresholds_from_config.env', 'w') as ef:
+                      for k, v in thresholds.items():
+                          ef.write(f"{k.upper()}={v}\n")
+          except Exception as e:
+              print(f"Warning: could not read .ci-hub.yml: {e}")
+          PYEOF
+            if [ -f "_thresholds_from_config.env" ]; then
+              source _thresholds_from_config.env
+              [ -n "$COVERAGE_MIN" ] && COVERAGE_MIN="$COVERAGE_MIN"
+              [ -n "$MUTATION_SCORE_MIN" ] && MUTATION_SCORE_MIN="$MUTATION_SCORE_MIN"
+              [ -n "$MAX_CRITICAL_VULNS" ] && MAX_CRITICAL_VULNS="$MAX_CRITICAL_VULNS"
+              [ -n "$MAX_HIGH_VULNS" ] && MAX_HIGH_VULNS="$MAX_HIGH_VULNS"
+              [ -n "$MAX_SEMGREP_FINDINGS" ] && MAX_SEMGREP_FINDINGS="$MAX_SEMGREP_FINDINGS"
+              [ -n "$MAX_BLACK_ISSUES" ] && MAX_BLACK_ISSUES="$MAX_BLACK_ISSUES"
+              [ -n "$MAX_ISORT_ISSUES" ] && MAX_ISORT_ISSUES="$MAX_ISORT_ISSUES"
+              [ -n "$MAX_RUFF_ERRORS" ] && MAX_RUFF_ERRORS="$MAX_RUFF_ERRORS"
+              [ -n "$OWASP_CVSS_FAIL" ] && OWASP_CVSS_FAIL="$OWASP_CVSS_FAIL"
+              rm -f _thresholds_from_config.env
+            fi
+          fi
+
+          # Override with threshold_overrides_yaml if provided (highest precedence)
+          OVERRIDES='${{ inputs.threshold_overrides_yaml }}'
+          if [ -n "$OVERRIDES" ]; then
+            echo "Applying threshold_overrides_yaml..."
+            echo "$OVERRIDES" | python3 << 'PYEOF'
+          import yaml
+          import sys
+
+          try:
+              data = yaml.safe_load(sys.stdin.read()) or {}
+              with open('_thresholds_override.env', 'w') as ef:
+                  for k, v in data.items():
+                      ef.write(f"{k.upper()}={v}\n")
+              print(f"Applied overrides: {data}")
+          except Exception as e:
+              print(f"Warning: could not parse threshold_overrides_yaml: {e}")
+          PYEOF
+            if [ -f "_thresholds_override.env" ]; then
+              source _thresholds_override.env
+              [ -n "$COVERAGE_MIN" ] && COVERAGE_MIN="$COVERAGE_MIN"
+              [ -n "$MUTATION_SCORE_MIN" ] && MUTATION_SCORE_MIN="$MUTATION_SCORE_MIN"
+              [ -n "$MAX_CRITICAL_VULNS" ] && MAX_CRITICAL_VULNS="$MAX_CRITICAL_VULNS"
+              [ -n "$MAX_HIGH_VULNS" ] && MAX_HIGH_VULNS="$MAX_HIGH_VULNS"
+              [ -n "$MAX_SEMGREP_FINDINGS" ] && MAX_SEMGREP_FINDINGS="$MAX_SEMGREP_FINDINGS"
+              [ -n "$MAX_BLACK_ISSUES" ] && MAX_BLACK_ISSUES="$MAX_BLACK_ISSUES"
+              [ -n "$MAX_ISORT_ISSUES" ] && MAX_ISORT_ISSUES="$MAX_ISORT_ISSUES"
+              [ -n "$MAX_RUFF_ERRORS" ] && MAX_RUFF_ERRORS="$MAX_RUFF_ERRORS"
+              [ -n "$OWASP_CVSS_FAIL" ] && OWASP_CVSS_FAIL="$OWASP_CVSS_FAIL"
+              rm -f _thresholds_override.env
+            fi
+          fi
+
+          # Export effective thresholds as outputs
+          echo "coverage_min=$COVERAGE_MIN" >> $GITHUB_OUTPUT
+          echo "mutation_score_min=$MUTATION_SCORE_MIN" >> $GITHUB_OUTPUT
+          echo "max_critical_vulns=$MAX_CRITICAL_VULNS" >> $GITHUB_OUTPUT
+          echo "max_high_vulns=$MAX_HIGH_VULNS" >> $GITHUB_OUTPUT
+          echo "max_semgrep_findings=$MAX_SEMGREP_FINDINGS" >> $GITHUB_OUTPUT
+          echo "max_black_issues=$MAX_BLACK_ISSUES" >> $GITHUB_OUTPUT
+          echo "max_isort_issues=$MAX_ISORT_ISSUES" >> $GITHUB_OUTPUT
+          echo "max_ruff_errors=$MAX_RUFF_ERRORS" >> $GITHUB_OUTPUT
+          echo "owasp_cvss_fail=$OWASP_CVSS_FAIL" >> $GITHUB_OUTPUT
+
+          echo "Effective thresholds:"
+          echo "  coverage_min: $COVERAGE_MIN"
+          echo "  mutation_score_min: $MUTATION_SCORE_MIN"
+          echo "  max_critical_vulns: $MAX_CRITICAL_VULNS"
+          echo "  max_high_vulns: $MAX_HIGH_VULNS"
 
       - name: Set up Python ${{ inputs.python_version }}
         uses: actions/setup-python@v5
@@ -200,7 +323,7 @@ jobs:
         if: inputs.run_ruff
         run: |
           ERRORS="${{ steps.ruff.outputs.errors || 0 }}"
-          MAX="${{ inputs.max_ruff_errors || 0 }}"
+          MAX="${{ steps.thresholds.outputs.max_ruff_errors || 0 }}"
           if [ "$ERRORS" -gt "$MAX" ]; then
             echo "::error::Ruff errors ($ERRORS) exceed max_ruff_errors $MAX"
             exit 1
@@ -253,7 +376,7 @@ jobs:
         if: inputs.run_bandit
         run: |
           HIGH="${{ steps.bandit.outputs.high || 0 }}"
-          MAX_HIGH="${{ inputs.max_high_vulns || 0 }}"
+          MAX_HIGH="${{ steps.thresholds.outputs.max_high_vulns || 0 }}"
           if [ "$HIGH" -gt "$MAX_HIGH" ]; then
             echo "::error::Bandit HIGH findings ($HIGH) exceed max_high_vulns $MAX_HIGH"
             exit 1
@@ -277,7 +400,7 @@ jobs:
         if: inputs.run_black
         run: |
           ISSUES="${{ steps.black.outputs.issues || 0 }}"
-          MAX="${{ inputs.max_black_issues || 0 }}"
+          MAX="${{ steps.thresholds.outputs.max_black_issues || 0 }}"
           if [ "$ISSUES" -gt "$MAX" ]; then
             echo "::error::Black formatting issues ($ISSUES) exceed max_black_issues $MAX"
             exit 1
@@ -311,7 +434,7 @@ jobs:
         if: inputs.run_isort
         run: |
           ISSUES="${{ steps.isort.outputs.issues || 0 }}"
-          MAX="${{ inputs.max_isort_issues || 0 }}"
+          MAX="${{ steps.thresholds.outputs.max_isort_issues || 0 }}"
           if [ "$ISSUES" -gt "$MAX" ]; then
             echo "::error::isort import issues ($ISSUES) exceed max_isort_issues $MAX"
             exit 1
@@ -349,17 +472,17 @@ jobs:
             echo "| Security | CodeQL | ${{ inputs.run_codeql }} |"
             echo "| Container | Docker | ${{ inputs.run_docker }} |"
             echo ""
-            echo "### Thresholds"
+            echo "### Thresholds (effective)"
             echo "| Setting | Value |"
             echo "|---------|-------|"
-            echo "| Min Coverage | ${{ inputs.coverage_min }}% |"
-            echo "| Min Mutation Score | ${{ inputs.mutation_score_min }}% |"
-            echo "| Max Ruff Errors | ${{ inputs.max_ruff_errors }} |"
-            echo "| Max Black Issues | ${{ inputs.max_black_issues }} |"
-            echo "| Max isort Issues | ${{ inputs.max_isort_issues }} |"
-            echo "| Max Critical Vulns | ${{ inputs.max_critical_vulns }} |"
-            echo "| Max High Vulns | ${{ inputs.max_high_vulns }} |"
-            echo "| Max Semgrep Findings | ${{ inputs.max_semgrep_findings }} |"
+            echo "| Min Coverage | ${{ steps.thresholds.outputs.coverage_min }}% |"
+            echo "| Min Mutation Score | ${{ steps.thresholds.outputs.mutation_score_min }}% |"
+            echo "| Max Ruff Errors | ${{ steps.thresholds.outputs.max_ruff_errors }} |"
+            echo "| Max Black Issues | ${{ steps.thresholds.outputs.max_black_issues }} |"
+            echo "| Max isort Issues | ${{ steps.thresholds.outputs.max_isort_issues }} |"
+            echo "| Max Critical Vulns | ${{ steps.thresholds.outputs.max_critical_vulns }} |"
+            echo "| Max High Vulns | ${{ steps.thresholds.outputs.max_high_vulns }} |"
+            echo "| Max Semgrep Findings | ${{ steps.thresholds.outputs.max_semgrep_findings }} |"
             echo ""
             echo "### Environment"
             echo "| Setting | Value |"
@@ -388,7 +511,7 @@ jobs:
               echo "| Ruff | SKIP | - |"
             else
               RUFF_ISSUES="${{ steps.ruff.outputs.errors || 0 }}"
-              RUFF_MAX="${{ inputs.max_ruff_errors || 0 }}"
+              RUFF_MAX="${{ steps.thresholds.outputs.max_ruff_errors || 0 }}"
               if [ "${RUFF_ISSUES:-0}" -le "${RUFF_MAX:-0}" ] 2>/dev/null; then
                 STATUS="PASS"
               else
@@ -402,7 +525,7 @@ jobs:
               echo "| Black | SKIP | - |"
             else
               BLACK_ISSUES="${{ steps.black.outputs.issues || 0 }}"
-              BLACK_MAX="${{ inputs.max_black_issues || 0 }}"
+              BLACK_MAX="${{ steps.thresholds.outputs.max_black_issues || 0 }}"
               if [ "${BLACK_ISSUES:-0}" -le "${BLACK_MAX:-0}" ] 2>/dev/null; then
                 STATUS="PASS"
               else
@@ -416,7 +539,7 @@ jobs:
               echo "| isort | SKIP | - |"
             else
               ISORT_ISSUES="${{ steps.isort.outputs.issues || 0 }}"
-              ISORT_MAX="${{ inputs.max_isort_issues || 0 }}"
+              ISORT_MAX="${{ steps.thresholds.outputs.max_isort_issues || 0 }}"
               if [ "${ISORT_ISSUES:-0}" -le "${ISORT_MAX:-0}" ] 2>/dev/null; then
                 STATUS="PASS"
               else
@@ -444,7 +567,7 @@ jobs:
               BANDIT_HIGH="${{ steps.bandit.outputs.high || 0 }}"
               BANDIT_MED="${{ steps.bandit.outputs.medium || 0 }}"
               BANDIT_LOW="${{ steps.bandit.outputs.low || 0 }}"
-              BANDIT_MAX="${{ inputs.max_high_vulns || 0 }}"
+              BANDIT_MAX="${{ steps.thresholds.outputs.max_high_vulns || 0 }}"
               if [ "${BANDIT_HIGH:-0}" -le "${BANDIT_MAX:-0}" ] 2>/dev/null; then
                 STATUS="PASS"
               else
@@ -488,6 +611,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    needs: lint
     outputs:
       status: ${{ steps.test.outcome }}
       coverage: ${{ steps.coverage.outputs.percentage }}
@@ -564,7 +688,7 @@ jobs:
         if: inputs.run_pytest
         run: |
           COVERAGE=${{ steps.coverage.outputs.percentage || 0 }}
-          MIN=${{ inputs.coverage_min }}
+          MIN=${{ needs.lint.outputs.eff_coverage_min }}
           if [ "$COVERAGE" -lt "$MIN" ]; then
             echo "::error::Coverage $COVERAGE% is below minimum $MIN%"
             exit 1
@@ -582,10 +706,10 @@ jobs:
             echo "| Testing | pytest | ${{ inputs.run_pytest }} |"
             echo "| Testing | Hypothesis | ${{ inputs.run_hypothesis }} |"
             echo ""
-            echo "### Thresholds"
+            echo "### Thresholds (effective)"
             echo "| Setting | Value |"
             echo "|---------|-------|"
-            echo "| Min Coverage | ${{ inputs.coverage_min }}% |"
+            echo "| Min Coverage | ${{ needs.lint.outputs.eff_coverage_min }}% |"
             echo ""
             echo "### Environment"
             echo "| Setting | Value |"
@@ -613,7 +737,7 @@ jobs:
               TESTS_PASSED="${{ steps.test.outputs.tests_passed || 0 }}"
               TESTS_FAILED="${{ steps.test.outputs.tests_failed || 0 }}"
               COVERAGE="${{ steps.coverage.outputs.percentage || 0 }}"
-              MIN_COVERAGE="${{ inputs.coverage_min }}"
+              MIN_COVERAGE="${{ needs.lint.outputs.eff_coverage_min }}"
               if [ "${TESTS_FAILED:-0}" -gt 0 ] || [ "${COVERAGE:-0}" -lt "${MIN_COVERAGE:-0}" ]; then
                 STATUS="FAIL"
               else
@@ -680,7 +804,8 @@ jobs:
   security:
     name: Security Scan
     runs-on: ubuntu-latest
-    if: inputs.run_pip_audit
+    needs: lint
+    if: always() && inputs.run_pip_audit
     defaults:
       run:
         working-directory: ${{ inputs.workdir }}
@@ -717,8 +842,8 @@ jobs:
         run: |
           CRITICAL=0
           HIGH=0
-          MAX_CRITICAL="${{ inputs.max_critical_vulns || 0 }}"
-          MAX_HIGH="${{ inputs.max_high_vulns || 0 }}"
+          MAX_CRITICAL="${{ needs.lint.outputs.eff_max_critical_vulns || 0 }}"
+          MAX_HIGH="${{ needs.lint.outputs.eff_max_high_vulns || 0 }}"
 
           if [ -f "pip-audit-report.json" ]; then
             # pip-audit does not consistently emit severity; treat all findings as HIGH
@@ -746,11 +871,11 @@ jobs:
             echo "|----------|------|---------|"
             echo "| Security | pip-audit | ${{ inputs.run_pip_audit }} |"
             echo ""
-            echo "### Thresholds"
+            echo "### Thresholds (effective)"
             echo "| Setting | Value |"
             echo "|---------|-------|"
-            echo "| Max Critical Vulns | ${{ inputs.max_critical_vulns }} |"
-            echo "| Max High Vulns | ${{ inputs.max_high_vulns }} |"
+            echo "| Max Critical Vulns | ${{ needs.lint.outputs.eff_max_critical_vulns }} |"
+            echo "| Max High Vulns | ${{ needs.lint.outputs.eff_max_high_vulns }} |"
             echo ""
             echo "### Environment"
             echo "| Setting | Value |"
@@ -777,8 +902,8 @@ jobs:
             if [ -f "pip-audit-report.json" ]; then
               HIGH=$(python -c "import json; from pathlib import Path; path = Path('pip-audit-report.json'); data = json.loads(path.read_text()) if path.exists() else {}; print(sum(len(dep.get('vulnerabilities', []) or []) for dep in data.get('dependencies', [])))")
             fi
-            MAX_CRITICAL="${{ inputs.max_critical_vulns || 0 }}"
-            MAX_HIGH="${{ inputs.max_high_vulns || 0 }}"
+            MAX_CRITICAL="${{ needs.lint.outputs.eff_max_critical_vulns || 0 }}"
+            MAX_HIGH="${{ needs.lint.outputs.eff_max_high_vulns || 0 }}"
             if [ "${CRITICAL:-0}" -le "${MAX_CRITICAL:-0}" ] && [ "${HIGH:-0}" -le "${MAX_HIGH:-0}" ]; then
               STATUS="PASS"
             else
@@ -881,7 +1006,7 @@ jobs:
   mutation-test:
     name: Mutation Testing
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, lint]
     if: always() && inputs.run_mutmut
     outputs:
       score: ${{ steps.mutmut.outputs.score }}
@@ -1003,7 +1128,7 @@ jobs:
       - name: Enforce Mutation Threshold
         run: |
           SCORE=${{ steps.mutmut.outputs.score || 0 }}
-          MIN=${{ inputs.mutation_score_min }}
+          MIN=${{ needs.lint.outputs.eff_mutation_score_min }}
           if [ "$SCORE" -lt "$MIN" ]; then
             echo "::error::Mutation score $SCORE% is below minimum $MIN%"
             exit 1
@@ -1020,10 +1145,10 @@ jobs:
             echo "|----------|------|---------|"
             echo "| Testing | mutmut | ${{ inputs.run_mutmut }} |"
             echo ""
-            echo "### Thresholds"
+            echo "### Thresholds (effective)"
             echo "| Setting | Value |"
             echo "|---------|-------|"
-            echo "| Min Mutation Score | ${{ inputs.mutation_score_min }}% |"
+            echo "| Min Mutation Score | ${{ needs.lint.outputs.eff_mutation_score_min }}% |"
             echo ""
             echo "### Environment"
             echo "| Setting | Value |"
@@ -1046,7 +1171,7 @@ jobs:
             echo "|------|--------|---------|"
 
             SCORE="${{ steps.mutmut.outputs.score || 0 }}"
-            MIN_SCORE="${{ inputs.mutation_score_min }}"
+            MIN_SCORE="${{ needs.lint.outputs.eff_mutation_score_min }}"
             if [ "${SCORE:-0}" -ge "${MIN_SCORE:-0}" ]; then
               STATUS="PASS"
             else
@@ -1061,7 +1186,7 @@ jobs:
   semgrep:
     name: Semgrep SAST
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, lint]
     if: always() && inputs.run_semgrep
     outputs:
       findings: ${{ steps.semgrep.outputs.findings }}
@@ -1106,10 +1231,10 @@ jobs:
             echo "|----------|------|---------|"
             echo "| Security | Semgrep | ${{ inputs.run_semgrep }} |"
             echo ""
-            echo "### Thresholds"
+            echo "### Thresholds (effective)"
             echo "| Setting | Value |"
             echo "|---------|-------|"
-            echo "| Max Semgrep Findings | ${{ inputs.max_semgrep_findings }} |"
+            echo "| Max Semgrep Findings | ${{ needs.lint.outputs.eff_max_semgrep_findings }} |"
             echo ""
             echo "### Environment"
             echo "| Setting | Value |"
@@ -1132,7 +1257,7 @@ jobs:
             echo "|------|--------|---------|"
 
             FINDINGS="${{ steps.semgrep.outputs.findings || 0 }}"
-            MAX_FINDINGS="${{ inputs.max_semgrep_findings || 0 }}"
+            MAX_FINDINGS="${{ needs.lint.outputs.eff_max_semgrep_findings || 0 }}"
             if [ "${FINDINGS:-0}" -le "${MAX_FINDINGS:-0}" ]; then
               STATUS="PASS"
             else
@@ -1153,7 +1278,7 @@ jobs:
       - name: Enforce Semgrep Threshold
         run: |
           FINDINGS=${{ steps.semgrep.outputs.findings || 0 }}
-          MAX_FINDINGS=${{ inputs.max_semgrep_findings || 0 }}
+          MAX_FINDINGS=${{ needs.lint.outputs.eff_max_semgrep_findings || 0 }}
           if [ "$FINDINGS" -gt "$MAX_FINDINGS" ]; then
             echo "::error::Semgrep reported $FINDINGS findings (max: $MAX_FINDINGS)"
             exit 1
@@ -1165,7 +1290,7 @@ jobs:
   trivy:
     name: Trivy Container Scan
     runs-on: ubuntu-latest
-    needs: test
+    needs: [test, lint]
     if: always() && inputs.run_trivy
     outputs:
       critical: ${{ steps.trivy-parse.outputs.critical }}
@@ -1229,11 +1354,11 @@ jobs:
             echo "|----------|------|---------|"
             echo "| Security | Trivy | ${{ inputs.run_trivy }} |"
             echo ""
-            echo "### Thresholds"
+            echo "### Thresholds (effective)"
             echo "| Setting | Value |"
             echo "|---------|-------|"
-            echo "| Max Critical Vulns | ${{ inputs.max_critical_vulns }} |"
-            echo "| Max High Vulns | ${{ inputs.max_high_vulns }} |"
+            echo "| Max Critical Vulns | ${{ needs.lint.outputs.eff_max_critical_vulns }} |"
+            echo "| Max High Vulns | ${{ needs.lint.outputs.eff_max_high_vulns }} |"
             echo ""
             echo "### Environment"
             echo "| Setting | Value |"
@@ -1260,8 +1385,8 @@ jobs:
             else
               CRIT="${{ steps.trivy-parse.outputs.critical || 0 }}"
               HIGH="${{ steps.trivy-parse.outputs.high || 0 }}"
-              MAX_CRIT="${{ inputs.max_critical_vulns || 0 }}"
-              MAX_HIGH="${{ inputs.max_high_vulns || 0 }}"
+              MAX_CRIT="${{ needs.lint.outputs.eff_max_critical_vulns || 0 }}"
+              MAX_HIGH="${{ needs.lint.outputs.eff_max_high_vulns || 0 }}"
               if [ "${CRIT:-0}" -le "${MAX_CRIT:-0}" ] && [ "${HIGH:-0}" -le "${MAX_HIGH:-0}" ]; then
                 STATUS="PASS"
               else
@@ -1285,8 +1410,8 @@ jobs:
         run: |
           CRIT="${{ steps.trivy-parse.outputs.critical || 0 }}"
           HIGH="${{ steps.trivy-parse.outputs.high || 0 }}"
-          MAX_CRITICAL="${{ inputs.max_critical_vulns || 0 }}"
-          MAX_HIGH="${{ inputs.max_high_vulns || 0 }}"
+          MAX_CRITICAL="${{ needs.lint.outputs.eff_max_critical_vulns || 0 }}"
+          MAX_HIGH="${{ needs.lint.outputs.eff_max_high_vulns || 0 }}"
           if [ "$CRIT" -gt "$MAX_CRITICAL" ]; then
             echo "::error::Trivy critical findings ($CRIT) exceed max_critical_vulns $MAX_CRITICAL"
             exit 1
@@ -1294,6 +1419,24 @@ jobs:
           if [ "$HIGH" -gt "$MAX_HIGH" ]; then
             echo "::error::Trivy high findings ($HIGH) exceed max_high_vulns $MAX_HIGH"
             exit 1
+          fi
+
+          # CVSS-based enforcement (parity with Java OWASP)
+          CVSS_THRESHOLD="${{ needs.lint.outputs.eff_owasp_cvss_fail }}"
+          REPORT="${{ github.workspace }}/trivy-report.json"
+          if [ -f "$REPORT" ]; then
+            MAX_CVSS=$(jq '
+              [.Results[]?.Vulnerabilities[]?.CVSS | to_entries[]?.value |
+               (.V3Score // .V2Score // 0)] | max // 0
+            ' "$REPORT" 2>/dev/null || echo 0)
+
+            # Default to 0 if empty to avoid awk errors
+            MAX_CVSS="${MAX_CVSS:-0}"
+
+            if awk "BEGIN {exit !($MAX_CVSS >= $CVSS_THRESHOLD)}"; then
+              echo "::error::Trivy found vulnerability with CVSS $MAX_CVSS >= threshold $CVSS_THRESHOLD"
+              exit 1
+            fi
           fi
 
   # ============================================================================

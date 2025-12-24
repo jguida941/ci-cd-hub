@@ -61,6 +61,35 @@ Dispatch mode: repo-local `.ci-hub.yml` is merged over hub config when present (
 
 ---
 
+## Dispatch-Time Threshold Override (Escape Hatch)
+
+For dispatch mode, there's an **escape hatch** that operates **outside the config hierarchy**:
+
+```yaml
+# Workflow dispatch input (NOT a .ci-hub.yml key)
+threshold_overrides_yaml: |
+  coverage_min: 70
+  owasp_cvss_fail: 7
+  max_critical_vulns: 0
+```
+
+**Purpose:** The orchestrator uses this to pass resolved thresholds to workflows at dispatch time. This is useful when:
+- Orchestrator has already merged configs and wants to pass final values
+- You need to temporarily override thresholds for a single run
+
+**Not a config tier:** This input is parsed by the workflow at runtime but is NOT part of the three-tier config hierarchy. It's a dispatch mechanism, not a configuration source.
+
+**Supported keys:**
+- `coverage_min` - Minimum coverage percentage
+- `mutation_score_min` - Minimum mutation score percentage
+- `owasp_cvss_fail` - CVSS threshold for OWASP/Trivy (fail if >= this value)
+- `max_critical_vulns` - Maximum allowed CRITICAL vulnerabilities
+- `max_high_vulns` - Maximum allowed HIGH vulnerabilities
+
+See [ADR-0024](../adr/0024-workflow-dispatch-input-limit.md) for the design rationale.
+
+---
+
 ## Schema Validation
 
 All configs are validated against `schema/ci-hub-config.schema.json`.

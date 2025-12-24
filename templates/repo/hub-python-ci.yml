@@ -15,9 +15,16 @@
 
 name: "Hub: Python CI"
 
+# ============================================================================
+# DISPATCH INPUTS: Tool toggles only (booleans)
+# THRESHOLDS: Set in .ci-hub.yml or edit defaults below
+# See ADR-0024 for rationale (GitHub 25-input limit)
+# ============================================================================
+
 on:
   workflow_dispatch:
     inputs:
+      # ---- Essential Settings ----
       python_version:
         description: 'Python version'
         type: string
@@ -26,6 +33,12 @@ on:
         description: 'Working directory (for monorepos)'
         type: string
         default: '.'
+      hub_correlation_id:
+        description: 'Correlation ID (set by orchestrator)'
+        type: string
+        default: ''
+
+      # ---- Tool Toggles (booleans only) ----
       run_pytest:
         description: 'Run pytest'
         type: boolean
@@ -74,50 +87,16 @@ on:
         description: 'Run CodeQL analysis'
         type: boolean
         default: false
-      coverage_min:
-        description: 'Minimum coverage %'
-        type: number
-        default: 70
-      mutation_score_min:
-        description: 'Minimum mutation score %'
-        type: number
-        default: 70
-      max_critical_vulns:
-        description: 'Max critical vulns allowed'
-        type: number
-        default: 0
-      max_high_vulns:
-        description: 'Max high vulns allowed'
-        type: number
-        default: 0
-      max_semgrep_findings:
-        description: 'Max Semgrep findings allowed'
-        type: number
-        default: 0
-      max_black_issues:
-        description: 'Max Black formatting issues allowed'
-        type: number
-        default: 0
-      max_isort_issues:
-        description: 'Max isort import issues allowed'
-        type: number
-        default: 0
-      max_ruff_errors:
-        description: 'Max Ruff errors allowed'
-        type: number
-        default: 0
-      artifact_prefix:
-        description: 'Artifact name prefix (for multiple jobs)'
+
+      # ---- Threshold Override ----
+      threshold_overrides_yaml:
+        description: 'YAML string with threshold overrides'
         type: string
         default: ''
-      hub_correlation_id:
-        description: 'Correlation ID for hub orchestrator run matching'
-        type: string
-        default: ''
-      retention_days:
-        description: 'Artifact retention days'
-        type: number
-        default: 30
+
+      # ---- NOTE: Thresholds not in dispatch ----
+      # To customize thresholds, edit the defaults in the 'with:' block below
+      # or set them in your .ci-hub.yml (see docs/guides/ONBOARDING.md)
 
 # Required permissions for reusable workflow features
 permissions:
@@ -129,8 +108,12 @@ jobs:
   ci:
     uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
     with:
+      # ---- From dispatch inputs ----
       python_version: ${{ inputs.python_version }}
       workdir: ${{ inputs.workdir }}
+      hub_correlation_id: ${{ inputs.hub_correlation_id }}
+
+      # ---- Tool toggles (from dispatch) ----
       run_pytest: ${{ inputs.run_pytest }}
       run_ruff: ${{ inputs.run_ruff }}
       run_bandit: ${{ inputs.run_bandit }}
@@ -143,15 +126,21 @@ jobs:
       run_semgrep: ${{ inputs.run_semgrep }}
       run_trivy: ${{ inputs.run_trivy }}
       run_codeql: ${{ inputs.run_codeql }}
-      coverage_min: ${{ fromJSON(inputs.coverage_min) }}
-      mutation_score_min: ${{ fromJSON(inputs.mutation_score_min) }}
-      max_critical_vulns: ${{ fromJSON(inputs.max_critical_vulns) }}
-      max_high_vulns: ${{ fromJSON(inputs.max_high_vulns) }}
-      max_semgrep_findings: ${{ fromJSON(inputs.max_semgrep_findings) }}
-      max_black_issues: ${{ fromJSON(inputs.max_black_issues) }}
-      max_isort_issues: ${{ fromJSON(inputs.max_isort_issues) }}
-      max_ruff_errors: ${{ fromJSON(inputs.max_ruff_errors) }}
-      artifact_prefix: ${{ inputs.artifact_prefix }}
-      hub_correlation_id: ${{ inputs.hub_correlation_id }}
-      retention_days: ${{ fromJSON(inputs.retention_days) }}
+
+      # ---- Threshold Override ----
+      threshold_overrides_yaml: ${{ inputs.threshold_overrides_yaml }}
+
+      # ---- Thresholds (edit these defaults or set in .ci-hub.yml) ----
+      coverage_min: 70
+      mutation_score_min: 70
+      max_critical_vulns: 0
+      max_high_vulns: 0
+      max_semgrep_findings: 0
+      max_black_issues: 0
+      max_isort_issues: 0
+      max_ruff_errors: 0
+
+      # ---- Metadata (edit if needed) ----
+      artifact_prefix: ''
+      retention_days: 30
     secrets: inherit

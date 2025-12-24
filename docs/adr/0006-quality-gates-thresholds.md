@@ -19,9 +19,10 @@ CI pipelines need pass/fail criteria. Questions:
 |--------|---------|--------------|-------------|
 | Coverage (min %) | 70 | Yes | Per-tool plugin (JaCoCo/pytest-cov) |
 | Mutation score (min %) | 70 | Yes | Warning only (not blocking) |
-| OWASP CVSS (fail >=) | 7 | Yes | OWASP plugin fails build |
-| Critical vulns (max) | 0 | Yes | Pending implementation |
-| High vulns (max) | 0 | Yes | Pending implementation |
+| OWASP CVSS (fail >=) | 7 | Yes | Workflow step + plugin fails build |
+| Trivy CVSS (fail >=) | 7 | Yes | Workflow step (parity with OWASP) |
+| Critical vulns (max) | 0 | Yes | Workflow step enforces count |
+| High vulns (max) | 0 | Yes | Workflow step enforces count |
 
 **Configuration Hierarchy:**
 1. Per-tool settings (e.g., `java.tools.jacoco.min_coverage: 80`)
@@ -42,15 +43,20 @@ Per-tool settings take precedence over global thresholds.
    - mutmut: reported but not blocking
    - Currently warning only in hub (too slow for PR checks)
 
-3. **OWASP:**
-   - `failBuildOnCVSS` parameter
+3. **OWASP (Java):**
+   - `failBuildOnCVSS` parameter in Maven plugin
+   - Workflow step also enforces CVSS threshold
    - Fails if any dependency has CVSS >= threshold
-   - Enforced at build time
 
-4. **Vulnerability counts:**
-   - Config keys exist (`thresholds.max_critical_vulns`, `thresholds.max_high_vulns`)
-   - **Enforcement NOT yet implemented**
-   - Currently: OWASP fails on individual CVSS, not counts
+4. **Trivy (Python/Java):**
+   - Workflow step enforces CVSS threshold (parity with OWASP)
+   - Uses same `owasp_cvss_fail` config for consistency
+   - Fails if any vulnerability has CVSS >= threshold
+
+5. **Vulnerability counts:**
+   - Config keys: `thresholds.max_critical_vulns`, `thresholds.max_high_vulns`
+   - **Enforced** in workflow "Enforce Thresholds" steps
+   - Counts critical/high vulns from OWASP, pip-audit, Trivy reports
 
 ## Alternatives Considered
 
@@ -68,9 +74,9 @@ Per-tool settings take precedence over global thresholds.
 - Mutation score as advisory prevents slow PR builds
 
 **Negative:**
-- Vuln count thresholds not yet enforced
 - Different tools enforce differently (some warn, some fail)
 - Repos must configure plugins to respect thresholds
+- CVSS parsing depends on JSON report format consistency
 
 ## Implementation Notes
 
@@ -81,16 +87,14 @@ Per-tool settings take precedence over global thresholds.
 
 **Current Limitations:**
 
-1. **Vulnerability counts pending aggregation implementation:**
-   - `thresholds.max_critical_vulns` and `thresholds.max_high_vulns` exist in config
-   - Schema accepts these values
-   - However, counting and enforcement NOT implemented
-   - Future: aggregate vuln counts from OWASP, pip-audit, Trivy
-
-2. **No quality gate summary job:**
+1. **No quality gate summary job:**
    - Individual tools enforce their thresholds
    - No unified "quality gate" job that checks all thresholds
    - Consider adding for clearer pass/fail signal
+
+2. **CVSS parsing is format-dependent:**
+   - OWASP, pip-audit, Trivy have different JSON structures
+   - jq queries must handle format variations
 
 ## Future Work
 

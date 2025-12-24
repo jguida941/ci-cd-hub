@@ -1,0 +1,8 @@
+# Development dependencies (includes core)
+-r requirements.txt
+
+# Testing
+pytest>=7.0
+
+# Linting
+ruff>=0.1.0
