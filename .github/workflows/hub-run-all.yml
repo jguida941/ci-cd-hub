@@ -154,6 +154,9 @@ jobs:
                   "run_group": run_group,
               }
 
+              if "use_nvd_api_key" in inputs:
+                  entry["use_nvd_api_key"] = inputs["use_nvd_api_key"]
+
               # Java tool flags
               for key in (
                   "run_jacoco",
@@ -416,21 +419,29 @@ jobs:
         run: |
           CRITICAL=0; HIGH=0; MEDIUM=0; LOW=0
 
-          # Build NVD API key flag if secret is set
+          # Build NVD API key flag if enabled and secret is set
+          USE_NVD_API_KEY="${{ matrix.use_nvd_api_key }}"
+          if [ -z "$USE_NVD_API_KEY" ]; then
+            USE_NVD_API_KEY="true"
+          fi
           NVD_FLAGS=""
-          if [ -n "$NVD_API_KEY" ]; then
+          if [ "$USE_NVD_API_KEY" = "true" ] && [ -n "$NVD_API_KEY" ]; then
             NVD_FLAGS="-DnvdApiKey=$NVD_API_KEY"
             echo "NVD API key configured - using accelerated vulnerability updates"
+          elif [ "$USE_NVD_API_KEY" = "true" ]; then
+            echo "Warning: NVD API key enabled but secret not set - vulnerability updates will be slow"
           else
-            echo "Warning: No NVD API key - vulnerability updates will be slow"
+            echo "NVD API key disabled via config"
           fi
+
+          DC_FLAGS="-DnvdApiDelay=2500 -DnvdMaxRetryCount=10 -Ddependencycheck.failOnError=false"
 
           if [ -f "mvnw" ]; then
             # shellcheck disable=SC2086
-            ./mvnw -B -ntp org.owasp:dependency-check-maven:check $NVD_FLAGS -DfailBuildOnCVSS=11 2>/dev/null || true
+            ./mvnw -B -ntp org.owasp:dependency-check-maven:check $NVD_FLAGS $DC_FLAGS -DfailBuildOnCVSS=11 2>/dev/null || true
           else
             # shellcheck disable=SC2086
-            mvn -B -ntp org.owasp:dependency-check-maven:check $NVD_FLAGS -DfailBuildOnCVSS=11 2>/dev/null || true
+            mvn -B -ntp org.owasp:dependency-check-maven:check $NVD_FLAGS $DC_FLAGS -DfailBuildOnCVSS=11 2>/dev/null || true
           fi
 
           REPORT=$(find . -name "dependency-check-report.json" 2>/dev/null | head -1)
