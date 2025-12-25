@@ -24,6 +24,10 @@ JAVA_SUMMARY_MAP = {
     "OWASP Dependency-Check": "owasp",
     "Semgrep": "semgrep",
     "Trivy": "trivy",
+    # Added for unified summary format
+    "jqwik": "jqwik",
+    "CodeQL": "codeql",
+    "Docker": "docker",
 }
 
 PYTHON_SUMMARY_MAP = {
@@ -37,6 +41,10 @@ PYTHON_SUMMARY_MAP = {
     "pip-audit": "pip_audit",
     "Semgrep": "semgrep",
     "Trivy": "trivy",
+    # Added for unified summary format
+    "Hypothesis": "hypothesis",
+    "CodeQL": "codeql",
+    "Docker": "docker",
 }
 
 JAVA_ARTIFACTS = {
@@ -48,6 +56,10 @@ JAVA_ARTIFACTS = {
     "pitest": ["**/target/pit-reports/mutations.xml"],
     "semgrep": ["**/semgrep-report.json"],
     "trivy": ["**/trivy-report.json"],
+    # Added for unified summary format
+    "jqwik": [],  # jqwik runs inline with tests, no separate artifact
+    "codeql": [],  # CodeQL uploads to GitHub Security tab, no local artifact
+    "docker": [],  # Docker produces images, not file artifacts
 }
 
 PYTHON_ARTIFACTS = {
@@ -62,6 +74,9 @@ PYTHON_ARTIFACTS = {
     "hypothesis": ["**/hypothesis-output.txt"],
     "semgrep": ["**/semgrep-report.json"],
     "trivy": ["**/trivy-report.json"],
+    # Added for unified summary format
+    "codeql": [],  # CodeQL uploads to GitHub Security tab, no local artifact
+    "docker": [],  # Docker produces images, not file artifacts
 }
 
 

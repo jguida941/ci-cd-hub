@@ -573,25 +573,28 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Build & Test Summary"
+            echo "## Tools Enabled"
+            echo "| Category | Tool | Configured | Ran | Success |"
+            echo "|----------|------|------------|-----|---------|"
+            # Build always runs
+            echo "| Build | ${{ inputs.build_tool }} | true | true | ${{ steps.build.outcome == 'success' }} |"
+            # Testing tools
+            echo "| Testing | JaCoCo Coverage | ${{ inputs.run_jacoco }} | ${{ inputs.run_jacoco == 'true' && (steps.coverage.outcome == 'success' || steps.coverage.outcome == 'failure') }} | ${{ steps.coverage.outcome == 'success' }} |"
+            echo "| Testing | PITest | ${{ inputs.run_pitest }} | false | false |"
+            echo "| Testing | jqwik | ${{ inputs.run_jqwik }} | ${{ inputs.run_jqwik == 'true' && (steps.jqwik-results.outcome == 'success' || steps.jqwik-results.outcome == 'failure') }} | ${{ steps.jqwik-results.outcome == 'success' }} |"
+            # Linting tools
+            echo "| Linting | Checkstyle | ${{ inputs.run_checkstyle }} | ${{ inputs.run_checkstyle == 'true' && (steps.lint-results.outcome == 'success' || steps.lint-results.outcome == 'failure') }} | ${{ steps.lint-results.outcome == 'success' }} |"
+            echo "| Linting | PMD | ${{ inputs.run_pmd }} | false | false |"
+            echo "| Linting | SpotBugs | ${{ inputs.run_spotbugs }} | ${{ inputs.run_spotbugs == 'true' && (steps.lint-results.outcome == 'success' || steps.lint-results.outcome == 'failure') }} | ${{ steps.lint-results.outcome == 'success' }} |"
+            # Security tools
+            echo "| Security | OWASP Dependency-Check | ${{ inputs.run_owasp }} | ${{ inputs.run_owasp == 'true' && (steps.security-results.outcome == 'success' || steps.security-results.outcome == 'failure') }} | ${{ steps.security-results.outcome == 'success' }} |"
+            echo "| Security | Semgrep | ${{ inputs.run_semgrep }} | false | false |"
+            echo "| Security | Trivy | ${{ inputs.run_trivy }} | false | false |"
+            echo "| Security | CodeQL | ${{ inputs.run_codeql }} | false | false |"
+            # Container tools
+            echo "| Container | Docker | ${{ inputs.run_docker }} | false | false |"
             echo ""
-            echo "### Configuration"
-            echo "| Category | Tool | Enabled |"
-            echo "|----------|------|---------|"
-            echo "| Build | ${{ inputs.build_tool }} | true |"
-            echo "| Testing | JaCoCo Coverage | ${{ inputs.run_jacoco }} |"
-            echo "| Testing | PITest | ${{ inputs.run_pitest }} |"
-            echo "| Testing | jqwik | ${{ inputs.run_jqwik }} |"
-            echo "| Linting | Checkstyle | ${{ inputs.run_checkstyle }} |"
-            echo "| Linting | PMD | ${{ inputs.run_pmd }} |"
-            echo "| Linting | SpotBugs | ${{ inputs.run_spotbugs }} |"
-            echo "| Security | OWASP Dependency-Check | ${{ inputs.run_owasp }} |"
-            echo "| Security | Semgrep | ${{ inputs.run_semgrep }} |"
-            echo "| Security | Trivy | ${{ inputs.run_trivy }} |"
-            echo "| Security | CodeQL | ${{ inputs.run_codeql }} |"
-            echo "| Container | Docker | ${{ inputs.run_docker }} |"
-            echo ""
-            echo "### Thresholds (effective)"
+            echo "## Thresholds (effective)"
             echo "| Setting | Value |"
             echo "|---------|-------|"
             echo "| Min Coverage | ${{ steps.thresholds.outputs.coverage_min }}% |"

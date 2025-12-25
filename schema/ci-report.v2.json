@@ -92,6 +92,61 @@
     },
     "tools_ran": {
       "type": "object",
+      "description": "Which tools actually executed during the workflow run",
+      "additionalProperties": false,
+      "properties": {
+        "pytest": { "type": "boolean" },
+        "ruff": { "type": "boolean" },
+        "bandit": { "type": "boolean" },
+        "pip_audit": { "type": "boolean" },
+        "mypy": { "type": "boolean" },
+        "hypothesis": { "type": "boolean" },
+        "black": { "type": "boolean" },
+        "isort": { "type": "boolean" },
+        "mutmut": { "type": "boolean" },
+        "jacoco": { "type": "boolean" },
+        "checkstyle": { "type": "boolean" },
+        "spotbugs": { "type": "boolean" },
+        "pmd": { "type": "boolean" },
+        "owasp": { "type": "boolean" },
+        "pitest": { "type": "boolean" },
+        "jqwik": { "type": "boolean" },
+        "semgrep": { "type": "boolean" },
+        "trivy": { "type": "boolean" },
+        "docker": { "type": "boolean" },
+        "codeql": { "type": "boolean" }
+      }
+    },
+    "tools_configured": {
+      "type": "object",
+      "description": "Which tools were configured to run (from workflow inputs)",
+      "additionalProperties": false,
+      "properties": {
+        "pytest": { "type": "boolean" },
+        "ruff": { "type": "boolean" },
+        "bandit": { "type": "boolean" },
+        "pip_audit": { "type": "boolean" },
+        "mypy": { "type": "boolean" },
+        "hypothesis": { "type": "boolean" },
+        "black": { "type": "boolean" },
+        "isort": { "type": "boolean" },
+        "mutmut": { "type": "boolean" },
+        "jacoco": { "type": "boolean" },
+        "checkstyle": { "type": "boolean" },
+        "spotbugs": { "type": "boolean" },
+        "pmd": { "type": "boolean" },
+        "owasp": { "type": "boolean" },
+        "pitest": { "type": "boolean" },
+        "jqwik": { "type": "boolean" },
+        "semgrep": { "type": "boolean" },
+        "trivy": { "type": "boolean" },
+        "docker": { "type": "boolean" },
+        "codeql": { "type": "boolean" }
+      }
+    },
+    "tools_success": {
+      "type": "object",
+      "description": "Which tools completed successfully (passed thresholds)",
       "additionalProperties": false,
       "properties": {
         "pytest": { "type": "boolean" },
@@ -118,12 +173,21 @@
     },
     "thresholds": {
       "type": "object",
+      "description": "Effective thresholds used for this run",
       "additionalProperties": false,
       "properties": {
         "coverage_min": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
         "mutation_score_min": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
         "owasp_cvss_fail": { "type": ["number", "null"], "minimum": 0 },
-        "max_pmd_violations": { "type": ["integer", "null"], "minimum": 0 }
+        "max_pmd_violations": { "type": ["integer", "null"], "minimum": 0 },
+        "max_critical_vulns": { "type": ["integer", "null"], "minimum": 0 },
+        "max_high_vulns": { "type": ["integer", "null"], "minimum": 0 },
+        "max_semgrep_findings": { "type": ["integer", "null"], "minimum": 0 },
+        "max_checkstyle_errors": { "type": ["integer", "null"], "minimum": 0 },
+        "max_spotbugs_bugs": { "type": ["integer", "null"], "minimum": 0 },
+        "max_ruff_errors": { "type": ["integer", "null"], "minimum": 0 },
+        "max_black_issues": { "type": ["integer", "null"], "minimum": 0 },
+        "max_isort_issues": { "type": ["integer", "null"], "minimum": 0 }
       }
     }
   }
