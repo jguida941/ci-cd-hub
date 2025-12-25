@@ -52,7 +52,9 @@ class GitHubAPI:
     def __init__(self, token: str):
         self.token = token
 
-    def get(self, url: str, retries: int = 3, backoff: float = 2.0) -> dict:
+    def get(
+        self, url: str, retries: int = 3, backoff: float = 2.0, timeout: int = 30
+    ) -> dict:
         """Make GET request with retry logic."""
         attempt = 0
         while True:
@@ -65,7 +67,7 @@ class GitHubAPI:
                         "X-GitHub-Api-Version": "2022-11-28",
                     },
                 )
-                with request.urlopen(req) as resp:  # noqa: S310
+                with request.urlopen(req, timeout=timeout) as resp:  # noqa: S310
                     return json.loads(resp.read().decode())
             except Exception as exc:
                 attempt += 1
@@ -79,6 +81,7 @@ class GitHubAPI:
 
     def download_artifact(self, archive_url: str, target_dir: Path) -> Path | None:
         """Download and extract artifact ZIP."""
+        print("   Downloading artifact...")
         req = request.Request(  # noqa: S310
             archive_url,
             headers={
@@ -88,16 +91,17 @@ class GitHubAPI:
             },
         )
         try:
-            with request.urlopen(req) as resp:  # noqa: S310
+            with request.urlopen(req, timeout=60) as resp:  # noqa: S310
                 data = resp.read()
             target_dir.mkdir(parents=True, exist_ok=True)
             zip_path = target_dir / "artifact.zip"
             zip_path.write_bytes(data)
             with zipfile.ZipFile(zip_path, "r") as zf:
                 zf.extractall(target_dir)
+            print(f"   Artifact extracted to {target_dir}")
             return target_dir
         except Exception as exc:
-            print(f"Warning: failed to download artifact {archive_url}: {exc}")
+            print(f"   Failed to download artifact: {exc}")
             return None
 
 
@@ -169,25 +173,44 @@ def poll_run_completion(
     """Poll run until completion or timeout. Returns (status, conclusion)."""
     pending_statuses = {"queued", "in_progress", "waiting", "pending"}
     url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}"
+    run_url = f"https://github.com/{owner}/{repo}/actions/runs/{run_id}"
     start_poll = time.time()
     delay = 10
+    poll_count = 0
+
+    print(f"Polling {owner}/{repo} run {run_id}...")
+    print(f"   View: {run_url}")
 
     while True:
         try:
+            poll_count += 1
+            elapsed = int(time.time() - start_poll)
+            elapsed_min = elapsed // 60
+            elapsed_sec = elapsed % 60
+
             run = api.get(url)
             status = run.get("status", "unknown")
             conclusion = run.get("conclusion", "unknown")
 
+            # Always log current status
+            print(
+                f"   [{elapsed_min:02d}:{elapsed_sec:02d}] {owner}/{repo}: "
+                f"status={status}, conclusion={conclusion}"
+            )
+
             if status not in pending_statuses:
+                print(f"Completed {owner}/{repo}: {conclusion}")
                 return status, conclusion
 
             if time.time() - start_poll > timeout_sec:
+                print(f"TIMEOUT: {owner}/{repo} after {timeout_sec}s")
                 return "timed_out", "timed_out"
 
+            print(f"   Waiting {int(delay)}s before next poll...")
             time.sleep(delay)
             delay = min(delay * 1.5, 60)
         except Exception as exc:
-            print(f"Warning: error polling run {run_id}: {exc}")
+            print(f"ERROR polling {owner}/{repo} run {run_id}: {exc}")
             return "fetch_failed", "unknown"
 
 
@@ -243,10 +266,12 @@ def fetch_and_validate_artifact(
     If correlation mismatch, attempts to find correct run.
     """
     try:
+        print(f"   Fetching artifacts for run {run_id}...")
         artifacts = api.get(
             f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}/artifacts"
         )
         ci_artifacts = artifacts.get("artifacts", [])
+        print(f"   Found {len(ci_artifacts)} artifact(s)")
 
         # Prefer artifact ending with ci-report
         artifact = next(
@@ -260,7 +285,13 @@ def fetch_and_validate_artifact(
             )
 
         if not artifact:
+            print(f"   WARNING: No ci-report artifact found for {owner}/{repo}")
+            if ci_artifacts:
+                names = [a.get("name", "?") for a in ci_artifacts]
+                print(f"   Available artifacts: {names}")
             return None
+
+        print(f"   Using artifact: {artifact.get('name')}")
 
         with tempfile.TemporaryDirectory() as tmpdir:
             dl_url = artifact["archive_download_url"]
@@ -270,12 +301,18 @@ def fetch_and_validate_artifact(
 
             report_file = next(iter(Path(extracted).rglob("report.json")), None)
             if not report_file or not report_file.exists():
+                print("   WARNING: No report.json found in artifact")
                 return None
 
             report_data = json.loads(report_file.read_text())
             report_corr = report_data.get("hub_correlation_id", "")
 
             # Validate correlation ID
+            if expected_correlation_id:
+                print(
+                    f"   Validating correlation: expected={expected_correlation_id}, "
+                    f"got={report_corr or '(none)'}"
+                )
             if not validate_correlation_id(expected_correlation_id, report_corr):
                 print(
                     f"Correlation mismatch for {owner}/{repo} run {run_id} "
@@ -298,6 +335,7 @@ def fetch_and_validate_artifact(
                     print(f"Could not find correct run for {owner}/{repo}")
                     return None
 
+            print("   Correlation OK, extracting metrics...")
             return report_data
 
     except Exception as exc:
@@ -553,7 +591,13 @@ def run_aggregation(
     entries = load_dispatch_metadata(dispatch_dir)
     results = []
 
-    for entry in entries:
+    print(f"\n{'='*60}")
+    print(f"Starting aggregation for {len(entries)} dispatched repos")
+    print(f"   Hub Run ID: {hub_run_id}")
+    print(f"   Total expected repos: {total_repos}")
+    print(f"{'='*60}\n")
+
+    for idx, entry in enumerate(entries, 1):
         repo_full = entry.get("repo", "unknown/unknown")
         owner_repo = repo_full.split("/")
         if len(owner_repo) != 2:
@@ -565,6 +609,7 @@ def run_aggregation(
         workflow = entry.get("workflow")
         expected_corr = entry.get("correlation_id", "")
 
+        print(f"\n[{idx}/{len(entries)}] Processing {repo_full}...")
         run_status = create_run_status(entry)
 
         # Try to find run by correlation ID if run_id is missing
@@ -657,13 +702,54 @@ def run_aggregation(
         or r.get("status") not in ("completed",)
     ]
 
+    passed_runs = [
+        r for r in results
+        if r.get("status") == "completed" and r.get("conclusion") == "success"
+    ]
+
+    # Print final summary
+    print(f"\n{'='*60}")
+    print("AGGREGATION SUMMARY")
+    print(f"{'='*60}")
+    print(f"Total dispatched: {dispatched}")
+    print(f"Passed: {len(passed_runs)}")
+    print(f"Failed: {len(failed_runs)}")
+    if missing > 0:
+        print(f"Missing metadata: {missing}")
+    if missing_run_id > 0:
+        print(f"Missing run IDs: {missing_run_id}")
+
+    if failed_runs:
+        print("\nFailed runs:")
+        for r in failed_runs:
+            repo = r.get("repo", "unknown")
+            status = r.get("status", "unknown")
+            conclusion = r.get("conclusion", "unknown")
+            run_id = r.get("run_id", "none")
+            if status == "missing_run_id":
+                print(f"  - {repo}: no run_id (dispatch may have failed)")
+            elif status == "timed_out":
+                print(f"  - {repo}: timed out waiting for run {run_id}")
+            elif status == "fetch_failed":
+                print(f"  - {repo}: failed to fetch run {run_id}")
+            else:
+                print(f"  - {repo}: {status}/{conclusion} (run {run_id})")
+
+    if threshold_exceeded:
+        print("\nThreshold violations:")
+        if report["total_critical_vulns"] > max_critical:
+            print(
+                f"  - Critical vulns: {report['total_critical_vulns']} "
+                f"(max: {max_critical})"
+            )
+        if report["total_high_vulns"] > max_high:
+            print(
+                f"  - High vulns: {report['total_high_vulns']} (max: {max_high})"
+            )
+
+    print(f"{'='*60}\n")
+
     if failed_runs or missing > 0 or threshold_exceeded:
-        if failed_runs:
-            print(f"Aggregation detected {len(failed_runs)} failed runs.")
-        if missing > 0:
-            print(f"Aggregation detected {missing} missing dispatch metadata.")
-        if threshold_exceeded:
-            print("Vulnerability thresholds exceeded.")
         return 1
 
     return 0
