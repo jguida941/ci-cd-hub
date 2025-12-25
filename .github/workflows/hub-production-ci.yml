@@ -104,11 +104,11 @@ jobs:
       - name: Run zizmor
         uses: zizmorcore/zizmor-action@9a44813a27b1bbd30d4cb1b0e6df29a6d95c1df8 # v1.5.2
         with:
-          version: latest
+          version: 1.5.2
           args: --format sarif --output zizmor.sarif .github/workflows/
 
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@c37a8b7cd97e31de3fcbd9d84c401870edeb8d34 # v3
         if: always()
         with:
           sarif_file: zizmor.sarif
@@ -514,6 +514,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Report result
+        if: success()
+        run: |
+          echo "## Secret Detection" >> $GITHUB_STEP_SUMMARY
+          echo "PASS - no leaks detected" >> $GITHUB_STEP_SUMMARY
+
   trivy:
     name: Trivy Scan
     runs-on: ubuntu-latest
@@ -538,7 +544,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy FS SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@c37a8b7cd97e31de3fcbd9d84c401870edeb8d34 # v3
         if: always()
         with:
           sarif_file: trivy-fs.sarif
@@ -670,12 +676,20 @@ jobs:
 
       - name: Check licenses
         run: |
-          echo "## License Summary" >> $GITHUB_STEP_SUMMARY
-          pip-licenses --format=markdown >> $GITHUB_STEP_SUMMARY
-
+          TOTAL=$(pip-licenses --format=csv | wc -l)
           COPYLEFT=$(pip-licenses --format=csv | grep -iE "GPL|AGPL" | wc -l || echo "0")
+
+          echo "## License Check" >> $GITHUB_STEP_SUMMARY
+          echo "Total packages: $TOTAL" >> $GITHUB_STEP_SUMMARY
+          echo "Copyleft (GPL/AGPL): $COPYLEFT" >> $GITHUB_STEP_SUMMARY
+
           if [ "$COPYLEFT" -gt 0 ]; then
-            echo "::notice::Found $COPYLEFT packages with copyleft licenses"
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Copyleft packages:" >> $GITHUB_STEP_SUMMARY
+            pip-licenses --format=csv | grep -iE "GPL|AGPL" >> $GITHUB_STEP_SUMMARY
+            echo "::warning::Found $COPYLEFT packages with copyleft licenses"
+          else
+            echo "PASS - no copyleft licenses" >> $GITHUB_STEP_SUMMARY
           fi
 
   # ============================================================================
@@ -729,7 +743,7 @@ jobs:
           publish_results: true
 
       - name: Upload Scorecard SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@c37a8b7cd97e31de3fcbd9d84c401870edeb8d34 # v3
         with:
           sarif_file: scorecard.sarif
           category: scorecard
@@ -757,6 +771,8 @@ jobs:
       - validate-configs
       - verify-matrix-keys
       - license-check
+      - dependency-review
+      - scorecard
     if: always()
     permissions:
       contents: read
@@ -768,26 +784,38 @@ jobs:
 
       - name: Generate summary
         run: |
+          status() {
+            case "$1" in
+              success) echo "✅ success" ;;
+              failure) echo "❌ failure" ;;
+              cancelled) echo "❌ cancelled" ;;
+              skipped) echo "⏭️ skipped" ;;
+              *) echo "❌ $1" ;;
+            esac
+          }
+
           echo "## Hub Production CI Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Category | Check | What it does | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|--------------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Workflow | actionlint | Validates GitHub Actions workflow syntax | ${{ needs.actionlint.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Workflow | zizmor | Scans workflows for security issues (injection, perms) | ${{ needs.zizmor.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Quality | ruff | Python linting and formatting | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Quality | syntax | Python syntax validation (py_compile) | ${{ needs.syntax-check.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Quality | mypy | Static type checking | ${{ needs.type-check.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Quality | yamllint | YAML syntax and style | ${{ needs.yaml-lint.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Testing | pytest | Unit tests with coverage (min 60%) | ${{ needs.unit-tests.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Testing | mutmut | Mutation testing (min 70% killed) | ${{ needs.mutation-tests.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security | bandit | Python SAST for vulnerabilities | ${{ needs.bandit.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security | pip-audit | Dependency CVE scanning | ${{ needs.pip-audit.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security | gitleaks | Secret detection in code/history | ${{ needs.secret-scan.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security | trivy | Filesystem and config scanning | ${{ needs.trivy.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Validate | templates | Profile template integrity | ${{ needs.validate-templates.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Validate | configs | Repo config schema validation | ${{ needs.validate-configs.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Validate | matrix | Workflow matrix key consistency | ${{ needs.verify-matrix-keys.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Validate | licenses | Dependency license compliance | ${{ needs.license-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | actionlint | Validates GitHub Actions workflow syntax | $(status "${{ needs.actionlint.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | zizmor | Scans workflows for security issues (injection, perms) | $(status "${{ needs.zizmor.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | ruff | Python linting and formatting | $(status "${{ needs.lint.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | syntax | Python syntax validation (py_compile) | $(status "${{ needs.syntax-check.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | mypy | Static type checking | $(status "${{ needs.type-check.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | yamllint | YAML syntax and style | $(status "${{ needs.yaml-lint.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Testing | pytest | Unit tests with coverage (min 60%) | $(status "${{ needs.unit-tests.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Testing | mutmut | Mutation testing (min 70% killed) | $(status "${{ needs.mutation-tests.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | bandit | Python SAST for vulnerabilities | $(status "${{ needs.bandit.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | pip-audit | Dependency CVE scanning | $(status "${{ needs.pip-audit.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | gitleaks | Secret detection in code/history | $(status "${{ needs.secret-scan.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | trivy | Filesystem and config scanning | $(status "${{ needs.trivy.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Validate | templates | Profile template integrity | $(status "${{ needs.validate-templates.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Validate | configs | Repo config schema validation | $(status "${{ needs.validate-configs.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Validate | matrix | Workflow matrix key consistency | $(status "${{ needs.verify-matrix-keys.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Validate | licenses | Dependency license compliance | $(status "${{ needs.license-check.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Supply Chain | dependency-review | Blocks vulnerable dependency changes | $(status "${{ needs.dependency-review.result }}") |" >> $GITHUB_STEP_SUMMARY
+          echo "| Supply Chain | scorecard | OpenSSF security posture checks | $(status "${{ needs.scorecard.result }}") |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "See individual job logs for detailed metrics (coverage %, mutation score, findings count)." >> $GITHUB_STEP_SUMMARY
 
