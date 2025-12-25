@@ -641,8 +641,8 @@ def run_aggregation(
             results.append(run_status)
             continue
 
-        # Fetch and validate artifact
-        if status == "completed" and conclusion == "success":
+        # Fetch and validate artifact (for both success AND failure to get metrics)
+        if status == "completed":
             report_data = fetch_and_validate_artifact(
                 api, owner, repo, run_id, expected_corr, workflow, token
             )
