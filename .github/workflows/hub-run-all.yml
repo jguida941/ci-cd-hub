@@ -381,31 +381,38 @@ jobs:
 
           # Aggregate mutation results across all modules
           # Note: PITest uses single quotes in XML (status='KILLED'), so we match both quote styles
+          # NO_COVERAGE mutations are code paths never executed during tests (count as not killed)
           echo "Searching for mutations.xml files..."
           MUTATION_FILES=$(find . -name "mutations.xml" 2>/dev/null | grep -v target/classes || true)
           echo "Found mutation files: $MUTATION_FILES"
+          NO_COVERAGE=0
 
           for xml in $MUTATION_FILES; do
             K=$(grep -cE "status=['\"]KILLED['\"]" "$xml" 2>/dev/null || echo 0)
             S=$(grep -cE "status=['\"]SURVIVED['\"]" "$xml" 2>/dev/null || echo 0)
-            echo "  $xml: killed=$K, survived=$S"
+            N=$(grep -cE "status=['\"]NO_COVERAGE['\"]" "$xml" 2>/dev/null || echo 0)
+            echo "  $xml: killed=$K, survived=$S, no_coverage=$N"
             KILLED=$((KILLED + K))
             SURVIVED=$((SURVIVED + S))
+            NO_COVERAGE=$((NO_COVERAGE + N))
           done
 
-          KILLED=${KILLED:-0}; SURVIVED=${SURVIVED:-0}
+          KILLED=${KILLED:-0}; SURVIVED=${SURVIVED:-0}; NO_COVERAGE=${NO_COVERAGE:-0}
           KNUM=$(printf '%s' "$KILLED" | tr -cd '0-9')
           SNUM=$(printf '%s' "$SURVIVED" | tr -cd '0-9')
+          NNUM=$(printf '%s' "$NO_COVERAGE" | tr -cd '0-9')
           [ -z "$KNUM" ] && KNUM=0
           [ -z "$SNUM" ] && SNUM=0
-          TOTAL=$((KNUM + SNUM))
+          [ -z "$NNUM" ] && NNUM=0
+          TOTAL=$((KNUM + SNUM + NNUM))
           if [ "$TOTAL" -gt 0 ]; then
             SCORE=$((KNUM * 100 / TOTAL))
           fi
 
-          echo "Mutation Score: $SCORE% (Killed: $KNUM, Survived: $SNUM)"
+          echo "Mutation Score: $SCORE% (Killed: $KNUM, Survived: $SNUM, No Coverage: $NNUM, Total: $TOTAL)"
           echo "killed=$KNUM" >> $GITHUB_OUTPUT
           echo "survived=$SNUM" >> $GITHUB_OUTPUT
+          echo "no_coverage=$NNUM" >> $GITHUB_OUTPUT
           echo "score=${SCORE:-0}" >> $GITHUB_OUTPUT
         continue-on-error: true
 
@@ -887,7 +894,7 @@ jobs:
               echo "| Security | Semgrep | ${{ matrix.run_semgrep }} | ${{ steps.semgrep.outcome == 'success' || steps.semgrep.outcome == 'failure' }} | ${{ steps.semgrep.outcome == 'success' }} |"
               echo "| Security | Trivy | ${{ matrix.run_trivy }} | ${{ steps.trivy.outcome == 'success' || steps.trivy.outcome == 'failure' }} | ${{ steps.trivy.outcome == 'success' }} |"
               echo "| Security | CodeQL | ${{ matrix.run_codeql }} | ${{ steps.codeql.outcome == 'success' || steps.codeql.outcome == 'failure' }} | ${{ steps.codeql.outcome == 'success' }} |"
-              echo "| Testing | jqwik | ${{ matrix.run_jqwik }} | ${{ steps.java-jqwik.outcome == 'success' || steps.java-jqwik.outcome == 'failure' }} | ${{ steps.java-jqwik.outcome == 'success' }} |"
+              echo "| Testing | jqwik | ${{ matrix.run_jqwik }} | ${{ steps.java-tests.outcome == 'success' || steps.java-tests.outcome == 'failure' }} | ${{ steps.java-tests.outcome == 'success' }} |"
               echo "| Container | Docker | ${{ matrix.run_docker }} | ${{ steps.docker.outcome == 'success' || steps.docker.outcome == 'failure' }} | ${{ steps.docker.outcome == 'success' }} |"
               echo ""
               echo "## Environment"
@@ -1119,6 +1126,7 @@ jobs:
               "pmd": ${{ matrix.run_pmd }},
               "owasp": ${{ matrix.run_owasp }},
               "pitest": ${{ matrix.run_pitest }},
+              "jqwik": ${{ matrix.run_jqwik }},
               "semgrep": ${{ matrix.run_semgrep }},
               "trivy": ${{ matrix.run_trivy }},
               "codeql": ${{ matrix.run_codeql }},
@@ -1131,6 +1139,7 @@ jobs:
               "pmd": ${{ steps.java-pmd.outcome == 'success' || steps.java-pmd.outcome == 'failure' }},
               "owasp": ${{ steps.java-owasp.outcome == 'success' || steps.java-owasp.outcome == 'failure' }},
               "pitest": ${{ steps.java-mutation.outcome == 'success' || steps.java-mutation.outcome == 'failure' }},
+              "jqwik": ${{ steps.java-tests.outcome == 'success' || steps.java-tests.outcome == 'failure' }},
               "semgrep": ${{ steps.semgrep.outcome == 'success' || steps.semgrep.outcome == 'failure' }},
               "trivy": ${{ steps.trivy.outcome == 'success' || steps.trivy.outcome == 'failure' }},
               "codeql": ${{ steps.codeql.outcome == 'success' || steps.codeql.outcome == 'failure' }},
@@ -1143,6 +1152,7 @@ jobs:
               "pmd": ${{ steps.java-pmd.outcome == 'success' }},
               "owasp": ${{ steps.java-owasp.outcome == 'success' }},
               "pitest": ${{ steps.java-mutation.outcome == 'success' }},
+              "jqwik": ${{ steps.java-tests.outcome == 'success' }},
               "semgrep": ${{ steps.semgrep.outcome == 'success' }},
               "trivy": ${{ steps.trivy.outcome == 'success' }},
               "codeql": ${{ steps.codeql.outcome == 'success' }},

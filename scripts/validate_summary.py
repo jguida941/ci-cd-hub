@@ -47,6 +47,40 @@ PYTHON_SUMMARY_MAP = {
     "Docker": "docker",
 }
 
+# PRIMARY VALIDATION: Check metrics in report.json for proof of execution
+# Format: list of dot-paths (e.g., "results.coverage")
+# Empty list = trust step outcome (no metrics to check)
+JAVA_TOOL_METRICS = {
+    "jacoco": ["results.coverage"],
+    "pitest": ["results.mutation_score"],
+    "checkstyle": ["tool_metrics.checkstyle_issues"],
+    "spotbugs": ["tool_metrics.spotbugs_issues"],
+    "pmd": ["tool_metrics.pmd_violations"],
+    "owasp": ["tool_metrics.owasp_critical", "tool_metrics.owasp_high"],
+    "semgrep": ["tool_metrics.semgrep_findings"],
+    "trivy": ["tool_metrics.trivy_critical", "tool_metrics.trivy_high"],
+    "jqwik": ["results.tests_passed"],  # jqwik runs as part of tests
+    "codeql": [],  # uploads to GitHub Security tab
+    "docker": [],  # produces images
+}
+
+PYTHON_TOOL_METRICS = {
+    "pytest": ["results.tests_passed", "results.coverage"],
+    "mutmut": ["results.mutation_score"],
+    "ruff": ["tool_metrics.ruff_errors"],
+    "black": ["tool_metrics.black_issues"],
+    "isort": ["tool_metrics.isort_issues"],
+    "mypy": ["tool_metrics.mypy_errors"],
+    "bandit": ["tool_metrics.bandit_high", "tool_metrics.bandit_medium"],
+    "pip_audit": ["tool_metrics.pip_audit_vulns"],
+    "semgrep": ["tool_metrics.semgrep_findings"],
+    "trivy": ["tool_metrics.trivy_critical", "tool_metrics.trivy_high"],
+    "hypothesis": ["results.tests_passed"],  # hypothesis runs as part of tests
+    "codeql": [],  # uploads to GitHub Security tab
+    "docker": [],  # produces images
+}
+
+# BACKUP VALIDATION: File artifacts (when --reports-dir provided)
 JAVA_ARTIFACTS = {
     "jacoco": ["**/target/site/jacoco/jacoco.xml"],
     "checkstyle": ["**/checkstyle-result.xml"],
@@ -56,10 +90,6 @@ JAVA_ARTIFACTS = {
     "pitest": ["**/target/pit-reports/mutations.xml"],
     "semgrep": ["**/semgrep-report.json"],
     "trivy": ["**/trivy-report.json"],
-    # Added for unified summary format
-    "jqwik": [],  # jqwik runs inline with tests, no separate artifact
-    "codeql": [],  # CodeQL uploads to GitHub Security tab, no local artifact
-    "docker": [],  # Docker produces images, not file artifacts
 }
 
 PYTHON_ARTIFACTS = {
@@ -74,9 +104,6 @@ PYTHON_ARTIFACTS = {
     "hypothesis": ["**/hypothesis-output.txt"],
     "semgrep": ["**/semgrep-report.json"],
     "trivy": ["**/trivy-report.json"],
-    # Added for unified summary format
-    "codeql": [],  # CodeQL uploads to GitHub Security tab, no local artifact
-    "docker": [],  # Docker produces images, not file artifacts
 }
 
 
@@ -92,6 +119,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--strict", action="store_true", help="Exit non-zero on warnings"
+    )
+    parser.add_argument(
+        "--debug", action="store_true", help="Show debug output for validation"
     )
     return parser.parse_args()
 
@@ -185,6 +215,41 @@ def iter_existing_patterns(root: Path, patterns: Iterable[str]) -> bool:
     return False
 
 
+def get_nested_value(data: dict, path: str) -> Any:
+    """Get a nested value from dict using dot notation (e.g., 'results.coverage')."""
+    keys = path.split(".")
+    value = data
+    for key in keys:
+        if not isinstance(value, dict) or key not in value:
+            return None
+        value = value[key]
+    return value
+
+
+def check_metrics_exist(
+    report: dict[str, Any],
+    tool: str,
+    metric_paths: list[str],
+) -> tuple[bool, list[str]]:
+    """Check if any expected metric exists in report.json for a tool.
+
+    Returns (found, debug_messages) tuple.
+    """
+    if not metric_paths:
+        # No metrics to check, trust step outcome
+        return True, [f"Debug: {tool} has no metrics, trusting step outcome"]
+
+    found_metrics = []
+    for path in metric_paths:
+        value = get_nested_value(report, path)
+        if value is not None:
+            found_metrics.append(f"{path}={value}")
+
+    if found_metrics:
+        return True, [f"Debug: {tool} verified via metrics: {', '.join(found_metrics)}"]
+    return False, [f"Debug: {tool} missing expected metrics: {metric_paths}"]
+
+
 def compare_summary(
     summary_configured: dict[str, bool],
     summary_ran: dict[str, bool],
@@ -221,27 +286,66 @@ def compare_summary(
     return warnings
 
 
-def compare_artifacts(
-    reports_dir: Path,
+def validate_tool_execution(
+    report: dict[str, Any],
     tools_ran: dict[str, Any],
     tools_success: dict[str, Any],
-    artifact_map: dict[str, list[str]],
-) -> list[str]:
-    """Only check for artifacts from tools that ran AND succeeded."""
+    metrics_map: dict[str, list[str]],
+    artifact_map: dict[str, list[str]] | None = None,
+    reports_dir: Path | None = None,
+) -> tuple[list[str], list[str]]:
+    """Validate tool execution using metrics (primary) and artifacts (backup).
+
+    Returns (warnings, debug_messages) tuple.
+    """
     warnings: list[str] = []
-    for tool, patterns in artifact_map.items():
+    debug: list[str] = []
+
+    for tool, metric_paths in metrics_map.items():
         ran = bool(tools_ran.get(tool))
         succeeded = bool(tools_success.get(tool))
+
         if not ran:
+            debug.append(f"Debug: {tool} did not run, skipping validation")
             continue
-        # Only expect artifacts if the tool succeeded
-        if not succeeded:
+
+        # PRIMARY: Check metrics in report.json
+        metrics_found, metric_debug = check_metrics_exist(report, tool, metric_paths)
+        debug.extend(metric_debug)
+
+        if metrics_found:
+            # Metrics verified, optionally check artifacts for consistency
+            if artifact_map and reports_dir and tool in artifact_map:
+                patterns = artifact_map[tool]
+                if patterns and not iter_existing_patterns(reports_dir, patterns):
+                    debug.append(
+                        f"Debug: {tool} has metrics but missing artifacts "
+                        f"(patterns: {patterns}) - metrics take precedence"
+                    )
             continue
-        if not iter_existing_patterns(reports_dir, patterns):
+
+        # BACKUP: Metrics not found, check artifacts
+        if artifact_map and reports_dir and tool in artifact_map:
+            patterns = artifact_map[tool]
+            if patterns and iter_existing_patterns(reports_dir, patterns):
+                debug.append(
+                    f"Debug: {tool} missing metrics but artifacts found - "
+                    "consider adding metrics for primary validation"
+                )
+                continue
+
+        # Neither metrics nor artifacts found
+        if succeeded:
             warnings.append(
-                f"artifact missing for successful tool '{tool}' (patterns: {patterns})"
+                f"tool '{tool}' marked as ran+success but no proof found "
+                f"(expected metrics: {metric_paths})"
             )
-    return warnings
+        else:
+            debug.append(
+                f"Debug: {tool} ran but failed, no metrics expected"
+            )
+
+    return warnings, debug
 
 
 def compare_configured_vs_ran(
@@ -278,6 +382,7 @@ def main() -> int:
         return 2
 
     warnings: list[str] = []
+    debug_messages: list[str] = []
     summary_success: dict[str, bool] = {}
 
     # Check for drift between configured and ran
@@ -299,22 +404,42 @@ def main() -> int:
             )
         )
 
+    # Validate tool execution using metrics (primary) and artifacts (backup)
+    metrics_map = JAVA_TOOL_METRICS if language == "java" else PYTHON_TOOL_METRICS
+    artifact_map = JAVA_ARTIFACTS if language == "java" else PYTHON_ARTIFACTS
+
+    # Use success status from report.json if available, otherwise from summary
+    mapping = JAVA_SUMMARY_MAP if language == "java" else PYTHON_SUMMARY_MAP
+    effective_success = dict(tools_success)
+    for label, key in mapping.items():
+        if key not in effective_success and label in summary_success:
+            effective_success[key] = summary_success[label]
+
+    # Setup reports_dir if provided
+    reports_dir = None
     if args.reports_dir:
         reports_dir = Path(args.reports_dir)
         if not reports_dir.exists():
             print(f"reports dir not found: {reports_dir}", file=sys.stderr)
             return 2
-        artifact_map = JAVA_ARTIFACTS if language == "java" else PYTHON_ARTIFACTS
-        # Use success status from report.json if available, otherwise from summary
-        # Convert summary keys (display names) to report keys
-        mapping = JAVA_SUMMARY_MAP if language == "java" else PYTHON_SUMMARY_MAP
-        effective_success = dict(tools_success)
-        for label, key in mapping.items():
-            if key not in effective_success and label in summary_success:
-                effective_success[key] = summary_success[label]
-        warnings.extend(
-            compare_artifacts(reports_dir, tools_ran, effective_success, artifact_map)
-        )
+
+    # Run validation
+    tool_warnings, tool_debug = validate_tool_execution(
+        report=report,
+        tools_ran=tools_ran,
+        tools_success=effective_success,
+        metrics_map=metrics_map,
+        artifact_map=artifact_map,
+        reports_dir=reports_dir,
+    )
+    warnings.extend(tool_warnings)
+    debug_messages.extend(tool_debug)
+
+    # Print debug messages if requested
+    if args.debug and debug_messages:
+        print("Validation debug output:")
+        for msg in debug_messages:
+            print(f"  {msg}")
 
     if warnings:
         print("Summary validation warnings:")
