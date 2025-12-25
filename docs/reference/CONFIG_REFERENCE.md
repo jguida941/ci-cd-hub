@@ -232,6 +232,8 @@ repo:
 | `health_endpoint` | string | `/actuator/health` | Health check endpoint |
 | `health_timeout` | integer | `300` | Health check timeout (seconds) |
 
+> **Dispatch vs Config:** `run_docker` (the tool toggle) is a dispatch input. `docker_compose_file` and `docker_health_endpoint` are config strings set in `.ci-hub.yml` or the caller template's `with:` block—they are NOT dispatch inputs.
+
 ---
 
 ## Python Configuration
@@ -320,6 +322,8 @@ repo:
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `enabled` | boolean | `false` | Build and test Docker |
+
+> **Dispatch vs Config:** `run_docker` (the tool toggle) is a dispatch input. Docker-specific config like compose file paths remain in `.ci-hub.yml` or the caller template's `with:` block—they are NOT dispatch inputs.
 
 ### python.tools.black
 

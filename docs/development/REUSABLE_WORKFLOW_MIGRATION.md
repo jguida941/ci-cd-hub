@@ -1,5 +1,7 @@
 # Reusable Workflow Migration Plan
 
+> ⚠️ **STALE DOCUMENT:** This document is outdated and needs to be updated. Some information may not reflect the current state of the project.
+
 > **This is the primary execution plan for CI/CD Hub.** Supersedes ROADMAP.md phases 4-8.
 >
 > **See also:** `plan.md` for high-level status and checklists.

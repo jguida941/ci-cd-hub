@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-12-24 - ADR-0024 Threshold Resolution
+
+### Reusable Workflows
+- Added `threshold_overrides_yaml` input to `java-ci.yml` and `python-ci.yml`; thresholds now resolve in order: override YAML → `.ci-hub.yml` → input defaults.
+- Exported effective thresholds (`eff_*`) and wired all gates/summaries to use them (coverage, mutation, OWASP/Trivy, Semgrep, PMD, lint).
+- Updated Java `report.json` to emit effective thresholds instead of raw inputs; summaries now show effective values.
+
+### Orchestrator / Contract
+- Kept dispatch inputs to booleans only; thresholds flow from config/override per ADR-0024.
+- Added ADR-0024 (`docs/adr/0024-workflow-dispatch-input-limit.md`) to document the 25-input limit strategy and single-override approach.
+
+### Caller Templates
+- Templates adjusted for threshold/input cleanup (pending final sync); templates still need the `threshold_overrides_yaml` input added and synced via `cihub sync-templates`.
+
+## 2025-12-24 - Quarantine System, NEW_PLAN, and CLI/Validation Hardening
+
+### Architecture & Governance
+- Added `_quarantine/` with phased graduation, `INTEGRATION_STATUS.md`, and `check_quarantine_imports.py` guardrail to prevent premature imports.
+- Added `docs/development/NEW_PLAN.md` (proposed self-validating CLI + manifest architecture); noted current blockers in the plan.
+
+### CLI & Validation
+- Added `setup-nvd` command; hardened `setup-secrets` token handling and cross-repo verification.
+- Added template sync command/guard; validator fixes for summary drift and matrix key validation; wired Java POM checks into `cihub init`.
+- Added CLI integration tests and correlation tests.
+
+### Workflows & OWASP/NVD
+- Fixed NVD/OWASP handling (use_nvd_api_key toggle, pass tokens) in central/reusable workflows; cleaned up workflow errors (duplicate keys, NameError).
+- Note: the `setup-nvd`/NVD integration script still needs a follow-up fix; current version may not work end-to-end.
+
+### Templates/Docs/Schema
+- Updated caller templates and docs (TOOLS, WORKFLOWS, CONFIG_REFERENCE) alongside ADR updates; minor schema/report tweaks to match governance changes.
+
 ## 2025-12-23 - CLI Dispatch Token Handling
 
 ### CLI (cihub)

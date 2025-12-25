@@ -81,8 +81,10 @@ Files changed:
 - `.github/workflows/hub-orchestrator.yml` - Removed threshold inputs from dispatch payload
 
 Input counts after change:
-- Java caller: 16 inputs (was 26) - 4 essential + 11 tool toggles + 1 threshold_overrides_yaml
-- Python caller: 16 inputs (was 26) - 3 essential + 12 tool toggles + 1 threshold_overrides_yaml
+- Java caller: 17 inputs (was 26) - 4 essential + 12 tool toggles + 1 threshold_overrides_yaml
+- Python caller: 17 inputs (was 26) - 3 essential + 13 tool toggles + 1 threshold_overrides_yaml
+
+Note: `run_docker` was added as a dispatchable toggle (per Option 1), while `docker_compose_file` and `docker_health_endpoint` remain config/with-block strings.
 
 ## References
 
