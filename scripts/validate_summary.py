@@ -186,7 +186,8 @@ def compare_summary(
                 actual_conf = summary_configured[label]
                 if actual_conf != expected_conf:
                     warnings.append(
-                        f"configured mismatch for {label}: summary={actual_conf} report={expected_conf}"
+                        f"configured mismatch for {label}: "
+                        f"summary={actual_conf} report={expected_conf}"
                     )
 
         # Check ran values

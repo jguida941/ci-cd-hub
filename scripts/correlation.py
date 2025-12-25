@@ -28,7 +28,7 @@ def download_artifact(archive_url: str, target_dir: Path, token: str) -> Path | 
     Returns:
         Path to extraction directory if successful, None otherwise
     """
-    req = request.Request(
+    req = request.Request(  # noqa: S310
         archive_url,
         headers={
             "Authorization": f"Bearer {token}",
@@ -37,7 +37,7 @@ def download_artifact(archive_url: str, target_dir: Path, token: str) -> Path | 
         },
     )
     try:
-        with request.urlopen(req) as resp:
+        with request.urlopen(req) as resp:  # noqa: S310
             data = resp.read()
         target_dir.mkdir(parents=True, exist_ok=True)
         zip_path = target_dir / "artifact.zip"
@@ -86,7 +86,7 @@ def find_run_by_correlation_id(
     gh_get: Callable[[str], dict] | None = None,
 ) -> str | None:
     """
-    Deterministic run matching: search recent runs and match by hub_correlation_id in artifact.
+    Deterministic run matching: search runs and match by hub_correlation_id.
 
     This eliminates race conditions from time-based matching by using the
     correlation ID embedded in the report.json artifact.
@@ -107,7 +107,7 @@ def find_run_by_correlation_id(
 
     if gh_get is None:
         def gh_get(url: str) -> dict:
-            req = request.Request(
+            req = request.Request(  # noqa: S310
                 url,
                 headers={
                     "Authorization": f"Bearer {token}",
@@ -115,7 +115,7 @@ def find_run_by_correlation_id(
                     "X-GitHub-Api-Version": "2022-11-28",
                 },
             )
-            with request.urlopen(req) as resp:
+            with request.urlopen(req) as resp:  # noqa: S310
                 return json.loads(resp.read().decode())
 
     try:
@@ -150,7 +150,7 @@ def find_run_by_correlation_id(
                         token
                     )
                     if artifact_corr == correlation_id:
-                        print(f"Found matching run {run_id} for correlation_id {correlation_id}")
+                        print(f"Found matching run {run_id} for {correlation_id}")
                         return str(run_id)
 
             except Exception as e:

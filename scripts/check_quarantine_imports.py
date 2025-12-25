@@ -18,8 +18,8 @@ import re
 import sys
 from pathlib import Path
 
-# Match actual import statements, not comments or strings
-# These patterns require the import keyword to be at the start of a line (after optional whitespace)
+# Match actual import statements, not comments or strings.
+# Patterns require import keyword at line start (after optional whitespace).
 QUARANTINE_PATTERNS = [
     r"^\s*from\s+_quarantine\b",
     r"^\s*import\s+_quarantine\b",
@@ -33,9 +33,14 @@ QUARANTINE_PATTERNS = [
 SCAN_EXTENSIONS = {".py"}
 
 # Configurable via QUARANTINE_EXCLUDE_DIRS env var (comma-separated)
-_DEFAULT_EXCLUDES = {"_quarantine", ".git", "__pycache__", ".pytest_cache", "node_modules", ".ruff_cache", "vendor", "generated"}
+_DEFAULT_EXCLUDES = {
+    "_quarantine", ".git", "__pycache__", ".pytest_cache",
+    "node_modules", ".ruff_cache", "vendor", "generated",
+}
 _env_excludes = os.environ.get("QUARANTINE_EXCLUDE_DIRS", "")
-EXCLUDE_DIRS = _DEFAULT_EXCLUDES | (set(_env_excludes.split(",")) if _env_excludes else set())
+EXCLUDE_DIRS = _DEFAULT_EXCLUDES | (
+    set(_env_excludes.split(",")) if _env_excludes else set()
+)
 
 
 def find_quarantine_imports(root: Path) -> list[tuple[Path, int, str]]:

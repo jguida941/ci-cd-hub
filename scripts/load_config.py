@@ -168,7 +168,7 @@ def generate_workflow_inputs(config: dict) -> dict:
 
     Per ADR-0024, this returns:
     - Dispatch inputs: tool toggles, essential settings, threshold_overrides_yaml
-    - Internal metadata: _dispatch_enabled, _run_group, _force_all_tools (prefixed with _)
+    - Internal metadata: _dispatch_enabled, _run_group, _force_all_tools (_-prefixed)
 
     Thresholds are bundled into 'threshold_overrides_yaml' to stay under
     GitHub's 25-input limit.

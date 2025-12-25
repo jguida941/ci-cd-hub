@@ -40,7 +40,10 @@ SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
-from correlation import find_run_by_correlation_id, validate_correlation_id
+from correlation import (  # noqa: E402
+    find_run_by_correlation_id,
+    validate_correlation_id,
+)
 
 
 class GitHubAPI:
@@ -54,7 +57,7 @@ class GitHubAPI:
         attempt = 0
         while True:
             try:
-                req = request.Request(
+                req = request.Request(  # noqa: S310
                     url,
                     headers={
                         "Authorization": f"Bearer {self.token}",
@@ -62,19 +65,21 @@ class GitHubAPI:
                         "X-GitHub-Api-Version": "2022-11-28",
                     },
                 )
-                with request.urlopen(req) as resp:
+                with request.urlopen(req) as resp:  # noqa: S310
                     return json.loads(resp.read().decode())
             except Exception as exc:
                 attempt += 1
                 if attempt > retries:
                     raise
                 sleep_for = backoff * attempt
-                print(f"Retry {attempt}/{retries} for {url} after error: {exc} (sleep {sleep_for}s)")
+                print(
+                    f"Retry {attempt}/{retries} for {url}: {exc} (sleep {sleep_for}s)"
+                )
                 time.sleep(sleep_for)
 
     def download_artifact(self, archive_url: str, target_dir: Path) -> Path | None:
         """Download and extract artifact ZIP."""
-        req = request.Request(
+        req = request.Request(  # noqa: S310
             archive_url,
             headers={
                 "Authorization": f"Bearer {self.token}",
@@ -83,7 +88,7 @@ class GitHubAPI:
             },
         )
         try:
-            with request.urlopen(req) as resp:
+            with request.urlopen(req) as resp:  # noqa: S310
                 data = resp.read()
             target_dir.mkdir(parents=True, exist_ok=True)
             zip_path = target_dir / "artifact.zip"
@@ -258,7 +263,8 @@ def fetch_and_validate_artifact(
             return None
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            extracted = api.download_artifact(artifact["archive_download_url"], Path(tmpdir))
+            dl_url = artifact["archive_download_url"]
+            extracted = api.download_artifact(dl_url, Path(tmpdir))
             if not extracted:
                 return None
 
@@ -273,7 +279,7 @@ def fetch_and_validate_artifact(
             if not validate_correlation_id(expected_correlation_id, report_corr):
                 print(
                     f"Correlation mismatch for {owner}/{repo} run {run_id} "
-                    f"(expected {expected_correlation_id}, got {report_corr}); searching for correct run..."
+                    f"(expected {expected_correlation_id}, got {report_corr})"
                 )
 
                 # Try to find correct run by correlation ID
@@ -283,13 +289,13 @@ def fetch_and_validate_artifact(
                 )
 
                 if correct_run_id and correct_run_id != run_id:
-                    print(f"Found correct run {correct_run_id}, re-fetching artifacts...")
-                    # Recursively fetch from correct run (with empty expected to skip re-validation)
+                    print(f"Found correct run {correct_run_id}, re-fetching...")
+                    # Re-fetch from correct run (empty expected to skip re-validation)
                     return fetch_and_validate_artifact(
                         api, owner, repo, correct_run_id, "", workflow, token
                     )
                 else:
-                    print(f"Could not find correct run for {owner}/{repo}, skipping artifact.")
+                    print(f"Could not find correct run for {owner}/{repo}")
                     return None
 
             return report_data
@@ -336,8 +342,12 @@ def aggregate_results(results: list[dict]) -> dict:
     if mutations:
         aggregated["mutation_average"] = round(sum(mutations) / len(mutations), 1)
 
-    aggregated["total_critical_vulns"] = sum(owasp_critical) + sum(trivy_critical)
-    aggregated["total_high_vulns"] = sum(owasp_high) + sum(bandit_high) + sum(trivy_high)
+    aggregated["total_critical_vulns"] = (
+        sum(owasp_critical) + sum(trivy_critical)
+    )
+    aggregated["total_high_vulns"] = (
+        sum(owasp_high) + sum(bandit_high) + sum(trivy_high)
+    )
     aggregated["total_medium_vulns"] = sum(owasp_medium) + sum(bandit_medium)
     aggregated["total_pip_audit_vulns"] = sum(pip_audit_vulns)
     aggregated["total_semgrep_findings"] = sum(semgrep_findings)
@@ -391,7 +401,12 @@ def generate_summary_markdown(
         for entry in java_results:
             config = entry.get("config", "unknown")
             status = entry.get("conclusion", entry.get("status", "unknown"))
-            status_label = "PASS" if status == "success" else "FAIL" if status in ("failure", "failed") else "PENDING"
+            if status == "success":
+                status_label = "PASS"
+            elif status in ("failure", "failed"):
+                status_label = "FAIL"
+            else:
+                status_label = "PENDING"
 
             cov = fmt(entry.get("coverage"), "%")
             mut = fmt(entry.get("mutation_score"), "%")
@@ -399,34 +414,53 @@ def generate_summary_markdown(
             sb = fmt(entry.get("spotbugs_issues"))
             pmd = fmt(entry.get("pmd_violations"))
 
-            oc, oh, om = entry.get("owasp_critical"), entry.get("owasp_high"), entry.get("owasp_medium")
-            owasp = f"{oc or 0}/{oh or 0}/{om or 0}" if any(v is not None for v in [oc, oh, om]) else "-"
+            oc = entry.get("owasp_critical")
+            oh = entry.get("owasp_high")
+            om = entry.get("owasp_medium")
+            if any(v is not None for v in [oc, oh, om]):
+                owasp = f"{oc or 0}/{oh or 0}/{om or 0}"
+            else:
+                owasp = "-"
 
             sem = fmt(entry.get("semgrep_findings"))
             tc, th = entry.get("trivy_critical"), entry.get("trivy_high")
-            trivy = f"{tc or 0}/{th or 0}" if any(v is not None for v in [tc, th]) else "-"
+            if any(v is not None for v in [tc, th]):
+                trivy = f"{tc or 0}/{th or 0}"
+            else:
+                trivy = "-"
 
-            lines.append(f"| {config} | {status_label} | {cov} | {mut} | {cs} | {sb} | {pmd} | {owasp} | {sem} | {trivy} |")
+            lines.append(
+                f"| {config} | {status_label} | {cov} | {mut} "
+                f"| {cs} | {sb} | {pmd} | {owasp} | {sem} | {trivy} |"
+            )
         lines.append("")
 
     # Python table
     if python_results:
-        lines.extend([
-            "## Python Repos",
-            "",
-            "| Config | Status | Cov | Mut | Tests | Ruff | Black | isort | mypy | Bandit | pip-audit | Semgrep | Trivy |",
-            "|--------|--------|-----|-----|-------|------|-------|-------|------|--------|-----------|---------|-------|",
-        ])
+        # Table header split for line length
+        hdr = "| Config | Status | Cov | Mut | Tests | Ruff | Black "
+        hdr += "| isort | mypy | Bandit | pip-audit | Semgrep | Trivy |"
+        sep = "|--------|--------|-----|-----|-------|------|-------"
+        sep += "|-------|------|--------|-----------|---------|-------|"
+        lines.extend(["## Python Repos", "", hdr, sep])
         for entry in python_results:
             config = entry.get("config", "unknown")
             status = entry.get("conclusion", entry.get("status", "unknown"))
-            status_label = "PASS" if status == "success" else "FAIL" if status in ("failure", "failed") else "PENDING"
+            if status == "success":
+                status_label = "PASS"
+            elif status in ("failure", "failed"):
+                status_label = "FAIL"
+            else:
+                status_label = "PENDING"
 
             cov = fmt(entry.get("coverage"), "%")
             mut = fmt(entry.get("mutation_score"), "%")
 
             tp, tf = entry.get("tests_passed"), entry.get("tests_failed")
-            tests = f"{tp or 0} pass/{tf or 0} fail" if any(v is not None for v in [tp, tf]) else "-"
+            if any(v is not None for v in [tp, tf]):
+                tests = f"{tp or 0}/{tf or 0}"
+            else:
+                tests = "-"
 
             ruff = fmt(entry.get("ruff_errors"))
             black = fmt(entry.get("black_issues"))
@@ -434,15 +468,25 @@ def generate_summary_markdown(
             mypy = fmt(entry.get("mypy_errors"))
 
             bh, bm = entry.get("bandit_high"), entry.get("bandit_medium")
-            bandit = f"{bh or 0}/{bm or 0}" if any(v is not None for v in [bh, bm]) else "-"
+            if any(v is not None for v in [bh, bm]):
+                bandit = f"{bh or 0}/{bm or 0}"
+            else:
+                bandit = "-"
 
             pip = fmt(entry.get("pip_audit_vulns"))
             sem = fmt(entry.get("semgrep_findings"))
 
             tc, th = entry.get("trivy_critical"), entry.get("trivy_high")
-            trivy = f"{tc or 0}/{th or 0}" if any(v is not None for v in [tc, th]) else "-"
+            if any(v is not None for v in [tc, th]):
+                trivy = f"{tc or 0}/{th or 0}"
+            else:
+                trivy = "-"
 
-            lines.append(f"| {config} | {status_label} | {cov} | {mut} | {tests} | {ruff} | {black} | {isort} | {mypy} | {bandit} | {pip} | {sem} | {trivy} |")
+            lines.append(
+                f"| {config} | {status_label} | {cov} | {mut} | {tests} "
+                f"| {ruff} | {black} | {isort} | {mypy} | {bandit} "
+                f"| {pip} | {sem} | {trivy} |"
+            )
         lines.append("")
 
     # Aggregated metrics
@@ -455,16 +499,22 @@ def generate_summary_markdown(
         lines.append(f"- **Average Coverage:** {report['coverage_average']}%")
     if "mutation_average" in report:
         lines.append(f"- **Average Mutation Score:** {report['mutation_average']}%")
-    lines.append(f"- **Total Code Quality Issues:** {report['total_code_quality_issues']}")
+    total_issues = report['total_code_quality_issues']
+    lines.append(f"- **Total Code Quality Issues:** {total_issues}")
 
+    crit = report['total_critical_vulns']
+    high = report['total_high_vulns']
+    med = report['total_medium_vulns']
+    pip_v = report['total_pip_audit_vulns']
+    sem_f = report['total_semgrep_findings']
     lines.extend([
         "",
         "### Security",
-        f"- **Critical Vulnerabilities (OWASP+Trivy):** {report['total_critical_vulns']}",
-        f"- **High Vulnerabilities (OWASP+Bandit+Trivy):** {report['total_high_vulns']}",
-        f"- **Medium Vulnerabilities (OWASP+Bandit):** {report['total_medium_vulns']}",
-        f"- **pip-audit Vulnerabilities:** {report['total_pip_audit_vulns']}",
-        f"- **Semgrep Findings:** {report['total_semgrep_findings']}",
+        f"- **Critical Vulnerabilities (OWASP+Trivy):** {crit}",
+        f"- **High Vulnerabilities (OWASP+Bandit+Trivy):** {high}",
+        f"- **Medium Vulnerabilities (OWASP+Bandit):** {med}",
+        f"- **pip-audit Vulnerabilities:** {pip_v}",
+        f"- **Semgrep Findings:** {sem_f}",
     ])
 
     return "\n".join(lines)
@@ -519,7 +569,7 @@ def run_aggregation(
 
         # Try to find run by correlation ID if run_id is missing
         if not run_id and expected_corr and workflow:
-            print(f"No run_id for {repo_full}, searching by correlation_id {expected_corr}...")
+            print(f"No run_id for {repo_full}, searching by {expected_corr}...")
             found_run_id = find_run_by_correlation_id(
                 owner, repo, workflow, expected_corr, token, gh_get=api.get
             )
@@ -550,7 +600,8 @@ def run_aggregation(
                 api, owner, repo, run_id, expected_corr, workflow, token
             )
             if report_data:
-                run_status["correlation_id"] = report_data.get("hub_correlation_id", expected_corr)
+                corr = report_data.get("hub_correlation_id", expected_corr)
+                run_status["correlation_id"] = corr
                 extract_metrics_from_report(report_data, run_status)
 
         results.append(run_status)
@@ -590,10 +641,12 @@ def run_aggregation(
     threshold_exceeded = False
 
     if report["total_critical_vulns"] > max_critical:
-        print(f"THRESHOLD EXCEEDED: Critical vulnerabilities {report['total_critical_vulns']} > {max_critical}")
+        crit_v = report['total_critical_vulns']
+        print(f"THRESHOLD EXCEEDED: Critical vulns {crit_v} > {max_critical}")
         threshold_exceeded = True
     if report["total_high_vulns"] > max_high:
-        print(f"THRESHOLD EXCEEDED: High vulnerabilities {report['total_high_vulns']} > {max_high}")
+        high_v = report['total_high_vulns']
+        print(f"THRESHOLD EXCEEDED: High vulns {high_v} > {max_high}")
         threshold_exceeded = True
 
     # Check for failures
@@ -621,7 +674,9 @@ def main():
     parser.add_argument("--dispatch-dir", type=Path, default=Path("dispatch-artifacts"))
     parser.add_argument("--output", type=Path, default=Path("hub-report.json"))
     parser.add_argument("--summary-file", type=Path, default=None)
-    parser.add_argument("--defaults-file", type=Path, default=Path("config/defaults.yaml"))
+    parser.add_argument(
+        "--defaults-file", type=Path, default=Path("config/defaults.yaml")
+    )
     args = parser.parse_args()
 
     token = os.environ.get("GITHUB_TOKEN")
