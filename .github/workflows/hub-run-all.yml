@@ -191,6 +191,16 @@ jobs:
                   if key in inputs:
                       entry[key] = inputs[key]
 
+              # Environment settings (version, retention, build tool)
+              for key in (
+                  "java_version",
+                  "python_version",
+                  "retention_days",
+                  "build_tool",
+              ):
+                  if key in inputs:
+                      entry[key] = inputs[key]
+
               entries.append(entry)
 
           matrix = {"include": entries}
@@ -261,13 +271,13 @@ jobs:
       # ========================================
       # JAVA SETUP & TOOLS
       # ========================================
-      - name: Set up JDK 21
+      - name: Set up JDK ${{ matrix.java_version }}
         if: matrix.language == 'java'
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: '${{ matrix.java_version }}'
           distribution: 'temurin'
-          cache: 'maven'
+          cache: '${{ matrix.build_tool }}'
 
       - name: "[Java] Build & Test"
         if: matrix.language == 'java'
@@ -512,11 +522,11 @@ jobs:
       # ========================================
       # PYTHON SETUP & TOOLS
       # ========================================
-      - name: Set up Python 3.12
+      - name: Set up Python ${{ matrix.python_version }}
         if: matrix.language == 'python'
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '${{ matrix.python_version }}'
 
       - name: "[Python] Install Dependencies"
         if: matrix.language == 'python'
@@ -900,8 +910,8 @@ jobs:
               echo "## Environment"
               echo "| Setting | Value |"
               echo "|---------|-------|"
-              echo "| Java Version | 21 |"
-              echo "| Build Tool | Maven |"
+              echo "| Java Version | ${{ matrix.java_version || 'NOT SET' }} |"
+              echo "| Build Tool | ${{ matrix.build_tool || 'NOT SET' }} |"
               echo "| Working Directory | \`${{ matrix.subdir || '.' }}\` |"
               echo "| Repository | ${{ matrix.owner }}/${{ matrix.name }} |"
               echo "| Branch | ${{ matrix.branch }} |"
@@ -909,7 +919,7 @@ jobs:
               echo "| Config | ${{ matrix.config_basename }} |"
               echo "| Run Group | ${{ matrix.run_group }} |"
               echo "| Run Number | #${{ github.run_number }} |"
-              echo "| Artifact Retention | 30 days |"
+              echo "| Artifact Retention | ${{ matrix.retention_days || 'NOT SET' }} days |"
               echo ""
               echo "---"
               echo ""
@@ -936,7 +946,7 @@ jobs:
               echo "## Environment"
               echo "| Setting | Value |"
               echo "|---------|-------|"
-              echo "| Python Version | 3.12 |"
+              echo "| Python Version | ${{ matrix.python_version || 'NOT SET' }} |"
               echo "| Working Directory | \`${{ matrix.subdir || '.' }}\` |"
               echo "| Repository | ${{ matrix.owner }}/${{ matrix.name }} |"
               echo "| Branch | ${{ matrix.branch }} |"
@@ -944,7 +954,7 @@ jobs:
               echo "| Config | ${{ matrix.config_basename }} |"
               echo "| Run Group | ${{ matrix.run_group }} |"
               echo "| Run Number | #${{ github.run_number }} |"
-              echo "| Artifact Retention | 30 days |"
+              echo "| Artifact Retention | ${{ matrix.retention_days || 'NOT SET' }} days |"
               echo ""
               echo "---"
               echo ""
@@ -1105,7 +1115,7 @@ jobs:
             "commit": "${COMMIT_SHA}",
             "branch": "${{ matrix.branch }}",
             "timestamp": "${TIMESTAMP}",
-            "java_version": "21",
+            "java_version": "${{ matrix.java_version }}",
             "results": {
               "build": "${BUILD_STATUS}",
               "coverage": ${{ steps.java-coverage.outputs.percent || 0 }},
@@ -1206,7 +1216,7 @@ jobs:
             "commit": "${COMMIT_SHA}",
             "branch": "${{ matrix.branch }}",
             "timestamp": "${TIMESTAMP}",
-            "python_version": "3.12",
+            "python_version": "${{ matrix.python_version }}",
             "results": {
               "test": "${TEST_STATUS}",
               "coverage": ${{ steps.python-tests.outputs.coverage || 0 }},
@@ -1320,7 +1330,7 @@ jobs:
             repo/mypy-output.txt
             reports/**/report.json
             reports/**/summary.md
-          retention-days: 30
+          retention-days: ${{ matrix.retention_days }}
           if-no-files-found: ignore
 
   # ============================================================================
