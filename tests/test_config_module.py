@@ -6,7 +6,6 @@ assertions that would fail if the logic were changed.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import pytest
@@ -26,7 +25,6 @@ from cihub.config import (
     save_repo_config,
     save_yaml_file,
 )
-
 
 # =============================================================================
 # PathConfig Tests
@@ -69,12 +67,17 @@ class TestPathConfig:
     def test_repo_file_with_special_chars(self):
         """repo_file handles repo names with special characters."""
         paths = PathConfig(root="/hub")
-        assert paths.repo_file("org-name_repo") == "/hub/config/repos/org-name_repo.yaml"
+        assert (
+            paths.repo_file("org-name_repo") == "/hub/config/repos/org-name_repo.yaml"
+        )
 
     def test_profile_file_path(self):
         """profile_file returns correct path for profile name."""
         paths = PathConfig(root="/hub")
-        assert paths.profile_file("java-security") == "/hub/templates/profiles/java-security.yaml"
+        assert (
+            paths.profile_file("java-security")
+            == "/hub/templates/profiles/java-security.yaml"
+        )
 
     def test_frozen_dataclass(self):
         """PathConfig is immutable."""
@@ -350,7 +353,9 @@ class TestLoadProfile:
         paths = PathConfig(root=str(tmp_path))
         profiles_dir = Path(paths.profiles_dir)
         profiles_dir.mkdir(parents=True, exist_ok=True)
-        (profiles_dir / "java-security.yaml").write_text("java:\n  tools:\n    semgrep: true")
+        (profiles_dir / "java-security.yaml").write_text(
+            "java:\n  tools:\n    semgrep: true"
+        )
 
         result = load_profile(paths, "java-security")
         assert result == {"java": {"tools": {"semgrep": True}}}
@@ -668,7 +673,9 @@ class TestBuildEffectiveConfig:
         defaults = {"key": "default"}
         profile = {"key": "profile"}
         repo_config = {"key": "repo"}
-        result = build_effective_config(defaults, profile=profile, repo_config=repo_config)
+        result = build_effective_config(
+            defaults, profile=profile, repo_config=repo_config
+        )
         assert result == {"key": "repo"}
 
     def test_repo_overrides_defaults_without_profile(self):
@@ -684,7 +691,9 @@ class TestBuildEffectiveConfig:
         profile = {"b": "profile", "c": "profile"}
         repo_config = {"c": "repo"}
 
-        result = build_effective_config(defaults, profile=profile, repo_config=repo_config)
+        result = build_effective_config(
+            defaults, profile=profile, repo_config=repo_config
+        )
 
         assert result["a"] == "defaults"
         assert result["b"] == "profile"
@@ -722,7 +731,9 @@ class TestBuildEffectiveConfig:
             }
         }
 
-        result = build_effective_config(defaults, profile=profile, repo_config=repo_config)
+        result = build_effective_config(
+            defaults, profile=profile, repo_config=repo_config
+        )
 
         assert result["java"]["version"] == "21"
         assert result["java"]["tools"]["jacoco"] is True
@@ -747,22 +758,34 @@ class TestConfigIntegration:
 
         # Create defaults
         defaults_file = Path(paths.defaults_file)
-        defaults_file.write_text(yaml.dump({
-            "java": {"version": "17", "tools": {"jacoco": True}},
-        }))
+        defaults_file.write_text(
+            yaml.dump(
+                {
+                    "java": {"version": "17", "tools": {"jacoco": True}},
+                }
+            )
+        )
 
         # Create profile
         profiles_dir = Path(paths.profiles_dir)
         profiles_dir.mkdir(parents=True, exist_ok=True)
-        (profiles_dir / "security.yaml").write_text(yaml.dump({
-            "java": {"tools": {"semgrep": True}},
-        }))
+        (profiles_dir / "security.yaml").write_text(
+            yaml.dump(
+                {
+                    "java": {"tools": {"semgrep": True}},
+                }
+            )
+        )
 
         # Create repo config
-        save_repo_config(paths, "my-repo", {
-            "repo": {"name": "my-repo"},
-            "java": {"version": "21"},
-        })
+        save_repo_config(
+            paths,
+            "my-repo",
+            {
+                "repo": {"name": "my-repo"},
+                "java": {"version": "21"},
+            },
+        )
 
         # Load and merge
         defaults = load_defaults(paths)

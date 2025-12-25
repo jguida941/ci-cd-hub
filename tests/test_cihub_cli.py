@@ -5,7 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from cihub.cli import (
+from cihub.cli import (  # noqa: E402
     build_repo_config,
     detect_language,
     parse_repo_from_remote,

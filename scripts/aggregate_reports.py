@@ -204,9 +204,7 @@ def generate_summary(reports: list[dict]) -> dict:
 
 def generate_html_dashboard(summary: dict) -> str:
     """Generate an HTML dashboard from the summary."""
-    total_tests = (
-        summary["tests"]["total_passed"] + summary["tests"]["total_failed"]
-    )
+    total_tests = summary["tests"]["total_passed"] + summary["tests"]["total_failed"]
     repos_html = ""
     for repo in summary["repos"]:
         status_class = "success" if repo["status"] == "success" else "failure"
@@ -214,20 +212,20 @@ def generate_html_dashboard(summary: dict) -> str:
         tests_failed = repo.get("tests_failed", 0)
         tests_class = "success" if tests_failed == 0 else "failure"
         # Escape user-controlled values to prevent XSS
-        name = html.escape(str(repo['name']))
+        name = html.escape(str(repo["name"]))
         language = html.escape(str(repo.get("language", "unknown")))
-        branch = html.escape(str(repo['branch']))
-        status = html.escape(str(repo['status']))
-        timestamp = html.escape(str(repo['timestamp']))
+        branch = html.escape(str(repo["branch"]))
+        status = html.escape(str(repo["status"]))
+        timestamp = html.escape(str(repo["timestamp"]))
         repos_html += f"""
         <tr>
             <td>{name}</td>
             <td>{language}</td>
             <td>{branch}</td>
             <td class="{status_class}">{status}</td>
-            <td>{repo['coverage']}%</td>
+            <td>{repo["coverage"]}%</td>
             <td class="{tests_class}">{tests_passed}/{tests_passed + tests_failed}</td>
-            <td>{repo['mutation_score']}%</td>
+            <td>{repo["mutation_score"]}%</td>
             <td>{timestamp}</td>
         </tr>
         """
@@ -293,24 +291,24 @@ def generate_html_dashboard(summary: dict) -> str:
 
     <div class="summary">
         <div class="card">
-            <div class="card-value">{summary['total_repos']}</div>
+            <div class="card-value">{summary["total_repos"]}</div>
             <div class="card-label">Total Repositories</div>
         </div>
         <div class="card">
-            <div class="card-value">{summary['coverage']['average']}%</div>
+            <div class="card-value">{summary["coverage"]["average"]}%</div>
             <div class="card-label">Average Coverage</div>
         </div>
         <div class="card">
-            <div class="card-value">{summary['mutation']['average']}%</div>
+            <div class="card-value">{summary["mutation"]["average"]}%</div>
             <div class="card-label">Average Mutation Score</div>
         </div>
         <div class="card">
-            <div class="card-value">{len(summary['languages'])}</div>
+            <div class="card-value">{len(summary["languages"])}</div>
             <div class="card-label">Languages</div>
         </div>
         <div class="card">
             <div class="card-value">
-                {summary['tests']['total_passed']}/{total_tests}
+                {summary["tests"]["total_passed"]}/{total_tests}
             </div>
             <div class="card-label">Tests Passed</div>
         </div>
@@ -335,7 +333,7 @@ def generate_html_dashboard(summary: dict) -> str:
         </tbody>
     </table>
 
-    <p class="timestamp">Generated: {summary['generated_at']}</p>
+    <p class="timestamp">Generated: {summary["generated_at"]}</p>
 </body>
 </html>
 """
@@ -402,4 +400,5 @@ def main():
 
 if __name__ == "__main__":
     import sys
+
     sys.exit(main())

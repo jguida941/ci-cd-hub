@@ -843,7 +843,7 @@ jobs:
       # ========================================
       - name: "[All] Initialize CodeQL"
         if: matrix.run_codeql == true
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@5d4e8d1aca955e8d8589aabd499c5cae939e33c7
         with:
           languages: ${{ matrix.language }}
           source-root: ${{ env.WORKDIR }}
@@ -851,7 +851,7 @@ jobs:
       - name: "[All] Perform CodeQL Analysis"
         if: matrix.run_codeql == true
         id: codeql
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@5d4e8d1aca955e8d8589aabd499c5cae939e33c7
         continue-on-error: true
 
       # ========================================

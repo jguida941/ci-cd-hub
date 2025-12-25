@@ -277,13 +277,12 @@ def fetch_and_validate_artifact(
 
         # Prefer artifact ending with ci-report
         artifact = next(
-            (a for a in ci_artifacts if a.get("name", "").endswith("ci-report")),
-            None
+            (a for a in ci_artifacts if a.get("name", "").endswith("ci-report")), None
         )
         if not artifact and ci_artifacts:
             artifact = next(
                 (a for a in ci_artifacts if "report" in a.get("name", "")),
-                ci_artifacts[0] if ci_artifacts else None
+                ci_artifacts[0] if ci_artifacts else None,
             )
 
         if not artifact:
@@ -323,8 +322,12 @@ def fetch_and_validate_artifact(
 
                 # Try to find correct run by correlation ID
                 correct_run_id = find_run_by_correlation_id(
-                    owner, repo, workflow, expected_correlation_id, token,
-                    gh_get=api.get
+                    owner,
+                    repo,
+                    workflow,
+                    expected_correlation_id,
+                    token,
+                    gh_get=api.get,
                 )
 
                 if correct_run_id and correct_run_id != run_id:
@@ -382,9 +385,7 @@ def aggregate_results(results: list[dict]) -> dict:
     if mutations:
         aggregated["mutation_average"] = round(sum(mutations) / len(mutations), 1)
 
-    aggregated["total_critical_vulns"] = (
-        sum(owasp_critical) + sum(trivy_critical)
-    )
+    aggregated["total_critical_vulns"] = sum(owasp_critical) + sum(trivy_critical)
     aggregated["total_high_vulns"] = (
         sum(owasp_high) + sum(bandit_high) + sum(trivy_high)
     )
@@ -392,8 +393,13 @@ def aggregate_results(results: list[dict]) -> dict:
     aggregated["total_pip_audit_vulns"] = sum(pip_audit_vulns)
     aggregated["total_semgrep_findings"] = sum(semgrep_findings)
     aggregated["total_code_quality_issues"] = (
-        sum(checkstyle_issues) + sum(spotbugs_issues) + sum(pmd_violations) +
-        sum(ruff_errors) + sum(black_issues) + sum(isort_issues) + sum(mypy_errors)
+        sum(checkstyle_issues)
+        + sum(spotbugs_issues)
+        + sum(pmd_violations)
+        + sum(ruff_errors)
+        + sum(black_issues)
+        + sum(isort_issues)
+        + sum(mypy_errors)
     )
 
     return aggregated
@@ -432,12 +438,14 @@ def generate_summary_markdown(
 
     # Java table
     if java_results:
-        lines.extend([
-            "## Java Repos",
-            "",
-            "| Config | Status | Cov | Mut | CS | SB | PMD | OWASP | Semgrep | Trivy |",
-            "|--------|--------|-----|-----|----|----|-----|-------|---------|-------|",
-        ])
+        lines.extend(
+            [
+                "## Java Repos",
+                "",
+                "| Config | Status | Coverage | Mutation | Checkstyle | SpotBugs | PMD | OWASP | Semgrep | Trivy |",  # noqa: E501
+                "|--------|--------|----------|----------|------------|----------|-----|-------|---------|-------|",  # noqa: E501
+            ]
+        )
         for entry in java_results:
             config = entry.get("config", "unknown")
             status = entry.get("conclusion", entry.get("status", "unknown"))
@@ -478,9 +486,9 @@ def generate_summary_markdown(
     # Python table
     if python_results:
         # Table header split for line length
-        hdr = "| Config | Status | Cov | Mut | Tests | Ruff | Black "
+        hdr = "| Config | Status | Coverage | Mutation | Tests | Ruff | Black "
         hdr += "| isort | mypy | Bandit | pip-audit | Semgrep | Trivy |"
-        sep = "|--------|--------|-----|-----|-------|------|-------"
+        sep = "|--------|--------|----------|----------|-------|------|-------"
         sep += "|-------|------|--------|-----------|---------|-------|"
         lines.extend(["## Python Repos", "", hdr, sep])
         for entry in python_results:
@@ -530,32 +538,36 @@ def generate_summary_markdown(
         lines.append("")
 
     # Aggregated metrics
-    lines.extend([
-        "## Aggregated Metrics",
-        "",
-        "### Quality",
-    ])
+    lines.extend(
+        [
+            "## Aggregated Metrics",
+            "",
+            "### Quality",
+        ]
+    )
     if "coverage_average" in report:
         lines.append(f"- **Average Coverage:** {report['coverage_average']}%")
     if "mutation_average" in report:
         lines.append(f"- **Average Mutation Score:** {report['mutation_average']}%")
-    total_issues = report['total_code_quality_issues']
+    total_issues = report["total_code_quality_issues"]
     lines.append(f"- **Total Code Quality Issues:** {total_issues}")
 
-    crit = report['total_critical_vulns']
-    high = report['total_high_vulns']
-    med = report['total_medium_vulns']
-    pip_v = report['total_pip_audit_vulns']
-    sem_f = report['total_semgrep_findings']
-    lines.extend([
-        "",
-        "### Security",
-        f"- **Critical Vulnerabilities (OWASP+Trivy):** {crit}",
-        f"- **High Vulnerabilities (OWASP+Bandit+Trivy):** {high}",
-        f"- **Medium Vulnerabilities (OWASP+Bandit):** {med}",
-        f"- **pip-audit Vulnerabilities:** {pip_v}",
-        f"- **Semgrep Findings:** {sem_f}",
-    ])
+    crit = report["total_critical_vulns"]
+    high = report["total_high_vulns"]
+    med = report["total_medium_vulns"]
+    pip_v = report["total_pip_audit_vulns"]
+    sem_f = report["total_semgrep_findings"]
+    lines.extend(
+        [
+            "",
+            "### Security",
+            f"- **Critical Vulnerabilities (OWASP+Trivy):** {crit}",
+            f"- **High Vulnerabilities (OWASP+Bandit+Trivy):** {high}",
+            f"- **Medium Vulnerabilities (OWASP+Bandit):** {med}",
+            f"- **pip-audit Vulnerabilities:** {pip_v}",
+            f"- **Semgrep Findings:** {sem_f}",
+        ]
+    )
 
     return "\n".join(lines)
 
@@ -593,11 +605,11 @@ def run_aggregation(
     entries = load_dispatch_metadata(dispatch_dir)
     results = []
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Starting aggregation for {len(entries)} dispatched repos")
     print(f"   Hub Run ID: {hub_run_id}")
     print(f"   Total expected repos: {total_repos}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     for idx, entry in enumerate(entries, 1):
         repo_full = entry.get("repo", "unknown/unknown")
@@ -688,31 +700,33 @@ def run_aggregation(
     threshold_exceeded = False
 
     if report["total_critical_vulns"] > max_critical:
-        crit_v = report['total_critical_vulns']
+        crit_v = report["total_critical_vulns"]
         print(f"THRESHOLD EXCEEDED: Critical vulns {crit_v} > {max_critical}")
         threshold_exceeded = True
     if report["total_high_vulns"] > max_high:
-        high_v = report['total_high_vulns']
+        high_v = report["total_high_vulns"]
         print(f"THRESHOLD EXCEEDED: High vulns {high_v} > {max_high}")
         threshold_exceeded = True
 
     # Check for failures
     failed_runs = [
-        r for r in results
+        r
+        for r in results
         if r.get("status") in ("missing_run_id", "fetch_failed", "timed_out")
         or (r.get("status") == "completed" and r.get("conclusion") != "success")
         or r.get("status") not in ("completed",)
     ]
 
     passed_runs = [
-        r for r in results
+        r
+        for r in results
         if r.get("status") == "completed" and r.get("conclusion") == "success"
     ]
 
     # Print final summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("AGGREGATION SUMMARY")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Total dispatched: {dispatched}")
     print(f"Passed: {len(passed_runs)}")
     print(f"Failed: {len(failed_runs)}")
@@ -745,11 +759,9 @@ def run_aggregation(
                 f"(max: {max_critical})"
             )
         if report["total_high_vulns"] > max_high:
-            print(
-                f"  - High vulns: {report['total_high_vulns']} (max: {max_high})"
-            )
+            print(f"  - High vulns: {report['total_high_vulns']} (max: {max_high})")
 
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     if failed_runs or missing > 0 or threshold_exceeded:
         return 1

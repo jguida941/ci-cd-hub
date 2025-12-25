@@ -51,6 +51,7 @@ packages = ["cihub"]
 [tool.ruff]
 line-length = 88
 target-version = "py310"
+exclude = ["_quarantine"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "S", "B", "I"]

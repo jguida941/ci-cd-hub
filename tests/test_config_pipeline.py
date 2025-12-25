@@ -10,8 +10,12 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.load_config import ConfigValidationError, generate_workflow_inputs, load_config
-from scripts.validate_config import validate_config
+from scripts.load_config import (  # noqa: E402
+    ConfigValidationError,
+    generate_workflow_inputs,
+    load_config,
+)
+from scripts.validate_config import validate_config  # noqa: E402
 
 
 def test_generate_workflow_inputs_java():
@@ -44,7 +48,10 @@ def test_generate_workflow_inputs_java():
     assert "threshold_overrides_yaml" in inputs
     thresholds = yaml.safe_load(inputs["threshold_overrides_yaml"])
     assert thresholds["coverage_min"] == cfg["java"]["tools"]["jacoco"]["min_coverage"]
-    assert thresholds["mutation_score_min"] == cfg["java"]["tools"]["pitest"]["min_mutation_score"]
+    assert (
+        thresholds["mutation_score_min"]
+        == cfg["java"]["tools"]["pitest"]["min_mutation_score"]
+    )
     assert thresholds["max_critical_vulns"] == cfg["thresholds"]["max_critical_vulns"]
     assert thresholds["max_high_vulns"] == cfg["thresholds"]["max_high_vulns"]
 
@@ -76,8 +83,13 @@ def test_generate_workflow_inputs_python():
     # Verify bundling respects config values, not hardcoded defaults
     assert "threshold_overrides_yaml" in inputs
     thresholds = yaml.safe_load(inputs["threshold_overrides_yaml"])
-    assert thresholds["coverage_min"] == cfg["python"]["tools"]["pytest"]["min_coverage"]
-    assert thresholds["mutation_score_min"] == cfg["python"]["tools"]["mutmut"]["min_mutation_score"]
+    assert (
+        thresholds["coverage_min"] == cfg["python"]["tools"]["pytest"]["min_coverage"]
+    )
+    assert (
+        thresholds["mutation_score_min"]
+        == cfg["python"]["tools"]["mutmut"]["min_mutation_score"]
+    )
     assert thresholds["max_critical_vulns"] == cfg["thresholds"]["max_critical_vulns"]
     assert thresholds["max_high_vulns"] == cfg["thresholds"]["max_high_vulns"]
 

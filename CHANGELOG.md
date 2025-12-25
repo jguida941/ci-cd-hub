@@ -7,17 +7,29 @@ All notable changes to this project will be documented in this file.
 ### Workflow Rename
 - **Renamed `hub-self-check.yml` → `hub-production-ci.yml`** - Comprehensive production-grade CI for the hub itself
 
+### CLI Config & Wizard Foundations
+- Added schema loader/validator in `cihub/config/schema.py` and wired CLI validation to it
+- Added wizard scaffolding (styles, validators, questions, summary, core runner)
+- Extracted CLI command handlers into `cihub/commands/*` and added wrappers in `cihub/cli.py`
+- Added new hub-side commands: `cihub new` and `cihub config` (edit/show/set/enable/disable)
+- Updated NEW_PLAN acceptance checklist to require explicit CI summaries and failure context
+- Added ADR-0027 documenting hub production CI policy
+
 ### Security Hardening
 - All GitHub Actions pinned to SHA (supply chain security)
 - Added `harden-runner` to all jobs (egress monitoring)
 - Added least-privilege `GITHUB_TOKEN` permissions per job
 - Trivy pinned to v0.31.0 (was @master)
 - Fixed syntax check to properly validate all `cihub/**/*.py` files
+- Pinned CodeQL actions to v4 SHA in hub/security/reusable workflows
 
 ### New CI Stages
 - **Stage 0: Workflow Security** - actionlint + zizmor for workflow validation
 - **Stage 5: Supply Chain** - OpenSSF Scorecard + Dependency Review
 - SARIF uploads for Trivy, zizmor, and Scorecard findings
+- Updated CI summary table with check descriptions and explicit results
+- Forced ruff to respect exclusions in CI (skips `_quarantine`)
+- Pip-audit now scans requirements files (avoids editable package false positives)
 
 ### Documentation
 - Updated README and WORKFLOWS.md to reference `hub-production-ci.yml`

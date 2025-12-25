@@ -313,7 +313,7 @@ jobs:
           ERRORS=0
           if [ -f "ruff-report.json" ]; then
             COUNT=$(jq '. | length' ruff-report.json 2>/dev/null || true)
-            if [ -n "$COUNT" ] && [ "$COUNT" -gt 0 ] 2>/dev/null; then
+            if [ -n "$COUNT" ] && [ "$COUNT" -gt 0 ]; then
               ERRORS=$COUNT
             fi
           fi
@@ -353,9 +353,9 @@ jobs:
             H=$(jq '[.results[] | select(.issue_severity == "HIGH")] | length' bandit-report.json 2>/dev/null || true)
             M=$(jq '[.results[] | select(.issue_severity == "MEDIUM")] | length' bandit-report.json 2>/dev/null || true)
             L=$(jq '[.results[] | select(.issue_severity == "LOW")] | length' bandit-report.json 2>/dev/null || true)
-            [ -n "$H" ] && [ "$H" -ge 0 ] 2>/dev/null && HIGH=$H
-            [ -n "$M" ] && [ "$M" -ge 0 ] 2>/dev/null && MEDIUM=$M
-            [ -n "$L" ] && [ "$L" -ge 0 ] 2>/dev/null && LOW=$L
+            [ -n "$H" ] && [ "$H" -ge 0 ] && HIGH=$H
+            [ -n "$M" ] && [ "$M" -ge 0 ] && MEDIUM=$M
+            [ -n "$L" ] && [ "$L" -ge 0 ] && LOW=$L
           fi
           {
             echo "high=$HIGH"
@@ -390,7 +390,7 @@ jobs:
           ISSUES=0
           if [ -f black-output.txt ]; then
             COUNT=$(grep -c "would reformat" black-output.txt 2>/dev/null || true)
-            if [ -n "$COUNT" ] && [ "$COUNT" -gt 0 ] 2>/dev/null; then
+            if [ -n "$COUNT" ] && [ "$COUNT" -gt 0 ]; then
               ISSUES=$COUNT
             fi
           fi
@@ -512,7 +512,7 @@ jobs:
             else
               RUFF_ISSUES="${{ steps.ruff.outputs.errors || 0 }}"
               RUFF_MAX="${{ steps.thresholds.outputs.max_ruff_errors || 0 }}"
-              if [ "${RUFF_ISSUES:-0}" -le "${RUFF_MAX:-0}" ] 2>/dev/null; then
+              if [ "${RUFF_ISSUES:-0}" -le "${RUFF_MAX:-0}" ]; then
                 STATUS="PASS"
               else
                 STATUS="FAIL"
@@ -526,7 +526,7 @@ jobs:
             else
               BLACK_ISSUES="${{ steps.black.outputs.issues || 0 }}"
               BLACK_MAX="${{ steps.thresholds.outputs.max_black_issues || 0 }}"
-              if [ "${BLACK_ISSUES:-0}" -le "${BLACK_MAX:-0}" ] 2>/dev/null; then
+              if [ "${BLACK_ISSUES:-0}" -le "${BLACK_MAX:-0}" ]; then
                 STATUS="PASS"
               else
                 STATUS="FAIL"
@@ -540,7 +540,7 @@ jobs:
             else
               ISORT_ISSUES="${{ steps.isort.outputs.issues || 0 }}"
               ISORT_MAX="${{ steps.thresholds.outputs.max_isort_issues || 0 }}"
-              if [ "${ISORT_ISSUES:-0}" -le "${ISORT_MAX:-0}" ] 2>/dev/null; then
+              if [ "${ISORT_ISSUES:-0}" -le "${ISORT_MAX:-0}" ]; then
                 STATUS="PASS"
               else
                 STATUS="FAIL"
@@ -568,7 +568,7 @@ jobs:
               BANDIT_MED="${{ steps.bandit.outputs.medium || 0 }}"
               BANDIT_LOW="${{ steps.bandit.outputs.low || 0 }}"
               BANDIT_MAX="${{ steps.thresholds.outputs.max_high_vulns || 0 }}"
-              if [ "${BANDIT_HIGH:-0}" -le "${BANDIT_MAX:-0}" ] 2>/dev/null; then
+              if [ "${BANDIT_HIGH:-0}" -le "${BANDIT_MAX:-0}" ]; then
                 STATUS="PASS"
               else
                 STATUS="FAIL"
@@ -1541,7 +1541,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@5d4e8d1aca955e8d8589aabd499c5cae939e33c7
         with:
           languages: python
           # Scope analysis to workdir only
@@ -1549,7 +1549,7 @@ jobs:
 
       - name: Perform CodeQL Analysis
         id: codeql-analyze
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@5d4e8d1aca955e8d8589aabd499c5cae939e33c7
 
       - name: CodeQL Summary
         if: always()

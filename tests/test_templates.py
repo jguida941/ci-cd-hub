@@ -12,16 +12,15 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
 
 # Allow importing scripts as modules
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.apply_profile import deep_merge, load_yaml
-from scripts.load_config import ConfigValidationError, load_config
-from scripts.validate_config import validate_config
+from scripts.apply_profile import deep_merge, load_yaml  # noqa: E402
+from scripts.load_config import ConfigValidationError, load_config  # noqa: E402
+from scripts.validate_config import validate_config  # noqa: E402
 
 TEMPLATES_DIR = ROOT / "templates"
 PROFILES_DIR = TEMPLATES_DIR / "profiles"
@@ -32,6 +31,7 @@ SCHEMA_PATH = ROOT / "schema" / "ci-hub-config.schema.json"
 def load_schema():
     """Load the JSON schema for config validation."""
     import json
+
     with SCHEMA_PATH.open("r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -70,19 +70,29 @@ class TestHubConfigTemplates:
         templates = self.get_hub_templates()
         assert len(templates) > 0, "No hub config templates found"
 
-    @pytest.mark.parametrize("template_path", [
-        pytest.param(p, id=p.name)
-        for p in (HUB_TEMPLATES_DIR.glob("*.yaml") if HUB_TEMPLATES_DIR.exists() else [])
-    ])
+    @pytest.mark.parametrize(
+        "template_path",
+        [
+            pytest.param(p, id=p.name)
+            for p in (
+                HUB_TEMPLATES_DIR.glob("*.yaml") if HUB_TEMPLATES_DIR.exists() else []
+            )
+        ],
+    )
     def test_hub_template_is_valid_yaml(self, template_path):
         """Each hub template should be valid YAML."""
         data = load_yaml(template_path)
         assert isinstance(data, dict), f"{template_path.name} should be a mapping"
 
-    @pytest.mark.parametrize("template_path", [
-        pytest.param(p, id=p.name)
-        for p in (HUB_TEMPLATES_DIR.glob("*.yaml") if HUB_TEMPLATES_DIR.exists() else [])
-    ])
+    @pytest.mark.parametrize(
+        "template_path",
+        [
+            pytest.param(p, id=p.name)
+            for p in (
+                HUB_TEMPLATES_DIR.glob("*.yaml") if HUB_TEMPLATES_DIR.exists() else []
+            )
+        ],
+    )
     def test_hub_template_has_required_fields(self, template_path):
         """Hub templates should have repo section with required fields."""
         data = load_yaml(template_path)
@@ -90,8 +100,9 @@ class TestHubConfigTemplates:
         # Templates might be partial (for merging), but full templates need repo
         if "repo" in data:
             repo = data["repo"]
-            assert "owner" in repo or "name" in repo, \
+            assert "owner" in repo or "name" in repo, (
                 f"{template_path.name} repo section should have owner or name"
+            )
 
 
 class TestProfileTemplates:
@@ -116,19 +127,27 @@ class TestProfileTemplates:
         assert len(python_profiles) > 0, "No Python profiles found"
         assert len(java_profiles) > 0, "No Java profiles found"
 
-    @pytest.mark.parametrize("profile_path", [
-        pytest.param(p, id=p.name)
-        for p in (PROFILES_DIR.glob("*.yaml") if PROFILES_DIR.exists() else [])
-    ])
+    @pytest.mark.parametrize(
+        "profile_path",
+        [
+            pytest.param(p, id=p.name)
+            for p in (PROFILES_DIR.glob("*.yaml") if PROFILES_DIR.exists() else [])
+        ],
+    )
     def test_profile_is_valid_yaml(self, profile_path):
         """Each profile should be valid YAML."""
         data = load_yaml(profile_path)
         assert isinstance(data, dict), f"{profile_path.name} should be a mapping"
 
-    @pytest.mark.parametrize("profile_path", [
-        pytest.param(p, id=p.name)
-        for p in (PROFILES_DIR.glob("python-*.yaml") if PROFILES_DIR.exists() else [])
-    ])
+    @pytest.mark.parametrize(
+        "profile_path",
+        [
+            pytest.param(p, id=p.name)
+            for p in (
+                PROFILES_DIR.glob("python-*.yaml") if PROFILES_DIR.exists() else []
+            )
+        ],
+    )
     def test_python_profile_merged_is_valid(self, profile_path):
         """Python profile + minimal repo config should pass schema validation."""
         profile_data = load_yaml(profile_path)
@@ -137,13 +156,17 @@ class TestProfileTemplates:
         schema = load_schema()
         errors = validate_config(merged, schema)
 
-        assert not errors, \
+        assert not errors, (
             f"{profile_path.name} merged with minimal repo has errors: {errors}"
+        )
 
-    @pytest.mark.parametrize("profile_path", [
-        pytest.param(p, id=p.name)
-        for p in (PROFILES_DIR.glob("java-*.yaml") if PROFILES_DIR.exists() else [])
-    ])
+    @pytest.mark.parametrize(
+        "profile_path",
+        [
+            pytest.param(p, id=p.name)
+            for p in (PROFILES_DIR.glob("java-*.yaml") if PROFILES_DIR.exists() else [])
+        ],
+    )
     def test_java_profile_merged_is_valid(self, profile_path):
         """Java profile + minimal repo config should pass schema validation."""
         profile_data = load_yaml(profile_path)
@@ -152,8 +175,9 @@ class TestProfileTemplates:
         schema = load_schema()
         errors = validate_config(merged, schema)
 
-        assert not errors, \
+        assert not errors, (
             f"{profile_path.name} merged with minimal repo has errors: {errors}"
+        )
 
 
 class TestNoStaleReferences:
@@ -173,18 +197,22 @@ class TestNoStaleReferences:
             files.extend(TEMPLATES_DIR.rglob("*.md"))
         return files
 
-    @pytest.mark.parametrize("template_path", [
-        pytest.param(p, id=str(p.relative_to(ROOT)))
-        for p in (TEMPLATES_DIR.rglob("*") if TEMPLATES_DIR.exists() else [])
-        if p.is_file() and p.suffix in {".yaml", ".yml", ".md"}
-    ])
+    @pytest.mark.parametrize(
+        "template_path",
+        [
+            pytest.param(p, id=str(p.relative_to(ROOT)))
+            for p in (TEMPLATES_DIR.rglob("*") if TEMPLATES_DIR.exists() else [])
+            if p.is_file() and p.suffix in {".yaml", ".yml", ".md"}
+        ],
+    )
     def test_no_stale_repo_references(self, template_path):
         """Templates should not reference old repo names."""
         content = template_path.read_text(encoding="utf-8")
 
         for pattern in self.STALE_PATTERNS:
-            assert pattern not in content, \
+            assert pattern not in content, (
                 f"{template_path} contains stale reference: {pattern}"
+            )
 
 
 class TestRepoTemplate:
@@ -194,8 +222,9 @@ class TestRepoTemplate:
 
     def test_repo_template_exists(self):
         """The repo-side .ci-hub.yml template should exist."""
-        assert self.REPO_TEMPLATE.exists(), \
+        assert self.REPO_TEMPLATE.exists(), (
             f"Repo template not found at {self.REPO_TEMPLATE}"
+        )
 
     def test_repo_template_is_valid_yaml(self):
         """Repo template should be valid YAML."""
@@ -214,13 +243,15 @@ class TestDispatchTemplates:
 
     def test_java_dispatch_template_exists(self):
         """Java dispatch template should exist."""
-        assert self.JAVA_DISPATCH.exists(), \
+        assert self.JAVA_DISPATCH.exists(), (
             f"Java dispatch template not found at {self.JAVA_DISPATCH}"
+        )
 
     def test_python_dispatch_template_exists(self):
         """Python dispatch template should exist."""
-        assert self.PYTHON_DISPATCH.exists(), \
+        assert self.PYTHON_DISPATCH.exists(), (
             f"Python dispatch template not found at {self.PYTHON_DISPATCH}"
+        )
 
     def test_java_dispatch_is_valid_yaml(self):
         """Java dispatch template should be valid YAML."""
@@ -269,11 +300,17 @@ class TestActualConfigs:
         configs = self.get_actual_configs()
         assert len(configs) > 0, "No repo configs found in config/repos/"
 
-    @pytest.mark.parametrize("config_path", [
-        pytest.param(p, id=p.stem)
-        for p in ((ROOT / "config" / "repos").glob("*.yaml")
-                  if (ROOT / "config" / "repos").exists() else [])
-    ])
+    @pytest.mark.parametrize(
+        "config_path",
+        [
+            pytest.param(p, id=p.stem)
+            for p in (
+                (ROOT / "config" / "repos").glob("*.yaml")
+                if (ROOT / "config" / "repos").exists()
+                else []
+            )
+        ],
+    )
     def test_actual_config_is_valid(self, config_path):
         """Each actual repo config should pass validation."""
         try:

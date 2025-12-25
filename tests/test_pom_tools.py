@@ -5,7 +5,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from cihub.cli import (
+from cihub.cli import (  # noqa: E402
     apply_dependency_fixes,
     apply_pom_fixes,
     build_parser,
@@ -113,7 +113,9 @@ def test_apply_dependency_fixes_inserts_dependency(tmp_path: Path) -> None:
 """,
     )
 
-    result = apply_dependency_fixes(tmp_path, base_config(jqwik_enabled=True), apply=True)
+    result = apply_dependency_fixes(
+        tmp_path, base_config(jqwik_enabled=True), apply=True
+    )
     assert result == 0
     updated = pom_path.read_text(encoding="utf-8")
     assert "<artifactId>jqwik</artifactId>" in updated
@@ -144,7 +146,9 @@ def test_apply_dependency_fixes_multi_module(tmp_path: Path) -> None:
 """,
     )
 
-    result = apply_dependency_fixes(tmp_path, base_config(jqwik_enabled=True), apply=True)
+    result = apply_dependency_fixes(
+        tmp_path, base_config(jqwik_enabled=True), apply=True
+    )
     assert result == 0
     updated = module_pom.read_text(encoding="utf-8")
     assert "<artifactId>jqwik</artifactId>" in updated

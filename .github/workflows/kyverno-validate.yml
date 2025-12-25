@@ -60,7 +60,8 @@ jobs:
           VALIDATED=0
 
           # Validate all policy files
-          for policy in policies/kyverno/*.yaml policies/kyverno/*.yml 2>/dev/null; do
+          shopt -s nullglob
+          for policy in policies/kyverno/*.yaml policies/kyverno/*.yml; do
             if [ -f "$policy" ]; then
               echo "Validating: $policy"
               # Use apply with /dev/null - validates policy syntax
@@ -78,7 +79,7 @@ jobs:
 
           # Validate template files if they exist
           if [ -d "templates/kyverno" ]; then
-            for template in templates/kyverno/*.yaml templates/kyverno/*.yml 2>/dev/null; do
+            for template in templates/kyverno/*.yaml templates/kyverno/*.yml; do
               if [ -f "$template" ]; then
                 echo "Validating template: $template"
                 OUTPUT=$(kyverno apply "$template" --resource /dev/null 2>&1 || true)
@@ -120,7 +121,8 @@ jobs:
           echo "| Policy | Purpose |" >> $GITHUB_STEP_SUMMARY
           echo "|--------|---------|" >> $GITHUB_STEP_SUMMARY
 
-          for policy in policies/kyverno/*.yaml policies/kyverno/*.yml 2>/dev/null; do
+          shopt -s nullglob
+          for policy in policies/kyverno/*.yaml policies/kyverno/*.yml; do
             if [ -f "$policy" ]; then
               NAME=$(basename "$policy" .yaml)
               PURPOSE=$(grep "policies.kyverno.io/title:" "$policy" 2>/dev/null | sed 's/.*title:\s*//' | head -1 || echo "N/A")

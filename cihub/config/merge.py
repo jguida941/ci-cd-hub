@@ -1,4 +1,5 @@
 """Deep merge utilities for CI/CD Hub config management."""
+
 from __future__ import annotations
 
 import copy
@@ -30,11 +31,7 @@ def deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
     result = copy.deepcopy(base)
 
     for key, value in overlay.items():
-        if (
-            key in result
-            and isinstance(result[key], dict)
-            and isinstance(value, dict)
-        ):
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
             # Recursively merge nested dicts
             result[key] = deep_merge(result[key], value)
         else:

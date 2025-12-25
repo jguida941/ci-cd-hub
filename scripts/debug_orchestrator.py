@@ -80,9 +80,9 @@ def download_artifact(archive_url: str, token: str, target_dir: Path) -> Path | 
 
 def check_repo_runs(owner: str, repo: str, token: str, limit: int = 5):
     """Check recent workflow runs for a repo."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Checking {owner}/{repo}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     # List recent workflow runs
     url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs?per_page={limit}"

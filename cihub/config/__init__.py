@@ -1,4 +1,5 @@
 """Config management module for CI/CD Hub."""
+
 from __future__ import annotations
 
 from cihub.config.io import (
@@ -14,12 +15,14 @@ from cihub.config.io import (
 )
 from cihub.config.merge import build_effective_config, deep_merge
 from cihub.config.paths import PathConfig
+from cihub.config.schema import get_schema, validate_config
 
 __all__ = [
     "PathConfig",
     "build_effective_config",
     "deep_merge",
     "ensure_dirs",
+    "get_schema",
     "list_profiles",
     "list_repos",
     "load_defaults",
@@ -28,4 +31,5 @@ __all__ = [
     "load_yaml_file",
     "save_repo_config",
     "save_yaml_file",
+    "validate_config",
 ]

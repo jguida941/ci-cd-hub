@@ -16,7 +16,6 @@ from typing import Any
 from urllib.parse import urlparse
 
 import yaml
-from jsonschema import Draft7Validator
 
 from cihub import __version__
 
@@ -304,10 +303,7 @@ def collect_java_pom_warnings(
 
     tool_flags = get_java_tool_flags(config)
     checkstyle_config = (
-        config.get("java", {})
-        .get("tools", {})
-        .get("checkstyle", {})
-        .get("config_file")
+        config.get("java", {}).get("tools", {}).get("checkstyle", {}).get("config_file")
     )
     if checkstyle_config:
         config_path = repo_path / checkstyle_config
@@ -466,7 +462,7 @@ def insert_plugins_into_pom(pom_text: str, plugin_block: str) -> tuple[str, bool
         build_close = pom_text.find("</build>", build_match.end())
         if build_close == -1:
             return pom_text, False
-        build_section = pom_text[build_match.end():build_close]
+        build_section = pom_text[build_match.end() : build_close]
         plugins_match = re.search(r"<plugins[^>]*>", build_section)
         if plugins_match:
             plugins_close = build_section.find("</plugins>", plugins_match.end())
@@ -486,7 +482,8 @@ def insert_plugins_into_pom(pom_text: str, plugin_block: str) -> tuple[str, bool
         block = indent_block(plugin_block, plugin_indent)
         insert_at = build_close
         plugins_block = (
-            f"\n{plugins_indent}<plugins>\n{block}\n{plugins_indent}</plugins>\n{build_indent}"
+            f"\n{plugins_indent}<plugins>\n{block}\n"
+            f"{plugins_indent}</plugins>\n{build_indent}"
         )
         return pom_text[:insert_at] + plugins_block + pom_text[insert_at:], True
 
@@ -639,17 +636,6 @@ def render_caller_workflow(language: str) -> str:
     return header + content
 
 
-def validate_config(config: dict[str, Any]) -> list[str]:
-    schema_path = hub_root() / "schema" / "ci-hub-config.schema.json"
-    schema = json.loads(schema_path.read_text(encoding="utf-8"))
-    validator = Draft7Validator(schema)
-    errors = []
-    for err in validator.iter_errors(config):
-        path = ".".join([str(p) for p in err.path]) or "<root>"
-        errors.append(f"{path}: {err.message}")
-    return sorted(errors)
-
-
 def resolve_language(repo_path: Path, override: str | None) -> tuple[str, list[str]]:
     if override:
         return override, []
@@ -661,152 +647,30 @@ def resolve_language(repo_path: Path, override: str | None) -> tuple[str, list[s
 
 
 def cmd_detect(args: argparse.Namespace) -> int:
-    repo_path = Path(args.repo).resolve()
-    language, reasons = resolve_language(repo_path, args.language)
-    payload: dict[str, Any] = {"language": language}
-    if args.explain:
-        payload["reasons"] = reasons
-    print(json.dumps(payload, indent=2))
-    return 0
+    from cihub.commands.detect import cmd_detect as handler
+
+    return handler(args)
 
 
 def cmd_init(args: argparse.Namespace) -> int:
-    repo_path = Path(args.repo).resolve()
-    language, _ = resolve_language(repo_path, args.language)
+    from cihub.commands.init import cmd_init as handler
 
-    owner = args.owner or ""
-    name = args.name or ""
-    if not owner or not name:
-        remote = get_git_remote(repo_path)
-        if remote:
-            git_owner, git_name = parse_repo_from_remote(remote)
-            owner = owner or (git_owner or "")
-            name = name or (git_name or "")
-
-    if not name:
-        name = repo_path.name
-    if not owner:
-        owner = "unknown"
-        print(
-            "Warning: could not detect repo owner; set repo.owner manually.",
-            file=sys.stderr,
-        )
-
-    branch = args.branch or get_git_branch(repo_path) or "main"
-
-    subdir = args.subdir or ""
-    config = build_repo_config(language, owner, name, branch, subdir=subdir)
-    config_path = repo_path / ".ci-hub.yml"
-    write_yaml(config_path, config, args.dry_run)
-
-    workflow_path = repo_path / ".github" / "workflows" / "hub-ci.yml"
-    workflow_content = render_caller_workflow(language)
-    write_text(workflow_path, workflow_content, args.dry_run)
-
-    if language == "java" and not args.dry_run:
-        effective = load_effective_config(repo_path)
-        pom_warnings, _ = collect_java_pom_warnings(repo_path, effective)
-        dep_warnings, _ = collect_java_dependency_warnings(repo_path, effective)
-        warnings = pom_warnings + dep_warnings
-        if warnings:
-            print("POM warnings:")
-            for warning in warnings:
-                print(f"  - {warning}")
-            if args.fix_pom:
-                status = apply_pom_fixes(repo_path, effective, apply=True)
-                status = max(
-                    status, apply_dependency_fixes(repo_path, effective, apply=True)
-                )
-                return status
-            print("Run: cihub fix-pom --repo . --apply")
-
-    return 0
+    return handler(args)
 
 
 def cmd_update(args: argparse.Namespace) -> int:
-    repo_path = Path(args.repo).resolve()
-    config_path = repo_path / ".ci-hub.yml"
-    existing = read_yaml(config_path) if config_path.exists() else {}
+    from cihub.commands.update import cmd_update as handler
 
-    language = args.language or existing.get("language")
-    if not language:
-        language, _ = resolve_language(repo_path, None)
-
-    owner = args.owner or existing.get("repo", {}).get("owner", "")
-    name = args.name or existing.get("repo", {}).get("name", "")
-    repo_existing = (
-        existing.get("repo", {}) if isinstance(existing.get("repo"), dict) else {}
-    )
-    branch = args.branch or repo_existing.get("default_branch", "main")
-    subdir = args.subdir or repo_existing.get("subdir")
-
-    if not name:
-        name = repo_path.name
-    if not owner:
-        owner = "unknown"
-        print(
-            "Warning: could not detect repo owner; set repo.owner manually.",
-            file=sys.stderr,
-        )
-
-    base = build_repo_config(language, owner, name, branch, subdir=subdir)
-    merged = deep_merge(base, existing)
-    write_yaml(config_path, merged, args.dry_run)
-
-    workflow_path = repo_path / ".github" / "workflows" / "hub-ci.yml"
-    workflow_content = render_caller_workflow(language)
-    write_text(workflow_path, workflow_content, args.dry_run)
-
-    if language == "java" and not args.dry_run:
-        effective = load_effective_config(repo_path)
-        pom_warnings, _ = collect_java_pom_warnings(repo_path, effective)
-        dep_warnings, _ = collect_java_dependency_warnings(repo_path, effective)
-        warnings = pom_warnings + dep_warnings
-        if warnings:
-            print("POM warnings:")
-            for warning in warnings:
-                print(f"  - {warning}")
-            if args.fix_pom:
-                apply_pom_fixes(repo_path, effective, apply=True)
-                apply_dependency_fixes(repo_path, effective, apply=True)
-            else:
-                print("Run: cihub fix-pom --repo . --apply")
-    return 0
+    return handler(args)
 
 
 def cmd_validate(args: argparse.Namespace) -> int:
-    repo_path = Path(args.repo).resolve()
-    config_path = repo_path / ".ci-hub.yml"
-    if not config_path.exists():
-        print(f"Config not found: {config_path}", file=sys.stderr)
-        return 2
-    config = read_yaml(config_path)
-    errors = validate_config(config)
-    if errors:
-        print("Validation failed:")
-        for err in errors:
-            print(f"  - {err}")
-        return 1
-    print("Config OK")
-    effective = load_effective_config(repo_path)
-    if effective.get("language") == "java":
-        pom_warnings, _ = collect_java_pom_warnings(repo_path, effective)
-        dep_warnings, _ = collect_java_dependency_warnings(repo_path, effective)
-        warnings = pom_warnings + dep_warnings
-        if warnings:
-            print("POM warnings:")
-            for warning in warnings:
-                print(f"  - {warning}")
-            if args.strict:
-                return 1
-        else:
-            print("POM OK")
-    return 0
+    from cihub.commands.validate import cmd_validate as handler
+
+    return handler(args)
 
 
-def apply_pom_fixes(
-    repo_path: Path, config: dict[str, Any], apply: bool
-) -> int:
+def apply_pom_fixes(repo_path: Path, config: dict[str, Any], apply: bool) -> int:
     subdir = config.get("repo", {}).get("subdir") or ""
     root_path = repo_path / subdir if subdir else repo_path
     pom_path = root_path / "pom.xml"
@@ -831,9 +695,7 @@ def apply_pom_fixes(
             blocks.append(snippet)
         else:
             group_id, artifact_id = plugin_id
-            warnings.append(
-                f"Missing snippet for plugin {group_id}:{artifact_id}"
-            )
+            warnings.append(f"Missing snippet for plugin {group_id}:{artifact_id}")
     if not blocks:
         for warning in warnings:
             print(f"  - {warning}")
@@ -867,9 +729,7 @@ def apply_pom_fixes(
     return 0
 
 
-def apply_dependency_fixes(
-    repo_path: Path, config: dict[str, Any], apply: bool
-) -> int:
+def apply_dependency_fixes(repo_path: Path, config: dict[str, Any], apply: bool) -> int:
     warnings, missing = collect_java_dependency_warnings(repo_path, config)
     if warnings:
         print("Dependency warnings:")
@@ -918,37 +778,15 @@ def apply_dependency_fixes(
 
 
 def cmd_fix_pom(args: argparse.Namespace) -> int:
-    repo_path = Path(args.repo).resolve()
-    config_path = repo_path / ".ci-hub.yml"
-    if not config_path.exists():
-        print(f"Config not found: {config_path}", file=sys.stderr)
-        return 2
-    config = load_effective_config(repo_path)
-    if config.get("language") != "java":
-        print("fix-pom is only supported for Java repos.")
-        return 0
-    if config.get("java", {}).get("build_tool", "maven") != "maven":
-        print("fix-pom only supports Maven repos.")
-        return 0
-    status = apply_pom_fixes(repo_path, config, apply=args.apply)
-    status = max(status, apply_dependency_fixes(repo_path, config, apply=args.apply))
-    return status
+    from cihub.commands.pom import cmd_fix_pom as handler
+
+    return handler(args)
 
 
 def cmd_fix_deps(args: argparse.Namespace) -> int:
-    repo_path = Path(args.repo).resolve()
-    config_path = repo_path / ".ci-hub.yml"
-    if not config_path.exists():
-        print(f"Config not found: {config_path}", file=sys.stderr)
-        return 2
-    config = load_effective_config(repo_path)
-    if config.get("language") != "java":
-        print("fix-deps is only supported for Java repos.")
-        return 0
-    if config.get("java", {}).get("build_tool", "maven") != "maven":
-        print("fix-deps only supports Maven repos.")
-        return 0
-    return apply_dependency_fixes(repo_path, config, apply=args.apply)
+    from cihub.commands.pom import cmd_fix_deps as handler
+
+    return handler(args)
 
 
 def get_connected_repos(
@@ -1118,389 +956,33 @@ def delete_remote_file(
 
 
 def cmd_setup_secrets(args: argparse.Namespace) -> int:
-    """Set HUB_DISPATCH_TOKEN on hub and optionally all connected repos."""
-    import getpass
+    from cihub.commands.secrets import cmd_setup_secrets as handler
 
-    hub_repo = args.hub_repo
-    token = args.token
-
-    if not token:
-        token = getpass.getpass("Enter GitHub PAT: ")
-
-    token = token.strip()
-
-    if not token:
-        print("Error: No token provided", file=sys.stderr)
-        return 1
-
-    if any(ch.isspace() for ch in token):
-        print(
-            "Error: Token contains whitespace; paste the raw token value.",
-            file=sys.stderr,
-        )
-        return 1
-
-    def verify_token(pat: str) -> tuple[bool, str]:
-        req = urllib.request.Request(  # noqa: S310
-            "https://api.github.com/user",
-            headers={
-                "Authorization": f"token {pat}",
-                "Accept": "application/vnd.github+json",
-                "User-Agent": "cihub",
-            },
-        )
-        try:
-            with safe_urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                scopes = resp.headers.get("X-OAuth-Scopes", "")
-        except urllib.error.HTTPError as exc:
-            if exc.code == 401:
-                return False, "unauthorized (token invalid or expired)"
-            return False, f"HTTP {exc.code} {exc.reason}"
-        except Exception as exc:
-            return False, str(exc)
-
-        login = data.get("login", "unknown")
-        scope_msg = f"scopes: {scopes}" if scopes else "scopes: (not reported)"
-        return True, f"user {login} ({scope_msg})"
-
-    def verify_cross_repo_access(pat: str, target_repo: str) -> tuple[bool, str]:
-        """Verify token can access another repo's artifacts.
-
-        Required for orchestrator downloads.
-        """
-        req = urllib.request.Request(  # noqa: S310
-            f"https://api.github.com/repos/{target_repo}/actions/artifacts",
-            headers={
-                "Authorization": f"token {pat}",
-                "Accept": "application/vnd.github+json",
-                "User-Agent": "cihub",
-            },
-        )
-        try:
-            with safe_urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                count = data.get("total_count", 0)
-                return True, f"{count} artifacts accessible"
-        except urllib.error.HTTPError as exc:
-            if exc.code == 404:
-                return False, f"repo not found or no access: {target_repo}"
-            if exc.code == 401:
-                return False, "token cannot access this repo (needs 'repo' scope)"
-            return False, f"HTTP {exc.code} {exc.reason}"
-        except Exception as exc:
-            return False, str(exc)
-
-    if args.verify:
-        ok, message = verify_token(token)
-        if not ok:
-            print(f"Token verification failed: {message}", file=sys.stderr)
-            return 1
-        print(f"Token verified: {message}")
-
-        # Also verify cross-repo access on connected repos
-        connected = get_connected_repos()
-        if connected:
-            test_repo = connected[0]
-            ok, message = verify_cross_repo_access(token, test_repo)
-            if not ok:
-                print(
-                    f"Cross-repo access failed for {test_repo}: {message}",
-                    file=sys.stderr,
-                )
-                print(
-                    "The token needs 'repo' scope to access other repos' artifacts.",
-                    file=sys.stderr,
-                )
-                return 1
-            print(f"Cross-repo access verified: {test_repo} ({message})")
-
-    gh_bin = resolve_executable("gh")
-
-    def set_secret(repo: str) -> tuple[bool, str]:
-        result = subprocess.run(  # noqa: S603
-            [gh_bin, "secret", "set", "HUB_DISPATCH_TOKEN", "-R", repo],
-            input=token,
-            capture_output=True,
-            text=True,
-        )  # noqa: S603
-        if result.returncode != 0:
-            return False, result.stderr.strip()
-        return True, ""
-
-    # Set on hub repo
-    print(f"Setting HUB_DISPATCH_TOKEN on {hub_repo}...")
-    ok, error = set_secret(hub_repo)
-    if not ok:
-        print(f"Failed: {error}", file=sys.stderr)
-        return 1
-    print(f"  ✅ {hub_repo}")
-
-    if args.all:
-        print("\nSetting on connected repos...")
-        repos = get_connected_repos()
-        for repo in repos:
-            if repo == hub_repo:
-                continue
-            ok, error = set_secret(repo)
-            if ok:
-                print(f"  ✅ {repo}")
-            else:
-                suffix = " (no admin access)"
-                if error:
-                    suffix = f" ({error})"
-                print(f"  ❌ {repo}{suffix}")
-
-    print("\nConnected dispatch-enabled repos:")
-    for repo in get_connected_repos():
-        print(f"  - {repo}")
-    print(
-        "\nEnsure PAT has 'repo' scope (classic) or Actions R/W (fine-grained) "
-        "on all repos."
-    )
-    return 0
+    return handler(args)
 
 
 def cmd_setup_nvd(args: argparse.Namespace) -> int:
-    """Set NVD_API_KEY on Java repos for OWASP Dependency Check."""
-    import getpass
+    from cihub.commands.secrets import cmd_setup_nvd as handler
 
-    nvd_key = args.nvd_key
-
-    if not nvd_key:
-        print("NVD API Key is required for fast OWASP Dependency Check scans.")
-        print("Get a free key at: https://nvd.nist.gov/developers/request-an-api-key")
-        print()
-        nvd_key = getpass.getpass("Enter NVD API Key: ")
-
-    nvd_key = nvd_key.strip()
-
-    if not nvd_key:
-        print("Error: No NVD API key provided", file=sys.stderr)
-        return 1
-
-    if any(ch.isspace() for ch in nvd_key):
-        print(
-            "Error: Key contains whitespace; paste the raw key value.",
-            file=sys.stderr,
-        )
-        return 1
-
-    def verify_nvd_key(key: str) -> tuple[bool, str]:
-        """Verify NVD API key by making a test request."""
-        # NVD API test - fetch a known CVE
-        test_url = (
-            "https://services.nvd.nist.gov/rest/json/cves/2.0"
-            "?cveId=CVE-2021-44228"
-        )
-        req = urllib.request.Request(  # noqa: S310
-            test_url,
-            headers={
-                "apiKey": key,
-                "User-Agent": "cihub",
-            },
-        )
-        try:
-            with safe_urlopen(req, timeout=15) as resp:
-                if resp.status == 200:
-                    return True, "NVD API key is valid"
-        except urllib.error.HTTPError as exc:
-            if exc.code == 403:
-                return False, "invalid or expired API key"
-            if exc.code == 404:
-                return True, "API key accepted (test CVE not found)"
-            return False, f"HTTP {exc.code} {exc.reason}"
-        except Exception as exc:
-            return False, str(exc)
-        return True, "API key accepted"
-
-    if args.verify:
-        print("Verifying NVD API key...")
-        ok, message = verify_nvd_key(nvd_key)
-        if not ok:
-            print(f"NVD API key verification failed: {message}", file=sys.stderr)
-            return 1
-        print(f"NVD API key verified: {message}")
-
-    gh_bin = resolve_executable("gh")
-
-    def set_secret(repo: str, secret_name: str, secret_value: str) -> tuple[bool, str]:
-        result = subprocess.run(  # noqa: S603
-            [gh_bin, "secret", "set", secret_name, "-R", repo],
-            input=secret_value,
-            capture_output=True,
-            text=True,
-        )  # noqa: S603
-        if result.returncode != 0:
-            return False, result.stderr.strip()
-        return True, ""
-
-    # Get Java repos
-    java_repos = get_connected_repos(
-        only_dispatch_enabled=False,
-        language_filter="java",
-    )
-
-    if not java_repos:
-        print("No Java repos found in config/repos/*.yaml")
-        print("NVD_API_KEY is only needed for Java repos (OWASP Dependency Check).")
-        return 0
-
-    print(f"\nSetting NVD_API_KEY on {len(java_repos)} Java repo(s)...")
-    success_count = 0
-    for repo in java_repos:
-        ok, error = set_secret(repo, "NVD_API_KEY", nvd_key)
-        if ok:
-            print(f"  ✅ {repo}")
-            success_count += 1
-        else:
-            suffix = " (no admin access)" if not error else f" ({error})"
-            print(f"  ❌ {repo}{suffix}")
-
-    print(f"\nSet NVD_API_KEY on {success_count}/{len(java_repos)} Java repos.")
-    if success_count < len(java_repos):
-        print("For repos you don't have admin access to, set the secret manually:")
-        print("  gh secret set NVD_API_KEY -R owner/repo")
-    return 0
+    return handler(args)
 
 
 def cmd_sync_templates(args: argparse.Namespace) -> int:
-    """Sync caller workflow templates to target repos."""
-    entries = get_repo_entries(only_dispatch_enabled=not args.include_disabled)
-    if args.repo:
-        repo_map = {entry["full"]: entry for entry in entries}
-        missing = [repo for repo in args.repo if repo not in repo_map]
-        if missing:
-            print(
-                "Error: repos not found in config/repos/*.yaml: "
-                + ", ".join(missing),
-                file=sys.stderr,
-            )
-            return 2
-        entries = [repo_map[repo] for repo in args.repo]
+    from cihub.commands.templates import cmd_sync_templates as handler
 
-    if not entries:
-        print("No repos found to sync.")
-        return 0
+    return handler(args)
 
-    failures = 0
-    for entry in entries:
-        repo = entry["full"]
-        language = entry.get("language", "")
-        dispatch_workflow = entry.get("dispatch_workflow", "hub-ci.yml")
-        branch = entry.get("default_branch", "main") or "main"
-        path = f".github/workflows/{dispatch_workflow}"
 
-        try:
-            desired = render_dispatch_workflow(language, dispatch_workflow)
-        except ValueError as exc:
-            print(f"Error: {repo} {path}: {exc}", file=sys.stderr)
-            failures += 1
-            continue
+def cmd_new(args: argparse.Namespace) -> int:
+    from cihub.commands.new import cmd_new as handler
 
-        remote = fetch_remote_file(repo, path, branch)
-        workflow_synced = False
+    return handler(args)
 
-        if remote and remote.get("content") == desired:
-            print(f"✅ {repo} {path} up to date")
-            workflow_synced = True
-        elif args.check:
-            print(f"❌ {repo} {path} out of date")
-            failures += 1
-        elif args.dry_run:
-            print(f"# Would update {repo} {path}")
-        else:
-            try:
-                update_remote_file(
-                    repo,
-                    path,
-                    branch,
-                    desired,
-                    args.commit_message,
-                    remote.get("sha") if remote else None,
-                )
-                print(f"✅ {repo} {path} updated")
-                workflow_synced = True
-            except RuntimeError as exc:
-                print(f"❌ {repo} {path} update failed: {exc}", file=sys.stderr)
-                failures += 1
 
-        # Delete stale workflow files only when migrating to unified hub-ci.yml
-        # For language-specific workflows (monorepos), don't touch other files
-        if dispatch_workflow == "hub-ci.yml":
-            stale_workflow_names = ["hub-java-ci.yml", "hub-python-ci.yml"]
-            for stale_name in stale_workflow_names:
-                stale_path = f".github/workflows/{stale_name}"
-                stale_file = fetch_remote_file(repo, stale_path, branch)
-                if stale_file and stale_file.get("sha"):
-                    if args.check:
-                        print(f"❌ {repo} {stale_path} stale (should be deleted)")
-                        failures += 1
-                    elif args.dry_run:
-                        print(f"# Would delete {repo} {stale_path} (stale)")
-                    elif workflow_synced:
-                        try:
-                            delete_remote_file(
-                                repo,
-                                stale_path,
-                                branch,
-                                stale_file["sha"],
-                                "Remove stale workflow (migrated to hub-ci.yml)",
-                            )
-                            print(f"🗑️  {repo} {stale_path} deleted (stale)")
-                        except RuntimeError as exc:
-                            print(
-                                f"⚠️  {repo} {stale_path} delete failed: {exc}",
-                                file=sys.stderr,
-                            )
+def cmd_config(args: argparse.Namespace) -> int:
+    from cihub.commands.config_cmd import cmd_config as handler
 
-    if args.check and failures:
-        print(f"Template drift detected in {failures} repo(s).", file=sys.stderr)
-        return 1
-    if failures:
-        return 1
-
-    # Update v1 tag to current HEAD so caller workflows get latest reusable workflows
-    if args.update_tag and not args.check and not args.dry_run:
-        try:
-            result = subprocess.run(
-                ["git", "rev-parse", "HEAD"],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            head_sha = result.stdout.strip()
-
-            # Check current v1 tag
-            result = subprocess.run(
-                ["git", "rev-parse", "v1"],
-                capture_output=True,
-                text=True,
-            )
-            current_v1 = result.stdout.strip() if result.returncode == 0 else None
-
-            if current_v1 == head_sha:
-                print("✅ v1 tag already at HEAD")
-            else:
-                # Update v1 tag locally
-                subprocess.run(
-                    ["git", "tag", "-f", "v1", "HEAD"],
-                    check=True,
-                    capture_output=True,
-                )
-                # Push to origin
-                subprocess.run(
-                    ["git", "push", "origin", "v1", "--force"],
-                    check=True,
-                    capture_output=True,
-                )
-                print(f"✅ v1 tag updated: {current_v1[:7] if current_v1 else 'none'} → {head_sha[:7]}")
-        except subprocess.CalledProcessError as exc:
-            print(f"⚠️  Failed to update v1 tag: {exc}", file=sys.stderr)
-    elif args.dry_run and args.update_tag:
-        print("# Would update v1 tag to HEAD")
-
-    return 0
+    return handler(args)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1518,6 +1000,34 @@ def build_parser() -> argparse.ArgumentParser:
     detect.add_argument("--explain", action="store_true", help="Show detection reasons")
     detect.set_defaults(func=cmd_detect)
 
+    new = subparsers.add_parser("new", help="Create hub-side repo config")
+    new.add_argument("name", help="Repo config name (config/repos/<name>.yaml)")
+    new.add_argument("--owner", help="Repo owner (GitHub user/org)")
+    new.add_argument(
+        "--language",
+        choices=["java", "python"],
+        help="Repo language",
+    )
+    new.add_argument("--branch", help="Default branch (e.g., main)")
+    new.add_argument("--subdir", help="Subdirectory for monorepos (repo.subdir)")
+    new.add_argument("--profile", help="Apply a profile from templates/profiles")
+    new.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Run interactive wizard (requires cihub[wizard])",
+    )
+    new.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print output instead of writing",
+    )
+    new.add_argument(
+        "--yes",
+        action="store_true",
+        help="Skip confirmation prompt",
+    )
+    new.set_defaults(func=cmd_new)
+
     init = subparsers.add_parser("init", help="Generate .ci-hub.yml and hub-ci.yml")
     init.add_argument("--repo", required=True, help="Path to repo")
     init.add_argument(
@@ -1534,6 +1044,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--fix-pom",
         action="store_true",
         help="Fix pom.xml for Java repos (adds missing plugins/dependencies)",
+    )
+    init.add_argument(
+        "--wizard",
+        action="store_true",
+        help="Run interactive wizard (requires cihub[wizard])",
     )
     init.add_argument(
         "--dry-run",
@@ -1598,9 +1113,7 @@ def build_parser() -> argparse.ArgumentParser:
     setup_nvd = subparsers.add_parser(
         "setup-nvd", help="Set NVD_API_KEY on Java repos for OWASP Dependency Check"
     )
-    setup_nvd.add_argument(
-        "--nvd-key", help="NVD API key (prompts if not provided)"
-    )
+    setup_nvd.add_argument("--nvd-key", help="NVD API key (prompts if not provided)")
     setup_nvd.add_argument(
         "--verify",
         action="store_true",
@@ -1673,6 +1186,43 @@ def build_parser() -> argparse.ArgumentParser:
         help="Skip updating v1 tag",
     )
     sync_templates.set_defaults(func=cmd_sync_templates)
+
+    config = subparsers.add_parser(
+        "config",
+        help="Manage hub-side repo configs (config/repos/*.yaml)",
+    )
+    config.add_argument("--repo", required=True, help="Repo config name")
+    config.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show updates without writing",
+    )
+    config_sub = config.add_subparsers(dest="subcommand")
+    config.set_defaults(func=cmd_config)
+
+    config_edit = config_sub.add_parser("edit", help="Edit config via wizard")
+    config_edit.set_defaults(func=cmd_config)
+
+    config_show = config_sub.add_parser("show", help="Show config")
+    config_show.add_argument(
+        "--effective",
+        action="store_true",
+        help="Show merged defaults + repo config",
+    )
+    config_show.set_defaults(func=cmd_config)
+
+    config_set = config_sub.add_parser("set", help="Set a config value")
+    config_set.add_argument("path", help="Dot path (e.g., repo.use_central_runner)")
+    config_set.add_argument("value", help="Value (YAML literal)")
+    config_set.set_defaults(func=cmd_config)
+
+    config_enable = config_sub.add_parser("enable", help="Enable a tool")
+    config_enable.add_argument("tool", help="Tool name (e.g., jacoco)")
+    config_enable.set_defaults(func=cmd_config)
+
+    config_disable = config_sub.add_parser("disable", help="Disable a tool")
+    config_disable.add_argument("tool", help="Tool name (e.g., jacoco)")
+    config_disable.set_defaults(func=cmd_config)
 
     return parser
 

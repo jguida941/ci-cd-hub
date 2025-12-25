@@ -106,6 +106,7 @@ def find_run_by_correlation_id(
         return None
 
     if gh_get is None:
+
         def gh_get(url: str) -> dict:
             req = request.Request(  # noqa: S310
                 url,
@@ -139,15 +140,17 @@ def find_run_by_correlation_id(
                 )
                 artifacts = gh_get(artifacts_url)
                 ci_artifact = next(
-                    (a for a in artifacts.get("artifacts", [])
-                     if a.get("name", "").endswith("ci-report")),
-                    None
+                    (
+                        a
+                        for a in artifacts.get("artifacts", [])
+                        if a.get("name", "").endswith("ci-report")
+                    ),
+                    None,
                 )
 
                 if ci_artifact:
                     artifact_corr = extract_correlation_id_from_artifact(
-                        ci_artifact["archive_download_url"],
-                        token
+                        ci_artifact["archive_download_url"], token
                     )
                     if artifact_corr == correlation_id:
                         print(f"Found matching run {run_id} for {correlation_id}")

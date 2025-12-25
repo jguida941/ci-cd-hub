@@ -8,6 +8,18 @@
 
 This is a production-grade system intended for commercial use. Prioritize safety, scalability, maintainability, SDLC best practices, and thorough testing (including mutation testing when practical). Do not cut corners for speed.
 
+## MVP Acceptance Checklist
+
+- Hub production CI is green and enforces strict gates (actionlint, zizmor, lint, mypy, yamllint, tests, mutation).
+- All GitHub Actions are pinned to commit SHAs.
+- Mutation testing meets the defined threshold for `cihub/`.
+- Config schema/docs/defaults are aligned for `use_central_runner` and `repo_side_execution`.
+- `_quarantine/` content is excluded from linting/formatting gates.
+- Reusable workflows always generate and upload `report.json` artifacts (use `if: always()`) so aggregation never shows `-`.
+- `hub-orchestrator.yml` and `hub-security.yml` failures are resolved (blockers cleared).
+- Hub production CI summary lists every check with pass/fail/skip status and a failed/skipped table.
+- Aggregation summaries include failure reasons when jobs fail (no silent `-` without context).
+
 
   # MVP/Phase‑0 (hub‑side only) 12/24/2025
 
@@ -39,29 +51,29 @@ This is a production-grade system intended for commercial use. Prioritize safety
 
   Phase 2 – Config Module
 
-  - [ ] Extract YAML I/O to cihub/config/io.py
-  - [ ] Move deep merge to cihub/config/merge.py
-  - [ ] Add schema loader/validator in cihub/config/schema.py
-  - [ ] Wire config module to existing CLI paths
+  - [x] Extract YAML I/O to cihub/config/io.py (2025-12-25)
+  - [x] Move deep merge to cihub/config/merge.py (2025-12-25)
+  - [x] Add schema loader/validator in cihub/config/schema.py (2025-12-25)
+  - [x] Wire config module to existing CLI paths (2025-12-25)
 
   Phase 3 – Wizard Module
 
-  - [ ] wizard/styles.py + wizard/validators.py
-  - [ ] wizard/core.py with run_new/init/config
-  - [ ] wizard/summary.py
-  - [ ] Question modules for language/tools/security/thresholds
-  - [ ] Graceful fallback when deps missing
+  - [x] wizard/styles.py + wizard/validators.py (2025-12-25)
+  - [x] wizard/core.py with run_new/init/config (2025-12-25)
+  - [x] wizard/summary.py (2025-12-25)
+  - [x] Question modules for language/tools/security/thresholds (2025-12-25)
+  - [x] Graceful fallback when deps missing (2025-12-25)
 
   Phase 4 – Commands Refactor
 
-  - [ ] Extract existing command handlers into cihub/commands/*
-  - [ ] Add --wizard path for init
+  - [x] Extract existing command handlers into cihub/commands/* (2025-12-25)
+  - [x] Add --wizard path for init (2025-12-25)
 
   Phase 5 – New Commands
 
-  - [ ] cihub new (hub‑side only)
-  - [ ] cihub config (edit/show/set/enable/disable)
-  - [ ] CLI wiring for new subcommands
+  - [x] cihub new (hub‑side only) (2025-12-25)
+  - [x] cihub config (edit/show/set/enable/disable) (2025-12-25)
+  - [x] CLI wiring for new subcommands (2025-12-25)
 
   Guardrails
 

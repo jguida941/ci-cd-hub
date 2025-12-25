@@ -4,14 +4,12 @@ import json
 import sys
 from pathlib import Path
 
-import pytest
-
 # Allow importing scripts as modules
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.aggregate_reports import (
+from scripts.aggregate_reports import (  # noqa: E402
     detect_language,
     generate_html_dashboard,
     generate_summary,
@@ -112,7 +110,11 @@ class TestLoadReports:
         for i in range(3):
             repo_dir = tmp_path / f"repo{i}"
             repo_dir.mkdir()
-            report = {"schema_version": "2.0", "repository": f"test/repo{i}", "results": {"coverage": 70 + i * 5}}
+            report = {
+                "schema_version": "2.0",
+                "repository": f"test/repo{i}",
+                "results": {"coverage": 70 + i * 5},
+            }
             (repo_dir / "report.json").write_text(json.dumps(report))
 
         reports, skipped = load_reports(tmp_path)
@@ -223,9 +225,36 @@ class TestGenerateSummary:
     def test_multiple_repos_average(self):
         """Multiple repos have averages calculated correctly."""
         reports = [
-            {"repository": "repo1", "java_version": "21", "results": {"coverage": 60, "mutation_score": 50, "tests_passed": 5, "tests_failed": 1}},
-            {"repository": "repo2", "java_version": "21", "results": {"coverage": 80, "mutation_score": 70, "tests_passed": 10, "tests_failed": 0}},
-            {"repository": "repo3", "java_version": "21", "results": {"coverage": 100, "mutation_score": 90, "tests_passed": 15, "tests_failed": 2}},
+            {
+                "repository": "repo1",
+                "java_version": "21",
+                "results": {
+                    "coverage": 60,
+                    "mutation_score": 50,
+                    "tests_passed": 5,
+                    "tests_failed": 1,
+                },
+            },
+            {
+                "repository": "repo2",
+                "java_version": "21",
+                "results": {
+                    "coverage": 80,
+                    "mutation_score": 70,
+                    "tests_passed": 10,
+                    "tests_failed": 0,
+                },
+            },
+            {
+                "repository": "repo3",
+                "java_version": "21",
+                "results": {
+                    "coverage": 100,
+                    "mutation_score": 90,
+                    "tests_passed": 15,
+                    "tests_failed": 2,
+                },
+            },
         ]
         summary = generate_summary(reports)
 
@@ -250,8 +279,16 @@ class TestGenerateSummary:
     def test_language_from_tools_ran(self):
         """Language detected from tools_ran when no version field."""
         reports = [
-            {"repository": "java1", "tools_ran": {"jacoco": True, "checkstyle": True}, "results": {}},
-            {"repository": "python1", "tools_ran": {"pytest": True, "ruff": True}, "results": {}},
+            {
+                "repository": "java1",
+                "tools_ran": {"jacoco": True, "checkstyle": True},
+                "results": {},
+            },
+            {
+                "repository": "python1",
+                "tools_ran": {"pytest": True, "ruff": True},
+                "results": {},
+            },
         ]
         summary = generate_summary(reports)
 
@@ -261,7 +298,11 @@ class TestGenerateSummary:
     def test_zero_values_included(self):
         """Zero values are included in averages (not treated as missing)."""
         reports = [
-            {"repository": "repo1", "java_version": "21", "results": {"coverage": 0, "mutation_score": 0}},
+            {
+                "repository": "repo1",
+                "java_version": "21",
+                "results": {"coverage": 0, "mutation_score": 0},
+            },
         ]
         summary = generate_summary(reports)
 
@@ -274,8 +315,16 @@ class TestGenerateSummary:
     def test_missing_values_excluded(self):
         """Missing values are excluded from averages."""
         reports = [
-            {"repository": "repo1", "java_version": "21", "results": {"coverage": 80}},  # No mutation_score
-            {"repository": "repo2", "java_version": "21", "results": {"mutation_score": 70}},  # No coverage
+            {
+                "repository": "repo1",
+                "java_version": "21",
+                "results": {"coverage": 80},  # No mutation_score
+            },
+            {
+                "repository": "repo2",
+                "java_version": "21",
+                "results": {"mutation_score": 70},  # No coverage
+            },
         ]
         summary = generate_summary(reports)
 
@@ -345,8 +394,28 @@ class TestGenerateHtmlDashboard:
             "tests": {"total_passed": 0, "total_failed": 0},
             "languages": {},
             "repos": [
-                {"name": "passing", "language": "python", "branch": "main", "status": "success", "coverage": 0, "mutation_score": 0, "tests_passed": 5, "tests_failed": 0, "timestamp": ""},
-                {"name": "failing", "language": "java", "branch": "main", "status": "failure", "coverage": 0, "mutation_score": 0, "tests_passed": 3, "tests_failed": 2, "timestamp": ""},
+                {
+                    "name": "passing",
+                    "language": "python",
+                    "branch": "main",
+                    "status": "success",
+                    "coverage": 0,
+                    "mutation_score": 0,
+                    "tests_passed": 5,
+                    "tests_failed": 0,
+                    "timestamp": "",
+                },
+                {
+                    "name": "failing",
+                    "language": "java",
+                    "branch": "main",
+                    "status": "failure",
+                    "coverage": 0,
+                    "mutation_score": 0,
+                    "tests_passed": 3,
+                    "tests_failed": 2,
+                    "timestamp": "",
+                },
             ],
         }
         html = generate_html_dashboard(summary)

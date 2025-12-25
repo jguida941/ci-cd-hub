@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from cihub.cli import main as cli_main
+from cihub.cli import main as cli_main  # noqa: E402
 
 
 def resolve_fixtures_root() -> Path | None:

@@ -1,4 +1,5 @@
 """YAML I/O utilities for CI/CD Hub config management."""
+
 from __future__ import annotations
 
 import os
@@ -144,9 +145,7 @@ def list_repos(paths: PathConfig) -> list[str]:
     repos_dir = Path(paths.repos_dir)
     if not repos_dir.exists():
         return []
-    return sorted(
-        p.stem for p in repos_dir.glob("*.yaml") if p.is_file()
-    )
+    return sorted(p.stem for p in repos_dir.glob("*.yaml") if p.is_file())
 
 
 def list_profiles(paths: PathConfig) -> list[str]:
@@ -161,6 +160,4 @@ def list_profiles(paths: PathConfig) -> list[str]:
     profiles_dir = Path(paths.profiles_dir)
     if not profiles_dir.exists():
         return []
-    return sorted(
-        p.stem for p in profiles_dir.glob("*.yaml") if p.is_file()
-    )
+    return sorted(p.stem for p in profiles_dir.glob("*.yaml") if p.is_file())

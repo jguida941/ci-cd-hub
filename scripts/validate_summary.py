@@ -341,9 +341,7 @@ def validate_tool_execution(
                 f"(expected metrics: {metric_paths})"
             )
         else:
-            debug.append(
-                f"Debug: {tool} ran but failed, no metrics expected"
-            )
+            debug.append(f"Debug: {tool} ran but failed, no metrics expected")
 
     return warnings, debug
 

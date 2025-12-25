@@ -2,19 +2,16 @@
 
 import json
 import sys
-import tempfile
 import zipfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 # Allow importing scripts as modules
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.correlation import (
+from scripts.correlation import (  # noqa: E402
     extract_correlation_id_from_artifact,
     find_run_by_correlation_id,
     generate_correlation_id,
@@ -86,8 +83,7 @@ class TestExtractCorrelationIdFromArtifact:
             mock_download.return_value = artifact_dir
 
             result = extract_correlation_id_from_artifact(
-                "https://fake-url/artifact.zip",
-                "fake-token"
+                "https://fake-url/artifact.zip", "fake-token"
             )
             assert result == "12345-1-test-config"
 
@@ -102,8 +98,7 @@ class TestExtractCorrelationIdFromArtifact:
             mock_download.return_value = artifact_dir
 
             result = extract_correlation_id_from_artifact(
-                "https://fake-url/artifact.zip",
-                "fake-token"
+                "https://fake-url/artifact.zip", "fake-token"
             )
             assert result is None
 
@@ -113,8 +108,7 @@ class TestExtractCorrelationIdFromArtifact:
             mock_download.return_value = None
 
             result = extract_correlation_id_from_artifact(
-                "https://fake-url/artifact.zip",
-                "fake-token"
+                "https://fake-url/artifact.zip", "fake-token"
             )
             assert result is None
 
@@ -128,8 +122,7 @@ class TestExtractCorrelationIdFromArtifact:
             mock_download.return_value = artifact_dir
 
             result = extract_correlation_id_from_artifact(
-                "https://fake-url/artifact.zip",
-                "fake-token"
+                "https://fake-url/artifact.zip", "fake-token"
             )
             assert result is None
 
@@ -176,7 +169,9 @@ class TestFindRunByCorrelationId:
             return {}
 
         # Mock artifact extraction to return matching ID for run 222
-        with patch("scripts.correlation.extract_correlation_id_from_artifact") as mock_extract:
+        with patch(
+            "scripts.correlation.extract_correlation_id_from_artifact"
+        ) as mock_extract:
             mock_extract.return_value = "target-correlation-id"
 
             result = find_run_by_correlation_id(
@@ -185,7 +180,7 @@ class TestFindRunByCorrelationId:
                 "workflow.yml",
                 "target-correlation-id",
                 "token",
-                gh_get=mock_gh_get
+                gh_get=mock_gh_get,
             )
 
             assert result == "222"
@@ -211,7 +206,9 @@ class TestFindRunByCorrelationId:
                 return artifacts_111
             return {}
 
-        with patch("scripts.correlation.extract_correlation_id_from_artifact") as mock_extract:
+        with patch(
+            "scripts.correlation.extract_correlation_id_from_artifact"
+        ) as mock_extract:
             mock_extract.return_value = "different-correlation-id"
 
             result = find_run_by_correlation_id(
@@ -220,7 +217,7 @@ class TestFindRunByCorrelationId:
                 "workflow.yml",
                 "target-correlation-id",
                 "token",
-                gh_get=mock_gh_get
+                gh_get=mock_gh_get,
             )
 
             assert result is None
@@ -253,13 +250,14 @@ class TestFindRunByCorrelationId:
             "workflow.yml",
             "target-id",
             "token",
-            gh_get=mock_gh_get
+            gh_get=mock_gh_get,
         )
 
         assert result is None
 
     def test_api_error_handling(self):
         """Handles API errors gracefully."""
+
         def mock_gh_get(url: str) -> dict:
             raise Exception("API rate limit exceeded")
 
@@ -269,7 +267,7 @@ class TestFindRunByCorrelationId:
             "workflow.yml",
             "target-id",
             "token",
-            gh_get=mock_gh_get
+            gh_get=mock_gh_get,
         )
 
         assert result is None
@@ -282,8 +280,6 @@ class TestFindRunByCorrelationId:
                 {"id": 222, "status": "completed"},
             ]
         }
-
-        call_count = [0]
 
         def mock_gh_get(url: str) -> dict:
             if "workflows" in url and "runs" in url:
@@ -298,7 +294,9 @@ class TestFindRunByCorrelationId:
                 }
             return {}
 
-        with patch("scripts.correlation.extract_correlation_id_from_artifact") as mock_extract:
+        with patch(
+            "scripts.correlation.extract_correlation_id_from_artifact"
+        ) as mock_extract:
             mock_extract.return_value = "target-id"
 
             result = find_run_by_correlation_id(
@@ -307,7 +305,7 @@ class TestFindRunByCorrelationId:
                 "workflow.yml",
                 "target-id",
                 "token",
-                gh_get=mock_gh_get
+                gh_get=mock_gh_get,
             )
 
             # Should find run 222 even though 111 failed

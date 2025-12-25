@@ -34,8 +34,14 @@ SCAN_EXTENSIONS = {".py"}
 
 # Configurable via QUARANTINE_EXCLUDE_DIRS env var (comma-separated)
 _DEFAULT_EXCLUDES = {
-    "_quarantine", ".git", "__pycache__", ".pytest_cache",
-    "node_modules", ".ruff_cache", "vendor", "generated",
+    "_quarantine",
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    "node_modules",
+    ".ruff_cache",
+    "vendor",
+    "generated",
 }
 _env_excludes = os.environ.get("QUARANTINE_EXCLUDE_DIRS", "")
 EXCLUDE_DIRS = _DEFAULT_EXCLUDES | (
