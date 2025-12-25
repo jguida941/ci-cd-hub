@@ -247,8 +247,10 @@ def extract_metrics_from_report(report_data: dict, run_status: dict) -> None:
     run_status["trivy_critical"] = tool_metrics.get("trivy_critical")
     run_status["trivy_high"] = tool_metrics.get("trivy_high")
 
-    # Track which tools ran
+    # Track tool execution status
     run_status["tools_ran"] = report_data.get("tools_ran", {})
+    run_status["tools_configured"] = report_data.get("tools_configured", {})
+    run_status["tools_success"] = report_data.get("tools_success", {})
 
 
 def fetch_and_validate_artifact(

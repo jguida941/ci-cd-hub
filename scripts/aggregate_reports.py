@@ -104,11 +104,16 @@ def generate_summary(reports: list[dict]) -> dict:
         "repos": [],
     }
 
+    # Aggregate tool statistics across all repos
+    tool_stats: dict = {}
+
     for report in reports:
         repo_name = report.get("repository", "unknown")
         results = report.get("results", {})
         tool_metrics = report.get("tool_metrics", {})
         tools_ran = report.get("tools_ran", {})
+        tools_configured = report.get("tools_configured", {})
+        tools_success = report.get("tools_success", {})
 
         # Track languages using helper
         lang = detect_language(report)
@@ -158,7 +163,26 @@ def generate_summary(reports: list[dict]) -> dict:
         if tools_ran:
             repo_detail["tools_ran"] = tools_ran
 
+        # Include tools_configured and tools_success if present
+        if tools_configured:
+            repo_detail["tools_configured"] = tools_configured
+        if tools_success:
+            repo_detail["tools_success"] = tools_success
+
         summary["repos"].append(repo_detail)
+
+        # Aggregate tool stats across all repos
+        for tool, configured in tools_configured.items():
+            if tool not in tool_stats:
+                tool_stats[tool] = {"configured": 0, "ran": 0, "passed": 0, "failed": 0}
+            if configured:
+                tool_stats[tool]["configured"] += 1
+            if tools_ran.get(tool):
+                tool_stats[tool]["ran"] += 1
+            if tools_success.get(tool):
+                tool_stats[tool]["passed"] += 1
+            elif tools_ran.get(tool):
+                tool_stats[tool]["failed"] += 1
 
     # Calculate averages
     if summary["coverage"]["count"] > 0:
@@ -170,6 +194,10 @@ def generate_summary(reports: list[dict]) -> dict:
         summary["mutation"]["average"] = round(
             summary["mutation"]["total"] / summary["mutation"]["count"], 1
         )
+
+    # Add tool stats to summary
+    if tool_stats:
+        summary["tool_stats"] = tool_stats
 
     return summary
 
