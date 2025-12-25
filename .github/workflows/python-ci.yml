@@ -1607,6 +1607,8 @@ jobs:
     steps:
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
+        if: always()
+        continue-on-error: true
         with:
           path: all-reports/
 
@@ -1729,6 +1731,7 @@ jobs:
 
       - name: Upload Combined Report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: ${{ inputs.artifact_prefix }}ci-report
           path: report.json
