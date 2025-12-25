@@ -923,8 +923,10 @@ jobs:
                                           run_status["semgrep_findings"] = tool_metrics.get("semgrep_findings")
                                           run_status["trivy_critical"] = tool_metrics.get("trivy_critical")
                                           run_status["trivy_high"] = tool_metrics.get("trivy_high")
-                                          # Track which tools ran
+                                          # Track tool execution status
                                           run_status["tools_ran"] = report_data.get("tools_ran", {})
+                                          run_status["tools_configured"] = report_data.get("tools_configured", {})
+                                          run_status["tools_success"] = report_data.get("tools_success", {})
                                       except Exception as exc:  # noqa: PIE786
                                           print(f"Warning: could not parse report.json from {artifact['name']}: {exc}")
                   except Exception as exc:  # noqa: PIE786
@@ -998,6 +1000,25 @@ jobs:
               sum(checkstyle_issues) + sum(spotbugs_issues) + sum(pmd_violations) +
               sum(ruff_errors) + sum(black_issues) + sum(isort_issues) + sum(mypy_errors)
           )
+
+          # Aggregate tool stats across all repos
+          tool_stats = {}
+          for r in results:
+              tools_configured = r.get("tools_configured", {})
+              tools_ran = r.get("tools_ran", {})
+              tools_success = r.get("tools_success", {})
+              for tool, configured in tools_configured.items():
+                  if tool not in tool_stats:
+                      tool_stats[tool] = {"configured": 0, "ran": 0, "passed": 0, "failed": 0}
+                  if configured:
+                      tool_stats[tool]["configured"] += 1
+                  if tools_ran.get(tool):
+                      tool_stats[tool]["ran"] += 1
+                  if tools_success.get(tool):
+                      tool_stats[tool]["passed"] += 1
+                  elif tools_ran.get(tool):
+                      tool_stats[tool]["failed"] += 1
+          report["tool_stats"] = tool_stats
 
           Path("hub-report.json").write_text(json.dumps(report, indent=2))
 
@@ -1116,6 +1137,53 @@ jobs:
               f"- **pip-audit Vulnerabilities:** {report['total_pip_audit_vulns']}",
               f"- **Semgrep Findings:** {report['total_semgrep_findings']}",
           ])
+
+          # Tool Stats Aggregate Table
+          if tool_stats:
+              # Define tool categories for display
+              tool_categories = {
+                  # Java tools
+                  "jacoco": ("Testing", "JaCoCo Coverage"),
+                  "pitest": ("Testing", "PITest"),
+                  "jqwik": ("Testing", "jqwik"),
+                  "checkstyle": ("Linting", "Checkstyle"),
+                  "spotbugs": ("Linting", "SpotBugs"),
+                  "pmd": ("Linting", "PMD"),
+                  "owasp": ("Security", "OWASP"),
+                  # Python tools
+                  "pytest": ("Testing", "pytest"),
+                  "mutmut": ("Testing", "mutmut"),
+                  "hypothesis": ("Testing", "Hypothesis"),
+                  "ruff": ("Linting", "Ruff"),
+                  "black": ("Linting", "Black"),
+                  "isort": ("Linting", "isort"),
+                  "mypy": ("Linting", "mypy"),
+                  "bandit": ("Security", "Bandit"),
+                  "pip_audit": ("Security", "pip-audit"),
+                  # Cross-language
+                  "semgrep": ("Security", "Semgrep"),
+                  "trivy": ("Security", "Trivy"),
+                  "codeql": ("Security", "CodeQL"),
+                  "docker": ("Container", "Docker"),
+              }
+
+              summary_lines.extend([
+                  "",
+                  "## Tools Summary (Aggregate)",
+                  "",
+                  "| Category | Tool | Configured | Ran | Passed | Failed |",
+                  "|----------|------|------------|-----|--------|--------|",
+              ])
+
+              for tool, stats in sorted(tool_stats.items()):
+                  category, display_name = tool_categories.get(tool, ("Other", tool))
+                  summary_lines.append(
+                      f"| {category} | {display_name} | "
+                      f"{stats['configured']}/{total_repos} | "
+                      f"{stats['ran']}/{stats['configured']} | "
+                      f"{stats['passed']} | {stats['failed']} |"
+                  )
+              summary_lines.append("")
 
           summary_path = Path(os.environ["GITHUB_STEP_SUMMARY"])
           summary_path.write_text("\n".join(summary_lines))
