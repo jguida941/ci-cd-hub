@@ -1425,34 +1425,34 @@ def cmd_sync_templates(args: argparse.Namespace) -> int:
                 print(f"❌ {repo} {path} update failed: {exc}", file=sys.stderr)
                 failures += 1
 
-        # Check for stale workflow files (old naming convention)
-        stale_workflow_names = ["hub-java-ci.yml", "hub-python-ci.yml"]
-        for stale_name in stale_workflow_names:
-            if stale_name == dispatch_workflow:
-                continue  # Don't delete the current workflow
-            stale_path = f".github/workflows/{stale_name}"
-            stale_file = fetch_remote_file(repo, stale_path, branch)
-            if stale_file and stale_file.get("sha"):
-                if args.check:
-                    print(f"❌ {repo} {stale_path} stale (should be deleted)")
-                    failures += 1
-                elif args.dry_run:
-                    print(f"# Would delete {repo} {stale_path} (stale)")
-                elif workflow_synced:
-                    try:
-                        delete_remote_file(
-                            repo,
-                            stale_path,
-                            branch,
-                            stale_file["sha"],
-                            "Remove stale workflow (migrated to hub-ci.yml)",
-                        )
-                        print(f"🗑️  {repo} {stale_path} deleted (stale)")
-                    except RuntimeError as exc:
-                        print(
-                            f"⚠️  {repo} {stale_path} delete failed: {exc}",
-                            file=sys.stderr,
-                        )
+        # Delete stale workflow files only when migrating to unified hub-ci.yml
+        # For language-specific workflows (monorepos), don't touch other files
+        if dispatch_workflow == "hub-ci.yml":
+            stale_workflow_names = ["hub-java-ci.yml", "hub-python-ci.yml"]
+            for stale_name in stale_workflow_names:
+                stale_path = f".github/workflows/{stale_name}"
+                stale_file = fetch_remote_file(repo, stale_path, branch)
+                if stale_file and stale_file.get("sha"):
+                    if args.check:
+                        print(f"❌ {repo} {stale_path} stale (should be deleted)")
+                        failures += 1
+                    elif args.dry_run:
+                        print(f"# Would delete {repo} {stale_path} (stale)")
+                    elif workflow_synced:
+                        try:
+                            delete_remote_file(
+                                repo,
+                                stale_path,
+                                branch,
+                                stale_file["sha"],
+                                "Remove stale workflow (migrated to hub-ci.yml)",
+                            )
+                            print(f"🗑️  {repo} {stale_path} deleted (stale)")
+                        except RuntimeError as exc:
+                            print(
+                                f"⚠️  {repo} {stale_path} delete failed: {exc}",
+                                file=sys.stderr,
+                            )
 
     if args.check and failures:
         print(f"Template drift detected in {failures} repo(s).", file=sys.stderr)
