@@ -1,0 +1,84 @@
+# ============================================================================
+# Pre-commit Configuration
+# ============================================================================
+# Shift-left enforcement - catch issues before they're committed.
+#
+# Install: pip install pre-commit && pre-commit install
+# Run all: pre-commit run --all-files
+# Update:  pre-commit autoupdate
+# ============================================================================
+
+repos:
+  # --------------------------------------------------------------------------
+  # General hooks
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]  # Allow custom tags
+      - id: check-json
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: [--branch, main, --branch, master]
+
+  # --------------------------------------------------------------------------
+  # Python formatting & linting (ruff - fast, replaces black/isort/flake8)
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  # --------------------------------------------------------------------------
+  # Security scanning (bandit)
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.9
+    hooks:
+      - id: bandit
+        args: [-r, cihub/, scripts/, -q, --severity-level, high, --confidence-level, high]
+        exclude: tests/
+
+  # --------------------------------------------------------------------------
+  # YAML linting
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        args: [-d, relaxed]
+        types: [yaml]
+
+  # --------------------------------------------------------------------------
+  # Markdown linting
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.42.0
+    hooks:
+      - id: markdownlint-fix
+        args: [--disable, MD013, MD033, MD041, --]
+
+  # --------------------------------------------------------------------------
+  # Commit message format
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.29.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+# CI configuration
+ci:
+  autofix_prs: true
+  autoupdate_schedule: weekly
+  skip:
+    - bandit  # Runs separately in CI for better reporting

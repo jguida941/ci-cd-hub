@@ -1,0 +1,830 @@
+# ============================================================================
+# CI/CD Hub - Production CI
+# ============================================================================
+# Comprehensive CI pipeline for the hub repository itself.
+# Runs on every push/PR with full security scanning, testing, and compliance.
+#
+# Jobs are organized in stages for fast feedback:
+# - Stage 0: Workflow Security (actionlint, zizmor) - validates our own workflows
+# - Stage 1: Fast checks (lint, syntax, type) - fail fast
+# - Stage 2: Testing (unit, mutation)
+# - Stage 3: Security (SAST, dependency audit, secrets, trivy)
+# - Stage 4: Validation (templates, configs, schemas)
+# - Stage 5: Supply Chain (scorecard, dependency-review)
+# - Stage 6: Summary
+#
+# Security hardening:
+# - harden-runner on all jobs (egress monitoring)
+# - Actions pinned to SHAs (see pinact)
+# - Least-privilege GITHUB_TOKEN per job
+# ============================================================================
+
+name: Hub Production CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'cihub/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'templates/**'
+      - 'config/**'
+      - 'schema/**'
+      - '.github/workflows/**'
+      - 'pyproject.toml'
+      - 'requirements*.txt'
+      - '.pre-commit-config.yaml'
+  pull_request:
+    paths:
+      - 'cihub/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'templates/**'
+      - 'config/**'
+      - 'schema/**'
+      - '.github/workflows/**'
+      - 'pyproject.toml'
+      - 'requirements*.txt'
+      - '.pre-commit-config.yaml'
+  workflow_dispatch:
+  schedule:
+    # Weekly scan for new CVEs
+    - cron: '0 6 * * 1'
+
+concurrency:
+  group: hub-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: '3.12'
+
+# Minimal default permissions - jobs override as needed
+permissions:
+  contents: read
+
+jobs:
+  # ============================================================================
+  # Stage 0: Workflow Security (validates our own workflows)
+  # ============================================================================
+  actionlint:
+    name: Workflow Lint (actionlint)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Run actionlint
+        uses: rhysd/actionlint-action@0f6b15fea7e1d80f7c328f6e059a3af498b2cc99 # v1.7.7
+        with:
+          fail-on-error: true
+
+  zizmor:
+    name: Workflow Security (zizmor)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # For SARIF upload
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@9a44813a27b1bbd30d4cb1b0e6df29a6d95c1df8 # v1.5.2
+        with:
+          version: latest
+          args: --format sarif --output zizmor.sarif .github/workflows/
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: zizmor.sarif
+          category: zizmor
+
+      - name: Check for high-severity findings
+        run: |
+          if [ -f zizmor.sarif ]; then
+            HIGH=$(python3 -c "
+          import json
+          with open('zizmor.sarif') as f:
+              sarif = json.load(f)
+          runs = sarif.get('runs', [])
+          if runs:
+              results = runs[0].get('results', [])
+              high = [r for r in results if r.get('level') in ('error', 'warning')]
+              print(len(high))
+          else:
+              print(0)
+          " 2>/dev/null || echo "0")
+
+            echo "## Zizmor Workflow Security" >> $GITHUB_STEP_SUMMARY
+            echo "High/Warning findings: $HIGH" >> $GITHUB_STEP_SUMMARY
+
+            if [ "$HIGH" -gt 0 ]; then
+              echo "::warning::Found $HIGH workflow security findings - review in Security tab"
+            fi
+          fi
+
+  # ============================================================================
+  # Stage 1: Fast Checks (fail fast)
+  # ============================================================================
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Ruff lint
+        run: ruff check . --output-format=github
+
+      - name: Ruff format check
+        run: ruff format --check .
+
+  syntax-check:
+    name: Python Syntax
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Check syntax
+        run: |
+          set -e
+          echo "Checking scripts/*.py..."
+          python -m py_compile scripts/*.py
+          echo "Checking cihub/**/*.py..."
+          find cihub -name '*.py' -exec python -m py_compile {} +
+          echo "✓ Python syntax valid"
+
+  type-check:
+    name: Type Check (mypy)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install mypy
+        run: pip install mypy pyyaml jsonschema types-PyYAML
+
+      - name: Run mypy
+        run: |
+          mypy cihub/ --ignore-missing-imports --show-error-codes
+          echo "✓ Type check passed"
+
+  yaml-lint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint YAML
+        run: |
+          yamllint -d "{extends: relaxed, rules: {line-length: disable}}" \
+            config/defaults.yaml config/repos/ templates/profiles/
+          echo "✓ YAML lint passed"
+
+  # ============================================================================
+  # Stage 2: Testing
+  # ============================================================================
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [lint, syntax-check]
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('pyproject.toml') }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pytest pytest-cov pyyaml jsonschema
+
+      - name: Run tests with coverage
+        run: |
+          python -m pytest tests/ -v \
+            --cov=cihub --cov=scripts \
+            --cov-report=xml --cov-report=term-missing \
+            --cov-fail-under=60 \
+            --junitxml=test-results.xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
+        if: always()
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-results
+          path: |
+            test-results.xml
+            coverage.xml
+          retention-days: 7
+
+  mutation-tests:
+    name: Mutation Tests
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pytest pyyaml jsonschema mutmut
+
+      - name: Run mutation tests
+        id: mutmut
+        run: |
+          set -e  # Fail on any error
+
+          # Run mutmut - fail if it errors (import issues, misconfig, etc.)
+          echo "Running mutation tests on cihub/..."
+          if ! mutmut run --paths-to-mutate cihub/ --no-progress; then
+            echo "::error::mutmut run failed - check for import errors or test failures"
+            exit 1
+          fi
+
+          # Get results - must have run successfully
+          RESULTS=$(mutmut results 2>&1)
+          if [ -z "$RESULTS" ]; then
+            echo "::error::mutmut produced no results - check configuration"
+            exit 1
+          fi
+
+          # Count ALL mutant states (not just killed/survived)
+          KILLED=$(echo "$RESULTS" | grep -c "killed" || echo "0")
+          SURVIVED=$(echo "$RESULTS" | grep -c "survived" || echo "0")
+          TIMEOUT=$(echo "$RESULTS" | grep -c "timeout" || echo "0")
+          SUSPICIOUS=$(echo "$RESULTS" | grep -c "suspicious" || echo "0")
+          SKIPPED=$(echo "$RESULTS" | grep -c "skipped" || echo "0")
+
+          # Total = all mutants that were tested (exclude skipped)
+          TESTED=$((KILLED + SURVIVED + TIMEOUT + SUSPICIOUS))
+          TOTAL=$((TESTED + SKIPPED))
+
+          if [ "$TESTED" -eq 0 ]; then
+            echo "::error::No mutants were tested - check test coverage"
+            exit 1
+          fi
+
+          # Score = killed / tested (timeout/suspicious count as not killed)
+          SCORE=$((KILLED * 100 / TESTED))
+
+          echo "mutation_score=$SCORE" >> $GITHUB_OUTPUT
+          echo "killed=$KILLED" >> $GITHUB_OUTPUT
+          echo "survived=$SURVIVED" >> $GITHUB_OUTPUT
+          echo "timeout=$TIMEOUT" >> $GITHUB_OUTPUT
+          echo "suspicious=$SUSPICIOUS" >> $GITHUB_OUTPUT
+
+          echo "## Mutation Testing" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Score** | **${SCORE}%** |" >> $GITHUB_STEP_SUMMARY
+          echo "| Killed | $KILLED |" >> $GITHUB_STEP_SUMMARY
+          echo "| Survived | $SURVIVED |" >> $GITHUB_STEP_SUMMARY
+          echo "| Timeout | $TIMEOUT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Suspicious | $SUSPICIOUS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Skipped | $SKIPPED |" >> $GITHUB_STEP_SUMMARY
+          echo "| Total Tested | $TESTED |" >> $GITHUB_STEP_SUMMARY
+
+          # Fail if score below threshold
+          if [ "$SCORE" -lt 70 ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**FAILED**: Score ${SCORE}% below 70% threshold" >> $GITHUB_STEP_SUMMARY
+            echo "::error::Mutation score ${SCORE}% below 70% threshold"
+            mutmut results  # Show details
+            exit 1
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PASSED**: Score ${SCORE}% meets 70% threshold" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload mutation results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mutation-results
+          path: .mutmut-cache
+          retention-days: 7
+
+  # ============================================================================
+  # Stage 3: Security Scanning
+  # ============================================================================
+  bandit:
+    name: SAST (Bandit)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install bandit
+        run: pip install bandit[toml]
+
+      - name: Run bandit
+        run: |
+          bandit -r cihub/ scripts/ -f json -o bandit.json \
+            --severity-level medium --confidence-level medium || true
+
+          HIGH=$(python3 -c "import json; r=json.load(open('bandit.json')); print(len([i for i in r.get('results',[]) if i['issue_severity']=='HIGH']))")
+
+          echo "## Bandit SAST" >> $GITHUB_STEP_SUMMARY
+          echo "High severity: $HIGH" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$HIGH" -gt 0 ]; then
+            echo "::error::Found $HIGH high-severity issues"
+            bandit -r cihub/ scripts/ --severity-level high
+            exit 1
+          fi
+
+      - name: Upload bandit results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: bandit-results
+          path: bandit.json
+          retention-days: 7
+
+  pip-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install pip-audit and deps
+        run: |
+          pip install pip-audit
+          pip install -e .
+
+      - name: Run pip-audit
+        run: |
+          pip-audit --format json --output pip-audit.json || true
+          VULNS=$(python3 -c "import json; print(len(json.load(open('pip-audit.json'))))" 2>/dev/null || echo "0")
+
+          echo "## Dependency Vulnerabilities" >> $GITHUB_STEP_SUMMARY
+          echo "Found: $VULNS" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$VULNS" -gt 0 ]; then
+            pip-audit --format markdown >> $GITHUB_STEP_SUMMARY
+            echo "::warning::Found $VULNS dependency vulnerabilities"
+          fi
+
+      - name: Upload pip-audit results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pip-audit-results
+          path: pip-audit.json
+          retention-days: 7
+
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  trivy:
+    name: Trivy Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # For SARIF upload
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # 0.31.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy FS SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
+      - name: Trivy config scan
+        uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # 0.31.0
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+
+  # ============================================================================
+  # Stage 4: Validation
+  # ============================================================================
+  validate-templates:
+    name: Validate Templates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install pytest pyyaml jsonschema
+
+      - name: Validate templates
+        run: python -m pytest tests/test_templates.py -v --tb=short
+
+  validate-configs:
+    name: Validate Configs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install pyyaml jsonschema
+
+      - name: Validate repo configs
+        run: |
+          for cfg in config/repos/*.yaml; do
+            repo=$(basename "$cfg" .yaml)
+            echo "Validating $repo"
+            python scripts/load_config.py --repo "$repo" --output workflow-inputs >/dev/null
+          done
+          echo "✓ All configs valid"
+
+      - name: Validate profiles
+        run: |
+          python3 -c "
+          import yaml
+          from pathlib import Path
+          for p in Path('templates/profiles').glob('*.yaml'):
+              data = yaml.safe_load(p.read_text())
+              assert isinstance(data, dict), f'{p} not a dict'
+              print(f'✓ {p.name}')
+          "
+
+  verify-matrix-keys:
+    name: Verify Matrix Keys
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Verify matrix keys
+        run: python scripts/verify_hub_matrix_keys.py
+
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install pip-licenses
+        run: |
+          pip install pip-licenses
+          pip install -e ".[dev]" || pip install -e .
+
+      - name: Check licenses
+        run: |
+          echo "## License Summary" >> $GITHUB_STEP_SUMMARY
+          pip-licenses --format=markdown >> $GITHUB_STEP_SUMMARY
+
+          COPYLEFT=$(pip-licenses --format=csv | grep -iE "GPL|AGPL" | wc -l || echo "0")
+          if [ "$COPYLEFT" -gt 0 ]; then
+            echo "::notice::Found $COPYLEFT packages with copyleft licenses"
+          fi
+
+  # ============================================================================
+  # Stage 5: Supply Chain Security
+  # ============================================================================
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@da24556b548a50705dd671f47852072ea4c105d9 # v4.7.1
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: always
+
+  scorecard:
+    name: OpenSSF Scorecard
+    runs-on: ubuntu-latest
+    # Only run on main branch pushes and scheduled runs
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write  # Required for scorecard
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard
+        uses: ossf/scorecard-action@f49aabe0b5af0936a0987cfb85d86b75731b0186 # v2.4.1
+        with:
+          results_file: scorecard.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload Scorecard SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: scorecard.sarif
+          category: scorecard
+
+  # ============================================================================
+  # Stage 6: Summary
+  # ============================================================================
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs:
+      - actionlint
+      - zizmor
+      - lint
+      - syntax-check
+      - type-check
+      - yaml-lint
+      - unit-tests
+      - mutation-tests
+      - bandit
+      - pip-audit
+      - secret-scan
+      - trivy
+      - validate-templates
+      - validate-configs
+      - verify-matrix-keys
+      - license-check
+    if: always()
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - name: Generate summary
+        run: |
+          echo "## Hub Production CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Workflow Security" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| actionlint | ${{ needs.actionlint.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| zizmor | ${{ needs.zizmor.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Code Quality" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint | ${{ needs.lint.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Syntax | ${{ needs.syntax-check.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Type Check | ${{ needs.type-check.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| YAML Lint | ${{ needs.yaml-lint.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Testing" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Mutation | ${{ needs.mutation-tests.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Security" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Bandit | ${{ needs.bandit.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| pip-audit | ${{ needs.pip-audit.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secrets | ${{ needs.secret-scan.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Trivy | ${{ needs.trivy.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Validation" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Templates | ${{ needs.validate-templates.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Configs | ${{ needs.validate-configs.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Matrix Keys | ${{ needs.verify-matrix-keys.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Licenses | ${{ needs.license-check.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check critical failures
+        run: |
+          FAILED=0
+
+          # Workflow security - must pass
+          [ "${{ needs.actionlint.result }}" != "success" ] && echo "::error::actionlint failed - fix workflow syntax" && FAILED=1
+
+          # Code quality gates - must pass
+          [ "${{ needs.type-check.result }}" != "success" ] && echo "::error::Type check failed - fix mypy errors" && FAILED=1
+          [ "${{ needs.yaml-lint.result }}" != "success" ] && echo "::error::YAML lint failed - fix config syntax" && FAILED=1
+
+          # Critical code checks that must pass
+          [ "${{ needs.unit-tests.result }}" != "success" ] && echo "::error::Unit tests failed" && FAILED=1
+          [ "${{ needs.bandit.result }}" != "success" ] && echo "::error::Security scan failed" && FAILED=1
+          [ "${{ needs.secret-scan.result }}" != "success" ] && echo "::error::Secret detection failed" && FAILED=1
+          [ "${{ needs.validate-configs.result }}" != "success" ] && echo "::error::Config validation failed" && FAILED=1
+
+          if [ "$FAILED" -eq 1 ]; then
+            exit 1
+          fi
+
+          echo "✅ All critical checks passed"

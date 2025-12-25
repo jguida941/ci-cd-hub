@@ -118,24 +118,32 @@ Validates all hub repo configs against the JSON schema on config/schema/script c
 
 ---
 
-## Hub: Self-Check
+## Hub: Production CI
 
-**File:** `.github/workflows/hub-self-check.yml`
+**File:** `.github/workflows/hub-production-ci.yml`
 
-Validates hub scripts, tests, templates, and config integrity.
+Comprehensive CI pipeline for the hub repository itself with full security scanning, testing, and compliance.
 
 ### Triggers
-- `push` to main/master on `scripts/**`, `tests/**`, `templates/**`, `config/**`, `schema/**`, `pyproject.toml`, `requirements*.txt`, or the workflow file
+- `push` to main/master on `cihub/**`, `scripts/**`, `tests/**`, `templates/**`, `config/**`, `schema/**`, `.github/workflows/**`, `pyproject.toml`, `requirements*.txt`, or `.pre-commit-config.yaml`
 - `pull_request` touching the same paths
 - `workflow_dispatch`
+- `schedule` (weekly, Monday 06:00 UTC for CVE scanning)
 
-### Steps (summary)
-- Python syntax check (`scripts/*.py`)
-- Unit tests (`pytest tests/`)
-- Template validation (`tests/test_templates.py`)
-- Config validation (schema + defaults)
-- Matrix key verification
-- Combined summary
+### Stages
+1. **Workflow Security** - actionlint, zizmor (validates our own workflows)
+2. **Fast Checks** - ruff lint, Python syntax, mypy type check, YAML lint
+3. **Testing** - Unit tests with coverage, mutation testing (mutmut)
+4. **Security** - Bandit SAST, pip-audit, Gitleaks secret scan, Trivy filesystem/config scan
+5. **Validation** - Templates, configs, matrix keys, license compliance
+6. **Supply Chain** - Dependency review (PRs), OpenSSF Scorecard (main branch)
+7. **Summary** - Aggregated results with pass/fail status
+
+### Security Hardening
+- All actions pinned to SHA (supply chain security)
+- `harden-runner` on all jobs (egress monitoring)
+- Least-privilege `GITHUB_TOKEN` per job
+- SARIF uploads for Trivy, zizmor, and Scorecard findings
 
 ---
 

@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-12-25 - Hub Production CI & Security Hardening
+
+### Workflow Rename
+- **Renamed `hub-self-check.yml` → `hub-production-ci.yml`** - Comprehensive production-grade CI for the hub itself
+
+### Security Hardening
+- All GitHub Actions pinned to SHA (supply chain security)
+- Added `harden-runner` to all jobs (egress monitoring)
+- Added least-privilege `GITHUB_TOKEN` permissions per job
+- Trivy pinned to v0.31.0 (was @master)
+- Fixed syntax check to properly validate all `cihub/**/*.py` files
+
+### New CI Stages
+- **Stage 0: Workflow Security** - actionlint + zizmor for workflow validation
+- **Stage 5: Supply Chain** - OpenSSF Scorecard + Dependency Review
+- SARIF uploads for Trivy, zizmor, and Scorecard findings
+
+### Documentation
+- Updated README and WORKFLOWS.md to reference `hub-production-ci.yml`
+- Added Elastic License 2.0
+
 ## 2025-12-24 - ADR-0024 Threshold Resolution
 
 ### Reusable Workflows

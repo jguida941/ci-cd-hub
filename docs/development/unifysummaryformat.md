@@ -288,15 +288,15 @@ PYTHON_ARTIFACTS = {
 
 **Current schema** (`schema/ci-report.v2.json`) is missing:
 
-| Field | Status | Required By |
-|-------|--------|-------------|
-| `tools_configured` | ❌ Missing | Summary to Report Mapping |
-| `tools_success` | ❌ Missing | Summary to Report Mapping |
-| `thresholds.max_critical_vulns` | ❌ Missing | Quality Gates |
-| `thresholds.max_high_vulns` | ❌ Missing | Quality Gates |
-| `thresholds.max_semgrep_findings` | ❌ Missing | Quality Gates |
-| `thresholds.max_checkstyle_errors` | ❌ Missing | Quality Gates |
-| `thresholds.max_spotbugs_bugs` | ❌ Missing | Quality Gates |
+| Field                              | Status    | Required By               |
+|------------------------------------|-----------|---------------------------|
+| `tools_configured`                 | ❌ Missing | Summary to Report Mapping |
+| `tools_success`                    | ❌ Missing | Summary to Report Mapping |
+| `thresholds.max_critical_vulns`    | ❌ Missing | Quality Gates             |
+| `thresholds.max_high_vulns`        | ❌ Missing | Quality Gates             |
+| `thresholds.max_semgrep_findings`  | ❌ Missing | Quality Gates             |
+| `thresholds.max_checkstyle_errors` | ❌ Missing | Quality Gates             |
+| `thresholds.max_spotbugs_bugs`     | ❌ Missing | Quality Gates             |
 
 **Note**: These thresholds ARE output by workflows (java-ci.yml:197-200) but not in schema.
 
@@ -363,25 +363,25 @@ Current summary format:
 
 ### Schema vs Workflow Output Alignment
 
-| Field | In Schema? | In Workflow Output? | Notes |
-|-------|------------|---------------------|-------|
-| `results.build` | ✅ | ✅ java-ci | Java uses `build` |
-| `results.test` | ✅ | ✅ python-ci | Python uses `test` |
-| `tools_ran` | ✅ | ✅ | Both workflows |
-| `tools_configured` | ❌ | ❌ | Plan requires, neither has |
-| `tools_success` | ❌ | ❌ | Plan requires, neither has |
-| `thresholds` (full) | Partial | ✅ | Workflow outputs more than schema allows |
+| Field               | In Schema? | In Workflow Output? | Notes                                    |
+|---------------------|------------|---------------------|------------------------------------------|
+| `results.build`     | ✅          | ✅ java-ci           | Java uses `build`                        |
+| `results.test`      | ✅          | ✅ python-ci         | Python uses `test`                       |
+| `tools_ran`         | ✅          | ✅                   | Both workflows                           |
+| `tools_configured`  | ❌          | ❌                   | Plan requires, neither has               |
+| `tools_success`     | ❌          | ❌                   | Plan requires, neither has               |
+| `thresholds` (full) | Partial    | ✅                   | Workflow outputs more than schema allows |
 
 ---
 
 ### Potential Breaking Changes
 
-| Change | Impact | Mitigation |
-|--------|--------|------------|
-| New required sections in summary | Downstream parsing may break | Phase rollout, version flag |
+| Change                                              | Impact                          | Mitigation                       |
+|-----------------------------------------------------|---------------------------------|----------------------------------|
+| New required sections in summary                    | Downstream parsing may break    | Phase rollout, version flag      |
 | Adding `tools_configured`/`tools_success` to schema | Existing reports won't validate | Schema v2.1? Or optional fields? |
-| Renaming tool display names | `validate_summary.py` will fail | Update mappings first |
-| Changing orchestrator summary format | Dashboard may break | Keep aggregator format separate |
+| Renaming tool display names                         | `validate_summary.py` will fail | Update mappings first            |
+| Changing orchestrator summary format                | Dashboard may break             | Keep aggregator format separate  |
 
 ---
 
@@ -389,12 +389,12 @@ Current summary format:
 
 These scripts parse report.json and/or artifacts - verify compatibility:
 
-| Script | Parses | Fields Used | Status |
-|--------|--------|-------------|--------|
-| `scripts/validate_summary.py` | summary + report.json | `tools_ran`, mappings | ⚠️ Needs updates |
-| `scripts/aggregate_reports.py` | report.json | `results`, `tool_metrics`, `tools_ran` | ✅ OK |
-| `scripts/run_aggregation.py` | report.json | Same as above | ✅ OK |
-| `hub-orchestrator.yml` (inline Python) | report.json | All fields | ⚠️ Check `tools_success` |
+| Script                                 | Parses                | Fields Used                            | Status                   |
+|----------------------------------------|-----------------------|----------------------------------------|--------------------------|
+| `scripts/validate_summary.py`          | summary + report.json | `tools_ran`, mappings                  | ⚠️ Needs updates         |
+| `scripts/aggregate_reports.py`         | report.json           | `results`, `tool_metrics`, `tools_ran` | ✅ OK                     |
+| `scripts/run_aggregation.py`           | report.json           | Same as above                          | ✅ OK                     |
+| `hub-orchestrator.yml` (inline Python) | report.json           | All fields                             | ⚠️ Check `tools_success` |
 
 ---
 
@@ -428,12 +428,12 @@ These scripts parse report.json and/or artifacts - verify compatibility:
 
 ### Risk Assessment
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Breaking `validate_summary.py` | High | Medium | Complete Phase 0 first |
-| Breaking orchestrator aggregation | Medium | High | Test with fixture repos |
-| Schema validation failures | High | Low | Make new fields optional |
-| Dashboard rendering issues | Medium | Medium | Golden samples before rollout |
+| Risk                              | Likelihood | Impact | Mitigation                    |
+|-----------------------------------|------------|--------|-------------------------------|
+| Breaking `validate_summary.py`    | High       | Medium | Complete Phase 0 first        |
+| Breaking orchestrator aggregation | Medium     | High   | Test with fixture repos       |
+| Schema validation failures        | High       | Low    | Make new fields optional      |
+| Dashboard rendering issues        | Medium     | Medium | Golden samples before rollout |
 
 ---
 
@@ -480,12 +480,12 @@ tools_success = report.get("tools_success", {})        # Line 260 - CURRENTLY EM
 
 **Artifact expectations** (lines 42-65):
 
-| JAVA_ARTIFACTS | PYTHON_ARTIFACTS |
-|----------------|-----------------|
-| jacoco, checkstyle, spotbugs | pytest, ruff, bandit |
-| pmd, owasp, pitest | pip_audit, black, isort |
-| semgrep, trivy | mypy, mutmut, **hypothesis** ✅ |
-| | semgrep, trivy |
+| JAVA_ARTIFACTS               | PYTHON_ARTIFACTS               |
+|------------------------------|--------------------------------|
+| jacoco, checkstyle, spotbugs | pytest, ruff, bandit           |
+| pmd, owasp, pitest           | pip_audit, black, isort        |
+| semgrep, trivy               | mypy, mutmut, **hypothesis** ✅ |
+|                              | semgrep, trivy                 |
 
 **Note**: `hypothesis` is in PYTHON_ARTIFACTS but NOT in PYTHON_SUMMARY_MAP - inconsistency!
 
@@ -650,38 +650,38 @@ All metrics above plus `tools_ran` dict.
 
 ### Java Tools (All Sources)
 
-| Tool | In Schema tools_ran | In Workflow | In JAVA_SUMMARY_MAP | In JAVA_ARTIFACTS | In defaults.yaml |
-|------|---------------------|-------------|---------------------|-------------------|------------------|
-| jacoco | ✅ | ✅ | ✅ | ✅ | ✅ |
-| checkstyle | ✅ | ✅ | ✅ | ✅ | ✅ |
-| spotbugs | ✅ | ✅ | ✅ | ✅ | ✅ |
-| pmd | ✅ | ✅ | ✅ | ✅ | ✅ |
-| owasp | ✅ | ✅ | ✅ | ✅ | ✅ |
-| pitest | ✅ | ✅ | ✅ | ✅ | ✅ |
-| jqwik | ✅ | ✅ | ❌ | ❌ | ✅ |
-| semgrep | ✅ | ✅ | ✅ | ✅ | ✅ |
-| trivy | ✅ | ✅ | ✅ | ✅ | ✅ |
-| codeql | ✅ | ✅ | ❌ | ❌ | ✅ |
-| docker | ✅ | ✅ | ❌ | ❌ | ✅ |
-| maven/gradle | ❌ | ✅ (summary) | ❌ | ❌ | ✅ (build_tool) |
+| Tool         | In Schema tools_ran | In Workflow | In JAVA_SUMMARY_MAP | In JAVA_ARTIFACTS | In defaults.yaml |
+|--------------|---------------------|-------------|---------------------|-------------------|------------------|
+| jacoco       | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
+| checkstyle   | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
+| spotbugs     | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
+| pmd          | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
+| owasp        | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
+| pitest       | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
+| jqwik        | ✅                   | ✅           | ❌                   | ❌                 | ✅                |
+| semgrep      | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
+| trivy        | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
+| codeql       | ✅                   | ✅           | ❌                   | ❌                 | ✅                |
+| docker       | ✅                   | ✅           | ❌                   | ❌                 | ✅                |
+| maven/gradle | ❌                   | ✅ (summary) | ❌                   | ❌                 | ✅ (build_tool)   |
 
 ### Python Tools (All Sources)
 
-| Tool | In Schema tools_ran | In Workflow | In PYTHON_SUMMARY_MAP | In PYTHON_ARTIFACTS | In defaults.yaml |
-|------|---------------------|-------------|----------------------|---------------------|------------------|
-| pytest | ✅ | ✅ | ✅ | ✅ | ✅ |
-| ruff | ✅ | ✅ | ✅ | ✅ | ✅ |
-| bandit | ✅ | ✅ | ✅ | ✅ | ✅ |
-| pip_audit | ✅ | ✅ | ✅ | ✅ | ✅ |
-| mypy | ✅ | ✅ | ✅ | ✅ | ✅ |
-| black | ✅ | ✅ | ✅ | ✅ | ✅ |
-| isort | ✅ | ✅ | ✅ | ✅ | ✅ |
-| mutmut | ✅ | ✅ | ✅ | ✅ | ✅ |
-| hypothesis | ✅ | ✅ | ❌ | ✅ | ✅ |
-| semgrep | ✅ | ✅ | ✅ | ✅ | ✅ |
-| trivy | ✅ | ✅ | ✅ | ✅ | ✅ |
-| codeql | ✅ | ✅ | ❌ | ❌ | ✅ |
-| docker | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Tool       | In Schema tools_ran | In Workflow | In PYTHON_SUMMARY_MAP | In PYTHON_ARTIFACTS | In defaults.yaml |
+|------------|---------------------|-------------|-----------------------|---------------------|------------------|
+| pytest     | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
+| ruff       | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
+| bandit     | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
+| pip_audit  | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
+| mypy       | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
+| black      | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
+| isort      | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
+| mutmut     | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
+| hypothesis | ✅                   | ✅           | ❌                     | ✅                   | ✅                |
+| semgrep    | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
+| trivy      | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
+| codeql     | ✅                   | ✅           | ❌                     | ❌                   | ✅                |
+| docker     | ✅                   | ✅           | ❌                     | ❌                   | ✅                |
 
 ---
 
@@ -824,27 +824,28 @@ This section provides concrete solutions for all identified gaps.
 **Solution**: Orchestrator emits the SAME `## Tools Enabled` format, but aggregated across all repos.
 
 **Current orchestrator format**:
+
 ```markdown
 ## Java Repos
 | Config | Status | Cov | Mut | CS | SB | PMD | OWASP | Semgrep | Trivy |
 ```
 
 **Proposed unified format**:
-```markdown
+
 ## Aggregate Tools Summary
 
-| Category | Tool | Repos Configured | Repos Ran | Repos Passed | Repos Failed |
-|----------|------|------------------|-----------|--------------|--------------|
-| Testing | JaCoCo Coverage | 5 | 5 | 4 | 1 |
-| Testing | PITest | 3 | 2 | 2 | 0 |
-| Linting | Checkstyle | 5 | 5 | 3 | 2 |
-| Security | OWASP | 4 | 4 | 4 | 0 |
-| Security | Semgrep | 2 | 0 | - | - |
-...
+| Category | Tool            | Repos Configured | Repos Ran | Repos Passed | Repos Failed |
+|----------|-----------------|------------------|-----------|--------------|--------------|
+| Testing  | JaCoCo Coverage | 5                | 5         | 4            | 1            |
+| Testing  | PITest          | 3                | 2         | 2            | 0            |
+| Linting  | Checkstyle      | 5                | 5         | 3            | 2            |
+| Security | OWASP           | 4                | 4         | 4            | 0            |
+| Security | Semgrep         | 2                | 0         | -            | -            |
+
 
 ## Per-Repo Summary (existing format, keep)
 | Repo | Status | Coverage | Mutation | Critical | High |
-```
+
 
 **Implementation**:
 - Orchestrator aggregates `tools_configured`, `tools_ran`, `tools_success` from all child `report.json` files

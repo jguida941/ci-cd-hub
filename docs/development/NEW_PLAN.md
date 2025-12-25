@@ -4,6 +4,474 @@
 > **Date:** 2025-12-24
 > **Author:** Architecture Review
 
+## Product Intent
+
+This is a production-grade system intended for commercial use. Prioritize safety, scalability, maintainability, SDLC best practices, and thorough testing (including mutation testing when practical). Do not cut corners for speed.
+
+
+  # MVP/Phase‑0 (hub‑side only) 12/24/2025
+
+  ## Rules
+
+- Two booleans are distinct: use_central_runner (central vs distributed) and
+  repo_side_execution (opt‑in repo writes).
+  - Non‑goal: no repo writes unless repo_side_execution is true.
+  - After this plan: proceed to the full NEW_PLAN phases in order.
+
+  For each step, use the Execution Checklist to record completion with date, proof,
+  and results.
+
+# Execution Checklist (for completion)
+ - [ ] Check off each item only after you record the date, proof, and results.
+
+• MVP/Phase‑0 Checklist (Hub‑Side Only)
+
+  - [x] Confirm defaults: use_central_runner: true, repo_side_execution: false (2025-12-25)
+  - [x] Update schema: add use_central_runner in schema/ci-hub-config.schema.json (2025-12-25)
+  - [x] Update schema: add repo_side_execution in schema/ci-hub-config.schema.json (2025-12-25)
+  - [x] Update defaults: add use_central_runner in config/defaults.yaml (2025-12-25)
+  - [x] Update defaults: add repo_side_execution in config/defaults.yaml (2025-12-25)
+  - [x] Update docs: add use_central_runner in docs/reference/CONFIG_REFERENCE.md (2025-12-25)
+  - [x] Update docs: add repo_side_execution in docs/reference/CONFIG_REFERENCE.md (2025-12-25)
+  - [x] ADR‑0025 created (modular CLI + wizard, hub‑side only) (2025-12-25)
+  - [x] ADR‑0026 placeholder (repo-side execution guardrails) (2025-12-25)
+  - [x] Optional deps added: questionary, rich under [project.optional-dependencies].wizard (2025-12-25)
+
+  Phase 2 – Config Module
+
+  - [ ] Extract YAML I/O to cihub/config/io.py
+  - [ ] Move deep merge to cihub/config/merge.py
+  - [ ] Add schema loader/validator in cihub/config/schema.py
+  - [ ] Wire config module to existing CLI paths
+
+  Phase 3 – Wizard Module
+
+  - [ ] wizard/styles.py + wizard/validators.py
+  - [ ] wizard/core.py with run_new/init/config
+  - [ ] wizard/summary.py
+  - [ ] Question modules for language/tools/security/thresholds
+  - [ ] Graceful fallback when deps missing
+
+  Phase 4 – Commands Refactor
+
+  - [ ] Extract existing command handlers into cihub/commands/*
+  - [ ] Add --wizard path for init
+
+  Phase 5 – New Commands
+
+  - [ ] cihub new (hub‑side only)
+  - [ ] cihub config (edit/show/set/enable/disable)
+  - [ ] CLI wiring for new subcommands
+
+  Guardrails
+
+  - [ ] repo_side_execution remains OFF by default
+  - [ ] No repo writes unless repo_side_execution: true (future ADR‑0026)
+
+  If you want, I can turn this into a markdown checklist in docs/development/
+  NEW_PLAN.md or docs/development/plan.md.
+
+
+
+ Plan: CLI Modular Restructure with Interactive Wizard
+
+ Context
+
+ The current cihub/cli.py is a 1,688-line monolithic file with 8 commands.
+ NEW_PLAN.md defines a comprehensive modular architecture. The user wants to:
+
+ 1. Restructure CLI to match NEW_PLAN.md architecture (MVP subset)
+ 2. Add interactive wizard for cihub new, cihub init, cihub config
+ 3. Create ADR-0025 documenting this decision
+ 4. Use questionary + Rich for interactive prompts (soft/optional deps)
+
+ Key Constraints (from code review)
+
+ "Target repos stay clean" - Core principle. Hub-side config only.
+
+ Execution Modes (Existing Architecture)
+
+ The hub already has 2 modes - wizard configures which one to use:
+
+ | Mode        | How it works                                       | Controlled by
+              |
+ |-------------|----------------------------------------------------|--------------
+ -------------|
+ | Central     | hub-run-all.yml runs in hub, clones repo, executes |
+ use_central_runner: true  |
+ | Distributed | hub dispatches to target repo's caller workflow    |
+ use_central_runner: false |
+
+ The wizard does NOT create a 3rd mode. It only configures config/repos/*.yaml.
+
+ ESSENTIAL: Two Separate Booleans
+
+ | Boolean             | Purpose                                      | Default |
+ |---------------------|----------------------------------------------|---------|
+ | use_central_runner  | Switch between central vs distributed        | true    |
+ | repo_side_execution | Enable workflow generation INTO target repos | false   |
+
+ Both must be:
+ 1. Added to schema (schema/ci-hub-config.schema.json)
+ 2. Added to defaults.yaml (config/defaults.yaml) with defaults
+ 3. Documented in docs/reference/CONFIG_REFERENCE.md
+ 4. Wired into wizard - ask user which mode to use
+ 5. Wired into config commands - cihub config set ...
+
+ repo_side_execution Guardrails
+
+ Default OFF - No writes to target repos unless explicitly enabled.
+
+ 1. Default off: repo_side_execution: false by default
+ 2. Explicit command: cihub generate-workflow --repo <name> only runs when flag is
+ true
+ 3. Dry-run first: --dry-run is default, must explicitly use --apply
+ 4. Manifest tracking: Hash of generated workflow stored for drift detection
+ 5. No writes on failure: If validation fails, abort (no partial writes)
+ 6. Backup before write: Always save .bak before overwriting
+ 7. Requires ADR: Document this as ADR-0026
+
+ # In config/repos/<repo>.yaml
+ repo:
+   owner: jguida941
+   name: my-repo
+   use_central_runner: true      # Central vs distributed toggle
+   repo_side_execution: false    # Opt-in to workflow generation (OFF by default)
+
+ Hard Rules
+
+ - Hub-side only: Write to config/repos/*.yaml only
+ - No writing to target repos: Don't create .github/workflows/ in target repos
+ (that's a separate opt-in feature requiring its own ADR)
+ - POM edits are opt-in: Separate phase with dedicated ADR (not in MVP)
+ - Soft dependencies: questionary/rich optional for non-interactive use
+ - Minimal command set: Only new, init, config, validate in MVP
+ - New commands only: Add flags to new commands, not existing ones
+
+ Current State
+
+ - cihub/cli.py - 1,688 lines, all logic in one file
+ - cihub/config/paths.py - PathConfig class exists
+ - cihub/commands/ - exists but empty
+ - cihub/wizard/ - exists but empty
+ - 12 profiles in templates/profiles/ (6 Java, 6 Python)
+ - scripts/apply_profile.py - deep merge logic exists
+ - Existing ADRs in docs/adr/ (verify count before creating ADR-0025)
+
+ Architecture Decisions
+
+ Library Choice: questionary + Rich
+
+ - questionary: Interactive prompts (maintained, cross-platform)
+ - Rich: Pretty output (panels, tables, progress)
+ - Centralized theme in wizard/styles.py
+ - Separation: Rich for output, questionary for input
+
+ Module Structure (from NEW_PLAN.md)
+
+ cihub/
+ ├── cli.py                    # Entry point + argparse
+ ├── config/                   # Config management
+ │   ├── io.py                 # YAML I/O
+ │   ├── merge.py              # Deep merge
+ │   ├── schema.py             # JSON schema validation
+ │   └── paths.py              # PathConfig (exists)
+ ├── commands/                 # Command implementations
+ │   ├── new.py, init.py, add.py, validate.py, apply.py
+ │   ├── pom.py, secrets.py, templates.py
+ │   └── config_cmd.py, dispatch.py, registry.py
+ ├── wizard/                   # Interactive prompts
+ │   ├── core.py               # WizardRunner
+ │   ├── styles.py             # Centralized theme
+ │   ├── validators.py         # Input validation
+ │   ├── summary.py            # Rich summary display
+ │   └── questions/            # Per-category questions
+ ├── diagnostics/              # Error reporting
+ │   ├── models.py, renderer.py
+ │   └── collectors/           # yaml, schema, pom validators
+ ├── fixers/                   # Auto-fix capabilities
+ │   └── base.py, regenerate.py, format.py
+ └── runners/                  # External tool execution
+     └── base.py, maven.py, yamllint.py
+
+ Checkpoints & Documentation Strategy
+
+ STOP after each phase for user audit. Create ADRs/guides as we go.
+
+ | Phase | Checkpoint                   | Documents Created                  |
+ |-------|------------------------------|------------------------------------|
+ | 1     | ADR-0025 created, deps added | ADR-0025, pyproject.toml changes   |
+ | 2     | Config module working        | docs/guides/CLI_CONFIG.md          |
+ | 3     | Wizard module working        | docs/guides/CLI_WIZARD.md          |
+ | 4     | Commands extracted           | Update docs/guides/CLI_COMMANDS.md |
+ | 5     | New commands added           | Final CLI guide update             |
+
+ Cross-reference to NEW_PLAN.md:
+ - This work implements Phase 5: CLI Commands from NEW_PLAN.md
+ - Also partially implements Phase 4: Profiles (wizard uses profiles)
+
+ Implementation Phases (MVP: Phases 1-5)
+
+ Scope: MVP first - get wizard working, then iterate. Phases 6-8 deferred.
+ Process: STOP after each phase. User audits. Then proceed.
+
+ Phase 1: ADR-0025 + Dependencies
+
+ Files:
+ - docs/adr/0025-cli-modular-restructure.md - Document decision (next after 0024)
+ - pyproject.toml - add questionary>=2.0.0, rich>=13.0.0 as optional extras
+
+ ADR Content:
+ - Decision: Modular CLI with questionary+Rich wizard (hub-side config only)
+ - Context: Monolithic cli.py doesn't scale; need interactive onboarding
+ - Scope: Hub-side config only (config/repos/*.yaml), NOT target repo workflows
+ - Consequences: Better maintainability, testability, user experience
+ - Alternatives: Typer/Click (rejected: argparse works); full scaffolding
+ (deferred)
+ - Soft deps: questionary/rich are extras, graceful fallback for non-interactive
+
+ pyproject.toml changes:
+ [project.optional-dependencies]
+ wizard = ["questionary>=2.0.0", "rich>=13.0.0"]
+
+ Phase 2: Config Module (Foundation)
+
+ Extract from cli.py to cihub/config/:
+
+ io.py:
+ - read_yaml(path) -> dict
+ - write_yaml(path, data, dry_run=False)
+ - write_text(path, content, dry_run=False)
+ - load_defaults(paths: PathConfig) -> dict
+ - load_profile(paths: PathConfig, name: str) -> dict
+ - load_repo_config(paths: PathConfig, repo: str) -> dict
+ - save_repo_config(paths: PathConfig, repo: str, data: dict)
+ - list_repos(paths: PathConfig) -> list[str]
+ - list_profiles(paths: PathConfig) -> list[str]
+
+ merge.py (from scripts/apply_profile.py):
+ - deep_merge(base: dict, overlay: dict) -> dict
+ - build_effective_config(defaults, profile, repo_cfg) -> dict
+
+ schema.py:
+ - validate_config(config: dict) -> list[str]  # Returns errors
+ - get_schema() -> dict  # Load from schema/ci-hub-config.schema.json
+
+ ESSENTIAL - Also update schema:
+ - Add use_central_runner: boolean to schema/ci-hub-config.schema.json
+ - Add default to config/defaults.yaml: use_central_runner: true (APPROVED -
+ central is default)
+ - Update docs/reference/CONFIG_REFERENCE.md with documentation
+
+ Phase 3: Wizard Module
+
+ Core files:
+
+ wizard/styles.py:
+ - THEME: questionary.Style with consistent colors
+ - Colors: SUCCESS, ERROR, WARNING, INFO, PROMPT
+ - get_style() -> questionary.Style
+
+ wizard/validators.py:
+ - validate_percentage(val: str) -> bool  # 0-100
+ - validate_version(val: str) -> bool     # semver-ish
+ - validate_package_name(val: str) -> bool
+ - validate_repo_name(val: str) -> bool
+
+ wizard/core.py:
+ class WizardRunner:
+     def __init__(self, console: Console, paths: PathConfig)
+     def run_new_wizard(self, name: str, profile: str = None) -> dict
+     def run_init_wizard(self, detected: dict) -> dict
+     def run_config_wizard(self, existing: dict) -> dict
+
+ wizard/summary.py:
+ - print_config_summary(console: Console, config: dict)
+ - print_tool_table(console: Console, tools: dict)
+ - print_save_confirmation(console: Console, path: str)
+
+ Question modules:
+ - questions/language.py: select_language(), select_java_version(),
+ select_python_version(), select_build_tool()
+ - questions/java_tools.py: configure_java_tools(defaults: dict) -> dict
+ - questions/python_tools.py: configure_python_tools(defaults: dict) -> dict
+ - questions/security.py: configure_security_tools(language: str) -> dict
+ - questions/thresholds.py: configure_thresholds(defaults: dict) -> dict
+
+ Phase 4: Commands Module (Refactor Existing)
+
+ Extract from cli.py - keep same signatures:
+
+ - commands/detect.py: cmd_detect(args) -> int
+ - commands/init.py: cmd_init(args) -> int, cmd_update(args) -> int
+ - commands/validate.py: cmd_validate(args) -> int
+ - commands/pom.py: cmd_fix_pom(args) -> int, cmd_fix_deps(args) -> int
+ - commands/secrets.py: cmd_setup_secrets(args) -> int, cmd_setup_nvd(args) -> int
+ - commands/templates.py: cmd_sync_templates(args) -> int
+
+ Add wizard integration to init.py:
+ if args.wizard:
+     from cihub.wizard.core import WizardRunner
+     runner = WizardRunner(console, paths)
+     config = runner.run_init_wizard(detected_config)
+
+ Phase 5: New Commands + CLI Update
+
+ New command files:
+
+ commands/new.py (hub-side only):
+ def cmd_new(args) -> int:
+     """Create hub-side config for a new repo.
+
+     Writes to: config/repos/<name>.yaml
+     Does NOT write to target repo (hub-side only in MVP).
+     """
+     # --name (required)
+     # --profile security|standard|fast|quality|compliance|minimal
+     # --interactive (ask per tool) - requires [wizard] extra
+     # --dry-run, --yes (new commands only)
+
+ commands/config_cmd.py:
+ def cmd_config(args) -> int:
+     """Manage hub-side repo configs.
+
+     All operations on config/repos/*.yaml
+     """
+     # config (no subcommand) -> wizard (if installed)
+     # config edit -> wizard (if installed)
+     # config show [--effective] --repo <name>
+     # config set <path> <value> --repo <name>
+     # config enable <tool> --repo <name>
+     # config disable <tool> --repo <name>
+
+ Graceful degradation for wizard deps:
+ try:
+     from cihub.wizard.core import WizardRunner
+     HAS_WIZARD = True
+ except ImportError:
+     HAS_WIZARD = False
+
+ if args.interactive and not HAS_WIZARD:
+     print("Install wizard deps: pip install cihub[wizard]")
+     return 1
+
+ Update cli.py:
+ - Add new subcommand with argparse
+ - Add config subcommand with sub-subparsers
+ - Add --wizard flag to init
+ - Import handlers from commands/
+ - Keep existing commands unchanged (no new flags)
+
+ ---
+ DEFERRED (Post-MVP)
+
+ Phase 6: Diagnostics Module
+
+ - diagnostics/models.py: Diagnostic dataclass
+ - diagnostics/renderer.py: Pretty console output
+ - diagnostics/collectors/: yaml, schema, pom validators
+
+ Phase 7: Fixers + Runners
+
+ - fixers/base.py, fixers/regenerate.py
+ - runners/base.py, runners/maven.py
+
+ Phase 8: Full Testing
+
+ - Integration tests
+ - Snapshot tests
+ - E2E tests
+
+ Critical Files
+
+ | File                                     | Action | Purpose
+                        |
+ |------------------------------------------|--------|-----------------------------
+ -----------------------|
+ | docs/adr/0025-cli-modular-restructure.md | Create | Document decision + hub-only
+  scope                 |
+ | pyproject.toml                           | Modify | Add
+ [project.optional-dependencies] wizard = [...] |
+ | cihub/config/io.py                       | Create | YAML I/O extracted from
+ cli.py                     |
+ | cihub/config/merge.py                    | Create | Deep merge from
+ scripts/apply_profile.py           |
+ | cihub/config/schema.py                   | Create | JSON schema validation
+                        |
+ | cihub/wizard/__init__.py                 | Create | Graceful import with
+ HAS_WIZARD flag               |
+ | cihub/wizard/core.py                     | Create | WizardRunner orchestration
+                        |
+ | cihub/wizard/styles.py                   | Create | Centralized questionary+Rich
+  theme                 |
+ | cihub/wizard/validators.py               | Create | Input validation functions
+                        |
+ | cihub/wizard/summary.py                  | Create | Rich config summary display
+                        |
+ | cihub/wizard/questions/*.py              | Create | Per-category question
+ modules                      |
+ | cihub/commands/__init__.py               | Create | Command exports
+                        |
+ | cihub/commands/new.py                    | Create | Hub-side config creation
+ (not target repo)         |
+ | cihub/commands/config_cmd.py             | Create | Config management
+ (show/set/enable/disable)        |
+ | cihub/cli.py                             | Modify | Add new/config subcommands,
+ import from commands/  |
+
+ Flags for NEW Commands Only (not existing)
+
+ | Flag             | Commands        | Purpose                                 |
+ |------------------|-----------------|-----------------------------------------|
+ | --dry-run        | new, config set | Preview without changes                 |
+ | --yes            | new, config     | Non-interactive mode                    |
+ | --profile <name> | new             | Apply preset profile                    |
+ | --interactive    | new, init       | Launch wizard (requires [wizard] extra) |
+ | --effective      | config show     | Show merged config                      |
+ | --repo <name>    | config          | Target specific repo                    |
+
+ Note: Existing commands (detect, init, update, validate, fix-pom, fix-deps, 
+ setup-secrets, setup-nvd, sync-templates) keep their existing flags unchanged.
+
+ Exit Codes
+
+ | Code | Meaning                     |
+ |------|-----------------------------|
+ | 0    | Success                     |
+ | 1    | Validation failed (fixable) |
+ | 2    | Missing required tools      |
+ | 3    | User cancelled              |
+ | 4    | Internal error              |
+
+ Backward Compatibility
+
+ - All existing 8 commands continue to work unchanged
+ - New commands (new, config, add, apply) are additive
+ - Existing flags preserved
+
+ Success Criteria
+
+ 1. cihub new myrepo --profile standard creates full project
+ 2. cihub init --wizard detects and prompts interactively
+ 3. cihub config edit opens Rich+questionary wizard
+ 4. cihub config enable jacoco works non-interactively
+ 5. cihub validate --fast runs offline validation
+ 6. All 12 profiles work with --profile flag
+ 7. ADR-0025 documents the decision
+ 8. Tests pass for all new modules
+
+ Sources
+
+ - https://pypi.org/project/questionary/
+ - https://arjancodes.com/blog/rich-python-library-for-interactive-cli-tools/
+ - https://brianbraatz.github.io/p/best-python-cli-menu-libraries/
+
+# End of # MVP/Phase‑0 (hub‑side only)
+
+
+
+# This is the NEW_PLAN.md file that outlines the complete architecture for 
+# the Self-Validating CLI + Central Hub system.
 ## Executive Summary
 
 This document outlines a comprehensive **Self-Validating CLI + Central Hub** architecture that consolidates all CI/CD tooling into a single, unified system. The CLI becomes the single entry point for project scaffolding, maintenance, validation, and execution.
@@ -2886,7 +3354,7 @@ ci-cd-hub/
 
 | Source | Target | Purpose |
 |--------|--------|---------|
-| `hub-self-check.yml` | `workflows/hub-self-check.yml` | Hub self-validation |
+| `hub-production-ci.yml` | `workflows/hub-production-ci.yml` | Hub production CI (lint, test, security) |
 | `release.yml` | `workflows/release.yml` | Release automation |
 
 ---

@@ -11,6 +11,21 @@
 # ============================================================================
 
 # ------------------------------------------------------------------------------
+# Repo Defaults
+# ------------------------------------------------------------------------------
+# These are defaults for repo.* settings. Override in config/repos/<repo>.yaml.
+#
+# use_central_runner: true   - Hub clones repo and runs tools (central mode)
+# use_central_runner: false  - Hub dispatches to target repo's workflow (distributed)
+#
+# repo_side_execution: false - Hub-side config only (default, safe)
+# repo_side_execution: true  - Enable cihub generate-workflow to write to target repos
+#                              (requires explicit --apply, creates .bak backups)
+repo:
+  use_central_runner: true      # Central mode by default
+  repo_side_execution: false    # No writes to target repos by default
+
+# ------------------------------------------------------------------------------
 # Java Defaults
 # ------------------------------------------------------------------------------
 java:
