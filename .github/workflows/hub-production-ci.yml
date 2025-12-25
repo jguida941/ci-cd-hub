@@ -770,41 +770,26 @@ jobs:
         run: |
           echo "## Hub Production CI Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Workflow Security" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| actionlint | ${{ needs.actionlint.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| zizmor | ${{ needs.zizmor.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Category | Check | What it does | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|--------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | actionlint | Validates GitHub Actions workflow syntax | ${{ needs.actionlint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Workflow | zizmor | Scans workflows for security issues (injection, perms) | ${{ needs.zizmor.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | ruff | Python linting and formatting | ${{ needs.lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | syntax | Python syntax validation (py_compile) | ${{ needs.syntax-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | mypy | Static type checking | ${{ needs.type-check.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quality | yamllint | YAML syntax and style | ${{ needs.yaml-lint.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Testing | pytest | Unit tests with coverage (min 60%) | ${{ needs.unit-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Testing | mutmut | Mutation testing (min 70% killed) | ${{ needs.mutation-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | bandit | Python SAST for vulnerabilities | ${{ needs.bandit.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | pip-audit | Dependency CVE scanning | ${{ needs.pip-audit.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | gitleaks | Secret detection in code/history | ${{ needs.secret-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security | trivy | Filesystem and config scanning | ${{ needs.trivy.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Validate | templates | Profile template integrity | ${{ needs.validate-templates.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Validate | configs | Repo config schema validation | ${{ needs.validate-configs.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Validate | matrix | Workflow matrix key consistency | ${{ needs.verify-matrix-keys.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Validate | licenses | Dependency license compliance | ${{ needs.license-check.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Code Quality" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Lint | ${{ needs.lint.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Syntax | ${{ needs.syntax-check.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Type Check | ${{ needs.type-check.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| YAML Lint | ${{ needs.yaml-lint.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Testing" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Mutation | ${{ needs.mutation-tests.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Security" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Bandit | ${{ needs.bandit.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| pip-audit | ${{ needs.pip-audit.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Secrets | ${{ needs.secret-scan.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Trivy | ${{ needs.trivy.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Validation" >> $GITHUB_STEP_SUMMARY
-          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Templates | ${{ needs.validate-templates.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Configs | ${{ needs.validate-configs.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Matrix Keys | ${{ needs.verify-matrix-keys.result == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Licenses | ${{ needs.license-check.result == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "See individual job logs for detailed metrics (coverage %, mutation score, findings count)." >> $GITHUB_STEP_SUMMARY
 
       - name: Check critical failures
         run: |
@@ -827,4 +812,4 @@ jobs:
             exit 1
           fi
 
-          echo "✅ All critical checks passed"
+          echo "All critical checks passed"
