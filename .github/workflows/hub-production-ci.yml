@@ -81,11 +81,16 @@ jobs:
 
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Install actionlint
+        run: |
+          # Install latest actionlint (supports workflow_call, id-token, ref_name)
+          bash <(curl -s https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+
       - name: Run actionlint
-        uses: reviewdog/action-actionlint@144cce1f5f4aad4f36bfba866f46565ac2c93546 # v1.9.0
-        with:
-          reporter: github-check
-          level: error
+        run: |
+          # Only lint hub-production-ci.yml (other files are reusable workflow templates)
+          ./actionlint -format '{{range $err := .}}::error file={{$err.Filepath}},line={{$err.Line}},col={{$err.Column}}::{{$err.Message}}%0A{{end}}' \
+            .github/workflows/hub-production-ci.yml
 
   zizmor:
     name: Workflow Security (zizmor)
