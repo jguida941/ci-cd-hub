@@ -52,10 +52,10 @@ jobs:
 
     steps:
       - name: Checkout Hub
-        uses: actions/checkout@v4
+uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -151,10 +151,10 @@ jobs:
 
     steps:
       - name: Checkout Hub
-        uses: actions/checkout@v4
+uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -400,7 +400,7 @@ jobs:
 
       - name: Trigger Repository Workflow
         id: dispatch
-        uses: actions/github-script@v7
+uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         env:
           # Pass matrix/step values via env vars to prevent expression injection
           MATRIX_OWNER: ${{ matrix.owner }}
@@ -649,7 +649,7 @@ jobs:
 
       - name: Upload Dispatch Metadata
         if: always()
-        uses: actions/upload-artifact@v4
+uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: dispatch-${{ matrix.config_basename }}-${{ github.run_id }}
           path: dispatch-results/${{ matrix.config_basename }}.json
@@ -666,10 +666,10 @@ jobs:
 
     steps:
       - name: Checkout Hub
-        uses: actions/checkout@v4
+uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -677,7 +677,7 @@ jobs:
         run: pip install pyyaml
 
       - name: Download Dispatch Metadata
-        uses: actions/download-artifact@v4
+uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: dispatch-artifacts
         continue-on-error: true
@@ -687,22 +687,26 @@ jobs:
           TOTAL_REPOS: ${{ needs.load-config.outputs.repo_count }}
           HUB_RUN_ID: ${{ github.run_id }}
           HUB_EVENT: ${{ github.event_name }}
-          # Use HUB_DISPATCH_TOKEN for cross-repo artifact access, fallback to GITHUB_TOKEN
-          GITHUB_TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
+          # Use HUB_DISPATCH_TOKEN for cross-repo artifact access
+          HUB_DISPATCH_TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN }}
         run: |
+          if [ -z "${HUB_DISPATCH_TOKEN}" ]; then
+            echo "::error::HUB_DISPATCH_TOKEN is required for cross-repo artifact access"
+            exit 1
+          fi
           python << 'EOF'
           import json
           import os
-          from datetime import datetime
+          from datetime import datetime, timezone
           from pathlib import Path
           from urllib import request
           import time
           import zipfile
           import tempfile
 
-          token = os.environ.get("GITHUB_TOKEN")
+          token = os.environ.get("HUB_DISPATCH_TOKEN")
           if not token:
-              print("Missing GITHUB_TOKEN for aggregation", flush=True)
+              print("Missing HUB_DISPATCH_TOKEN for aggregation", flush=True)
               exit(1)
 
           def gh_get(url: str, retries: int = 3, backoff: float = 2.0) -> dict:
@@ -990,7 +994,7 @@ jobs:
 
           report = {
               "hub_run_id": os.environ.get("HUB_RUN_ID"),
-              "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
               "triggered_by": os.environ.get("HUB_EVENT"),
               "total_repos": total_repos,
               "dispatched_repos": dispatched,
@@ -1266,7 +1270,7 @@ jobs:
           EOF
 
       - name: Upload Hub Report
-        uses: actions/upload-artifact@v4
+uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: hub-report-${{ github.run_id }}
           path: hub-report.json

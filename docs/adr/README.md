@@ -31,6 +31,7 @@ Existing:
 - [ADR-0026: Repo-Side Execution Guardrails](0026-repo-side-execution-guardrails.md)
 - [ADR-0027: Hub Production CI Policy](0027-hub-production-ci-policy.md)
 - [ADR-0028: Boolean Config Type Coercion](0028-boolean-config-type-coercion.md)
+- [ADR-0029: CLI Exit Code Registry](0029-cli-exit-codes.md)
 
 Template starter:
 ```markdown
