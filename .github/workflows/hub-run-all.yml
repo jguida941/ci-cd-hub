@@ -81,6 +81,7 @@ jobs:
           python <<'PY'
           import json
           import os
+          import re
           from pathlib import Path
 
           from scripts.load_config import (
@@ -91,6 +92,7 @@ jobs:
 
           hub_root = Path(".")
           repos_dir = hub_root / "config" / "repos"
+          safe_re = re.compile(r"^[A-Za-z0-9._/-]+$")
 
           run_group_filter = os.environ.get("INPUT_RUN_GROUP", "").strip()
           filter_groups = [g.strip() for g in run_group_filter.split(",") if g.strip()]
@@ -124,11 +126,24 @@ jobs:
               owner = repo_info.get("owner")
               name = repo_info.get("name") or repo_basename
               language = repo_info.get("language") or cfg.get("language")
+              subdir = repo_info.get("subdir", "")
+              branch = repo_info.get("default_branch", "main")
 
               if not (owner and name and language):
                   print(
                       f"::warning::Skipping {config_file}: missing repo.owner/name/language"
                   )
+                  continue
+
+              unsafe = [
+                  ("owner", owner),
+                  ("name", name),
+                  ("subdir", subdir),
+                  ("branch", branch),
+                  ("config", repo_basename),
+              ]
+              if any(not safe_re.match(str(value)) for _, value in unsafe):
+                  print(f"::warning::Skipping {config_file}: unsafe repo metadata")
                   continue
 
               if filter_repos:
@@ -151,8 +166,8 @@ jobs:
                   "name": name,
                   "owner": owner,
                   "language": language,
-                  "branch": repo_info.get("default_branch", "main"),
-                  "subdir": repo_info.get("subdir", ""),
+                  "branch": branch,
+                  "subdir": subdir,
                   "run_group": run_group,
               }
 
@@ -1294,6 +1309,23 @@ jobs:
           PYTHON_PIPAUDIT_VULNS: ${{ steps.python-pipaudit.outputs.vulnerabilities }}
           PYTHON_RUFF_ERRORS: ${{ steps.python-ruff.outputs.errors }}
         run: |
+          validate_safe() {
+            [[ "$1" =~ ^[A-Za-z0-9._/-]+$ ]]
+          }
+
+          for value in \
+            "$MATRIX_CONFIG_BASENAME" \
+            "$MATRIX_SUBDIR" \
+            "$MATRIX_OWNER" \
+            "$MATRIX_NAME" \
+            "$MATRIX_BRANCH"
+          do
+            if [ -n "$value" ] && ! validate_safe "$value"; then
+              echo "::error::Unsafe matrix value detected; aborting report generation"
+              exit 1
+            fi
+          done
+
           # Use same REPORT_DIR as Generate QA Metrics Report step
           REPORT_SUFFIX="${MATRIX_CONFIG_BASENAME}${MATRIX_SUBDIR:+-${MATRIX_SUBDIR}}"
           REPORT_DIR="reports/${REPORT_SUFFIX}"

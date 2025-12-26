@@ -46,6 +46,10 @@ jobs:
     steps:
       - name: Checkout Hub
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ github.sha }}
 
       - name: Build Repo Matrix
         id: repos
@@ -105,7 +109,8 @@ jobs:
         with:
           repository: ${{ matrix.owner }}/${{ matrix.name }}
           path: repo
-          fetch-depth: 0
+          fetch-depth: 1
+          persist-credentials: false
           token: ${{ secrets.HUB_DISPATCH_TOKEN || github.token }}
         continue-on-error: true
 
@@ -330,6 +335,9 @@ jobs:
         with:
           repository: ${{ matrix.owner }}/${{ matrix.name }}
           path: repo
+          fetch-depth: 1
+          persist-credentials: false
+          token: ${{ secrets.HUB_DISPATCH_TOKEN || github.token }}
         continue-on-error: true
 
       - name: Verify checkout
