@@ -335,6 +335,12 @@ class TestActualConfigs:
 class TestSyncTemplatesCommand:
     """Tests for the sync-templates command logic."""
 
+    @pytest.fixture(autouse=True)
+    def import_module(self):
+        """Import the templates module before patching."""
+        # Import module first so patches can find it
+        import cihub.commands.templates  # noqa: F401
+
     @pytest.fixture
     def mock_get_repo_entries(self):
         """Mock get_repo_entries to return test repos."""
