@@ -420,9 +420,9 @@ class TestMainFunction:
         with mock.patch("cihub.cli.cmd_config") as mock_cmd:
             mock_cmd.return_value = CommandResult(
                 exit_code=0,
-                summary="Listed 0 configs",
+                summary="Config shown",
             )
-            result = main(["config", "list", "--json"])
+            result = main(["config", "--repo", "test", "show", "--json"])
 
         assert result == 0
         captured = capsys.readouterr()
@@ -438,7 +438,7 @@ class TestMainFunction:
                 summary="Config not found",
                 problems=[{"message": "File not found", "severity": "error"}],
             )
-            result = main(["config", "show", "nonexistent", "--json"])
+            result = main(["config", "--repo", "nonexistent", "show", "--json"])
 
         assert result == 1
         captured = capsys.readouterr()
@@ -451,7 +451,7 @@ class TestMainFunction:
         """Main outputs JSON error on unhandled exception."""
         with mock.patch("cihub.cli.cmd_config") as mock_cmd:
             mock_cmd.side_effect = RuntimeError("Unexpected error")
-            result = main(["config", "show", "test", "--json"])
+            result = main(["config", "--repo", "test", "show", "--json"])
 
         assert result != 0
         captured = capsys.readouterr()
@@ -464,13 +464,13 @@ class TestMainFunction:
         with mock.patch("cihub.cli.cmd_config") as mock_cmd:
             mock_cmd.side_effect = RuntimeError("Test error")
             with pytest.raises(RuntimeError, match="Test error"):
-                main(["config", "show", "test"])
+                main(["config", "--repo", "test", "show"])
 
     def test_main_sets_default_summary_on_success(self, capsys):
         """Main sets 'OK' summary when command returns success without summary."""
         with mock.patch("cihub.cli.cmd_config") as mock_cmd:
             mock_cmd.return_value = CommandResult(exit_code=0)
-            main(["config", "list", "--json"])
+            main(["config", "--repo", "test", "show", "--json"])
 
         captured = capsys.readouterr()
         output = json.loads(captured.out)
@@ -480,7 +480,7 @@ class TestMainFunction:
         """Main sets failure summary when command returns failure without summary."""
         with mock.patch("cihub.cli.cmd_config") as mock_cmd:
             mock_cmd.return_value = CommandResult(exit_code=1)
-            main(["config", "list", "--json"])
+            main(["config", "--repo", "test", "show", "--json"])
 
         captured = capsys.readouterr()
         output = json.loads(captured.out)
@@ -490,7 +490,7 @@ class TestMainFunction:
         """Main handles commands that return int instead of CommandResult."""
         with mock.patch("cihub.cli.cmd_config") as mock_cmd:
             mock_cmd.return_value = 0  # Return int instead of CommandResult
-            result = main(["config", "list", "--json"])
+            result = main(["config", "--repo", "test", "show", "--json"])
 
         assert result == 0
         captured = capsys.readouterr()
@@ -501,7 +501,7 @@ class TestMainFunction:
         """Main includes duration_ms in JSON output."""
         with mock.patch("cihub.cli.cmd_config") as mock_cmd:
             mock_cmd.return_value = CommandResult(exit_code=0)
-            main(["config", "list", "--json"])
+            main(["config", "--repo", "test", "show", "--json"])
 
         captured = capsys.readouterr()
         output = json.loads(captured.out)

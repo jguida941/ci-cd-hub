@@ -3,14 +3,14 @@
 [![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
 [![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://github.com/jguida941/ci-cd-hub)
 [![Java](https://img.shields.io/badge/java-%23ED8B00.svg?style=for-the-badge&logo=openjdk&logoColor=white)](https://github.com/jguida941/ci-cd-hub)
-[![codecov](https://codecov.io/gh/jguida941/ci-cd-hub/graph/badge.svg)](https://codecov.io/gh/jguida941/ci-cd-hub)
-[![mutmut](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/mutmut.json)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
-[![ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/ruff.json)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
-[![black](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/black.json&logo=python&logoColor=white)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
-[![bandit](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/bandit.json)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
-[![pip-audit](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/pip-audit.json)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
-[![zizmor](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/zizmor.json)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
-[![License: Elastic 2.0](https://img.shields.io/badge/license-Elastic%202.0-blue)](LICENSE)
+[![codecov](https://img.shields.io/codecov/c/github/jguida941/ci-cd-hub?style=for-the-badge&logo=codecov&logoColor=white)](https://codecov.io/gh/jguida941/ci-cd-hub)
+[![mutmut](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/mutmut.json&style=for-the-badge)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
+[![ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/ruff.json&style=for-the-badge)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
+[![black](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/black.json&style=for-the-badge&logo=python&logoColor=white)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
+[![bandit](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/bandit.json&style=for-the-badge)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
+[![pip-audit](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/pip-audit.json&style=for-the-badge)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
+[![zizmor](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/zizmor.json&style=for-the-badge)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
+[![License: Elastic 2.0](https://img.shields.io/badge/license-Elastic%202.0-blue?style=for-the-badge)](LICENSE)
 
 Centralized CI/CD for Java and Python repos with config-driven toggles, reusable workflows, and a single hub that runs pipelines across many repositories.
 

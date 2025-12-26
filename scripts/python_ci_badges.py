@@ -115,7 +115,8 @@ def status_badge(label: str, status: str, color: str) -> dict:
 
 def load_zizmor() -> Optional[int]:
     """Parse zizmor SARIF for high/warning findings."""
-    report = ROOT / "zizmor.sarif"
+    report_path = os.environ.get("ZIZMOR_SARIF")
+    report = Path(report_path) if report_path else ROOT / "zizmor.sarif"
     if not report.exists():
         return None
     try:
@@ -225,11 +226,7 @@ def main() -> int:
 
     # zizmor workflow security (from SARIF)
     zizmor_findings = load_zizmor()
-    if zizmor_findings is not None:
-        if zizmor_findings > 0:
-            badges["zizmor.json"] = status_badge("zizmor", "failed", "red")
-        else:
-            badges["zizmor.json"] = status_badge("zizmor", "clean", "brightgreen")
+    badges["zizmor.json"] = count_badge("zizmor", zizmor_findings)
 
     # Black formatter (from env var set by CI: 0=clean, non-zero=failed)
     black_status = os.environ.get("BLACK_STATUS")
@@ -238,6 +235,8 @@ def main() -> int:
             badges["black.json"] = status_badge("black", "clean", "brightgreen")
         else:
             badges["black.json"] = status_badge("black", "failed", "red")
+    else:
+        badges["black.json"] = status_badge("black", "n/a", "lightgrey")
 
     if not badges:
         print("[WARN] No metrics found to generate badges")

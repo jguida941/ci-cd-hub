@@ -277,3 +277,164 @@ class TestProfileApplication:
         assert (
             merged["python"]["tools"]["black"]["enabled"] is True
         )  # Preserved from profile
+
+
+class TestMain:
+    """Tests for main() CLI function."""
+
+    def test_main_applies_profile(self, tmp_path: Path, monkeypatch, capsys):
+        """Main applies profile to target and writes output."""
+        from scripts.apply_profile import main
+
+        profile = tmp_path / "profile.yaml"
+        profile.write_text("language: python\npython:\n  version: '3.11'")
+
+        target = tmp_path / "target.yaml"
+        target.write_text("repo:\n  name: test-repo")
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["apply_profile.py", str(profile), str(target)],
+        )
+
+        main()
+
+        # Verify output file was updated
+        result = yaml.safe_load(target.read_text())
+        assert result["language"] == "python"
+        assert result["python"]["version"] == "3.11"
+        assert result["repo"]["name"] == "test-repo"
+
+        captured = capsys.readouterr()
+        assert "Profile applied" in captured.out
+
+    def test_main_with_output_option(self, tmp_path: Path, monkeypatch):
+        """Main writes to specified output path."""
+        from scripts.apply_profile import main
+
+        profile = tmp_path / "profile.yaml"
+        profile.write_text("language: java")
+
+        target = tmp_path / "target.yaml"
+        target.write_text("repo:\n  name: my-repo")
+
+        output = tmp_path / "output" / "merged.yaml"
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["apply_profile.py", str(profile), str(target), "-o", str(output)],
+        )
+
+        main()
+
+        assert output.exists()
+        result = yaml.safe_load(output.read_text())
+        assert result["language"] == "java"
+        assert result["repo"]["name"] == "my-repo"
+
+        # Original target unchanged
+        original = yaml.safe_load(target.read_text())
+        assert "language" not in original
+
+    def test_main_creates_parent_dirs(self, tmp_path: Path, monkeypatch):
+        """Main creates parent directories for output."""
+        from scripts.apply_profile import main
+
+        profile = tmp_path / "profile.yaml"
+        profile.write_text("key: value")
+
+        target = tmp_path / "target.yaml"
+        target.write_text("")
+
+        output = tmp_path / "deep" / "nested" / "output.yaml"
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["apply_profile.py", str(profile), str(target), "-o", str(output)],
+        )
+
+        main()
+
+        assert output.exists()
+        assert output.parent.exists()
+
+    def test_main_nonexistent_profile(self, tmp_path: Path, monkeypatch):
+        """Main handles nonexistent profile (returns empty dict)."""
+        from scripts.apply_profile import main
+
+        profile = tmp_path / "nonexistent.yaml"
+        target = tmp_path / "target.yaml"
+        target.write_text("existing: data")
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["apply_profile.py", str(profile), str(target)],
+        )
+
+        main()
+
+        result = yaml.safe_load(target.read_text())
+        assert result == {"existing": "data"}
+
+    def test_main_nonexistent_target(self, tmp_path: Path, monkeypatch):
+        """Main handles nonexistent target (returns empty dict)."""
+        from scripts.apply_profile import main
+
+        profile = tmp_path / "profile.yaml"
+        profile.write_text("default: value")
+
+        target = tmp_path / "new_target.yaml"
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["apply_profile.py", str(profile), str(target)],
+        )
+
+        main()
+
+        assert target.exists()
+        result = yaml.safe_load(target.read_text())
+        assert result == {"default": "value"}
+
+    def test_main_atomic_write(self, tmp_path: Path, monkeypatch):
+        """Main uses atomic write pattern."""
+        from scripts.apply_profile import main
+
+        profile = tmp_path / "profile.yaml"
+        profile.write_text("key: value")
+
+        target = tmp_path / "target.yaml"
+        target.write_text("old: data")
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["apply_profile.py", str(profile), str(target)],
+        )
+
+        main()
+
+        # No temp file should remain
+        temp_files = list(tmp_path.glob("*.tmp"))
+        assert len(temp_files) == 0
+
+    def test_main_preserves_yaml_formatting(self, tmp_path: Path, monkeypatch):
+        """Main outputs readable YAML (not flow style)."""
+        from scripts.apply_profile import main
+
+        profile = tmp_path / "profile.yaml"
+        profile.write_text("nested:\n  key: value\n  list:\n    - item1\n    - item2")
+
+        target = tmp_path / "target.yaml"
+        target.write_text("")
+
+        monkeypatch.setattr(
+            "sys.argv",
+            ["apply_profile.py", str(profile), str(target)],
+        )
+
+        main()
+
+        content = target.read_text()
+        # Should be block style, not {nested: {key: value}}
+        assert "nested:" in content
+        assert "{" not in content or "}" not in content
