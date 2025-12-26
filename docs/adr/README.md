@@ -25,6 +25,13 @@ Existing:
 - [ADR-0020: Schema Backward Compatibility](0020-schema-backward-compatibility.md)
 - [ADR-0021: Java POM Compatibility and CLI Enforcement](0021-java-pom-compatibility.md)
 - [ADR-0022: Summary Verification Against Reports](0022-summary-verification.md)
+- [ADR-0023: Deterministic Correlation IDs](0023-deterministic-correlation.md)
+- [ADR-0024: Workflow Dispatch Input Limit](0024-workflow-dispatch-input-limit.md)
+- [ADR-0025: CLI Modular Restructure](0025-cli-modular-restructure.md)
+- [ADR-0026: Repo-Side Execution Guardrails](0026-repo-side-execution-guardrails.md)
+- [ADR-0027: Hub Production CI Policy](0027-hub-production-ci-policy.md)
+- [ADR-0028: Boolean Config Type Coercion](0028-boolean-config-type-coercion.md)
+- [ADR-0028: Boolean Config Type Coercion](0028-boolean-config-type-coercion.md)
 
 Template starter:
 ```markdown

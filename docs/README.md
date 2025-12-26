@@ -70,7 +70,7 @@ docs/
 │       ├── FIXTURES_PLAN.md
 │       ├── WORKFLOW_MIGRATION.md
 │       └── audit.md
-├── adr/             # Architecture Decision Records (0001-0027)
+├── adr/             # Architecture Decision Records (0001-0028)
 └── README.md        # This file
 ```
 
@@ -128,7 +128,7 @@ Internal documentation for hub maintainers:
 | [RESEARCH_LOG.md](development/research/RESEARCH_LOG.md) | Design decisions and research |
 | [MUTATION_TESTING_GAPS.md](development/research/MUTATION_TESTING_GAPS.md) | Mutation testing gap analysis |
 | [archive/](development/archive/) | Archived docs (ROADMAP, OUTSTANDING, etc.) |
-| [adr/](adr/) | Architecture Decision Records (0001-0027) |
+| [adr/](adr/) | Architecture Decision Records (0001-0028) |
 
 ---
 

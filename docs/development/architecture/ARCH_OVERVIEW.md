@@ -252,7 +252,7 @@ Per-Repository Run                      Hub Aggregation
 | CLI Tool           | 3,326 lines, 132 functions   |
 | Configured Repos   | 22                           |
 | Pre-built Profiles | 12                           |
-| ADRs               | 27                           |
+| ADRs               | 28                           |
 | Unit Tests         | 80                           |
 | User Guides        | 9                            |
 

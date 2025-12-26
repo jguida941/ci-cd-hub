@@ -215,7 +215,7 @@ When adding tests:
 - Caller templates (`hub-python-ci.yml`, `hub-java-ci.yml`)
 - CLI tool (`cihub`) v0.2.0 with 11 commands (plus subcommands)
 - Tests: 240+ unit tests
-- ADRs: 27 total
+- ADRs: 28 total
 - Report schema 2.0
 - Orchestrator input passthrough complete
 

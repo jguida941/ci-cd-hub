@@ -21,7 +21,7 @@
 | Schema Validation | Working | `config-validate.yml` workflow |
 | CLI Tool (`cihub`) | Working | detect/init/update/validate/setup-secrets/new/config |
 | Tests | **80 tests** | 6 test files covering all scripts |
-| ADRs | **27 ADRs** | 0001 through 0027 complete |
+| ADRs | **28 ADRs** | 0001 through 0028 complete |
 | Smoke Test | **PASSING** | Last run: 2025-12-22 |
 
 ### What's Broken
@@ -66,7 +66,7 @@ All P0 items complete. See `docs/development/specs/P0.md` for details.
 
 ## P1 Checklist (Should-Have)
 
-- [x] ADRs: 27 complete (0001-0027)
+- [x] ADRs: 28 complete (0001-0028)
 - [x] Profiles/templates: 12 profiles complete
 - [x] Fixtures: `ci-cd-hub-fixtures` repo with passing/failing examples
 - [x] CLI: `cihub` detect/init/update/validate/setup-secrets/new/config
@@ -122,7 +122,7 @@ Blocking issues:
 
 ### ADRs
 
-27 ADRs document all major decisions. See `docs/adr/README.md`.
+28 ADRs document all major decisions. See `docs/adr/README.md`.
 
 Key decisions:
 - ADR-0001: Central mode is default
@@ -191,7 +191,7 @@ Run: `pytest tests/`
 - Report schema 2.0
 - CLI (`cihub`) with detect/init/update/validate/setup-secrets/new/config
 - 80 tests across 6 files
-- 27 ADRs
+- 28 ADRs
 
 **Deferred to v1.1.0:**
 - Dashboard/GitHub Pages
