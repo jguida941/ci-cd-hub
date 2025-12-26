@@ -14,6 +14,7 @@ Environment variables:
     MUTATION_SCORE=XX       Mutation score percentage (from CI)
     RUFF_ISSUES=XX          Ruff issue count (from CI)
     MYPY_ERRORS=XX          Mypy error count (from CI)
+    BLACK_ISSUES=XX         Black formatting issue count (from CI)
     BLACK_STATUS=clean|failed  Black formatter status (from CI)
     ZIZMOR_SARIF=path       Optional path to zizmor SARIF file
 """
@@ -167,6 +168,18 @@ def load_pip_audit() -> Optional[int]:
         return None
 
 
+def load_black_output() -> Optional[int]:
+    """Parse black-output.txt for reformat count."""
+    report = ROOT / "black-output.txt"
+    if not report.exists():
+        return None
+    try:
+        text = report.read_text()
+    except OSError:
+        return None
+    return sum(1 for line in text.splitlines() if "would reformat" in line)
+
+
 def get_env_int(name: str) -> Optional[int]:
     """Get integer from environment variable."""
     val = os.environ.get(name)
@@ -229,14 +242,20 @@ def main() -> int:
     badges["zizmor.json"] = count_badge("zizmor", zizmor_findings)
 
     # Black formatter (from env var set by CI: 0=clean, non-zero=failed)
-    black_status = os.environ.get("BLACK_STATUS")
-    if black_status is not None:
-        if black_status.lower() in {"clean", "0", "pass", "passed"}:
-            badges["black.json"] = status_badge("black", "clean", "brightgreen")
-        else:
-            badges["black.json"] = status_badge("black", "failed", "red")
+    black_issues = get_env_int("BLACK_ISSUES")
+    if black_issues is None:
+        black_issues = load_black_output()
+    if black_issues is not None:
+        badges["black.json"] = count_badge("black", black_issues)
     else:
-        badges["black.json"] = status_badge("black", "n/a", "lightgrey")
+        black_status = os.environ.get("BLACK_STATUS")
+        if black_status is not None:
+            if black_status.lower() in {"clean", "0", "pass", "passed"}:
+                badges["black.json"] = status_badge("black", "clean", "brightgreen")
+            else:
+                badges["black.json"] = status_badge("black", "failed", "red")
+        else:
+            badges["black.json"] = status_badge("black", "n/a", "lightgrey")
 
     if not badges:
         print("[WARN] No metrics found to generate badges")
