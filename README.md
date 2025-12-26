@@ -2,10 +2,23 @@
 
 [![Hub Production CI](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml/badge.svg)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
 [![codecov](https://codecov.io/gh/jguida941/ci-cd-hub/graph/badge.svg)](https://codecov.io/gh/jguida941/ci-cd-hub)
-[![Mutation Score](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/mutation.json)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
+[![mutmut](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/mutmut.json)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
+[![ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/ruff.json)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
+[![bandit](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/bandit.json)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
+[![pip-audit](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/jguida941/ci-cd-hub/main/badges/pip-audit.json)](https://github.com/jguida941/ci-cd-hub/actions/workflows/hub-production-ci.yml)
 [![License: Elastic 2.0](https://img.shields.io/badge/license-Elastic%202.0-blue)](LICENSE)
 
 Centralized CI/CD for Java and Python repos with config-driven toggles, reusable workflows, and a single hub that runs pipelines across many repositories.
+
+## Execution Modes
+
+- Central mode: the hub clones repos and runs pipelines directly from a single workflow.
+- Distributed mode: the hub dispatches workflows to each repo via caller templates and reusable workflows.
+
+## Toolchains (at a glance)
+
+- Java: JaCoCo, Checkstyle, SpotBugs, PMD, OWASP DC, PITest, jqwik, Semgrep, Trivy, CodeQL, Docker.
+- Python: pytest, Ruff, Black, isort, Bandit, pip-audit, mypy, mutmut, Hypothesis, Semgrep, Trivy, CodeQL, Docker.
 
 ## Quick Start
 

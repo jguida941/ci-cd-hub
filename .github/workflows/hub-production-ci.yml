@@ -176,6 +176,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    outputs:
+      ruff_issues: ${{ steps.ruff.outputs.issues }}
     env:
       PYTHON_VERSION: '3.12'
     steps:
@@ -195,7 +197,11 @@ jobs:
         run: pip install ruff
 
       - name: Ruff lint
-        run: ruff check . --output-format=github --force-exclude
+        id: ruff
+        run: |
+          ISSUES=$(ruff check . --force-exclude --output-format=json 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
+          echo "issues=$ISSUES" >> "$GITHUB_OUTPUT"
+          ruff check . --output-format=github --force-exclude
 
       - name: Ruff format check
         run: ruff format --check . --force-exclude
@@ -347,7 +353,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: unit-tests
     permissions:
-      contents: write
+      contents: read
+    outputs:
+      mutation_score: ${{ steps.mutmut.outputs.mutation_score }}
     env:
       PYTHON_VERSION: '3.12'
     steps:
@@ -475,39 +483,6 @@ jobs:
             mutants/
             mutmut-run.log
           retention-days: 7
-
-      - name: Update mutation badge
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        run: |
-          SCORE="${{ steps.mutmut.outputs.mutation_score }}"
-          if [ -z "$SCORE" ]; then
-            echo "No mutation score available, skipping badge update"
-            exit 0
-          fi
-
-          # Determine color based on score
-          if [ "$SCORE" -ge 90 ]; then
-            COLOR="brightgreen"
-          elif [ "$SCORE" -ge 80 ]; then
-            COLOR="green"
-          elif [ "$SCORE" -ge 70 ]; then
-            COLOR="yellowgreen"
-          elif [ "$SCORE" -ge 60 ]; then
-            COLOR="yellow"
-          else
-            COLOR="red"
-          fi
-
-          mkdir -p badges
-          cat > badges/mutation.json << EOF
-          {"schemaVersion": 1, "label": "mutation", "message": "${SCORE}%", "color": "${COLOR}"}
-          EOF
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add badges/mutation.json
-          git diff --staged --quiet || git commit -m "chore: update mutation badge [skip ci]"
-          git push
 
   # ============================================================================
   # Stage 3: Security Scanning
@@ -893,7 +868,56 @@ jobs:
           category: scorecard
 
   # ============================================================================
-  # Stage 6: Summary
+  # Stage 6: Update Badges (on main only)
+  # ============================================================================
+  update-badges:
+    name: Update Badges
+    runs-on: ubuntu-latest
+    needs: [lint, mutation-tests, bandit, pip-audit]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      contents: write
+    env:
+      PYTHON_VERSION: '3.12'
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Download artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: artifacts
+        continue-on-error: true
+
+      - name: Generate badges
+        env:
+          UPDATE_BADGES: 'true'
+          RUFF_ISSUES: ${{ needs.lint.outputs.ruff_issues }}
+          MUTATION_SCORE: ${{ needs.mutation-tests.outputs.mutation_score }}
+        run: |
+          mkdir -p badges
+
+          # Copy artifacts to expected locations
+          [ -f artifacts/bandit-results/bandit.json ] && cp artifacts/bandit-results/bandit.json .
+          [ -f artifacts/pip-audit-results/pip-audit.json ] && cp artifacts/pip-audit-results/pip-audit.json .
+
+          # Run badge generator
+          python scripts/python_ci_badges.py
+
+      - name: Commit badges
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add badges/
+          git diff --staged --quiet || git commit -m "chore: update CI badges [skip ci]"
+          git push
+
+  # ============================================================================
+  # Stage 7: Summary
   # ============================================================================
   summary:
     name: CI Summary
