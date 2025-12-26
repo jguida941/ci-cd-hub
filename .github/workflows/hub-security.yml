@@ -121,12 +121,15 @@ jobs:
 
       - name: Verify checkout
         id: repo-check
+        env:
+          MATRIX_OWNER: ${{ matrix.owner }}
+          MATRIX_NAME: ${{ matrix.name }}
         run: |
           if [ -d repo/.git ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Repo checkout failed for ${{ matrix.owner }}/${{ matrix.name }}"
+            echo "::warning::Repo checkout failed for ${MATRIX_OWNER}/${MATRIX_NAME}"
           fi
 
       # ========================================
@@ -201,7 +204,7 @@ jobs:
         id: pip-audit
         working-directory: repo
         run: |
-          pip install pip-audit
+          pip install pip-audit==2.7.3
           pip install -r requirements.txt 2>/dev/null || true
           pip-audit --format=json --output=pip-audit-report.json 2>/dev/null || true
           VULNS=$(jq '
@@ -219,7 +222,7 @@ jobs:
         id: bandit
         working-directory: repo
         run: |
-          pip install bandit
+          pip install bandit==1.7.10
           bandit -r . -f json -o bandit-report.json 2>/dev/null || true
           HIGH=$(jq '[.results[] | select(.issue_severity == "HIGH")] | length' bandit-report.json 2>/dev/null || echo 0)
           echo "high=$HIGH" >> "$GITHUB_OUTPUT"
@@ -230,7 +233,7 @@ jobs:
         id: ruff-security
         working-directory: repo
         run: |
-          pip install ruff
+          pip install ruff==0.8.4
           ruff check . --select=S --output-format=json > ruff-security.json 2>/dev/null || true
           ISSUES=$(jq 'length' ruff-security.json 2>/dev/null || echo 0)
           echo "issues=$ISSUES" >> "$GITHUB_OUTPUT"
@@ -265,13 +268,21 @@ jobs:
       # GENERATE SECURITY REPORT
       # ========================================
       - name: Generate Security Summary
+        env:
+          MATRIX_NAME: ${{ matrix.name }}
+          MATRIX_LANGUAGE: ${{ matrix.language }}
+          PIP_AUDIT_VULNS: ${{ steps.pip-audit.outputs.vulnerabilities }}
+          BANDIT_HIGH: ${{ steps.bandit.outputs.high }}
+          RUFF_ISSUES: ${{ steps.ruff-security.outputs.issues }}
+          OWASP_CRITICAL: ${{ steps.owasp.outputs.critical }}
+          OWASP_HIGH: ${{ steps.owasp.outputs.high }}
         run: |
           summary_file="$GITHUB_STEP_SUMMARY"
           exec 3> "$summary_file"
           cat >&3 << EOF
-          # Security & Supply Chain: ${{ matrix.name }}
+          # Security & Supply Chain: ${MATRIX_NAME}
 
-          **Language:** ${{ matrix.language }}
+          **Language:** ${MATRIX_LANGUAGE}
 
           ---
 
@@ -281,17 +292,17 @@ jobs:
           |-----|--------|----------|
           EOF
 
-          if [ "${{ matrix.language }}" = "python" ]; then
+          if [ "${MATRIX_LANGUAGE}" = "python" ]; then
             cat >&3 << EOF
-          | pip-audit | ${{ steps.pip-audit.outputs.vulnerabilities || 0 }} vulns | - |
-          | bandit | ${{ steps.bandit.outputs.high || 0 }} high severity | - |
-          | ruff-security | ${{ steps.ruff-security.outputs.issues || 0 }} issues | - |
+          | pip-audit | ${PIP_AUDIT_VULNS:-0} vulns | - |
+          | bandit | ${BANDIT_HIGH:-0} high severity | - |
+          | ruff-security | ${RUFF_ISSUES:-0} issues | - |
           | codeql | Complete | - |
           | sbom | Generated | - |
           EOF
           else
             cat >&3 << EOF
-          | OWASP | ${{ steps.owasp.outputs.critical || 0 }} critical, ${{ steps.owasp.outputs.high || 0 }} high | - |
+          | OWASP | ${OWASP_CRITICAL:-0} critical, ${OWASP_HIGH:-0} high | - |
           | codeql | Complete | - |
           | sbom | Generated | - |
           EOF
@@ -305,7 +316,7 @@ jobs:
 
           | Name | Size | Digest |
           |------|------|--------|
-          | sbom-${{ matrix.name }}.spdx.json | - | - |
+          | sbom-${MATRIX_NAME}.spdx.json | - | - |
 
           EOF
           exec 3>&-
@@ -349,12 +360,15 @@ jobs:
 
       - name: Verify checkout
         id: repo-check
+        env:
+          MATRIX_OWNER: ${{ matrix.owner }}
+          MATRIX_NAME: ${{ matrix.name }}
         run: |
           if [ -d repo/.git ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Repo checkout failed for ${{ matrix.owner }}/${{ matrix.name }}"
+            echo "::warning::Repo checkout failed for ${MATRIX_OWNER}/${MATRIX_NAME}"
           fi
 
       - name: Check for Docker Compose
@@ -390,15 +404,20 @@ jobs:
         run: docker compose down
 
       - name: Generate ZAP Summary
+        env:
+          MATRIX_NAME: ${{ matrix.name }}
+          REPO_PRESENT: ${{ steps.repo-check.outputs.present }}
+          RUN_ZAP: ${{ inputs.run_zap }}
+          HAS_DOCKER: ${{ steps.check-docker.outputs.has_docker }}
         run: |
           summary_file="$GITHUB_STEP_SUMMARY"
           exec 3> "$summary_file"
-          echo "## ZAP DAST Scan: ${{ matrix.name }}" >&3
-          if [ "${{ steps.repo-check.outputs.present }}" != "true" ]; then
+          echo "## ZAP DAST Scan: ${MATRIX_NAME}" >&3
+          if [ "${REPO_PRESENT}" != "true" ]; then
             echo "Skipped - Repo checkout failed" >&3
-          elif [ "${{ inputs.run_zap }}" != "true" ]; then
+          elif [ "${RUN_ZAP}" != "true" ]; then
             echo "Skipped - run_zap input is false" >&3
-          elif [ "${{ steps.check-docker.outputs.has_docker }}" = "true" ]; then
+          elif [ "${HAS_DOCKER}" = "true" ]; then
             echo "Scan completed. See artifacts for detailed report." >&3
           else
             echo "Skipped - No docker-compose.yml found" >&3

@@ -73,7 +73,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install Config Dependencies
-        run: pip install pyyaml jsonschema
+        run: pip install pyyaml==6.0.2 jsonschema==4.23.0
 
       - name: Build Repo Matrix
         id: repos
@@ -584,15 +584,15 @@ jobs:
         run: |
           pip install --upgrade pip
           # Core testing
-          pip install pytest pytest-cov hypothesis
+          pip install pytest==8.3.4 pytest-cov==6.0.0 hypothesis==6.122.3
           # Linting & formatting
-          pip install ruff black isort
+          pip install ruff==0.8.4 black==24.10.0 isort==5.13.2
           # Security
-          pip install bandit pip-audit safety
+          pip install bandit==1.8.0 pip-audit==2.7.3 safety==3.2.11
           # Type checking
-          pip install mypy
+          pip install mypy==1.14.0
           # Mutation testing
-          pip install mutmut
+          pip install mutmut==3.2.0
           # Install repo dependencies
           if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
           if [ -f "requirements-dev.txt" ]; then pip install -r requirements-dev.txt; fi
@@ -860,7 +860,7 @@ jobs:
         id: semgrep
         working-directory: ${{ env.WORKDIR }}
         run: |
-          pip install semgrep 2>/dev/null || true
+          pip install semgrep==1.99.0 2>/dev/null || true
 
           # Run semgrep with auto config
           semgrep --config=auto --json --output=semgrep-report.json . 2>/dev/null || true

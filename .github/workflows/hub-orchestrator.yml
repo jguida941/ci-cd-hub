@@ -136,11 +136,13 @@ jobs:
           INPUT_REPOS: ${{ inputs.repos || '' }}
 
       - name: Summary
+        env:
+          REPO_COUNT: ${{ steps.config.outputs.count }}
         run: |
           {
             echo "## Hub Orchestrator"
             echo ""
-            echo "**Repositories to build:** ${{ steps.config.outputs.count }}"
+            echo "**Repositories to build:** $REPO_COUNT"
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ============================================================================
@@ -407,7 +409,7 @@ jobs:
               f.write(f"dispatch_workflow={dispatch_workflow}\n")
               f.write(f"dispatch_enabled={str(dispatch_enabled).lower()}\n")
 
-          print(f"Config for ${{ matrix.name }}:")
+          print(f"Config for {os.environ.get('MATRIX_REPO', 'unknown')}:")
           print(json.dumps(inputs, indent=2))
           EOF
 
@@ -627,36 +629,56 @@ jobs:
             core.setOutput('correlation_id', correlationId);
 
       - name: Record Build Trigger
+        env:
+          MATRIX_NAME: ${{ matrix.name }}
+          MATRIX_OWNER: ${{ matrix.owner }}
+          MATRIX_LANGUAGE: ${{ matrix.language }}
+          MATRIX_BRANCH: ${{ matrix.default_branch }}
+          STEP_WORKFLOW_ID: ${{ steps.dispatch.outputs.workflow_id }}
+          STEP_RUN_ID: ${{ steps.dispatch.outputs.run_id }}
         run: |
           {
-            echo "## ${{ matrix.name }}"
+            echo "## $MATRIX_NAME"
             echo ""
-            echo "- **Owner:** ${{ matrix.owner }}"
-            echo "- **Language:** ${{ matrix.language }}"
-            echo "- **Branch:** ${{ matrix.default_branch }}"
-            echo "- **Workflow:** ${{ steps.dispatch.outputs.workflow_id }}"
-            echo "- **Run ID:** ${{ steps.dispatch.outputs.run_id != '' && steps.dispatch.outputs.run_id || 'pending' }}"
+            echo "- **Owner:** $MATRIX_OWNER"
+            echo "- **Language:** $MATRIX_LANGUAGE"
+            echo "- **Branch:** $MATRIX_BRANCH"
+            echo "- **Workflow:** $STEP_WORKFLOW_ID"
+            echo "- **Run ID:** ${STEP_RUN_ID:-pending}"
             echo "- **Status:** Triggered"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Save Dispatch Metadata
         if: always()
+        env:
+          MATRIX_CONFIG_BASENAME: ${{ matrix.config_basename }}
+          MATRIX_OWNER: ${{ matrix.owner }}
+          MATRIX_NAME: ${{ matrix.name }}
+          MATRIX_SUBDIR: ${{ matrix.subdir }}
+          MATRIX_LANGUAGE: ${{ matrix.language }}
+          MATRIX_BRANCH: ${{ matrix.default_branch }}
+          STEP_WORKFLOW_ID: ${{ steps.dispatch.outputs.workflow_id }}
+          STEP_ARTIFACT_PREFIX: ${{ steps.repo-config.outputs.artifact_prefix }}
+          STEP_FORCE_ALL_TOOLS: ${{ steps.repo-config.outputs.force_all_tools }}
+          STEP_RUN_ID: ${{ steps.dispatch.outputs.run_id }}
+          STEP_CORRELATION_ID: ${{ steps.dispatch.outputs.correlation_id }}
+          JOB_STATUS: ${{ job.status }}
         run: |
           mkdir -p dispatch-results
-          cat > dispatch-results/${{ matrix.config_basename }}.json << EOF
+          cat > "dispatch-results/${MATRIX_CONFIG_BASENAME}.json" << EOF
           {
-            "config": "${{ matrix.config_basename }}",
-            "repo": "${{ matrix.owner }}/${{ matrix.name }}",
-            "subdir": "${{ matrix.subdir }}",
-            "language": "${{ matrix.language }}",
-            "branch": "${{ matrix.default_branch }}",
-            "workflow": "${{ steps.dispatch.outputs.workflow_id }}",
-            "artifact_prefix": "${{ steps.repo-config.outputs.artifact_prefix }}",
-            "force_all_tools": "${{ steps.repo-config.outputs.force_all_tools }}",
-            "run_id": "${{ steps.dispatch.outputs.run_id }}",
-            "correlation_id": "${{ steps.dispatch.outputs.correlation_id }}",
+            "config": "${MATRIX_CONFIG_BASENAME}",
+            "repo": "${MATRIX_OWNER}/${MATRIX_NAME}",
+            "subdir": "${MATRIX_SUBDIR}",
+            "language": "${MATRIX_LANGUAGE}",
+            "branch": "${MATRIX_BRANCH}",
+            "workflow": "${STEP_WORKFLOW_ID}",
+            "artifact_prefix": "${STEP_ARTIFACT_PREFIX}",
+            "force_all_tools": "${STEP_FORCE_ALL_TOOLS}",
+            "run_id": "${STEP_RUN_ID}",
+            "correlation_id": "${STEP_CORRELATION_ID}",
             "dispatch_time": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-            "status": "${{ job.status }}"
+            "status": "${JOB_STATUS}"
           }
           EOF
 
