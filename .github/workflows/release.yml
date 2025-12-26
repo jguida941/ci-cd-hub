@@ -31,6 +31,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Install actionlint (pinned version with checksum)
         env:
@@ -75,6 +77,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Get version from tag
         id: version
@@ -112,9 +115,12 @@ jobs:
             ```
 
       - name: Update floating major tag
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_MAJOR: ${{ steps.version.outputs.major }}
         run: |
-          VERSION=${{ steps.version.outputs.version }}
-          MAJOR=${{ steps.version.outputs.major }}
+          VERSION="$RELEASE_VERSION"
+          MAJOR="$RELEASE_MAJOR"
 
           echo "Updating floating tag $MAJOR to point to $VERSION..."
 
