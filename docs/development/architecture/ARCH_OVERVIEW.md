@@ -1,7 +1,7 @@
 # CI/CD Hub: Architectural Overview
-> **Status:** Audited
-> **Last Updated:** 2025-12-25
-> **Author:** Justin Guida
+> **Status:** Audited  
+> **Last Updated:** 2025-12-25  
+> **Author:** Justin Guida  
 >
 This document provides a comprehensive overview of the CI/CD Hub platform,
 detailing its architecture, core components, execution modes, toolchains,
@@ -262,16 +262,27 @@ Per-Repository Run                      Hub Aggregation
 
 See `docs/development/CURRENT_STATUS.md` for the authoritative status log.
 
-| Component                        | Status      |
-|----------------------------------|-------------|
-| Central Mode (`hub-run-all.yml`) | ✅ Passing   |
-| Reusable Workflows               | ✅ Working   |
-| CLI Tool                         | ✅ v0.2.0    |
-| Report Schema                    | ✅ v2.0      |
-| Smoke Tests                      | ✅ Passing   |
-| Orchestrator (Distributed)       | ❌ Needs fix |
-| Hub Security Workflow            | ❌ Needs fix |
+| Component                        | Status    |
+|----------------------------------|-----------|
+| Central Mode (`hub-run-all.yml`) | Passing   |
+| Reusable Workflows               | Working   |
+| CLI Tool                         | v0.2.0    |
+| Report Schema                    | v2.0      |
+| Smoke Tests                      | Passing   |
+| Orchestrator (Distributed)       | Needs fix |
+| Hub Security Workflow            | Needs fix |
 
 ---
 
 ## Simple CI/CD-Hub Architecture Summary for Quick Reference
+
+**Toolchains:**
+- Java: JaCoCo, Checkstyle, SpotBugs, PMD, OWASP DC, PITest, jqwik, Semgrep, Trivy, CodeQL, Docker.
+- Python: pytest, Ruff, Black, isort, Bandit, pip-audit, mypy, mutmut, Hypothesis, Semgrep, Trivy, CodeQL, Docker.
+
+**Full Docs Index:**
+- [Full Docs Index](../../README.md)
+- [Architecture Plan](ARCHITECTURE_PLAN.md)
+- [Current Status](../status/STATUS.md)
+- [Troubleshooting](../../guides/TROUBLESHOOTING.md)
+- [Smoke Test Guide](../execution/SMOKE_TEST.md)

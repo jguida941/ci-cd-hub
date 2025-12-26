@@ -19,14 +19,14 @@ Centralized CI/CD for Java and Python repos with config-driven toggles, reusable
 - Central mode: the hub clones repos and runs pipelines directly from a single workflow.
 - Distributed mode: the hub dispatches workflows to each repo via caller templates and reusable workflows.
 
-## Toolchains (at a glance)
+## Toolchains
 
 - Java: JaCoCo, Checkstyle, SpotBugs, PMD, OWASP DC, PITest, jqwik, Semgrep, Trivy, CodeQL, Docker.
 - Python: pytest, Ruff, Black, isort, Bandit, pip-audit, mypy, mutmut, Hypothesis, Semgrep, Trivy, CodeQL, Docker.
 
 ## Quick Start
 
-### Central mode (default)
+### Central mode
 ```bash
 # Run all repos
 gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub
@@ -35,7 +35,7 @@ gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub
 gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub -f run_group=fixtures
 ```
 
-### Distributed mode (optional)
+### Distributed mode 
 1) Create a PAT with `repo` + `workflow` scopes.
 2) Set `HUB_DISPATCH_TOKEN` via CLI:
    ```bash
@@ -64,7 +64,7 @@ pip install -r requirements/requirements-dev.txt
 ## Documentation
 
 - [Full Docs Index](docs/README.md)
-- [Architecture Plan](docs/development/architecture/ARCHITECTURE_PLAN.md)
+- [Architecture Overview](docs/development/architecture/ARCH_OVERVIEW.md)
 - [Current Status](docs/development/status/STATUS.md)
 - [Troubleshooting](docs/guides/TROUBLESHOOTING.md)
 - [Smoke Test Guide](docs/development/execution/SMOKE_TEST.md)
