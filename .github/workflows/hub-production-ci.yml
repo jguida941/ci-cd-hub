@@ -56,8 +56,8 @@ concurrency:
   group: hub-ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  PYTHON_VERSION: '3.12'
+# Note: No global env: block - Scorecard rejects workflows with global env vars.
+# PYTHON_VERSION is defined at job-level for jobs that need it.
 
 # Minimal default permissions - jobs override as needed
 permissions:
@@ -109,7 +109,8 @@ jobs:
 
       - name: Run zizmor
         run: |
-          zizmor --format sarif --output zizmor.sarif .github/workflows/ || true
+          # zizmor 0.8.0 uses stdout redirect instead of --output flag
+          zizmor --format sarif .github/workflows/ > zizmor.sarif 2>&1 || true
 
       - name: Upload SARIF
         uses: github/codeql-action/upload-sarif@27fcff4ecb39e96348e7ceddcc2d9ef42308b6fc # v4
@@ -153,6 +154,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      PYTHON_VERSION: '3.12'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -180,6 +183,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      PYTHON_VERSION: '3.12'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -207,6 +212,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      PYTHON_VERSION: '3.12'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -233,6 +240,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      PYTHON_VERSION: '3.12'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -259,6 +268,8 @@ jobs:
     needs: [lint, syntax-check]
     permissions:
       contents: read
+    env:
+      PYTHON_VERSION: '3.12'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -314,6 +325,8 @@ jobs:
     needs: unit-tests
     permissions:
       contents: read
+    env:
+      PYTHON_VERSION: '3.12'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -424,6 +437,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      PYTHON_VERSION: '3.12'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -471,6 +486,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      PYTHON_VERSION: '3.12'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -486,6 +503,7 @@ jobs:
 
       - name: Install pip-audit and deps
         run: |
+          pip install --upgrade pip
           pip install pip-audit
 
       - name: Run pip-audit
@@ -596,6 +614,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      PYTHON_VERSION: '3.12'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -620,6 +640,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      PYTHON_VERSION: '3.12'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -661,6 +683,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      PYTHON_VERSION: '3.12'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -685,6 +709,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      PYTHON_VERSION: '3.12'
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -833,7 +859,7 @@ jobs:
           echo "| Language | Python |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Results (unified format per unifysummaryformat.md contract)
+          # Results (unified format per SUMMARY_CONTRACT.md contract)
           echo "## Tools Enabled" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Category | Tool | Configured | Ran | Success |" >> $GITHUB_STEP_SUMMARY
