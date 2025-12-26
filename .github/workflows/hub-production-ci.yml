@@ -349,7 +349,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -e ".[dev,wizard]"
           pip install pytest pyyaml jsonschema mutmut
 
       - name: Run mutation tests
