@@ -6,7 +6,7 @@ nav:
       - Ops Runbook: OPS_RUNBOOK.md
       - Disaster Recovery: DR_RUNBOOK.md
   - Testing: TESTING.md
-  - Contributing: CONTRIBUTING.md
+  - Contributing: .github/CONTRIBUTING.md
   - Tools:
       - Mutation Observatory: ../tools/mutation_observatory/README.md
       - Cache Sentinel: ../tools/cache_sentinel/README.md

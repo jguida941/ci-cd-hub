@@ -42,7 +42,7 @@ Add an Issue link for each row (fill in once created).
 | Canary evidence: replace sample SQL and point `scripts/capture_canary_decision.py` at live metrics URIs | TBD – create GH Issue | release/observability |
 | Determinism/DR scripts: extend parity checks and DR recall automation (`tools/determinism_check.sh`, `data-quality-and-dr/dr_recall.sh`) | TBD – create GH Issue | determinism/dr |
 | dbt tests: align `models/tests/data_quality.yml` thresholds to your warehouse | TBD – create GH Issue | data/dbt |
-| Docs: fill in real registry/bucket/IAM/SOC2/ISO mappings in `docs/SUPPLY_CHAIN.md`, `docs/SECURITY.md`, `docs/DR_RUNBOOK.md` | TBD – create GH Issue | docs |
+| Docs: fill in real registry/bucket/IAM/SOC2/ISO mappings in `docs/SUPPLY_CHAIN.md`, `.github/SECURITY.md`, `docs/DR_RUNBOOK.md` | TBD – create GH Issue | docs |
 
 ## Documentation governance
 | Item | Issue | Notes |

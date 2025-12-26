@@ -36,12 +36,12 @@ This is the master index for all CI/CD Hub documentation. All documents should b
 | [Operations Runbook](ops/ops-runbook.md) | Operations Runbook | Active | 2025-11-02 |
 | [CI/CD Intelligence Hub – Agent Guide](AGENTS.md) | CI/CD Intelligence Hub – Agent Guide | Active | 2025-11-20 |
 | [Canary Decision Setup Guide](CANARY_SETUP.md) | Canary Decision Setup Guide | Active | 2025-10-30 |
-| [Contributing Guide](CONTRIBUTING.md) | Contributing Guide | Active | 2025-10-29 |
+| [Contributing Guide](.github/CONTRIBUTING.md) | Contributing Guide | Active | 2025-10-29 |
 | [Disaster Recovery Runbook](DR_RUNBOOK.md) | Disaster Recovery Runbook | Active | 2025-11-02 |
 | [Overview](OVERVIEW.md) | Overview | Active | 2025-10-26 |
 | [Postmortem Template](POSTMORTEM.md) | Postmortem Template | Active | 2025-10-26 |
 | [Runner Isolation & Fairness Playbook](RUNNER_ISOLATION.md) | Runner Isolation & Fairness Playbook | Active | 2025-10-30 |
-| [Security Overview](SECURITY.md) | Security Overview | Active | 2025-10-30 |
+| [Security Overview](.github/SECURITY.md) | Security Overview | Active | 2025-10-30 |
 | [Self-Hosted Runner Deployment Guide](SELF_HOSTED_RUNNER_SETUP.md) | Self-Hosted Runner Deployment Guide | Active | 2025-10-30 |
 | [Supply Chain Controls](SUPPLY_CHAIN.md) | Supply Chain Controls | Active | 2025-11-02 |
 | [Testing Matrix](TESTING.md) | Testing Matrix | Active | 2025-11-02 |

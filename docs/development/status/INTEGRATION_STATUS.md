@@ -180,7 +180,7 @@ Docs that need consolidation.
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
 | `docs/SUPPLY_CHAIN.md` | ☐ | `docs/guides/` | N/A | N/A | N/A | ☐ | Supply chain guide |
 | `docs/DR_RUNBOOK.md` | ☐ | `docs/guides/` | N/A | N/A | N/A | ☐ | DR runbook |
-| `docs/SECURITY.md` | ☐ | `docs/guides/` | N/A | N/A | N/A | ☐ | Security guide |
+| `.github/SECURITY.md` | ☐ | `docs/guides/` | N/A | N/A | N/A | ☐ | Security guide |
 | `docs/adr/*.md` | ☐ | `docs/adr/` | N/A | N/A | N/A | ☐ | Merge with existing |
 
 ---
