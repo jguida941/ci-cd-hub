@@ -46,7 +46,9 @@ jobs:
 
     steps:
       - name: Checkout Hub
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
       - name: Build Smoke Test Matrix
         id: repos
@@ -108,17 +110,19 @@ jobs:
 
     steps:
       - name: Checkout Hub (for scripts)
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           path: hub
+          persist-credentials: false
 
       - name: Checkout Target Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           repository: ${{ matrix.owner }}/${{ matrix.name }}
           ref: ${{ matrix.branch }}
           path: repo
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Create Reports Directory
         run: mkdir -p reports
@@ -128,7 +132,7 @@ jobs:
       # ========================================
       - name: Set up JDK 21
         if: matrix.language == 'java'
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -253,7 +257,7 @@ jobs:
       # ========================================
       - name: Set up Python 3.12
         if: matrix.language == 'python'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -341,59 +345,103 @@ jobs:
       # ========================================
       - name: Generate Smoke Test Report
         id: report
+        env:
+          MATRIX_OWNER: ${{ matrix.owner }}
+          MATRIX_NAME: ${{ matrix.name }}
+          MATRIX_BRANCH: ${{ matrix.branch }}
+          MATRIX_LANGUAGE: ${{ matrix.language }}
+          MATRIX_CONFIG: ${{ matrix.config }}
+          JAVA_TESTS_TOTAL: ${{ steps.java-tests.outputs.total || 0 }}
+          JAVA_TESTS_FAILED: ${{ steps.java-tests.outputs.failed || 0 }}
+          JAVA_COV_PERCENT: ${{ steps.java-coverage.outputs.percent || 0 }}
+          JAVA_COV_LINES: ${{ steps.java-coverage.outputs.lines || '0 / 0' }}
+          JAVA_CHECKSTYLE: ${{ steps.java-checkstyle.outputs.violations || 0 }}
+          JAVA_SPOTBUGS: ${{ steps.java-spotbugs.outputs.count || 0 }}
+          PYTHON_TESTS_TOTAL: ${{ steps.python-tests.outputs.total || 0 }}
+          PYTHON_TESTS_FAILED: ${{ steps.python-tests.outputs.failed || 0 }}
+          PYTHON_COV: ${{ steps.python-tests.outputs.coverage || 0 }}
+          PYTHON_RUFF_ERRORS: ${{ steps.python-ruff.outputs.errors || 0 }}
+          PYTHON_RUFF_SECURITY: ${{ steps.python-ruff.outputs.security || 0 }}
+          PYTHON_BLACK_ISSUES: ${{ steps.python-black.outputs.issues || 0 }}
         run: |
           summary_file="$GITHUB_STEP_SUMMARY"
           exec 3> "$summary_file"
-          cat >&3 << 'EOF'
-          # Smoke Test Results: ${{ matrix.owner }}/${{ matrix.name }}
 
-          **Branch:** `${{ matrix.branch }}` | **Language:** `${{ matrix.language }}` | **Config:** `${{ matrix.config }}`
+          # Header
+          cat >&3 << EOF
+          # Smoke Test Results: ${MATRIX_OWNER}/${MATRIX_NAME}
+
+          **Branch:** \`${MATRIX_BRANCH}\` | **Language:** \`${MATRIX_LANGUAGE}\` | **Config:** \`${MATRIX_CONFIG}\`
 
           ---
 
           EOF
 
-          if [ "${{ matrix.language }}" = "java" ]; then
-            COV=${{ steps.java-coverage.outputs.percent || 0 }}
+          if [ "$MATRIX_LANGUAGE" = "java" ]; then
+            COV=$JAVA_COV_PERCENT
             COV_BAR=$(printf '█%.0s' $(seq 1 $((COV / 5))) 2>/dev/null; printf '░%.0s' $(seq 1 $((20 - COV / 5))) 2>/dev/null)
+
+            # Determine statuses
+            TESTS_STATUS="FAIL"; [ "$JAVA_TESTS_TOTAL" -gt 0 ] 2>/dev/null && TESTS_STATUS="PASS"
+            FAILURES_STATUS="PASS"; [ "$JAVA_TESTS_FAILED" -gt 0 ] 2>/dev/null && FAILURES_STATUS="WARN"
+            COV_STATUS="WARN"; [ "$COV" -ge 50 ] 2>/dev/null && COV_STATUS="PASS"
+            CHECKSTYLE_STATUS="PASS"; [ "$JAVA_CHECKSTYLE" -gt 0 ] 2>/dev/null && CHECKSTYLE_STATUS="WARN"
+            SPOTBUGS_STATUS="PASS"; [ "$JAVA_SPOTBUGS" -gt 0 ] 2>/dev/null && SPOTBUGS_STATUS="WARN"
+
+            SMOKE_STATUS="**FAIL** - Missing test execution or coverage data"
+            if [ "$JAVA_TESTS_TOTAL" -gt 0 ] 2>/dev/null && [ "$COV" -gt 0 ] 2>/dev/null; then
+              SMOKE_STATUS="**PASS** - Core Java tools executed successfully"
+            fi
 
             cat >&3 << EOF
           ## Java Smoke Test Results
 
           | Metric | Result | Status |
           |--------|--------|--------|
-          | **Unit Tests** | ${{ steps.java-tests.outputs.total || 0 }} executed | ${{ steps.java-tests.outputs.total > 0 && 'PASS' || 'FAIL' }} |
-          | **Test Failures** | ${{ steps.java-tests.outputs.failed || 0 }} failed | ${{ steps.java-tests.outputs.failed == 0 && 'PASS' || 'WARN' }} |
-          | **Coverage (JaCoCo)** | ${COV}% ${COV_BAR} | ${{ steps.java-coverage.outputs.percent >= 50 && 'PASS' || 'WARN' }} |
-          | **Checkstyle** | ${{ steps.java-checkstyle.outputs.violations || 0 }} violations | ${{ steps.java-checkstyle.outputs.violations == 0 && 'PASS' || 'WARN' }} |
-          | **SpotBugs** | ${{ steps.java-spotbugs.outputs.count || 0 }} potential bugs | ${{ steps.java-spotbugs.outputs.count == 0 && 'PASS' || 'WARN' }} |
+          | **Unit Tests** | ${JAVA_TESTS_TOTAL} executed | ${TESTS_STATUS} |
+          | **Test Failures** | ${JAVA_TESTS_FAILED} failed | ${FAILURES_STATUS} |
+          | **Coverage (JaCoCo)** | ${COV}% ${COV_BAR} | ${COV_STATUS} |
+          | **Checkstyle** | ${JAVA_CHECKSTYLE} violations | ${CHECKSTYLE_STATUS} |
+          | **SpotBugs** | ${JAVA_SPOTBUGS} potential bugs | ${SPOTBUGS_STATUS} |
 
-          **Coverage Details:** ${{ steps.java-coverage.outputs.lines || '0 / 0' }} instructions covered
+          **Coverage Details:** ${JAVA_COV_LINES} instructions covered
 
           ### Smoke Test Status
-          ${{ steps.java-tests.outputs.total > 0 && steps.java-coverage.outputs.percent > 0 && '**PASS** - Core Java tools executed successfully' || '**FAIL** - Missing test execution or coverage data' }}
+          ${SMOKE_STATUS}
 
           EOF
 
           else
-            COV=${{ steps.python-tests.outputs.coverage || 0 }}
+            COV=$PYTHON_COV
             COV_BAR=$(printf '█%.0s' $(seq 1 $((COV / 5))) 2>/dev/null; printf '░%.0s' $(seq 1 $((20 - COV / 5))) 2>/dev/null)
+
+            # Determine statuses
+            TESTS_STATUS="FAIL"; [ "$PYTHON_TESTS_TOTAL" -gt 0 ] 2>/dev/null && TESTS_STATUS="PASS"
+            FAILURES_STATUS="PASS"; [ "$PYTHON_TESTS_FAILED" -gt 0 ] 2>/dev/null && FAILURES_STATUS="WARN"
+            COV_STATUS="WARN"; [ "$COV" -ge 50 ] 2>/dev/null && COV_STATUS="PASS"
+            RUFF_STATUS="PASS"; [ "$PYTHON_RUFF_ERRORS" -gt 0 ] 2>/dev/null && RUFF_STATUS="WARN"
+            BLACK_STATUS="PASS"; [ "$PYTHON_BLACK_ISSUES" -gt 0 ] 2>/dev/null && BLACK_STATUS="WARN"
+
+            SMOKE_STATUS="**FAIL** - Missing test execution or coverage data"
+            if [ "$PYTHON_TESTS_TOTAL" -gt 0 ] 2>/dev/null && [ "$COV" -gt 0 ] 2>/dev/null; then
+              SMOKE_STATUS="**PASS** - Core Python tools executed successfully"
+            fi
 
             cat >&3 << EOF
           ## Python Smoke Test Results
 
           | Metric | Result | Status |
           |--------|--------|--------|
-          | **Unit Tests** | ${{ steps.python-tests.outputs.total || 0 }} passed | ${{ steps.python-tests.outputs.total > 0 && 'PASS' || 'FAIL' }} |
-          | **Test Failures** | ${{ steps.python-tests.outputs.failed || 0 }} failed | ${{ steps.python-tests.outputs.failed == 0 && 'PASS' || 'WARN' }} |
-          | **Coverage (pytest-cov)** | ${COV}% ${COV_BAR} | ${{ steps.python-tests.outputs.coverage >= 50 && 'PASS' || 'WARN' }} |
-          | **Ruff Lint** | ${{ steps.python-ruff.outputs.errors || 0 }} issues | ${{ steps.python-ruff.outputs.errors == 0 && 'PASS' || 'WARN' }} |
-          | **Black Format** | ${{ steps.python-black.outputs.issues || 0 }} files need reformatting | ${{ steps.python-black.outputs.issues == 0 && 'PASS' || 'WARN' }} |
+          | **Unit Tests** | ${PYTHON_TESTS_TOTAL} passed | ${TESTS_STATUS} |
+          | **Test Failures** | ${PYTHON_TESTS_FAILED} failed | ${FAILURES_STATUS} |
+          | **Coverage (pytest-cov)** | ${COV}% ${COV_BAR} | ${COV_STATUS} |
+          | **Ruff Lint** | ${PYTHON_RUFF_ERRORS} issues | ${RUFF_STATUS} |
+          | **Black Format** | ${PYTHON_BLACK_ISSUES} files need reformatting | ${BLACK_STATUS} |
 
-          **Security:** ${{ steps.python-ruff.outputs.security || 0 }} security-related issues
+          **Security:** ${PYTHON_RUFF_SECURITY} security-related issues
 
           ### Smoke Test Status
-          ${{ steps.python-tests.outputs.total > 0 && steps.python-tests.outputs.coverage > 0 && '**PASS** - Core Python tools executed successfully' || '**FAIL** - Missing test execution or coverage data' }}
+          ${SMOKE_STATUS}
 
           EOF
           fi
@@ -404,7 +452,7 @@ jobs:
       # ========================================
       - name: Upload Smoke Test Artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: smoke-test-${{ matrix.language }}-${{ matrix.name }}
           path: |
@@ -430,21 +478,28 @@ jobs:
 
     steps:
       - name: Download All Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: smoke-test-artifacts
 
       - name: Generate Summary
+        env:
+          REPO_COUNT: ${{ needs.discover.outputs.count }}
+          RUN_NUMBER: ${{ github.run_number }}
+          EVENT_NAME: ${{ github.event_name }}
+          TEST_RESULT: ${{ needs.test-repo.result }}
         run: |
           summary_file="$GITHUB_STEP_SUMMARY"
+          STATUS="FAILED"
+          [ "$TEST_RESULT" = "success" ] && STATUS="PASSED"
           exec 3> "$summary_file"
           cat >&3 << EOF
           # Smoke Test Summary
 
-          **Total Test Repositories:** ${{ needs.discover.outputs.count }}
-          **Run Number:** #${{ github.run_number }}
-          **Trigger:** ${{ github.event_name }}
-          **Status:** ${{ needs.test-repo.result == 'success' && 'PASSED' || 'FAILED' }}
+          **Total Test Repositories:** ${REPO_COUNT}
+          **Run Number:** #${RUN_NUMBER}
+          **Trigger:** ${EVENT_NAME}
+          **Status:** ${STATUS}
 
           ---
 
@@ -494,8 +549,10 @@ jobs:
           exec 3>&-
 
       - name: Check Smoke Test Result
+        env:
+          TEST_RESULT: ${{ needs.test-repo.result }}
         run: |
-          if [ "${{ needs.test-repo.result }}" != "success" ]; then
+          if [ "$TEST_RESULT" != "success" ]; then
             echo "::error::Smoke test failed - check job results above"
             exit 1
           fi
