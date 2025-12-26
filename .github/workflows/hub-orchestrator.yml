@@ -52,10 +52,10 @@ jobs:
 
     steps:
       - name: Checkout Hub
-uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Python
-uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -151,10 +151,10 @@ uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
 
     steps:
       - name: Checkout Hub
-uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Python
-uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -400,7 +400,7 @@ uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
 
       - name: Trigger Repository Workflow
         id: dispatch
-uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         env:
           # Pass matrix/step values via env vars to prevent expression injection
           MATRIX_OWNER: ${{ matrix.owner }}
@@ -649,7 +649,7 @@ uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
 
       - name: Upload Dispatch Metadata
         if: always()
-uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: dispatch-${{ matrix.config_basename }}-${{ github.run_id }}
           path: dispatch-results/${{ matrix.config_basename }}.json
@@ -666,10 +666,10 @@ uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
 
     steps:
       - name: Checkout Hub
-uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Set up Python
-uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
 
@@ -677,7 +677,7 @@ uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         run: pip install pyyaml
 
       - name: Download Dispatch Metadata
-uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: dispatch-artifacts
         continue-on-error: true
@@ -1270,7 +1270,7 @@ uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
           EOF
 
       - name: Upload Hub Report
-uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: hub-report-${{ github.run_id }}
           path: hub-report.json
