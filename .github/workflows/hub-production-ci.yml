@@ -951,10 +951,43 @@ jobs:
           egress-policy: audit
 
       - name: Generate summary
+        env:
+          # Use environment variables to avoid template injection vulnerabilities
+          # Branch name can be attacker-controlled, so never interpolate directly in run scripts
+          GH_REPOSITORY: ${{ github.repository }}
+          GH_REF_NAME: ${{ github.ref_name }}
+          GH_RUN_NUMBER: ${{ github.run_number }}
+          GH_EVENT_NAME: ${{ github.event_name }}
+          # Job results are safe (predefined values only) but use env vars for consistency
+          RESULT_ACTIONLINT: ${{ needs.actionlint.result }}
+          RESULT_ZIZMOR: ${{ needs.zizmor.result }}
+          RESULT_LINT: ${{ needs.lint.result }}
+          RESULT_SYNTAX: ${{ needs.syntax-check.result }}
+          RESULT_TYPECHECK: ${{ needs.type-check.result }}
+          RESULT_YAMLLINT: ${{ needs.yaml-lint.result }}
+          RESULT_UNIT_TESTS: ${{ needs.unit-tests.result }}
+          RESULT_MUTATION: ${{ needs.mutation-tests.result }}
+          RESULT_BANDIT: ${{ needs.bandit.result }}
+          RESULT_PIP_AUDIT: ${{ needs.pip-audit.result }}
+          RESULT_SECRET_SCAN: ${{ needs.secret-scan.result }}
+          RESULT_TRIVY: ${{ needs.trivy.result }}
+          RESULT_TEMPLATES: ${{ needs.validate-templates.result }}
+          RESULT_CONFIGS: ${{ needs.validate-configs.result }}
+          RESULT_MATRIX_KEYS: ${{ needs.verify-matrix-keys.result }}
+          RESULT_LICENSE: ${{ needs.license-check.result }}
+          RESULT_DEP_REVIEW: ${{ needs.dependency-review.result }}
+          RESULT_SCORECARD: ${{ needs.scorecard.result }}
         run: |
           # Helpers for unified format
           ran() { [[ "$1" != "skipped" && "$1" != "cancelled" ]] && echo "true" || echo "false"; }
           ok() { [[ "$1" == "success" ]] && echo "true" || echo "false"; }
+          status_text() {
+            case "$1" in
+              success) echo "Passed" ;;
+              skipped) echo "Skipped" ;;
+              *) echo "Failed" ;;
+            esac
+          }
           summary_file="$GITHUB_STEP_SUMMARY"
 
           {
@@ -966,10 +999,10 @@ jobs:
             echo ""
             echo "| Setting | Value |"
             echo "|---------|-------|"
-            echo "| Repository | ${{ github.repository }} |"
-            echo "| Branch | ${{ github.ref_name }} |"
-            echo "| Run Number | #${{ github.run_number }} |"
-            echo "| Trigger | ${{ github.event_name }} |"
+            echo "| Repository | $GH_REPOSITORY |"
+            echo "| Branch | $GH_REF_NAME |"
+            echo "| Run Number | #$GH_RUN_NUMBER |"
+            echo "| Trigger | $GH_EVENT_NAME |"
             echo "| Language | Python |"
             echo ""
 
@@ -978,24 +1011,24 @@ jobs:
             echo ""
             echo "| Category | Tool | Configured | Ran | Success |"
             echo "|----------|------|------------|-----|---------|"
-            echo "| Workflow | actionlint | true | $(ran "${{ needs.actionlint.result }}") | $(ok "${{ needs.actionlint.result }}") |"
-            echo "| Workflow | zizmor | true | $(ran "${{ needs.zizmor.result }}") | $(ok "${{ needs.zizmor.result }}") |"
-            echo "| Quality | ruff | true | $(ran "${{ needs.lint.result }}") | $(ok "${{ needs.lint.result }}") |"
-            echo "| Quality | syntax | true | $(ran "${{ needs.syntax-check.result }}") | $(ok "${{ needs.syntax-check.result }}") |"
-            echo "| Quality | mypy | true | $(ran "${{ needs.type-check.result }}") | $(ok "${{ needs.type-check.result }}") |"
-            echo "| Quality | yamllint | true | $(ran "${{ needs.yaml-lint.result }}") | $(ok "${{ needs.yaml-lint.result }}") |"
-            echo "| Testing | pytest | true | $(ran "${{ needs.unit-tests.result }}") | $(ok "${{ needs.unit-tests.result }}") |"
-            echo "| Testing | mutmut | true | $(ran "${{ needs.mutation-tests.result }}") | $(ok "${{ needs.mutation-tests.result }}") |"
-            echo "| Security | bandit | true | $(ran "${{ needs.bandit.result }}") | $(ok "${{ needs.bandit.result }}") |"
-            echo "| Security | pip-audit | true | $(ran "${{ needs.pip-audit.result }}") | $(ok "${{ needs.pip-audit.result }}") |"
-            echo "| Security | gitleaks | true | $(ran "${{ needs.secret-scan.result }}") | $(ok "${{ needs.secret-scan.result }}") |"
-            echo "| Security | trivy | true | $(ran "${{ needs.trivy.result }}") | $(ok "${{ needs.trivy.result }}") |"
-            echo "| Validate | templates | true | $(ran "${{ needs.validate-templates.result }}") | $(ok "${{ needs.validate-templates.result }}") |"
-            echo "| Validate | configs | true | $(ran "${{ needs.validate-configs.result }}") | $(ok "${{ needs.validate-configs.result }}") |"
-            echo "| Validate | matrix-keys | true | $(ran "${{ needs.verify-matrix-keys.result }}") | $(ok "${{ needs.verify-matrix-keys.result }}") |"
-            echo "| Validate | licenses | true | $(ran "${{ needs.license-check.result }}") | $(ok "${{ needs.license-check.result }}") |"
-            echo "| Supply Chain | dependency-review | true | $(ran "${{ needs.dependency-review.result }}") | $(ok "${{ needs.dependency-review.result }}") |"
-            echo "| Supply Chain | scorecard | true | $(ran "${{ needs.scorecard.result }}") | $(ok "${{ needs.scorecard.result }}") |"
+            echo "| Workflow | actionlint | true | $(ran "$RESULT_ACTIONLINT") | $(ok "$RESULT_ACTIONLINT") |"
+            echo "| Workflow | zizmor | true | $(ran "$RESULT_ZIZMOR") | $(ok "$RESULT_ZIZMOR") |"
+            echo "| Quality | ruff | true | $(ran "$RESULT_LINT") | $(ok "$RESULT_LINT") |"
+            echo "| Quality | syntax | true | $(ran "$RESULT_SYNTAX") | $(ok "$RESULT_SYNTAX") |"
+            echo "| Quality | mypy | true | $(ran "$RESULT_TYPECHECK") | $(ok "$RESULT_TYPECHECK") |"
+            echo "| Quality | yamllint | true | $(ran "$RESULT_YAMLLINT") | $(ok "$RESULT_YAMLLINT") |"
+            echo "| Testing | pytest | true | $(ran "$RESULT_UNIT_TESTS") | $(ok "$RESULT_UNIT_TESTS") |"
+            echo "| Testing | mutmut | true | $(ran "$RESULT_MUTATION") | $(ok "$RESULT_MUTATION") |"
+            echo "| Security | bandit | true | $(ran "$RESULT_BANDIT") | $(ok "$RESULT_BANDIT") |"
+            echo "| Security | pip-audit | true | $(ran "$RESULT_PIP_AUDIT") | $(ok "$RESULT_PIP_AUDIT") |"
+            echo "| Security | gitleaks | true | $(ran "$RESULT_SECRET_SCAN") | $(ok "$RESULT_SECRET_SCAN") |"
+            echo "| Security | trivy | true | $(ran "$RESULT_TRIVY") | $(ok "$RESULT_TRIVY") |"
+            echo "| Validate | templates | true | $(ran "$RESULT_TEMPLATES") | $(ok "$RESULT_TEMPLATES") |"
+            echo "| Validate | configs | true | $(ran "$RESULT_CONFIGS") | $(ok "$RESULT_CONFIGS") |"
+            echo "| Validate | matrix-keys | true | $(ran "$RESULT_MATRIX_KEYS") | $(ok "$RESULT_MATRIX_KEYS") |"
+            echo "| Validate | licenses | true | $(ran "$RESULT_LICENSE") | $(ok "$RESULT_LICENSE") |"
+            echo "| Supply Chain | dependency-review | true | $(ran "$RESULT_DEP_REVIEW") | $(ok "$RESULT_DEP_REVIEW") |"
+            echo "| Supply Chain | scorecard | true | $(ran "$RESULT_SCORECARD") | $(ok "$RESULT_SCORECARD") |"
             echo ""
 
             # Failures/Skips
@@ -1006,24 +1039,24 @@ jobs:
           } >> "$summary_file"
 
           checks=(
-            "actionlint:${{ needs.actionlint.result }}"
-            "zizmor:${{ needs.zizmor.result }}"
-            "ruff:${{ needs.lint.result }}"
-            "syntax:${{ needs.syntax-check.result }}"
-            "mypy:${{ needs.type-check.result }}"
-            "yamllint:${{ needs.yaml-lint.result }}"
-            "pytest:${{ needs.unit-tests.result }}"
-            "mutmut:${{ needs.mutation-tests.result }}"
-            "bandit:${{ needs.bandit.result }}"
-            "pip-audit:${{ needs.pip-audit.result }}"
-            "gitleaks:${{ needs.secret-scan.result }}"
-            "trivy:${{ needs.trivy.result }}"
-            "templates:${{ needs.validate-templates.result }}"
-            "configs:${{ needs.validate-configs.result }}"
-            "matrix-keys:${{ needs.verify-matrix-keys.result }}"
-            "licenses:${{ needs.license-check.result }}"
-            "dependency-review:${{ needs.dependency-review.result }}"
-            "scorecard:${{ needs.scorecard.result }}"
+            "actionlint:$RESULT_ACTIONLINT"
+            "zizmor:$RESULT_ZIZMOR"
+            "ruff:$RESULT_LINT"
+            "syntax:$RESULT_SYNTAX"
+            "mypy:$RESULT_TYPECHECK"
+            "yamllint:$RESULT_YAMLLINT"
+            "pytest:$RESULT_UNIT_TESTS"
+            "mutmut:$RESULT_MUTATION"
+            "bandit:$RESULT_BANDIT"
+            "pip-audit:$RESULT_PIP_AUDIT"
+            "gitleaks:$RESULT_SECRET_SCAN"
+            "trivy:$RESULT_TRIVY"
+            "templates:$RESULT_TEMPLATES"
+            "configs:$RESULT_CONFIGS"
+            "matrix-keys:$RESULT_MATRIX_KEYS"
+            "licenses:$RESULT_LICENSE"
+            "dependency-review:$RESULT_DEP_REVIEW"
+            "scorecard:$RESULT_SCORECARD"
           )
 
           has_issues=0
@@ -1046,17 +1079,37 @@ jobs:
             echo ""
             echo "| Check | Threshold | Status |"
             echo "|-------|-----------|--------|"
-            echo "| Unit Tests | pass | ${{ needs.unit-tests.result == 'success' && 'Passed' || needs.unit-tests.result == 'skipped' && 'Skipped' || 'Failed' }} |"
-            echo "| Coverage | 70% min | ${{ needs.unit-tests.result == 'success' && 'Passed' || 'N/A' }} |"
-            echo "| Mutation Score | 70% min | ${{ needs.mutation-tests.result == 'success' && 'Passed' || needs.mutation-tests.result == 'skipped' && 'Skipped' || 'Failed' }} |"
-            echo "| Type Check (mypy) | 0 errors | ${{ needs.type-check.result == 'success' && 'Passed' || 'Failed' }} |"
-            echo "| SAST (bandit) | 0 high | ${{ needs.bandit.result == 'success' && 'Passed' || 'Failed' }} |"
-            echo "| Secrets (gitleaks) | 0 leaks | ${{ needs.secret-scan.result == 'success' && 'Passed' || 'Failed' }} |"
+            echo "| Unit Tests | pass | $(status_text "$RESULT_UNIT_TESTS") |"
+            echo "| Coverage | 70% min | $([[ "$RESULT_UNIT_TESTS" == "success" ]] && echo "Passed" || echo "N/A") |"
+            echo "| Mutation Score | 70% min | $(status_text "$RESULT_MUTATION") |"
+            echo "| Type Check (mypy) | 0 errors | $([[ "$RESULT_TYPECHECK" == "success" ]] && echo "Passed" || echo "Failed") |"
+            echo "| SAST (bandit) | 0 high | $([[ "$RESULT_BANDIT" == "success" ]] && echo "Passed" || echo "Failed") |"
+            echo "| Secrets (gitleaks) | 0 leaks | $([[ "$RESULT_SECRET_SCAN" == "success" ]] && echo "Passed" || echo "Failed") |"
             echo ""
             echo "Job summary generated at run-time"
           } >> "$summary_file"
 
       - name: Check critical failures
+        env:
+          # Use environment variables to avoid template injection vulnerabilities
+          RESULT_ACTIONLINT: ${{ needs.actionlint.result }}
+          RESULT_ZIZMOR: ${{ needs.zizmor.result }}
+          RESULT_LINT: ${{ needs.lint.result }}
+          RESULT_SYNTAX: ${{ needs.syntax-check.result }}
+          RESULT_TYPECHECK: ${{ needs.type-check.result }}
+          RESULT_YAMLLINT: ${{ needs.yaml-lint.result }}
+          RESULT_UNIT_TESTS: ${{ needs.unit-tests.result }}
+          RESULT_MUTATION: ${{ needs.mutation-tests.result }}
+          RESULT_BANDIT: ${{ needs.bandit.result }}
+          RESULT_PIP_AUDIT: ${{ needs.pip-audit.result }}
+          RESULT_SECRET_SCAN: ${{ needs.secret-scan.result }}
+          RESULT_TRIVY: ${{ needs.trivy.result }}
+          RESULT_TEMPLATES: ${{ needs.validate-templates.result }}
+          RESULT_CONFIGS: ${{ needs.validate-configs.result }}
+          RESULT_MATRIX_KEYS: ${{ needs.verify-matrix-keys.result }}
+          RESULT_LICENSE: ${{ needs.license-check.result }}
+          RESULT_DEP_REVIEW: ${{ needs.dependency-review.result }}
+          RESULT_SCORECARD: ${{ needs.scorecard.result }}
         run: |
           FAILED=0
 
@@ -1071,30 +1124,30 @@ jobs:
           }
 
           # Workflow security - must pass
-          fail_if_hard "actionlint" "${{ needs.actionlint.result }}" "fix workflow syntax"
-          fail_if_hard "zizmor" "${{ needs.zizmor.result }}" "address workflow security findings"
+          fail_if_hard "actionlint" "$RESULT_ACTIONLINT" "fix workflow syntax"
+          fail_if_hard "zizmor" "$RESULT_ZIZMOR" "address workflow security findings"
 
           # Code quality gates - must pass
-          fail_if_hard "mypy" "${{ needs.type-check.result }}" "fix mypy errors"
-          fail_if_hard "yamllint" "${{ needs.yaml-lint.result }}" "fix config syntax"
-          fail_if_hard "ruff" "${{ needs.lint.result }}" "fix ruff lint violations"
-          fail_if_hard "syntax" "${{ needs.syntax-check.result }}" "fix Python syntax errors"
+          fail_if_hard "mypy" "$RESULT_TYPECHECK" "fix mypy errors"
+          fail_if_hard "yamllint" "$RESULT_YAMLLINT" "fix config syntax"
+          fail_if_hard "ruff" "$RESULT_LINT" "fix ruff lint violations"
+          fail_if_hard "syntax" "$RESULT_SYNTAX" "fix Python syntax errors"
 
           # Critical code checks that must pass
-          fail_if_hard "unit-tests" "${{ needs.unit-tests.result }}" "unit tests failed"
-          fail_if_hard "mutation-tests" "${{ needs.mutation-tests.result }}" "mutation testing failed"
-          fail_if_hard "bandit" "${{ needs.bandit.result }}" "security scan failed"
-          fail_if_hard "pip-audit" "${{ needs.pip-audit.result }}" "dependency audit failed"
-          fail_if_hard "gitleaks" "${{ needs.secret-scan.result }}" "secret detection failed"
-          fail_if_hard "trivy" "${{ needs.trivy.result }}" "trivy scan failed"
-          fail_if_hard "validate-templates" "${{ needs.validate-templates.result }}" "template validation failed"
-          fail_if_hard "validate-configs" "${{ needs.validate-configs.result }}" "config validation failed"
-          fail_if_hard "verify-matrix-keys" "${{ needs.verify-matrix-keys.result }}" "matrix key validation failed"
-          fail_if_hard "license-check" "${{ needs.license-check.result }}" "license compliance failed"
+          fail_if_hard "unit-tests" "$RESULT_UNIT_TESTS" "unit tests failed"
+          fail_if_hard "mutation-tests" "$RESULT_MUTATION" "mutation testing failed"
+          fail_if_hard "bandit" "$RESULT_BANDIT" "security scan failed"
+          fail_if_hard "pip-audit" "$RESULT_PIP_AUDIT" "dependency audit failed"
+          fail_if_hard "gitleaks" "$RESULT_SECRET_SCAN" "secret detection failed"
+          fail_if_hard "trivy" "$RESULT_TRIVY" "trivy scan failed"
+          fail_if_hard "validate-templates" "$RESULT_TEMPLATES" "template validation failed"
+          fail_if_hard "validate-configs" "$RESULT_CONFIGS" "config validation failed"
+          fail_if_hard "verify-matrix-keys" "$RESULT_MATRIX_KEYS" "matrix key validation failed"
+          fail_if_hard "license-check" "$RESULT_LICENSE" "license compliance failed"
 
           # Supply chain checks - must pass when they run
-          fail_if_hard "dependency-review" "${{ needs.dependency-review.result }}" "dependency review failed"
-          fail_if_hard "scorecard" "${{ needs.scorecard.result }}" "scorecard checks failed"
+          fail_if_hard "dependency-review" "$RESULT_DEP_REVIEW" "dependency review failed"
+          fail_if_hard "scorecard" "$RESULT_SCORECARD" "scorecard checks failed"
 
           if [ "$FAILED" -eq 1 ]; then
             exit 1
