@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name: Checkout Hub
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
 
@@ -89,8 +89,9 @@ jobs:
           echo "$REPOS" | jq -r '.include[] | "  - \(.language): \(.owner)/\(.name)"' || echo "$REPOS"
 
       - name: Validate Smoke Test Setup
+        env:
+          COUNT: ${{ steps.repos.outputs.count }}
         run: |
-          COUNT="${{ steps.repos.outputs.count }}"
           if [ "${COUNT:-0}" -lt 2 ]; then
             echo "::error::Expected at least 2 smoke test repos (Java + Python), found ${COUNT:-0}"
             echo "::error::Ensure config/repos/smoke-test-java.yaml and smoke-test-python.yaml exist"
@@ -113,13 +114,13 @@ jobs:
 
     steps:
       - name: Checkout Hub (for scripts)
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           path: hub
           persist-credentials: false
 
       - name: Checkout Target Repo
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: ${{ matrix.owner }}/${{ matrix.name }}
           ref: ${{ matrix.branch }}
@@ -135,7 +136,7 @@ jobs:
       # ========================================
       - name: Set up JDK 21
         if: matrix.language == 'java'
-        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -260,7 +261,7 @@ jobs:
       # ========================================
       - name: Set up Python 3.12
         if: matrix.language == 'python'
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.12'
 
@@ -455,7 +456,7 @@ jobs:
       # ========================================
       - name: Upload Smoke Test Artifacts
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: smoke-test-${{ matrix.language }}-${{ matrix.name }}
           path: |
@@ -481,7 +482,7 @@ jobs:
 
     steps:
       - name: Download All Artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: smoke-test-artifacts
 

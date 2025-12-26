@@ -41,11 +41,9 @@ on:
     paths:
       - 'config/repos/*.yaml'
 
-# Required permissions for all features
+# Minimal default permissions - jobs override as needed
 permissions:
   contents: read
-  security-events: write  # For CodeQL
-  actions: read
 
 env:
   REPORTS_DIR: ${{ github.workspace }}/all-reports
@@ -57,18 +55,20 @@ jobs:
   discover:
     name: Discover Repositories
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.repos.outputs.matrix }}
       count: ${{ steps.repos.outputs.count }}
 
     steps:
       - name: Checkout Hub
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.12'
 
@@ -250,6 +250,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: discover
     if: needs.discover.outputs.count > 0
+    permissions:
+      contents: read
+      security-events: write  # For CodeQL SARIF upload
     strategy:
       fail-fast: false
       max-parallel: 3
@@ -260,13 +263,13 @@ jobs:
 
     steps:
       - name: Checkout Hub (for scripts)
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           path: hub
           persist-credentials: false
 
       - name: Checkout Target Repo
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: ${{ matrix.owner }}/${{ matrix.name }}
           ref: ${{ matrix.branch }}
@@ -304,7 +307,7 @@ jobs:
       # ========================================
       - name: Set up JDK ${{ matrix.java_version }}
         if: matrix.language == 'java'
-        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.7.1
         with:
           java-version: '${{ matrix.java_version }}'
           distribution: 'temurin'
@@ -571,7 +574,7 @@ jobs:
       # ========================================
       - name: Set up Python ${{ matrix.python_version }}
         if: matrix.language == 'python'
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '${{ matrix.python_version }}'
 
@@ -902,7 +905,7 @@ jobs:
       # ========================================
       - name: "[All] Initialize CodeQL"
         if: matrix.run_codeql == true
-        uses: github/codeql-action/init@5d4e8d1aca955e8d8589aabd499c5cae939e33c7
+        uses: github/codeql-action/init@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v3.28.19
         with:
           languages: ${{ matrix.language }}
           source-root: ${{ env.WORKDIR }}
@@ -910,7 +913,7 @@ jobs:
       - name: "[All] Perform CodeQL Analysis"
         if: matrix.run_codeql == true
         id: codeql
-        uses: github/codeql-action/analyze@5d4e8d1aca955e8d8589aabd499c5cae939e33c7
+        uses: github/codeql-action/analyze@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v3.28.19
         continue-on-error: true
 
       # ========================================
@@ -1252,6 +1255,9 @@ jobs:
           MATRIX_BRANCH: ${{ matrix.branch }}
           MATRIX_JAVA_VERSION: ${{ matrix.java_version }}
           MATRIX_PYTHON_VERSION: ${{ matrix.python_version }}
+          # GitHub context (passed via env to prevent template injection)
+          GH_RUN_ID: ${{ github.run_id }}
+          GH_RUN_NUMBER: ${{ github.run_number }}
           # Tool flags
           MATRIX_RUN_JACOCO: ${{ matrix.run_jacoco }}
           MATRIX_RUN_CHECKSTYLE: ${{ matrix.run_checkstyle }}
@@ -1265,6 +1271,10 @@ jobs:
           MATRIX_RUN_RUFF: ${{ matrix.run_ruff }}
           MATRIX_RUN_BANDIT: ${{ matrix.run_bandit }}
           MATRIX_RUN_PIP_AUDIT: ${{ matrix.run_pip_audit }}
+          MATRIX_RUN_MYPY: ${{ matrix.run_mypy }}
+          MATRIX_RUN_HYPOTHESIS: ${{ matrix.run_hypothesis }}
+          MATRIX_RUN_BLACK: ${{ matrix.run_black }}
+          MATRIX_RUN_ISORT: ${{ matrix.run_isort }}
           MATRIX_RUN_SEMGREP: ${{ matrix.run_semgrep }}
           MATRIX_RUN_TRIVY: ${{ matrix.run_trivy }}
           MATRIX_RUN_CODEQL: ${{ matrix.run_codeql }}
@@ -1282,6 +1292,10 @@ jobs:
           PYTHON_RUFF_OUTCOME: ${{ steps.python-ruff.outcome }}
           PYTHON_BANDIT_OUTCOME: ${{ steps.python-bandit.outcome }}
           PYTHON_PIPAUDIT_OUTCOME: ${{ steps.python-pipaudit.outcome }}
+          PYTHON_MYPY_OUTCOME: ${{ steps.python-mypy.outcome }}
+          PYTHON_HYPOTHESIS_OUTCOME: ${{ steps.python-hypothesis.outcome }}
+          PYTHON_BLACK_OUTCOME: ${{ steps.python-black.outcome }}
+          PYTHON_ISORT_OUTCOME: ${{ steps.python-isort.outcome }}
           SEMGREP_OUTCOME: ${{ steps.semgrep.outcome }}
           TRIVY_OUTCOME: ${{ steps.trivy.outcome }}
           CODEQL_OUTCOME: ${{ steps.codeql.outcome }}
@@ -1308,6 +1322,9 @@ jobs:
           PYTHON_BANDIT_MEDIUM: ${{ steps.python-bandit.outputs.medium }}
           PYTHON_PIPAUDIT_VULNS: ${{ steps.python-pipaudit.outputs.vulnerabilities }}
           PYTHON_RUFF_ERRORS: ${{ steps.python-ruff.outputs.errors }}
+          PYTHON_MYPY_ERRORS: ${{ steps.python-mypy.outputs.errors }}
+          PYTHON_BLACK_ISSUES: ${{ steps.python-black.outputs.issues }}
+          PYTHON_ISORT_ISSUES: ${{ steps.python-isort.outputs.issues }}
         run: |
           validate_safe() {
             [[ "$1" =~ ^[A-Za-z0-9._/-]+$ ]]
@@ -1337,8 +1354,9 @@ jobs:
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           WORKFLOW_REF="${GITHUB_REPOSITORY}/.github/workflows/hub-run-all.yml@${GITHUB_REF_NAME}"
 
-          # Helper for ran status
+          # Helper functions for boolean conversion
           ran() { [ "$1" = "success" ] || [ "$1" = "failure" ] && echo "true" || echo "false"; }
+          succeeded() { [ "$1" = "success" ] && echo "true" || echo "false"; }
 
           if [ "$MATRIX_LANGUAGE" = "java" ]; then
             BUILD_STATUS="success"
@@ -1347,20 +1365,20 @@ jobs:
               BUILD_STATUS="failure"
             fi
 
-            CRITICAL_VULNS=${{ steps.java-owasp.outputs.critical || 0 }}
-            HIGH_VULNS=${{ steps.java-owasp.outputs.high || 0 }}
-            MEDIUM_VULNS=${{ steps.java-owasp.outputs.medium || 0 }}
+            CRITICAL_VULNS=${JAVA_OWASP_CRITICAL:-0}
+            HIGH_VULNS=${JAVA_OWASP_HIGH:-0}
+            MEDIUM_VULNS=${JAVA_OWASP_MEDIUM:-0}
 
-            TRIVY_CRITICAL=${{ steps.trivy.outputs.critical || 0 }}
-            TRIVY_HIGH=${{ steps.trivy.outputs.high || 0 }}
-            TRIVY_MEDIUM=0
+            TRIVY_CRIT=${TRIVY_CRITICAL:-0}
+            TRIVY_HI=${TRIVY_HIGH:-0}
+            TRIVY_MED=0
             if [ -f "repo/trivy-report.json" ]; then
-              TRIVY_MEDIUM=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' repo/trivy-report.json 2>/dev/null || echo 0)
+              TRIVY_MED=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' repo/trivy-report.json 2>/dev/null || echo 0)
             fi
 
-            CRITICAL_VULNS=$((CRITICAL_VULNS + TRIVY_CRITICAL))
-            HIGH_VULNS=$((HIGH_VULNS + TRIVY_HIGH))
-            MEDIUM_VULNS=$((MEDIUM_VULNS + TRIVY_MEDIUM))
+            CRITICAL_VULNS=$((CRITICAL_VULNS + TRIVY_CRIT))
+            HIGH_VULNS=$((HIGH_VULNS + TRIVY_HI))
+            MEDIUM_VULNS=$((MEDIUM_VULNS + TRIVY_MED))
 
             cat > "$REPORT_DIR/report.json" << EOF
           {
@@ -1370,78 +1388,78 @@ jobs:
               "workflow_ref": "${WORKFLOW_REF}",
               "generated_at": "${TIMESTAMP}"
             },
-            "repository": "${{ matrix.owner }}/${{ matrix.name }}",
-            "run_id": "${{ github.run_id }}",
-            "run_number": "${{ github.run_number }}",
+            "repository": "${MATRIX_OWNER}/${MATRIX_NAME}",
+            "run_id": "${GH_RUN_ID}",
+            "run_number": "${GH_RUN_NUMBER}",
             "commit": "${COMMIT_SHA}",
-            "branch": "${{ matrix.branch }}",
+            "branch": "${MATRIX_BRANCH}",
             "timestamp": "${TIMESTAMP}",
-            "java_version": "${{ matrix.java_version }}",
+            "java_version": "${MATRIX_JAVA_VERSION}",
             "results": {
               "build": "${BUILD_STATUS}",
-              "coverage": ${{ steps.java-coverage.outputs.percent || 0 }},
-              "mutation_score": ${{ steps.java-mutation.outputs.score || 0 }},
-              "tests_passed": ${{ steps.java-tests.outputs.passed || 0 }},
-              "tests_failed": ${{ steps.java-tests.outputs.failed || 0 }},
+              "coverage": ${JAVA_COV_PERCENT:-0},
+              "mutation_score": ${JAVA_MUT_SCORE:-0},
+              "tests_passed": ${JAVA_TESTS_PASSED:-0},
+              "tests_failed": ${JAVA_TESTS_FAILED:-0},
               "critical_vulns": ${CRITICAL_VULNS},
               "high_vulns": ${HIGH_VULNS},
               "medium_vulns": ${MEDIUM_VULNS}
             },
             "tool_metrics": {
-              "checkstyle_issues": ${{ steps.java-checkstyle.outputs.violations || 0 }},
-              "spotbugs_issues": ${{ steps.java-spotbugs.outputs.count || 0 }},
-              "pmd_violations": ${{ steps.java-pmd.outputs.violations || 0 }},
-              "owasp_critical": ${{ steps.java-owasp.outputs.critical || 0 }},
-              "owasp_high": ${{ steps.java-owasp.outputs.high || 0 }},
-              "semgrep_findings": ${{ steps.semgrep.outputs.findings || 0 }},
-              "trivy_critical": ${{ steps.trivy.outputs.critical || 0 }},
-              "trivy_high": ${{ steps.trivy.outputs.high || 0 }}
+              "checkstyle_issues": ${JAVA_CHECKSTYLE_VIOLATIONS:-0},
+              "spotbugs_issues": ${JAVA_SPOTBUGS_COUNT:-0},
+              "pmd_violations": ${JAVA_PMD_VIOLATIONS:-0},
+              "owasp_critical": ${JAVA_OWASP_CRITICAL:-0},
+              "owasp_high": ${JAVA_OWASP_HIGH:-0},
+              "semgrep_findings": ${SEMGREP_FINDINGS:-0},
+              "trivy_critical": ${TRIVY_CRITICAL:-0},
+              "trivy_high": ${TRIVY_HIGH:-0}
             },
             "tools_configured": {
-              "jacoco": ${{ matrix.run_jacoco }},
-              "checkstyle": ${{ matrix.run_checkstyle }},
-              "spotbugs": ${{ matrix.run_spotbugs }},
-              "pmd": ${{ matrix.run_pmd }},
-              "owasp": ${{ matrix.run_owasp }},
-              "pitest": ${{ matrix.run_pitest }},
-              "jqwik": ${{ matrix.run_jqwik }},
-              "semgrep": ${{ matrix.run_semgrep }},
-              "trivy": ${{ matrix.run_trivy }},
-              "codeql": ${{ matrix.run_codeql }},
-              "docker": ${{ matrix.run_docker }}
+              "jacoco": ${MATRIX_RUN_JACOCO:-false},
+              "checkstyle": ${MATRIX_RUN_CHECKSTYLE:-false},
+              "spotbugs": ${MATRIX_RUN_SPOTBUGS:-false},
+              "pmd": ${MATRIX_RUN_PMD:-false},
+              "owasp": ${MATRIX_RUN_OWASP:-false},
+              "pitest": ${MATRIX_RUN_PITEST:-false},
+              "jqwik": ${MATRIX_RUN_JQWIK:-false},
+              "semgrep": ${MATRIX_RUN_SEMGREP:-false},
+              "trivy": ${MATRIX_RUN_TRIVY:-false},
+              "codeql": ${MATRIX_RUN_CODEQL:-false},
+              "docker": ${MATRIX_RUN_DOCKER:-false}
             },
             "tools_ran": {
-              "jacoco": ${{ steps.java-coverage.outcome == 'success' || steps.java-coverage.outcome == 'failure' }},
-              "checkstyle": ${{ steps.java-checkstyle.outcome == 'success' || steps.java-checkstyle.outcome == 'failure' }},
-              "spotbugs": ${{ steps.java-spotbugs.outcome == 'success' || steps.java-spotbugs.outcome == 'failure' }},
-              "pmd": ${{ steps.java-pmd.outcome == 'success' || steps.java-pmd.outcome == 'failure' }},
-              "owasp": ${{ steps.java-owasp.outcome == 'success' || steps.java-owasp.outcome == 'failure' }},
-              "pitest": ${{ steps.java-mutation.outcome == 'success' || steps.java-mutation.outcome == 'failure' }},
-              "jqwik": ${{ steps.java-tests.outcome == 'success' || steps.java-tests.outcome == 'failure' }},
-              "semgrep": ${{ steps.semgrep.outcome == 'success' || steps.semgrep.outcome == 'failure' }},
-              "trivy": ${{ steps.trivy.outcome == 'success' || steps.trivy.outcome == 'failure' }},
-              "codeql": ${{ steps.codeql.outcome == 'success' || steps.codeql.outcome == 'failure' }},
-              "docker": ${{ steps.docker-build.outcome == 'success' || steps.docker-build.outcome == 'failure' }}
+              "jacoco": $(ran "$JAVA_COVERAGE_OUTCOME"),
+              "checkstyle": $(ran "$JAVA_CHECKSTYLE_OUTCOME"),
+              "spotbugs": $(ran "$JAVA_SPOTBUGS_OUTCOME"),
+              "pmd": $(ran "$JAVA_PMD_OUTCOME"),
+              "owasp": $(ran "$JAVA_OWASP_OUTCOME"),
+              "pitest": $(ran "$JAVA_MUTATION_OUTCOME"),
+              "jqwik": $(ran "$JAVA_TESTS_OUTCOME"),
+              "semgrep": $(ran "$SEMGREP_OUTCOME"),
+              "trivy": $(ran "$TRIVY_OUTCOME"),
+              "codeql": $(ran "$CODEQL_OUTCOME"),
+              "docker": $(ran "$DOCKER_BUILD_OUTCOME")
             },
             "tools_success": {
-              "jacoco": ${{ steps.java-coverage.outcome == 'success' }},
-              "checkstyle": ${{ steps.java-checkstyle.outcome == 'success' }},
-              "spotbugs": ${{ steps.java-spotbugs.outcome == 'success' }},
-              "pmd": ${{ steps.java-pmd.outcome == 'success' }},
-              "owasp": ${{ steps.java-owasp.outcome == 'success' }},
-              "pitest": ${{ steps.java-mutation.outcome == 'success' }},
-              "jqwik": ${{ steps.java-tests.outcome == 'success' }},
-              "semgrep": ${{ steps.semgrep.outcome == 'success' }},
-              "trivy": ${{ steps.trivy.outcome == 'success' }},
-              "codeql": ${{ steps.codeql.outcome == 'success' }},
-              "docker": ${{ steps.docker-build.outcome == 'success' }}
+              "jacoco": $(succeeded "$JAVA_COVERAGE_OUTCOME"),
+              "checkstyle": $(succeeded "$JAVA_CHECKSTYLE_OUTCOME"),
+              "spotbugs": $(succeeded "$JAVA_SPOTBUGS_OUTCOME"),
+              "pmd": $(succeeded "$JAVA_PMD_OUTCOME"),
+              "owasp": $(succeeded "$JAVA_OWASP_OUTCOME"),
+              "pitest": $(succeeded "$JAVA_MUTATION_OUTCOME"),
+              "jqwik": $(succeeded "$JAVA_TESTS_OUTCOME"),
+              "semgrep": $(succeeded "$SEMGREP_OUTCOME"),
+              "trivy": $(succeeded "$TRIVY_OUTCOME"),
+              "codeql": $(succeeded "$CODEQL_OUTCOME"),
+              "docker": $(succeeded "$DOCKER_BUILD_OUTCOME")
             }
           }
           EOF
           else
             TEST_STATUS="skipped"
-            if [ "${{ matrix.run_pytest }}" = "true" ]; then
-              FAILED_TESTS="${{ steps.python-tests.outputs.failed || 0 }}"
+            if [ "$MATRIX_RUN_PYTEST" = "true" ]; then
+              FAILED_TESTS="${PYTHON_TESTS_FAILED:-0}"
               if [ "${FAILED_TESTS:-0}" -gt 0 ]; then
                 TEST_STATUS="failure"
               else
@@ -1450,19 +1468,19 @@ jobs:
             fi
 
             CRITICAL_VULNS=0
-            HIGH_VULNS=${{ steps.python-pipaudit.outputs.vulnerabilities || 0 }}
+            HIGH_VULNS=${PYTHON_PIPAUDIT_VULNS:-0}
             MEDIUM_VULNS=0
 
-            TRIVY_CRITICAL=${{ steps.trivy.outputs.critical || 0 }}
-            TRIVY_HIGH=${{ steps.trivy.outputs.high || 0 }}
-            TRIVY_MEDIUM=0
+            TRIVY_CRIT=${TRIVY_CRITICAL:-0}
+            TRIVY_HI=${TRIVY_HIGH:-0}
+            TRIVY_MED=0
             if [ -f "repo/trivy-report.json" ]; then
-              TRIVY_MEDIUM=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' repo/trivy-report.json 2>/dev/null || echo 0)
+              TRIVY_MED=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "MEDIUM")] | length' repo/trivy-report.json 2>/dev/null || echo 0)
             fi
 
-            CRITICAL_VULNS=$((CRITICAL_VULNS + TRIVY_CRITICAL))
-            HIGH_VULNS=$((HIGH_VULNS + TRIVY_HIGH))
-            MEDIUM_VULNS=$((MEDIUM_VULNS + TRIVY_MEDIUM))
+            CRITICAL_VULNS=$((CRITICAL_VULNS + TRIVY_CRIT))
+            HIGH_VULNS=$((HIGH_VULNS + TRIVY_HI))
+            MEDIUM_VULNS=$((MEDIUM_VULNS + TRIVY_MED))
 
             cat > "$REPORT_DIR/report.json" << EOF
           {
@@ -1472,79 +1490,79 @@ jobs:
               "workflow_ref": "${WORKFLOW_REF}",
               "generated_at": "${TIMESTAMP}"
             },
-            "repository": "${{ matrix.owner }}/${{ matrix.name }}",
-            "run_id": "${{ github.run_id }}",
-            "run_number": "${{ github.run_number }}",
+            "repository": "${MATRIX_OWNER}/${MATRIX_NAME}",
+            "run_id": "${GH_RUN_ID}",
+            "run_number": "${GH_RUN_NUMBER}",
             "commit": "${COMMIT_SHA}",
-            "branch": "${{ matrix.branch }}",
+            "branch": "${MATRIX_BRANCH}",
             "timestamp": "${TIMESTAMP}",
-            "python_version": "${{ matrix.python_version }}",
+            "python_version": "${MATRIX_PYTHON_VERSION}",
             "results": {
               "test": "${TEST_STATUS}",
-              "coverage": ${{ steps.python-tests.outputs.coverage || 0 }},
-              "mutation_score": ${{ steps.python-mutmut.outputs.score || 0 }},
-              "tests_passed": ${{ steps.python-tests.outputs.passed || 0 }},
-              "tests_failed": ${{ steps.python-tests.outputs.failed || 0 }},
+              "coverage": ${PYTHON_COV_PERCENT:-0},
+              "mutation_score": ${PYTHON_MUT_SCORE:-0},
+              "tests_passed": ${PYTHON_TESTS_PASSED:-0},
+              "tests_failed": ${PYTHON_TESTS_FAILED:-0},
               "critical_vulns": ${CRITICAL_VULNS},
               "high_vulns": ${HIGH_VULNS},
               "medium_vulns": ${MEDIUM_VULNS}
             },
             "tool_metrics": {
-              "ruff_errors": ${{ steps.python-ruff.outputs.errors || 0 }},
-              "mypy_errors": ${{ steps.python-mypy.outputs.errors || 0 }},
-              "bandit_high": ${{ steps.python-bandit.outputs.high || 0 }},
-              "bandit_medium": ${{ steps.python-bandit.outputs.medium || 0 }},
-              "black_issues": ${{ steps.python-black.outputs.issues || 0 }},
-              "isort_issues": ${{ steps.python-isort.outputs.issues || 0 }},
-              "pip_audit_vulns": ${{ steps.python-pipaudit.outputs.vulnerabilities || 0 }},
-              "semgrep_findings": ${{ steps.semgrep.outputs.findings || 0 }},
-              "trivy_critical": ${{ steps.trivy.outputs.critical || 0 }},
-              "trivy_high": ${{ steps.trivy.outputs.high || 0 }}
+              "ruff_errors": ${PYTHON_RUFF_ERRORS:-0},
+              "mypy_errors": ${PYTHON_MYPY_ERRORS:-0},
+              "bandit_high": ${PYTHON_BANDIT_HIGH:-0},
+              "bandit_medium": ${PYTHON_BANDIT_MEDIUM:-0},
+              "black_issues": ${PYTHON_BLACK_ISSUES:-0},
+              "isort_issues": ${PYTHON_ISORT_ISSUES:-0},
+              "pip_audit_vulns": ${PYTHON_PIPAUDIT_VULNS:-0},
+              "semgrep_findings": ${SEMGREP_FINDINGS:-0},
+              "trivy_critical": ${TRIVY_CRITICAL:-0},
+              "trivy_high": ${TRIVY_HIGH:-0}
             },
             "tools_configured": {
-              "pytest": ${{ matrix.run_pytest }},
-              "ruff": ${{ matrix.run_ruff }},
-              "bandit": ${{ matrix.run_bandit }},
-              "pip_audit": ${{ matrix.run_pip_audit }},
-              "mypy": ${{ matrix.run_mypy }},
-              "hypothesis": ${{ matrix.run_hypothesis }},
-              "black": ${{ matrix.run_black }},
-              "isort": ${{ matrix.run_isort }},
-              "mutmut": ${{ matrix.run_mutmut }},
-              "semgrep": ${{ matrix.run_semgrep }},
-              "trivy": ${{ matrix.run_trivy }},
-              "codeql": ${{ matrix.run_codeql }},
-              "docker": ${{ matrix.run_docker }}
+              "pytest": ${MATRIX_RUN_PYTEST:-false},
+              "ruff": ${MATRIX_RUN_RUFF:-false},
+              "bandit": ${MATRIX_RUN_BANDIT:-false},
+              "pip_audit": ${MATRIX_RUN_PIP_AUDIT:-false},
+              "mypy": ${MATRIX_RUN_MYPY:-false},
+              "hypothesis": ${MATRIX_RUN_HYPOTHESIS:-false},
+              "black": ${MATRIX_RUN_BLACK:-false},
+              "isort": ${MATRIX_RUN_ISORT:-false},
+              "mutmut": ${MATRIX_RUN_MUTMUT:-false},
+              "semgrep": ${MATRIX_RUN_SEMGREP:-false},
+              "trivy": ${MATRIX_RUN_TRIVY:-false},
+              "codeql": ${MATRIX_RUN_CODEQL:-false},
+              "docker": ${MATRIX_RUN_DOCKER:-false}
             },
             "tools_ran": {
-              "pytest": ${{ steps.python-tests.outcome == 'success' || steps.python-tests.outcome == 'failure' }},
-              "ruff": ${{ steps.python-ruff.outcome == 'success' || steps.python-ruff.outcome == 'failure' }},
-              "bandit": ${{ steps.python-bandit.outcome == 'success' || steps.python-bandit.outcome == 'failure' }},
-              "pip_audit": ${{ steps.python-pipaudit.outcome == 'success' || steps.python-pipaudit.outcome == 'failure' }},
-              "mypy": ${{ steps.python-mypy.outcome == 'success' || steps.python-mypy.outcome == 'failure' }},
-              "hypothesis": ${{ steps.python-hypothesis.outcome == 'success' || steps.python-hypothesis.outcome == 'failure' }},
-              "black": ${{ steps.python-black.outcome == 'success' || steps.python-black.outcome == 'failure' }},
-              "isort": ${{ steps.python-isort.outcome == 'success' || steps.python-isort.outcome == 'failure' }},
-              "mutmut": ${{ steps.python-mutmut.outcome == 'success' || steps.python-mutmut.outcome == 'failure' }},
-              "semgrep": ${{ steps.semgrep.outcome == 'success' || steps.semgrep.outcome == 'failure' }},
-              "trivy": ${{ steps.trivy.outcome == 'success' || steps.trivy.outcome == 'failure' }},
-              "codeql": ${{ steps.codeql.outcome == 'success' || steps.codeql.outcome == 'failure' }},
-              "docker": ${{ steps.docker-build.outcome == 'success' || steps.docker-build.outcome == 'failure' }}
+              "pytest": $(ran "$PYTHON_TESTS_OUTCOME"),
+              "ruff": $(ran "$PYTHON_RUFF_OUTCOME"),
+              "bandit": $(ran "$PYTHON_BANDIT_OUTCOME"),
+              "pip_audit": $(ran "$PYTHON_PIPAUDIT_OUTCOME"),
+              "mypy": $(ran "$PYTHON_MYPY_OUTCOME"),
+              "hypothesis": $(ran "$PYTHON_HYPOTHESIS_OUTCOME"),
+              "black": $(ran "$PYTHON_BLACK_OUTCOME"),
+              "isort": $(ran "$PYTHON_ISORT_OUTCOME"),
+              "mutmut": $(ran "$PYTHON_MUTMUT_OUTCOME"),
+              "semgrep": $(ran "$SEMGREP_OUTCOME"),
+              "trivy": $(ran "$TRIVY_OUTCOME"),
+              "codeql": $(ran "$CODEQL_OUTCOME"),
+              "docker": $(ran "$DOCKER_BUILD_OUTCOME")
             },
             "tools_success": {
-              "pytest": ${{ steps.python-tests.outcome == 'success' }},
-              "ruff": ${{ steps.python-ruff.outcome == 'success' }},
-              "bandit": ${{ steps.python-bandit.outcome == 'success' }},
-              "pip_audit": ${{ steps.python-pipaudit.outcome == 'success' }},
-              "mypy": ${{ steps.python-mypy.outcome == 'success' }},
-              "hypothesis": ${{ steps.python-hypothesis.outcome == 'success' }},
-              "black": ${{ steps.python-black.outcome == 'success' }},
-              "isort": ${{ steps.python-isort.outcome == 'success' }},
-              "mutmut": ${{ steps.python-mutmut.outcome == 'success' }},
-              "semgrep": ${{ steps.semgrep.outcome == 'success' }},
-              "trivy": ${{ steps.trivy.outcome == 'success' }},
-              "codeql": ${{ steps.codeql.outcome == 'success' }},
-              "docker": ${{ steps.docker-build.outcome == 'success' }}
+              "pytest": $(succeeded "$PYTHON_TESTS_OUTCOME"),
+              "ruff": $(succeeded "$PYTHON_RUFF_OUTCOME"),
+              "bandit": $(succeeded "$PYTHON_BANDIT_OUTCOME"),
+              "pip_audit": $(succeeded "$PYTHON_PIPAUDIT_OUTCOME"),
+              "mypy": $(succeeded "$PYTHON_MYPY_OUTCOME"),
+              "hypothesis": $(succeeded "$PYTHON_HYPOTHESIS_OUTCOME"),
+              "black": $(succeeded "$PYTHON_BLACK_OUTCOME"),
+              "isort": $(succeeded "$PYTHON_ISORT_OUTCOME"),
+              "mutmut": $(succeeded "$PYTHON_MUTMUT_OUTCOME"),
+              "semgrep": $(succeeded "$SEMGREP_OUTCOME"),
+              "trivy": $(succeeded "$TRIVY_OUTCOME"),
+              "codeql": $(succeeded "$CODEQL_OUTCOME"),
+              "docker": $(succeeded "$DOCKER_BUILD_OUTCOME")
             }
           }
           EOF
@@ -1552,8 +1570,11 @@ jobs:
 
       - name: Validate Summary
         if: always()
+        env:
+          MATRIX_CONFIG_BASENAME: ${{ matrix.config_basename }}
+          MATRIX_SUBDIR: ${{ matrix.subdir }}
         run: |
-          REPORT_SUFFIX="${{ matrix.config_basename }}${{ matrix.subdir != '' && format('-{0}', matrix.subdir) || '' }}"
+          REPORT_SUFFIX="${MATRIX_CONFIG_BASENAME}${MATRIX_SUBDIR:+-${MATRIX_SUBDIR}}"
           REPORT_DIR="reports/${REPORT_SUFFIX}"
           python3 hub/scripts/validate_summary.py \
             --report "$REPORT_DIR/report.json" \
@@ -1566,7 +1587,7 @@ jobs:
       # ========================================
       - name: Upload Test Reports
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: reports-${{ matrix.config_basename }}${{ matrix.subdir != '' && format('-{0}', matrix.subdir) || '' }}
           path: |
@@ -1603,18 +1624,24 @@ jobs:
     runs-on: ubuntu-latest
     needs: [discover, test-repo]
     if: always()
+    permissions:
+      contents: read
 
     steps:
       - name: Generate Hub Summary
+        env:
+          DISCOVER_COUNT: ${{ needs.discover.outputs.count }}
+          GH_RUN_NUMBER: ${{ github.run_number }}
+          GH_EVENT_NAME: ${{ github.event_name }}
         run: |
           summary_file="$GITHUB_STEP_SUMMARY"
           exec 3> "$summary_file"
           cat >&3 << EOF
           # CI/CD Hub Summary
 
-          **Total Repositories:** ${{ needs.discover.outputs.count }}
-          **Run:** #${{ github.run_number }}
-          **Triggered:** ${{ github.event_name }}
+          **Total Repositories:** ${DISCOVER_COUNT}
+          **Run:** #${GH_RUN_NUMBER}
+          **Triggered:** ${GH_EVENT_NAME}
 
           ---
 

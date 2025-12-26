@@ -28,9 +28,9 @@ on:
     # Run weekly on Sunday at 3 AM UTC
     - cron: '0 3 * * 0'
 
+# Minimal default permissions - jobs override as needed
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   # ============================================================================
@@ -39,13 +39,15 @@ jobs:
   discover:
     name: Discover Repositories
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       matrix: ${{ steps.repos.outputs.matrix }}
       count: ${{ steps.repos.outputs.count }}
 
     steps:
       - name: Checkout Hub
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 1
           persist-credentials: false
@@ -99,13 +101,16 @@ jobs:
     runs-on: ubuntu-latest
     needs: discover
     if: needs.discover.outputs.count > 0
+    permissions:
+      contents: read
+      security-events: write  # For CodeQL SARIF upload
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
 
     steps:
       - name: Checkout Target Repo
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: ${{ matrix.owner }}/${{ matrix.name }}
           path: repo
@@ -128,7 +133,7 @@ jobs:
       # CODEQL ANALYSIS
       # ========================================
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@5d4e8d1aca955e8d8589aabd499c5cae939e33c7
+        uses: github/codeql-action/init@45c373516f557556c15d420e3f5e0aa3d64366bc # v3.31.9
         if: steps.repo-check.outputs.present == 'true'
         continue-on-error: true
         with:
@@ -137,7 +142,7 @@ jobs:
 
       - name: Set up JDK (for Java CodeQL)
         if: steps.repo-check.outputs.present == 'true' && matrix.language == 'java'
-        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -155,7 +160,7 @@ jobs:
         continue-on-error: true
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@5d4e8d1aca955e8d8589aabd499c5cae939e33c7
+        uses: github/codeql-action/analyze@45c373516f557556c15d420e3f5e0aa3d64366bc # v3.31.9
         if: steps.repo-check.outputs.present == 'true'
         continue-on-error: true
         with:
@@ -165,7 +170,7 @@ jobs:
       # SBOM GENERATION
       # ========================================
       - name: Generate SBOM (Syft)
-        uses: anchore/sbom-action@a930d0ac434e3182448fe678398ba5713717112a # v0
+        uses: anchore/sbom-action@a930d0ac434e3182448fe678398ba5713717112a # v0.21.0
         if: steps.repo-check.outputs.present == 'true'
         continue-on-error: true
         with:
@@ -178,7 +183,7 @@ jobs:
       # ========================================
       - name: Dependency Review
         if: steps.repo-check.outputs.present == 'true' && github.event_name == 'pull_request'
-        uses: actions/dependency-review-action@3c4e3dcb1aa7874d2c16be7d79418e9b7efd6261 # v4
+        uses: actions/dependency-review-action@3c4e3dcb1aa7874d2c16be7d79418e9b7efd6261 # v4.8.2
         with:
           fail-on-severity: high
 
@@ -187,7 +192,7 @@ jobs:
       # ========================================
       - name: Set up Python
         if: steps.repo-check.outputs.present == 'true' && matrix.language == 'python'
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.12'
 
@@ -307,7 +312,7 @@ jobs:
 
       - name: Upload Security Reports
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: security-reports-${{ matrix.name }}
           path: |
@@ -325,13 +330,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: discover
     if: inputs.run_zap == true && needs.discover.outputs.count > 0
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
 
     steps:
       - name: Checkout Target Repo
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: ${{ matrix.owner }}/${{ matrix.name }}
           path: repo
@@ -406,17 +413,22 @@ jobs:
     runs-on: ubuntu-latest
     needs: [discover, security-scan]
     if: always()
+    permissions:
+      contents: read
 
     steps:
       - name: Generate Summary
+        env:
+          REPO_COUNT: ${{ needs.discover.outputs.count }}
+          RUN_NUMBER: ${{ github.run_number }}
         run: |
           summary_file="$GITHUB_STEP_SUMMARY"
           exec 3> "$summary_file"
           cat >&3 << EOF
           # Security & Supply Chain Summary
 
-          **Repositories Scanned:** ${{ needs.discover.outputs.count }}
-          **Run:** #${{ github.run_number }}
+          **Repositories Scanned:** ${REPO_COUNT}
+          **Run:** #${RUN_NUMBER}
 
           ## Tools Executed
 
