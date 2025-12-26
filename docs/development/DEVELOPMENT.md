@@ -75,6 +75,28 @@ cihub config --repo <name> disable pitest    # Disable a tool
 cihub config --repo <name> set repo.branch develop  # Set a value
 ```
 
+### JSON Output
+
+Most CLI commands accept `--json`, which emits a structured envelope for
+machine parsing (not raw tool JSON). Use the `data` field for
+command-specific payloads.
+
+```json
+{
+  "command": "detect",
+  "status": "success",
+  "exit_code": 0,
+  "duration_ms": 12,
+  "summary": "OK",
+  "problems": [],
+  "files_generated": [],
+  "files_modified": [],
+  "data": {
+    "language": "python"
+  }
+}
+```
+
 ---
 
 ## Scripts
