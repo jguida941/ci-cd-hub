@@ -12,7 +12,7 @@ Documentation had drift: broken references (`issues.md`, `START_HERE.md` casing)
   - Readiness/status: `docs/status/honest-status.md` (primary); historical snapshot at `docs/status/archive/implementation-2025-11-02.md`
   - Day-1 actions: `docs/start-here.md`
   - Backlog summary: `docs/backlog.md` (issues are canonical)
-  - Changelog: `CHANGELOG.md`
+  - Changelog: `docs/development/CHANGELOG.md`
   - Decisions: `docs/adr/`
   - Module/tool references: `docs/modules/*` and tool READMEs
   - CI summary of multi-repo runs: run-level `project-ci-summary` artifact + run summary table emitted by `.github/workflows/project-ci.yml` (tests/coverage/spotbugs/bandit/ruff per repo); mutation summaries live under `mutation-observatory-*` artifacts.

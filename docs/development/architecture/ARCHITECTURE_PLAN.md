@@ -3366,10 +3366,10 @@ ci-cd-hub/
 | `docs/SUPPLY_CHAIN.md` | `docs/guides/supply-chain.md` | Supply chain guide |
 | `docs/DR_RUNBOOK.md` | `docs/guides/dr-runbook.md` | DR runbook |
 | `docs/RUNNER_ISOLATION.md` | `docs/guides/runner-isolation.md` | Runner isolation |
-| `docs/SECURITY.md` | `docs/guides/security.md` | Security guide |
+| `.github/SECURITY.md` | `docs/guides/security.md` | Security guide |
 | `docs/CANARY_SETUP.md` | `docs/guides/canary.md` | Canary setup |
 | `docs/TESTING.md` | `docs/guides/testing.md` | Testing guide |
-| `docs/CONTRIBUTING.md` | `docs/CONTRIBUTING.md` | Contribution guide |
+| `.github/CONTRIBUTING.md` | `.github/CONTRIBUTING.md` | Contribution guide |
 | `docs/adr/*.md` | `docs/adr/` | Architecture decisions |
 | `docs/modules/*.md` | `docs/modules/` | Module documentation |
 | `docs/ops/*.md` | `docs/ops/` | Operations docs |
@@ -4144,4 +4144,4 @@ Production-grade approach to add more languages without exceeding the GitHub Act
 - ADR-0003: Dispatch and Orchestration
 - ADR-0004: Aggregation and Reporting
 - ADR-0023: Deterministic Correlation
-- ADR-0024: Modular Validation Architecture (proposed)
+- ADR-0024: Workflow Dispatch Input Limit

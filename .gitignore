@@ -24,6 +24,10 @@ env/
 .DS_Store
 Thumbs.db
 
+# Test artifacts
+.coverage
+mutants/
+
 # Reports (generated)
 reports/*.json
 reports/*.html
@@ -35,9 +39,8 @@ reports/*.html
 *.local.yaml
 
 # AI context files (local only)
-AGENTS.md
 CLAUDE.md
-chatgptreview.md
+docs/development/coderabbit.md
 
 # Internal audit docs
 docs/development/audit.md
@@ -49,3 +52,6 @@ artifacts/
 hub-fixtures/
 ci-cd-hub-fixtures/
 scripts/ci-report/
+
+# Personal dev notes (local only)
+personal_dev/

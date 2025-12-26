@@ -1056,7 +1056,7 @@ hub-release/
 ├── reports/                 # Generated (gitignored)
 │
 ├── README.md
-├── CHANGELOG.md
+├── docs/development/CHANGELOG.md
 ├── STATUS.md
 └── pyproject.toml
 ```

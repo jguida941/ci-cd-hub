@@ -15,9 +15,10 @@ Start here if you're new to the hub:
 
 ## Project Policies
 
-- [CONTRIBUTING.md](../CONTRIBUTING.md) - How to contribute
-- [SECURITY.md](../SECURITY.md) - Vulnerability reporting policy
-- [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) - Community standards
+- [CONTRIBUTING.md](../.github/CONTRIBUTING.md) - How to contribute
+- [SECURITY.md](../.github/SECURITY.md) - Vulnerability reporting policy
+- [CODE_OF_CONDUCT.md](../.github/CODE_OF_CONDUCT.md) - Community standards
+- [Makefile](../Makefile) - Canonical developer commands
 
 ---
 
@@ -40,6 +41,9 @@ docs/
 │   ├── TOOLS.md
 │   └── example.ci-hub.yml
 ├── development/     # Internal/development docs
+│   ├── CHANGELOG.md
+│   ├── BACKLOG.md
+│   ├── DEVELOPMENT.md
 │   ├── coderabbit.md
 │   ├── specs/
 │   │   ├── P0.md
@@ -58,7 +62,8 @@ docs/
 │   │   ├── SMOKE_TEST.md
 │   │   └── SMOKE_TEST_REPOS.md
 │   ├── research/
-│   │   └── RESEARCH_LOG.md
+│   │   ├── RESEARCH_LOG.md
+│   │   └── MUTATION_TESTING_GAPS.md
 │   └── archive/
 │       ├── ROADMAP.md
 │       ├── OUTSTANDING.md
@@ -107,7 +112,9 @@ Internal documentation for hub maintainers:
 
 | Document | Description |
 |----------|-------------|
-| [BACKLOG.md](../BACKLOG.md) | Feature backlog and priorities |
+| [CHANGELOG.md](development/CHANGELOG.md) | Release notes and change history |
+| [BACKLOG.md](development/BACKLOG.md) | Feature backlog and priorities |
+| [DEVELOPMENT.md](development/DEVELOPMENT.md) | Developer guide and commands |
 | [coderabbit.md](development/coderabbit.md) | CodeRabbit review feedback |
 | [specs/](development/specs/) | P0/P1/nonfunctional requirements |
 | [STATUS.md](development/status/STATUS.md) | Current execution plan |
@@ -119,6 +126,7 @@ Internal documentation for hub maintainers:
 | [SMOKE_TEST.md](development/execution/SMOKE_TEST.md) | How to run smoke tests |
 | [SMOKE_TEST_REPOS.md](development/execution/SMOKE_TEST_REPOS.md) | Smoke test repository requirements |
 | [RESEARCH_LOG.md](development/research/RESEARCH_LOG.md) | Design decisions and research |
+| [MUTATION_TESTING_GAPS.md](development/research/MUTATION_TESTING_GAPS.md) | Mutation testing gap analysis |
 | [archive/](development/archive/) | Archived docs (ROADMAP, OUTSTANDING, etc.) |
 | [adr/](adr/) | Architecture Decision Records (0001-0027) |
 
@@ -156,13 +164,15 @@ Internal documentation for hub maintainers:
 2. [guides/MODES.md](guides/MODES.md) - Execution modes
 3. [development/execution/SMOKE_TEST.md](development/execution/SMOKE_TEST.md) - Pre-release validation
 4. [development/research/RESEARCH_LOG.md](development/research/RESEARCH_LOG.md) - Design decisions
-5. [../BACKLOG.md](../BACKLOG.md) - Feature backlog
-6. [development/specs/](development/specs/) - P0/P1 requirements
+5. [development/BACKLOG.md](development/BACKLOG.md) - Feature backlog
+6. [development/DEVELOPMENT.md](development/DEVELOPMENT.md) - Developer guide and commands
+7. [development/specs/](development/specs/) - P0/P1 requirements
+7. [Makefile](../Makefile) - Canonical developer commands
 
 ### For AI Assistants
 1. **[../AGENTS.md](../AGENTS.md)** - AI context and rules
 2. [development/research/RESEARCH_LOG.md](development/research/RESEARCH_LOG.md) - Full context
-3. [../BACKLOG.md](../BACKLOG.md) - Current priorities
+3. [development/BACKLOG.md](development/BACKLOG.md) - Current priorities
 
 ---
 
