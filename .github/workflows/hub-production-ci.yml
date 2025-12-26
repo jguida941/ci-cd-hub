@@ -374,27 +374,48 @@ jobs:
         run: |
           set -e  # Fail on any error
 
+          KILLED=0
+          SURVIVED=0
+          TIMEOUT=0
+          SUSPICIOUS=0
+          SKIPPED=0
+          SCORE=0
+
           # Run mutmut 3.x - reads paths from pyproject.toml [tool.mutmut]
           echo "Running mutation tests on cihub/..."
-          if ! mutmut run; then
+          if ! mutmut run 2>&1 | tee mutmut-run.log; then
             echo "::error::mutmut run failed - check for import errors or test failures"
             exit 1
           fi
 
-          # Get results - mutmut 3.x: --all true shows all mutants including killed
-          # Without --all, it only shows non-killed mutants (empty if all killed)
-          RESULTS=$(mutmut results --all true 2>&1)
-          if [ -z "$RESULTS" ]; then
-            echo "::error::mutmut produced no results - check configuration"
+          # Parse results from mutmut 3.x run output
+          # Final line format: "⠙ 73/73  🎉 73 🫥 0  ⏰ 0  🤔 0  🙁 0  🔇 0"
+          # 🎉 = killed, 🙁 = survived, ⏰ = timeout, 🤔 = suspicious, 🔇 = skipped
+          if grep -q "mutations/second" mutmut-run.log; then
+            # Get the line with final counts (contains X/X pattern)
+            FINAL=$(grep -E '[0-9]+/[0-9]+' mutmut-run.log | tail -1)
+            echo "Final line: $FINAL"
+
+            # Extract counts from emoji markers (use tr to strip newlines)
+            KILLED=$(echo "$FINAL" | sed -n 's/.*🎉[[:space:]]*\([0-9]*\).*/\1/p' | tr -d '\n' | head -1)
+            SURVIVED=$(echo "$FINAL" | sed -n 's/.*🙁[[:space:]]*\([0-9]*\).*/\1/p' | tr -d '\n' | head -1)
+            TIMEOUT=$(echo "$FINAL" | sed -n 's/.*⏰[[:space:]]*\([0-9]*\).*/\1/p' | tr -d '\n' | head -1)
+            SUSPICIOUS=$(echo "$FINAL" | sed -n 's/.*🤔[[:space:]]*\([0-9]*\).*/\1/p' | tr -d '\n' | head -1)
+            SKIPPED=$(echo "$FINAL" | sed -n 's/.*🔇[[:space:]]*\([0-9]*\).*/\1/p' | tr -d '\n' | head -1)
+
+            # Default to 0 if empty
+            KILLED=${KILLED:-0}
+            SURVIVED=${SURVIVED:-0}
+            TIMEOUT=${TIMEOUT:-0}
+            SUSPICIOUS=${SUSPICIOUS:-0}
+            SKIPPED=${SKIPPED:-0}
+
+            echo "Parsed: killed=$KILLED, survived=$SURVIVED, timeout=$TIMEOUT, suspicious=$SUSPICIOUS, skipped=$SKIPPED"
+          else
+            echo "::error::mutmut did not complete successfully - no 'mutations/second' found"
+            cat mutmut-run.log
             exit 1
           fi
-
-          # Count ALL mutant states (not just killed/survived)
-          KILLED=$(echo "$RESULTS" | grep -c "killed" || echo "0")
-          SURVIVED=$(echo "$RESULTS" | grep -c "survived" || echo "0")
-          TIMEOUT=$(echo "$RESULTS" | grep -c "timeout" || echo "0")
-          SUSPICIOUS=$(echo "$RESULTS" | grep -c "suspicious" || echo "0")
-          SKIPPED=$(echo "$RESULTS" | grep -c "skipped" || echo "0")
 
           # Total = all mutants that were tested (exclude skipped)
           TESTED=$((KILLED + SURVIVED + TIMEOUT + SUSPICIOUS))
@@ -436,7 +457,7 @@ jobs:
               echo "**FAILED**: Score ${SCORE}% below 70% threshold"
             } >> "$GITHUB_STEP_SUMMARY"
             echo "::error::Mutation score ${SCORE}% below 70% threshold"
-            mutmut results --all true  # Show all mutant details
+            cat mutmut-run.log
             exit 1
           fi
 
@@ -450,7 +471,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: mutation-results
-          path: mutants/
+          path: |
+            mutants/
+            mutmut-run.log
           retention-days: 7
 
   # ============================================================================
