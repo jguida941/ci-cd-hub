@@ -203,9 +203,7 @@ class TestLoadZizmor:
         """Missing file returns None."""
         monkeypatch.delenv("ZIZMOR_SARIF", raising=False)
         # Point to non-existent default location
-        with mock.patch(
-            "scripts.python_ci_badges.ROOT", Path("/nonexistent")
-        ):
+        with mock.patch("scripts.python_ci_badges.ROOT", Path("/nonexistent")):
             result = load_zizmor()
             assert result is None
 
@@ -256,9 +254,7 @@ class TestLoadBandit:
 
     def test_missing_file_returns_none(self, monkeypatch):
         """Missing file returns None."""
-        with mock.patch(
-            "scripts.python_ci_badges.ROOT", Path("/nonexistent")
-        ):
+        with mock.patch("scripts.python_ci_badges.ROOT", Path("/nonexistent")):
             result = load_bandit()
             assert result is None
 
@@ -297,9 +293,7 @@ class TestLoadPipAudit:
 
     def test_missing_file_returns_none(self):
         """Missing file returns None."""
-        with mock.patch(
-            "scripts.python_ci_badges.ROOT", Path("/nonexistent")
-        ):
+        with mock.patch("scripts.python_ci_badges.ROOT", Path("/nonexistent")):
             result = load_pip_audit()
             assert result is None
 
