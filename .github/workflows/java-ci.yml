@@ -1421,17 +1421,24 @@ jobs:
 
       - name: Resolve Hub Workflow Ref
         id: hub-ref
+        env:
+          HUB_REPO_INPUT: ${{ inputs.hub_repo }}
+          HUB_REF_INPUT: ${{ inputs.hub_ref }}
         run: |
-          WF_REF="${GITHUB_WORKFLOW_REF:-}"
-          if [ -n "$WF_REF" ]; then
-            REPO="${WF_REF%%/.github/workflows/*}"
-            REF="${WF_REF##*@}"
+          if [ -n "$HUB_REPO_INPUT" ] || [ -n "$HUB_REF_INPUT" ]; then
+            if [ -z "$HUB_REPO_INPUT" ] || [ -z "$HUB_REF_INPUT" ]; then
+              echo "::error::hub_repo and hub_ref must both be set or both be empty"
+              exit 1
+            fi
+            repo="$HUB_REPO_INPUT"
+            ref="$HUB_REF_INPUT"
           else
-            REPO="jguida941/ci-cd-hub"
-            REF="main"
+            # Fallback to hub repo defaults (override via inputs for forks)
+            repo="jguida941/ci-cd-hub"
+            ref="main"
           fi
-          echo "repo=$REPO" >> "$GITHUB_OUTPUT"
-          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
       - name: Checkout Hub Scripts
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2

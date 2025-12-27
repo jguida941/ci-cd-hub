@@ -190,16 +190,9 @@ jobs:
             repo="$HUB_REPO_INPUT"
             ref="$HUB_REF_INPUT"
           else
-            if [ -z "$WORKFLOW_REF" ]; then
-              echo "::error::github.workflow_ref is not set; cannot resolve hub repo/ref"
-              exit 1
-            fi
-            ref="${WORKFLOW_REF##*@}"
-            repo="${WORKFLOW_REF%%/.github/*}"
-            if [ -z "$repo" ] || [ "$repo" = "$WORKFLOW_REF" ] || [ -z "$ref" ] || [ "$ref" = "$WORKFLOW_REF" ]; then
-              echo "::error::Unable to parse hub repo/ref from workflow_ref=$WORKFLOW_REF"
-              exit 1
-            fi
+            # Fallback to hub repo defaults (override via inputs for forks)
+            repo="jguida941/ci-cd-hub"
+            ref="main"
           fi
           echo "repo=$repo" >> "$GITHUB_OUTPUT"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
