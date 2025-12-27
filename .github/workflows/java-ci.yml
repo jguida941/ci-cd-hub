@@ -147,6 +147,14 @@ on:
         description: 'Correlation ID from hub orchestrator for run matching'
         type: string
         default: ''
+      hub_repo:
+        description: 'Override hub repo (owner/name) for installing cihub'
+        type: string
+        default: ''
+      hub_ref:
+        description: 'Override hub ref (tag/sha/branch) for installing cihub'
+        type: string
+        default: ''
 
     secrets:
       NVD_API_KEY:

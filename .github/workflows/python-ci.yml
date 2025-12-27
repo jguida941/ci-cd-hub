@@ -136,6 +136,14 @@ on:
         description: 'Correlation ID from hub orchestrator for run matching'
         type: string
         default: ''
+      hub_repo:
+        description: 'Override hub repo (owner/name) for installing cihub'
+        type: string
+        default: ''
+      hub_ref:
+        description: 'Override hub ref (tag/sha/branch) for installing cihub'
+        type: string
+        default: ''
 
     secrets:
       CODECOV_TOKEN:
@@ -169,16 +177,28 @@ jobs:
 
       - name: Resolve hub ref
         id: hub-ref
+        env:
+          HUB_REPO_INPUT: ${{ inputs.hub_repo }}
+          HUB_REF_INPUT: ${{ inputs.hub_ref }}
         run: |
-          if [ -z "${GITHUB_WORKFLOW_REF:-}" ]; then
-            echo "::error::GITHUB_WORKFLOW_REF is not set; cannot resolve hub repo/ref"
-            exit 1
-          fi
-          ref="${GITHUB_WORKFLOW_REF##*@}"
-          repo="${GITHUB_WORKFLOW_REF%%/.github/*}"
-          if [ -z "$repo" ] || [ "$repo" = "$GITHUB_WORKFLOW_REF" ] || [ -z "$ref" ] || [ "$ref" = "$GITHUB_WORKFLOW_REF" ]; then
-            echo "::error::Unable to parse hub repo/ref from GITHUB_WORKFLOW_REF=$GITHUB_WORKFLOW_REF"
-            exit 1
+          if [ -n "$HUB_REPO_INPUT" ] || [ -n "$HUB_REF_INPUT" ]; then
+            if [ -z "$HUB_REPO_INPUT" ] || [ -z "$HUB_REF_INPUT" ]; then
+              echo "::error::hub_repo and hub_ref must both be set or both be empty"
+              exit 1
+            fi
+            repo="$HUB_REPO_INPUT"
+            ref="$HUB_REF_INPUT"
+          else
+            if [ -z "${GITHUB_WORKFLOW_REF:-}" ]; then
+              echo "::error::GITHUB_WORKFLOW_REF is not set; cannot resolve hub repo/ref"
+              exit 1
+            fi
+            ref="${GITHUB_WORKFLOW_REF##*@}"
+            repo="${GITHUB_WORKFLOW_REF%%/.github/*}"
+            if [ -z "$repo" ] || [ "$repo" = "$GITHUB_WORKFLOW_REF" ] || [ -z "$ref" ] || [ "$ref" = "$GITHUB_WORKFLOW_REF" ]; then
+              echo "::error::Unable to parse hub repo/ref from GITHUB_WORKFLOW_REF=$GITHUB_WORKFLOW_REF"
+              exit 1
+            fi
           fi
           echo "repo=$repo" >> "$GITHUB_OUTPUT"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
