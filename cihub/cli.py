@@ -1091,6 +1091,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=".cihub",
         help="Output directory for reports (default: .cihub)",
     )
+    ci.add_argument(
+        "--install-deps",
+        action="store_true",
+        help="Install repo dependencies before running tools",
+    )
     ci.add_argument("--report", help="Override report.json path")
     ci.add_argument("--summary", help="Override summary.md path")
     ci.set_defaults(func=cmd_ci)

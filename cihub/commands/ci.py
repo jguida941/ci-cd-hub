@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -119,6 +121,92 @@ def _tool_enabled(config: dict[str, Any], tool: str) -> bool:
     if isinstance(entry, dict):
         return bool(entry.get("enabled", False))
     return False
+
+
+def _run_dep_command(
+    cmd: list[str],
+    workdir: Path,
+    label: str,
+    problems: list[dict[str, Any]],
+) -> bool:
+    proc = subprocess.run(  # noqa: S603
+        cmd,
+        cwd=workdir,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode == 0:
+        return True
+    message = proc.stderr.strip() or proc.stdout.strip() or "unknown error"
+    problems.append(
+        {
+            "severity": "error",
+            "message": f"{label} failed: {message}",
+            "code": "CIHUB-CI-DEPS",
+        }
+    )
+    return False
+
+
+def _install_python_dependencies(
+    config: dict[str, Any],
+    workdir: Path,
+    problems: list[dict[str, Any]],
+) -> None:
+    deps_cfg = config.get("python", {}).get("dependencies", {}) or {}
+    if isinstance(deps_cfg, dict):
+        if deps_cfg.get("install") is False:
+            return
+        commands = deps_cfg.get("commands")
+    else:
+        commands = None
+
+    python_bin = sys.executable or resolve_executable("python")
+    if commands:
+        for cmd in commands:
+            if not cmd:
+                continue
+            if isinstance(cmd, list):
+                parts = [str(part) for part in cmd if str(part)]
+            else:
+                cmd_str = str(cmd).strip()
+                if not cmd_str:
+                    continue
+                parts = shlex.split(cmd_str)
+            if not parts:
+                continue
+            _run_dep_command(parts, workdir, " ".join(parts), problems)
+        return
+
+    if (workdir / "requirements.txt").exists():
+        _run_dep_command(
+            [python_bin, "-m", "pip", "install", "-r", "requirements.txt"],
+            workdir,
+            "requirements.txt",
+            problems,
+        )
+    if (workdir / "requirements-dev.txt").exists():
+        _run_dep_command(
+            [python_bin, "-m", "pip", "install", "-r", "requirements-dev.txt"],
+            workdir,
+            "requirements-dev.txt",
+            problems,
+        )
+    if (workdir / "pyproject.toml").exists():
+        ok = _run_dep_command(
+            [python_bin, "-m", "pip", "install", "-e", ".[dev]"],
+            workdir,
+            "pyproject.toml [dev]",
+            problems,
+        )
+        if not ok:
+            _run_dep_command(
+                [python_bin, "-m", "pip", "install", "-e", "."],
+                workdir,
+                "pyproject.toml",
+                problems,
+            )
 
 
 def _run_python_tools(
@@ -321,6 +409,8 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
 
     workdir = _resolve_workdir(repo_path, config, args.workdir)
     problems: list[dict[str, Any]] = []
+    if args.install_deps:
+        _install_python_dependencies(config, repo_path / workdir, problems)
     try:
         tool_outputs, tools_ran, tools_success = _run_python_tools(
             config, repo_path, workdir, output_dir, problems

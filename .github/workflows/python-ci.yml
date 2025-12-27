@@ -201,20 +201,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e "hub[ci]"
 
-      - name: Install project dependencies
-        run: |
-          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
-          if [ -f "requirements-dev.txt" ]; then pip install -r requirements-dev.txt; fi
-          if [ -f "pyproject.toml" ]; then
-            pip install -e ".[dev]" 2>/dev/null || pip install -e . 2>/dev/null || true
-          fi
-
       - name: Run cihub ci
         run: |
           cihub ci \
             --workdir "${{ inputs.workdir }}" \
             --correlation-id "${{ inputs.hub_correlation_id }}" \
-            --output-dir .cihub
+            --output-dir .cihub \
+            --install-deps
 
       - name: Read report outputs
         id: report
