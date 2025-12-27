@@ -30,6 +30,7 @@ Explicit scope + constraints (must be in plan):
 ADRs to reference in this plan:
 - ADR-0031: CLI-Driven Workflow Execution (Thin Workflows)
 - ADR-0032: PyQt6 GUI Wrapper for Full Automation
+- ADR-0033: CLI Distribution and Automation Enhancements
 - ADR-0029: CLI Exit Code Registry (JSON contract)
 - ADR-0028: Boolean Config Type Coercion
 - ADR-0024: Workflow Dispatch Input Limit
@@ -68,6 +69,18 @@ Dependency strategy:
 - Java uses Maven/Gradle wrappers; Python tools come from extras
   (e.g., pytest/pytest-cov, ruff, black, isort, mypy, bandit, pip-audit,
   mutmut, hypothesis).
+
+Research additions (explicit requirements):
+- CLI distribution: PyPI publish + scoped tokens + automated release workflow.
+- Custom command parsing modes: exit_code, json, regex.
+- Private deps auth: PIP_INDEX_URL with secrets; Maven settings.xml secret.
+- PyQt6 CLI wrapper must use QProcess with streamed output (no blocking UI).
+- Makefile support is explicit in config (never auto-run).
+- Workflow limits documented (10 nesting levels, 50 unique calls).
+- Schema validation via check-jsonschema + pre-commit hook.
+- POM editing: current approach is fragile; consider pom-tuner patterns.
+- Secrets automation: set/list/verify/discover commands.
+- CLI framework: keep argparse for base install; revisit Typer later if needed.
 
   Phase A (10 steps):
   - A1: Create simplify-workflows branch

@@ -34,6 +34,7 @@ Existing:
 - [ADR-0029: CLI Exit Code Registry](0029-cli-exit-codes.md)
 - [ADR-0031: CLI-Driven Workflow Execution (Thin Workflows)](0031-cli-driven-workflow-execution.md)
 - [ADR-0032: PyQt6 GUI Wrapper for Full Automation](0032-pyqt6-cli-wrapper-full-automation.md)
+- [ADR-0033: CLI Distribution and Automation Enhancements](0033-cli-distribution-and-automation.md)
 
 Template starter:
 ```markdown

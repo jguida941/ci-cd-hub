@@ -1872,6 +1872,53 @@ Planned/required:
 
 ---
 
+## Distribution, Parsing, and Validation (Research Additions)
+
+### CLI Distribution
+
+- Publish to PyPI with scoped tokens.
+- Automate release: `python -m build` + `twine upload`.
+- Pin workflow callers to tags (e.g., `@v1`), not `@main`.
+
+### Custom Command Parsing
+
+Support parsing modes for custom commands:
+
+- `exit_code` (pass/fail only)
+- `json` (structured output)
+- `regex` (metric extraction)
+
+### Private Dependencies
+
+- Python: `PIP_INDEX_URL` with secret-backed auth.
+- Maven: base64-encoded `settings.xml` secret, decoded at runtime.
+
+### Workflow Limits
+
+- 10 levels of reusable workflow nesting.
+- 50 unique workflow calls per workflow file.
+
+### Schema Validation
+
+- Use `check-jsonschema` for `.ci-hub.yml`.
+- Add pre-commit hook for schema enforcement.
+
+### POM Editing
+
+- Current POM edits are fragile for complex projects.
+- Consider pom-tuner patterns or equivalent structured edits.
+
+### Secrets Automation
+
+- CLI must support set/list/verify/discover secrets.
+
+### CLI Framework
+
+- Keep `argparse` (stdlib, no deps).
+- Revisit Typer only if maintainability becomes a blocker.
+
+---
+
 ## Phase 9: PyQt6 GUI Wrapper (Optional)
 
 ### Architecture: CLI as Engine, GUI as Controller
