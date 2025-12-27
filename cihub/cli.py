@@ -1058,6 +1058,12 @@ def cmd_config(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.config_outputs import cmd_config_outputs as handler
+
+    return handler(args)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="cihub", description="CI/CD Hub CLI")
     parser.add_argument("--version", action="version", version=f"cihub {__version__}")
@@ -1166,6 +1172,20 @@ def build_parser() -> argparse.ArgumentParser:
         "--output", help="Path to write outputs (defaults to GITHUB_OUTPUT)"
     )
     report_outputs.set_defaults(func=cmd_report)
+
+    config_outputs = subparsers.add_parser(
+        "config-outputs",
+        help="Emit config outputs for GitHub Actions",
+    )
+    add_json_flag(config_outputs)
+    config_outputs.add_argument("--repo", default=".", help="Path to repo (default: .)")
+    config_outputs.add_argument("--workdir", help="Override workdir/subdir")
+    config_outputs.add_argument(
+        "--github-output",
+        action="store_true",
+        help="Write outputs to GITHUB_OUTPUT",
+    )
+    config_outputs.set_defaults(func=cmd_config_outputs)
 
     new = subparsers.add_parser("new", help="Create hub-side repo config")
     add_json_flag(new)

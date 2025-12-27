@@ -53,57 +53,11 @@ jobs:
     outputs:
       # Language
       language: ${{ steps.parse.outputs.language }}
-      hub_repo: ${{ steps.parse.outputs.hub_repo }}
-      hub_ref: ${{ steps.parse.outputs.hub_ref }}
-
-      # Python settings
       python_version: ${{ steps.parse.outputs.python_version }}
-      run_pytest: ${{ steps.parse.outputs.run_pytest }}
-      run_ruff: ${{ steps.parse.outputs.run_ruff }}
-      run_bandit: ${{ steps.parse.outputs.run_bandit }}
-      run_pip_audit: ${{ steps.parse.outputs.run_pip_audit }}
-      run_mypy: ${{ steps.parse.outputs.run_mypy }}
-      run_black: ${{ steps.parse.outputs.run_black }}
-      run_isort: ${{ steps.parse.outputs.run_isort }}
-      run_mutmut: ${{ steps.parse.outputs.run_mutmut }}
-      run_hypothesis: ${{ steps.parse.outputs.run_hypothesis }}
-      run_semgrep: ${{ steps.parse.outputs.run_semgrep }}
-      run_trivy: ${{ steps.parse.outputs.run_trivy }}
-      run_codeql: ${{ steps.parse.outputs.run_codeql }}
-      run_docker: ${{ steps.parse.outputs.run_docker }}
-
-      # Java settings
       java_version: ${{ steps.parse.outputs.java_version }}
       build_tool: ${{ steps.parse.outputs.build_tool }}
-      run_jacoco: ${{ steps.parse.outputs.run_jacoco }}
-      run_checkstyle: ${{ steps.parse.outputs.run_checkstyle }}
-      run_spotbugs: ${{ steps.parse.outputs.run_spotbugs }}
-      run_owasp: ${{ steps.parse.outputs.run_owasp }}
-      use_nvd_api_key: ${{ steps.parse.outputs.use_nvd_api_key }}
-      run_pmd: ${{ steps.parse.outputs.run_pmd }}
-      run_pitest: ${{ steps.parse.outputs.run_pitest }}
-      run_jqwik: ${{ steps.parse.outputs.run_jqwik }}
-      # Shared tool toggles are defined above (run_semgrep/run_trivy/run_codeql/run_docker)
-
-      # Common settings
       workdir: ${{ steps.parse.outputs.workdir }}
       retention_days: ${{ steps.parse.outputs.retention_days }}
-
-      # Thresholds
-      coverage_min: ${{ steps.parse.outputs.coverage_min }}
-      mutation_score_min: ${{ steps.parse.outputs.mutation_score_min }}
-      max_critical_vulns: ${{ steps.parse.outputs.max_critical_vulns }}
-      max_high_vulns: ${{ steps.parse.outputs.max_high_vulns }}
-      max_semgrep_findings: ${{ steps.parse.outputs.max_semgrep_findings }}
-      # Python thresholds
-      max_ruff_errors: ${{ steps.parse.outputs.max_ruff_errors }}
-      max_black_issues: ${{ steps.parse.outputs.max_black_issues }}
-      max_isort_issues: ${{ steps.parse.outputs.max_isort_issues }}
-      # Java thresholds
-      owasp_cvss_fail: ${{ steps.parse.outputs.owasp_cvss_fail }}
-      max_checkstyle_errors: ${{ steps.parse.outputs.max_checkstyle_errors }}
-      max_spotbugs_bugs: ${{ steps.parse.outputs.max_spotbugs_bugs }}
-      max_pmd_violations: ${{ steps.parse.outputs.max_pmd_violations }}
 
     steps:
       - name: Checkout calling repo
@@ -111,205 +65,26 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Parse .ci-hub.yml
-        id: parse
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install cihub
         env:
-          HUB_REPO_INPUT: ${{ inputs.hub_repo || vars.HUB_REPO }}
-          HUB_REF_INPUT: ${{ inputs.hub_ref || vars.HUB_REF }}
+          HUB_REPO: ${{ inputs.hub_repo || vars.HUB_REPO }}
+          HUB_REF: ${{ inputs.hub_ref || vars.HUB_REF }}
         run: |
-          python3 << 'PYEOF'
-          import yaml
-          import json
-          import os
+          if [ -z "$HUB_REPO" ] || [ -z "$HUB_REF" ]; then
+            echo "::error::Set inputs hub_repo/hub_ref or repo/org vars HUB_REPO and HUB_REF"
+            exit 1
+          fi
+          python -m pip install --upgrade pip
+          python -m pip install "git+https://github.com/${HUB_REPO}.git@${HUB_REF}"
 
-          # =================================================================
-          # DEFAULTS (copied from config/defaults.yaml - keep in sync!)
-          # =================================================================
-          DEFAULTS = {
-              # Language defaults
-              "language": "python",
-              "workdir": ".",
-
-              # Python defaults
-              "python": {
-                  "version": "3.12",
-                  "tools": {
-                      "pytest": {"enabled": True, "min_coverage": 70},
-                      "ruff": {"enabled": True, "max_errors": 0},
-                      "bandit": {"enabled": True},
-                      "pip_audit": {"enabled": True},
-                      "mypy": {"enabled": False},
-                      "black": {"enabled": True, "max_issues": 0},
-                      "isort": {"enabled": True, "max_issues": 0},
-                      "mutmut": {"enabled": True, "min_mutation_score": 70},
-                      "hypothesis": {"enabled": True},
-                      "semgrep": {"enabled": False, "max_findings": 0},
-                      "trivy": {"enabled": False},
-                      "codeql": {"enabled": False},
-                      "docker": {"enabled": False},
-                  }
-              },
-
-              # Java defaults
-              "java": {
-                  "version": "21",
-                  "build_tool": "maven",
-                  "tools": {
-                      "jacoco": {"enabled": True, "min_coverage": 70},
-                      "checkstyle": {"enabled": True, "max_errors": 0},
-                      "spotbugs": {"enabled": True, "max_bugs": 0},
-                      "owasp": {"enabled": True, "fail_on_cvss": 7},
-                      "pmd": {"enabled": True, "max_violations": 0},
-                      "pitest": {"enabled": True, "min_mutation_score": 70},
-                      "jqwik": {"enabled": False},
-                      "semgrep": {"enabled": False, "max_findings": 0},
-                      "trivy": {"enabled": False},
-                      "codeql": {"enabled": False},
-                      "docker": {"enabled": False},
-                  }
-              },
-
-              # Global thresholds
-              "thresholds": {
-                  "coverage_min": 70,
-                  "mutation_score_min": 70,
-                  "max_critical_vulns": 0,
-                  "max_high_vulns": 0,
-              },
-              "reports": {
-                  "retention_days": 30,
-              },
-          }
-
-          def get_tool_enabled(config, lang, tool_name, default=False):
-              """Get tool enabled status with defaults."""
-              tools = config.get(lang, {}).get("tools", {})
-              tool = tools.get(tool_name, {})
-              if isinstance(tool, bool):
-                  return tool
-              return tool.get("enabled", default)
-
-          def get_tool_threshold(config, lang, tool_name, threshold_key, default):
-              """Get tool threshold with defaults."""
-              tools = config.get(lang, {}).get("tools", {})
-              tool = tools.get(tool_name, {})
-              if isinstance(tool, dict):
-                  return tool.get(threshold_key, default)
-              return default
-
-          def get_threshold(config, key, default):
-              """Get global threshold with defaults."""
-              return config.get("thresholds", {}).get(key, default)
-
-          # Load .ci-hub.yml
-          config = {}
-          if os.path.exists(".ci-hub.yml"):
-              with open(".ci-hub.yml") as f:
-                  config = yaml.safe_load(f) or {}
-              print(f"Loaded .ci-hub.yml")
-          else:
-              print("No .ci-hub.yml found, using defaults")
-
-          # Determine language
-          language = config.get("language", DEFAULTS["language"])
-          workdir = config.get("workdir", config.get("repo", {}).get("subdir", DEFAULTS["workdir"]))
-          retention_days = config.get("reports", {}).get("retention_days", DEFAULTS["reports"]["retention_days"])
-
-          hub_repo = (os.environ.get("HUB_REPO_INPUT") or "").strip()
-          hub_ref = (os.environ.get("HUB_REF_INPUT") or "").strip()
-          if not hub_repo or not hub_ref:
-              raise SystemExit(
-                  "Missing hub repo/ref. Set inputs hub_repo/hub_ref or repo/org vars "
-                  "HUB_REPO and HUB_REF."
-              )
-
-          if language == "python":
-              coverage_min = get_tool_threshold(config, "python", "pytest", "min_coverage", 70)
-              mutation_score_min = get_tool_threshold(config, "python", "mutmut", "min_mutation_score", 70)
-              max_semgrep_findings = get_tool_threshold(config, "python", "semgrep", "max_findings", 0)
-              owasp_cvss_fail = get_tool_threshold(config, "python", "trivy", "fail_on_cvss", 7)
-              run_semgrep = get_tool_enabled(config, "python", "semgrep", False)
-              run_trivy = get_tool_enabled(config, "python", "trivy", False)
-              run_codeql = get_tool_enabled(config, "python", "codeql", False)
-              run_docker = get_tool_enabled(config, "python", "docker", False)
-          else:
-              coverage_min = get_tool_threshold(config, "java", "jacoco", "min_coverage", 70)
-              mutation_score_min = get_tool_threshold(config, "java", "pitest", "min_mutation_score", 70)
-              max_semgrep_findings = get_tool_threshold(config, "java", "semgrep", "max_findings", 0)
-              owasp_cvss_fail = get_tool_threshold(config, "java", "owasp", "fail_on_cvss", 7)
-              run_semgrep = get_tool_enabled(config, "java", "semgrep", False)
-              run_trivy = get_tool_enabled(config, "java", "trivy", False)
-              run_codeql = get_tool_enabled(config, "java", "codeql", False)
-              run_docker = get_tool_enabled(config, "java", "docker", False)
-
-          coverage_min = get_threshold(config, "coverage_min", coverage_min)
-          mutation_score_min = get_threshold(config, "mutation_score_min", mutation_score_min)
-
-          # Output file
-          output_file = os.environ.get("GITHUB_OUTPUT", "/dev/stdout")
-
-          with open(output_file, "a") as out:
-              # Language
-              out.write(f"language={language}\n")
-              out.write(f"hub_repo={hub_repo}\n")
-              out.write(f"hub_ref={hub_ref}\n")
-              out.write(f"workdir={workdir}\n")
-              out.write(f"retention_days={retention_days}\n")
-
-              # Python settings
-              py_defaults = DEFAULTS["python"]
-              out.write(f"python_version={config.get('python', {}).get('version', py_defaults['version'])}\n")
-
-              # Python tool toggles (output as JSON for fromJson())
-              out.write(f"run_pytest={json.dumps(get_tool_enabled(config, 'python', 'pytest', True))}\n")
-              out.write(f"run_ruff={json.dumps(get_tool_enabled(config, 'python', 'ruff', True))}\n")
-              out.write(f"run_bandit={json.dumps(get_tool_enabled(config, 'python', 'bandit', True))}\n")
-              out.write(f"run_pip_audit={json.dumps(get_tool_enabled(config, 'python', 'pip_audit', True))}\n")
-              out.write(f"run_mypy={json.dumps(get_tool_enabled(config, 'python', 'mypy', False))}\n")
-              out.write(f"run_black={json.dumps(get_tool_enabled(config, 'python', 'black', True))}\n")
-              out.write(f"run_isort={json.dumps(get_tool_enabled(config, 'python', 'isort', True))}\n")
-              out.write(f"run_mutmut={json.dumps(get_tool_enabled(config, 'python', 'mutmut', True))}\n")
-              out.write(f"run_hypothesis={json.dumps(get_tool_enabled(config, 'python', 'hypothesis', True))}\n")
-              out.write(f"run_semgrep={json.dumps(run_semgrep)}\n")
-              out.write(f"run_trivy={json.dumps(run_trivy)}\n")
-              out.write(f"run_codeql={json.dumps(run_codeql)}\n")
-              out.write(f"run_docker={json.dumps(run_docker)}\n")
-
-              # Java settings
-              java_defaults = DEFAULTS["java"]
-              out.write(f"java_version={config.get('java', {}).get('version', java_defaults['version'])}\n")
-              out.write(f"build_tool={config.get('java', {}).get('build_tool', java_defaults['build_tool'])}\n")
-
-              # Java tool toggles
-              out.write(f"run_jacoco={json.dumps(get_tool_enabled(config, 'java', 'jacoco', True))}\n")
-              out.write(f"run_checkstyle={json.dumps(get_tool_enabled(config, 'java', 'checkstyle', True))}\n")
-              out.write(f"run_spotbugs={json.dumps(get_tool_enabled(config, 'java', 'spotbugs', True))}\n")
-              out.write(f"run_owasp={json.dumps(get_tool_enabled(config, 'java', 'owasp', True))}\n")
-              out.write(f"use_nvd_api_key={json.dumps(get_tool_threshold(config, 'java', 'owasp', 'use_nvd_api_key', True))}\n")
-              out.write(f"run_pmd={json.dumps(get_tool_enabled(config, 'java', 'pmd', True))}\n")
-              out.write(f"run_pitest={json.dumps(get_tool_enabled(config, 'java', 'pitest', True))}\n")
-              out.write(f"run_jqwik={json.dumps(get_tool_enabled(config, 'java', 'jqwik', False))}\n")
-
-              # Thresholds (shared)
-              out.write(f"coverage_min={coverage_min}\n")
-              out.write(f"mutation_score_min={mutation_score_min}\n")
-              out.write(f"max_critical_vulns={get_threshold(config, 'max_critical_vulns', 0)}\n")
-              out.write(f"max_high_vulns={get_threshold(config, 'max_high_vulns', 0)}\n")
-              out.write(f"max_semgrep_findings={max_semgrep_findings}\n")
-
-              # Python-specific thresholds
-              out.write(f"max_ruff_errors={get_tool_threshold(config, 'python', 'ruff', 'max_errors', 0)}\n")
-              out.write(f"max_black_issues={get_tool_threshold(config, 'python', 'black', 'max_issues', 0)}\n")
-              out.write(f"max_isort_issues={get_tool_threshold(config, 'python', 'isort', 'max_issues', 0)}\n")
-
-              # Java-specific thresholds
-              out.write(f"owasp_cvss_fail={owasp_cvss_fail}\n")
-              out.write(f"max_checkstyle_errors={get_tool_threshold(config, 'java', 'checkstyle', 'max_errors', 0)}\n")
-              out.write(f"max_spotbugs_bugs={get_tool_threshold(config, 'java', 'spotbugs', 'max_bugs', 0)}\n")
-              out.write(f"max_pmd_violations={get_tool_threshold(config, 'java', 'pmd', 'max_violations', 0)}\n")
-
-          print(f"Config parsed: language={language}")
-          PYEOF
+      - name: Emit config outputs
+        id: parse
+        run: cihub config-outputs --repo . --github-output
 
   # ============================================================================
   # Python CI
@@ -323,8 +98,8 @@ jobs:
       python_version: ${{ needs.config.outputs.python_version }}
       workdir: ${{ needs.config.outputs.workdir }}
       hub_correlation_id: ${{ inputs.hub_correlation_id }}
-      hub_repo: ${{ needs.config.outputs.hub_repo }}
-      hub_ref: ${{ needs.config.outputs.hub_ref }}
+      hub_repo: ${{ inputs.hub_repo || vars.HUB_REPO }}
+      hub_ref: ${{ inputs.hub_ref || vars.HUB_REF }}
 
       # Tool toggles - use fromJson() for proper boolean conversion
       run_pytest: ${{ fromJson(needs.config.outputs.run_pytest) }}
@@ -367,8 +142,8 @@ jobs:
       build_tool: ${{ needs.config.outputs.build_tool }}
       workdir: ${{ needs.config.outputs.workdir }}
       hub_correlation_id: ${{ inputs.hub_correlation_id }}
-      hub_repo: ${{ needs.config.outputs.hub_repo }}
-      hub_ref: ${{ needs.config.outputs.hub_ref }}
+      hub_repo: ${{ inputs.hub_repo || vars.HUB_REPO }}
+      hub_ref: ${{ inputs.hub_ref || vars.HUB_REF }}
 
       # Tool toggles - use fromJson() for proper boolean conversion
       run_jacoco: ${{ fromJson(needs.config.outputs.run_jacoco) }}
