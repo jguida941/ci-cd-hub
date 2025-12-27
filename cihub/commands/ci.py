@@ -380,6 +380,9 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.repo or ".").resolve()
     json_mode = getattr(args, "json", False)
     output_dir = Path(args.output_dir or ".cihub")
+    if not output_dir.is_absolute():
+        output_dir = repo_path / output_dir
+    output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     try:
@@ -440,10 +443,14 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
     )
 
     report_path = Path(args.report) if args.report else output_dir / "report.json"
+    if not report_path.is_absolute():
+        report_path = repo_path / report_path
     report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     summary_text = render_summary(report)
     summary_path = Path(args.summary) if args.summary else output_dir / "summary.md"
+    if not summary_path.is_absolute():
+        summary_path = repo_path / summary_path
     summary_path.write_text(summary_text, encoding="utf-8")
 
     github_summary = os.environ.get("GITHUB_STEP_SUMMARY")
