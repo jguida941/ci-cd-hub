@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -39,8 +40,6 @@ from cihub.reporting import render_summary
 
 PYTHON_TOOLS = [
     "pytest",
-    "mutmut",
-    "hypothesis",
     "ruff",
     "black",
     "isort",
@@ -51,6 +50,8 @@ PYTHON_TOOLS = [
     "trivy",
     "codeql",
     "docker",
+    "hypothesis",
+    "mutmut",
 ]
 
 PYTHON_RUNNERS = {
@@ -219,6 +220,19 @@ def _run_python_tools(
     workdir_path = repo_path / workdir
     if not workdir_path.exists():
         raise FileNotFoundError(f"Workdir not found: {workdir_path}")
+
+    mutants_dir = workdir_path / "mutants"
+    if mutants_dir.exists():
+        try:
+            shutil.rmtree(mutants_dir)
+        except OSError as exc:
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"Failed to remove mutmut artifacts: {exc}",
+                    "code": "CIHUB-CI-MUTMUT-CLEANUP",
+                }
+            )
 
     tool_outputs: dict[str, dict[str, Any]] = {}
     tools_ran: dict[str, bool] = {tool: False for tool in PYTHON_TOOLS}
