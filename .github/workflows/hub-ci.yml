@@ -53,8 +53,8 @@ jobs:
     outputs:
       # Language
       language: ${{ steps.parse.outputs.language }}
-      hub_repo: ${{ steps.parse.outputs.hub_repo }}
-      hub_ref: ${{ steps.parse.outputs.hub_ref }}
+      hub_repo: ${{ steps.hub-ref.outputs.hub_repo }}
+      hub_ref: ${{ steps.hub-ref.outputs.hub_ref }}
 
       # Python settings
       python_version: ${{ steps.parse.outputs.python_version }}
@@ -111,12 +111,33 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Parse .ci-hub.yml
-        id: parse
+      - name: Resolve hub ref
+        id: hub-ref
         env:
           HUB_REPO_INPUT: ${{ inputs.hub_repo }}
           HUB_REF_INPUT: ${{ inputs.hub_ref }}
           WORKFLOW_REF: ${{ github.workflow_ref }}
+        run: |
+          if [ -n "$HUB_REPO_INPUT" ] || [ -n "$HUB_REF_INPUT" ]; then
+            if [ -z "$HUB_REPO_INPUT" ] || [ -z "$HUB_REF_INPUT" ]; then
+              echo "::error::hub_repo and hub_ref must both be set or both be empty"
+              exit 1
+            fi
+            repo="$HUB_REPO_INPUT"
+            ref="$HUB_REF_INPUT"
+          else
+            ref="${WORKFLOW_REF##*@}"
+            repo="${WORKFLOW_REF%%/.github/*}"
+            if [ -z "$repo" ] || [ "$repo" = "$WORKFLOW_REF" ] || [ -z "$ref" ] || [ "$ref" = "$WORKFLOW_REF" ]; then
+              echo "::error::Unable to parse hub repo/ref from workflow_ref=$WORKFLOW_REF"
+              exit 1
+            fi
+          fi
+          echo "hub_repo=$repo" >> "$GITHUB_OUTPUT"
+          echo "hub_ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Parse .ci-hub.yml
+        id: parse
         run: |
           python3 << 'PYEOF'
           import yaml
@@ -216,23 +237,6 @@ jobs:
           workdir = config.get("workdir", config.get("repo", {}).get("subdir", DEFAULTS["workdir"]))
           retention_days = config.get("reports", {}).get("retention_days", DEFAULTS["reports"]["retention_days"])
 
-          hub_repo_input = (os.environ.get("HUB_REPO_INPUT") or "").strip()
-          hub_ref_input = (os.environ.get("HUB_REF_INPUT") or "").strip()
-          workflow_ref = (os.environ.get("WORKFLOW_REF") or "").strip()
-
-          if hub_repo_input or hub_ref_input:
-              if not hub_repo_input or not hub_ref_input:
-                  raise SystemExit("hub_repo and hub_ref must both be set or both be empty")
-              hub_repo = hub_repo_input
-              hub_ref = hub_ref_input
-          else:
-              if not workflow_ref:
-                  raise SystemExit("github.workflow_ref is not set; cannot resolve hub repo/ref")
-              if "@" not in workflow_ref or "/.github/" not in workflow_ref:
-                  raise SystemExit(f"Unable to parse hub repo/ref from workflow_ref={workflow_ref}")
-              hub_repo, hub_ref = workflow_ref.split("@", 1)
-              hub_repo = hub_repo.split("/.github/")[0]
-
           if language == "python":
               coverage_min = get_tool_threshold(config, "python", "pytest", "min_coverage", 70)
               mutation_score_min = get_tool_threshold(config, "python", "mutmut", "min_mutation_score", 70)
@@ -261,8 +265,6 @@ jobs:
           with open(output_file, "a") as out:
               # Language
               out.write(f"language={language}\n")
-              out.write(f"hub_repo={hub_repo}\n")
-              out.write(f"hub_ref={hub_ref}\n")
               out.write(f"workdir={workdir}\n")
               out.write(f"retention_days={retention_days}\n")
 
