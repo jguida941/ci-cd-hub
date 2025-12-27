@@ -1817,6 +1817,61 @@ contact-suite/
 
 ---
 
+## Workflow Execution Simplification
+
+Reusable workflows must be thin wrappers. Inline parsing and report logic
+move into the CLI so the YAML surface stays small and consistent.
+
+- `cihub ci` (or `cihub run <tool>`) executes tools, applies thresholds,
+  and produces `report.json` + unified summary.
+- Workflows should not re-implement parsing or report composition in bash.
+
+This is the required foundation for the GUI and for consistent summaries
+across Python, Java, and hub-run-all.
+
+---
+
+## CLI Command Surface and Dependencies
+
+### Commands (GUI/automation uses)
+
+Existing:
+- `cihub detect`
+- `cihub init`
+- `cihub update`
+- `cihub validate`
+- `cihub new`
+- `cihub config` (edit/show/set/enable/disable)
+- `cihub fix-pom`
+- `cihub fix-deps`
+- `cihub setup-secrets`
+- `cihub setup-nvd`
+- `cihub sync-templates`
+
+Planned/required:
+- `cihub ci`
+- `cihub run <tool>`
+- `cihub report build`
+- `cihub report summary`
+- `cihub preflight`
+- `cihub verify-github`
+- `cihub repo create|clone|attach`
+- `cihub secrets set|list|verify`
+- `cihub protect`
+- `cihub push` (PR-first, opt-in direct push)
+- `cihub migrate` (optional)
+
+### Dependency Strategy
+
+- Base install is minimal (`pyyaml`, `jsonschema`, `defusedxml`).
+- Optional extras provide tool runners: `cihub[ci]`.
+- Workflows should install `cihub[ci]` (or `cihub ci --install-tools`).
+- Java uses Maven/Gradle wrappers; Python tools come from extras
+  (e.g., pytest/pytest-cov, ruff, black, isort, mypy, bandit, pip-audit,
+  mutmut, hypothesis).
+
+---
+
 ## Phase 9: PyQt6 GUI Wrapper (Optional)
 
 ### Architecture: CLI as Engine, GUI as Controller
@@ -1913,6 +1968,38 @@ cihub sync-templates --json
 | Tier buttons (Fast/Build/Test) | ✅        | Custom tier creation      |
 | Run/Stop buttons               | ✅        | Parallel execution        |
 | Problems table                 | ✅        | In-app code editing       |
+
+### Automation & Auth (Required for "no manual steps")
+
+The GUI/CLI can automate GitHub setup with `gh` when the user is authenticated.
+If `gh` is unavailable or auth fails, the GUI must fall back to showing manual steps.
+
+- Create repo: `gh repo create`
+- Set secrets: `gh secret set` (use existing `cihub setup-secrets`/`cihub setup-nvd` helpers)
+- Branch protection: `gh api .../branches/main/protection`
+- Push changes: `git push` (prefer branch + PR by default)
+
+Workflows cannot set their own secrets. Secrets and protection must be set by CLI/GUI.
+
+### Modes: Central vs Distributed
+
+Both modes must be supported in the GUI and CLI.
+
+| Mode         | Workflow files | Runner location     | Notes                                  |
+|--------------|----------------|---------------------|----------------------------------------|
+| Central      | None           | Hub repo runners    | Uses hub-run-all, no per-repo workflow |
+| Distributed  | Thin caller    | Target repo runners | 5-10 line caller + reusable workflow   |
+
+### Change Workflow (Default PR Flow)
+
+- Default: write changes to a branch and open a PR
+- Optional: direct push if user opts in
+- Always show a diff preview before apply
+
+### Config Import & Merge
+
+- Load existing `.ci-hub.yml`, normalize, and preserve overrides
+- Show merge conflicts explicitly (no silent overwrite)
 | Console log (streaming)        | ✅        | Log filtering/search      |
 | Click-to-open file at line     | ✅        | In-app file editor        |
 | Git stage/commit/push          | ✅        | Merge conflict resolution |

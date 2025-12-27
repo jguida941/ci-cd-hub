@@ -32,6 +32,8 @@ Existing:
 - [ADR-0027: Hub Production CI Policy](0027-hub-production-ci-policy.md)
 - [ADR-0028: Boolean Config Type Coercion](0028-boolean-config-type-coercion.md)
 - [ADR-0029: CLI Exit Code Registry](0029-cli-exit-codes.md)
+- [ADR-0031: CLI-Driven Workflow Execution (Thin Workflows)](0031-cli-driven-workflow-execution.md)
+- [ADR-0032: PyQt6 GUI Wrapper for Full Automation](0032-pyqt6-cli-wrapper-full-automation.md)
 
 Template starter:
 ```markdown
