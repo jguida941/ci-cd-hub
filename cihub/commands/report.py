@@ -1,0 +1,193 @@
+"""Report build and summary commands."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+from typing import Any
+
+from cihub.ci_config import load_ci_config
+from cihub.ci_report import RunContext, build_python_report, resolve_thresholds
+from cihub.cli import (
+    CommandResult,
+    get_git_branch,
+    get_git_remote,
+    parse_repo_from_remote,
+)
+from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
+from cihub.reporting import render_summary_from_path
+
+
+def _tool_enabled(config: dict[str, Any], tool: str) -> bool:
+    tools = config.get("python", {}).get("tools", {}) or {}
+    entry = tools.get(tool, {}) if isinstance(tools, dict) else {}
+    if isinstance(entry, bool):
+        return entry
+    if isinstance(entry, dict):
+        return bool(entry.get("enabled", False))
+    return False
+
+
+def _get_repo_name(config: dict[str, Any], repo_path: Path) -> str:
+    repo_env = os.environ.get("GITHUB_REPOSITORY")
+    if repo_env:
+        return repo_env
+    repo_info = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
+    owner = repo_info.get("owner")
+    name = repo_info.get("name")
+    if owner and name:
+        return f"{owner}/{name}"
+    remote = get_git_remote(repo_path)
+    if remote:
+        parsed = parse_repo_from_remote(remote)
+        if parsed[0] and parsed[1]:
+            return f"{parsed[0]}/{parsed[1]}"
+    return ""
+
+
+def _build_context(
+    repo_path: Path,
+    config: dict[str, Any],
+    workdir: str,
+    correlation_id: str | None,
+) -> RunContext:
+    repo_info = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
+    branch = os.environ.get("GITHUB_REF_NAME") or repo_info.get("default_branch")
+    branch = branch or get_git_branch(repo_path) or ""
+    return RunContext(
+        repository=_get_repo_name(config, repo_path),
+        branch=branch,
+        run_id=os.environ.get("GITHUB_RUN_ID"),
+        run_number=os.environ.get("GITHUB_RUN_NUMBER"),
+        commit=os.environ.get("GITHUB_SHA") or "",
+        correlation_id=correlation_id,
+        workflow_ref=os.environ.get("GITHUB_WORKFLOW_REF"),
+        workdir=workdir,
+        build_tool=None,
+        retention_days=config.get("reports", {}).get("retention_days"),
+        project_type=None,
+        docker_compose_file=None,
+        docker_health_endpoint=None,
+    )
+
+
+def _load_tool_outputs(tool_dir: Path) -> dict[str, dict[str, Any]]:
+    outputs: dict[str, dict[str, Any]] = {}
+    for path in tool_dir.glob("*.json"):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            tool = str(data.get("tool") or path.stem)
+            outputs[tool] = data
+        except json.JSONDecodeError:
+            continue
+    return outputs
+
+
+def cmd_report(args: argparse.Namespace) -> int | CommandResult:
+    json_mode = getattr(args, "json", False)
+    if args.subcommand == "summary":
+        report_path = Path(args.report)
+        summary_text = render_summary_from_path(report_path)
+        output_path = Path(args.output) if args.output else None
+        if output_path:
+            output_path.write_text(summary_text, encoding="utf-8")
+        else:
+            print(summary_text)
+        github_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+        if github_summary and args.write_github_summary:
+            Path(github_summary).write_text(summary_text, encoding="utf-8")
+        if json_mode:
+            return CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary="Summary rendered",
+                artifacts={"summary": str(output_path) if output_path else ""},
+            )
+        return EXIT_SUCCESS
+
+    if args.subcommand != "build":
+        message = f"Unknown report subcommand: {args.subcommand}"
+        if json_mode:
+            return CommandResult(exit_code=EXIT_USAGE, summary=message)
+        print(message)
+        return EXIT_USAGE
+
+    repo_path = Path(args.repo or ".").resolve()
+    output_dir = Path(args.output_dir or ".cihub")
+    tool_dir = Path(args.tool_dir) if args.tool_dir else output_dir / "tool-outputs"
+    report_path = Path(args.report) if args.report else output_dir / "report.json"
+    summary_path = Path(args.summary) if args.summary else output_dir / "summary.md"
+
+    try:
+        config = load_ci_config(repo_path)
+    except Exception as exc:
+        message = f"Failed to load config: {exc}"
+        if json_mode:
+            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
+        print(message)
+        return EXIT_FAILURE
+
+    language = config.get("language") or ""
+    if language != "python":
+        message = f"report build currently supports python only (got '{language}')"
+        if json_mode:
+            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
+        print(message)
+        return EXIT_FAILURE
+
+    tool_outputs = _load_tool_outputs(tool_dir)
+    tools_configured = {
+        tool: _tool_enabled(config, tool)
+        for tool in [
+            "pytest",
+            "mutmut",
+            "hypothesis",
+            "ruff",
+            "black",
+            "isort",
+            "mypy",
+            "bandit",
+            "pip_audit",
+            "semgrep",
+            "trivy",
+            "codeql",
+            "docker",
+        ]
+    }
+    tools_ran = {tool: False for tool in tools_configured}
+    tools_success = {tool: False for tool in tools_configured}
+    for tool, data in tool_outputs.items():
+        tools_ran[tool] = bool(data.get("ran"))
+        tools_success[tool] = bool(data.get("success"))
+    if tools_configured.get("hypothesis"):
+        tools_ran["hypothesis"] = tools_ran.get("pytest", False)
+        tools_success["hypothesis"] = tools_success.get("pytest", False)
+    thresholds = resolve_thresholds(config, "python")
+    context = _build_context(
+        repo_path, config, args.workdir or ".", args.correlation_id
+    )
+    report = build_python_report(
+        config,
+        tool_outputs,
+        tools_configured,
+        tools_ran,
+        tools_success,
+        thresholds,
+        context,
+    )
+
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    summary_text = render_summary_from_path(report_path)
+    summary_path.write_text(summary_text, encoding="utf-8")
+
+    if json_mode:
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="Report built",
+            artifacts={"report": str(report_path), "summary": str(summary_path)},
+        )
+    print(f"Wrote report: {report_path}")
+    print(f"Wrote summary: {summary_path}")
+    return EXIT_SUCCESS

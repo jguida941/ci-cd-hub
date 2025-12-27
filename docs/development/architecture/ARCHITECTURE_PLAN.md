@@ -1831,6 +1831,15 @@ across Python, Java, and hub-run-all.
 
 ---
 
+## Sequencing (to Avoid Rework)
+
+- Implement CLI core (`cihub ci`, `cihub run <tool>`, `cihub report build/summary`) first.
+- Pilot on one workflow (python-ci) + fixtures to validate report/summary parity.
+- Port java-ci and hub-run-all only after the CLI output contract is stable.
+- Avoid further inline YAML parsing changes that will be removed.
+
+---
+
 ## CLI Command Surface and Dependencies
 
 ### Commands (GUI/automation uses)

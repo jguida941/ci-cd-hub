@@ -707,6 +707,24 @@ def cmd_detect(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.ci import cmd_ci as handler
+
+    return handler(args)
+
+
+def cmd_run(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.run import cmd_run as handler
+
+    return handler(args)
+
+
+def cmd_report(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.report import cmd_report as handler
+
+    return handler(args)
+
+
 def cmd_init(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.init import cmd_init as handler
 
@@ -1062,6 +1080,75 @@ def build_parser() -> argparse.ArgumentParser:
     )
     detect.add_argument("--explain", action="store_true", help="Show detection reasons")
     detect.set_defaults(func=cmd_detect)
+
+    ci = subparsers.add_parser("ci", help="Run CI based on .ci-hub.yml")
+    add_json_flag(ci)
+    ci.add_argument("--repo", default=".", help="Path to repo (default: .)")
+    ci.add_argument("--workdir", help="Override workdir/subdir")
+    ci.add_argument("--correlation-id", help="Hub correlation id")
+    ci.add_argument(
+        "--output-dir",
+        default=".cihub",
+        help="Output directory for reports (default: .cihub)",
+    )
+    ci.add_argument("--report", help="Override report.json path")
+    ci.add_argument("--summary", help="Override summary.md path")
+    ci.set_defaults(func=cmd_ci)
+
+    run = subparsers.add_parser("run", help="Run one tool and emit JSON output")
+    add_json_flag(run)
+    run.add_argument("tool", help="Tool name (pytest, ruff, bandit, etc.)")
+    run.add_argument("--repo", default=".", help="Path to repo (default: .)")
+    run.add_argument("--workdir", help="Override workdir/subdir")
+    run.add_argument(
+        "--output-dir",
+        default=".cihub",
+        help="Output directory for tool outputs (default: .cihub)",
+    )
+    run.add_argument("--output", help="Override tool output path")
+    run.add_argument(
+        "--force",
+        action="store_true",
+        help="Run even if tool is disabled in config",
+    )
+    run.set_defaults(func=cmd_run)
+
+    report = subparsers.add_parser("report", help="Build reports and summaries")
+    add_json_flag(report)
+    report_sub = report.add_subparsers(dest="subcommand", required=True)
+
+    report_build = report_sub.add_parser(
+        "build", help="Build report.json from tool outputs"
+    )
+    add_json_flag(report_build)
+    report_build.add_argument("--repo", default=".", help="Path to repo (default: .)")
+    report_build.add_argument("--workdir", help="Override workdir/subdir")
+    report_build.add_argument("--correlation-id", help="Hub correlation id")
+    report_build.add_argument(
+        "--output-dir",
+        default=".cihub",
+        help="Output directory for reports (default: .cihub)",
+    )
+    report_build.add_argument(
+        "--tool-dir",
+        help="Directory containing tool output JSON files",
+    )
+    report_build.add_argument("--report", help="Override report.json path")
+    report_build.add_argument("--summary", help="Override summary.md path")
+    report_build.set_defaults(func=cmd_report)
+
+    report_summary = report_sub.add_parser(
+        "summary", help="Render summary from report.json"
+    )
+    add_json_flag(report_summary)
+    report_summary.add_argument("--report", required=True, help="Path to report.json")
+    report_summary.add_argument("--output", help="Output summary.md path")
+    report_summary.add_argument(
+        "--write-github-summary",
+        action="store_true",
+        help="Write to GITHUB_STEP_SUMMARY if set",
+    )
+    report_summary.set_defaults(func=cmd_report)
 
     new = subparsers.add_parser("new", help="Create hub-side repo config")
     add_json_flag(new)

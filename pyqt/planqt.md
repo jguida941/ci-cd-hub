@@ -82,6 +82,12 @@ Research additions (explicit requirements):
 - Secrets automation: set/list/verify/discover commands.
 - CLI framework: keep argparse for base install; revisit Typer later if needed.
 
+Execution order (avoid rework):
+- Build CLI core first (`cihub ci`, `cihub run <tool>`, `cihub report build/summary`).
+- Pilot on one workflow (python-ci) + fixtures to validate report + summary parity.
+- Port java-ci and hub-run-all only after CLI outputs match.
+- Do not spend time polishing inline YAML parsing that will be removed.
+
   Phase A (10 steps):
   - A1: Create simplify-workflows branch
   - A2: Create hub-ci.yml wrapper (with embedded defaults, fromJson() for types)

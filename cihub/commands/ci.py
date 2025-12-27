@@ -1,0 +1,401 @@
+"""CI command handler for CLI-driven workflows."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+from pathlib import Path
+from typing import Any
+
+from cihub.ci_config import load_ci_config
+from cihub.ci_report import RunContext, build_python_report, resolve_thresholds
+from cihub.ci_runner import (
+    ToolResult,
+    run_bandit,
+    run_black,
+    run_isort,
+    run_mutmut,
+    run_mypy,
+    run_pip_audit,
+    run_pytest,
+    run_ruff,
+    run_semgrep,
+    run_trivy,
+)
+from cihub.cli import (
+    CommandResult,
+    get_git_branch,
+    get_git_remote,
+    parse_repo_from_remote,
+    resolve_executable,
+    validate_subdir,
+)
+from cihub.exit_codes import EXIT_FAILURE, EXIT_INTERNAL_ERROR, EXIT_SUCCESS
+from cihub.reporting import render_summary
+
+PYTHON_TOOLS = [
+    "pytest",
+    "mutmut",
+    "hypothesis",
+    "ruff",
+    "black",
+    "isort",
+    "mypy",
+    "bandit",
+    "pip_audit",
+    "semgrep",
+    "trivy",
+    "codeql",
+    "docker",
+]
+
+PYTHON_RUNNERS = {
+    "pytest": run_pytest,
+    "ruff": run_ruff,
+    "black": run_black,
+    "isort": run_isort,
+    "mypy": run_mypy,
+    "bandit": run_bandit,
+    "pip_audit": run_pip_audit,
+    "mutmut": run_mutmut,
+    "semgrep": run_semgrep,
+    "trivy": run_trivy,
+}
+
+
+def _get_repo_name(config: dict[str, Any], repo_path: Path) -> str:
+    repo_env = os.environ.get("GITHUB_REPOSITORY")
+    if repo_env:
+        return repo_env
+    repo_info = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
+    owner = repo_info.get("owner")
+    name = repo_info.get("name")
+    if owner and name:
+        return f"{owner}/{name}"
+    remote = get_git_remote(repo_path)
+    if remote:
+        parsed = parse_repo_from_remote(remote)
+        if parsed[0] and parsed[1]:
+            return f"{parsed[0]}/{parsed[1]}"
+    return ""
+
+
+def _get_git_commit(repo_path: Path) -> str:
+    try:
+        git_bin = resolve_executable("git")
+        output = subprocess.check_output(  # noqa: S603
+            [git_bin, "-C", str(repo_path), "rev-parse", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        )
+        return output.strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return ""
+
+
+def _resolve_workdir(
+    repo_path: Path,
+    config: dict[str, Any],
+    override: str | None,
+) -> str:
+    if override:
+        validate_subdir(override)
+        return override
+    repo_info = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
+    subdir = repo_info.get("subdir")
+    if isinstance(subdir, str) and subdir:
+        validate_subdir(subdir)
+        return subdir
+    return "."
+
+
+def _tool_enabled(config: dict[str, Any], tool: str) -> bool:
+    tools = config.get("python", {}).get("tools", {}) or {}
+    entry = tools.get(tool, {}) if isinstance(tools, dict) else {}
+    if isinstance(entry, bool):
+        return entry
+    if isinstance(entry, dict):
+        return bool(entry.get("enabled", False))
+    return False
+
+
+def _run_python_tools(
+    config: dict[str, Any],
+    repo_path: Path,
+    workdir: str,
+    output_dir: Path,
+    problems: list[dict[str, Any]],
+) -> tuple[dict[str, dict[str, Any]], dict[str, bool], dict[str, bool]]:
+    workdir_path = repo_path / workdir
+    if not workdir_path.exists():
+        raise FileNotFoundError(f"Workdir not found: {workdir_path}")
+
+    tool_outputs: dict[str, dict[str, Any]] = {}
+    tools_ran: dict[str, bool] = {tool: False for tool in PYTHON_TOOLS}
+    tools_success: dict[str, bool] = {tool: False for tool in PYTHON_TOOLS}
+
+    tool_output_dir = output_dir / "tool-outputs"
+    tool_output_dir.mkdir(parents=True, exist_ok=True)
+
+    for tool in PYTHON_TOOLS:
+        if tool == "hypothesis":
+            continue
+        enabled = _tool_enabled(config, tool)
+        if not enabled:
+            continue
+        runner = PYTHON_RUNNERS.get(tool)
+        if runner is None:
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": (
+                        f"Tool '{tool}' is enabled but is not supported by cihub; "
+                        "run it via a workflow step."
+                    ),
+                    "code": "CIHUB-CI-UNSUPPORTED",
+                }
+            )
+            ToolResult(tool=tool, ran=False, success=False).write_json(
+                tool_output_dir / f"{tool}.json"
+            )
+            continue
+        try:
+            if tool == "mutmut":
+                timeout = (
+                    config.get("python", {})
+                    .get("tools", {})
+                    .get("mutmut", {})
+                    .get("timeout_minutes", 15)
+                )
+                result = runner(workdir_path, output_dir, int(timeout) * 60)
+            else:
+                result = runner(workdir_path, output_dir)
+        except FileNotFoundError as exc:
+            problems.append(
+                {
+                    "severity": "error",
+                    "message": f"Tool '{tool}' not found: {exc}",
+                    "code": "CIHUB-CI-MISSING-TOOL",
+                }
+            )
+            result = ToolResult(tool=tool, ran=False, success=False)
+        tool_outputs[tool] = result.to_payload()
+        tools_ran[tool] = result.ran
+        tools_success[tool] = result.success
+        result.write_json(tool_output_dir / f"{tool}.json")
+
+    if _tool_enabled(config, "hypothesis"):
+        tools_ran["hypothesis"] = tools_ran.get("pytest", False)
+        tools_success["hypothesis"] = tools_success.get("pytest", False)
+
+    return tool_outputs, tools_ran, tools_success
+
+
+def _build_context(
+    repo_path: Path,
+    config: dict[str, Any],
+    workdir: str,
+    correlation_id: str | None,
+) -> RunContext:
+    repo_info = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
+    branch = os.environ.get("GITHUB_REF_NAME") or repo_info.get("default_branch")
+    branch = branch or get_git_branch(repo_path) or ""
+    return RunContext(
+        repository=_get_repo_name(config, repo_path),
+        branch=branch,
+        run_id=os.environ.get("GITHUB_RUN_ID"),
+        run_number=os.environ.get("GITHUB_RUN_NUMBER"),
+        commit=os.environ.get("GITHUB_SHA") or _get_git_commit(repo_path),
+        correlation_id=correlation_id,
+        workflow_ref=os.environ.get("GITHUB_WORKFLOW_REF"),
+        workdir=workdir,
+        build_tool=None,
+        retention_days=config.get("reports", {}).get("retention_days"),
+        project_type=None,
+        docker_compose_file=None,
+        docker_health_endpoint=None,
+    )
+
+
+def _evaluate_python_gates(
+    report: dict[str, Any],
+    thresholds: dict[str, Any],
+    tools_configured: dict[str, bool],
+) -> list[str]:
+    failures: list[str] = []
+    results = report.get("results", {}) or {}
+    metrics = report.get("tool_metrics", {}) or {}
+
+    tests_failed = int(results.get("tests_failed", 0))
+    if tools_configured.get("pytest") and tests_failed > 0:
+        failures.append("pytest failures detected")
+
+    coverage_min = int(thresholds.get("coverage_min", 0) or 0)
+    coverage = int(results.get("coverage", 0))
+    if tools_configured.get("pytest") and coverage < coverage_min:
+        failures.append(f"coverage {coverage}% < {coverage_min}%")
+
+    mut_min = int(thresholds.get("mutation_score_min", 0) or 0)
+    mut_score = int(results.get("mutation_score", 0))
+    if tools_configured.get("mutmut") and mut_score < mut_min:
+        failures.append(f"mutation score {mut_score}% < {mut_min}%")
+
+    max_ruff = int(thresholds.get("max_ruff_errors", 0) or 0)
+    ruff_errors = int(metrics.get("ruff_errors", 0))
+    if tools_configured.get("ruff") and ruff_errors > max_ruff:
+        failures.append(f"ruff errors {ruff_errors} > {max_ruff}")
+
+    max_black = int(thresholds.get("max_black_issues", 0) or 0)
+    black_issues = int(metrics.get("black_issues", 0))
+    if tools_configured.get("black") and black_issues > max_black:
+        failures.append(f"black issues {black_issues} > {max_black}")
+
+    max_isort = int(thresholds.get("max_isort_issues", 0) or 0)
+    isort_issues = int(metrics.get("isort_issues", 0))
+    if tools_configured.get("isort") and isort_issues > max_isort:
+        failures.append(f"isort issues {isort_issues} > {max_isort}")
+
+    mypy_errors = int(metrics.get("mypy_errors", 0))
+    if tools_configured.get("mypy") and mypy_errors > 0:
+        failures.append(f"mypy errors {mypy_errors} > 0")
+
+    max_high = int(thresholds.get("max_high_vulns", 0) or 0)
+    bandit_high = int(metrics.get("bandit_high", 0))
+    if tools_configured.get("bandit") and bandit_high > max_high:
+        failures.append(f"bandit high {bandit_high} > {max_high}")
+
+    pip_vulns = int(metrics.get("pip_audit_vulns", 0))
+    max_pip = int(thresholds.get("max_pip_audit_vulns", max_high) or 0)
+    if tools_configured.get("pip_audit") and pip_vulns > max_pip:
+        failures.append(f"pip-audit vulns {pip_vulns} > {max_pip}")
+
+    max_semgrep = int(thresholds.get("max_semgrep_findings", 0) or 0)
+    semgrep_findings = int(metrics.get("semgrep_findings", 0))
+    if tools_configured.get("semgrep") and semgrep_findings > max_semgrep:
+        failures.append(f"semgrep findings {semgrep_findings} > {max_semgrep}")
+
+    max_critical = int(thresholds.get("max_critical_vulns", 0) or 0)
+    trivy_critical = int(metrics.get("trivy_critical", 0))
+    if tools_configured.get("trivy") and trivy_critical > max_critical:
+        failures.append(f"trivy critical {trivy_critical} > {max_critical}")
+
+    trivy_high = int(metrics.get("trivy_high", 0))
+    if tools_configured.get("trivy") and trivy_high > max_high:
+        failures.append(f"trivy high {trivy_high} > {max_high}")
+
+    return failures
+
+
+def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
+    repo_path = Path(args.repo or ".").resolve()
+    json_mode = getattr(args, "json", False)
+    output_dir = Path(args.output_dir or ".cihub")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        config = load_ci_config(repo_path)
+    except Exception as exc:
+        message = f"Failed to load config: {exc}"
+        if json_mode:
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=message,
+                problems=[{"severity": "error", "message": message}],
+            )
+        print(message)
+        return EXIT_FAILURE
+
+    language = config.get("language") or ""
+    if language != "python":
+        message = f"cihub ci currently supports python only (got '{language}')"
+        if json_mode:
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=message,
+                problems=[{"severity": "error", "message": message}],
+            )
+        print(message)
+        return EXIT_FAILURE
+
+    workdir = _resolve_workdir(repo_path, config, args.workdir)
+    problems: list[dict[str, Any]] = []
+    try:
+        tool_outputs, tools_ran, tools_success = _run_python_tools(
+            config, repo_path, workdir, output_dir, problems
+        )
+    except Exception as exc:
+        message = f"Tool execution failed: {exc}"
+        if json_mode:
+            return CommandResult(
+                exit_code=EXIT_INTERNAL_ERROR,
+                summary=message,
+                problems=[{"severity": "error", "message": message}],
+            )
+        print(message)
+        return EXIT_INTERNAL_ERROR
+
+    tools_configured = {tool: _tool_enabled(config, tool) for tool in PYTHON_TOOLS}
+    thresholds = resolve_thresholds(config, "python")
+    context = _build_context(repo_path, config, workdir, args.correlation_id)
+    report = build_python_report(
+        config,
+        tool_outputs,
+        tools_configured,
+        tools_ran,
+        tools_success,
+        thresholds,
+        context,
+    )
+
+    report_path = Path(args.report) if args.report else output_dir / "report.json"
+    report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    summary_text = render_summary(report)
+    summary_path = Path(args.summary) if args.summary else output_dir / "summary.md"
+    summary_path.write_text(summary_text, encoding="utf-8")
+
+    github_summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if github_summary:
+        Path(github_summary).write_text(summary_text, encoding="utf-8")
+
+    gate_failures = _evaluate_python_gates(report, thresholds, tools_configured)
+    if gate_failures:
+        problems.extend(
+            [
+                {
+                    "severity": "error",
+                    "message": failure,
+                    "code": "CIHUB-CI-GATE",
+                }
+                for failure in gate_failures
+            ]
+        )
+
+    has_errors = any(p.get("severity") == "error" for p in problems)
+    exit_code = EXIT_FAILURE if has_errors else EXIT_SUCCESS
+    if json_mode:
+        result = CommandResult(
+            exit_code=exit_code,
+            summary="CI completed with issues" if problems else "CI completed",
+            problems=problems,
+            artifacts={
+                "report": str(report_path),
+                "summary": str(summary_path),
+            },
+            data={
+                "report_path": str(report_path),
+                "summary_path": str(summary_path),
+            },
+        )
+        return result
+
+    print(f"Wrote report: {report_path}")
+    print(f"Wrote summary: {summary_path}")
+    if problems:
+        print("CI findings:")
+        for problem in problems:
+            severity = problem.get("severity", "error")
+            print(f"  - [{severity}] {problem.get('message')}")
+    return exit_code
