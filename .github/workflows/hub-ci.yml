@@ -34,11 +34,11 @@ on:
       hub_repo:
         description: 'Override hub repo (owner/name) for installing cihub'
         type: string
-        default: 'jguida941/ci-cd-hub'
+        default: ''
       hub_ref:
         description: 'Override hub ref (tag/sha/branch) for installing cihub'
         type: string
-        default: 'v0-dev'
+        default: ''
 
 permissions:
   contents: read
@@ -53,6 +53,8 @@ jobs:
     outputs:
       # Language
       language: ${{ steps.parse.outputs.language }}
+      hub_repo: ${{ steps.parse.outputs.hub_repo }}
+      hub_ref: ${{ steps.parse.outputs.hub_ref }}
 
       # Python settings
       python_version: ${{ steps.parse.outputs.python_version }}
@@ -111,6 +113,9 @@ jobs:
 
       - name: Parse .ci-hub.yml
         id: parse
+        env:
+          HUB_REPO_INPUT: ${{ inputs.hub_repo || vars.HUB_REPO }}
+          HUB_REF_INPUT: ${{ inputs.hub_ref || vars.HUB_REF }}
         run: |
           python3 << 'PYEOF'
           import yaml
@@ -210,6 +215,14 @@ jobs:
           workdir = config.get("workdir", config.get("repo", {}).get("subdir", DEFAULTS["workdir"]))
           retention_days = config.get("reports", {}).get("retention_days", DEFAULTS["reports"]["retention_days"])
 
+          hub_repo = (os.environ.get("HUB_REPO_INPUT") or "").strip()
+          hub_ref = (os.environ.get("HUB_REF_INPUT") or "").strip()
+          if not hub_repo or not hub_ref:
+              raise SystemExit(
+                  "Missing hub repo/ref. Set inputs hub_repo/hub_ref or repo/org vars "
+                  "HUB_REPO and HUB_REF."
+              )
+
           if language == "python":
               coverage_min = get_tool_threshold(config, "python", "pytest", "min_coverage", 70)
               mutation_score_min = get_tool_threshold(config, "python", "mutmut", "min_mutation_score", 70)
@@ -238,6 +251,8 @@ jobs:
           with open(output_file, "a") as out:
               # Language
               out.write(f"language={language}\n")
+              out.write(f"hub_repo={hub_repo}\n")
+              out.write(f"hub_ref={hub_ref}\n")
               out.write(f"workdir={workdir}\n")
               out.write(f"retention_days={retention_days}\n")
 
@@ -308,8 +323,8 @@ jobs:
       python_version: ${{ needs.config.outputs.python_version }}
       workdir: ${{ needs.config.outputs.workdir }}
       hub_correlation_id: ${{ inputs.hub_correlation_id }}
-      hub_repo: ${{ inputs.hub_repo }}
-      hub_ref: ${{ inputs.hub_ref }}
+      hub_repo: ${{ needs.config.outputs.hub_repo }}
+      hub_ref: ${{ needs.config.outputs.hub_ref }}
 
       # Tool toggles - use fromJson() for proper boolean conversion
       run_pytest: ${{ fromJson(needs.config.outputs.run_pytest) }}
@@ -352,8 +367,8 @@ jobs:
       build_tool: ${{ needs.config.outputs.build_tool }}
       workdir: ${{ needs.config.outputs.workdir }}
       hub_correlation_id: ${{ inputs.hub_correlation_id }}
-      hub_repo: ${{ inputs.hub_repo }}
-      hub_ref: ${{ inputs.hub_ref }}
+      hub_repo: ${{ needs.config.outputs.hub_repo }}
+      hub_ref: ${{ needs.config.outputs.hub_ref }}
 
       # Tool toggles - use fromJson() for proper boolean conversion
       run_jacoco: ${{ fromJson(needs.config.outputs.run_jacoco) }}
