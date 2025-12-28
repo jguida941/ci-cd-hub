@@ -272,13 +272,5 @@ See [CONFIG_REFERENCE.md](../reference/CONFIG_REFERENCE.md#hub-ci-configuration)
 
 ### Threshold Overrides (Advanced)
 
-For one-off threshold adjustments without editing `.ci-hub.yml`, the orchestrator can pass a `threshold_overrides_yaml` dispatch input:
-
-```yaml
-# Example: pass resolved thresholds to workflow
-threshold_overrides_yaml: |
-  owasp_cvss_fail: 7
-  coverage_min: 70
-```
-
-This is an **escape hatch** outside the normal config hierarchy. See [CONFIG_REFERENCE.md](../reference/CONFIG_REFERENCE.md#dispatch-time-threshold-override-escape-hatch) for details.
+Thresholds are config-driven only. For a one-off change, update `.ci-hub.yml`
+or the hub-side repo config and re-run.

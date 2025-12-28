@@ -62,3 +62,5 @@ Three-tier hierarchy (highest precedence wins):
 **Dispatch-time escape hatch (outside hierarchy):**
 
 The `threshold_overrides_yaml` workflow dispatch input exists as an escape hatch for the orchestrator to pass resolved thresholds at dispatch time. This is NOT a config tier - it's how the orchestrator passes the already-resolved values to the workflow. See ADR-0024 for details.
+
+**Update:** `threshold_overrides_yaml` has been removed in the simplify-workflows plan; thresholds are now config-only.

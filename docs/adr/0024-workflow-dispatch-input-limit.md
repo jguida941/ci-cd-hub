@@ -5,6 +5,8 @@
 **Developer:** Justin Guida  
 **Last Reviewed:** 2025-12-26  
 
+**Update:** The simplify-workflows plan removes `threshold_overrides_yaml`; thresholds are now config-only and read directly by the CLI.
+
 ## Context
 
 GitHub Actions `workflow_dispatch` events have a **hard limit of 25 inputs**. Our caller workflows (e.g., `hub-java-ci.yml`, `hub-python-ci.yml`) were exceeding this limit when we tried to dispatch both:

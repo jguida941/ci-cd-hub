@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
 
 # Allow importing scripts as modules
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,17 +42,14 @@ def test_generate_workflow_inputs_java():
     assert inputs["run_pitest"] == cfg["java"]["tools"]["pitest"]["enabled"]
     assert inputs["run_semgrep"] == cfg["java"]["tools"]["semgrep"]["enabled"]
 
-    # Thresholds are bundled into threshold_overrides_yaml (ADR-0024)
-    # Verify bundling respects config values, not hardcoded defaults
-    assert "threshold_overrides_yaml" in inputs
-    thresholds = yaml.safe_load(inputs["threshold_overrides_yaml"])
-    assert thresholds["coverage_min"] == cfg["java"]["tools"]["jacoco"]["min_coverage"]
+    # Thresholds are direct inputs
+    assert inputs["coverage_min"] == cfg["java"]["tools"]["jacoco"]["min_coverage"]
     assert (
-        thresholds["mutation_score_min"]
+        inputs["mutation_score_min"]
         == cfg["java"]["tools"]["pitest"]["min_mutation_score"]
     )
-    assert thresholds["max_critical_vulns"] == cfg["thresholds"]["max_critical_vulns"]
-    assert thresholds["max_high_vulns"] == cfg["thresholds"]["max_high_vulns"]
+    assert inputs["max_critical_vulns"] == cfg["thresholds"]["max_critical_vulns"]
+    assert inputs["max_high_vulns"] == cfg["thresholds"]["max_high_vulns"]
 
 
 def test_generate_workflow_inputs_python():
@@ -79,19 +75,14 @@ def test_generate_workflow_inputs_python():
     assert inputs["run_mutmut"] == cfg["python"]["tools"]["mutmut"]["enabled"]
     assert inputs["run_trivy"] == cfg["python"]["tools"]["trivy"]["enabled"]
 
-    # Thresholds are bundled into threshold_overrides_yaml (ADR-0024)
-    # Verify bundling respects config values, not hardcoded defaults
-    assert "threshold_overrides_yaml" in inputs
-    thresholds = yaml.safe_load(inputs["threshold_overrides_yaml"])
+    # Thresholds are direct inputs
+    assert inputs["coverage_min"] == cfg["python"]["tools"]["pytest"]["min_coverage"]
     assert (
-        thresholds["coverage_min"] == cfg["python"]["tools"]["pytest"]["min_coverage"]
-    )
-    assert (
-        thresholds["mutation_score_min"]
+        inputs["mutation_score_min"]
         == cfg["python"]["tools"]["mutmut"]["min_mutation_score"]
     )
-    assert thresholds["max_critical_vulns"] == cfg["thresholds"]["max_critical_vulns"]
-    assert thresholds["max_high_vulns"] == cfg["thresholds"]["max_high_vulns"]
+    assert inputs["max_critical_vulns"] == cfg["thresholds"]["max_critical_vulns"]
+    assert inputs["max_high_vulns"] == cfg["thresholds"]["max_high_vulns"]
 
 
 def test_load_config_merge_and_no_exit(tmp_path: Path):

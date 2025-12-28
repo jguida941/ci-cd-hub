@@ -175,12 +175,9 @@ def generate_workflow_inputs(config: dict) -> dict:
     """
     Generate inputs for GitHub Actions workflow dispatch.
 
-    Per ADR-0024, this returns:
-    - Dispatch inputs: tool toggles, essential settings, threshold_overrides_yaml
+    Returns:
+    - Dispatch inputs: tool toggles, essential settings, thresholds
     - Internal metadata: _dispatch_enabled, _run_group, _force_all_tools (_-prefixed)
-
-    Thresholds are bundled into 'threshold_overrides_yaml' to stay under
-    GitHub's 25-input limit.
 
     Returns a flat dict. Keys prefixed with _ are for internal use, not dispatch.
     """
@@ -192,7 +189,6 @@ def generate_workflow_inputs(config: dict) -> dict:
         "hub_correlation_id": "",
     }
 
-    # Collect thresholds to bundle into threshold_overrides_yaml
     thresholds: dict[str, Any] = {}
 
     if language == "java":
@@ -216,7 +212,7 @@ def generate_workflow_inputs(config: dict) -> dict:
         inputs["run_codeql"] = tools.get("codeql", {}).get("enabled", False)
         inputs["run_docker"] = tools.get("docker", {}).get("enabled", False)
 
-        # Thresholds (bundled into threshold_overrides_yaml, not dispatch inputs)
+        # Thresholds (direct dispatch inputs)
         thresholds["coverage_min"] = tools.get("jacoco", {}).get("min_coverage", 70)
         thresholds["mutation_score_min"] = tools.get("pitest", {}).get(
             "min_mutation_score", 70
@@ -252,7 +248,7 @@ def generate_workflow_inputs(config: dict) -> dict:
         inputs["run_codeql"] = tools.get("codeql", {}).get("enabled", False)
         inputs["run_docker"] = tools.get("docker", {}).get("enabled", False)
 
-        # Thresholds (bundled into threshold_overrides_yaml, not dispatch inputs)
+        # Thresholds (direct dispatch inputs)
         thresholds["coverage_min"] = tools.get("pytest", {}).get("min_coverage", 70)
         thresholds["mutation_score_min"] = tools.get("mutmut", {}).get(
             "min_mutation_score", 70
@@ -277,8 +273,7 @@ def generate_workflow_inputs(config: dict) -> dict:
     thresholds["max_critical_vulns"] = global_thresholds.get("max_critical_vulns", 0)
     thresholds["max_high_vulns"] = global_thresholds.get("max_high_vulns", 0)
 
-    # Bundle thresholds into threshold_overrides_yaml (ADR-0024 escape hatch)
-    inputs["threshold_overrides_yaml"] = yaml.dump(thresholds, default_flow_style=False)
+    inputs.update(thresholds)
 
     # Metadata for internal use (not dispatch inputs)
     repo = config.get("repo", {})

@@ -4219,7 +4219,7 @@ Production-grade approach to add more languages without exceeding the GitHub Act
 |-----------|----------------|
 | Per-language workflows | Each language gets its own reusable workflow + caller template |
 | Lean caller inputs | Keep to ~20 inputs max: version, workdir, correlation_id, tool booleans |
-| Config-first thresholds | Thresholds stay in `config/.ci-hub.yml`; single `threshold_overrides_yaml` input |
+| Config-first thresholds | Thresholds stay in `.ci-hub.yml`; workflows do not accept override inputs |
 | No mega-dispatch | Route via orchestrator to per-language callers, not a single shared caller |
 | Hardcode defaults | If a tool is always on, hardcode it in the workflow instead of adding an input |
 
@@ -4253,9 +4253,8 @@ Production-grade approach to add more languages without exceeding the GitHub Act
 |----------|------------|----------|
 | Core | 3 | version, workdir, correlation_id |
 | Tool booleans | ~15 | run_tests, run_lint, run_security, etc. |
-| Override | 1 | threshold_overrides_yaml |
 | Reserved | ~1 | Future expansion |
-| **Total** | **~20** | Stay under 25 limit |
+| **Total** | **~19** | Stay under 25 limit |
 
 ### What NOT to Do
 
