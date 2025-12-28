@@ -150,31 +150,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Check for high-severity findings
-        run: |
-          if [ -f zizmor.sarif ]; then
-            HIGH=$(python3 -c "
-          import json
-          with open('zizmor.sarif') as f:
-              sarif = json.load(f)
-          runs = sarif.get('runs', [])
-          if runs:
-              results = runs[0].get('results', [])
-              high = [r for r in results if r.get('level') in ('error', 'warning')]
-              print(len(high))
-          else:
-              print(0)
-          " 2>/dev/null || echo "0")
-
-            {
-              echo "## Zizmor Workflow Security"
-              echo "High/Warning findings: $HIGH"
-            } >> "$GITHUB_STEP_SUMMARY"
-
-            if [ "$HIGH" -gt 0 ]; then
-              echo "::error::Found $HIGH workflow security findings - review in Security tab"
-              exit 1
-            fi
-          fi
+        run: python -m cihub hub-ci zizmor-check --sarif zizmor.sarif --github-summary
 
   # ============================================================================
   # Stage 1: Fast Checks (fail fast)
@@ -209,27 +185,14 @@ jobs:
 
       - name: Ruff lint
         id: ruff
-        run: |
-          ISSUES=$(ruff check . --force-exclude --output-format=json 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
-          echo "issues=$ISSUES" >> "$GITHUB_OUTPUT"
-          ruff check . --output-format=github --force-exclude
+        run: python -m cihub hub-ci ruff --path . --force-exclude --github-output
 
       - name: Ruff format check
         run: ruff format --check . --force-exclude
 
       - name: Black format check
         id: black
-        run: |
-          set +e
-          black --check . 2>&1 | tee black-output.txt
-          STATUS=${PIPESTATUS[0]}
-          set -e
-
-          ISSUES=$(grep -c "would reformat" black-output.txt 2>/dev/null || echo "0")
-          if [ "$STATUS" -ne 0 ] && [ "$ISSUES" -eq 0 ]; then
-            ISSUES=1
-          fi
-          echo "issues=$ISSUES" >> "$GITHUB_OUTPUT"
+        run: python -m cihub hub-ci black --path . --github-output
 
   syntax-check:
     name: Python Syntax
@@ -414,100 +377,7 @@ jobs:
 
       - name: Run mutation tests
         id: mutmut
-        run: |
-          set -e  # Fail on any error
-
-          KILLED=0
-          SURVIVED=0
-          TIMEOUT=0
-          SUSPICIOUS=0
-          SKIPPED=0
-          SCORE=0
-
-          # Run mutmut 3.x - reads paths from pyproject.toml [tool.mutmut]
-          echo "Running mutation tests on cihub/..."
-          if ! mutmut run 2>&1 | tee mutmut-run.log; then
-            echo "::error::mutmut run failed - check for import errors or test failures"
-            exit 1
-          fi
-
-          # Parse results from mutmut 3.x run output
-          # Final line format: "⠙ 73/73  🎉 73 🫥 0  ⏰ 0  🤔 0  🙁 0  🔇 0"
-          # 🎉 = killed, 🙁 = survived, ⏰ = timeout, 🤔 = suspicious, 🔇 = skipped
-          if grep -q "mutations/second" mutmut-run.log; then
-            # Get the line with final counts (contains X/X pattern)
-            FINAL=$(grep -E '[0-9]+/[0-9]+' mutmut-run.log | tail -1)
-            echo "Final line: $FINAL"
-
-            # Extract counts from emoji markers (use tr to strip newlines)
-            KILLED=$(echo "$FINAL" | sed -n 's/.*🎉[[:space:]]*\([0-9]*\).*/\1/p' | tr -d '\n' | head -1)
-            SURVIVED=$(echo "$FINAL" | sed -n 's/.*🙁[[:space:]]*\([0-9]*\).*/\1/p' | tr -d '\n' | head -1)
-            TIMEOUT=$(echo "$FINAL" | sed -n 's/.*⏰[[:space:]]*\([0-9]*\).*/\1/p' | tr -d '\n' | head -1)
-            SUSPICIOUS=$(echo "$FINAL" | sed -n 's/.*🤔[[:space:]]*\([0-9]*\).*/\1/p' | tr -d '\n' | head -1)
-            SKIPPED=$(echo "$FINAL" | sed -n 's/.*🔇[[:space:]]*\([0-9]*\).*/\1/p' | tr -d '\n' | head -1)
-
-            # Default to 0 if empty
-            KILLED=${KILLED:-0}
-            SURVIVED=${SURVIVED:-0}
-            TIMEOUT=${TIMEOUT:-0}
-            SUSPICIOUS=${SUSPICIOUS:-0}
-            SKIPPED=${SKIPPED:-0}
-
-            echo "Parsed: killed=$KILLED, survived=$SURVIVED, timeout=$TIMEOUT, suspicious=$SUSPICIOUS, skipped=$SKIPPED"
-          else
-            echo "::error::mutmut did not complete successfully - no 'mutations/second' found"
-            cat mutmut-run.log
-            exit 1
-          fi
-
-          # Total = all mutants that were tested (exclude skipped)
-          TESTED=$((KILLED + SURVIVED + TIMEOUT + SUSPICIOUS))
-
-          if [ "$TESTED" -eq 0 ]; then
-            echo "::error::No mutants were tested - check test coverage"
-            exit 1
-          fi
-
-          # Score = killed / tested (timeout/suspicious count as not killed)
-          SCORE=$((KILLED * 100 / TESTED))
-
-          {
-            echo "mutation_score=$SCORE"
-            echo "killed=$KILLED"
-            echo "survived=$SURVIVED"
-            echo "timeout=$TIMEOUT"
-            echo "suspicious=$SUSPICIOUS"
-          } >> "$GITHUB_OUTPUT"
-
-          {
-            echo "## Mutation Testing"
-            echo ""
-            echo "| Metric | Value |"
-            echo "|--------|-------|"
-            echo "| **Score** | **${SCORE}%** |"
-            echo "| Killed | $KILLED |"
-            echo "| Survived | $SURVIVED |"
-            echo "| Timeout | $TIMEOUT |"
-            echo "| Suspicious | $SUSPICIOUS |"
-            echo "| Skipped | $SKIPPED |"
-            echo "| Total Tested | $TESTED |"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          # Fail if score below threshold
-          if [ "$SCORE" -lt 70 ]; then
-            {
-              echo ""
-              echo "**FAILED**: Score ${SCORE}% below 70% threshold"
-            } >> "$GITHUB_STEP_SUMMARY"
-            echo "::error::Mutation score ${SCORE}% below 70% threshold"
-            cat mutmut-run.log
-            exit 1
-          fi
-
-          {
-            echo ""
-            echo "**PASSED**: Score ${SCORE}% meets 70% threshold"
-          } >> "$GITHUB_STEP_SUMMARY"
+        run: python -m cihub hub-ci mutmut --min-score 70 --output-dir . --github-output --github-summary
 
       - name: Upload mutation results
         if: always()
@@ -548,22 +418,7 @@ jobs:
         run: pip install "bandit[toml]==1.8.3"
 
       - name: Run bandit
-        run: |
-          bandit -r cihub/ scripts/ -f json -o bandit.json \
-            --severity-level medium --confidence-level medium || true
-
-          HIGH=$(python3 -c "import json; r=json.load(open('bandit.json')); print(len([i for i in r.get('results',[]) if i['issue_severity']=='HIGH']))")
-
-          {
-            echo "## Bandit SAST"
-            echo "High severity: $HIGH"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          if [ "$HIGH" -gt 0 ]; then
-            echo "::error::Found $HIGH high-severity issues"
-            bandit -r cihub/ scripts/ --severity-level high
-            exit 1
-          fi
+        run: python -m cihub hub-ci bandit --paths cihub scripts --output bandit.json --github-summary
 
       - name: Upload bandit results
         if: always()
@@ -601,21 +456,7 @@ jobs:
           pip install pip-audit==2.8.0
 
       - name: Run pip-audit
-        run: |
-          pip-audit -r requirements/requirements.txt -r requirements/requirements-dev.txt --format json --output pip-audit.json || true
-          # Count actual vulnerabilities, not packages scanned
-          VULNS=$(python3 -c "import json; data=json.load(open('pip-audit.json')); print(sum(len(d.get('vulns',[])) for d in data))" 2>/dev/null || echo "0")
-
-          {
-            echo "## Dependency Vulnerabilities"
-            echo "Found: $VULNS"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-          if [ "$VULNS" -gt 0 ]; then
-            pip-audit --format markdown >> "$GITHUB_STEP_SUMMARY"
-            echo "::error::Found $VULNS dependency vulnerabilities"
-            exit 1
-          fi
+        run: python -m cihub hub-ci pip-audit --requirements requirements/requirements.txt requirements/requirements-dev.txt --output pip-audit.json --github-summary
 
       - name: Upload pip-audit results
         if: always()
@@ -649,19 +490,9 @@ jobs:
 
       - name: Report result
         if: always()
-        run: |
-          COMMITS=$(git rev-list --count HEAD)
-          FILES=$(git ls-files | wc -l)
-
-          {
-            echo "## Secret Detection (gitleaks)"
-            echo "| Metric | Value |"
-            echo "|--------|-------|"
-            echo "| Commits scanned | $COMMITS |"
-            echo "| Files in repo | $FILES |"
-            echo "| Leaks found | ${{ steps.gitleaks.outcome == 'success' && '0' || 'CHECK LOGS' }} |"
-            echo "| Result | ${{ steps.gitleaks.outcome == 'success' && 'PASS' || 'FAIL' }} |"
-          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          GITLEAKS_OUTCOME: ${{ steps.gitleaks.outcome }}
+        run: python -m cihub hub-ci gitleaks-summary --github-summary
 
   trivy:
     name: Trivy Scan
@@ -763,24 +594,10 @@ jobs:
         run: pip install pyyaml==6.0.2 jsonschema==4.23.0
 
       - name: Validate repo configs
-        run: |
-          for cfg in config/repos/*.yaml; do
-            repo=$(basename "$cfg" .yaml)
-            echo "Validating $repo"
-            python scripts/load_config.py --repo "$repo" --output workflow-inputs >/dev/null
-          done
-          echo "✓ All configs valid"
+        run: python -m cihub hub-ci validate-configs
 
       - name: Validate profiles
-        run: |
-          python3 -c "
-          import yaml
-          from pathlib import Path
-          for p in Path('templates/profiles').glob('*.yaml'):
-              data = yaml.safe_load(p.read_text())
-              assert isinstance(data, dict), f'{p} not a dict'
-              print(f'✓ {p.name}')
-          "
+        run: python -m cihub hub-ci validate-profiles
 
   verify-matrix-keys:
     name: Verify Matrix Keys
@@ -838,28 +655,7 @@ jobs:
           pip install -e ".[dev]" || pip install -e .
 
       - name: Check licenses
-        run: |
-          summary_file="$GITHUB_STEP_SUMMARY"
-          TOTAL=$(pip-licenses --format=csv | wc -l)
-          COPYLEFT=$(pip-licenses --format=csv | grep -icE "GPL|AGPL" || echo "0")
-
-          {
-            echo "## License Check"
-            echo "Total packages: $TOTAL"
-            echo "Copyleft (GPL/AGPL): $COPYLEFT"
-          } >> "$summary_file"
-
-          if [ "$COPYLEFT" -gt 0 ]; then
-            {
-              echo ""
-              echo "Copyleft packages (dev dependencies are acceptable):"
-              pip-licenses --format=csv | grep -iE "GPL|AGPL"
-            } >> "$summary_file"
-            # Only warn - dev dependencies like mutmut (GPL) are acceptable
-            echo "::warning::Found $COPYLEFT packages with copyleft licenses"
-          else
-            echo "PASS - no copyleft licenses" >> "$summary_file"
-          fi
+        run: python -m cihub hub-ci license-check --github-summary
 
   # ============================================================================
   # Stage 5: Supply Chain Security
@@ -1033,117 +829,7 @@ jobs:
           RESULT_LICENSE: ${{ needs.license-check.result }}
           RESULT_DEP_REVIEW: ${{ needs.dependency-review.result }}
           RESULT_SCORECARD: ${{ needs.scorecard.result }}
-        run: |
-          # Helpers for unified format
-          ran() { [[ "$1" != "skipped" && "$1" != "cancelled" ]] && echo "true" || echo "false"; }
-          ok() { [[ "$1" == "success" ]] && echo "true" || echo "false"; }
-          status_text() {
-            case "$1" in
-              success) echo "Passed" ;;
-              skipped) echo "Skipped" ;;
-              *) echo "Failed" ;;
-            esac
-          }
-          summary_file="$GITHUB_STEP_SUMMARY"
-
-          {
-            echo "## Hub Production CI Summary"
-            echo ""
-
-            # Environment
-            echo "### Environment"
-            echo ""
-            echo "| Setting | Value |"
-            echo "|---------|-------|"
-            echo "| Repository | $GH_REPOSITORY |"
-            echo "| Branch | $GH_REF_NAME |"
-            echo "| Run Number | #$GH_RUN_NUMBER |"
-            echo "| Trigger | $GH_EVENT_NAME |"
-            echo "| Language | Python |"
-            echo ""
-
-            # Results (unified format per SUMMARY_CONTRACT.md contract)
-            echo "## Tools Enabled"
-            echo ""
-            echo "| Category | Tool | Configured | Ran | Success |"
-            echo "|----------|------|------------|-----|---------|"
-            echo "| Workflow | actionlint | true | $(ran "$RESULT_ACTIONLINT") | $(ok "$RESULT_ACTIONLINT") |"
-            echo "| Workflow | zizmor | true | $(ran "$RESULT_ZIZMOR") | $(ok "$RESULT_ZIZMOR") |"
-            echo "| Quality | ruff | true | $(ran "$RESULT_LINT") | $(ok "$RESULT_LINT") |"
-            echo "| Quality | syntax | true | $(ran "$RESULT_SYNTAX") | $(ok "$RESULT_SYNTAX") |"
-            echo "| Quality | mypy | true | $(ran "$RESULT_TYPECHECK") | $(ok "$RESULT_TYPECHECK") |"
-            echo "| Quality | yamllint | true | $(ran "$RESULT_YAMLLINT") | $(ok "$RESULT_YAMLLINT") |"
-            echo "| Testing | pytest | true | $(ran "$RESULT_UNIT_TESTS") | $(ok "$RESULT_UNIT_TESTS") |"
-            echo "| Testing | mutmut | true | $(ran "$RESULT_MUTATION") | $(ok "$RESULT_MUTATION") |"
-            echo "| Security | bandit | true | $(ran "$RESULT_BANDIT") | $(ok "$RESULT_BANDIT") |"
-            echo "| Security | pip-audit | true | $(ran "$RESULT_PIP_AUDIT") | $(ok "$RESULT_PIP_AUDIT") |"
-            echo "| Security | gitleaks | true | $(ran "$RESULT_SECRET_SCAN") | $(ok "$RESULT_SECRET_SCAN") |"
-            echo "| Security | trivy | true | $(ran "$RESULT_TRIVY") | $(ok "$RESULT_TRIVY") |"
-            echo "| Validate | templates | true | $(ran "$RESULT_TEMPLATES") | $(ok "$RESULT_TEMPLATES") |"
-            echo "| Validate | configs | true | $(ran "$RESULT_CONFIGS") | $(ok "$RESULT_CONFIGS") |"
-            echo "| Validate | matrix-keys | true | $(ran "$RESULT_MATRIX_KEYS") | $(ok "$RESULT_MATRIX_KEYS") |"
-            echo "| Validate | licenses | true | $(ran "$RESULT_LICENSE") | $(ok "$RESULT_LICENSE") |"
-            echo "| Supply Chain | dependency-review | true | $(ran "$RESULT_DEP_REVIEW") | $(ok "$RESULT_DEP_REVIEW") |"
-            echo "| Supply Chain | scorecard | true | $(ran "$RESULT_SCORECARD") | $(ok "$RESULT_SCORECARD") |"
-            echo ""
-
-            # Failures/Skips
-            echo "### Failed or Skipped Checks"
-            echo ""
-            echo "| Check | Status |"
-            echo "|-------|--------|"
-          } >> "$summary_file"
-
-          checks=(
-            "actionlint:$RESULT_ACTIONLINT"
-            "zizmor:$RESULT_ZIZMOR"
-            "ruff:$RESULT_LINT"
-            "syntax:$RESULT_SYNTAX"
-            "mypy:$RESULT_TYPECHECK"
-            "yamllint:$RESULT_YAMLLINT"
-            "pytest:$RESULT_UNIT_TESTS"
-            "mutmut:$RESULT_MUTATION"
-            "bandit:$RESULT_BANDIT"
-            "pip-audit:$RESULT_PIP_AUDIT"
-            "gitleaks:$RESULT_SECRET_SCAN"
-            "trivy:$RESULT_TRIVY"
-            "templates:$RESULT_TEMPLATES"
-            "configs:$RESULT_CONFIGS"
-            "matrix-keys:$RESULT_MATRIX_KEYS"
-            "licenses:$RESULT_LICENSE"
-            "dependency-review:$RESULT_DEP_REVIEW"
-            "scorecard:$RESULT_SCORECARD"
-          )
-
-          has_issues=0
-          for item in "${checks[@]}"; do
-            name="${item%%:*}"
-            status="${item##*:}"
-            if [ "$status" != "success" ]; then
-              has_issues=1
-              echo "| $name | $status |" >> "$summary_file"
-            fi
-          done
-          if [ "$has_issues" -eq 0 ]; then
-            echo "| None | success |" >> "$summary_file"
-          fi
-          echo "" >> "$summary_file"
-
-          {
-            # Quality Gates
-            echo "### Quality Gates"
-            echo ""
-            echo "| Check | Threshold | Status |"
-            echo "|-------|-----------|--------|"
-            echo "| Unit Tests | pass | $(status_text "$RESULT_UNIT_TESTS") |"
-            echo "| Coverage | 70% min | $([[ "$RESULT_UNIT_TESTS" == "success" ]] && echo "Passed" || echo "N/A") |"
-            echo "| Mutation Score | 70% min | $(status_text "$RESULT_MUTATION") |"
-            echo "| Type Check (mypy) | 0 errors | $([[ "$RESULT_TYPECHECK" == "success" ]] && echo "Passed" || echo "Failed") |"
-            echo "| SAST (bandit) | 0 high | $([[ "$RESULT_BANDIT" == "success" ]] && echo "Passed" || echo "Failed") |"
-            echo "| Secrets (gitleaks) | 0 leaks | $([[ "$RESULT_SECRET_SCAN" == "success" ]] && echo "Passed" || echo "Failed") |"
-            echo ""
-            echo "Job summary generated at run-time"
-          } >> "$summary_file"
+        run: python -m cihub hub-ci summary --github-summary
 
       - name: Check critical failures
         env:
@@ -1166,47 +852,4 @@ jobs:
           RESULT_LICENSE: ${{ needs.license-check.result }}
           RESULT_DEP_REVIEW: ${{ needs.dependency-review.result }}
           RESULT_SCORECARD: ${{ needs.scorecard.result }}
-        run: |
-          FAILED=0
-
-          fail_if_hard() {
-            local name="$1"
-            local result="$2"
-            local message="$3"
-            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
-              echo "::error::${name} failed - ${message}"
-              FAILED=1
-            fi
-          }
-
-          # Workflow security - must pass
-          fail_if_hard "actionlint" "$RESULT_ACTIONLINT" "fix workflow syntax"
-          fail_if_hard "zizmor" "$RESULT_ZIZMOR" "address workflow security findings"
-
-          # Code quality gates - must pass
-          fail_if_hard "mypy" "$RESULT_TYPECHECK" "fix mypy errors"
-          fail_if_hard "yamllint" "$RESULT_YAMLLINT" "fix config syntax"
-          fail_if_hard "ruff" "$RESULT_LINT" "fix ruff lint violations"
-          fail_if_hard "syntax" "$RESULT_SYNTAX" "fix Python syntax errors"
-
-          # Critical code checks that must pass
-          fail_if_hard "unit-tests" "$RESULT_UNIT_TESTS" "unit tests failed"
-          fail_if_hard "mutation-tests" "$RESULT_MUTATION" "mutation testing failed"
-          fail_if_hard "bandit" "$RESULT_BANDIT" "security scan failed"
-          fail_if_hard "pip-audit" "$RESULT_PIP_AUDIT" "dependency audit failed"
-          fail_if_hard "gitleaks" "$RESULT_SECRET_SCAN" "secret detection failed"
-          fail_if_hard "trivy" "$RESULT_TRIVY" "trivy scan failed"
-          fail_if_hard "validate-templates" "$RESULT_TEMPLATES" "template validation failed"
-          fail_if_hard "validate-configs" "$RESULT_CONFIGS" "config validation failed"
-          fail_if_hard "verify-matrix-keys" "$RESULT_MATRIX_KEYS" "matrix key validation failed"
-          fail_if_hard "license-check" "$RESULT_LICENSE" "license compliance failed"
-
-          # Supply chain checks - must pass when they run
-          fail_if_hard "dependency-review" "$RESULT_DEP_REVIEW" "dependency review failed"
-          fail_if_hard "scorecard" "$RESULT_SCORECARD" "scorecard checks failed"
-
-          if [ "$FAILED" -eq 1 ]; then
-            exit 1
-          fi
-
-          echo "All critical checks passed"
+        run: python -m cihub hub-ci enforce

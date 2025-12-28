@@ -1064,6 +1064,12 @@ def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_hub_ci(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.hub_ci import cmd_hub_ci as handler
+
+    return handler(args)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="cihub", description="CI/CD Hub CLI")
     parser.add_argument("--version", action="version", version=f"cihub {__version__}")
@@ -1186,6 +1192,156 @@ def build_parser() -> argparse.ArgumentParser:
         help="Write outputs to GITHUB_OUTPUT",
     )
     config_outputs.set_defaults(func=cmd_config_outputs)
+
+    hub_ci = subparsers.add_parser("hub-ci", help="Hub production CI helpers")
+    hub_ci.set_defaults(func=cmd_hub_ci)
+    hub_ci_sub = hub_ci.add_subparsers(dest="subcommand", required=True)
+
+    hub_ci_ruff = hub_ci_sub.add_parser("ruff", help="Run ruff and emit issue count")
+    hub_ci_ruff.add_argument("--path", default=".", help="Path to lint")
+    hub_ci_ruff.add_argument(
+        "--force-exclude", action="store_true", help="Force ruff exclude rules"
+    )
+    hub_ci_ruff.add_argument("--output", help="Write outputs to file")
+    hub_ci_ruff.add_argument(
+        "--github-output", action="store_true", help="Write outputs to GITHUB_OUTPUT"
+    )
+
+    hub_ci_black = hub_ci_sub.add_parser(
+        "black", help="Run black and emit issue count"
+    )
+    hub_ci_black.add_argument("--path", default=".", help="Path to check")
+    hub_ci_black.add_argument("--output", help="Write outputs to file")
+    hub_ci_black.add_argument(
+        "--github-output", action="store_true", help="Write outputs to GITHUB_OUTPUT"
+    )
+
+    hub_ci_mutmut = hub_ci_sub.add_parser(
+        "mutmut", help="Run mutmut and emit summary outputs"
+    )
+    hub_ci_mutmut.add_argument("--workdir", default=".", help="Workdir to scan")
+    hub_ci_mutmut.add_argument(
+        "--output-dir", default=".", help="Directory for mutmut logs"
+    )
+    hub_ci_mutmut.add_argument(
+        "--min-score", type=int, default=70, help="Minimum mutation score"
+    )
+    hub_ci_mutmut.add_argument("--output", help="Write outputs to file")
+    hub_ci_mutmut.add_argument(
+        "--github-output", action="store_true", help="Write outputs to GITHUB_OUTPUT"
+    )
+    hub_ci_mutmut.add_argument("--summary", help="Write summary to file")
+    hub_ci_mutmut.add_argument(
+        "--github-summary",
+        action="store_true",
+        help="Append summary to GITHUB_STEP_SUMMARY",
+    )
+
+    hub_ci_bandit = hub_ci_sub.add_parser(
+        "bandit", help="Run bandit and enforce high severity gate"
+    )
+    hub_ci_bandit.add_argument(
+        "--paths",
+        nargs="+",
+        default=["cihub", "scripts"],
+        help="Paths to scan",
+    )
+    hub_ci_bandit.add_argument(
+        "--output", default="bandit.json", help="Bandit JSON output path"
+    )
+    hub_ci_bandit.add_argument(
+        "--severity", default="medium", help="Bandit severity level"
+    )
+    hub_ci_bandit.add_argument(
+        "--confidence", default="medium", help="Bandit confidence level"
+    )
+    hub_ci_bandit.add_argument("--summary", help="Write summary to file")
+    hub_ci_bandit.add_argument(
+        "--github-summary",
+        action="store_true",
+        help="Append summary to GITHUB_STEP_SUMMARY",
+    )
+
+    hub_ci_pip_audit = hub_ci_sub.add_parser(
+        "pip-audit", help="Run pip-audit and enforce vulnerability gate"
+    )
+    hub_ci_pip_audit.add_argument(
+        "--requirements",
+        nargs="+",
+        default=["requirements/requirements.txt", "requirements/requirements-dev.txt"],
+        help="Requirements files",
+    )
+    hub_ci_pip_audit.add_argument(
+        "--output", default="pip-audit.json", help="pip-audit JSON output path"
+    )
+    hub_ci_pip_audit.add_argument("--summary", help="Write summary to file")
+    hub_ci_pip_audit.add_argument(
+        "--github-summary",
+        action="store_true",
+        help="Append summary to GITHUB_STEP_SUMMARY",
+    )
+
+    hub_ci_zizmor = hub_ci_sub.add_parser(
+        "zizmor-check", help="Check zizmor SARIF for high findings"
+    )
+    hub_ci_zizmor.add_argument(
+        "--sarif", default="zizmor.sarif", help="Path to SARIF file"
+    )
+    hub_ci_zizmor.add_argument("--summary", help="Write summary to file")
+    hub_ci_zizmor.add_argument(
+        "--github-summary",
+        action="store_true",
+        help="Append summary to GITHUB_STEP_SUMMARY",
+    )
+
+    hub_ci_validate_configs = hub_ci_sub.add_parser(
+        "validate-configs", help="Validate hub repo config files"
+    )
+    hub_ci_validate_configs.add_argument(
+        "--configs-dir", help="Directory containing config repos"
+    )
+
+    hub_ci_validate_profiles = hub_ci_sub.add_parser(
+        "validate-profiles", help="Validate profile YAML files"
+    )
+    hub_ci_validate_profiles.add_argument(
+        "--profiles-dir", help="Directory containing profiles"
+    )
+
+    hub_ci_license = hub_ci_sub.add_parser(
+        "license-check", help="Run license checks for dependencies"
+    )
+    hub_ci_license.add_argument("--summary", help="Write summary to file")
+    hub_ci_license.add_argument(
+        "--github-summary",
+        action="store_true",
+        help="Append summary to GITHUB_STEP_SUMMARY",
+    )
+
+    hub_ci_gitleaks = hub_ci_sub.add_parser(
+        "gitleaks-summary", help="Summarize gitleaks results"
+    )
+    hub_ci_gitleaks.add_argument("--outcome", help="Gitleaks outcome")
+    hub_ci_gitleaks.add_argument("--summary", help="Write summary to file")
+    hub_ci_gitleaks.add_argument(
+        "--github-summary",
+        action="store_true",
+        help="Append summary to GITHUB_STEP_SUMMARY",
+    )
+
+    hub_ci_summary = hub_ci_sub.add_parser(
+        "summary", help="Generate hub CI summary"
+    )
+    hub_ci_summary.add_argument("--summary", help="Write summary to file")
+    hub_ci_summary.add_argument(
+        "--github-summary",
+        action="store_true",
+        help="Append summary to GITHUB_STEP_SUMMARY",
+    )
+
+    hub_ci_enforce = hub_ci_sub.add_parser(
+        "enforce", help="Fail if critical hub checks failed"
+    )
 
     new = subparsers.add_parser("new", help="Create hub-side repo config")
     add_json_flag(new)
