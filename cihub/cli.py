@@ -1135,9 +1135,7 @@ def build_parser() -> argparse.ArgumentParser:
     detect.add_argument("--explain", action="store_true", help="Show detection reasons")
     detect.set_defaults(func=cmd_detect)
 
-    preflight = subparsers.add_parser(
-        "preflight", help="Check environment readiness"
-    )
+    preflight = subparsers.add_parser("preflight", help="Check environment readiness")
     add_json_flag(preflight)
     preflight.add_argument(
         "--full",
@@ -1224,9 +1222,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     smoke.set_defaults(func=cmd_smoke)
 
-    check = subparsers.add_parser(
-        "check", help="Run local validation checks"
-    )
+    check = subparsers.add_parser("check", help="Run local validation checks")
     add_json_flag(check)
     check.add_argument(
         "--smoke-repo",
@@ -1250,6 +1246,32 @@ def build_parser() -> argparse.ArgumentParser:
         "--keep",
         action="store_true",
         help="Keep generated fixtures on disk",
+    )
+    # Tiered check modes
+    check.add_argument(
+        "--audit",
+        action="store_true",
+        help="Add drift detection checks (links, adr, configs)",
+    )
+    check.add_argument(
+        "--security",
+        action="store_true",
+        help="Add security checks (bandit, pip-audit, trivy, gitleaks)",
+    )
+    check.add_argument(
+        "--full",
+        action="store_true",
+        help="Add validation checks (templates, matrix, license, zizmor)",
+    )
+    check.add_argument(
+        "--mutation",
+        action="store_true",
+        help="Add mutation testing with mutmut (~15min, very slow)",
+    )
+    check.add_argument(
+        "--all",
+        action="store_true",
+        help="Run all checks (audit + security + full + mutation)",
     )
     check.set_defaults(func=cmd_check)
 
@@ -1331,17 +1353,13 @@ def build_parser() -> argparse.ArgumentParser:
         "outputs", help="Write workflow outputs from report.json"
     )
     add_json_flag(report_outputs)
-    report_outputs.add_argument(
-        "--report", required=True, help="Path to report.json"
-    )
+    report_outputs.add_argument("--report", required=True, help="Path to report.json")
     report_outputs.add_argument(
         "--output", help="Path to write outputs (defaults to GITHUB_OUTPUT)"
     )
     report_outputs.set_defaults(func=cmd_report)
 
-    docs = subparsers.add_parser(
-        "docs", help="Generate reference documentation"
-    )
+    docs = subparsers.add_parser("docs", help="Generate reference documentation")
     docs_sub = docs.add_subparsers(dest="subcommand", required=True)
 
     docs_generate = docs_sub.add_parser(
@@ -1383,15 +1401,11 @@ def build_parser() -> argparse.ArgumentParser:
     docs_links.set_defaults(func=cmd_docs_links)
 
     # ADR (Architecture Decision Records) commands
-    adr = subparsers.add_parser(
-        "adr", help="Manage Architecture Decision Records"
-    )
+    adr = subparsers.add_parser("adr", help="Manage Architecture Decision Records")
     adr_sub = adr.add_subparsers(dest="subcommand")
     adr.set_defaults(func=cmd_adr)
 
-    adr_new = adr_sub.add_parser(
-        "new", help="Create a new ADR from template"
-    )
+    adr_new = adr_sub.add_parser("new", help="Create a new ADR from template")
     add_json_flag(adr_new)
     adr_new.add_argument("title", help="Title for the new ADR")
     adr_new.add_argument(
@@ -1401,9 +1415,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     adr_new.set_defaults(func=cmd_adr)
 
-    adr_list = adr_sub.add_parser(
-        "list", help="List all ADRs with status"
-    )
+    adr_list = adr_sub.add_parser("list", help="List all ADRs with status")
     add_json_flag(adr_list)
     adr_list.add_argument(
         "--status",
@@ -1445,9 +1457,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--github-output", action="store_true", help="Write outputs to GITHUB_OUTPUT"
     )
 
-    hub_ci_black = hub_ci_sub.add_parser(
-        "black", help="Run black and emit issue count"
-    )
+    hub_ci_black = hub_ci_sub.add_parser("black", help="Run black and emit issue count")
     hub_ci_black.add_argument("--path", default=".", help="Path to check")
     hub_ci_black.add_argument("--output", help="Write outputs to file")
     hub_ci_black.add_argument(
@@ -1567,9 +1577,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Append summary to GITHUB_STEP_SUMMARY",
     )
 
-    hub_ci_summary = hub_ci_sub.add_parser(
-        "summary", help="Generate hub CI summary"
-    )
+    hub_ci_summary = hub_ci_sub.add_parser("summary", help="Generate hub CI summary")
     hub_ci_summary.add_argument("--summary", help="Write summary to file")
     hub_ci_summary.add_argument(
         "--github-summary",

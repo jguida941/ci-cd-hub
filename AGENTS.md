@@ -21,7 +21,19 @@ CI/CD Hub is a CLI tool and workflow wrapper for running CI across many repos. T
 - Generate docs: `python -m cihub docs generate`
 - Check docs drift: `python -m cihub docs check`
 - Smoke test: `python -m cihub smoke --full`
-- Full local check: `python -m cihub check`
+- Local check (fast): `python -m cihub check`
+- Local check (full): `python -m cihub check --all`
+
+### Check Tiers
+
+```
+cihub check              # Fast: lint, format, type, test, docs (~30s)
+cihub check --audit      # + links, adr, configs (~45s)
+cihub check --security   # + bandit, pip-audit, trivy, gitleaks (~2min)
+cihub check --full       # + templates, matrix, license, zizmor (~3min)
+cihub check --mutation   # + mutmut (~15min)
+cihub check --all        # Everything
+```
 
 ## Testing Notes
 
@@ -65,6 +77,12 @@ CI/CD Hub is a CLI tool and workflow wrapper for running CI across many repos. T
 - Delete docs (archive instead).
 - Commit secrets or credentials.
 - Change workflow pins without explicit approval.
+
+### CI Parity Rule
+
+- If `hub-production-ci.yml` fails on something that can be reproduced locally, add it to `cihub check` or document why it's CI-only.
+- Run `cihub check --all` before pushing to catch issues early.
+- CI-only exceptions (cannot run locally): SARIF upload, reviewdog, dependency-review, OpenSSF Scorecard, harden-runner, badge updates, GH Step Summary.
 
 ## Key Architecture
 

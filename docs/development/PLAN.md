@@ -99,6 +99,20 @@ These are references, not competing plans.
 - [x] Add `make links` target
 - [ ] Add `make audit` target
 
+### 7) Local/CI Parity (Expand `cihub check`)
+
+- [x] Define a CI-parity map: every hub-production-ci.yml step is either locally reproducible or explicitly CI-only.
+- [x] Expand `cihub check` tiers:
+  - `cihub check` (fast default)
+  - `cihub check --audit` (docs links + ADR check + config/profile validation)
+  - `cihub check --security` (bandit, pip-audit, gitleaks, trivy; skip if missing)
+  - `cihub check --full` (audit + templates + matrix keys + license + zizmor)
+  - `cihub check --all` (everything)
+- [x] Add optional tool detection and clear "skipped/missing tool" messaging.
+- [x] Update `docs/guides/GETTING_STARTED.md` with new flags and expected runtimes.
+- [x] Add `docs/guides/CLI_EXAMPLES.md` with runnable command examples.
+- [x] Update AGENTS.md rule: "If GitHub CI fails but local checks passed, add it to `cihub check` or document as CI-only."
+
 ---
 
 ## Documentation Consolidation Rules

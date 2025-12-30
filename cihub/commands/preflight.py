@@ -93,24 +93,12 @@ def cmd_preflight(args: argparse.Namespace) -> int | CommandResult:
         _check_command(
             checks, "pytest", True, "Install pytest (pip install -e '.[ci]')"
         )
-        _check_command(
-            checks, "ruff", True, "Install ruff (pip install -e '.[ci]')"
-        )
-        _check_command(
-            checks, "black", True, "Install black (pip install -e '.[ci]')"
-        )
-        _check_command(
-            checks, "isort", True, "Install isort (pip install -e '.[ci]')"
-        )
-        _check_command(
-            checks, "mvn", False, "Install Maven for Java smoke tests"
-        )
-        _check_command(
-            checks, "gradle", False, "Install Gradle for Java smoke tests"
-        )
-        _check_command(
-            checks, "java", False, "Install Java for Java smoke tests"
-        )
+        _check_command(checks, "ruff", True, "Install ruff (pip install -e '.[ci]')")
+        _check_command(checks, "black", True, "Install black (pip install -e '.[ci]')")
+        _check_command(checks, "isort", True, "Install isort (pip install -e '.[ci]')")
+        _check_command(checks, "mvn", False, "Install Maven for Java smoke tests")
+        _check_command(checks, "gradle", False, "Install Gradle for Java smoke tests")
+        _check_command(checks, "java", False, "Install Java for Java smoke tests")
         _check_command(
             checks, "bandit", False, "Install bandit (pip install -e '.[ci]')"
         )

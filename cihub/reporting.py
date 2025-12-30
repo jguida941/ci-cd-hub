@@ -276,18 +276,14 @@ def build_java_metrics(report: dict[str, Any]) -> Iterable[str]:
     semgrep_ran = bool(tools_ran.get("semgrep"))
     trivy_ran = bool(tools_ran.get("trivy"))
 
-    test_detail = (
-        f"Runtime: {runtime_display}, Failures: {failed}, Skipped: {skipped}"
-    )
+    test_detail = f"Runtime: {runtime_display}, Failures: {failed}, Skipped: {skipped}"
     coverage_value = render_bar(cov) if jacoco_ran else "-"
     coverage_detail = cov_detail if jacoco_ran else "-"
     mutation_value = render_bar(mut) if pitest_ran else "-"
     mutation_detail = mut_detail if pitest_ran else "-"
     owasp_status = "scan complete" if owasp_ran else "-"
     owasp_detail = (
-        f"{owasp_crit} crit, {owasp_high} high, {owasp_med} med"
-        if owasp_ran
-        else "-"
+        f"{owasp_crit} crit, {owasp_high} high, {owasp_med} med" if owasp_ran else "-"
     )
     spotbugs_detail = "Static analysis" if spotbugs_ran else "-"
     pmd_detail = "Code analysis" if pmd_ran else "-"
@@ -360,9 +356,7 @@ def build_python_metrics(report: dict[str, Any]) -> Iterable[str]:
     semgrep_ran = bool(tools_ran.get("semgrep"))
     trivy_ran = bool(tools_ran.get("trivy"))
 
-    test_detail = (
-        f"Runtime: {runtime_display}, Failures: {failed}, Skipped: {skipped}"
-    )
+    test_detail = f"Runtime: {runtime_display}, Failures: {failed}, Skipped: {skipped}"
     coverage_value = render_bar(cov) if pytest_ran else "-"
     coverage_detail = cov_detail if pytest_ran else "-"
     mutation_value = render_bar(mut) if mutmut_ran else "-"
@@ -474,9 +468,7 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
         if tools_configured.get("pmd", False):
             issues = format_number(tool_metrics.get("pmd_violations"))
             max_issues = format_number(thresholds.get("max_pmd_violations"))
-            lines.append(
-                f"| PMD | {gate_status(issues <= max_issues, 'Violations')} |"
-            )
+            lines.append(f"| PMD | {gate_status(issues <= max_issues, 'Violations')} |")
         else:
             lines.append("| PMD | SKIP |")
 

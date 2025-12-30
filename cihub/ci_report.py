@@ -30,9 +30,7 @@ def _timestamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _set_threshold(
-    thresholds: dict[str, Any], key: str, value: Any
-) -> None:
+def _set_threshold(thresholds: dict[str, Any], key: str, value: Any) -> None:
     if value is None:
         return
     thresholds.setdefault(key, value)
@@ -283,9 +281,7 @@ def build_java_report(
         "owasp_high": owasp_high,
         "owasp_medium": owasp_medium,
         "owasp_low": owasp_low,
-        "semgrep_findings": _get_metric(
-            tool_results, "semgrep", "semgrep_findings", 0
-        ),
+        "semgrep_findings": _get_metric(tool_results, "semgrep", "semgrep_findings", 0),
         "trivy_critical": trivy_critical,
         "trivy_high": trivy_high,
         "trivy_medium": trivy_medium,

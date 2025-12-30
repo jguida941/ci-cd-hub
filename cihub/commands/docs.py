@@ -28,9 +28,7 @@ def _link_is_external(link_target: str) -> bool:
     return link_target.startswith(("http://", "https://", "mailto:", "tel:"))
 
 
-def _resolve_link(
-    md_file: Path, repo_root: Path, link_target: str
-) -> Path:
+def _resolve_link(md_file: Path, repo_root: Path, link_target: str) -> Path:
     if link_target.startswith("/"):
         return (repo_root / link_target.lstrip("/")).resolve()
     return (md_file.parent / link_target).resolve()

@@ -112,9 +112,7 @@ def _parse_coverage(path: Path) -> dict[str, Any]:
     root = ET.parse(path).getroot()
     line_rate = float(root.attrib.get("line-rate", 0))
     lines_covered = int(root.attrib.get("lines-covered", 0))
-    lines_total = int(
-        root.attrib.get("lines-valid", root.attrib.get("lines-total", 0))
-    )
+    lines_total = int(root.attrib.get("lines-valid", root.attrib.get("lines-total", 0)))
     coverage = int(round(line_rate * 100))
     return {
         "coverage": coverage,
@@ -794,12 +792,16 @@ def run_owasp(
             "build/reports/dependency-check-report.json",
         ],
     )
-    metrics = _parse_dependency_check(report_paths[0]) if report_paths else {
-        "owasp_critical": 0,
-        "owasp_high": 0,
-        "owasp_medium": 0,
-        "owasp_low": 0,
-    }
+    metrics = (
+        _parse_dependency_check(report_paths[0])
+        if report_paths
+        else {
+            "owasp_critical": 0,
+            "owasp_high": 0,
+            "owasp_medium": 0,
+            "owasp_low": 0,
+        }
+    )
     ran = bool(report_paths)
     return ToolResult(
         tool="owasp",

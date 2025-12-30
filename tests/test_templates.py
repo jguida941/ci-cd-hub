@@ -102,9 +102,9 @@ class TestHubConfigTemplates:
         # Templates might be partial (for merging), but full templates need repo
         if "repo" in data:
             repo = data["repo"]
-            assert (
-                "owner" in repo or "name" in repo
-            ), f"{template_path.name} repo section should have owner or name"
+            assert "owner" in repo or "name" in repo, (
+                f"{template_path.name} repo section should have owner or name"
+            )
 
 
 class TestProfileTemplates:
@@ -158,9 +158,9 @@ class TestProfileTemplates:
         schema = load_schema()
         errors = validate_config(merged, schema)
 
-        assert (
-            not errors
-        ), f"{profile_path.name} merged with minimal repo has errors: {errors}"
+        assert not errors, (
+            f"{profile_path.name} merged with minimal repo has errors: {errors}"
+        )
 
     @pytest.mark.parametrize(
         "profile_path",
@@ -177,9 +177,9 @@ class TestProfileTemplates:
         schema = load_schema()
         errors = validate_config(merged, schema)
 
-        assert (
-            not errors
-        ), f"{profile_path.name} merged with minimal repo has errors: {errors}"
+        assert not errors, (
+            f"{profile_path.name} merged with minimal repo has errors: {errors}"
+        )
 
 
 class TestNoStaleReferences:
@@ -212,9 +212,9 @@ class TestNoStaleReferences:
         content = template_path.read_text(encoding="utf-8")
 
         for pattern in self.STALE_PATTERNS:
-            assert (
-                pattern not in content
-            ), f"{template_path} contains stale reference: {pattern}"
+            assert pattern not in content, (
+                f"{template_path} contains stale reference: {pattern}"
+            )
 
 
 class TestRepoTemplate:
@@ -224,9 +224,9 @@ class TestRepoTemplate:
 
     def test_repo_template_exists(self):
         """The repo-side .ci-hub.yml template should exist."""
-        assert (
-            self.REPO_TEMPLATE.exists()
-        ), f"Repo template not found at {self.REPO_TEMPLATE}"
+        assert self.REPO_TEMPLATE.exists(), (
+            f"Repo template not found at {self.REPO_TEMPLATE}"
+        )
 
     def test_repo_template_is_valid_yaml(self):
         """Repo template should be valid YAML."""
@@ -245,15 +245,15 @@ class TestDispatchTemplates:
 
     def test_java_dispatch_template_exists(self):
         """Java dispatch template should exist."""
-        assert (
-            self.JAVA_DISPATCH.exists()
-        ), f"Java dispatch template not found at {self.JAVA_DISPATCH}"
+        assert self.JAVA_DISPATCH.exists(), (
+            f"Java dispatch template not found at {self.JAVA_DISPATCH}"
+        )
 
     def test_python_dispatch_template_exists(self):
         """Python dispatch template should exist."""
-        assert (
-            self.PYTHON_DISPATCH.exists()
-        ), f"Python dispatch template not found at {self.PYTHON_DISPATCH}"
+        assert self.PYTHON_DISPATCH.exists(), (
+            f"Python dispatch template not found at {self.PYTHON_DISPATCH}"
+        )
 
     def test_java_dispatch_is_valid_yaml(self):
         """Java dispatch template should be valid YAML."""
@@ -281,9 +281,9 @@ class TestHubRunAllSummary:
 
     def test_summary_does_not_force_true(self) -> None:
         content = self.HUB_RUN_ALL.read_text(encoding="utf-8")
-        assert not re.search(
-            r"matrix\.run_[A-Za-z0-9_]+\s*\|\|", content
-        ), "hub-run-all.yml should not force matrix.run_* values with '||' fallbacks"
+        assert not re.search(r"matrix\.run_[A-Za-z0-9_]+\s*\|\|", content), (
+            "hub-run-all.yml should not force matrix.run_* values with '||' fallbacks"
+        )
 
 
 class TestActualConfigs:

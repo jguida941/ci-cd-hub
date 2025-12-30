@@ -216,7 +216,51 @@ repo:
 
 ## Local Validation Checklist (Pre-Push)
 
-Run this sequence before pushing workflow or CLI changes:
+The `cihub check` command provides tiered validation that mirrors GitHub CI:
+
+### Quick Commands
+
+```bash
+# Fast checks (~30s) - lint, format, type, test, docs, smoke
+python -m cihub check
+
+# With drift detection (~45s) - + links, ADR, config validation
+python -m cihub check --audit
+
+# With security tools (~2min) - + bandit, pip-audit, trivy*, gitleaks*
+python -m cihub check --security
+
+# Full validation (~3min) - + templates, matrix, license, zizmor*
+python -m cihub check --full
+
+# Everything including mutation testing (~15min)
+python -m cihub check --all
+
+# * = optional tool, skipped gracefully if not installed
+```
+
+### What Each Tier Runs
+
+| Tier | Checks Included |
+|------|-----------------|
+| **Default** | preflight, ruff lint, ruff format, black, mypy, yamllint*, pytest, actionlint*, docs-check, smoke |
+| **--audit** | + docs-links, adr-check, validate-configs, validate-profiles |
+| **--security** | + bandit, pip-audit, gitleaks*, trivy* |
+| **--full** | + zizmor*, validate-templates, verify-matrix-keys, license-check |
+| **--mutation** | + mutmut (very slow, opt-in only) |
+| **--all** | Everything above (unique set, no duplicates) |
+
+\* Optional tools are skipped with a warning if not installed.
+
+### CI Parity Rule
+
+If something fails on GitHub CI but passes locally, either:
+1. Add it to `cihub check`, or
+2. Document it as CI-only (SARIF upload, reviewdog, dependency-review, etc.)
+
+Run `cihub check --all` before pushing to catch issues early.
+
+### Make Shortcuts (Alternative)
 
 ```bash
 make preflight    # Environment checks
@@ -227,21 +271,10 @@ make actionlint   # workflow syntax
 make docs-check   # docs drift
 make links        # broken link check
 make smoke        # full smoke test on scaffold
+make check        # Runs cihub check
 ```
 
-One-shot command:
-
-```bash
-make check
-```
-
-Or run the CLI wrapper directly:
-
-```bash
-python -m cihub check
-```
-
-Notes:
+### Notes
 - `cihub validate --repo .` validates **repo-local** `.ci-hub.yml`.
 - `make validate-config REPO=<name>` validates **hub configs** in `config/repos/`.
 
@@ -261,7 +294,7 @@ repo .ci-hub.yml  →  hub config/repos/<repo>.yaml  →  hub config/defaults.ya
 | Command | Purpose |
 |---------|---------|
 | `cihub preflight` | Check environment readiness (Python, gh CLI, etc.) |
-| `cihub check` | Run full local validation suite (lint, test, docs, smoke) |
+| `cihub check` | Run tiered validation (use `--audit`, `--security`, `--full`, `--all` for more) |
 | `cihub validate --repo .` | Validate repo's `.ci-hub.yml` against schema |
 
 **Project Initialization**
@@ -317,7 +350,16 @@ repo .ci-hub.yml  →  hub config/repos/<repo>.yaml  →  hub config/defaults.ya
 | `cihub setup-nvd` | Set NVD_API_KEY for OWASP scans |
 | `cihub sync-templates` | Sync workflow templates to repos |
 
-Run `python -m cihub --help` for the full command list, or `cihub <command> --help` for command-specific options.
+**Advanced / Maintainer Commands**
+| Command | Purpose |
+|---------|---------|
+| `cihub update --repo .` | Refresh `.ci-hub.yml` + `hub-ci.yml` after changes |
+| `cihub config-outputs --repo .` | Emit GitHub Actions outputs from config |
+| `cihub report outputs --report .cihub/report.json` | Write workflow outputs from a report |
+| `cihub config edit --repo <name>` | Interactive config wizard for hub-side configs |
+| `cihub hub-ci <subcommand>` | Run hub CI helpers locally (ruff/black/bandit/pip-audit/mutmut/validate-configs/license-check/etc.) |
+
+Run `python -m cihub --help` for the full command list, `cihub <command> --help` for command-specific options, or see `docs/reference/CLI.md` for the generated reference.
 
 ### Make Shortcuts
 

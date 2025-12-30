@@ -158,7 +158,13 @@ def cmd_adr_new(args: argparse.Namespace) -> int | CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary="Title is required",
-                problems=[{"severity": "error", "message": "Title is required", "code": "CIHUB-ADR-NO-TITLE"}],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": "Title is required",
+                        "code": "CIHUB-ADR-NO-TITLE",
+                    }
+                ],
             )
         print("Error: title is required", file=sys.stderr)
         return EXIT_FAILURE
@@ -289,7 +295,9 @@ def cmd_adr_list(args: argparse.Namespace) -> int | CommandResult:
     print("-" * 70)
 
     for adr in adrs:
-        print(f"{adr['number']:>4}  {adr['status']:<12}  {adr['date']:<12}  {adr['title']}")
+        print(
+            f"{adr['number']:>4}  {adr['status']:<12}  {adr['date']:<12}  {adr['title']}"
+        )
 
     print(f"\nTotal: {len(adrs)} ADRs")
     return EXIT_SUCCESS
@@ -323,20 +331,24 @@ def cmd_adr_check(args: argparse.Namespace) -> int | CommandResult:
 
         # Check required fields
         if adr["status"] == "unknown":
-            problems.append({
-                "severity": "warning",
-                "message": f"{f.name}: Missing Status field",
-                "code": "CIHUB-ADR-MISSING-STATUS",
-                "file": str(f),
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"{f.name}: Missing Status field",
+                    "code": "CIHUB-ADR-MISSING-STATUS",
+                    "file": str(f),
+                }
+            )
 
         if not adr["date"]:
-            problems.append({
-                "severity": "warning",
-                "message": f"{f.name}: Missing Date field",
-                "code": "CIHUB-ADR-MISSING-DATE",
-                "file": str(f),
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"{f.name}: Missing Date field",
+                    "code": "CIHUB-ADR-MISSING-DATE",
+                    "file": str(f),
+                }
+            )
 
         # Check internal links
         link_problems = _check_adr_links(f)
@@ -345,11 +357,13 @@ def cmd_adr_check(args: argparse.Namespace) -> int | CommandResult:
     # Check README.md exists
     readme_path = adr_dir / "README.md"
     if not readme_path.exists():
-        problems.append({
-            "severity": "warning",
-            "message": "ADR README.md is missing",
-            "code": "CIHUB-ADR-MISSING-README",
-        })
+        problems.append(
+            {
+                "severity": "warning",
+                "message": "ADR README.md is missing",
+                "code": "CIHUB-ADR-MISSING-README",
+            }
+        )
 
     errors = [p for p in problems if p["severity"] == "error"]
     warnings = [p for p in problems if p["severity"] == "warning"]

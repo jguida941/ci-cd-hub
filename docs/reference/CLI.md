@@ -127,7 +127,8 @@ options:
 ```
 usage: cihub check [-h] [--json] [--smoke-repo SMOKE_REPO]
                    [--smoke-subdir SMOKE_SUBDIR] [--install-deps] [--relax]
-                   [--keep]
+                   [--keep] [--audit] [--security] [--full] [--mutation]
+                   [--all]
 
 options:
   -h, --help            show this help message and exit
@@ -140,6 +141,13 @@ options:
   --install-deps        Install repo dependencies during smoke test
   --relax               Relax tool toggles and thresholds during smoke test
   --keep                Keep generated fixtures on disk
+  --audit               Add drift detection checks (links, adr, configs)
+  --security            Add security checks (bandit, pip-audit, trivy,
+                        gitleaks)
+  --full                Add validation checks (templates, matrix, license,
+                        zizmor)
+  --mutation            Add mutation testing with mutmut (~15min, very slow)
+  --all                 Run all checks (audit + security + full + mutation)
 ```
 
 ## cihub ci

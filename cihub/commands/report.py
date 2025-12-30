@@ -279,8 +279,7 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
 
         thresholds = resolve_thresholds(config, "java")
         build_tool = (
-            config.get("java", {}).get("build_tool", "maven").strip().lower()
-            or "maven"
+            config.get("java", {}).get("build_tool", "maven").strip().lower() or "maven"
         )
         project_type = _detect_java_project_type(repo_path / (args.workdir or "."))
         docker_cfg = config.get("java", {}).get("tools", {}).get("docker", {}) or {}

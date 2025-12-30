@@ -210,16 +210,12 @@ def cmd_bandit(args: argparse.Namespace) -> int:
         try:
             data = json.loads(output_path.read_text(encoding="utf-8"))
             results = data.get("results", []) if isinstance(data, dict) else []
-            high = sum(
-                1 for item in results if item.get("issue_severity") == "HIGH"
-            )
+            high = sum(1 for item in results if item.get("issue_severity") == "HIGH")
         except json.JSONDecodeError:
             high = 0
 
     summary_path = _resolve_summary_path(args.summary, args.github_summary)
-    _append_summary(
-        f"## Bandit SAST\nHigh severity: {high}\n", summary_path
-    )
+    _append_summary(f"## Bandit SAST\nHigh severity: {high}\n", summary_path)
 
     if high > 0:
         subprocess.run(  # noqa: S603
@@ -294,9 +290,7 @@ def cmd_zizmor_check(args: argparse.Namespace) -> int:
         runs = sarif.get("runs", []) if isinstance(sarif, dict) else []
         if runs:
             results = runs[0].get("results", []) or []
-            high = len(
-                [r for r in results if r.get("level") in ("error", "warning")]
-            )
+            high = len([r for r in results if r.get("level") in ("error", "warning")])
     except json.JSONDecodeError:
         high = 0
 
@@ -314,7 +308,9 @@ def cmd_zizmor_check(args: argparse.Namespace) -> int:
 
 def cmd_validate_configs(args: argparse.Namespace) -> int:
     root = hub_root()
-    configs_dir = Path(args.configs_dir) if args.configs_dir else root / "config" / "repos"
+    configs_dir = (
+        Path(args.configs_dir) if args.configs_dir else root / "config" / "repos"
+    )
     script_path = root / "scripts" / "load_config.py"
     if not script_path.exists():
         print(f"Missing script: {script_path}", file=sys.stderr)
@@ -336,7 +332,11 @@ def cmd_validate_configs(args: argparse.Namespace) -> int:
 
 def cmd_validate_profiles(args: argparse.Namespace) -> int:
     root = hub_root()
-    profiles_dir = Path(args.profiles_dir) if args.profiles_dir else root / "templates" / "profiles"
+    profiles_dir = (
+        Path(args.profiles_dir)
+        if args.profiles_dir
+        else root / "templates" / "profiles"
+    )
     try:
         import yaml  # type: ignore[import-untyped]
     except ImportError as exc:
@@ -530,11 +530,23 @@ def cmd_enforce(args: argparse.Namespace) -> int:
         ("pip-audit", _env_result("RESULT_PIP_AUDIT"), "dependency audit failed"),
         ("gitleaks", _env_result("RESULT_SECRET_SCAN"), "secret detection failed"),
         ("trivy", _env_result("RESULT_TRIVY"), "trivy scan failed"),
-        ("validate-templates", _env_result("RESULT_TEMPLATES"), "template validation failed"),
+        (
+            "validate-templates",
+            _env_result("RESULT_TEMPLATES"),
+            "template validation failed",
+        ),
         ("validate-configs", _env_result("RESULT_CONFIGS"), "config validation failed"),
-        ("verify-matrix-keys", _env_result("RESULT_MATRIX_KEYS"), "matrix key validation failed"),
+        (
+            "verify-matrix-keys",
+            _env_result("RESULT_MATRIX_KEYS"),
+            "matrix key validation failed",
+        ),
         ("license-check", _env_result("RESULT_LICENSE"), "license compliance failed"),
-        ("dependency-review", _env_result("RESULT_DEP_REVIEW"), "dependency review failed"),
+        (
+            "dependency-review",
+            _env_result("RESULT_DEP_REVIEW"),
+            "dependency review failed",
+        ),
         ("scorecard", _env_result("RESULT_SCORECARD"), "scorecard checks failed"),
     ]
 

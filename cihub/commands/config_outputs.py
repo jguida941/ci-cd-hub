@@ -130,15 +130,11 @@ def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
             config, "java", "pitest", "min_mutation_score", 70
         ),
         "owasp_cvss_fail": _tool_int(config, "java", "owasp", "fail_on_cvss", 7),
-        "max_semgrep_findings": _tool_int(
-            config, "java", "semgrep", "max_findings", 0
-        ),
+        "max_semgrep_findings": _tool_int(config, "java", "semgrep", "max_findings", 0),
         "max_checkstyle_errors": _tool_int(
             config, "java", "checkstyle", "max_errors", 0
         ),
-        "max_spotbugs_bugs": _tool_int(
-            config, "java", "spotbugs", "max_bugs", 0
-        ),
+        "max_spotbugs_bugs": _tool_int(config, "java", "spotbugs", "max_bugs", 0),
         "max_pmd_violations": _tool_int(config, "java", "pmd", "max_violations", 0),
     }
 
@@ -185,16 +181,12 @@ def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
         ),
         # Java tool toggles
         "run_jacoco": _bool_str(_tool_enabled(config, "java", "jacoco", True)),
-        "run_checkstyle": _bool_str(
-            _tool_enabled(config, "java", "checkstyle", True)
-        ),
+        "run_checkstyle": _bool_str(_tool_enabled(config, "java", "checkstyle", True)),
         "run_spotbugs": _bool_str(_tool_enabled(config, "java", "spotbugs", True)),
         "run_owasp": _bool_str(_tool_enabled(config, "java", "owasp", True)),
         "use_nvd_api_key": _bool_str(
             _tool_enabled(config, "java", "owasp", True)
-            and _get_value(
-                config, ["java", "tools", "owasp", "use_nvd_api_key"], True
-            )
+            and _get_value(config, ["java", "tools", "owasp", "use_nvd_api_key"], True)
             is not False
         ),
         "run_pmd": _bool_str(_tool_enabled(config, "java", "pmd", True)),

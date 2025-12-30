@@ -18,7 +18,13 @@ from cihub.config.io import load_yaml_file, save_yaml_file
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 
 DEFAULT_TYPES = ["python-pyproject", "java-maven"]
-ALL_TYPES = ["python-pyproject", "python-setup", "java-maven", "java-gradle", "monorepo"]
+ALL_TYPES = [
+    "python-pyproject",
+    "python-setup",
+    "java-maven",
+    "java-gradle",
+    "monorepo",
+]
 
 
 @dataclass
@@ -206,7 +212,9 @@ def _run_case(
     if init_result.exit_code != 0:
         return steps, language
 
-    validate_args = argparse.Namespace(repo=str(case.repo_path), json=True)
+    validate_args = argparse.Namespace(
+        repo=str(case.repo_path), json=True, strict=False
+    )
     validate_result = _as_command_result(cmd_validate(validate_args))
     steps.append(
         SmokeStep(

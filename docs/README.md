@@ -22,6 +22,7 @@ User-facing how-tos and setup guides:
 - [GETTING_STARTED.md](guides/GETTING_STARTED.md) - Setup, modes, walkthrough, secrets
 
 **Topic Guides:**
+- [CLI_EXAMPLES.md](guides/CLI_EXAMPLES.md) - Practical CLI commands
 - [WORKFLOWS.md](guides/WORKFLOWS.md) - Hub workflow internals
 - [TEMPLATES.md](guides/TEMPLATES.md) - Available config templates
 - [MONOREPOS.md](guides/MONOREPOS.md) - Multi-project repo setup

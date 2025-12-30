@@ -673,15 +673,12 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
 
     elif language == "java":
         build_tool = (
-            config.get("java", {}).get("build_tool", "maven").strip().lower()
-            or "maven"
+            config.get("java", {}).get("build_tool", "maven").strip().lower() or "maven"
         )
         if build_tool not in {"maven", "gradle"}:
             build_tool = "maven"
         project_type = _detect_java_project_type(repo_path / workdir)
-        docker_cfg = (
-            config.get("java", {}).get("tools", {}).get("docker", {}) or {}
-        )
+        docker_cfg = config.get("java", {}).get("tools", {}).get("docker", {}) or {}
         docker_compose = docker_cfg.get("compose_file")
         docker_health = docker_cfg.get("health_endpoint")
 
