@@ -317,4 +317,4 @@ repo:
 - [WORKFLOWS.md](WORKFLOWS.md) - Workflow details
 - [TEMPLATES.md](TEMPLATES.md) - Available templates
 - [TOOLS.md](../reference/TOOLS.md) - Tool availability by mode
-- [CONFIG_REFERENCE.md](../reference/CONFIG_REFERENCE.md) - Config options
+- [CONFIG.md](../reference/CONFIG.md) - Config options

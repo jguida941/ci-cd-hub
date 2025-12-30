@@ -3,7 +3,7 @@
 **Status**: Accepted  
 **Date:** 2026-12-15  
 **Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 
@@ -13,7 +13,7 @@ Some teams keep multiple services in a single repository. The hub originally ass
 
 - Add `repo.subdir` to the config schema.
 - Central workflow (`hub-run-all.yml`) rewrites checkout to the specified subdir before running tools.
-- Distributed workflow (`hub-orchestrator.yml`) passes `workdir` to reusable `java-ci.yml` / `python-ci.yml`, which run all steps with `working-directory: ${{ inputs.workdir }}`.
+- Distributed workflow (`hub-orchestrator.yml`) passes `workdir` to the `hub-ci.yml` wrapper, which routes to `java-ci.yml` / `python-ci.yml` and runs steps with `working-directory: ${{ inputs.workdir }}`.
 - Provide a monorepo config template and documentation (`templates/hub/config/repos/monorepo-template.yaml`, `docs/guides/MONOREPOS.md`).
 
 ## Implementation Details
@@ -119,3 +119,8 @@ Negative:
 
 - Split fixtures into separate repos: rejected to keep fixture maintenance simple.
 - Per-step custom working directories: more boilerplate; defaults at job level are cleaner.
+
+## Update (2025-12-30)
+
+- Repo entrypoint is now `hub-ci.yml`; it reads `.ci-hub.yml` and routes to `python-ci.yml`/`java-ci.yml` internally.
+- `workdir` still flows from the orchestrator through the wrapper into language-specific workflows.

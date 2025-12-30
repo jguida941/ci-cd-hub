@@ -3,7 +3,7 @@
 **Status**: Accepted  
 **Date:** 2025-12-17  
 **Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Last Reviewed:** 2025-12-30  
 
 - Supersedes: ADR-0013
 
@@ -49,10 +49,9 @@ on:
       # All inputs forwarded
 jobs:
   ci:
-    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
+    uses: jguida941/ci-cd-hub/.github/workflows/hub-ci.yml@v1
     with:
-      python_version: ${{ inputs.python_version }}
-      # All inputs passed through
+      hub_correlation_id: ${{ inputs.hub_correlation_id || '' }}
     secrets: inherit
 ```
 
@@ -90,8 +89,7 @@ All reusable workflows emit a standardized `report.json` with:
 ### 4. Caller Templates in Hub
 
 Provide official caller templates in `templates/repo/`:
-- `hub-python-ci.yml` - Python caller with full input passthrough
-- `hub-java-ci.yml` - Java caller with full input passthrough
+- `hub-python-ci.yml` / `hub-java-ci.yml` - language templates used by `cihub init` to render `hub-ci.yml`
 - `.ci-hub.yml` - Updated starter config
 
 ## Consequences
@@ -159,3 +157,9 @@ git push
 
 - ADR-0011: Dispatchable Workflow Requirement
 - ADR-0013: Dispatch Workflow Templates (SUPERSEDED)
+
+## Update (2025-12-30)
+
+- The public caller workflow in target repos is now a single `hub-ci.yml` wrapper.
+- `hub-python-ci.yml` and `hub-java-ci.yml` remain as template sources used by `cihub init` to render `hub-ci.yml`.
+- Callers reference `hub-ci.yml`, which then invokes `python-ci.yml`/`java-ci.yml` internally.

@@ -3,7 +3,7 @@
 **Status**: Accepted  
 **Date:** 2026-01-02  
 **Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 
@@ -32,3 +32,8 @@ Negative:
 
 - Continue using ad hoc public repos: rejected due to flakiness and lack of control.
 - In-tree fixtures only: rejected to keep hub repo small and allow independent lifecycle; we keep a local copy for dev convenience but treat the GitHub repo as source of truth.
+
+## Update (2025-12-30)
+
+- Local developer verification should use `cihub scaffold` + `cihub smoke`; the fixtures repo remains for CI/regression validation.
+- If fixtures repo structure changes, update `config/repos/fixtures-*.yaml` and this ADR together.

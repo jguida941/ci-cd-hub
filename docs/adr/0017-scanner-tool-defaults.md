@@ -3,7 +3,7 @@
 **Status**: Accepted  
 **Date:** 2025-12-18  
 **Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 
@@ -217,6 +217,10 @@ Tools gracefully skip when preconditions aren't met:
 | Docker Build | No Dockerfile present |
 | OWASP | No pom.xml/build.gradle |
 | pip-audit | No requirements.txt/pyproject.toml |
+
+## Update (2025-12-30)
+
+- Repo entrypoint is now `hub-ci.yml`; examples that call `python-ci.yml`/`java-ci.yml` are legacy. The wrapper reads `.ci-hub.yml` and forwards tool flags to those internal workflows.
 
 ### 6. Java Maven Plugin Execution
 

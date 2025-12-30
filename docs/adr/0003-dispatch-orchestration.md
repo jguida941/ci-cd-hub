@@ -3,7 +3,7 @@
 **Status**: Accepted  
 **Date:** 2025-12-14  
 **Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 
@@ -26,7 +26,7 @@ The orchestrator uses GitHub's REST API via `github-script` to trigger workflows
 await github.rest.actions.createWorkflowDispatch({
   owner,
   repo,
-  workflow_id: workflowId,  // 'java-ci.yml' or 'python-ci.yml' (line 297)
+  workflow_id: workflowId,  // 'hub-ci.yml' wrapper (line 297)
   ref: branch,
   inputs,
 });
@@ -179,7 +179,7 @@ permissions:
 - `actions: write` permission enables `createWorkflowDispatch()` and `listWorkflowRuns()`
 
 **Requirements for Target Repos:**
-1. Workflow file must exist (`.github/workflows/java-ci.yml` or `python-ci.yml`)
+1. Workflow file must exist (`.github/workflows/hub-ci.yml` wrapper)
 2. Workflow must have `workflow_dispatch` trigger with expected inputs
 3. Token must have write access to target repo's Actions
 
@@ -243,6 +243,11 @@ permissions:
 | Max poll timeout (completion) | 484 | `poll_timeout_sec = 30 * 60` |
 | Retry logic | 427-447 | `gh_get()` with backoff |
 
+## Update (2025-12-30)
+
+- Dispatch target repos now expose a single caller workflow `hub-ci.yml`. The wrapper reads `.ci-hub.yml` and routes to `python-ci.yml`/`java-ci.yml` internally.
+- Correlation ID generation and artifact matching are unchanged.
+
 ## Future Work
 
 - **Configurable timeouts:** Allow per-repo timeout settings for completion polling
@@ -250,4 +255,3 @@ permissions:
 - **Graceful degradation:** Option to continue aggregation even if some runs fail (currently strict: any failure = hub failure)
 - **PAT documentation:** Document PAT setup for cross-repo private access
 - ~~**Unified polling:** Consider consolidating run ID capture and completion polling into single phase~~ — Addressed by deterministic correlation; time-based capture is now just an optimization hint
-

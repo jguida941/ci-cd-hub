@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-12-30 - CLI Doc Drift Guardrails & Plan Consolidation
+
+### CLI & Tooling
+- Added `cihub docs generate/check` to auto-generate reference docs from CLI and schema.
+- Added CLI helpers for local verification: `preflight`/`doctor`, `scaffold`, and `smoke`.
+- Added tests for new CLI commands (docs/preflight/scaffold/smoke).
+
+### Documentation & Governance
+- Added canonical plan: `docs/development/PLAN.md`.
+- Added reference-only banners to `pyqt/planqt.md` and `docs/development/architecture/ARCHITECTURE_PLAN.md`.
+- Added `AGENTS.md` and removed ignore rule so it is tracked in git.
+- Updated ADRs to reflect `hub-ci.yml` wrapper and CLI-first verification.
+- Refreshed `docs/development/status/STATUS.md`.
+- Rewrote `claude_audit.md` into a factual audit ledger.
+- Generated `docs/reference/CLI.md` and `docs/reference/CONFIG.md` from code.
+
 ## 2025-12-26 - Security Hardening & Boolean Config Fix
 
 ### Security Fixes (OWASP Audit)
@@ -118,7 +134,7 @@ All notable changes to this project will be documented in this file.
 - Note: the `setup-nvd`/NVD integration script still needs a follow-up fix; current version may not work end-to-end.
 
 ### Templates/Docs/Schema
-- Updated caller templates and docs (TOOLS, WORKFLOWS, CONFIG_REFERENCE) alongside ADR updates; minor schema/report tweaks to match governance changes.
+- Updated caller templates and docs (TOOLS, WORKFLOWS, CONFIG.md) alongside ADR updates; minor schema/report tweaks to match governance changes.
 
 ## 2025-12-23 - CLI Dispatch Token Handling
 
@@ -290,7 +306,7 @@ All notable changes to this project will be documented in this file.
 ## 2025-12-14
 - Added docs/development/specs/ with P0, P1, and nonfunctional checklists.
 - Replaced STATUS.md with a concise execution checklist linking to requirements.
-- Added doc stubs extracted from the old plan: WORKFLOWS, CONFIG_REFERENCE, TOOLS, TEMPLATES, MODES, TROUBLESHOOTING, ADR index.
+- Added doc stubs extracted from the old plan: WORKFLOWS, CONFIG.md, TOOLS, TEMPLATES, MODES, TROUBLESHOOTING, ADR index.
 - Updated AGENTS to reflect current focus on P0 execution.
 - Linked ROADMAP to requirements and noted planned phases.
 - Hardened `hub-orchestrator.yml`: pass computed inputs, honor `default_branch`, set dispatch permissions, attempt run-id capture, emit dispatch metadata artifacts, and generate a hub summary/report from dispatch results.
@@ -300,7 +316,7 @@ All notable changes to this project will be documented in this file.
 - Added schema validation to `scripts/load_config.py`; added `jsonschema` dependency to `pyproject.toml`.
 - Added copy/paste templates: `templates/repo/.ci-hub.yml` and `templates/hub/config/repos/repo-template.yaml`.
 - Added `config-validate` workflow to run schema validation on config/schema changes and PRs.
-- Added ADR-0001 (Central vs Distributed) and expanded docs (CONFIG_REFERENCE, TOOLS, MODES, TROUBLESHOOTING, TEMPLATES).
+- Added ADR-0001 (Central vs Distributed) and expanded docs (CONFIG.md, TOOLS, MODES, TROUBLESHOOTING, TEMPLATES).
 - Fixed orchestrator config validation indentation bug and added dispatch run-id polling backoff/timeout.
 - Added ADRs 0002-0005 (config precedence, reusable vs dispatch, aggregation, dashboard).
 - Rewrote ADRs 0003-0006 to match actual implementation: ADR-0003 now accurately documents github-script dispatch mechanism; ADR-0004 now shows actual hub-report.json schema (runs[] array, not object); ADR-0005 added for Dashboard Approach (GitHub Pages); ADR-0006 added for Quality Gates and Thresholds.

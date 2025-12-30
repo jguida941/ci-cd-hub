@@ -224,7 +224,7 @@ Reusable workflow that a repo can call via `workflow_call`. Useful for distribut
 - `workflow_call` (called from another workflow)
 
 ### Inputs
-See [CONFIG_REFERENCE.md](../reference/CONFIG_REFERENCE.md) for the full config field list, and `.github/workflows/java-ci.yml` for the authoritative workflow inputs. Categories include:
+See [CONFIG.md](../reference/CONFIG.md) for the full config field list, and `.github/workflows/java-ci.yml` for the authoritative workflow inputs. Categories include:
 
 - Environment: `java_version`, `build_tool`, `workdir`, `artifact_prefix`, `retention_days`
 - Tool flags: `run_*` (jacoco, checkstyle, spotbugs, owasp, pitest, jqwik, pmd, semgrep, trivy, codeql, docker)
@@ -251,7 +251,7 @@ Reusable workflow that a repo can call via `workflow_call`. Runs lint, tests wit
 - `workflow_call` (called from another workflow)
 
 ### Inputs
-See [CONFIG_REFERENCE.md](../reference/CONFIG_REFERENCE.md) for the full config field list, and `.github/workflows/python-ci.yml` for the authoritative workflow inputs. Categories include:
+See [CONFIG.md](../reference/CONFIG.md) for the full config field list, and `.github/workflows/python-ci.yml` for the authoritative workflow inputs. Categories include:
 
 - Environment: `python_version`, `workdir`, `artifact_prefix`, `retention_days`
 - Tool flags: `run_*` (pytest, mutmut, hypothesis, ruff, black, isort, mypy, bandit, pip_audit, semgrep, trivy, codeql, docker)

@@ -519,5 +519,5 @@ After smoke test passes:
 
 - [P0 Requirements](../specs/P0.md) - Smoke test acceptance criteria
 - [Workflows Reference](../../guides/WORKFLOWS.md) - Hub workflow documentation
-- [Config Reference](../../reference/CONFIG_REFERENCE.md) - Configuration options
+- [Config Reference](../../reference/CONFIG.md) - Configuration options
 - [Tools Reference](../../reference/TOOLS.md) - Tool descriptions and outputs

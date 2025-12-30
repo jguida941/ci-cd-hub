@@ -164,7 +164,7 @@ Chosen option: "Option X" because...
 |------|-------------|
 | Tutorial | ONBOARDING.md, QUICKSTART.md |
 | How-To | How to add repo, How to toggle tools, How to customize thresholds |
-| Reference | CONFIG_REFERENCE.md, WORKFLOWS.md, TOOLS.md |
+| Reference | CONFIG.md, WORKFLOWS.md, TOOLS.md |
 | Explanation | MODES.md (central vs distributed), ARCHITECTURE.md |
 
 ---
@@ -346,7 +346,7 @@ jacoco:
 | Doc | Purpose | Diátaxis Type |
 |-----|---------|---------------|
 | WORKFLOWS.md | Each workflow, inputs, outputs, artifacts | Reference |
-| CONFIG_REFERENCE.md | Field-by-field config mapping | Reference |
+| CONFIG.md | Field-by-field config mapping | Reference |
 | TOOLS.md | What each tool does, toggles, thresholds | Reference |
 | MODES.md | Central vs Distributed explanation | Explanation |
 | TROUBLESHOOTING.md | Common failures, fixes | How-To |
@@ -380,7 +380,7 @@ jacoco:
 
 ### Phase 1: Documentation Structure
 - [ ] Create `docs/WORKFLOWS.md`
-- [ ] Create `docs/CONFIG_REFERENCE.md`
+- [ ] Create `docs/CONFIG.md`
 - [ ] Create `docs/TOOLS.md`
 - [ ] Create `docs/MODES.md`
 - [ ] Create `docs/TROUBLESHOOTING.md`
@@ -1008,7 +1008,7 @@ hub-release/
 ├── docs/
 │   ├── ONBOARDING.md        # Tutorial
 │   ├── WORKFLOWS.md         # Reference
-│   ├── CONFIG_REFERENCE.md  # Reference
+│   ├── CONFIG.md  # Reference
 │   ├── TOOLS.md             # Reference
 │   ├── MODES.md             # Explanation
 │   ├── TROUBLESHOOTING.md   # How-To

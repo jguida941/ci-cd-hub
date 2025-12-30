@@ -40,7 +40,6 @@ reports/*.html
 *.local.yaml
 
 # AI context files (local only)
-AGENTS.md
 CLAUDE.md
 
 # Internal audit docs

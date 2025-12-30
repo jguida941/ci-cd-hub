@@ -249,13 +249,13 @@ hub_ci:
     mutation_score_min: 70
 ```
 
-See [CONFIG_REFERENCE.md](../reference/CONFIG_REFERENCE.md#hub-ci-configuration) for the full `hub_ci` reference.
+See [CONFIG.md](../reference/CONFIG.md#hub-ci-configuration) for the full `hub_ci` reference.
 
 ---
 
 ## See Also
 
-- [CONFIG_REFERENCE.md](../reference/CONFIG_REFERENCE.md) - All config options
+- [CONFIG.md](../reference/CONFIG.md) - All config options
 - [TOOLS.md](../reference/TOOLS.md) - What tools are available
 - [MODES.md](MODES.md) - Central vs Distributed explained
 - [DISPATCH_SETUP.md](DISPATCH_SETUP.md) - Full dispatch/orchestrator setup guide

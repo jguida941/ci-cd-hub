@@ -1,4 +1,6 @@
-# Config Reference
+# Config Reference (Archived)
+
+> Superseded by `docs/reference/CONFIG.md`. This copy is archived for historical context.
 
 Complete reference for CI/CD Hub configuration files.
 

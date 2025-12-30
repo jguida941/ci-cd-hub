@@ -5,15 +5,15 @@ By the end, you'll have validated the CLI works end-to-end on your machine.
 
 ## Prerequisites
 
-### 1. Clone the Repositories
+### 1. Clone the Repository
 
 ```bash
 # Clone the hub
 git clone https://github.com/jguida941/ci-cd-hub.git
 cd ci-cd-hub
 
-# Clone fixtures (for testing)
-git clone https://github.com/jguida941/ci-cd-hub-fixtures.git ../ci-cd-hub-fixtures
+# Optional (maintainers only): clone fixtures for hub CI smoke tests
+# git clone https://github.com/jguida941/ci-cd-hub-fixtures.git ../ci-cd-hub-fixtures
 ```
 
 ### 2. Set Up Python Environment
@@ -60,35 +60,26 @@ gh auth login
 
 ## Quick Start (3 Commands)
 
-Test the CLI on a Python fixture in under 2 minutes:
+Test the CLI on a scaffolded Python fixture in under 2 minutes:
 
 ```bash
-# 1. Copy a fixture to a temp directory
+# 0. Optional: preflight check
+python -m cihub preflight
+
+# 1. Scaffold a minimal repo
 WORKDIR=$(mktemp -d)
-cp -R ../ci-cd-hub-fixtures/python-pyproject-pass "$WORKDIR/"
+python -m cihub scaffold python-pyproject "$WORKDIR/cihub-sample"
 
-# 2. Initialize and validate
-python -m cihub init \
-  --repo "$WORKDIR/python-pyproject-pass" \
-  --language python \
-  --owner test-owner \
-  --name test-repo \
-  --branch main \
-  --apply
+# 2. Run smoke test (detect → init → validate)
+python -m cihub smoke "$WORKDIR/cihub-sample"
 
-python -m cihub validate --repo "$WORKDIR/python-pyproject-pass"
-
-# 3. Run CI locally
-python -m cihub ci \
-  --repo "$WORKDIR/python-pyproject-pass" \
-  --output-dir "$WORKDIR/python-pyproject-pass/.cihub" \
-  --install-deps
+# 3. Optional: full run (runs cihub ci)
+python -m cihub smoke --full "$WORKDIR/cihub-sample"
 ```
 
 Expected:
-- `Config OK` from validate
-- `.cihub/report.json` and `.cihub/summary.md` created
-- Exit code 0 if all quality gates pass
+- `detect`, `init`, and `validate` succeed
+- With `--full`: `.cihub/report.json` and `.cihub/summary.md` created
 
 ---
 
@@ -115,6 +106,9 @@ Control via `repo.use_central_runner`:
 
 | Command | Purpose |
 |---------|---------|
+| `cihub preflight` | Check environment readiness |
+| `cihub scaffold` | Generate a minimal test repo |
+| `cihub smoke` | Run a local CLI smoke test |
 | `cihub init` | Generate `.ci-hub.yml` + `hub-ci.yml` in a repo |
 | `cihub validate` | Check config against schema |
 | `cihub ci` | Run all enabled tools locally |
@@ -132,8 +126,8 @@ Run `python -m cihub --help` for the full command list.
 
 ```bash
 WORKDIR=$(mktemp -d)
-cp -R ../ci-cd-hub-fixtures/python-pyproject-pass "$WORKDIR/"
-cd "$WORKDIR/python-pyproject-pass"
+python -m cihub scaffold python-pyproject "$WORKDIR/python-pyproject"
+cd "$WORKDIR/python-pyproject"
 ```
 
 ### Step 2: Detect Language
@@ -193,8 +187,8 @@ python -m cihub report summary --report .cihub/report.json
 
 ```bash
 WORKDIR=$(mktemp -d)
-cp -R ../ci-cd-hub-fixtures/java-maven-pass "$WORKDIR/"
-cd "$WORKDIR/java-maven-pass"
+python -m cihub scaffold java-maven "$WORKDIR/java-maven"
+cd "$WORKDIR/java-maven"
 ```
 
 ### Step 2: Initialize
@@ -237,8 +231,8 @@ Same as Maven, but:
 
 ```bash
 WORKDIR=$(mktemp -d)
-cp -R ../ci-cd-hub-fixtures/java-gradle-pass "$WORKDIR/"
-cd "$WORKDIR/java-gradle-pass"
+python -m cihub scaffold java-gradle "$WORKDIR/java-gradle"
+cd "$WORKDIR/java-gradle"
 
 python -m cihub init --repo . --language java --owner test --name test --branch main --apply
 python -m cihub validate --repo .
@@ -253,8 +247,8 @@ For repos with multiple projects in subdirectories:
 
 ```bash
 WORKDIR=$(mktemp -d)
-cp -R ../ci-cd-hub-fixtures/monorepo-pass "$WORKDIR/"
-cd "$WORKDIR/monorepo-pass"
+python -m cihub scaffold monorepo "$WORKDIR/monorepo"
+cd "$WORKDIR/monorepo"
 
 # Initialize with --subdir pointing to the project
 python -m cihub init \
@@ -448,4 +442,4 @@ After completing this guide, verify:
 - **Hub-side config management:** See `python -m cihub config --help`
 - **Template sync:** See `python -m cihub sync-templates --help`
 - **Internal smoke testing:** See `docs/guides/INTEGRATION_SMOKE_TEST.md`
-- **Full config reference:** See `docs/reference/CONFIG_REFERENCE.md`
+- **Full config reference:** See `docs/reference/CONFIG.md`

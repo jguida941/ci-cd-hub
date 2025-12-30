@@ -1,3 +1,5 @@
+> Reference only — the canonical execution plan lives in `docs/development/PLAN.md`.
+
 ## Plan for Simplified Workflow + PyQt6 GUI
 
   - Wrapper uses embedded defaults and fromJson() when passing values (so booleans/numbers behave correctly).

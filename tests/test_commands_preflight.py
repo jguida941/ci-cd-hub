@@ -1,0 +1,25 @@
+import argparse
+
+from cihub.cli import CommandResult
+from cihub.commands import preflight as preflight_module
+from cihub.commands.preflight import cmd_preflight
+
+
+def test_preflight_json(monkeypatch) -> None:
+    def fake_which(command: str) -> str | None:
+        if command in {"git", "gh", "pytest", "ruff", "black", "isort"}:
+            return f"/usr/bin/{command}"
+        return None
+
+    class FakeProc:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    monkeypatch.setattr(preflight_module, "_command_exists", fake_which)
+    monkeypatch.setattr(preflight_module.subprocess, "run", lambda *a, **k: FakeProc())
+
+    args = argparse.Namespace(json=True, full=True)
+    result = cmd_preflight(args)
+    assert isinstance(result, CommandResult)
+    assert "checks" in result.data

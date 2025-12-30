@@ -707,6 +707,24 @@ def cmd_detect(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_preflight(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.preflight import cmd_preflight as handler
+
+    return handler(args)
+
+
+def cmd_scaffold(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.scaffold import cmd_scaffold as handler
+
+    return handler(args)
+
+
+def cmd_smoke(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.smoke import cmd_smoke as handler
+
+    return handler(args)
+
+
 def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.ci import cmd_ci as handler
 
@@ -721,6 +739,12 @@ def cmd_run(args: argparse.Namespace) -> int | CommandResult:
 
 def cmd_report(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.report import cmd_report as handler
+
+    return handler(args)
+
+
+def cmd_docs(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.docs import cmd_docs as handler
 
     return handler(args)
 
@@ -1093,6 +1117,95 @@ def build_parser() -> argparse.ArgumentParser:
     detect.add_argument("--explain", action="store_true", help="Show detection reasons")
     detect.set_defaults(func=cmd_detect)
 
+    preflight = subparsers.add_parser(
+        "preflight", help="Check environment readiness"
+    )
+    add_json_flag(preflight)
+    preflight.add_argument(
+        "--full",
+        action="store_true",
+        help="Check optional toolchains and CI runners",
+    )
+    preflight.set_defaults(func=cmd_preflight)
+
+    doctor = subparsers.add_parser("doctor", help="Alias for preflight")
+    add_json_flag(doctor)
+    doctor.add_argument(
+        "--full",
+        action="store_true",
+        help="Check optional toolchains and CI runners",
+    )
+    doctor.set_defaults(func=cmd_preflight)
+
+    scaffold = subparsers.add_parser(
+        "scaffold", help="Generate a minimal fixture project"
+    )
+    add_json_flag(scaffold)
+    scaffold.add_argument(
+        "type",
+        nargs="?",
+        help=(
+            "Fixture type (python-pyproject, python-setup, java-maven, "
+            "java-gradle, monorepo)"
+        ),
+    )
+    scaffold.add_argument("path", nargs="?", help="Destination path")
+    scaffold.add_argument(
+        "--list", action="store_true", help="List available fixture types"
+    )
+    scaffold.add_argument(
+        "--force", action="store_true", help="Overwrite destination if not empty"
+    )
+    scaffold.set_defaults(func=cmd_scaffold)
+
+    smoke = subparsers.add_parser("smoke", help="Run a local smoke test")
+    add_json_flag(smoke)
+    smoke.add_argument(
+        "repo",
+        nargs="?",
+        help="Path to repo (omit to scaffold fixtures)",
+    )
+    smoke.add_argument("--subdir", help="Subdirectory for monorepos")
+    smoke.add_argument(
+        "--type",
+        action="append",
+        help=(
+            "Fixture type to generate (repeatable): python-pyproject, "
+            "python-setup, java-maven, java-gradle, monorepo"
+        ),
+    )
+    smoke.add_argument(
+        "--all",
+        action="store_true",
+        help="Generate and test all fixture types",
+    )
+    smoke.add_argument(
+        "--full",
+        action="store_true",
+        help="Run cihub ci after init/validate",
+    )
+    smoke.add_argument(
+        "--install-deps",
+        action="store_true",
+        help="Install repo dependencies during cihub ci",
+    )
+    smoke.add_argument(
+        "--force",
+        action="store_true",
+        help="Allow init to overwrite existing .ci-hub.yml",
+    )
+    smoke.add_argument(
+        "--relax",
+        action="store_true",
+        help="Relax tool toggles and thresholds when running full",
+    )
+    smoke.add_argument(
+        "--keep",
+        action="store_true",
+        help="Keep generated fixtures on disk",
+    )
+    smoke.set_defaults(func=cmd_smoke)
+
     ci = subparsers.add_parser("ci", help="Run CI based on .ci-hub.yml")
     add_json_flag(ci)
     ci.add_argument("--repo", default=".", help="Path to repo (default: .)")
@@ -1178,6 +1291,38 @@ def build_parser() -> argparse.ArgumentParser:
         "--output", help="Path to write outputs (defaults to GITHUB_OUTPUT)"
     )
     report_outputs.set_defaults(func=cmd_report)
+
+    docs = subparsers.add_parser(
+        "docs", help="Generate reference documentation"
+    )
+    docs_sub = docs.add_subparsers(dest="subcommand", required=True)
+
+    docs_generate = docs_sub.add_parser(
+        "generate", help="Generate CLI and config reference docs"
+    )
+    add_json_flag(docs_generate)
+    docs_generate.add_argument(
+        "--output",
+        default="docs/reference",
+        help="Output directory (default: docs/reference)",
+    )
+    docs_generate.add_argument(
+        "--check",
+        action="store_true",
+        help="Fail if docs would change",
+    )
+    docs_generate.set_defaults(func=cmd_docs)
+
+    docs_check = docs_sub.add_parser(
+        "check", help="Check reference docs are up to date"
+    )
+    add_json_flag(docs_check)
+    docs_check.add_argument(
+        "--output",
+        default="docs/reference",
+        help="Output directory (default: docs/reference)",
+    )
+    docs_check.set_defaults(func=cmd_docs)
 
     config_outputs = subparsers.add_parser(
         "config-outputs",

@@ -1,5 +1,7 @@
 # CI-CD Hub - Complete Architecture Plan
 
+> Reference only — the canonical execution plan lives in `docs/development/PLAN.md`.
+>
 > **Status:** Proposed  
 > **Date:** 2025-12-24  
 > **Author:** Justin Guida  
@@ -56,8 +58,8 @@ Historical execution details are archived in:
   - [x] Update schema: add repo_side_execution in schema/ci-hub-config.schema.json (2025-12-25)
   - [x] Update defaults: add use_central_runner in config/defaults.yaml (2025-12-25)
   - [x] Update defaults: add repo_side_execution in config/defaults.yaml (2025-12-25)
-  - [x] Update docs: add use_central_runner in docs/reference/CONFIG_REFERENCE.md (2025-12-25)
-  - [x] Update docs: add repo_side_execution in docs/reference/CONFIG_REFERENCE.md (2025-12-25)
+  - [x] Update docs: add use_central_runner in docs/reference/CONFIG.md (2025-12-25)
+  - [x] Update docs: add repo_side_execution in docs/reference/CONFIG.md (2025-12-25)
   - [x] ADR‑0025 created (modular CLI + wizard, hub‑side only) (2025-12-25)
   - [x] ADR‑0026 placeholder (repo-side execution guardrails) (2025-12-25)
   - [x] Optional deps added: questionary, rich under [project.optional-dependencies].wizard (2025-12-25)
@@ -139,7 +141,7 @@ Historical execution details are archived in:
  Both must be:
  1. Added to schema (schema/ci-hub-config.schema.json)
  2. Added to defaults.yaml (config/defaults.yaml) with defaults
- 3. Documented in docs/reference/CONFIG_REFERENCE.md
+ 3. Documented in docs/reference/CONFIG.md
  4. Wired into wizard - ask user which mode to use
  5. Wired into config commands - cihub config set ...
 
@@ -286,7 +288,7 @@ Historical execution details are archived in:
  - Add use_central_runner: boolean to schema/ci-hub-config.schema.json
  - Add default to config/defaults.yaml: use_central_runner: true (APPROVED -
  central is default)
- - Update docs/reference/CONFIG_REFERENCE.md with documentation
+ - Update docs/reference/CONFIG.md with documentation
 
  Phase 3: Wizard Module
 
@@ -4243,7 +4245,7 @@ Production-grade approach to add more languages without exceeding the GitHub Act
    - Share `scripts/` helpers to avoid divergence
 
 5. **Docs/Tests**
-   - Update CONFIG_REFERENCE, TOOLS documentation
+   - Update CONFIG.md, TOOLS documentation
    - Add template tests to `tests/test_templates.py`
    - Update ONBOARDING guide
 

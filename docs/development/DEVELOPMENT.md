@@ -160,7 +160,7 @@ hub-release/
 │   └── optional/          # Optional features (chaos, canary, etc.)
 ├── docs/
 │   ├── guides/            # User guides (ONBOARDING, WORKFLOWS, etc.)
-│   ├── reference/         # Reference docs (CONFIG_REFERENCE, TOOLS)
+│   ├── reference/         # Reference docs (CONFIG, TOOLS)
 │   ├── development/       # Internal docs
 │   │   ├── status/        # STATUS.md - current state
 │   │   ├── specs/         # P0.md, P1.md - requirements
@@ -219,7 +219,7 @@ hub-release/
 ### Reference
 | File | What It Is |
 |------|------------|
-| [CONFIG_REFERENCE.md](docs/reference/CONFIG_REFERENCE.md) | Every config field explained |
+| [CONFIG.md](docs/reference/CONFIG.md) | Every config field explained |
 | [TOOLS.md](docs/reference/TOOLS.md) | All 24+ quality tools documented |
 | [example.ci-hub.yml](docs/reference/example.ci-hub.yml) | Example repo-side config |
 
@@ -340,7 +340,7 @@ cihub setup-secrets --all --verify         # Setup dispatch token
 
 - [Full Docs Index](docs/README.md)
 - [Onboarding Guide](docs/guides/ONBOARDING.md)
-- [Config Reference](docs/reference/CONFIG_REFERENCE.md)
+- [Config Reference](docs/reference/CONFIG.md)
 - [Tools Reference](docs/reference/TOOLS.md)
 - [Troubleshooting](docs/guides/TROUBLESHOOTING.md)
 - [ADR Index](docs/adr/README.md)

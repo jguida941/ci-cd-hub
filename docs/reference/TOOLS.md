@@ -683,7 +683,7 @@ java:
 
 ## See Also
 
-- [CONFIG_REFERENCE.md](CONFIG_REFERENCE.md) - Full config schema
+- [CONFIG.md](CONFIG.md) - Full config schema
 - [WORKFLOWS.md](../guides/WORKFLOWS.md) - Workflow details
 - [MODES.md](../guides/MODES.md) - Central vs Distributed
 - [TROUBLESHOOTING.md](../guides/TROUBLESHOOTING.md) - Common issues

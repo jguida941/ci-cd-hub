@@ -202,7 +202,7 @@ PR checklist:
 ### Phase 5: Verify and Prevent Drift
 - Run `validate_summary.py`, `aggregate_reports.py`, and `scripts/validate_report.sh`.
 - Run `python -m cihub sync-templates --check` and fix drift.
-- Update docs: `docs/guides/ONBOARDING.md`, `docs/reference/CONFIG_REFERENCE.md`, `docs/guides/WORKFLOWS.md`.
+- Update docs: `docs/guides/ONBOARDING.md`, `docs/reference/CONFIG.md`, `docs/guides/WORKFLOWS.md`.
 - Document which job in orchestrator/security owns the consolidated summary and artifact sources.
 
 ---
@@ -1187,7 +1187,7 @@ def generate_tool_aggregate_table(results: list[dict]) -> str:
 
 2. **Update documentation**
    - `docs/guides/ONBOARDING.md`
-   - `docs/reference/CONFIG_REFERENCE.md`
+   - `docs/reference/CONFIG.md`
    - `docs/guides/WORKFLOWS.md`
 
 3. **Add drift detection**

@@ -3,7 +3,7 @@
 **Status**: Accepted  
 **Date:** 2025-12-26  
 **Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 
@@ -110,3 +110,8 @@ These commands are required for the thin workflow model:
 - ADR-0024: Workflow Dispatch Input Limit
 - ADR-0029: CLI Exit Code Registry
 - `docs/development/architecture/ARCHITECTURE_PLAN.md` (Phase 9 GUI)
+
+## Update (2025-12-30)
+
+- Repo callers now target the `hub-ci.yml` wrapper workflow as the single entrypoint.
+- `python-ci.yml`/`java-ci.yml` remain internal to the hub and are invoked by the wrapper.

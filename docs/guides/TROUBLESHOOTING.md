@@ -15,7 +15,7 @@ Common issues and their solutions, organized by category.
 **Fix:**
 1. Run locally: `python scripts/load_config.py config/repos/my-app.yaml`
 2. Check error messages for specific field issues
-3. Reference [CONFIG_REFERENCE.md](../reference/CONFIG_REFERENCE.md) for valid fields
+3. Reference [CONFIG.md](../reference/CONFIG.md) for valid fields
 4. Common issues:
    - `min_coverage: 150` → must be 0-100
    - `language: ruby` → must be `java` or `python`
@@ -473,7 +473,7 @@ reports:
 
 ## See Also
 
-- [CONFIG_REFERENCE.md](../reference/CONFIG_REFERENCE.md) - Config options
+- [CONFIG.md](../reference/CONFIG.md) - Config options
 - [TOOLS.md](../reference/TOOLS.md) - Tool details
 - [MODES.md](MODES.md) - Central vs Distributed
 - [WORKFLOWS.md](WORKFLOWS.md) - Workflow documentation

@@ -3,7 +3,7 @@
 **Status**: Accepted  
 **Date:** 2025-12-24  
 **Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 
@@ -184,3 +184,7 @@ Integration testing via hub orchestrator runs against canary repos.
 
 - ADR-0003: Dispatch and Orchestration — updated with correlation flow
 - ADR-0004: Aggregation and Reporting — updated with correlation_id field
+
+## Update (2025-12-30)
+
+- The dispatch entrypoint for target repos is `hub-ci.yml`, which forwards `hub_correlation_id` to internal language workflows.

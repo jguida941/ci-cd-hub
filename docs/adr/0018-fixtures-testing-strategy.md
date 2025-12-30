@@ -3,7 +3,7 @@
 **Status**: Accepted  
 **Date:** 2025-12-18  
 **Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-25  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 
@@ -218,6 +218,11 @@ max_semgrep_findings: 10  # Focus is Docker/Trivy, not code quality
 |---------|----------|----------|----------|------|---------|-----|-------|
 | python-passing | 70 | 0* | 0 | 0 | 0 | N/A | N/A |
 | python-failing | 0 | 0 | 999 | 999 | 999 | N/A | N/A |
+
+## Update (2025-12-30)
+
+- Fixture caller workflows should target the hub wrapper `hub-ci.yml` (repo entrypoint). Direct references to `python-ci.yml`/`java-ci.yml` are legacy.
+- Local verification should prefer `cihub scaffold` + `cihub smoke`; fixtures remain the CI/regression path.
 | python-docker | 70 | N/A | 0 | 10 | 10 | N/A | N/A |
 | java-passing | 70 | 0* | 0 | 0 | 0 | 0 | 7 |
 | java-failing | 0 | 0 | 999 | 999 | 999 | 999 | 11 |

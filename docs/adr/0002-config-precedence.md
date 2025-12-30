@@ -57,7 +57,7 @@ Three-tier hierarchy (highest precedence wins):
 **Implementation notes:**
 - `load_config.py` uses recursive dict merge
 - Validation runs on merged config, not individual sources
-- Config hierarchy documented in CONFIG_REFERENCE.md
+- Config hierarchy documented in CONFIG.md
 
 **Dispatch-time escape hatch (outside hierarchy):**
 
