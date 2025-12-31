@@ -252,10 +252,13 @@ jobs:
           pip install -e "hub[ci]"
 
       - name: Run cihub ci
+        env:
+          WORKDIR: ${{ inputs.workdir }}
+          CORRELATION_ID: ${{ inputs.hub_correlation_id }}
         run: |
           cihub ci \
-            --workdir "${{ inputs.workdir }}" \
-            --correlation-id "${{ inputs.hub_correlation_id }}" \
+            --workdir "$WORKDIR" \
+            --correlation-id "$CORRELATION_ID" \
             --output-dir .cihub
 
       - name: Read report outputs

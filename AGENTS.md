@@ -131,7 +131,7 @@ Use `--install-missing` to prompt for installing missing optional tools and
 | pip-audit | `pip-audit -r ...` | `cihub hub-ci pip-audit --format json --output ...` | Format/output differ |
 | gitleaks | `gitleaks detect --no-git` (skip if missing) | GitHub Action with history | No history locally |
 | trivy | `trivy fs .` | FS + config scans | CI has more scans |
-| zizmor | `zizmor .github/workflows/` | SARIF + `cihub hub-ci zizmor-check` | Output format differs |
+| zizmor | `zizmor .github/workflows/ --min-severity high` | SARIF + `cihub hub-ci zizmor-check` | Severity filter; output format differs |
 | mutmut | `cihub hub-ci mutmut --min-score 70` | `cihub hub-ci mutmut --min-score 70 --output-dir . --github-output --github-summary` | Output/summary differ |
 
 #### CI-Only (Requires GitHub Context)

@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-12-31 - Workflow Security & Verification Fixes
+
+### Security
+- **Fixed template-injection vulnerabilities in workflows** - Converted `${{ inputs.* }}` to environment variables in `python-ci.yml`, `java-ci.yml`, and `kyverno-ci.yml` to prevent potential command injection.
+- **Enhanced zizmor CLI handler** - Added `_run_zizmor()` function in `check.py` with:
+  - `--min-severity high` filtering (mirrors bandit pattern)
+  - Auto-fix detection with helpful 💡 suggestions
+  - Direct link to remediation docs
+
+### Bug Fixes
+- **Fixed smoke --full test failure** - Added `pythonpath = ["."]` to scaffold template `pyproject.toml` so pytest can find local modules.
+- **Fixed gitleaks false positives** - Updated `.gitleaksignore` with correct fingerprints for test file API key patterns.
+- **Fixed broken docs links** - Updated sigstore URLs in `KYVERNO.md` and `ADR-0012` (old `/cosign/keyless/` → `/cosign/signing/overview/`).
+
+### CLI Improvements
+- `cihub check` now displays suggestions with 💡 emoji for failed checks that have remediation guidance.
+
 ## 2025-12-31 - Pre-push Verify + Tool Installation
 
 ### Developer Workflow
