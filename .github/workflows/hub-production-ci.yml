@@ -381,7 +381,7 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install -e ".[dev,wizard]"
-          pip install pytest==8.3.4 pyyaml==6.0.2 jsonschema==4.23.0 mutmut==3.2.3
+          pip install pytest==8.3.4 pyyaml==6.0.2 jsonschema==4.23.0 mutmut==3.4.0
 
       - name: Run mutation tests
         id: mutmut

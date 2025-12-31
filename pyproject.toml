@@ -115,9 +115,8 @@ exclude_lines = [
     "raise NotImplementedError",
 ]
 
-# NOTE: mutmut only tests cihub/wizard/validators.py because it's the only
-# module with full test coverage. The rest of cihub/ has 193 potential mutants
-# with NO test coverage. To get meaningful mutation scores, add tests first!
+# Mutation testing: only modules with 95%+ test coverage and proper test
+# assertions are included. To add modules, ensure they can kill all mutants.
 [tool.mutmut]
 paths_to_mutate = [
     "cihub/wizard/validators.py",
