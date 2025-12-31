@@ -83,7 +83,7 @@ These are references, not competing plans.
 ### 5) Verification
 
 - [x] Run targeted pytest and record results in `docs/development/status/STATUS.md`.
-- [ ] Run `cihub smoke --full` on scaffolded fixtures and capture results.
+- [x] Run `cihub smoke --full` on scaffolded fixtures and capture results.
 - [ ] Re-run the hub production workflows as needed after CLI changes.
 - [x] Define and document a local validation checklist that mirrors CI (`cihub check` + `make check` + GETTING_STARTED.md section).
 - [x] Capture a CI parity map in the plan (localizable vs CI-only per hub-production step).

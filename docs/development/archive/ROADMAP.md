@@ -522,10 +522,10 @@ hub-release/
 
 | Document | Purpose |
 |----------|---------|
-| [RESEARCH_LOG.md](./RESEARCH_LOG.md) | Research findings and best practices |
-| [STATUS.md](../STATUS.md) | Original planning notes |
-| [defaults.yaml](../config/defaults.yaml) | Global configuration |
-| [ONBOARDING.md](./ONBOARDING.md) | Getting started guide |
+| [RESEARCH_LOG.md](../research/RESEARCH_LOG.md) | Research findings and best practices |
+| [STATUS.md](../status/STATUS.md) | Original planning notes |
+| [defaults.yaml](../../../config/defaults.yaml) | Global configuration |
+| [ONBOARDING.md](../../guides/ONBOARDING.md) | Getting started guide |
 
 ---
 

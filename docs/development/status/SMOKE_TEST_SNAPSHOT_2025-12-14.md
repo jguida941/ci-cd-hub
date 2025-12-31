@@ -184,10 +184,10 @@ hub-release/
 
 ## Documentation References
 
-- **Primary Guide:** [SMOKE_TEST.md](SMOKE_TEST.md)
-- **Repository Info:** [SMOKE_TEST_REPOS.md](SMOKE_TEST_REPOS.md)
-- **Workflow Reference:** [../guides/WORKFLOWS.md](../guides/WORKFLOWS.md#smoke-test)
-- **All Docs:** [../README.md](../README.md)
+- **Primary Guide:** [SMOKE_TEST.md](../execution/SMOKE_TEST.md)
+- **Repository Info:** [SMOKE_TEST_REPOS.md](../execution/SMOKE_TEST_REPOS.md)
+- **Workflow Reference:** [../../guides/WORKFLOWS.md](../../guides/WORKFLOWS.md#smoke-test)
+- **All Docs:** [../../README.md](../../README.md)
 
 ---
 
@@ -215,6 +215,6 @@ From `docs/development/specs/P0.md`:
 ## Contact & Support
 
 For issues or questions:
-1. Check [../guides/TROUBLESHOOTING.md](../guides/TROUBLESHOOTING.md)
-2. Review [SMOKE_TEST.md](SMOKE_TEST.md)
+1. Check [../../guides/TROUBLESHOOTING.md](../../guides/TROUBLESHOOTING.md)
+2. Review [SMOKE_TEST.md](../execution/SMOKE_TEST.md)
 3. Check workflow logs in GitHub Actions

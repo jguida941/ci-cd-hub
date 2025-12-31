@@ -187,48 +187,48 @@ hub-release/
 ### Status & Planning
 | File | What It Is |
 |------|------------|
-| [STATUS.md](docs/development/status/STATUS.md) | Current blockers, v1.0 progress, what's broken |
-| [P0.md](docs/development/specs/P0.md) | MVP requirements checklist (must ship) |
-| [P1.md](docs/development/specs/P1.md) | Should-have features |
-| [AGENTS.md](AGENTS.md) | Full context for AI assistants and developers |
+| [STATUS.md](status/STATUS.md) | Current blockers, v1.0 progress, what's broken |
+| [P0.md](specs/P0.md) | MVP requirements checklist (must ship) |
+| [P1.md](specs/P1.md) | Should-have features |
+| [AGENTS.md](../../AGENTS.md) | Full context for AI assistants and developers |
 
 ### Configuration
 | File | What It Is |
 |------|------------|
-| [defaults.yaml](config/defaults.yaml) | **Master config** - all tool toggles, thresholds |
-| [config/repos/](config/repos/) | Per-repo overrides (24 repos configured) |
-| [ci-hub-config.schema.json](schema/ci-hub-config.schema.json) | JSON Schema that validates all configs |
-| [templates/profiles/](templates/profiles/) | Pre-built profiles (fast, quality, security) |
+| [defaults.yaml](../../config/defaults.yaml) | **Master config** - all tool toggles, thresholds |
+| [config/repos/](../../config/repos/) | Per-repo overrides (24 repos configured) |
+| [ci-hub-config.schema.json](../../schema/ci-hub-config.schema.json) | JSON Schema that validates all configs |
+| [templates/profiles/](../../templates/profiles/) | Pre-built profiles (fast, quality, security) |
 
 ### Workflows
 | File | What It Is |
 |------|------------|
-| [hub-run-all.yml](.github/workflows/hub-run-all.yml) | **Central mode** - hub clones repo, runs all tools |
-| [hub-orchestrator.yml](.github/workflows/hub-orchestrator.yml) | **Distributed mode** - dispatches to repo's workflow |
-| [java-ci.yml](.github/workflows/java-ci.yml) | Reusable Java workflow (JaCoCo, Checkstyle, SpotBugs, PITest, OWASP) |
-| [python-ci.yml](.github/workflows/python-ci.yml) | Reusable Python workflow (pytest, Ruff, Bandit, mutmut, pip-audit) |
-| [hub-production-ci.yml](.github/workflows/hub-production-ci.yml) | CI for the hub itself |
+| [hub-run-all.yml](../../.github/workflows/hub-run-all.yml) | **Central mode** - hub clones repo, runs all tools |
+| [hub-orchestrator.yml](../../.github/workflows/hub-orchestrator.yml) | **Distributed mode** - dispatches to repo's workflow |
+| [java-ci.yml](../../.github/workflows/java-ci.yml) | Reusable Java workflow (JaCoCo, Checkstyle, SpotBugs, PITest, OWASP) |
+| [python-ci.yml](../../.github/workflows/python-ci.yml) | Reusable Python workflow (pytest, Ruff, Bandit, mutmut, pip-audit) |
+| [hub-production-ci.yml](../../.github/workflows/hub-production-ci.yml) | CI for the hub itself |
 
 ### Architecture
 | File | What It Is |
 |------|------------|
-| [ARCH_OVERVIEW.md](docs/development/architecture/ARCH_OVERVIEW.md) | System design with diagrams |
-| [SUMMARY_CONTRACT.md](docs/development/architecture/SUMMARY_CONTRACT.md) | Report schema, workflow outputs |
-| [docs/adr/](docs/adr/) | 27 Architecture Decision Records |
+| [ARCH_OVERVIEW.md](architecture/ARCH_OVERVIEW.md) | System design with diagrams |
+| [SUMMARY_CONTRACT.md](architecture/SUMMARY_CONTRACT.md) | Report schema, workflow outputs |
+| [docs/adr/](../adr/) | 27 Architecture Decision Records |
 
 ### Reference
 | File | What It Is |
 |------|------------|
-| [CONFIG.md](docs/reference/CONFIG.md) | Every config field explained |
-| [TOOLS.md](docs/reference/TOOLS.md) | All 24+ quality tools documented |
-| [example.ci-hub.yml](docs/reference/example.ci-hub.yml) | Example repo-side config |
+| [CONFIG.md](../reference/CONFIG.md) | Every config field explained |
+| [TOOLS.md](../reference/TOOLS.md) | All 24+ quality tools documented |
+| [example.ci-hub.yml](../reference/example.ci-hub.yml) | Example repo-side config |
 
 ### Governance
 | File | What It Is |
 |------|------------|
-| [CONTRIBUTING.md](.github/CONTRIBUTING.md) | How to contribute, PR process |
-| [SECURITY.md](.github/SECURITY.md) | Vulnerability reporting policy |
-| [CODE_OF_CONDUCT.md](.github/CODE_OF_CONDUCT.md) | Community standards |
+| [CONTRIBUTING.md](../../.github/CONTRIBUTING.md) | How to contribute, PR process |
+| [SECURITY.md](../../.github/SECURITY.md) | Vulnerability reporting policy |
+| [CODE_OF_CONDUCT.md](../../.github/CODE_OF_CONDUCT.md) | Community standards |
 
 ---
 
@@ -338,9 +338,9 @@ cihub setup-secrets --all --verify         # Setup dispatch token
 
 ## See Also
 
-- [Full Docs Index](docs/README.md)
-- [Getting Started](docs/guides/GETTING_STARTED.md)
-- [Config Reference](docs/reference/CONFIG.md)
-- [Tools Reference](docs/reference/TOOLS.md)
-- [Troubleshooting](docs/guides/TROUBLESHOOTING.md)
-- [ADR Index](docs/adr/README.md)
+- [Full Docs Index](../README.md)
+- [Getting Started](../guides/GETTING_STARTED.md)
+- [Config Reference](../reference/CONFIG.md)
+- [Tools Reference](../reference/TOOLS.md)
+- [Troubleshooting](../guides/TROUBLESHOOTING.md)
+- [ADR Index](../adr/README.md)

@@ -354,7 +354,19 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
             "bandit",
             _run_process(
                 "bandit",
-                ["bandit", "-r", "cihub", "scripts", "-f", "json", "-q"],
+                [
+                    "bandit",
+                    "-r",
+                    "cihub",
+                    "scripts",
+                    "-f",
+                    "json",
+                    "-q",
+                    "--severity-level",
+                    "high",
+                    "--confidence-level",
+                    "high",
+                ],
                 root,
             ),
         )

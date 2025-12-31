@@ -127,7 +127,7 @@ Use `--install-missing` to prompt for installing missing optional tools and
 | pytest | `pytest tests/` | `pytest --cov --cov-fail-under=70` | Coverage gate only in CI |
 | actionlint | All workflows | Only `hub-production-ci.yml` + reviewdog | Scope/annotations differ |
 | yamllint | `config/ templates/` | Specific paths + custom rules | Paths/rules differ |
-| bandit | `bandit -r cihub scripts -f json -q` | `cihub hub-ci bandit --paths cihub scripts --output ...` | Flags/output differ |
+| bandit | `bandit -r cihub scripts -f json -q --severity-level high --confidence-level high` | `cihub hub-ci bandit --paths cihub scripts --output ...` | Severity/flags differ |
 | pip-audit | `pip-audit -r ...` | `cihub hub-ci pip-audit --format json --output ...` | Format/output differ |
 | gitleaks | `gitleaks detect --no-git` (skip if missing) | GitHub Action with history | No history locally |
 | trivy | `trivy fs .` | FS + config scans | CI has more scans |

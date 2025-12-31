@@ -6,6 +6,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -56,6 +57,18 @@ def _run_command(
     env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     resolved = [resolve_executable(cmd[0]), *cmd[1:]]
+    venv_root = os.environ.get("VIRTUAL_ENV")
+    venv_bin = None
+    if venv_root:
+        venv_bin = Path(venv_root) / ("Scripts" if os.name == "nt" else "bin")
+    elif sys.prefix != sys.base_prefix:
+        venv_bin = Path(sys.executable).parent
+    if venv_bin:
+        candidate = venv_bin / cmd[0]
+        if os.name == "nt" and not candidate.suffix:
+            candidate = candidate.with_suffix(".exe")
+        if candidate.exists():
+            resolved[0] = str(candidate)
     return subprocess.run(  # noqa: S603
         resolved,
         cwd=workdir,

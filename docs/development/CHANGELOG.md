@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - Added `make verify` to run full pre-push validation (`cihub check --all --install-missing --require-optional`) plus template drift check.
 - Added `--install-missing` and `--require-optional` flags to `cihub check` to prompt for installing optional tools and fail if they are missing.
 - Added `zizmor` to dev dependencies for local workflow security scanning.
+- Fixed smoke validation by adding `thresholds.max_*` fields to the schema and ensuring CI tool execution prefers the active venv.
 
 ## 2025-12-30 - Formatter Unification (Ruff-only)
 

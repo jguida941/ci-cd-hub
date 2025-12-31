@@ -29,6 +29,7 @@
 ## Needs Verification (Run Required)
 
 - (2025-12-30) `pytest tests/test_templates.py` passed (user run); full pytest still pending.
+- (2025-12-30) `cihub smoke --full` passed on scaffolded fixtures (python-pyproject, java-maven).
 - Hub Orchestrator (`hub-orchestrator.yml`)
 - Hub Security (`hub-security.yml`)
 - Hub Production CI (`hub-production-ci.yml`) gates

@@ -636,15 +636,15 @@ thresholds:
 1. **Check precedence** - repo-local `.ci-hub.yml` overrides hub configs
 2. **Check file location** - must be `config/repos/<repo-name>.yaml`
 3. **Check language** - Python tools don't apply to Java repos and vice versa
-4. **Check workflow** - some tools only run in central mode (see [TOOLS.md](TOOLS.md) in this directory)
+4. **Check workflow** - some tools only run in central mode (see [TOOLS.md](../../reference/TOOLS.md))
 
 ---
 
 ## See Also
 
-- [TOOLS.md](TOOLS.md) - Tool details and availability
-- [MODES.md](../guides/MODES.md) - Central vs Distributed execution
-- [WORKFLOWS.md](../guides/WORKFLOWS.md) - Workflow documentation
+- [TOOLS.md](../../reference/TOOLS.md) - Tool details and availability
+- [MODES.md](../../guides/MODES.md) - Central vs Distributed execution
+- [WORKFLOWS.md](../../guides/WORKFLOWS.md) - Workflow documentation
 - `templates/repo/.ci-hub.yml` - Repo-local template
 - `templates/hub/config/repos/repo-template.yaml` - Hub-side template
 - `schema/ci-hub-config.schema.json` - JSON Schema source

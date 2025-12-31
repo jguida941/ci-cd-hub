@@ -1680,12 +1680,12 @@ grep "uses:.*java-ci.yml@v1" templates/repo/hub-java-ci.yml
 | 3.8 | Update roadmap | `docs/development/ROADMAP.md` | Update dispatch template references | [ ] |
 | 3.9 | Update outstanding items | `docs/development/OUTSTANDING.md` | Update dispatch template references | [ ] |
 | 3.10 | Update research notes | `docs/development/research/RESEARCH_LOG.md` | Update dispatch template references (if exists) | [ ] |
-| 3.11 | Add superseded notice | `docs/adr/0013-dispatch-workflow-templates.md` | Header: "**Status: Superseded by [ADR-0014](./0014-reusable-workflow-migration.md)**" | [ ] |
+| 3.11 | Add superseded notice | `docs/adr/0013-dispatch-workflow-templates.md` | Header: "**Status: Superseded by [ADR-0014](../../adr/0014-reusable-workflow-migration.md)**" | [ ] |
 | 3.12 | Update report schema docs | Various guides | Show new 12+ field schema with `schema_version` | [ ] |
 
 **ADR Supersedence Approach:**
 - **Decision:** Keep ADR-0013 in place (do NOT move to superseded/ folder)
-- **Action:** Add header banner: `**Status: Superseded by [ADR-0014](./0014-reusable-workflow-migration.md)**`
+- **Action:** Add header banner: `**Status: Superseded by [ADR-0014](../../adr/0014-reusable-workflow-migration.md)**`
 - **Rationale:** Preserves history, avoids breaking links, standard ADR practice
 - **ADR Index:** Update `docs/adr/README.md` to show ADR-0013 as superseded and link to ADR-0014
 
