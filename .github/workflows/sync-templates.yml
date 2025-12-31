@@ -37,4 +37,4 @@ jobs:
       - name: Sync templates
         env:
           GH_TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN }}
-        run: python -m cihub sync-templates
+        run: python -m cihub sync-templates --yes
