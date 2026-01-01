@@ -129,12 +129,12 @@ These are references, not competing plans.
 ### 8) Services Layer (Phase 5A, PyQt6 Readiness)
 
 - [x] Add discovery service + tests; wire `cihub discover` to services layer.
-- [ ] Add report validation service with **parity-first** behavior:
+- [x] Add report validation service with **parity-first** behavior:
   - include summary parsing + summary/report cross-checks
   - include artifact fallback when metrics are missing
   - include effective-success merging for summary/tool status
   - avoid duplicate maps/logic between service and CLI
-- [ ] Wire `cihub report validate` to the service and keep CLI-only output/verbosity in the adapter.
+- [x] Wire `cihub report validate` to the service and keep CLI-only output/verbosity in the adapter.
 - [ ] Add aggregation service (Phase 5A pattern) and wire CLI adapter.
 
 ### 9) Triage, Registry, and LLM Bundles (New)
