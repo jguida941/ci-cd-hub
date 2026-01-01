@@ -18,6 +18,7 @@ PYTHON_TOOL_METRICS: dict[str, list[str]] = {
     "mypy": ["tool_metrics.mypy_errors"],
     "bandit": ["tool_metrics.bandit_high", "tool_metrics.bandit_medium"],
     "pip_audit": ["tool_metrics.pip_audit_vulns"],
+    "sbom": [],
     "semgrep": ["tool_metrics.semgrep_findings"],
     "trivy": ["tool_metrics.trivy_critical", "tool_metrics.trivy_high"],
     "hypothesis": ["results.tests_passed"],
@@ -34,6 +35,7 @@ JAVA_TOOL_METRICS: dict[str, list[str]] = {
     "owasp": ["tool_metrics.owasp_critical", "tool_metrics.owasp_high"],
     "semgrep": ["tool_metrics.semgrep_findings"],
     "trivy": ["tool_metrics.trivy_critical", "tool_metrics.trivy_high"],
+    "sbom": [],
     "jqwik": ["results.tests_passed"],
     "codeql": [],
     "docker": [],
@@ -55,6 +57,7 @@ JAVA_SUMMARY_MAP = {
     "OWASP Dependency-Check": "owasp",
     "Semgrep": "semgrep",
     "Trivy": "trivy",
+    "SBOM": "sbom",
     "jqwik": "jqwik",
     "CodeQL": "codeql",
     "Docker": "docker",
@@ -73,6 +76,7 @@ PYTHON_SUMMARY_MAP = {
     "Trivy": "trivy",
     "Hypothesis": "hypothesis",
     "CodeQL": "codeql",
+    "SBOM": "sbom",
     "Docker": "docker",
 }
 
@@ -85,6 +89,7 @@ JAVA_ARTIFACTS = {
     "owasp": ["**/dependency-check-report.json"],
     "pitest": ["**/target/pit-reports/mutations.xml"],
     "semgrep": ["**/semgrep-report.json"],
+    "sbom": ["**/sbom*.json"],
     "trivy": ["**/trivy-report.json"],
 }
 
@@ -99,6 +104,7 @@ PYTHON_ARTIFACTS = {
     "mutmut": ["**/mutmut-run.log"],
     "hypothesis": ["**/hypothesis-output.txt"],
     "semgrep": ["**/semgrep-report.json"],
+    "sbom": ["**/sbom*.json"],
     "trivy": ["**/trivy-report.json"],
 }
 

@@ -157,6 +157,7 @@ def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
         "run_isort": _bool_str(_tool_enabled(config, "python", "isort", True)),
         "run_mutmut": _bool_str(_tool_enabled(config, "python", "mutmut", True)),
         "run_hypothesis": _bool_str(_tool_enabled(config, "python", "hypothesis", True)),
+        "run_sbom": _bool_str(_tool_enabled(config, lang_for_shared, "sbom", False)),
         "run_semgrep": _bool_str(_tool_enabled(config, lang_for_shared, "semgrep", False)),
         "run_trivy": _bool_str(_tool_enabled(config, lang_for_shared, "trivy", False)),
         "run_codeql": _bool_str(_tool_enabled(config, lang_for_shared, "codeql", False)),

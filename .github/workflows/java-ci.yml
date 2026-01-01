@@ -24,6 +24,7 @@
 #       jqwik:     { enabled: false }  # Property-based testing
 #       semgrep:   { enabled: false }  # SAST (expensive, opt-in)
 #       trivy:     { enabled: false }  # Container scan (expensive, opt-in)
+#       sbom:      { enabled: false }  # SBOM generation (expensive, opt-in)
 #       codeql:    { enabled: false }  # CodeQL (expensive, opt-in)
 #       docker:    { enabled: false }  # Docker build/test (opt-in)
 #
@@ -113,6 +114,10 @@ on:
         default: false
       run_trivy:
         description: 'Run Trivy container scan (expensive)'
+        type: boolean
+        default: false
+      run_sbom:
+        description: 'Generate SBOM (expensive)'
         type: boolean
         default: false
       run_docker:
@@ -259,17 +264,20 @@ jobs:
         env:
           WORKDIR: ${{ inputs.workdir }}
           CORRELATION_ID: ${{ inputs.hub_correlation_id }}
-          WRITE_SUMMARY: ${{ inputs.write_github_summary }}
-        run: |
-          summary_flag="--no-write-github-summary"
-          if [ "$WRITE_SUMMARY" = "true" ]; then
-            summary_flag="--write-github-summary"
-          fi
-          cihub ci \
-            --workdir "$WORKDIR" \
-            --correlation-id "$CORRELATION_ID" \
-            --output-dir .cihub \
-            $summary_flag
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary }}
+          CIHUB_RUN_JACOCO: ${{ inputs.run_jacoco }}
+          CIHUB_RUN_CHECKSTYLE: ${{ inputs.run_checkstyle }}
+          CIHUB_RUN_SPOTBUGS: ${{ inputs.run_spotbugs }}
+          CIHUB_RUN_OWASP: ${{ inputs.run_owasp }}
+          CIHUB_RUN_PITEST: ${{ inputs.run_pitest }}
+          CIHUB_RUN_JQWIK: ${{ inputs.run_jqwik }}
+          CIHUB_RUN_PMD: ${{ inputs.run_pmd }}
+          CIHUB_RUN_SEMGREP: ${{ inputs.run_semgrep }}
+          CIHUB_RUN_TRIVY: ${{ inputs.run_trivy }}
+          CIHUB_RUN_CODEQL: ${{ inputs.run_codeql }}
+          CIHUB_RUN_SBOM: ${{ inputs.run_sbom }}
+          CIHUB_RUN_DOCKER: ${{ inputs.run_docker }}
+        run: cihub ci --workdir "$WORKDIR" --correlation-id "$CORRELATION_ID" --output-dir .cihub
 
       - name: Read report outputs
         id: report

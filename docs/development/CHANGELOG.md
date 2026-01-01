@@ -2,6 +2,58 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-02 - Java SBOM Support
+
+### CLI
+- Added `java.tools.sbom` support in config loading and report summaries.
+- Added syft-based SBOM generation in `cihub ci` (format configurable).
+
+### Workflows
+- **hub-ci.yml** now passes `run_sbom` to Java jobs.
+- **java-ci.yml** accepts `run_sbom` and wires `CIHUB_RUN_SBOM`.
+
+## 2026-01-01 - Summary Commands + Snapshot Tests
+
+### CLI
+- Added `cihub report security-summary` (modes: repo, zap, overall) for hub-security.yml summaries.
+- Added `cihub report smoke-summary` (modes: repo, overall) for smoke-test.yml summaries.
+- Added `cihub report kyverno-summary` for kyverno-ci.yml and kyverno-validate.yml summaries.
+- Added `cihub report orchestrator-summary` (modes: load-config, trigger-record) for hub-orchestrator.yml summaries.
+- All summary commands honor `CIHUB_WRITE_GITHUB_SUMMARY` env var and `--write-github-summary`/`--no-write-github-summary` flags.
+- Summary commands no longer print to stdout when the summary toggle disables output.
+
+### Tests
+- Added `tests/test_summary_commands.py` with 19 snapshot tests covering all summary commands.
+- Tests verify output format parity with old inline heredocs.
+- Added toggle audit tests verifying `CIHUB_WRITE_GITHUB_SUMMARY` env var behavior.
+
+### Workflows
+- **hub-security.yml**: Replaced inline matrix build with `cihub discover`, replaced inline summaries with CLI commands.
+- **smoke-test.yml**: Replaced inline summaries with `cihub report smoke-summary`.
+- **kyverno-ci.yml** and **kyverno-validate.yml**: Replaced inline summaries with `cihub report kyverno-summary`.
+- **hub-orchestrator.yml**: Replaced inline summaries with `cihub report orchestrator-summary`.
+- All workflows now use `CIHUB_WRITE_GITHUB_SUMMARY` env var for toggle control.
+
+## 2026-01-01 - No-Inline Workflow Cleanup
+
+### CLI
+- Added `cihub dispatch trigger` to dispatch workflows and poll for run ID (replaces inline JS in hub-orchestrator.yml).
+- Added `cihub dispatch metadata` to generate dispatch metadata JSON files (replaces heredoc in hub-orchestrator.yml).
+- Added `cihub report dashboard` to generate HTML or JSON dashboards from aggregated reports.
+- Added CLI env overrides for tool toggles (e.g., `CIHUB_RUN_PYTEST=true`) and summary toggle (`CIHUB_WRITE_GITHUB_SUMMARY=false`).
+
+### Workflows
+- **hub-orchestrator.yml**: Removed 90+ lines of inline JavaScript, now uses `cihub dispatch trigger` and `cihub dispatch metadata`.
+- **config-validate.yml**: Updated to use `cihub hub-ci validate-configs` and `cihub hub-ci validate-profiles`.
+- **python-ci.yml**: Fixed typo in artifact name (`arme tifact_prefix` → `artifact_prefix`).
+
+### Scripts (Deprecated)
+- Converted `scripts/aggregate_reports.py` to deprecation shim → use `cihub report dashboard`.
+
+### Tests
+- Updated `test_aggregate_reports.py` to import from `cihub.commands.report` instead of deprecated shim.
+- Tests now use 3-tuple return (reports, skipped, warnings) matching new API.
+
 ## 2025-12-31 - Phase 4: Remaining Scripts → CLI
 
 ### CLI
@@ -123,7 +175,6 @@ All notable changes to this project will be documented in this file.
 ### Documentation & Governance
 - Added canonical plan: `docs/development/PLAN.md`.
 - Added reference-only banners to `pyqt/planqt.md` and archived `docs/development/archive/ARCHITECTURE_PLAN.md`.
-- Added `AGENTS.md` and removed ignore rule so it is tracked in git.
 - Updated ADRs to reflect `hub-ci.yml` wrapper and CLI-first verification.
 - Refreshed `docs/development/status/STATUS.md`.
 - Rewrote `claude_audit.md` into a factual audit ledger.

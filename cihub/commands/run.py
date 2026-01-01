@@ -100,7 +100,11 @@ def cmd_run(args: argparse.Namespace) -> int | CommandResult:
         return EXIT_SUCCESS
 
     try:
-        if tool == "mutmut":
+        if tool == "pytest":
+            pytest_cfg = config.get("python", {}).get("tools", {}).get("pytest", {}) or {}
+            fail_fast = bool(pytest_cfg.get("fail_fast", False))
+            result = runner(workdir_path, output_dir, fail_fast)
+        elif tool == "mutmut":
             timeout = config.get("python", {}).get("tools", {}).get("mutmut", {}).get("timeout_minutes", 15)
             result = runner(workdir_path, output_dir, int(timeout) * 60)
         else:

@@ -28,7 +28,21 @@ def cmd_discover(args: argparse.Namespace) -> int | CommandResult:
     repo_filter = getattr(args, "repos", "") or ""
     filter_repos = [r.strip() for r in repo_filter.split(",") if r.strip()]
 
-    filters = DiscoveryFilters(run_groups=filter_groups, repos=filter_repos)
+    central_only = bool(getattr(args, "central_only", False))
+    dispatch_only = bool(getattr(args, "dispatch_only", False))
+    if central_only and dispatch_only:
+        message = "Choose only one: --central-only or --dispatch-only"
+        if json_mode:
+            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
+        print(f"Error: {message}")
+        return EXIT_FAILURE
+
+    use_central_runner = True if central_only else False if dispatch_only else None
+    filters = DiscoveryFilters(
+        run_groups=filter_groups,
+        repos=filter_repos,
+        use_central_runner=use_central_runner,
+    )
 
     # Call service
     result = discover_repositories(hub, filters)

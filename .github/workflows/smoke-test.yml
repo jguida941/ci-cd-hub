@@ -26,6 +26,11 @@ on:
         required: false
         type: boolean
         default: true
+      write_github_summary:
+        description: 'Write summary to GITHUB_STEP_SUMMARY'
+        required: false
+        type: boolean
+        default: true
 
   # Allow running smoke test on config changes
   pull_request:
@@ -53,52 +58,20 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install cihub
+        run: pip install -e ".[ci]"
+
       - name: Build Smoke Test Matrix
         id: repos
-        run: |
-          REPOS='{"include":['
-          FIRST=true
-          COUNT=0
-
-          # Only include smoke-test-*.yaml configs
-          for config in config/repos/smoke-test-*.yaml; do
-            if [ -f "$config" ]; then
-              # Strip inline comments (# ...) and trim whitespace
-              NAME=$(grep -E "^\s+name:" "$config" | head -1 | sed 's/.*name:\s*//' | sed 's/#.*//' | tr -d '"' | tr -d "'" | xargs)
-              OWNER=$(grep -E "^\s+owner:" "$config" | head -1 | sed 's/.*owner:\s*//' | sed 's/#.*//' | tr -d '"' | tr -d "'" | xargs)
-              LANG=$(grep -E "^\s+language:" "$config" | head -1 | sed 's/.*language:\s*//' | sed 's/#.*//' | tr -d '"' | tr -d "'" | xargs)
-              BRANCH=$(grep -E "^\s+default_branch:" "$config" | head -1 | sed 's/.*default_branch:\s*//' | sed 's/#.*//' | tr -d '"' | tr -d "'" | xargs || echo "main")
-
-              if [ -n "$NAME" ] && [ -n "$OWNER" ]; then
-                if [ "$FIRST" = true ]; then
-                  FIRST=false
-                else
-                  REPOS+=','
-                fi
-                REPOS+="{\"name\":\"$NAME\",\"owner\":\"$OWNER\",\"language\":\"${LANG:-java}\",\"branch\":\"${BRANCH:-main}\",\"config\":\"$config\"}"
-                COUNT=$((COUNT + 1))
-              fi
-            fi
-          done
-
-          REPOS+=']}'
-          echo "matrix=$REPOS" >> "$GITHUB_OUTPUT"
-          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
-
-          echo "Found $COUNT smoke test repositories:"
-          echo "$REPOS" | jq -r '.include[] | "  - \(.language): \(.owner)/\(.name)"' || echo "$REPOS"
+        run: cihub discover --run-group smoke --github-output
 
       - name: Validate Smoke Test Setup
-        env:
-          COUNT: ${{ steps.repos.outputs.count }}
-        run: |
-          if [ "${COUNT:-0}" -lt 2 ]; then
-            echo "::error::Expected at least 2 smoke test repos (Java + Python), found ${COUNT:-0}"
-            echo "::error::Ensure config/repos/smoke-test-java.yaml and smoke-test-python.yaml exist"
-            exit 1
-          fi
-
-          echo "Smoke test setup valid: ${COUNT:-0} repositories configured"
+        run: cihub smoke-validate --count "${{ steps.repos.outputs.count }}" --min-count 2
 
   # ============================================================================
   # Run Smoke Tests
@@ -118,6 +91,14 @@ jobs:
         with:
           path: hub
           persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install cihub
+        run: pip install -e "hub[ci]"
 
       - name: Checkout Target Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -350,106 +331,8 @@ jobs:
       - name: Generate Smoke Test Report
         id: report
         env:
-          MATRIX_OWNER: ${{ matrix.owner }}
-          MATRIX_NAME: ${{ matrix.name }}
-          MATRIX_BRANCH: ${{ matrix.branch }}
-          MATRIX_LANGUAGE: ${{ matrix.language }}
-          MATRIX_CONFIG: ${{ matrix.config }}
-          JAVA_TESTS_TOTAL: ${{ steps.java-tests.outputs.total || 0 }}
-          JAVA_TESTS_FAILED: ${{ steps.java-tests.outputs.failed || 0 }}
-          JAVA_COV_PERCENT: ${{ steps.java-coverage.outputs.percent || 0 }}
-          JAVA_COV_LINES: ${{ steps.java-coverage.outputs.lines || '0 / 0' }}
-          JAVA_CHECKSTYLE: ${{ steps.java-checkstyle.outputs.violations || 0 }}
-          JAVA_SPOTBUGS: ${{ steps.java-spotbugs.outputs.count || 0 }}
-          PYTHON_TESTS_TOTAL: ${{ steps.python-tests.outputs.total || 0 }}
-          PYTHON_TESTS_FAILED: ${{ steps.python-tests.outputs.failed || 0 }}
-          PYTHON_COV: ${{ steps.python-tests.outputs.coverage || 0 }}
-          PYTHON_RUFF_ERRORS: ${{ steps.python-ruff.outputs.errors || 0 }}
-          PYTHON_RUFF_SECURITY: ${{ steps.python-ruff.outputs.security || 0 }}
-          PYTHON_BLACK_ISSUES: ${{ steps.python-black.outputs.issues || 0 }}
-        run: |
-          summary_file="$GITHUB_STEP_SUMMARY"
-          exec 3> "$summary_file"
-
-          # Header
-          cat >&3 << EOF
-          # Smoke Test Results: ${MATRIX_OWNER}/${MATRIX_NAME}
-
-          **Branch:** \`${MATRIX_BRANCH}\` | **Language:** \`${MATRIX_LANGUAGE}\` | **Config:** \`${MATRIX_CONFIG}\`
-
-          ---
-
-          EOF
-
-          if [ "$MATRIX_LANGUAGE" = "java" ]; then
-            COV=$JAVA_COV_PERCENT
-            COV_BAR=$(printf '█%.0s' $(seq 1 $((COV / 5))) 2>/dev/null; printf '░%.0s' $(seq 1 $((20 - COV / 5))) 2>/dev/null)
-
-            # Determine statuses
-            TESTS_STATUS="FAIL"; [ "$JAVA_TESTS_TOTAL" -gt 0 ] 2>/dev/null && TESTS_STATUS="PASS"
-            FAILURES_STATUS="PASS"; [ "$JAVA_TESTS_FAILED" -gt 0 ] 2>/dev/null && FAILURES_STATUS="WARN"
-            COV_STATUS="WARN"; [ "$COV" -ge 50 ] 2>/dev/null && COV_STATUS="PASS"
-            CHECKSTYLE_STATUS="PASS"; [ "$JAVA_CHECKSTYLE" -gt 0 ] 2>/dev/null && CHECKSTYLE_STATUS="WARN"
-            SPOTBUGS_STATUS="PASS"; [ "$JAVA_SPOTBUGS" -gt 0 ] 2>/dev/null && SPOTBUGS_STATUS="WARN"
-
-            SMOKE_STATUS="**FAIL** - Missing test execution or coverage data"
-            if [ "$JAVA_TESTS_TOTAL" -gt 0 ] 2>/dev/null && [ "$COV" -gt 0 ] 2>/dev/null; then
-              SMOKE_STATUS="**PASS** - Core Java tools executed successfully"
-            fi
-
-            cat >&3 << EOF
-          ## Java Smoke Test Results
-
-          | Metric | Result | Status |
-          |--------|--------|--------|
-          | **Unit Tests** | ${JAVA_TESTS_TOTAL} executed | ${TESTS_STATUS} |
-          | **Test Failures** | ${JAVA_TESTS_FAILED} failed | ${FAILURES_STATUS} |
-          | **Coverage (JaCoCo)** | ${COV}% ${COV_BAR} | ${COV_STATUS} |
-          | **Checkstyle** | ${JAVA_CHECKSTYLE} violations | ${CHECKSTYLE_STATUS} |
-          | **SpotBugs** | ${JAVA_SPOTBUGS} potential bugs | ${SPOTBUGS_STATUS} |
-
-          **Coverage Details:** ${JAVA_COV_LINES} instructions covered
-
-          ### Smoke Test Status
-          ${SMOKE_STATUS}
-
-          EOF
-
-          else
-            COV=$PYTHON_COV
-            COV_BAR=$(printf '█%.0s' $(seq 1 $((COV / 5))) 2>/dev/null; printf '░%.0s' $(seq 1 $((20 - COV / 5))) 2>/dev/null)
-
-            # Determine statuses
-            TESTS_STATUS="FAIL"; [ "$PYTHON_TESTS_TOTAL" -gt 0 ] 2>/dev/null && TESTS_STATUS="PASS"
-            FAILURES_STATUS="PASS"; [ "$PYTHON_TESTS_FAILED" -gt 0 ] 2>/dev/null && FAILURES_STATUS="WARN"
-            COV_STATUS="WARN"; [ "$COV" -ge 50 ] 2>/dev/null && COV_STATUS="PASS"
-            RUFF_STATUS="PASS"; [ "$PYTHON_RUFF_ERRORS" -gt 0 ] 2>/dev/null && RUFF_STATUS="WARN"
-            BLACK_STATUS="PASS"; [ "$PYTHON_BLACK_ISSUES" -gt 0 ] 2>/dev/null && BLACK_STATUS="WARN"
-
-            SMOKE_STATUS="**FAIL** - Missing test execution or coverage data"
-            if [ "$PYTHON_TESTS_TOTAL" -gt 0 ] 2>/dev/null && [ "$COV" -gt 0 ] 2>/dev/null; then
-              SMOKE_STATUS="**PASS** - Core Python tools executed successfully"
-            fi
-
-            cat >&3 << EOF
-          ## Python Smoke Test Results
-
-          | Metric | Result | Status |
-          |--------|--------|--------|
-          | **Unit Tests** | ${PYTHON_TESTS_TOTAL} passed | ${TESTS_STATUS} |
-          | **Test Failures** | ${PYTHON_TESTS_FAILED} failed | ${FAILURES_STATUS} |
-          | **Coverage (pytest-cov)** | ${COV}% ${COV_BAR} | ${COV_STATUS} |
-          | **Ruff Lint** | ${PYTHON_RUFF_ERRORS} issues | ${RUFF_STATUS} |
-          | **Black Format** | ${PYTHON_BLACK_ISSUES} files need reformatting | ${BLACK_STATUS} |
-
-          **Security:** ${PYTHON_RUFF_SECURITY} security-related issues
-
-          ### Smoke Test Status
-          ${SMOKE_STATUS}
-
-          EOF
-          fi
-          exec 3>&-
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
+        run: cihub report smoke-summary --mode repo --owner "${{ matrix.owner }}" --repo "${{ matrix.name }}" --branch "${{ matrix.branch }}" --language "${{ matrix.language }}" --config "${{ matrix.config_basename }}" --tests-total "${{ matrix.language == 'java' && steps.java-tests.outputs.total || steps.python-tests.outputs.total || '0' }}" --tests-failed "${{ matrix.language == 'java' && steps.java-tests.outputs.failed || steps.python-tests.outputs.failed || '0' }}" --coverage "${{ matrix.language == 'java' && steps.java-coverage.outputs.percent || steps.python-tests.outputs.coverage || '0' }}" --coverage-lines "${{ steps.java-coverage.outputs.lines || '0 / 0' }}" --checkstyle-violations "${{ steps.java-checkstyle.outputs.violations || '0' }}" --spotbugs-issues "${{ steps.java-spotbugs.outputs.count || '0' }}" --ruff-errors "${{ steps.python-ruff.outputs.errors || '0' }}" --ruff-security "${{ steps.python-ruff.outputs.security || '0' }}" --black-issues "${{ steps.python-black.outputs.issues || '0' }}"
 
       # ========================================
       # UPLOAD ARTIFACTS
@@ -481,6 +364,19 @@ jobs:
     if: always()
 
     steps:
+      - name: Checkout Hub
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install cihub
+        run: pip install -e ".[ci]"
+
       - name: Download All Artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -488,77 +384,8 @@ jobs:
 
       - name: Generate Summary
         env:
-          REPO_COUNT: ${{ needs.discover.outputs.count }}
-          RUN_NUMBER: ${{ github.run_number }}
-          EVENT_NAME: ${{ github.event_name }}
-          TEST_RESULT: ${{ needs.test-repo.result }}
-        run: |
-          summary_file="$GITHUB_STEP_SUMMARY"
-          STATUS="FAILED"
-          [ "$TEST_RESULT" = "success" ] && STATUS="PASSED"
-          exec 3> "$summary_file"
-          cat >&3 << EOF
-          # Smoke Test Summary
-
-          **Total Test Repositories:** ${REPO_COUNT}
-          **Run Number:** #${RUN_NUMBER}
-          **Trigger:** ${EVENT_NAME}
-          **Status:** ${STATUS}
-
-          ---
-
-          ## What Was Tested
-
-          The smoke test validates core hub functionality:
-
-          - Repository discovery and configuration loading
-          - Language detection (Java and Python)
-          - Core tool execution (coverage, linting, style checks)
-          - Artifact generation and upload
-          - Summary report generation
-
-          ## Test Repositories
-
-          EOF
-          {
-            echo "| Language | Repository | Status |"
-            echo "|----------|------------|--------|"
-            # This would ideally parse from job results, but for now we show static info
-            echo "| Java | Smoke Test Java | See job results above |"
-            echo "| Python | Smoke Test Python | See job results above |"
-          } >&3
-
-          cat >&3 << EOF
-
-          ---
-
-          ## Next Steps
-
-          If this smoke test **PASSED**:
-          1. Mark the smoke test checkbox in \`docs/development/specs/P0.md\`
-          2. Proceed with full hub testing on all configured repos
-          3. Review individual job summaries for detailed metrics
-
-          If this smoke test **FAILED**:
-          1. Check individual job logs for errors
-          2. Verify test repositories are accessible
-          3. Ensure config files are valid YAML
-          4. See [\`docs/development/execution/SMOKE_TEST.md\`](docs/development/execution/SMOKE_TEST.md) for troubleshooting
-
-          ---
-
-          **Documentation:** See [\`docs/development/execution/SMOKE_TEST.md\`](docs/development/execution/SMOKE_TEST.md) for detailed smoke test guide.
-
-          EOF
-          exec 3>&-
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
+        run: cihub report smoke-summary --mode overall --repo-count "${{ needs.discover.outputs.count }}" --run-number "${{ github.run_number }}" --event-name "${{ github.event_name }}" --test-result "${{ needs.test-repo.result }}"
 
       - name: Check Smoke Test Result
-        env:
-          TEST_RESULT: ${{ needs.test-repo.result }}
-        run: |
-          if [ "$TEST_RESULT" != "success" ]; then
-            echo "::error::Smoke test failed - check job results above"
-            exit 1
-          fi
-
-          echo "Smoke test passed."
+        run: cihub smoke-validate --status "${{ needs.test-repo.result }}"

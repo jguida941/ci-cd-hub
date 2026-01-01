@@ -190,7 +190,6 @@ hub-release/
 | [STATUS.md](status/STATUS.md) | Current blockers, v1.0 progress, what's broken |
 | [P0.md](specs/P0.md) | MVP requirements checklist (must ship) |
 | [P1.md](specs/P1.md) | Should-have features |
-| [AGENTS.md](../../AGENTS.md) | Full context for AI assistants and developers |
 
 ### Configuration
 | File | What It Is |

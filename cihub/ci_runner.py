@@ -277,7 +277,7 @@ def _parse_dependency_check(path: Path) -> dict[str, Any]:
     }
 
 
-def run_pytest(workdir: Path, output_dir: Path) -> ToolResult:
+def run_pytest(workdir: Path, output_dir: Path, fail_fast: bool = False) -> ToolResult:
     junit_path = output_dir / "pytest-junit.xml"
     coverage_path = output_dir / "coverage.xml"
     cmd = [
@@ -287,6 +287,8 @@ def run_pytest(workdir: Path, output_dir: Path) -> ToolResult:
         f"--junitxml={junit_path}",
         "-v",
     ]
+    if fail_fast:
+        cmd.append("-x")
     proc = _run_command(cmd, workdir)
     metrics = {}
     metrics.update(_parse_junit(junit_path))
@@ -576,6 +578,47 @@ def run_trivy(workdir: Path, output_dir: Path) -> ToolResult:
             "parse_error": not parse_ok,
         },
         artifacts={"report": str(report_path)},
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+    )
+
+
+def _normalize_sbom_format(format_value: str | None) -> tuple[str, str]:
+    raw = (format_value or "cyclonedx").strip().lower()
+    if not raw:
+        raw = "cyclonedx"
+    mapping = {
+        "cyclonedx": "cyclonedx-json",
+        "cyclonedx-json": "cyclonedx-json",
+        "cyclonedxjson": "cyclonedx-json",
+        "spdx": "spdx-json",
+        "spdx-json": "spdx-json",
+        "spdxjson": "spdx-json",
+    }
+    syft_format = mapping.get(raw, raw)
+    if syft_format.startswith("spdx"):
+        suffix = "spdx"
+    elif syft_format.startswith("cyclonedx"):
+        suffix = "cyclonedx"
+    else:
+        suffix = re.sub(r"[^a-z0-9]+", "-", raw).strip("-") or "sbom"
+    return syft_format, suffix
+
+
+def run_sbom(workdir: Path, output_dir: Path, format_value: str | None = None) -> ToolResult:
+    syft_format, suffix = _normalize_sbom_format(format_value)
+    output_path = output_dir / f"sbom.{suffix}.json"
+    cmd = ["syft", "dir:.", "-o", syft_format]
+    proc = _run_command(cmd, workdir)
+    if proc.stdout:
+        output_path.write_text(proc.stdout, encoding="utf-8")
+    parse_ok = _parse_json(output_path) is not None
+    return ToolResult(
+        tool="sbom",
+        ran=True,
+        success=proc.returncode == 0 and parse_ok,
+        metrics={"parse_error": not parse_ok},
+        artifacts={"sbom": str(output_path)},
         stdout=proc.stdout,
         stderr=proc.stderr,
     )

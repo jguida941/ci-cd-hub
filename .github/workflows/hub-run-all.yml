@@ -77,11 +77,7 @@ jobs:
         env:
           INPUT_REPOS: ${{ inputs.repos }}
           INPUT_RUN_GROUP: ${{ inputs.run_group }}
-        run: |
-          cihub discover \
-            --repos "${INPUT_REPOS:-}" \
-            --run-group "${INPUT_RUN_GROUP:-}" \
-            --github-output
+        run: cihub discover --central-only --repos "${INPUT_REPOS:-}" --run-group "${INPUT_RUN_GROUP:-}" --github-output
 
   # ============================================================================
   # Run CI for Each Repo (via cihub ci)
@@ -135,13 +131,9 @@ jobs:
         env:
           CONFIG_BASENAME: ${{ matrix.config_basename }}
           CORRELATION_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.config_basename }}
-        run: |
-          cihub ci \
-            --repo repo \
-            --config-from-hub "$CONFIG_BASENAME" \
-            --correlation-id "$CORRELATION_ID" \
-            --install-deps \
-            --output-dir .cihub
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ matrix.write_github_summary }}
+          CIHUB_RUN_MUTMUT: ${{ inputs.skip_mutation && 'false' || matrix.run_mutmut }}
+        run: cihub ci --repo repo --config-from-hub "$CONFIG_BASENAME" --correlation-id "$CORRELATION_ID" --install-deps --output-dir .cihub
 
       - name: Read report outputs
         id: report

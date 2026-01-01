@@ -35,6 +35,7 @@ _TOOL_KEYS = (
     "run_isort",
     "run_mutmut",
     "run_hypothesis",
+    "run_sbom",
     # Shared
     "run_semgrep",
     "run_trivy",
@@ -64,6 +65,7 @@ class DiscoveryFilters:
 
     run_groups: list[str] = field(default_factory=list)
     repos: list[str] = field(default_factory=list)
+    use_central_runner: bool | None = None
 
 
 @dataclass
@@ -189,6 +191,7 @@ def _load_single_repo(
         run_group=run_group,
         dispatch_enabled=repo_info.get("dispatch_enabled", True),
         dispatch_workflow=repo_info.get("dispatch_workflow", "hub-ci.yml"),
+        use_central_runner=repo_info.get("use_central_runner", True),
         tools=tools,
         thresholds=thresholds,
         java_version=inputs.get("java_version"),
@@ -248,6 +251,10 @@ def discover_repositories(
 
         # Apply run_group filter
         if filters.run_groups and entry.run_group not in filters.run_groups:
+            continue
+
+        # Apply use_central_runner filter
+        if filters.use_central_runner is not None and entry.use_central_runner != filters.use_central_runner:
             continue
 
         entries.append(entry)

@@ -11,10 +11,11 @@ Boolean configuration values (tool toggles like `run_jacoco`, `run_pytest`) flow
 
 1. **YAML Config** (`config/repos/*.yaml`, `.ci-hub.yml`) - Native YAML booleans (`enabled: true`)
 2. **Python** (`cihub/cli.py`) - Python `bool` type
-3. **GITHUB_OUTPUT** - String output (`echo "run_jacoco=true"`)
-4. **JavaScript** (orchestrator) - String environment variables, converted via `asBool()`
-5. **workflow_dispatch API** - Expects strings `'true'`/`'false'` for boolean inputs
-6. **Reusable Workflow Inputs** - Declared as `type: boolean`, GitHub auto-converts strings
+3. **CLI env overrides** (`CIHUB_RUN_*`, `CIHUB_WRITE_GITHUB_SUMMARY`) - Strings, parsed to `bool`
+4. **GITHUB_OUTPUT** - String output (`echo "run_jacoco=true"`)
+5. **JavaScript** (orchestrator) - String environment variables, converted via `asBool()`
+6. **workflow_dispatch API** - Expects strings `'true'`/`'false'` for boolean inputs
+7. **Reusable Workflow Inputs** - Declared as `type: boolean`, GitHub auto-converts strings
 
 This type coercion chain caused a bug where summary tables in `java-ci.yml` showed "Ran: false" for all tools regardless of actual execution state.
 
@@ -52,6 +53,8 @@ When `inputs.run_jacoco` is declared as `type: boolean`, GitHub Actions interpre
 YAML Config (bool)
     ↓
 Python loads (bool)
+    ↓
+CLI env overrides (CIHUB_RUN_* / CIHUB_WRITE_GITHUB_SUMMARY)
     ↓
 Python writes to GITHUB_OUTPUT (string "true"/"false")
     ↓

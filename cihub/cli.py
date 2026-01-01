@@ -692,6 +692,12 @@ def cmd_smoke(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_smoke_validate(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.smoke import cmd_smoke_validate as handler
+
+    return handler(args)
+
+
 def cmd_check(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.check import cmd_check as handler
 
@@ -1092,6 +1098,12 @@ def cmd_discover(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_dispatch(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.dispatch import cmd_dispatch as handler
+
+    return handler(args)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="cihub", description="CI/CD Hub CLI")
     parser.add_argument("--version", action="version", version=f"cihub {__version__}")
@@ -1191,6 +1203,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Keep generated fixtures on disk",
     )
     smoke.set_defaults(func=cmd_smoke)
+
+    smoke_validate = subparsers.add_parser("smoke-validate", help="Validate smoke test setup/results")
+    add_json_flag(smoke_validate)
+    smoke_validate.add_argument("--count", type=int, help="Repo count to validate")
+    smoke_validate.add_argument("--min-count", type=int, default=2, help="Minimum required repos")
+    smoke_validate.add_argument("--status", help="Smoke test job status (success/failure)")
+    smoke_validate.set_defaults(func=cmd_smoke_validate)
 
     check = subparsers.add_parser("check", help="Run local validation checks")
     add_json_flag(check)
@@ -1409,6 +1428,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     report_aggregate.add_argument("--summary-file", help="Path to write summary markdown")
     report_aggregate.add_argument(
+        "--write-github-summary",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Write summary to GITHUB_STEP_SUMMARY",
+    )
+    report_aggregate.add_argument(
         "--defaults-file",
         default="config/defaults.yaml",
         help="Defaults file for threshold checks",
@@ -1468,6 +1493,140 @@ def build_parser() -> argparse.ArgumentParser:
         help="Show debug output for validation",
     )
     report_validate.set_defaults(func=cmd_report)
+
+    report_dashboard = report_sub.add_parser(
+        "dashboard", help="Generate HTML or JSON dashboard from aggregated reports"
+    )
+    add_json_flag(report_dashboard)
+    report_dashboard.add_argument(
+        "--reports-dir",
+        required=True,
+        help="Directory containing report.json files to aggregate",
+    )
+    report_dashboard.add_argument(
+        "--output",
+        required=True,
+        help="Output file path (e.g., dashboard.html or report.json)",
+    )
+    report_dashboard.add_argument(
+        "--format",
+        choices=["json", "html"],
+        default="html",
+        help="Output format (default: html)",
+    )
+    report_dashboard.add_argument(
+        "--schema-mode",
+        choices=["warn", "strict"],
+        default="warn",
+        help="Schema validation: 'warn' includes non-2.0, 'strict' skips them",
+    )
+    report_dashboard.set_defaults(func=cmd_report)
+
+    report_security_summary = report_sub.add_parser("security-summary", help="Render hub security summaries")
+    report_security_summary.add_argument(
+        "--mode",
+        choices=["repo", "zap", "overall"],
+        default="repo",
+        help="Summary mode",
+    )
+    report_security_summary.add_argument("--repo", default="", help="Repository name")
+    report_security_summary.add_argument("--language", default="python", help="Repository language")
+    report_security_summary.add_argument("--has-source", default="false", help="Source code present")
+    report_security_summary.add_argument("--pip-audit-vulns", type=int, default=0, help="pip-audit vuln count")
+    report_security_summary.add_argument("--bandit-high", type=int, default=0, help="Bandit high count")
+    report_security_summary.add_argument("--ruff-issues", type=int, default=0, help="Ruff security issue count")
+    report_security_summary.add_argument("--owasp-critical", type=int, default=0, help="OWASP critical count")
+    report_security_summary.add_argument("--owasp-high", type=int, default=0, help="OWASP high count")
+    report_security_summary.add_argument("--repo-present", default="false", help="Repo checkout succeeded")
+    report_security_summary.add_argument("--run-zap", default="false", help="ZAP run requested")
+    report_security_summary.add_argument("--has-docker", default="false", help="Docker Compose present")
+    report_security_summary.add_argument("--repo-count", type=int, default=0, help="Total repos scanned")
+    report_security_summary.add_argument("--run-number", type=int, default=0, help="Run number")
+    report_security_summary.add_argument("--summary", help="Write summary to file")
+    report_security_summary.add_argument(
+        "--write-github-summary",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Write summary to GITHUB_STEP_SUMMARY",
+    )
+    report_security_summary.set_defaults(func=cmd_report)
+
+    report_smoke_summary = report_sub.add_parser("smoke-summary", help="Render smoke test summaries")
+    report_smoke_summary.add_argument(
+        "--mode",
+        choices=["repo", "overall"],
+        default="repo",
+        help="Summary mode",
+    )
+    report_smoke_summary.add_argument("--owner", default="", help="Repo owner")
+    report_smoke_summary.add_argument("--repo", default="", help="Repo name")
+    report_smoke_summary.add_argument("--branch", default="", help="Repo branch")
+    report_smoke_summary.add_argument("--language", default="python", help="Repo language")
+    report_smoke_summary.add_argument("--config", default="", help="Config name")
+    report_smoke_summary.add_argument("--tests-total", type=int, default=0, help="Total tests")
+    report_smoke_summary.add_argument("--tests-failed", type=int, default=0, help="Failed tests")
+    report_smoke_summary.add_argument("--coverage", type=int, default=0, help="Coverage percent")
+    report_smoke_summary.add_argument("--coverage-lines", default="0 / 0", help="Coverage lines")
+    report_smoke_summary.add_argument("--checkstyle-violations", type=int, default=0, help="Checkstyle violations")
+    report_smoke_summary.add_argument("--spotbugs-issues", type=int, default=0, help="SpotBugs issues")
+    report_smoke_summary.add_argument("--ruff-errors", type=int, default=0, help="Ruff errors")
+    report_smoke_summary.add_argument("--ruff-security", type=int, default=0, help="Ruff security issues")
+    report_smoke_summary.add_argument("--black-issues", type=int, default=0, help="Black issues")
+    report_smoke_summary.add_argument("--repo-count", type=int, default=0, help="Total repos")
+    report_smoke_summary.add_argument("--run-number", type=int, default=0, help="Run number")
+    report_smoke_summary.add_argument("--event-name", default="", help="Trigger event")
+    report_smoke_summary.add_argument("--test-result", default="success", help="Matrix job result")
+    report_smoke_summary.add_argument("--summary", help="Write summary to file")
+    report_smoke_summary.add_argument(
+        "--write-github-summary",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Write summary to GITHUB_STEP_SUMMARY",
+    )
+    report_smoke_summary.set_defaults(func=cmd_report)
+
+    report_kyverno_summary = report_sub.add_parser("kyverno-summary", help="Render Kyverno summaries")
+    report_kyverno_summary.add_argument("--policies-dir", default="policies", help="Policies directory")
+    report_kyverno_summary.add_argument("--validated", type=int, default=0, help="Validated policy count")
+    report_kyverno_summary.add_argument("--failed", type=int, default=0, help="Failed policy count")
+    report_kyverno_summary.add_argument("--run-tests", default="false", help="Whether tests were run")
+    report_kyverno_summary.add_argument(
+        "--title",
+        default="# Kyverno Policy Validation",
+        help="Summary title",
+    )
+    report_kyverno_summary.add_argument("--summary", help="Write summary to file")
+    report_kyverno_summary.add_argument(
+        "--write-github-summary",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Write summary to GITHUB_STEP_SUMMARY",
+    )
+    report_kyverno_summary.set_defaults(func=cmd_report)
+
+    report_orchestrator_summary = report_sub.add_parser("orchestrator-summary", help="Render orchestrator summaries")
+    report_orchestrator_summary.add_argument(
+        "--mode",
+        choices=["load-config", "trigger-record"],
+        default="load-config",
+        help="Summary mode",
+    )
+    report_orchestrator_summary.add_argument("--repo-count", type=int, default=0, help="Repo count")
+    report_orchestrator_summary.add_argument("--owner", default="", help="Repo owner")
+    report_orchestrator_summary.add_argument("--repo", default="", help="Repo name")
+    report_orchestrator_summary.add_argument("--language", default="", help="Repo language")
+    report_orchestrator_summary.add_argument("--branch", default="", help="Repo branch")
+    report_orchestrator_summary.add_argument("--workflow-id", default="", help="Workflow ID")
+    report_orchestrator_summary.add_argument("--run-id", default="", help="Run ID")
+    report_orchestrator_summary.add_argument("--status", default="Triggered", help="Run status")
+    report_orchestrator_summary.add_argument("--summary", help="Write summary to file")
+    report_orchestrator_summary.add_argument(
+        "--write-github-summary",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Write summary to GITHUB_STEP_SUMMARY",
+    )
+    report_orchestrator_summary.set_defaults(func=cmd_report)
 
     docs = subparsers.add_parser("docs", help="Generate reference documentation")
     docs_sub = docs.add_subparsers(dest="subcommand", required=True)
@@ -1561,11 +1720,69 @@ def build_parser() -> argparse.ArgumentParser:
         help="Filter by run group (comma-separated: full,smoke,fixtures)",
     )
     discover.add_argument(
+        "--central-only",
+        action="store_true",
+        help="Only include repos with repo.use_central_runner=true",
+    )
+    discover.add_argument(
+        "--dispatch-only",
+        action="store_true",
+        help="Only include repos with repo.use_central_runner=false",
+    )
+    discover.add_argument(
         "--github-output",
         action="store_true",
         help="Write matrix and count to GITHUB_OUTPUT",
     )
     discover.set_defaults(func=cmd_discover)
+
+    # -------------------------------------------------------------------------
+    # dispatch - workflow dispatch and metadata helpers
+    # -------------------------------------------------------------------------
+    dispatch = subparsers.add_parser("dispatch", help="Workflow dispatch helpers for hub orchestration")
+    dispatch.set_defaults(func=cmd_dispatch)
+    dispatch_sub = dispatch.add_subparsers(dest="subcommand", required=True)
+
+    dispatch_trigger = dispatch_sub.add_parser(
+        "trigger", help="Dispatch a workflow and poll for run ID"
+    )
+    add_json_flag(dispatch_trigger)
+    dispatch_trigger.add_argument("--owner", required=True, help="Repository owner")
+    dispatch_trigger.add_argument("--repo", required=True, help="Repository name")
+    dispatch_trigger.add_argument("--ref", required=True, help="Git ref (branch) to dispatch on")
+    dispatch_trigger.add_argument(
+        "--workflow", default="hub-ci.yml", help="Workflow file to dispatch (default: hub-ci.yml)"
+    )
+    dispatch_trigger.add_argument("--correlation-id", help="Hub correlation ID to pass as input")
+    dispatch_trigger.add_argument(
+        "--dispatch-enabled",
+        type=lambda x: x.lower() != "false",
+        default=True,
+        help="Whether dispatch is enabled (default: true)",
+    )
+    dispatch_trigger.add_argument("--token", help="GitHub token (or use HUB_DISPATCH_TOKEN env)")
+    dispatch_trigger.add_argument(
+        "--token-env", default="HUB_DISPATCH_TOKEN", help="Environment variable for token"
+    )
+    dispatch_trigger.add_argument(
+        "--timeout", type=int, default=1800, help="Timeout in seconds for polling (default: 1800)"
+    )
+
+    dispatch_metadata = dispatch_sub.add_parser(
+        "metadata", help="Generate dispatch metadata JSON file"
+    )
+    add_json_flag(dispatch_metadata)
+    dispatch_metadata.add_argument("--config-basename", required=True, help="Config file basename")
+    dispatch_metadata.add_argument("--owner", required=True, help="Repository owner")
+    dispatch_metadata.add_argument("--repo", required=True, help="Repository name")
+    dispatch_metadata.add_argument("--output-dir", default="dispatch-results", help="Output directory")
+    dispatch_metadata.add_argument("--subdir", help="Repository subdirectory")
+    dispatch_metadata.add_argument("--language", help="Repository language")
+    dispatch_metadata.add_argument("--branch", help="Git branch")
+    dispatch_metadata.add_argument("--workflow", help="Workflow file name")
+    dispatch_metadata.add_argument("--run-id", help="Workflow run ID")
+    dispatch_metadata.add_argument("--correlation-id", help="Hub correlation ID")
+    dispatch_metadata.add_argument("--status", default="unknown", help="Job status")
 
     hub_ci = subparsers.add_parser("hub-ci", help="Hub production CI helpers")
     hub_ci.set_defaults(func=cmd_hub_ci)
@@ -1665,6 +1882,10 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Validate badges match current metrics",
     )
+    hub_ci_badges.add_argument(
+        "--config",
+        help="Config file to read reports.badges.enabled from (defaults to config/defaults.yaml)",
+    )
     hub_ci_badges.add_argument("--output-dir", help="Output directory for badges")
     hub_ci_badges.add_argument(
         "--artifacts-dir",
@@ -1688,6 +1909,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Append summary to GITHUB_STEP_SUMMARY",
     )
+
+    hub_ci_outputs = hub_ci_sub.add_parser("outputs", help="Emit hub CI toggle outputs")
+    hub_ci_outputs.add_argument(
+        "--config",
+        help="Config file with hub_ci settings (defaults to config/defaults.yaml)",
+    )
+    hub_ci_outputs.add_argument("--output", help="Write outputs to file")
+    hub_ci_outputs.add_argument("--github-output", action="store_true", help="Write outputs to GITHUB_OUTPUT")
 
     _hub_ci_enforce = hub_ci_sub.add_parser("enforce", help="Fail if critical hub checks failed")  # noqa: F841
 

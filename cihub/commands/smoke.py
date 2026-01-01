@@ -413,3 +413,32 @@ def cmd_smoke(args: argparse.Namespace) -> int | CommandResult:
         )
 
     return exit_code
+
+
+def cmd_smoke_validate(args: argparse.Namespace) -> int | CommandResult:
+    json_mode = getattr(args, "json", False)
+    failures: list[str] = []
+
+    if args.count is not None and args.count < args.min_count:
+        failures.append(
+            f"Expected at least {args.min_count} smoke test repos, found {args.count}"
+        )
+
+    if args.status and args.status != "success":
+        failures.append("Smoke test failed - check job results")
+
+    if failures:
+        if json_mode:
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=failures[0],
+                problems=[{"severity": "error", "message": msg} for msg in failures],
+            )
+        for msg in failures:
+            print(f"::error::{msg}")
+        return EXIT_FAILURE
+
+    if json_mode:
+        return CommandResult(exit_code=EXIT_SUCCESS, summary="Smoke validation passed")
+    print("Smoke validation passed.")
+    return EXIT_SUCCESS

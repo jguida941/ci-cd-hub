@@ -16,13 +16,13 @@ on:
     paths:
       - 'config/**'
       - 'schema/**'
-      - 'scripts/load_config.py'
+      - 'cihub/config/**'
       - '.github/workflows/config-validate.yml'
   pull_request:
     paths:
       - 'config/**'
       - 'schema/**'
-      - 'scripts/load_config.py'
+      - 'cihub/config/**'
       - '.github/workflows/config-validate.yml'
   workflow_dispatch:
 
@@ -42,24 +42,11 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
-        run: |
-          if [ -f requirements-dev.txt ]; then
-            pip install -r requirements-dev.txt
-          elif [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          else
-            pip install pyyaml==6.0.2 jsonschema==4.23.0
-          fi
+      - name: Install cihub
+        run: pip install -e ".[ci]"
 
       - name: Validate all repo configs
-        run: |
-          set -e
-          for cfg in config/repos/*.yaml; do
-            repo_name=$(basename "$cfg" .yaml)
-            echo "Validating $cfg"
-            python scripts/load_config.py --repo "$repo_name" --output workflow-inputs >/dev/null
-          done
+        run: python -m cihub hub-ci validate-configs
 
-      - name: Validate defaults schema
-        run: python scripts/load_config.py --repo dummy --hub-root . --output workflow-inputs >/dev/null || true
+      - name: Validate profiles
+        run: python -m cihub hub-ci validate-profiles

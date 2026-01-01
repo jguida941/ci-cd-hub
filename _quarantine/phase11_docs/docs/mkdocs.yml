@@ -1,7 +1,6 @@
 site_name: CI Intelligence Hub
 nav:
   - Overview: OVERVIEW.md
-  - Agents: AGENTS.md
   - Runbooks:
       - Ops Runbook: OPS_RUNBOOK.md
       - Disaster Recovery: DR_RUNBOOK.md

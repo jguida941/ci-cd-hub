@@ -28,6 +28,12 @@ on:
       - 'templates/kyverno/**/*.yaml'
       - 'templates/kyverno/**/*.yml'
   workflow_dispatch:
+    inputs:
+      write_github_summary:
+        description: 'Write summary to GITHUB_STEP_SUMMARY'
+        required: false
+        type: boolean
+        default: true
 
 jobs:
   validate:
@@ -114,40 +120,16 @@ jobs:
           echo "All $VALIDATED policies validated successfully"
         shell: bash
 
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install cihub
+        run: pip install -e ".[ci]"
+
       - name: Generate Summary
         if: always()
-        run: |
-          summary_file="$GITHUB_STEP_SUMMARY"
-          exec 3> "$summary_file"
-          cat >&3 << EOF
-          # Kyverno Policy Validation
-
-          | Metric | Value |
-          |--------|-------|
-          | Policies Validated | ${{ steps.validate.outputs.validated || '0' }} |
-          | Failures | ${{ steps.validate.outputs.failed || '0' }} |
-
-          EOF
-
-          {
-            echo "| Policy | Purpose |"
-            echo "|--------|---------|"
-          } >&3
-
-          shopt -s nullglob
-          for policy in policies/kyverno/*.yaml policies/kyverno/*.yml; do
-            if [ -f "$policy" ]; then
-              NAME=$(basename "$policy" .yaml)
-              PURPOSE=$(grep "policies.kyverno.io/title:" "$policy" 2>/dev/null | sed 's/.*title:\s*//' | head -1 || echo "N/A")
-              echo "| \`$NAME\` | $PURPOSE |" >&3
-            fi
-          done
-
-          cat >&3 << 'EOF'
-
-          ---
-
-          See [docs/guides/KYVERNO.md](../../docs/guides/KYVERNO.md) for usage instructions.
-          EOF
-          exec 3>&-
-        shell: bash
+        env:
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
+        run: cihub report kyverno-summary --policies-dir "policies/kyverno" --validated "${{ steps.validate.outputs.validated || '0' }}" --failed "${{ steps.validate.outputs.failed || '0' }}" --run-tests "false" --title "# Kyverno Policy Validation (Hub)"

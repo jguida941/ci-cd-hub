@@ -60,8 +60,6 @@ flowchart TD
 
 ## Workflows & Modules
 
-- [Agents Catalog](./AGENTS.md)
-
 - [Mutation Observatory](./modules/mutation_observatory.md) → `.github/workflows/mutation.yml`
 
 - [Chaos Runner](./modules/chaos_runner.md) → `.github/workflows/chaos.yml`

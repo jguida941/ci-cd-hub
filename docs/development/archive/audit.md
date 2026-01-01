@@ -31,7 +31,6 @@ ChatGPT exceeded the original 5-step plan. Beyond docs reorganization, it also:
 | 1. Create docs files | ✅ DONE | 6 docs + adr/README.md |
 | 2. Fix P0.md typo | ✅ N/A | Typo not found |
 | 3. Update ROADMAP.md | ✅ DONE | Links to docs/development/specs/ |
-| 4. Update AGENTS.md | ✅ DONE | Current Focus accurate |
 | 5. Trim STATUS.md | ✅ DONE | 30 lines, execution checklist |
 
 ### Bonus Work (Not in Original Plan)
@@ -365,7 +364,6 @@ The following issues from initial review have been confirmed resolved:
 | .github/workflows/config-validate.yml | Created | ~50 |
 | .github/workflows/hub-orchestrator.yml | Modified | 591 |
 | STATUS.md | Replaced | 30 |
-| AGENTS.md | Modified | 214 |
 | docs/ROADMAP.md | Modified | 520 |
 
 ---

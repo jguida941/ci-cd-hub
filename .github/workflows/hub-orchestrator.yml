@@ -19,6 +19,11 @@ on:
         description: 'Comma-separated repo names (empty = all)'
         required: false
         type: string
+      write_github_summary:
+        description: 'Write summary to GITHUB_STEP_SUMMARY'
+        required: false
+        type: boolean
+        default: true
 
   schedule:
     # Run nightly at 2 AM UTC
@@ -72,20 +77,13 @@ jobs:
         id: config
         env:
           INPUT_REPOS: ${{ inputs.repos || '' }}
-        run: |
-          cihub discover \
-            --repos "${INPUT_REPOS:-}" \
-            --github-output
+        run: cihub discover --dispatch-only --repos "${INPUT_REPOS:-}" --github-output
 
       - name: Summary
         env:
           REPO_COUNT: ${{ steps.config.outputs.count }}
-        run: |
-          {
-            echo "## Hub Orchestrator"
-            echo ""
-            echo "**Repositories to build:** $REPO_COUNT"
-          } >> "$GITHUB_STEP_SUMMARY"
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
+        run: cihub report orchestrator-summary --mode load-config --repo-count "$REPO_COUNT"
 
   # ============================================================================
   # Trigger Builds for Each Repo
@@ -110,99 +108,20 @@ jobs:
           persist-credentials: false
           ref: ${{ github.sha }}
 
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Install cihub
+        run: pip install -e ".[ci]"
 
       - name: Trigger Repository Workflow
         id: dispatch
-        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         env:
-          # Pass matrix/step values via env vars to prevent expression injection
-          MATRIX_OWNER: ${{ matrix.owner }}
-          MATRIX_NAME: ${{ matrix.name }}
-          MATRIX_LANGUAGE: ${{ matrix.language }}
-          MATRIX_BRANCH: ${{ matrix.default_branch }}
-          MATRIX_CONFIG_BASENAME: ${{ matrix.config_basename }}
-          MATRIX_DISPATCH_ENABLED: ${{ matrix.dispatch_enabled }}
-          MATRIX_DISPATCH_WORKFLOW: ${{ matrix.dispatch_workflow }}
-          GH_RUN_ID: ${{ github.run_id }}
-          GH_RUN_ATTEMPT: ${{ github.run_attempt }}
-        with:
-          github-token: ${{ secrets.HUB_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
-          script: |
-            // Read values from environment variables (prevents expression injection)
-            const owner = process.env.MATRIX_OWNER;
-            const repo = process.env.MATRIX_NAME;
-            const branch = process.env.MATRIX_BRANCH;
-            const dispatchEnabled = (process.env.MATRIX_DISPATCH_ENABLED || '').toLowerCase() !== 'false';
-            const correlationId = `${process.env.GH_RUN_ID}-${process.env.GH_RUN_ATTEMPT || '1'}-${process.env.MATRIX_CONFIG_BASENAME}`;
-
-            if (!dispatchEnabled) {
-              core.info(`Dispatch disabled for ${owner}/${repo}; skipping dispatch.`);
-              return;
-            }
-
-            const inputs = { hub_correlation_id: correlationId };
-            const MAX_POLL_MS = 30 * 60 * 1000; // 30 minutes
-
-            // Use configurable workflow name from matrix, with fallback to hub-ci.yml
-            const workflowId = process.env.MATRIX_DISPATCH_WORKFLOW || 'hub-ci.yml';
-            const startedAt = Date.now();
-
-            core.info(`Dispatching ${workflowId} on ${owner}/${repo}@${branch}`);
-            try {
-              await github.rest.actions.createWorkflowDispatch({
-                owner,
-                repo,
-                workflow_id: workflowId,
-                ref: branch,
-                inputs,
-              });
-            } catch (err) {
-              core.setFailed(`Dispatch failed for ${owner}/${repo}: ${err.message}`);
-              throw err;
-            }
-
-            let runId = '';
-            let pollDelay = 5000;
-            const deadline = startedAt + MAX_POLL_MS;
-
-            while (Date.now() < deadline) {
-              await new Promise((resolve) => setTimeout(resolve, pollDelay));
-              const runs = await github.rest.actions.listWorkflowRuns({
-                owner,
-                repo,
-                workflow_id: workflowId,
-                event: 'workflow_dispatch',
-                branch,
-                per_page: 5,
-              });
-
-            const recent = runs.data.workflow_runs.find((run) => {
-                const created = new Date(run.created_at).getTime();
-                return (
-                  created >= startedAt - 2000 && // tighter window to reduce collisions
-                  run.head_branch === branch &&
-                  run.status !== 'completed'
-                );
-              });
-
-              if (recent) {
-                runId = String(recent.id);
-                core.info(`Captured run id ${runId} for ${repo}`);
-                break;
-              }
-
-              pollDelay = Math.min(pollDelay * 2, 30000); // backoff up to 30s
-            }
-
-            if (!runId) {
-              core.setFailed(`Dispatched ${workflowId} for ${repo}, but could not determine run id.`);
-              return;
-            }
-
-            core.setOutput('run_id', runId);
-            core.setOutput('branch', branch);
-            core.setOutput('workflow_id', workflowId);
-            core.setOutput('correlation_id', correlationId);
+          HUB_DISPATCH_TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
+          CORRELATION_ID: ${{ github.run_id }}-${{ github.run_attempt || '1' }}-${{ matrix.config_basename }}
+        run: cihub dispatch trigger --owner "${{ matrix.owner }}" --repo "${{ matrix.name }}" --ref "${{ matrix.default_branch }}" --workflow "${{ matrix.dispatch_workflow || 'hub-ci.yml' }}" --correlation-id "${CORRELATION_ID}" --dispatch-enabled "${{ matrix.dispatch_enabled }}" --timeout 1800
 
       - name: Record Build Trigger
         env:
@@ -212,47 +131,12 @@ jobs:
           MATRIX_BRANCH: ${{ matrix.default_branch }}
           STEP_WORKFLOW_ID: ${{ steps.dispatch.outputs.workflow_id }}
           STEP_RUN_ID: ${{ steps.dispatch.outputs.run_id }}
-        run: |
-          {
-            echo "## $MATRIX_NAME"
-            echo ""
-            echo "- **Owner:** $MATRIX_OWNER"
-            echo "- **Language:** $MATRIX_LANGUAGE"
-            echo "- **Branch:** $MATRIX_BRANCH"
-            echo "- **Workflow:** $STEP_WORKFLOW_ID"
-            echo "- **Run ID:** ${STEP_RUN_ID:-pending}"
-            echo "- **Status:** Triggered"
-          } >> "$GITHUB_STEP_SUMMARY"
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
+        run: cihub report orchestrator-summary --mode trigger-record --owner "$MATRIX_OWNER" --repo "$MATRIX_NAME" --language "$MATRIX_LANGUAGE" --branch "$MATRIX_BRANCH" --workflow-id "$STEP_WORKFLOW_ID" --run-id "$STEP_RUN_ID" --status "Triggered"
 
       - name: Save Dispatch Metadata
         if: always()
-        env:
-          MATRIX_CONFIG_BASENAME: ${{ matrix.config_basename }}
-          MATRIX_OWNER: ${{ matrix.owner }}
-          MATRIX_NAME: ${{ matrix.name }}
-          MATRIX_SUBDIR: ${{ matrix.subdir }}
-          MATRIX_LANGUAGE: ${{ matrix.language }}
-          MATRIX_BRANCH: ${{ matrix.default_branch }}
-          STEP_WORKFLOW_ID: ${{ steps.dispatch.outputs.workflow_id }}
-          STEP_RUN_ID: ${{ steps.dispatch.outputs.run_id }}
-          STEP_CORRELATION_ID: ${{ steps.dispatch.outputs.correlation_id }}
-          JOB_STATUS: ${{ job.status }}
-        run: |
-          mkdir -p dispatch-results
-          cat > "dispatch-results/${MATRIX_CONFIG_BASENAME}.json" << EOF
-          {
-            "config": "${MATRIX_CONFIG_BASENAME}",
-            "repo": "${MATRIX_OWNER}/${MATRIX_NAME}",
-            "subdir": "${MATRIX_SUBDIR}",
-            "language": "${MATRIX_LANGUAGE}",
-            "branch": "${MATRIX_BRANCH}",
-            "workflow": "${STEP_WORKFLOW_ID}",
-            "run_id": "${STEP_RUN_ID}",
-            "correlation_id": "${STEP_CORRELATION_ID}",
-            "dispatch_time": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-            "status": "${JOB_STATUS}"
-          }
-          EOF
+        run: cihub dispatch metadata --config-basename "${{ matrix.config_basename }}" --owner "${{ matrix.owner }}" --repo "${{ matrix.name }}" --output-dir dispatch-results --subdir "${{ matrix.subdir }}" --language "${{ matrix.language }}" --branch "${{ matrix.default_branch }}" --workflow "${{ steps.dispatch.outputs.workflow_id }}" --run-id "${{ steps.dispatch.outputs.run_id }}" --correlation-id "${{ steps.dispatch.outputs.correlation_id }}" --status "${{ job.status }}"
 
       - name: Upload Dispatch Metadata
         if: always()
@@ -303,16 +187,8 @@ jobs:
           HUB_EVENT: ${{ github.event_name }}
           # Use HUB_DISPATCH_TOKEN for cross-repo artifact access
           HUB_DISPATCH_TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN }}
-        run: |
-          if [ -z "${HUB_DISPATCH_TOKEN}" ]; then
-            echo "::error::HUB_DISPATCH_TOKEN is required for cross-repo artifact access"
-            exit 1
-          fi
-          python -m cihub report aggregate \
-            --dispatch-dir dispatch-artifacts \
-            --output hub-report.json \
-            --summary-file "$GITHUB_STEP_SUMMARY" \
-            --defaults-file config/defaults.yaml
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
+        run: cihub report aggregate --dispatch-dir dispatch-artifacts --output hub-report.json --defaults-file config/defaults.yaml
 
       - name: Upload Hub Report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

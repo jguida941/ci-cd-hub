@@ -84,6 +84,11 @@ java:
       fail_on_findings: false
       max_findings: 0
 
+    # SBOM Generation (expensive - disabled by default)
+    sbom:
+      enabled: false
+      format: cyclonedx
+
     # Container/Filesystem Scan - Trivy (expensive - disabled by default)
     trivy:
       enabled: false  # Enable via config when needed - only useful if Dockerfile exists

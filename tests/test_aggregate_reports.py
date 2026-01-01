@@ -1,20 +1,18 @@
-"""Tests for aggregate_reports.py - Report aggregation functionality."""
+"""Tests for dashboard generation - Report aggregation functionality.
+
+NOTE: These tests now import from cihub.commands.report instead of
+scripts/aggregate_reports.py (which is now a deprecation shim).
+"""
 
 import json
-import sys
 from pathlib import Path
 
-# Allow importing scripts as modules
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
-from scripts.aggregate_reports import (  # noqa: E402
-    detect_language,
-    generate_html_dashboard,
-    generate_summary,
-    get_status,
-    load_reports,
+from cihub.commands.report import (
+    _detect_language as detect_language,
+    _generate_dashboard_summary as generate_summary,
+    _generate_html_dashboard as generate_html_dashboard,
+    _get_report_status as get_status,
+    _load_dashboard_reports as load_reports,
 )
 
 
@@ -63,20 +61,26 @@ class TestHelperFunctions:
 
 
 class TestLoadReports:
-    """Tests for load_reports function."""
+    """Tests for load_reports function.
+
+    NOTE: _load_dashboard_reports returns a 3-tuple (reports, skipped, warnings)
+    instead of the old 2-tuple. Warnings are returned as a list instead of printed.
+    """
 
     def test_load_reports_empty_directory(self, tmp_path: Path):
         """Loading from empty directory returns empty list."""
-        reports, skipped = load_reports(tmp_path)
+        reports, skipped, warnings = load_reports(tmp_path)
         assert reports == []
         assert skipped == 0
+        assert warnings == []
 
     def test_load_reports_nonexistent_directory(self, tmp_path: Path):
         """Loading from nonexistent directory returns empty list."""
         nonexistent = tmp_path / "does_not_exist"
-        reports, skipped = load_reports(nonexistent)
+        reports, skipped, warnings = load_reports(nonexistent)
         assert reports == []
         assert skipped == 0
+        assert warnings == []
 
     def test_load_reports_valid_json(self, tmp_path: Path):
         """Loading valid report.json files works correctly."""
@@ -90,7 +94,7 @@ class TestLoadReports:
         }
         (reports_dir / "report.json").write_text(json.dumps(report_data))
 
-        reports, skipped = load_reports(tmp_path)
+        reports, skipped, warnings = load_reports(tmp_path)
         assert len(reports) == 1
         assert skipped == 0
         assert reports[0]["repository"] == "test/repo1"
@@ -102,8 +106,10 @@ class TestLoadReports:
         reports_dir.mkdir()
         (reports_dir / "report.json").write_text("not valid json {{{")
 
-        reports, skipped = load_reports(tmp_path)
+        reports, skipped, warnings = load_reports(tmp_path)
         assert reports == []
+        assert len(warnings) == 1
+        assert "Could not load" in warnings[0]
 
     def test_load_reports_multiple_repos(self, tmp_path: Path):
         """Multiple report.json files are all loaded."""
@@ -117,7 +123,7 @@ class TestLoadReports:
             }
             (repo_dir / "report.json").write_text(json.dumps(report))
 
-        reports, skipped = load_reports(tmp_path)
+        reports, skipped, warnings = load_reports(tmp_path)
         assert len(reports) == 3
         assert skipped == 0
 
@@ -128,37 +134,38 @@ class TestLoadReports:
         report = {"schema_version": "2.0", "repository": "nested/repo", "results": {}}
         (nested / "report.json").write_text(json.dumps(report))
 
-        reports, skipped = load_reports(tmp_path)
+        reports, skipped, warnings = load_reports(tmp_path)
         assert len(reports) == 1
         assert skipped == 0
         assert reports[0]["repository"] == "nested/repo"
 
-    def test_load_reports_warn_mode_includes_old_schema(self, tmp_path: Path, capsys):
+    def test_load_reports_warn_mode_includes_old_schema(self, tmp_path: Path):
         """Warn mode includes old schema reports with warning."""
         repo_dir = tmp_path / "old_repo"
         repo_dir.mkdir()
         report = {"schema_version": "1.0", "repository": "test", "results": {}}
         (repo_dir / "report.json").write_text(json.dumps(report))
 
-        reports, skipped = load_reports(tmp_path, schema_mode="warn")
+        reports, skipped, warnings = load_reports(tmp_path, schema_mode="warn")
         assert len(reports) == 1
         assert skipped == 0
-        captured = capsys.readouterr()
-        assert "Warning" in captured.out
-        assert "schema_version=1.0" in captured.out
+        # Warnings are now returned as a list instead of printed
+        assert len(warnings) == 1
+        assert "schema_version=1.0" in warnings[0]
 
-    def test_load_reports_strict_mode_skips_old_schema(self, tmp_path: Path, capsys):
+    def test_load_reports_strict_mode_skips_old_schema(self, tmp_path: Path):
         """Strict mode skips old schema reports."""
         repo_dir = tmp_path / "old_repo"
         repo_dir.mkdir()
         report = {"schema_version": "1.0", "repository": "test", "results": {}}
         (repo_dir / "report.json").write_text(json.dumps(report))
 
-        reports, skipped = load_reports(tmp_path, schema_mode="strict")
+        reports, skipped, warnings = load_reports(tmp_path, schema_mode="strict")
         assert len(reports) == 0
         assert skipped == 1
-        captured = capsys.readouterr()
-        assert "Skipping" in captured.out
+        # Warnings are now returned as a list instead of printed
+        assert len(warnings) == 1
+        assert "Skipping" in warnings[0]
 
     def test_load_reports_strict_mode_includes_2_0_schema(self, tmp_path: Path):
         """Strict mode includes 2.0 schema reports."""
@@ -167,7 +174,7 @@ class TestLoadReports:
         report = {"schema_version": "2.0", "repository": "test", "results": {}}
         (repo_dir / "report.json").write_text(json.dumps(report))
 
-        reports, skipped = load_reports(tmp_path, schema_mode="strict")
+        reports, skipped, warnings = load_reports(tmp_path, schema_mode="strict")
         assert len(reports) == 1
         assert skipped == 0
 

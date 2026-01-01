@@ -281,6 +281,7 @@ class TestCmdBadges:
 
         args = argparse.Namespace(
             check=True,
+            config=None,
             output_dir=None,
             artifacts_dir=None,
             ruff_issues=None,
@@ -318,6 +319,7 @@ class TestCmdBadges:
 
         args = argparse.Namespace(
             check=True,
+            config=None,
             output_dir=None,
             artifacts_dir=None,
             ruff_issues=None,
@@ -348,6 +350,7 @@ class TestCmdBadges:
         output_dir = tmp_path / "badges-out"
         args = argparse.Namespace(
             check=False,
+            config=None,
             output_dir=str(output_dir),
             artifacts_dir=None,
             ruff_issues=0,

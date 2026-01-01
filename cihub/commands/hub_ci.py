@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from cihub.cli import hub_root
+from cihub.config.io import load_yaml_file
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 
 
@@ -53,6 +54,20 @@ def _resolve_summary_path(path_value: str | None, github_summary: bool) -> Path 
         env_path = os.environ.get("GITHUB_STEP_SUMMARY")
         return Path(env_path) if env_path else None
     return None
+
+
+def _bool_str(value: bool) -> str:
+    return "true" if value else "false"
+
+
+def _load_config(path: Path | None) -> dict[str, Any]:
+    if path is None:
+        return {}
+    try:
+        return load_yaml_file(path)
+    except Exception as exc:  # noqa: BLE001
+        print(f"Failed to load config: {exc}")
+        return {}
 
 
 def _run_command(
@@ -215,6 +230,12 @@ def cmd_mutmut(args: argparse.Namespace) -> int:
 
 def cmd_badges(args: argparse.Namespace) -> int:
     root = hub_root()
+    config_path = Path(args.config).resolve() if args.config else root / "config" / "defaults.yaml"
+    config = _load_config(config_path)
+    badges_cfg = config.get("reports", {}).get("badges", {}) or {}
+    if badges_cfg.get("enabled") is False:
+        print("Badges disabled via reports.badges.enabled")
+        return EXIT_SUCCESS
     env = os.environ.copy()
     env["UPDATE_BADGES"] = "true"
 
@@ -267,6 +288,43 @@ def cmd_badges(args: argparse.Namespace) -> int:
     if proc.returncode != 0:
         print(proc.stdout or proc.stderr)
         return EXIT_FAILURE
+    return EXIT_SUCCESS
+
+
+def cmd_outputs(args: argparse.Namespace) -> int:
+    config_path = Path(args.config).resolve() if args.config else hub_root() / "config" / "defaults.yaml"
+    config = _load_config(config_path)
+    hub_cfg = config.get("hub_ci", {}) if isinstance(config.get("hub_ci"), dict) else {}
+    enabled = hub_cfg.get("enabled", True)
+    tools = hub_cfg.get("tools", {}) if isinstance(hub_cfg.get("tools"), dict) else {}
+    thresholds = hub_cfg.get("thresholds", {}) if isinstance(hub_cfg.get("thresholds"), dict) else {}
+
+    outputs = {
+        "hub_ci_enabled": _bool_str(bool(enabled)),
+        "run_actionlint": _bool_str(bool(tools.get("actionlint", True))),
+        "run_zizmor": _bool_str(bool(tools.get("zizmor", True))),
+        "run_ruff": _bool_str(bool(tools.get("ruff", True))),
+        "run_syntax": _bool_str(bool(tools.get("syntax", True))),
+        "run_mypy": _bool_str(bool(tools.get("mypy", True))),
+        "run_yamllint": _bool_str(bool(tools.get("yamllint", True))),
+        "run_pytest": _bool_str(bool(tools.get("pytest", True))),
+        "run_mutmut": _bool_str(bool(tools.get("mutmut", True))),
+        "run_bandit": _bool_str(bool(tools.get("bandit", True))),
+        "run_pip_audit": _bool_str(bool(tools.get("pip_audit", True))),
+        "run_gitleaks": _bool_str(bool(tools.get("gitleaks", True))),
+        "run_trivy": _bool_str(bool(tools.get("trivy", True))),
+        "run_validate_templates": _bool_str(bool(tools.get("validate_templates", True))),
+        "run_validate_configs": _bool_str(bool(tools.get("validate_configs", True))),
+        "run_verify_matrix_keys": _bool_str(bool(tools.get("verify_matrix_keys", True))),
+        "run_license_check": _bool_str(bool(tools.get("license_check", True))),
+        "run_dependency_review": _bool_str(bool(tools.get("dependency_review", True))),
+        "run_scorecard": _bool_str(bool(tools.get("scorecard", True))),
+        "coverage_min": str(thresholds.get("coverage_min", 70)),
+        "mutation_score_min": str(thresholds.get("mutation_score_min", 70)),
+    }
+
+    output_path = _resolve_output_path(args.output, args.github_output)
+    _write_outputs(outputs, output_path)
     return EXIT_SUCCESS
 
 
@@ -756,6 +814,7 @@ def cmd_hub_ci(args: argparse.Namespace) -> int:
         "black": cmd_black,
         "mutmut": cmd_mutmut,
         "badges": cmd_badges,
+        "outputs": cmd_outputs,
         "bandit": cmd_bandit,
         "pip-audit": cmd_pip_audit,
         "zizmor-check": cmd_zizmor_check,

@@ -14,13 +14,22 @@ Single source of truth for what we are doing now. Other docs can provide depth, 
 - [ ] Implement triage bundles + priority output + LLM prompt pack.
 - [ ] Implement registry CLI + versioning/rollback.
 - [x] Make aggregate reports resilient to failed repos (render partial summaries instead of aborting).
+- [x] Implement `cihub report dashboard` (HTML + JSON output) replacing scripts/aggregate_reports.py.
+- [x] Add CLI env overrides for tool toggles and summary toggle (`CIHUB_RUN_*`, `CIHUB_WRITE_GITHUB_SUMMARY`).
+- [x] Add Java SBOM support (schema + CLI runner + workflow wiring).
+- [x] **No-inline workflow cleanup complete** - All summary commands implemented, tested, and wired:
+  - `cihub report security-summary` (modes: repo, zap, overall)
+  - `cihub report smoke-summary` (modes: repo, overall)
+  - `cihub report kyverno-summary`
+  - `cihub report orchestrator-summary` (modes: load-config, trigger-record)
+  - Snapshot tests in `tests/test_summary_commands.py` (19 tests) verify parity with old heredocs.
+  - Toggle audit tests verify `CIHUB_WRITE_GITHUB_SUMMARY` env var behavior.
 
 ## Canonical Sources of Truth
 
 1. **Code** (`cihub/`, `schema/`, `.github/workflows/`) overrides docs on conflicts.
 2. **CLI --help** is the authoritative interface documentation.
 3. **Schema** (`schema/ci-hub-config.schema.json`) is the authoritative config contract.
-4. **AGENTS.md** defines operating rules for AI and contributors.
 
 ## References (Background Only)
 
@@ -46,7 +55,6 @@ These are references, not competing plans.
 
 - [x] Create this file as the canonical plan.
 - [x] Add reference banners to `pyqt/planqt.md` and `docs/development/archive/ARCHITECTURE_PLAN.md` stating this plan is canonical.
-- [x] Create `AGENTS.md` and ensure `CLAUDE.md` points to it.
 
 ### 2) CLI as Source of Truth (Core)
 
@@ -123,7 +131,6 @@ These are references, not competing plans.
 - [x] Add optional tool detection and clear "skipped/missing tool" messaging.
 - [x] Update `docs/guides/GETTING_STARTED.md` with new flags and expected runtimes.
 - [x] Add `docs/guides/CLI_EXAMPLES.md` with runnable command examples.
-- [x] Update AGENTS.md rule: "If GitHub CI fails but local checks passed, add it to `cihub check` or document as CI-only."
 - [ ] Evaluate `act` integration for local workflow simulation (document limitations; optional).
 
 ### 8) Services Layer (Phase 5A, PyQt6 Readiness)

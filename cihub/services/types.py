@@ -36,6 +36,7 @@ class RepoEntry:
     run_group: str = "full"
     dispatch_enabled: bool = True
     dispatch_workflow: str = "hub-ci.yml"
+    use_central_runner: bool = True
 
     # Tool flags (run_*)
     tools: dict[str, bool] = field(default_factory=dict)
@@ -72,6 +73,7 @@ class RepoEntry:
             "run_group": self.run_group,
             "dispatch_enabled": self.dispatch_enabled,
             "dispatch_workflow": self.dispatch_workflow,
+            "use_central_runner": self.use_central_runner,
             "write_github_summary": self.write_github_summary,
         }
 

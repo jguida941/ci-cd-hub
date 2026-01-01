@@ -22,6 +22,7 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
             "jqwik": {"enabled": False},
             "pmd": {"enabled": True, "max_violations": 0},
             "semgrep": {"enabled": False, "max_findings": 0},
+            "sbom": {"enabled": False, "format": "cyclonedx"},
             "trivy": {"enabled": False},
             "codeql": {"enabled": False},
             "docker": {
@@ -43,6 +44,7 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
             "mypy": {"enabled": False},
             "mutmut": {"enabled": True, "min_mutation_score": 70},
             "hypothesis": {"enabled": True},
+            "sbom": {"enabled": False, "format": "cyclonedx"},
             "semgrep": {"enabled": False, "max_findings": 0},
             "trivy": {"enabled": False, "fail_on_cvss": 7},
             "codeql": {"enabled": False},

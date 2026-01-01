@@ -78,6 +78,9 @@ Source: `schema/ci-hub-config.schema.json`
 | `java.tools.semgrep.enabled` | boolean | no | false |  |
 | `java.tools.semgrep.fail_on_findings` | boolean | no | false |  |
 | `java.tools.semgrep.max_findings` | integer | no | 0 |  |
+| `java.tools.sbom` | object | no |  |  |
+| `java.tools.sbom.enabled` | boolean | no | false |  |
+| `java.tools.sbom.format` | string | no | cyclonedx |  |
 | `java.tools.spotbugs` | object | no |  |  |
 | `java.tools.spotbugs.effort` | string | no | max |  |
 | `java.tools.spotbugs.enabled` | boolean | no | true |  |

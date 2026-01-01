@@ -18,6 +18,7 @@ JAVA_TOOL_ROWS = [
     ("Security", "Semgrep", "semgrep"),
     ("Security", "Trivy", "trivy"),
     ("Security", "CodeQL", "codeql"),
+    ("Security", "SBOM", "sbom"),
     ("Container", "Docker", "docker"),
 ]
 
@@ -38,6 +39,7 @@ PYTHON_TOOL_ROWS = [
     ("Security", "Semgrep", "semgrep"),
     ("Security", "Trivy", "trivy"),
     ("Security", "CodeQL", "codeql"),
+    ("Security", "SBOM", "sbom"),
     ("Container", "Docker", "docker"),
 ]
 
@@ -558,7 +560,7 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
     return lines
 
 
-def render_summary(report: dict[str, Any]) -> str:
+def render_summary(report: dict[str, Any], include_metrics: bool = True) -> str:
     language = detect_language(report)
     sections: list[str] = [
         "# Configuration Summary",
@@ -567,15 +569,16 @@ def render_summary(report: dict[str, Any]) -> str:
     sections.extend(build_tools_table(report, language))
     sections.extend(build_thresholds_table(report, language))
     sections.extend(build_environment_table(report))
-    if language == "java":
-        sections.extend(build_java_metrics(report))
-    elif language == "python":
-        sections.extend(build_python_metrics(report))
+    if include_metrics:
+        if language == "java":
+            sections.extend(build_java_metrics(report))
+        elif language == "python":
+            sections.extend(build_python_metrics(report))
     sections.extend(build_dependency_severity(report))
     sections.extend(build_quality_gates(report, language))
     return "\n".join(sections).strip() + "\n"
 
 
-def render_summary_from_path(report_path: Path) -> str:
+def render_summary_from_path(report_path: Path, include_metrics: bool = True) -> str:
     report = load_report(report_path)
-    return render_summary(report)
+    return render_summary(report, include_metrics=include_metrics)

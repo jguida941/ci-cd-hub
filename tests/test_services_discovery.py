@@ -155,6 +155,24 @@ repo:
         assert result.count == 1
         assert result.entries[0].run_group == "quick"
 
+    def test_applies_central_runner_filter(self, tmp_path: Path):
+        """Filters by repo.use_central_runner."""
+        repos_dir = tmp_path / "config" / "repos"
+        repos_dir.mkdir(parents=True)
+
+        (repos_dir / "central.yaml").write_text(
+            "repo:\n  owner: o\n  name: central\n  language: python\n  use_central_runner: true"
+        )
+        (repos_dir / "dispatch.yaml").write_text(
+            "repo:\n  owner: o\n  name: dispatch\n  language: python\n  use_central_runner: false"
+        )
+
+        filters = DiscoveryFilters(use_central_runner=True)
+        result = discover_repositories(tmp_path, filters)
+
+        assert result.count == 1
+        assert result.entries[0].name == "central"
+
     def test_warns_on_invalid_config(self, tmp_path: Path):
         """Warns but continues when config is invalid."""
         repos_dir = tmp_path / "config" / "repos"

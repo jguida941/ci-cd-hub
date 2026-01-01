@@ -82,6 +82,7 @@ jobs:
       run_isort: ${{ steps.parse.outputs.run_isort }}
       run_mutmut: ${{ steps.parse.outputs.run_mutmut }}
       run_hypothesis: ${{ steps.parse.outputs.run_hypothesis }}
+      run_sbom: ${{ steps.parse.outputs.run_sbom }}
       run_semgrep: ${{ steps.parse.outputs.run_semgrep }}
       run_trivy: ${{ steps.parse.outputs.run_trivy }}
       run_codeql: ${{ steps.parse.outputs.run_codeql }}
@@ -148,6 +149,7 @@ jobs:
       run_isort: ${{ fromJson(needs.config.outputs.run_isort) }}
       run_mutmut: ${{ fromJson(needs.config.outputs.run_mutmut) }}
       run_hypothesis: ${{ fromJson(needs.config.outputs.run_hypothesis) }}
+      run_sbom: ${{ fromJson(needs.config.outputs.run_sbom) }}
       run_semgrep: ${{ fromJson(needs.config.outputs.run_semgrep) }}
       run_trivy: ${{ fromJson(needs.config.outputs.run_trivy) }}
       run_codeql: ${{ fromJson(needs.config.outputs.run_codeql) }}
@@ -195,6 +197,7 @@ jobs:
       run_semgrep: ${{ fromJson(needs.config.outputs.run_semgrep) }}
       run_trivy: ${{ fromJson(needs.config.outputs.run_trivy) }}
       run_codeql: ${{ fromJson(needs.config.outputs.run_codeql) }}
+      run_sbom: ${{ fromJson(needs.config.outputs.run_sbom) }}
       run_docker: ${{ fromJson(needs.config.outputs.run_docker) }}
 
       # Thresholds - use fromJson() for proper number conversion

@@ -111,6 +111,10 @@ on:
         description: 'Run Semgrep SAST (expensive)'
         type: boolean
         default: false
+      run_sbom:
+        description: 'Generate SBOM (expensive)'
+        type: boolean
+        default: false
       run_trivy:
         description: 'Run Trivy container scan (expensive)'
         type: boolean
@@ -244,18 +248,22 @@ jobs:
         env:
           WORKDIR: ${{ inputs.workdir }}
           CORRELATION_ID: ${{ inputs.hub_correlation_id }}
-          WRITE_SUMMARY: ${{ inputs.write_github_summary }}
-        run: |
-          summary_flag="--no-write-github-summary"
-          if [ "$WRITE_SUMMARY" = "true" ]; then
-            summary_flag="--write-github-summary"
-          fi
-          cihub ci \
-            --workdir "$WORKDIR" \
-            --correlation-id "$CORRELATION_ID" \
-            --output-dir .cihub \
-            --install-deps \
-            $summary_flag
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary }}
+          CIHUB_RUN_PYTEST: ${{ inputs.run_pytest }}
+          CIHUB_RUN_RUFF: ${{ inputs.run_ruff }}
+          CIHUB_RUN_BANDIT: ${{ inputs.run_bandit }}
+          CIHUB_RUN_PIP_AUDIT: ${{ inputs.run_pip_audit }}
+          CIHUB_RUN_MYPY: ${{ inputs.run_mypy }}
+          CIHUB_RUN_BLACK: ${{ inputs.run_black }}
+          CIHUB_RUN_ISORT: ${{ inputs.run_isort }}
+          CIHUB_RUN_MUTMUT: ${{ inputs.run_mutmut }}
+          CIHUB_RUN_HYPOTHESIS: ${{ inputs.run_hypothesis }}
+          CIHUB_RUN_SEMGREP: ${{ inputs.run_semgrep }}
+          CIHUB_RUN_SBOM: ${{ inputs.run_sbom }}
+          CIHUB_RUN_TRIVY: ${{ inputs.run_trivy }}
+          CIHUB_RUN_CODEQL: ${{ inputs.run_codeql }}
+          CIHUB_RUN_DOCKER: ${{ inputs.run_docker }}
+        run: cihub ci --workdir "$WORKDIR" --correlation-id "$CORRELATION_ID" --output-dir .cihub --install-deps
 
       - name: Read report outputs
         id: report
@@ -266,7 +274,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: ${{ inputs.arme tifact_prefix }}ci-report
+          name: ${{ inputs.artifact_prefix }}ci-report
           path: |
             .cihub/report.json
             .cihub/summary.md

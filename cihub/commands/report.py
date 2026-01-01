@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -225,12 +227,602 @@ def _validate_report(args: argparse.Namespace, json_mode: bool) -> int | Command
     return EXIT_SUCCESS
 
 
+# ============================================================================
+# Dashboard Generation (HTML/JSON)
+# ============================================================================
+
+
+def _load_dashboard_reports(
+    reports_dir: Path, schema_mode: str = "warn"
+) -> tuple[list[dict[str, Any]], int, list[str]]:
+    """Load all report JSON files from the reports directory.
+
+    Args:
+        reports_dir: Directory containing report.json files
+        schema_mode: "warn" to warn on non-2.0 schema, "strict" to skip them
+
+    Returns:
+        Tuple of (reports list, skipped count, warnings)
+    """
+    reports: list[dict[str, Any]] = []
+    skipped = 0
+    warnings: list[str] = []
+
+    if not reports_dir.exists():
+        return reports, skipped, warnings
+
+    for report_file in reports_dir.glob("**/report.json"):
+        try:
+            with report_file.open(encoding="utf-8") as f:
+                report = json.load(f)
+                report["_source_file"] = str(report_file)
+
+                # Validate schema version
+                schema_version = report.get("schema_version")
+                if schema_version != "2.0":
+                    if schema_mode == "strict":
+                        warnings.append(
+                            f"Skipping {report_file}: schema_version={schema_version}, expected '2.0'"
+                        )
+                        skipped += 1
+                        continue
+                    else:
+                        warnings.append(
+                            f"{report_file} has schema_version={schema_version}, expected '2.0'"
+                        )
+
+                reports.append(report)
+        except (json.JSONDecodeError, OSError) as e:
+            warnings.append(f"Could not load {report_file}: {e}")
+
+    return reports, skipped, warnings
+
+
+def _detect_language(report: dict[str, Any]) -> str:
+    """Detect language from report fields."""
+    if report.get("java_version"):
+        return "java"
+    if report.get("python_version"):
+        return "python"
+    # Fallback to tools_ran inspection
+    tools_ran = report.get("tools_ran", {})
+    if tools_ran.get("jacoco") or tools_ran.get("checkstyle") or tools_ran.get("spotbugs"):
+        return "java"
+    if tools_ran.get("pytest") or tools_ran.get("ruff") or tools_ran.get("bandit"):
+        return "python"
+    return "unknown"
+
+
+def _get_report_status(report: dict[str, Any]) -> str:
+    """Get build/test status from report (handles both Java and Python)."""
+    results = report.get("results", {})
+    # Python uses 'test', Java uses 'build'
+    status = results.get("test") or results.get("build") or "unknown"
+    return status
+
+
+def _generate_dashboard_summary(reports: list[dict[str, Any]]) -> dict[str, Any]:
+    """Generate a summary from all reports."""
+    summary: dict[str, Any] = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "schema_version": "2.0",
+        "total_repos": len(reports),
+        "languages": {},
+        "coverage": {"total": 0, "count": 0, "average": 0},
+        "mutation": {"total": 0, "count": 0, "average": 0},
+        "tests": {"total_passed": 0, "total_failed": 0},
+        "repos": [],
+    }
+
+    # Aggregate tool statistics across all repos
+    tool_stats: dict[str, dict[str, int]] = {}
+
+    for report in reports:
+        repo_name = report.get("repository", "unknown")
+        results = report.get("results", {})
+        tool_metrics = report.get("tool_metrics", {})
+        tools_ran = report.get("tools_ran", {})
+        tools_configured = report.get("tools_configured", {})
+        tools_success = report.get("tools_success", {})
+
+        # Track languages using helper
+        lang = _detect_language(report)
+        summary["languages"][lang] = summary["languages"].get(lang, 0) + 1
+
+        # Coverage - include zeros in average (only skip if key is missing)
+        coverage = results.get("coverage")
+        if coverage is not None:
+            summary["coverage"]["total"] += coverage
+            summary["coverage"]["count"] += 1
+        else:
+            coverage = 0  # Default for repo_detail below
+
+        # Mutation score - include zeros in average (only skip if key is missing)
+        mutation = results.get("mutation_score")
+        if mutation is not None:
+            summary["mutation"]["total"] += mutation
+            summary["mutation"]["count"] += 1
+        else:
+            mutation = 0  # Default for repo_detail below
+
+        # Test counts
+        tests_passed = results.get("tests_passed", 0)
+        tests_failed = results.get("tests_failed", 0)
+        summary["tests"]["total_passed"] += tests_passed
+        summary["tests"]["total_failed"] += tests_failed
+
+        # Repo details with schema 2.0 fields
+        repo_detail: dict[str, Any] = {
+            "name": repo_name,
+            "branch": report.get("branch", "unknown"),
+            "language": lang,
+            "status": _get_report_status(report),
+            "coverage": coverage,
+            "mutation_score": mutation,
+            "tests_passed": tests_passed,
+            "tests_failed": tests_failed,
+            "timestamp": report.get("timestamp", "unknown"),
+            "schema_version": report.get("schema_version", "unknown"),
+        }
+
+        # Include tool_metrics if present
+        if tool_metrics:
+            repo_detail["tool_metrics"] = tool_metrics
+
+        # Include tools_ran if present
+        if tools_ran:
+            repo_detail["tools_ran"] = tools_ran
+
+        # Include tools_configured and tools_success if present
+        if tools_configured:
+            repo_detail["tools_configured"] = tools_configured
+        if tools_success:
+            repo_detail["tools_success"] = tools_success
+
+        summary["repos"].append(repo_detail)
+
+        # Aggregate tool stats across all repos
+        for tool, configured in tools_configured.items():
+            if tool not in tool_stats:
+                tool_stats[tool] = {"configured": 0, "ran": 0, "passed": 0, "failed": 0}
+            if configured:
+                tool_stats[tool]["configured"] += 1
+            if tools_ran.get(tool):
+                tool_stats[tool]["ran"] += 1
+            if tools_success.get(tool):
+                tool_stats[tool]["passed"] += 1
+            elif tools_ran.get(tool):
+                tool_stats[tool]["failed"] += 1
+
+    # Calculate averages
+    if summary["coverage"]["count"] > 0:
+        summary["coverage"]["average"] = round(
+            summary["coverage"]["total"] / summary["coverage"]["count"], 1
+        )
+
+    if summary["mutation"]["count"] > 0:
+        summary["mutation"]["average"] = round(
+            summary["mutation"]["total"] / summary["mutation"]["count"], 1
+        )
+
+    # Add tool stats to summary
+    if tool_stats:
+        summary["tool_stats"] = tool_stats
+
+    return summary
+
+
+def _generate_html_dashboard(summary: dict[str, Any]) -> str:
+    """Generate an HTML dashboard from the summary."""
+    total_tests = summary["tests"]["total_passed"] + summary["tests"]["total_failed"]
+    repos_html = ""
+    for repo in summary["repos"]:
+        status_class = "success" if repo["status"] == "success" else "failure"
+        tests_passed = repo.get("tests_passed", 0)
+        tests_failed = repo.get("tests_failed", 0)
+        tests_class = "success" if tests_failed == 0 else "failure"
+        # Escape user-controlled values to prevent XSS
+        name = html.escape(str(repo["name"]))
+        language = html.escape(str(repo.get("language", "unknown")))
+        branch = html.escape(str(repo["branch"]))
+        status = html.escape(str(repo["status"]))
+        timestamp = html.escape(str(repo["timestamp"]))
+        repos_html += f"""
+        <tr>
+            <td>{name}</td>
+            <td>{language}</td>
+            <td>{branch}</td>
+            <td class="{status_class}">{status}</td>
+            <td>{repo["coverage"]}%</td>
+            <td class="{tests_class}">{tests_passed}/{tests_passed + tests_failed}</td>
+            <td>{repo["mutation_score"]}%</td>
+            <td>{timestamp}</td>
+        </tr>
+        """
+
+    html_output = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CI/CD Hub Dashboard</title>
+    <style>
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
+                Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 2rem;
+        }}
+        h1 {{ color: #58a6ff; margin-bottom: 1rem; }}
+        h2 {{ color: #8b949e; margin: 1.5rem 0 1rem; font-size: 1.2rem; }}
+        .summary {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }}
+        .card {{
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 1.5rem;
+        }}
+        .card-value {{
+            font-size: 2rem;
+            font-weight: bold;
+            color: #58a6ff;
+        }}
+        .card-label {{
+            color: #8b949e;
+            font-size: 0.9rem;
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+        }}
+        th, td {{
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #30363d;
+        }}
+        th {{ background: #21262d; color: #8b949e; font-weight: 600; }}
+        .success {{ color: #3fb950; }}
+        .failure {{ color: #f85149; }}
+        .timestamp {{ color: #8b949e; font-size: 0.8rem; margin-top: 2rem; }}
+    </style>
+</head>
+<body>
+    <h1>CI/CD Hub Dashboard</h1>
+
+    <div class="summary">
+        <div class="card">
+            <div class="card-value">{summary["total_repos"]}</div>
+            <div class="card-label">Total Repositories</div>
+        </div>
+        <div class="card">
+            <div class="card-value">{summary["coverage"]["average"]}%</div>
+            <div class="card-label">Average Coverage</div>
+        </div>
+        <div class="card">
+            <div class="card-value">{summary["mutation"]["average"]}%</div>
+            <div class="card-label">Average Mutation Score</div>
+        </div>
+        <div class="card">
+            <div class="card-value">{len(summary["languages"])}</div>
+            <div class="card-label">Languages</div>
+        </div>
+        <div class="card">
+            <div class="card-value">
+                {summary["tests"]["total_passed"]}/{total_tests}
+            </div>
+            <div class="card-label">Tests Passed</div>
+        </div>
+    </div>
+
+    <h2>Repository Status</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Repository</th>
+                <th>Language</th>
+                <th>Branch</th>
+                <th>Status</th>
+                <th>Coverage</th>
+                <th>Tests</th>
+                <th>Mutation</th>
+                <th>Last Run</th>
+            </tr>
+        </thead>
+        <tbody>
+            {repos_html}
+        </tbody>
+    </table>
+
+    <p class="timestamp">Generated: {summary["generated_at"]}</p>
+</body>
+</html>
+"""
+    return html_output
+
+
+def _parse_env_bool(value: str | None) -> bool | None:
+    if value is None:
+        return None
+    text = str(value).strip().lower()
+    if text in {"true", "1", "yes", "y", "on"}:
+        return True
+    if text in {"false", "0", "no", "n", "off"}:
+        return False
+    return None
+
+
+def _resolve_write_summary(flag: bool | None) -> bool:
+    if flag is not None:
+        return flag
+    env_value = _parse_env_bool(os.environ.get("CIHUB_WRITE_GITHUB_SUMMARY"))
+    if env_value is not None:
+        return env_value
+    return True
+
+
+def _resolve_summary_path(path_value: str | None, write_summary: bool) -> Path | None:
+    if path_value:
+        return Path(path_value)
+    if write_summary:
+        env_path = os.environ.get("GITHUB_STEP_SUMMARY")
+        return Path(env_path) if env_path else None
+    return None
+
+
+def _append_summary(text: str, summary_path: Path | None, print_stdout: bool) -> None:
+    if summary_path is None:
+        if print_stdout:
+            print(text)
+        return
+    with open(summary_path, "a", encoding="utf-8") as handle:
+        handle.write(text)
+        if not text.endswith("\n"):
+            handle.write("\n")
+
+
+def _bar(value: int) -> str:
+    if value < 0:
+        value = 0
+    filled = min(20, max(0, value // 5))
+    return f"{'#' * filled}{'.' * (20 - filled)}"
+
+
+def _coerce_bool(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    parsed = _parse_env_bool(str(value))
+    if parsed is not None:
+        return parsed
+    return False
+
+
+def _security_repo_summary(args: argparse.Namespace) -> str:
+    has_source = _coerce_bool(args.has_source)
+    codeql_status = "Complete" if has_source else "Skipped (no source code)"
+    lines = [
+        f"# Security & Supply Chain: {args.repo}",
+        "",
+        f"**Language:** {args.language}",
+        "",
+        "---",
+        "",
+        "## Jobs",
+        "",
+        "| Job | Status | Duration |",
+        "|-----|--------|----------|",
+    ]
+    if args.language == "python":
+        lines.extend(
+            [
+                f"| pip-audit | {args.pip_audit_vulns} vulns | - |",
+                f"| bandit | {args.bandit_high} high severity | - |",
+                f"| ruff-security | {args.ruff_issues} issues | - |",
+                f"| codeql | {codeql_status} | - |",
+                "| sbom | Generated | - |",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                f"| OWASP | {args.owasp_critical} critical, {args.owasp_high} high | - |",
+                f"| codeql | {codeql_status} | - |",
+                "| sbom | Generated | - |",
+            ]
+        )
+
+    lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## Artifacts",
+            "",
+            "| Name | Size | Digest |",
+            "|------|------|--------|",
+            f"| sbom-{args.repo}.spdx.json | - | - |",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _security_zap_summary(args: argparse.Namespace) -> str:
+    repo_present = _coerce_bool(args.repo_present)
+    run_zap = _coerce_bool(args.run_zap)
+    has_docker = _coerce_bool(args.has_docker)
+    if not repo_present:
+        status = "Skipped - Repo checkout failed"
+    elif not run_zap:
+        status = "Skipped - run_zap input is false"
+    elif has_docker:
+        status = "Scan completed. See artifacts for detailed report."
+    else:
+        status = "Skipped - No docker-compose.yml found"
+    return "\n".join([f"## ZAP DAST Scan: {args.repo}", status])
+
+
+def _security_overall_summary(args: argparse.Namespace) -> str:
+    lines = [
+        "# Security & Supply Chain Summary",
+        "",
+        f"**Repositories Scanned:** {args.repo_count}",
+        f"**Run:** #{args.run_number}",
+        "",
+        "## Tools Executed",
+        "",
+        "| Tool | Purpose |",
+        "|------|---------|",
+        "| CodeQL | Static Application Security Testing (SAST) |",
+        "| SBOM | Software Bill of Materials generation |",
+        "| pip-audit / OWASP | Dependency vulnerability scanning |",
+        "| Bandit / Ruff-S | Python security linting |",
+        "| ZAP | Dynamic Application Security Testing (DAST) |",
+    ]
+    return "\n".join(lines)
+
+
+def _smoke_repo_summary(args: argparse.Namespace) -> str:
+    header = [
+        f"# Smoke Test Results: {args.owner}/{args.repo}",
+        "",
+        f"**Branch:** `{args.branch}` | **Language:** `{args.language}` | **Config:** `{args.config}`",
+        "",
+        "---",
+        "",
+    ]
+    if args.language == "java":
+        cov = int(args.coverage)
+        lines = [
+            "## Java Smoke Test Results",
+            "",
+            "| Metric | Result | Status |",
+            "|--------|--------|--------|",
+            f"| **Unit Tests** | {args.tests_total} executed | {'PASS' if args.tests_total > 0 else 'FAIL'} |",
+            f"| **Test Failures** | {args.tests_failed} failed | {'WARN' if args.tests_failed > 0 else 'PASS'} |",
+            f"| **Coverage (JaCoCo)** | {cov}% {_bar(cov)} | {'PASS' if cov >= 50 else 'WARN'} |",
+            f"| **Checkstyle** | {args.checkstyle_violations} violations | {'WARN' if args.checkstyle_violations > 0 else 'PASS'} |",
+            f"| **SpotBugs** | {args.spotbugs_issues} potential bugs | {'WARN' if args.spotbugs_issues > 0 else 'PASS'} |",
+            "",
+            f"**Coverage Details:** {args.coverage_lines} instructions covered",
+            "",
+            "### Smoke Test Status",
+            "**PASS** - Core Java tools executed successfully"
+            if args.tests_total > 0 and cov > 0
+            else "**FAIL** - Missing test execution or coverage data",
+        ]
+        return "\n".join(header + lines)
+
+    cov = int(args.coverage)
+    lines = [
+        "## Python Smoke Test Results",
+        "",
+        "| Metric | Result | Status |",
+        "|--------|--------|--------|",
+        f"| **Unit Tests** | {args.tests_total} passed | {'PASS' if args.tests_total > 0 else 'FAIL'} |",
+        f"| **Test Failures** | {args.tests_failed} failed | {'WARN' if args.tests_failed > 0 else 'PASS'} |",
+        f"| **Coverage (pytest-cov)** | {cov}% {_bar(cov)} | {'PASS' if cov >= 50 else 'WARN'} |",
+        f"| **Ruff Lint** | {args.ruff_errors} issues | {'WARN' if args.ruff_errors > 0 else 'PASS'} |",
+        f"| **Black Format** | {args.black_issues} files need reformatting | {'WARN' if args.black_issues > 0 else 'PASS'} |",
+        "",
+        f"**Security:** {args.ruff_security} security-related issues",
+        "",
+        "### Smoke Test Status",
+        "**PASS** - Core Python tools executed successfully"
+        if args.tests_total > 0 and cov > 0
+        else "**FAIL** - Missing test execution or coverage data",
+    ]
+    return "\n".join(header + lines)
+
+
+def _smoke_overall_summary(args: argparse.Namespace) -> str:
+    status = "PASSED" if args.test_result == "success" else "FAILED"
+    lines = [
+        "# Smoke Test Summary",
+        "",
+        f"**Total Test Repositories:** {args.repo_count}",
+        f"**Run Number:** #{args.run_number}",
+        f"**Trigger:** {args.event_name}",
+        f"**Status:** {status}",
+        "",
+        "---",
+        "",
+        "## What Was Tested",
+        "",
+        "The smoke test validates core hub functionality:",
+        "",
+        "- Repository discovery and configuration loading",
+        "- Language detection (Java and Python)",
+        "- Core tool execution (coverage, linting, style checks)",
+        "- Artifact generation and upload",
+        "- Summary report generation",
+    ]
+    return "\n".join(lines)
+
+
+def _kyverno_summary(args: argparse.Namespace) -> str:
+    policies_dir = Path(args.policies_dir)
+    lines = [
+        args.title,
+        "",
+        "| Metric | Value |",
+        "|--------|-------|",
+        f"| Policies Validated | {args.validated} |",
+        f"| Validation Failures | {args.failed} |",
+        f"| Tests Run | {args.run_tests} |",
+        "",
+        "## Policies Directory",
+        f"`{policies_dir}`",
+    ]
+
+    if policies_dir.is_dir():
+        lines.extend(["", "| Policy | Status |", "|--------|--------|"])
+        for policy in sorted(policies_dir.glob("*.y*ml")):
+            lines.append(f"| `{policy.name}` | Validated |")
+
+    lines.extend(["", "---"])
+    return "\n".join(lines)
+
+
+def _orchestrator_load_summary(args: argparse.Namespace) -> str:
+    return "\n".join(
+        [
+            "## Hub Orchestrator",
+            "",
+            f"**Repositories to build:** {args.repo_count}",
+        ]
+    )
+
+
+def _orchestrator_trigger_summary(args: argparse.Namespace) -> str:
+    return "\n".join(
+        [
+            f"## {args.repo}",
+            "",
+            f"- **Owner:** {args.owner}",
+            f"- **Language:** {args.language}",
+            f"- **Branch:** {args.branch}",
+            f"- **Workflow:** {args.workflow_id}",
+            f"- **Run ID:** {args.run_id or 'pending'}",
+            f"- **Status:** {args.status}",
+        ]
+    )
+
 
 def cmd_report(args: argparse.Namespace) -> int | CommandResult:
     json_mode = getattr(args, "json", False)
     if args.subcommand == "aggregate":
+        write_summary = _resolve_write_summary(getattr(args, "write_github_summary", None))
         summary_file = Path(args.summary_file) if args.summary_file else None
-        if summary_file is None:
+        if summary_file is None and write_summary:
             summary_env = os.environ.get("GITHUB_STEP_SUMMARY")
             if summary_env:
                 summary_file = Path(summary_env)
@@ -354,10 +946,11 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
         if output_path:
             output_path.write_text(summary_text, encoding="utf-8")
         else:
-            print(summary_text)
-        github_summary = os.environ.get("GITHUB_STEP_SUMMARY")
-        if github_summary and args.write_github_summary:
-            Path(github_summary).write_text(summary_text, encoding="utf-8")
+            if _resolve_write_summary(args.write_github_summary):
+                print(summary_text)
+        github_summary = _resolve_summary_path(None, _resolve_write_summary(args.write_github_summary))
+        if github_summary:
+            github_summary.write_text(summary_text, encoding="utf-8")
         if json_mode:
             return CommandResult(
                 exit_code=EXIT_SUCCESS,
@@ -366,8 +959,91 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
             )
         return EXIT_SUCCESS
 
+    if args.subcommand == "security-summary":
+        mode = args.mode
+        if mode == "repo":
+            summary_text = _security_repo_summary(args)
+        elif mode == "zap":
+            summary_text = _security_zap_summary(args)
+        else:
+            summary_text = _security_overall_summary(args)
+        write_summary = _resolve_write_summary(args.write_github_summary)
+        summary_path = _resolve_summary_path(args.summary, write_summary)
+        _append_summary(summary_text, summary_path, print_stdout=write_summary)
+        return EXIT_SUCCESS
+
+    if args.subcommand == "smoke-summary":
+        mode = args.mode
+        if mode == "repo":
+            summary_text = _smoke_repo_summary(args)
+        else:
+            summary_text = _smoke_overall_summary(args)
+        write_summary = _resolve_write_summary(args.write_github_summary)
+        summary_path = _resolve_summary_path(args.summary, write_summary)
+        _append_summary(summary_text, summary_path, print_stdout=write_summary)
+        return EXIT_SUCCESS
+
+    if args.subcommand == "kyverno-summary":
+        summary_text = _kyverno_summary(args)
+        write_summary = _resolve_write_summary(args.write_github_summary)
+        summary_path = _resolve_summary_path(args.summary, write_summary)
+        _append_summary(summary_text, summary_path, print_stdout=write_summary)
+        return EXIT_SUCCESS
+
+    if args.subcommand == "orchestrator-summary":
+        if args.mode == "load-config":
+            summary_text = _orchestrator_load_summary(args)
+        else:
+            summary_text = _orchestrator_trigger_summary(args)
+        write_summary = _resolve_write_summary(args.write_github_summary)
+        summary_path = _resolve_summary_path(args.summary, write_summary)
+        _append_summary(summary_text, summary_path, print_stdout=write_summary)
+        return EXIT_SUCCESS
+
     if args.subcommand == "validate":
         return _validate_report(args, json_mode)
+
+    if args.subcommand == "dashboard":
+        reports_dir = Path(args.reports_dir)
+        output_path = Path(args.output)
+        output_format = getattr(args, "format", "html")
+        schema_mode = getattr(args, "schema_mode", "warn")
+
+        # Load reports
+        reports, skipped, warnings = _load_dashboard_reports(reports_dir, schema_mode)
+
+        if not json_mode:
+            print(f"Loaded {len(reports)} reports")
+            if skipped > 0:
+                print(f"Skipped {skipped} reports with non-2.0 schema")
+            for warn in warnings:
+                print(f"Warning: {warn}")
+
+        # Generate summary
+        summary = _generate_dashboard_summary(reports)
+
+        # Output
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        if output_format == "json":
+            output_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        else:
+            html_content = _generate_html_dashboard(summary)
+            output_path.write_text(html_content, encoding="utf-8")
+
+        if not json_mode:
+            print(f"Generated {output_format} dashboard: {output_path}")
+
+        # Exit with error if strict mode and reports were skipped
+        exit_code = EXIT_FAILURE if (schema_mode == "strict" and skipped > 0) else EXIT_SUCCESS
+
+        if json_mode:
+            return CommandResult(
+                exit_code=exit_code,
+                summary=f"Dashboard generated with {len(reports)} reports",
+                artifacts={"dashboard": str(output_path)},
+                problems=[{"severity": "warning", "message": w} for w in warnings],
+            )
+        return exit_code
 
     if args.subcommand != "build":
         message = f"Unknown report subcommand: {args.subcommand}"
@@ -407,6 +1083,7 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
                 "mypy",
                 "bandit",
                 "pip_audit",
+                "sbom",
                 "semgrep",
                 "trivy",
                 "codeql",
@@ -446,6 +1123,7 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
                 "semgrep",
                 "trivy",
                 "codeql",
+                "sbom",
                 "docker",
             ]
         }

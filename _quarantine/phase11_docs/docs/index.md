@@ -34,7 +34,6 @@ This is the master index for all CI/CD Hub documentation. All documents should b
 | Document | Title | Status | Last Reviewed |
 |----------|-------|--------|---------------|
 | [Operations Runbook](ops/ops-runbook.md) | Operations Runbook | Active | 2025-11-02 |
-| [CI/CD Intelligence Hub – Agent Guide](AGENTS.md) | CI/CD Intelligence Hub – Agent Guide | Active | 2025-11-20 |
 | [Canary Decision Setup Guide](CANARY_SETUP.md) | Canary Decision Setup Guide | Active | 2025-10-30 |
 | [Contributing Guide](.github/CONTRIBUTING.md) | Contributing Guide | Active | 2025-10-29 |
 | [Disaster Recovery Runbook](DR_RUNBOOK.md) | Disaster Recovery Runbook | Active | 2025-11-02 |

@@ -39,6 +39,18 @@ on:
         description: 'Run policy tests against fixtures'
         type: boolean
         default: false
+      write_github_summary:
+        description: 'Write summary to GITHUB_STEP_SUMMARY'
+        type: boolean
+        default: true
+      hub_repo:
+        description: 'Override hub repo (owner/name) for installing cihub'
+        type: string
+        default: ''
+      hub_ref:
+        description: 'Override hub ref (tag/sha/branch) for installing cihub'
+        type: string
+        default: ''
       kyverno_version:
         description: 'Kyverno CLI version'
         type: string
@@ -63,6 +75,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Checkout Hub
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: ${{ inputs.hub_repo || vars.HUB_REPO }}
+          ref: ${{ inputs.hub_ref || vars.HUB_REF }}
+          path: hub
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install cihub
+        run: pip install -e "hub[ci]"
 
       - name: Install Kyverno CLI
         env:
@@ -201,44 +229,5 @@ jobs:
       - name: Generate Summary
         if: always()
         env:
-          POLICIES_DIR: ${{ inputs.policies_dir }}
-          RUN_TESTS: ${{ inputs.run_tests }}
-          VALIDATED_COUNT: ${{ steps.validate.outputs.validated || '0' }}
-          FAILED_COUNT: ${{ steps.validate.outputs.failed || '0' }}
-        run: |
-          summary_file="$GITHUB_STEP_SUMMARY"
-          exec 3> "$summary_file"
-          cat >&3 << EOF
-          # Kyverno Policy Validation
-
-          | Metric | Value |
-          |--------|-------|
-          | Policies Validated | $VALIDATED_COUNT |
-          | Validation Failures | $FAILED_COUNT |
-          | Tests Run | $RUN_TESTS |
-
-          ## Policies Directory
-          \`$POLICIES_DIR\`
-
-          EOF
-
-          if [ -d "$POLICIES_DIR" ]; then
-            {
-              echo "| Policy | Status |"
-              echo "|--------|--------|"
-            } >&3
-            for policy in "$POLICIES_DIR"/*.yaml "$POLICIES_DIR"/*.yml; do
-              if [ -f "$policy" ]; then
-                NAME=$(basename "$policy")
-                echo "| \`$NAME\` | Validated |" >&3
-              fi
-            done
-          fi
-
-          cat >&3 << 'EOF'
-
-          ---
-
-          See [Kyverno Documentation](https://kyverno.io/docs/) for policy reference.
-          EOF
-          exec 3>&-
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary }}
+        run: cihub report kyverno-summary --policies-dir "${{ inputs.policies_dir }}" --validated "${{ steps.validate.outputs.validated || '0' }}" --failed "${{ steps.validate.outputs.failed || '0' }}" --run-tests "${{ inputs.run_tests }}" --title "# Kyverno Policy Validation"

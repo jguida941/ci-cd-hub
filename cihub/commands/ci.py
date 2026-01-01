@@ -8,8 +8,11 @@ import os
 import re
 import shlex
 import shutil
+import smtplib
 import subprocess
 import sys
+import urllib.request
+from email.message import EmailMessage
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +39,7 @@ from cihub.ci_runner import (
     run_pmd,
     run_pytest,
     run_ruff,
+    run_sbom,
     run_semgrep,
     run_spotbugs,
     run_trivy,
@@ -59,6 +63,7 @@ PYTHON_TOOLS = [
     "mypy",
     "bandit",
     "pip_audit",
+    "sbom",
     "semgrep",
     "trivy",
     "codeql",
@@ -78,6 +83,7 @@ JAVA_TOOLS = [
     "semgrep",
     "trivy",
     "codeql",
+    "sbom",
     "docker",
 ]
 
@@ -90,6 +96,7 @@ PYTHON_RUNNERS = {
     "bandit": run_bandit,
     "pip_audit": run_pip_audit,
     "mutmut": run_mutmut,
+    "sbom": run_sbom,
     "semgrep": run_semgrep,
     "trivy": run_trivy,
 }
@@ -103,6 +110,7 @@ JAVA_RUNNERS = {
     "owasp": run_owasp,
     "semgrep": run_semgrep,
     "trivy": run_trivy,
+    "sbom": run_sbom,
 }
 
 
@@ -181,6 +189,335 @@ def _tool_enabled(config: dict[str, Any], tool: str, language: str) -> bool:
     if isinstance(entry, dict):
         return bool(entry.get("enabled", False))
     return False
+
+
+def _tool_gate_enabled(config: dict[str, Any], tool: str, language: str) -> bool:
+    tools = config.get(language, {}).get("tools", {}) or {}
+    entry = tools.get(tool, {}) if isinstance(tools, dict) else {}
+    if not isinstance(entry, dict):
+        return True
+
+    if language == "python":
+        if tool == "ruff":
+            return bool(entry.get("fail_on_error", True))
+        if tool == "black":
+            return bool(entry.get("fail_on_format_issues", True))
+        if tool == "isort":
+            return bool(entry.get("fail_on_issues", True))
+        if tool == "bandit":
+            return bool(entry.get("fail_on_high", True))
+        if tool == "pip_audit":
+            return bool(entry.get("fail_on_vuln", True))
+        if tool == "semgrep":
+            return bool(entry.get("fail_on_findings", True))
+        if tool == "trivy":
+            return bool(entry.get("fail_on_critical", True) or entry.get("fail_on_high", True))
+
+    if language == "java":
+        if tool == "checkstyle":
+            return bool(entry.get("fail_on_violation", True))
+        if tool == "spotbugs":
+            return bool(entry.get("fail_on_error", True))
+        if tool == "pmd":
+            return bool(entry.get("fail_on_violation", True))
+        if tool == "semgrep":
+            return bool(entry.get("fail_on_findings", True))
+        if tool == "trivy":
+            return bool(entry.get("fail_on_critical", True) or entry.get("fail_on_high", True))
+
+    return True
+
+
+def _parse_env_bool(value: str | None) -> bool | None:
+    if value is None:
+        return None
+    text = str(value).strip().lower()
+    if text in {"true", "1", "yes", "y", "on"}:
+        return True
+    if text in {"false", "0", "no", "n", "off"}:
+        return False
+    return None
+
+
+def _set_tool_enabled(
+    config: dict[str, Any],
+    language: str,
+    tool: str,
+    enabled: bool,
+) -> None:
+    lang_cfg = config.setdefault(language, {})
+    tools = lang_cfg.setdefault("tools", {})
+    entry = tools.get(tool)
+    if isinstance(entry, dict):
+        entry["enabled"] = enabled
+    else:
+        tools[tool] = {"enabled": enabled}
+
+
+def _apply_env_overrides(
+    config: dict[str, Any],
+    language: str,
+    env: dict[str, str],
+    problems: list[dict[str, Any]],
+) -> None:
+    tool_env = {
+        "python": {
+            "pytest": "CIHUB_RUN_PYTEST",
+            "ruff": "CIHUB_RUN_RUFF",
+            "bandit": "CIHUB_RUN_BANDIT",
+            "pip_audit": "CIHUB_RUN_PIP_AUDIT",
+            "mypy": "CIHUB_RUN_MYPY",
+            "black": "CIHUB_RUN_BLACK",
+            "isort": "CIHUB_RUN_ISORT",
+            "mutmut": "CIHUB_RUN_MUTMUT",
+            "hypothesis": "CIHUB_RUN_HYPOTHESIS",
+            "sbom": "CIHUB_RUN_SBOM",
+            "semgrep": "CIHUB_RUN_SEMGREP",
+            "trivy": "CIHUB_RUN_TRIVY",
+            "codeql": "CIHUB_RUN_CODEQL",
+            "docker": "CIHUB_RUN_DOCKER",
+        },
+        "java": {
+            "jacoco": "CIHUB_RUN_JACOCO",
+            "checkstyle": "CIHUB_RUN_CHECKSTYLE",
+            "spotbugs": "CIHUB_RUN_SPOTBUGS",
+            "owasp": "CIHUB_RUN_OWASP",
+            "pitest": "CIHUB_RUN_PITEST",
+            "jqwik": "CIHUB_RUN_JQWIK",
+            "pmd": "CIHUB_RUN_PMD",
+            "semgrep": "CIHUB_RUN_SEMGREP",
+            "trivy": "CIHUB_RUN_TRIVY",
+            "codeql": "CIHUB_RUN_CODEQL",
+            "sbom": "CIHUB_RUN_SBOM",
+            "docker": "CIHUB_RUN_DOCKER",
+        },
+    }
+    overrides = tool_env.get(language, {})
+    for tool, var in overrides.items():
+        raw = env.get(var)
+        if raw is None:
+            continue
+        parsed = _parse_env_bool(raw)
+        if parsed is None:
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"Invalid boolean for {var}: {raw!r}",
+                    "code": "CIHUB-CI-ENV-BOOL",
+                }
+            )
+            continue
+        _set_tool_enabled(config, language, tool, parsed)
+
+    summary_override = _parse_env_bool(env.get("CIHUB_WRITE_GITHUB_SUMMARY"))
+    if summary_override is not None:
+        reports = config.setdefault("reports", {})
+        github_summary = reports.setdefault("github_summary", {})
+        github_summary["enabled"] = summary_override
+
+
+def _apply_force_all_tools(config: dict[str, Any], language: str) -> None:
+    repo_cfg = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
+    if not repo_cfg.get("force_all_tools", False):
+        return
+    tool_list = PYTHON_TOOLS if language == "python" else JAVA_TOOLS
+    for tool in tool_list:
+        _set_tool_enabled(config, language, tool, True)
+
+
+def _collect_codecov_files(
+    language: str,
+    output_dir: Path,
+    tool_outputs: dict[str, dict[str, Any]],
+) -> list[Path]:
+    files: list[Path] = []
+    if language == "python":
+        coverage_path = tool_outputs.get("pytest", {}).get("artifacts", {}).get("coverage")
+        if coverage_path:
+            files.append(Path(coverage_path))
+        else:
+            files.append(output_dir / "coverage.xml")
+    elif language == "java":
+        jacoco_path = tool_outputs.get("jacoco", {}).get("artifacts", {}).get("report")
+        if jacoco_path:
+            files.append(Path(jacoco_path))
+    return [path for path in files if path and path.exists()]
+
+
+def _run_codecov_upload(
+    files: list[Path],
+    fail_ci_on_error: bool,
+    problems: list[dict[str, Any]],
+) -> None:
+    if not files:
+        problems.append(
+            {
+                "severity": "warning",
+                "message": "Codecov enabled but no coverage files were found",
+                "code": "CIHUB-CI-CODECOV-NO-FILES",
+            }
+        )
+        return
+    try:
+        codecov_bin = resolve_executable("codecov")
+    except FileNotFoundError as exc:
+        problems.append(
+            {
+                "severity": "error" if fail_ci_on_error else "warning",
+                "message": f"Codecov enabled but uploader not found: {exc}",
+                "code": "CIHUB-CI-CODECOV-MISSING",
+            }
+        )
+        return
+    cmd = [codecov_bin]
+    for path in files:
+        cmd.extend(["-f", str(path)])
+    proc = subprocess.run(  # noqa: S603
+        cmd,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        problems.append(
+            {
+                "severity": "error" if fail_ci_on_error else "warning",
+                "message": f"Codecov upload failed: {proc.stderr.strip() or proc.stdout.strip()}",
+                "code": "CIHUB-CI-CODECOV-FAILED",
+            }
+        )
+
+
+def _send_slack(
+    webhook_url: str,
+    message: str,
+    problems: list[dict[str, Any]],
+) -> None:
+    payload = json.dumps({"text": message}).encode("utf-8")
+    req = urllib.request.Request(  # noqa: S310
+        webhook_url,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310
+            if resp.status >= 400:
+                problems.append(
+                    {
+                        "severity": "warning",
+                        "message": f"Slack notification failed with status {resp.status}",
+                        "code": "CIHUB-CI-SLACK-FAILED",
+                    }
+                )
+    except Exception as exc:  # pragma: no cover - network dependent
+        problems.append(
+            {
+                "severity": "warning",
+                "message": f"Slack notification failed: {exc}",
+                "code": "CIHUB-CI-SLACK-FAILED",
+            }
+        )
+
+
+def _send_email(
+    subject: str,
+    body: str,
+    problems: list[dict[str, Any]],
+) -> None:
+    host = os.environ.get("SMTP_HOST")
+    if not host:
+        problems.append(
+            {
+                "severity": "warning",
+                "message": "Email notifications enabled but SMTP_HOST is not set",
+                "code": "CIHUB-CI-EMAIL-MISSING",
+            }
+        )
+        return
+    port = int(os.environ.get("SMTP_PORT", "25"))
+    username = os.environ.get("SMTP_USER")
+    password = os.environ.get("SMTP_PASSWORD")
+    use_starttls = _parse_env_bool(os.environ.get("SMTP_STARTTLS")) or False
+    sender = os.environ.get("SMTP_FROM", "cihub@localhost")
+    recipients = (
+        os.environ.get("CIHUB_EMAIL_TO")
+        or os.environ.get("SMTP_TO")
+        or os.environ.get("EMAIL_TO")
+    )
+    if not recipients:
+        problems.append(
+            {
+                "severity": "warning",
+                "message": "Email notifications enabled but no recipients set (CIHUB_EMAIL_TO/SMTP_TO/EMAIL_TO)",
+                "code": "CIHUB-CI-EMAIL-MISSING",
+            }
+        )
+        return
+
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = sender
+    msg["To"] = recipients
+    msg.set_content(body)
+
+    try:
+        with smtplib.SMTP(host, port, timeout=10) as client:
+            if use_starttls:
+                client.starttls()
+            if username and password:
+                client.login(username, password)
+            client.send_message(msg)
+    except Exception as exc:  # pragma: no cover - network dependent
+        problems.append(
+            {
+                "severity": "warning",
+                "message": f"Email notification failed: {exc}",
+                "code": "CIHUB-CI-EMAIL-FAILED",
+            }
+        )
+
+
+def _notify(
+    success: bool,
+    config: dict[str, Any],
+    report: dict[str, Any],
+    problems: list[dict[str, Any]],
+) -> None:
+    notifications = config.get("notifications", {}) or {}
+    slack_cfg = notifications.get("slack", {}) or {}
+    email_cfg = notifications.get("email", {}) or {}
+
+    repo = report.get("repository", "") or report.get("repo", "") or "unknown"
+    branch = report.get("branch", "") or "unknown"
+    status = "SUCCESS" if success else "FAILURE"
+
+    if slack_cfg.get("enabled", False):
+        on_success = bool(slack_cfg.get("on_success", False))
+        on_failure = bool(slack_cfg.get("on_failure", True))
+        if (success and on_success) or (not success and on_failure):
+            webhook = (
+                os.environ.get("CIHUB_SLACK_WEBHOOK_URL")
+                or os.environ.get("SLACK_WEBHOOK_URL")
+                or os.environ.get("SLACK_WEBHOOK")
+            )
+            if not webhook:
+                problems.append(
+                    {
+                        "severity": "warning",
+                        "message": "Slack notifications enabled but no webhook set",
+                        "code": "CIHUB-CI-SLACK-MISSING",
+                    }
+                )
+            else:
+                _send_slack(webhook, f"CIHUB {status}: {repo} ({branch})", problems)
+
+    if email_cfg.get("enabled", False):
+        _send_email(
+            f"CIHUB {status}: {repo}",
+            f"Repository: {repo}\nBranch: {branch}\nStatus: {status}\n",
+            problems,
+        )
 
 
 def _run_dep_command(
@@ -318,9 +655,19 @@ def _run_python_tools(
             ToolResult(tool=tool, ran=False, success=False).write_json(tool_output_dir / f"{tool}.json")
             continue
         try:
-            if tool == "mutmut":
+            if tool == "pytest":
+                pytest_cfg = config.get("python", {}).get("tools", {}).get("pytest", {}) or {}
+                fail_fast = bool(pytest_cfg.get("fail_fast", False))
+                result = runner(workdir_path, output_dir, fail_fast)  # type: ignore[operator]
+            elif tool == "mutmut":
                 timeout = config.get("python", {}).get("tools", {}).get("mutmut", {}).get("timeout_minutes", 15)
                 result = runner(workdir_path, output_dir, int(timeout) * 60)  # type: ignore[operator]
+            elif tool == "sbom":
+                sbom_cfg = config.get("python", {}).get("tools", {}).get("sbom", {})
+                if not isinstance(sbom_cfg, dict):
+                    sbom_cfg = {}
+                sbom_format = sbom_cfg.get("format", "cyclonedx")
+                result = runner(workdir_path, output_dir, sbom_format)  # type: ignore[operator]
             else:
                 result = runner(workdir_path, output_dir)  # type: ignore[operator]
         except FileNotFoundError as exc:
@@ -398,6 +745,12 @@ def _run_java_tools(
                 result = runner(workdir_path, output_dir, build_tool)  # type: ignore[operator]
             elif tool == "owasp":
                 result = runner(workdir_path, output_dir, build_tool, use_nvd_api_key)  # type: ignore[operator]
+            elif tool == "sbom":
+                sbom_cfg = config.get("java", {}).get("tools", {}).get("sbom", {})
+                if not isinstance(sbom_cfg, dict):
+                    sbom_cfg = {}
+                sbom_format = sbom_cfg.get("format", "cyclonedx")
+                result = runner(workdir_path, output_dir, sbom_format)  # type: ignore[operator]
             else:
                 result = runner(workdir_path, output_dir)  # type: ignore[operator]
         except FileNotFoundError as exc:
@@ -457,6 +810,7 @@ def _evaluate_python_gates(
     report: dict[str, Any],
     thresholds: dict[str, Any],
     tools_configured: dict[str, bool],
+    config: dict[str, Any],
 ) -> list[str]:
     failures: list[str] = []
     results = report.get("results", {}) or {}
@@ -478,17 +832,17 @@ def _evaluate_python_gates(
 
     max_ruff = int(thresholds.get("max_ruff_errors", 0) or 0)
     ruff_errors = int(metrics.get("ruff_errors", 0))
-    if tools_configured.get("ruff") and ruff_errors > max_ruff:
+    if tools_configured.get("ruff") and _tool_gate_enabled(config, "ruff", "python") and ruff_errors > max_ruff:
         failures.append(f"ruff errors {ruff_errors} > {max_ruff}")
 
     max_black = int(thresholds.get("max_black_issues", 0) or 0)
     black_issues = int(metrics.get("black_issues", 0))
-    if tools_configured.get("black") and black_issues > max_black:
+    if tools_configured.get("black") and _tool_gate_enabled(config, "black", "python") and black_issues > max_black:
         failures.append(f"black issues {black_issues} > {max_black}")
 
     max_isort = int(thresholds.get("max_isort_issues", 0) or 0)
     isort_issues = int(metrics.get("isort_issues", 0))
-    if tools_configured.get("isort") and isort_issues > max_isort:
+    if tools_configured.get("isort") and _tool_gate_enabled(config, "isort", "python") and isort_issues > max_isort:
         failures.append(f"isort issues {isort_issues} > {max_isort}")
 
     mypy_errors = int(metrics.get("mypy_errors", 0))
@@ -497,26 +851,34 @@ def _evaluate_python_gates(
 
     max_high = int(thresholds.get("max_high_vulns", 0) or 0)
     bandit_high = int(metrics.get("bandit_high", 0))
-    if tools_configured.get("bandit") and bandit_high > max_high:
+    if tools_configured.get("bandit") and _tool_gate_enabled(config, "bandit", "python") and bandit_high > max_high:
         failures.append(f"bandit high {bandit_high} > {max_high}")
 
     pip_vulns = int(metrics.get("pip_audit_vulns", 0))
     max_pip = int(thresholds.get("max_pip_audit_vulns", max_high) or 0)
-    if tools_configured.get("pip_audit") and pip_vulns > max_pip:
+    if tools_configured.get("pip_audit") and _tool_gate_enabled(config, "pip_audit", "python") and pip_vulns > max_pip:
         failures.append(f"pip-audit vulns {pip_vulns} > {max_pip}")
 
     max_semgrep = int(thresholds.get("max_semgrep_findings", 0) or 0)
     semgrep_findings = int(metrics.get("semgrep_findings", 0))
-    if tools_configured.get("semgrep") and semgrep_findings > max_semgrep:
+    if tools_configured.get("semgrep") and _tool_gate_enabled(config, "semgrep", "python") and semgrep_findings > max_semgrep:
         failures.append(f"semgrep findings {semgrep_findings} > {max_semgrep}")
 
     max_critical = int(thresholds.get("max_critical_vulns", 0) or 0)
     trivy_critical = int(metrics.get("trivy_critical", 0))
-    if tools_configured.get("trivy") and trivy_critical > max_critical:
+    if (
+        tools_configured.get("trivy")
+        and bool(config.get("python", {}).get("tools", {}).get("trivy", {}).get("fail_on_critical", True))
+        and trivy_critical > max_critical
+    ):
         failures.append(f"trivy critical {trivy_critical} > {max_critical}")
 
     trivy_high = int(metrics.get("trivy_high", 0))
-    if tools_configured.get("trivy") and trivy_high > max_high:
+    if (
+        tools_configured.get("trivy")
+        and bool(config.get("python", {}).get("tools", {}).get("trivy", {}).get("fail_on_high", True))
+        and trivy_high > max_high
+    ):
         failures.append(f"trivy high {trivy_high} > {max_high}")
 
     return failures
@@ -526,6 +888,7 @@ def _evaluate_java_gates(
     report: dict[str, Any],
     thresholds: dict[str, Any],
     tools_configured: dict[str, bool],
+    config: dict[str, Any],
 ) -> list[str]:
     failures: list[str] = []
     results = report.get("results", {}) or {}
@@ -547,17 +910,17 @@ def _evaluate_java_gates(
 
     max_checkstyle = int(thresholds.get("max_checkstyle_errors", 0) or 0)
     checkstyle_issues = int(metrics.get("checkstyle_issues", 0))
-    if tools_configured.get("checkstyle") and checkstyle_issues > max_checkstyle:
+    if tools_configured.get("checkstyle") and _tool_gate_enabled(config, "checkstyle", "java") and checkstyle_issues > max_checkstyle:
         failures.append(f"checkstyle issues {checkstyle_issues} > {max_checkstyle}")
 
     max_spotbugs = int(thresholds.get("max_spotbugs_bugs", 0) or 0)
     spotbugs_issues = int(metrics.get("spotbugs_issues", 0))
-    if tools_configured.get("spotbugs") and spotbugs_issues > max_spotbugs:
+    if tools_configured.get("spotbugs") and _tool_gate_enabled(config, "spotbugs", "java") and spotbugs_issues > max_spotbugs:
         failures.append(f"spotbugs issues {spotbugs_issues} > {max_spotbugs}")
 
     max_pmd = int(thresholds.get("max_pmd_violations", 0) or 0)
     pmd_issues = int(metrics.get("pmd_violations", 0))
-    if tools_configured.get("pmd") and pmd_issues > max_pmd:
+    if tools_configured.get("pmd") and _tool_gate_enabled(config, "pmd", "java") and pmd_issues > max_pmd:
         failures.append(f"pmd violations {pmd_issues} > {max_pmd}")
 
     max_critical = int(thresholds.get("max_critical_vulns", 0) or 0)
@@ -570,12 +933,18 @@ def _evaluate_java_gates(
 
     trivy_critical = int(metrics.get("trivy_critical", 0))
     trivy_high = int(metrics.get("trivy_high", 0))
-    if tools_configured.get("trivy") and (trivy_critical > max_critical or trivy_high > max_high):
+    trivy_cfg = config.get("java", {}).get("tools", {}).get("trivy", {}) or {}
+    trivy_crit_gate = bool(trivy_cfg.get("fail_on_critical", True))
+    trivy_high_gate = bool(trivy_cfg.get("fail_on_high", True))
+    if tools_configured.get("trivy") and (
+        (trivy_crit_gate and trivy_critical > max_critical)
+        or (trivy_high_gate and trivy_high > max_high)
+    ):
         failures.append(f"trivy critical/high {trivy_critical}/{trivy_high} > {max_critical}/{max_high}")
 
     max_semgrep = int(thresholds.get("max_semgrep_findings", 0) or 0)
     semgrep_findings = int(metrics.get("semgrep_findings", 0))
-    if tools_configured.get("semgrep") and semgrep_findings > max_semgrep:
+    if tools_configured.get("semgrep") and _tool_gate_enabled(config, "semgrep", "java") and semgrep_findings > max_semgrep:
         failures.append(f"semgrep findings {semgrep_findings} > {max_semgrep}")
 
     return failures
@@ -612,6 +981,8 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
     language = config.get("language") or ""
     workdir = _resolve_workdir(repo_path, config, args.workdir)
     problems: list[dict[str, Any]] = []
+    _apply_force_all_tools(config, language)
+    _apply_env_overrides(config, language, dict(os.environ), problems)
 
     if language == "python":
         if args.install_deps:
@@ -641,7 +1012,7 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
             thresholds,
             context,
         )
-        gate_failures = _evaluate_python_gates(report, thresholds, tools_configured)
+        gate_failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
 
     elif language == "java":
         build_tool = config.get("java", {}).get("build_tool", "maven").strip().lower() or "maven"
@@ -688,7 +1059,7 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
             thresholds,
             context,
         )
-        gate_failures = _evaluate_java_gates(report, thresholds, tools_configured)
+        gate_failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
 
     else:
         message = f"cihub ci supports python or java (got '{language}')"
@@ -706,10 +1077,11 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
         report_path = repo_path / report_path
     report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
-    summary_text = render_summary(report)
+    github_summary_cfg = config.get("reports", {}).get("github_summary", {}) or {}
+    include_metrics = bool(github_summary_cfg.get("include_metrics", True))
+    summary_text = render_summary(report, include_metrics=include_metrics)
     no_summary = getattr(args, "no_summary", False)
     write_github_summary_arg = getattr(args, "write_github_summary", None)
-    github_summary_cfg = config.get("reports", {}).get("github_summary", {}) or {}
     if write_github_summary_arg is None:
         write_github_summary = bool(github_summary_cfg.get("enabled", True))
     else:
@@ -726,6 +1098,15 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
     if write_github_summary and github_summary_env:
         Path(github_summary_env).write_text(summary_text, encoding="utf-8")
 
+    codecov_cfg = config.get("reports", {}).get("codecov", {}) or {}
+    if codecov_cfg.get("enabled", True):
+        files = _collect_codecov_files(language, output_dir, tool_outputs)
+        _run_codecov_upload(
+            files,
+            bool(codecov_cfg.get("fail_ci_on_error", False)),
+            problems,
+        )
+
     if gate_failures:
         problems.extend(
             [
@@ -739,6 +1120,7 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
         )
 
     has_errors = any(p.get("severity") == "error" for p in problems)
+    _notify(not has_errors, config, report, problems)
     exit_code = EXIT_FAILURE if has_errors else EXIT_SUCCESS
     if json_mode:
         artifacts: dict[str, str] = {"report": str(report_path)}
