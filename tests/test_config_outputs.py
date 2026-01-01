@@ -191,6 +191,18 @@ class TestCmdConfigOutputs:
         assert result.data["outputs"]["language"] == "python"
         assert result.data["outputs"]["python_version"] == "3.11"
 
+    def test_respects_github_summary_config(self, tmp_path: Path) -> None:
+        args = argparse.Namespace(repo=str(tmp_path), json=True, workdir=None, github_output=False)
+
+        with patch("cihub.commands.config_outputs.load_ci_config") as mock_load:
+            mock_load.return_value = {
+                "language": "python",
+                "reports": {"github_summary": {"enabled": False}},
+            }
+            result = cmd_config_outputs(args)
+
+        assert result.data["outputs"]["write_github_summary"] == "false"
+
     def test_outputs_to_stdout_when_no_github_output(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
         """Test outputs go to stdout."""
         args = argparse.Namespace(repo=str(tmp_path), json=False, workdir=None, github_output=False)

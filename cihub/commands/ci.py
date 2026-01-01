@@ -707,14 +707,24 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
     report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
 
     summary_text = render_summary(report)
-    summary_path = Path(args.summary) if args.summary else output_dir / "summary.md"
-    if not summary_path.is_absolute():
-        summary_path = repo_path / summary_path
-    summary_path.write_text(summary_text, encoding="utf-8")
+    no_summary = getattr(args, "no_summary", False)
+    write_github_summary_arg = getattr(args, "write_github_summary", None)
+    github_summary_cfg = config.get("reports", {}).get("github_summary", {}) or {}
+    if write_github_summary_arg is None:
+        write_github_summary = bool(github_summary_cfg.get("enabled", True))
+    else:
+        write_github_summary = bool(write_github_summary_arg)
 
-    github_summary = os.environ.get("GITHUB_STEP_SUMMARY")
-    if github_summary:
-        Path(github_summary).write_text(summary_text, encoding="utf-8")
+    summary_path: Path | None = None
+    if not no_summary:
+        summary_path = Path(args.summary) if args.summary else output_dir / "summary.md"
+        if not summary_path.is_absolute():
+            summary_path = repo_path / summary_path
+        summary_path.write_text(summary_text, encoding="utf-8")
+
+    github_summary_env = os.environ.get("GITHUB_STEP_SUMMARY")
+    if write_github_summary and github_summary_env:
+        Path(github_summary_env).write_text(summary_text, encoding="utf-8")
 
     if gate_failures:
         problems.extend(
@@ -731,23 +741,23 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
     has_errors = any(p.get("severity") == "error" for p in problems)
     exit_code = EXIT_FAILURE if has_errors else EXIT_SUCCESS
     if json_mode:
+        artifacts: dict[str, str] = {"report": str(report_path)}
+        data: dict[str, str] = {"report_path": str(report_path)}
+        if summary_path:
+            artifacts["summary"] = str(summary_path)
+            data["summary_path"] = str(summary_path)
         result = CommandResult(
             exit_code=exit_code,
             summary="CI completed with issues" if problems else "CI completed",
             problems=problems,
-            artifacts={
-                "report": str(report_path),
-                "summary": str(summary_path),
-            },
-            data={
-                "report_path": str(report_path),
-                "summary_path": str(summary_path),
-            },
+            artifacts=artifacts,
+            data=data,
         )
         return result
 
     print(f"Wrote report: {report_path}")
-    print(f"Wrote summary: {summary_path}")
+    if summary_path:
+        print(f"Wrote summary: {summary_path}")
     if problems:
         print("CI findings:")
         for problem in problems:

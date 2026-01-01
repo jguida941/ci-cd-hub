@@ -478,7 +478,7 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
             "verify-matrix-keys",
             _run_process(
                 "verify-matrix-keys",
-                ["python", "scripts/verify_hub_matrix_keys.py"],
+                [sys.executable, "-m", "cihub", "hub-ci", "verify-matrix-keys"],
                 root,
             ),
         )

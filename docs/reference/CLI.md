@@ -182,7 +182,8 @@ options:
 usage: cihub ci [-h] [--json] [--repo REPO] [--workdir WORKDIR]
                 [--correlation-id CORRELATION_ID] [--config-from-hub BASENAME]
                 [--output-dir OUTPUT_DIR] [--install-deps] [--report REPORT]
-                [--summary SUMMARY]
+                [--summary SUMMARY] [--no-summary] [--write-github-summary]
+                [--no-write-github-summary]
 
 options:
   -h, --help            show this help message and exit
@@ -199,6 +200,13 @@ options:
   --install-deps        Install repo dependencies before running tools
   --report REPORT       Override report.json path
   --summary SUMMARY     Override summary.md path
+  --no-summary          Skip writing summary.md file
+  --write-github-summary
+                        Write summary to GITHUB_STEP_SUMMARY if set (overrides
+                        config)
+  --no-write-github-summary
+                        Do not write summary to GITHUB_STEP_SUMMARY (overrides
+                        config)
 ```
 
 ## cihub run
@@ -225,14 +233,16 @@ options:
 ## cihub report
 
 ```
-usage: cihub report [-h] [--json] {build,summary,outputs,aggregate} ...
+usage: cihub report [-h] [--json]
+                    {build,summary,outputs,aggregate,validate} ...
 
 positional arguments:
-  {build,summary,outputs,aggregate}
+  {build,summary,outputs,aggregate,validate}
     build               Build report.json from tool outputs
     summary             Render summary from report.json
     outputs             Write workflow outputs from report.json
     aggregate           Aggregate hub reports across repos
+    validate            Validate report.json structure and content
 
 options:
   -h, --help            show this help message and exit
@@ -326,6 +336,32 @@ options:
                         Override hub event name
   --timeout TIMEOUT     Polling timeout in seconds (default: 1800)
   --strict              Fail if any repo fails or thresholds exceeded
+```
+
+## cihub report validate
+
+```
+usage: cihub report validate [-h] [--json] --report REPORT
+                             [--expect {clean,issues}]
+                             [--coverage-min COVERAGE_MIN] [--strict]
+                             [--verbose] [--summary SUMMARY]
+                             [--reports-dir REPORTS_DIR] [--debug]
+
+options:
+  -h, --help            show this help message and exit
+  --json                Output machine-readable JSON
+  --report REPORT       Path to report.json
+  --expect {clean,issues}
+                        Expected mode: 'clean' for passing builds, 'issues'
+                        for failing fixtures
+  --coverage-min COVERAGE_MIN
+                        Minimum coverage percentage (default: 70)
+  --strict              Fail on warnings (not just errors)
+  --verbose             Show all checks (including passed ones)
+  --summary SUMMARY     Path to summary.md for cross-checking
+  --reports-dir REPORTS_DIR
+                        Directory containing tool artifacts
+  --debug               Show debug output for validation
 ```
 
 ## cihub docs
@@ -462,11 +498,11 @@ options:
 
 ```
 usage: cihub hub-ci [-h]
-                    {ruff,black,mutmut,bandit,pip-audit,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,summary,enforce}
+                    {ruff,black,mutmut,bandit,pip-audit,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,summary,enforce,verify-matrix-keys,quarantine-check}
                     ...
 
 positional arguments:
-  {ruff,black,mutmut,bandit,pip-audit,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,summary,enforce}
+  {ruff,black,mutmut,bandit,pip-audit,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,summary,enforce,verify-matrix-keys,quarantine-check}
     ruff                Run ruff and emit issue count
     black               Run black and emit issue count
     mutmut              Run mutmut and emit summary outputs
@@ -480,6 +516,9 @@ positional arguments:
     badges              Generate or validate CI badges
     summary             Generate hub CI summary
     enforce             Fail if critical hub checks failed
+    verify-matrix-keys  Verify hub-run-all.yml matrix keys match discover.py
+                        output
+    quarantine-check    Fail if any file imports from _quarantine
 
 options:
   -h, --help            show this help message and exit
@@ -681,6 +720,25 @@ options:
   -h, --help  show this help message and exit
 ```
 
+## cihub hub-ci verify-matrix-keys
+
+```
+usage: cihub hub-ci verify-matrix-keys [-h]
+
+options:
+  -h, --help  show this help message and exit
+```
+
+## cihub hub-ci quarantine-check
+
+```
+usage: cihub hub-ci quarantine-check [-h] [--path PATH]
+
+options:
+  -h, --help   show this help message and exit
+  --path PATH  Root directory to scan (default: hub root)
+```
+
 ## cihub new
 
 ```
@@ -847,21 +905,22 @@ options:
 ## cihub config
 
 ```
-usage: cihub config [-h] [--json] --repo REPO [--dry-run]
-                    {edit,show,set,enable,disable} ...
+usage: cihub config [-h] [--json] [--repo REPO] [--dry-run]
+                    {edit,show,set,enable,disable,apply-profile} ...
 
 positional arguments:
-  {edit,show,set,enable,disable}
+  {edit,show,set,enable,disable,apply-profile}
     edit                Edit config via wizard
     show                Show config
     set                 Set a config value
     enable              Enable a tool
     disable             Disable a tool
+    apply-profile       Apply a profile to a repo config
 
 options:
   -h, --help            show this help message and exit
   --json                Output machine-readable JSON
-  --repo REPO           Repo config name
+  --repo REPO           Repo config name (required for most subcommands)
   --dry-run             Show updates without writing
 ```
 
@@ -924,5 +983,20 @@ positional arguments:
 options:
   -h, --help  show this help message and exit
   --json      Output machine-readable JSON
+```
+
+## cihub config apply-profile
+
+```
+usage: cihub config apply-profile [-h] [--json] --profile PROFILE
+                                  [--target TARGET] [--output OUTPUT]
+
+options:
+  -h, --help         show this help message and exit
+  --json             Output machine-readable JSON
+  --profile PROFILE  Path to profile YAML (e.g., templates/profiles/python-
+                     fast.yaml)
+  --target TARGET    Path to target repo config YAML (overrides --repo)
+  --output OUTPUT    Optional output path (defaults to target path)
 ```
 

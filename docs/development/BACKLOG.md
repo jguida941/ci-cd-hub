@@ -35,6 +35,5 @@ Move items here when done:
 
 | Item                                 | Completed | PR/Commit |
 |--------------------------------------|-----------|-----------|
-| CLI modular restructure (Phases 1-5) | 2024-12   | -         |
-| Wizard cancellation safety           | 2024-12   | -         |
-| Emoji output normalization           | 2024-12   | -         |
+| CLI modular restructure (Phases 1-5) | 2025-12   | -         |
+| Wizard cancellation safety           | 2025-12   | -         |

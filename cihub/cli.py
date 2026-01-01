@@ -1315,6 +1315,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ci.add_argument("--report", help="Override report.json path")
     ci.add_argument("--summary", help="Override summary.md path")
+    ci.add_argument(
+        "--no-summary",
+        action="store_true",
+        help="Skip writing summary.md file",
+    )
+    ci.add_argument(
+        "--write-github-summary",
+        action="store_true",
+        default=None,
+        help="Write summary to GITHUB_STEP_SUMMARY if set (overrides config)",
+    )
+    ci.add_argument(
+        "--no-write-github-summary",
+        dest="write_github_summary",
+        action="store_false",
+        help="Do not write summary to GITHUB_STEP_SUMMARY (overrides config)",
+    )
     ci.set_defaults(func=cmd_ci)
 
     run = subparsers.add_parser("run", help="Run one tool and emit JSON output")
@@ -1418,6 +1435,40 @@ def build_parser() -> argparse.ArgumentParser:
     )
     report_aggregate.set_defaults(func=cmd_report)
 
+    report_validate = report_sub.add_parser("validate", help="Validate report.json structure and content")
+    add_json_flag(report_validate)
+    report_validate.add_argument("--report", required=True, help="Path to report.json")
+    report_validate.add_argument(
+        "--expect",
+        choices=["clean", "issues"],
+        default="clean",
+        help="Expected mode: 'clean' for passing builds, 'issues' for failing fixtures",
+    )
+    report_validate.add_argument(
+        "--coverage-min",
+        type=int,
+        default=70,
+        help="Minimum coverage percentage (default: 70)",
+    )
+    report_validate.add_argument(
+        "--strict",
+        action="store_true",
+        help="Fail on warnings (not just errors)",
+    )
+    report_validate.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Show all checks (including passed ones)",
+    )
+    report_validate.add_argument("--summary", help="Path to summary.md for cross-checking")
+    report_validate.add_argument("--reports-dir", help="Directory containing tool artifacts")
+    report_validate.add_argument(
+        "--debug",
+        action="store_true",
+        help="Show debug output for validation",
+    )
+    report_validate.set_defaults(func=cmd_report)
+
     docs = subparsers.add_parser("docs", help="Generate reference documentation")
     docs_sub = docs.add_subparsers(dest="subcommand", required=True)
 
@@ -1495,9 +1546,7 @@ def build_parser() -> argparse.ArgumentParser:
     config_outputs.set_defaults(func=cmd_config_outputs)
 
     # Discover command - generates matrix for hub-run-all.yml
-    discover = subparsers.add_parser(
-        "discover", help="Generate repo matrix for hub-run-all.yml"
-    )
+    discover = subparsers.add_parser("discover", help="Generate repo matrix for hub-run-all.yml")
     add_json_flag(discover)
     discover.add_argument(
         "--hub-root",
@@ -1641,6 +1690,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     _hub_ci_enforce = hub_ci_sub.add_parser("enforce", help="Fail if critical hub checks failed")  # noqa: F841
+
+    _hub_ci_verify_matrix = hub_ci_sub.add_parser(  # noqa: F841
+        "verify-matrix-keys",
+        help="Verify hub-run-all.yml matrix keys match discover.py output",
+    )
+
+    hub_ci_quarantine = hub_ci_sub.add_parser(
+        "quarantine-check",
+        help="Fail if any file imports from _quarantine",
+    )
+    hub_ci_quarantine.add_argument(
+        "--path",
+        help="Root directory to scan (default: hub root)",
+    )
 
     new = subparsers.add_parser("new", help="Create hub-side repo config")
     add_json_flag(new)
@@ -1859,7 +1922,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Manage hub-side repo configs (config/repos/*.yaml)",
     )
     add_json_flag(config)
-    config.add_argument("--repo", required=True, help="Repo config name")
+    config.add_argument(
+        "--repo",
+        help="Repo config name (required for most subcommands)",
+    )
     config.add_argument(
         "--dry-run",
         action="store_true",
@@ -1896,6 +1962,25 @@ def build_parser() -> argparse.ArgumentParser:
     add_json_flag(config_disable)
     config_disable.add_argument("tool", help="Tool name (e.g., jacoco)")
     config_disable.set_defaults(func=cmd_config)
+
+    config_apply_profile = config_sub.add_parser(
+        "apply-profile", help="Apply a profile to a repo config"
+    )
+    add_json_flag(config_apply_profile)
+    config_apply_profile.add_argument(
+        "--profile",
+        required=True,
+        help="Path to profile YAML (e.g., templates/profiles/python-fast.yaml)",
+    )
+    config_apply_profile.add_argument(
+        "--target",
+        help="Path to target repo config YAML (overrides --repo)",
+    )
+    config_apply_profile.add_argument(
+        "--output",
+        help="Optional output path (defaults to target path)",
+    )
+    config_apply_profile.set_defaults(func=cmd_config)
 
     return parser
 

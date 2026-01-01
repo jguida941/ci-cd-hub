@@ -14,6 +14,7 @@ from cihub.config.io import (
     ensure_dirs,
     load_defaults,
     load_repo_config,
+    load_yaml_file,
     save_repo_config,
 )
 from cihub.config.merge import build_effective_config
@@ -108,7 +109,7 @@ def cmd_config(args: argparse.Namespace) -> int | CommandResult:
     json_mode = getattr(args, "json", False)
 
     repo = args.repo
-    if not repo:
+    if not repo and args.subcommand != "apply-profile":
         message = "--repo is required"
         if json_mode:
             return CommandResult(exit_code=EXIT_USAGE, summary=message)
@@ -203,6 +204,71 @@ def cmd_config(args: argparse.Namespace) -> int | CommandResult:
                     files_modified=[str(paths.repo_file(repo))],
                 )
             print(f"[OK] Updated {paths.repo_file(repo)}", file=sys.stderr)
+            return EXIT_SUCCESS
+
+        if args.subcommand == "apply-profile":
+            from cihub.config.merge import deep_merge
+
+            profile_path = Path(args.profile)
+            if not profile_path.exists():
+                raise ConfigError(f"Profile not found: {profile_path}")
+
+            profile_data = load_yaml_file(profile_path)
+
+            target_path = Path(args.target) if args.target else None
+            if target_path:
+                target_data = load_yaml_file(target_path)
+                merged = deep_merge(profile_data, target_data)
+                output_path = Path(args.output) if args.output else target_path
+
+                if args.dry_run:
+                    if json_mode:
+                        return CommandResult(
+                            exit_code=EXIT_SUCCESS,
+                            summary="Dry run complete",
+                            data={"config": merged},
+                        )
+                    _dump_config(merged)
+                    return EXIT_SUCCESS
+
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                with output_path.open("w", encoding="utf-8") as handle:
+                    yaml.safe_dump(merged, handle, sort_keys=False, default_flow_style=False)
+                if json_mode:
+                    return CommandResult(
+                        exit_code=EXIT_SUCCESS,
+                        summary=f"Profile applied: {profile_path}",
+                        data={"config": merged},
+                        files_modified=[str(output_path)],
+                    )
+                print(f"[OK] Applied {profile_path} -> {output_path}", file=sys.stderr)
+                return EXIT_SUCCESS
+
+            if not repo:
+                raise ConfigError("--repo or --target is required for apply-profile")
+
+            config = _load_repo(paths, repo)
+            merged = deep_merge(profile_data, config)
+
+            if args.dry_run:
+                if json_mode:
+                    return CommandResult(
+                        exit_code=EXIT_SUCCESS,
+                        summary="Dry run complete",
+                        data={"config": merged},
+                    )
+                _dump_config(merged)
+                return EXIT_SUCCESS
+
+            save_repo_config(paths, repo, merged, dry_run=False)
+            if json_mode:
+                return CommandResult(
+                    exit_code=EXIT_SUCCESS,
+                    summary=f"Profile applied: {profile_path}",
+                    data={"config": merged},
+                    files_modified=[str(paths.repo_file(repo))],
+                )
+            print(f"[OK] Applied {profile_path} -> {paths.repo_file(repo)}", file=sys.stderr)
             return EXIT_SUCCESS
 
         raise ConfigError(f"Unsupported config command: {args.subcommand}")

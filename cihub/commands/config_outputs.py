@@ -135,6 +135,7 @@ def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
 
     max_critical = _get_int(config, ["thresholds", "max_critical_vulns"], 0)
     max_high = _get_int(config, ["thresholds", "max_high_vulns"], 0)
+    github_summary_enabled = _get_value(config, ["reports", "github_summary", "enabled"], True)
 
     lang_for_shared = "java" if language == "java" else "python"
 
@@ -145,6 +146,7 @@ def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
         "build_tool": _get_str(config, ["java", "build_tool"], "maven"),
         "workdir": workdir,
         "retention_days": str(_get_int(config, ["reports", "retention_days"], 30)),
+        "write_github_summary": _bool_str(github_summary_enabled is not False),
         # Python tool toggles
         "run_pytest": _bool_str(_tool_enabled(config, "python", "pytest", True)),
         "run_ruff": _bool_str(_tool_enabled(config, "python", "ruff", True)),

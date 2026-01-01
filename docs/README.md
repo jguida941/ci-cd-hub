@@ -64,12 +64,6 @@ Internal planning and governance docs:
 
 ---
 
-## For AI Assistants
-
-- [../AGENTS.md](../AGENTS.md) - Operating rules and sources of truth
-
----
-
 ## Contributing Docs
 
 When adding documentation:

@@ -2,10 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2025-12-31 - Phase 4: Remaining Scripts → CLI
+
+### CLI
+- Added `cihub config apply-profile --profile <path>` to apply profile defaults to repo configs.
+- `cihub config apply-profile` now supports `--target` and `--output` for arbitrary file paths (parity with deprecated script).
+- Added `cihub hub-ci verify-matrix-keys` to verify hub-run-all.yml matrix references match discover.py output.
+- Added `cihub hub-ci quarantine-check [--path <dir>]` to fail if any file imports from `_quarantine`.
+
+### Scripts (Deprecated)
+- Converted `scripts/apply_profile.py` to deprecation shim → use `cihub config apply-profile`.
+- Converted `scripts/verify_hub_matrix_keys.py` to deprecation shim → use `cihub hub-ci verify-matrix-keys`.
+- Converted `scripts/check_quarantine_imports.py` to deprecation shim → use `cihub hub-ci quarantine-check`.
+
+### Workflows
+- Updated `hub-production-ci.yml` to use CLI commands instead of deprecated scripts.
+
+### Tests
+- Updated `test_apply_profile.py` and `test_templates.py` to import from `cihub.config.merge` and `cihub.config.io` instead of deprecated shims.
+
 ## 2025-12-31 - Badge CLI Integration
 
 ### CLI
 - Added `cihub hub-ci badges` to generate or validate badge JSON from workflow artifacts.
+
+## 2025-12-31 - Summary Toggle + Report Validation Consolidation
+
+### CLI
+- `cihub ci` now defaults `GITHUB_STEP_SUMMARY` behavior from `reports.github_summary.enabled` and supports `--no-write-github-summary`.
+- `cihub report validate` now accepts `--summary`, `--reports-dir`, and `--debug` for summary/artifact cross-checks.
+
+### Workflows
+- `hub-ci.yml` now passes `write_github_summary` to language workflows.
+- `python-ci.yml` and `java-ci.yml` pass `--write-github-summary`/`--no-write-github-summary` based on inputs.
+
+### Scripts
+- Deprecated `scripts/validate_summary.py` now delegates to `cihub report validate`.
 
 ## 2025-12-31 - Hub Aggregation Moved Into CLI
 

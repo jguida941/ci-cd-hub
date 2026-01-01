@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.load_config import (  # noqa: E402
+from cihub.config.loader import (  # noqa: E402
     ConfigValidationError,
     generate_workflow_inputs,
     load_config,

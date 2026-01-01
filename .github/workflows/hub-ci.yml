@@ -58,6 +58,7 @@ jobs:
       build_tool: ${{ steps.parse.outputs.build_tool }}
       workdir: ${{ steps.parse.outputs.workdir }}
       retention_days: ${{ steps.parse.outputs.retention_days }}
+      write_github_summary: ${{ steps.parse.outputs.write_github_summary }}
       # Thresholds
       coverage_min: ${{ steps.parse.outputs.coverage_min }}
       mutation_score_min: ${{ steps.parse.outputs.mutation_score_min }}
@@ -163,6 +164,7 @@ jobs:
       max_isort_issues: ${{ fromJson(needs.config.outputs.max_isort_issues) }}
       owasp_cvss_fail: ${{ fromJson(needs.config.outputs.owasp_cvss_fail) }}
       retention_days: ${{ fromJson(needs.config.outputs.retention_days) }}
+      write_github_summary: ${{ fromJson(needs.config.outputs.write_github_summary) }}
     secrets: inherit
 
   # ============================================================================
@@ -206,4 +208,5 @@ jobs:
       max_spotbugs_bugs: ${{ fromJson(needs.config.outputs.max_spotbugs_bugs) }}
       max_pmd_violations: ${{ fromJson(needs.config.outputs.max_pmd_violations) }}
       retention_days: ${{ fromJson(needs.config.outputs.retention_days) }}
+      write_github_summary: ${{ fromJson(needs.config.outputs.write_github_summary) }}
     secrets: inherit

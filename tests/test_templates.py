@@ -15,13 +15,15 @@ from unittest import mock
 
 import pytest
 
-# Allow importing scripts as modules
+from cihub.config.io import load_yaml_file
+from cihub.config.merge import deep_merge
+from cihub.config.loader import ConfigValidationError, load_config
+
+# Allow importing scripts as modules (for validate_config which is not yet migrated)
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.apply_profile import deep_merge, load_yaml  # noqa: E402
-from scripts.load_config import ConfigValidationError, load_config  # noqa: E402
 from scripts.validate_config import validate_config  # noqa: E402
 
 TEMPLATES_DIR = ROOT / "templates"
@@ -78,7 +80,7 @@ class TestHubConfigTemplates:
     )
     def test_hub_template_is_valid_yaml(self, template_path):
         """Each hub template should be valid YAML."""
-        data = load_yaml(template_path)
+        data = load_yaml_file(template_path)
         assert isinstance(data, dict), f"{template_path.name} should be a mapping"
 
     @pytest.mark.parametrize(
@@ -87,7 +89,7 @@ class TestHubConfigTemplates:
     )
     def test_hub_template_has_required_fields(self, template_path):
         """Hub templates should have repo section with required fields."""
-        data = load_yaml(template_path)
+        data = load_yaml_file(template_path)
 
         # Templates might be partial (for merging), but full templates need repo
         if "repo" in data:
@@ -123,7 +125,7 @@ class TestProfileTemplates:
     )
     def test_profile_is_valid_yaml(self, profile_path):
         """Each profile should be valid YAML."""
-        data = load_yaml(profile_path)
+        data = load_yaml_file(profile_path)
         assert isinstance(data, dict), f"{profile_path.name} should be a mapping"
 
     @pytest.mark.parametrize(
@@ -132,7 +134,7 @@ class TestProfileTemplates:
     )
     def test_python_profile_merged_is_valid(self, profile_path):
         """Python profile + minimal repo config should pass schema validation."""
-        profile_data = load_yaml(profile_path)
+        profile_data = load_yaml_file(profile_path)
         merged = deep_merge(profile_data, MINIMAL_PYTHON_REPO)
 
         schema = load_schema()
@@ -146,7 +148,7 @@ class TestProfileTemplates:
     )
     def test_java_profile_merged_is_valid(self, profile_path):
         """Java profile + minimal repo config should pass schema validation."""
-        profile_data = load_yaml(profile_path)
+        profile_data = load_yaml_file(profile_path)
         merged = deep_merge(profile_data, MINIMAL_JAVA_REPO)
 
         schema = load_schema()
@@ -202,7 +204,7 @@ class TestRepoTemplate:
         if not self.REPO_TEMPLATE.exists():
             pytest.skip("Repo template not found")
 
-        data = load_yaml(self.REPO_TEMPLATE)
+        data = load_yaml_file(self.REPO_TEMPLATE)
         assert isinstance(data, dict), "Repo template should be a mapping"
 
 
@@ -225,7 +227,7 @@ class TestCallerTemplates:
         if not self.JAVA_CALLER.exists():
             pytest.skip("Java caller template not found")
 
-        data = load_yaml(self.JAVA_CALLER)
+        data = load_yaml_file(self.JAVA_CALLER)
         assert isinstance(data, dict), "Java caller should be a mapping"
         assert "on" in data or "jobs" in data, "Should look like a workflow"
 
@@ -234,7 +236,7 @@ class TestCallerTemplates:
         if not self.PYTHON_CALLER.exists():
             pytest.skip("Python caller template not found")
 
-        data = load_yaml(self.PYTHON_CALLER)
+        data = load_yaml_file(self.PYTHON_CALLER)
         assert isinstance(data, dict), "Python caller should be a mapping"
         assert "on" in data or "jobs" in data, "Should look like a workflow"
 

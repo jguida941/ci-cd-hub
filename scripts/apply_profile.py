@@ -1,100 +1,100 @@
 #!/usr/bin/env python3
 """
-Apply a profile onto a repo config.
+DEPRECATED: This script is a shim for backwards compatibility.
 
-Usage:
-  python scripts/apply_profile.py templates/profiles/python-fast.yaml \
-    config/repos/my-repo.yaml
+Use: cihub config --repo <name> apply-profile --profile <path>
 
-Profile values are merged first; existing config overrides profile defaults so
-you keep repo-specific tweaks.
+This shim will be removed in the next release.
+
+The functions deep_merge and load_yaml are re-exported from cihub.config.*
+for backwards compatibility with existing tests and scripts.
 """
 
 from __future__ import annotations
 
 import argparse
+import sys
+import warnings
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import yaml
 
+warnings.warn(
+    "scripts.apply_profile is deprecated. Use 'cihub config apply-profile' instead. "
+    "This shim will be removed in the next release.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-def load_yaml(path: Path) -> Dict[str, Any]:
+# Re-export deep_merge from cihub.config.merge for backwards compatibility
+from cihub.config.merge import deep_merge  # noqa: E402, F401
+
+
+def load_yaml(path: Path) -> dict[str, Any]:
+    """Load a YAML file and return its contents as a dict.
+
+    Shim wrapper around cihub.config.io.load_yaml_file for backwards compatibility.
+
+    Args:
+        path: Path to the YAML file.
+
+    Returns:
+        Dictionary containing the YAML contents, or empty dict if file doesn't exist.
+
+    Raises:
+        ValueError: If the YAML root is not a mapping (dict).
+    """
+    path = Path(path)
     if not path.exists():
         return {}
-    with path.open("r", encoding="utf-8") as handle:
-        data = yaml.safe_load(handle) or {}
+    with open(path, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    if data is None:
+        return {}
     if not isinstance(data, dict):
-        raise ValueError(f"{path} must be a mapping at top level")
+        raise ValueError(f"{path} must be a mapping (dict), got {type(data).__name__}")
     return data
 
 
-def deep_merge(base: Dict[str, Any], overlay: Dict[str, Any]) -> Dict[str, Any]:
+def main() -> int:
+    """Apply profile to target config (backwards-compatible shim).
+
+    This preserves the original behavior:
+    - Works with arbitrary file paths (not just config/repos/*.yaml)
+    - Supports --output option for writing to a different path
     """
-    Merge overlay onto base recursively (overlay wins), returning a new dict.
-    Deterministic order: preserve base key order, then append overlay-only keys
-    in overlay order. Lists are replaced (not merged).
-    """
-    result: Dict[str, Any] = {}
-
-    # Base keys (preserve order)
-    for key in base:
-        if key in overlay:
-            b, o = base[key], overlay[key]
-            if isinstance(b, dict) and isinstance(o, dict):
-                result[key] = deep_merge(b, o)
-            else:
-                result[key] = overlay[key]
-        else:
-            result[key] = base[key]
-
-    # Overlay-only keys (append in overlay order)
-    for key in overlay:
-        if key not in base:
-            result[key] = overlay[key]
-
-    return result
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Apply a CI/CD Hub profile to a repo config.")
-    parser.add_argument("profile", type=Path, help="Path to profile YAML (source)")
-    parser.add_argument(
-        "target",
-        type=Path,
-        help="Path to repo config YAML to create/update",
+    print(
+        "[DEPRECATED] scripts/apply_profile.py: use 'cihub config apply-profile' instead",
+        file=sys.stderr,
     )
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=Path,
-        help="Optional output path (defaults to target path)",
-    )
+
+    parser = argparse.ArgumentParser(description="Apply profile to target config (DEPRECATED)")
+    parser.add_argument("profile", help="Path to profile YAML")
+    parser.add_argument("target", help="Path to target config YAML")
+    parser.add_argument("-o", "--output", help="Optional output path (defaults to target)")
     args = parser.parse_args()
 
-    profile_data = load_yaml(args.profile)
-    target_data = load_yaml(args.target)
+    profile_path = Path(args.profile)
+    target_path = Path(args.target)
+    output_path = Path(args.output) if args.output else target_path
 
-    # Profile provides defaults; existing config keeps overrides
+    # Load profile and target
+    profile_data = load_yaml(profile_path)
+    target_data = load_yaml(target_path)
+
+    # Merge: profile provides defaults, target overrides
     merged = deep_merge(profile_data, target_data)
 
-    output_path = args.output or args.target
+    # Write output
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(merged, f, default_flow_style=False, sort_keys=False)
 
-    # Atomic write
-    tmp_path = output_path.with_suffix(output_path.suffix + ".tmp")
-    with tmp_path.open("w", encoding="utf-8") as handle:
-        yaml.safe_dump(
-            merged,
-            handle,
-            sort_keys=False,
-            default_flow_style=False,
-            allow_unicode=True,
-        )
-    tmp_path.replace(output_path)
-
-    print(f"Profile applied: {args.profile} -> {output_path}")
+    print(f"Profile applied: {output_path}")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

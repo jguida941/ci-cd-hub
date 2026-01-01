@@ -193,6 +193,10 @@ on:
         description: 'Override hub ref (tag/sha/branch) for installing cihub'
         type: string
         default: ''
+      write_github_summary:
+        description: 'Write summary to GITHUB_STEP_SUMMARY'
+        type: boolean
+        default: true
 
     secrets:
       NVD_API_KEY:
@@ -255,11 +259,17 @@ jobs:
         env:
           WORKDIR: ${{ inputs.workdir }}
           CORRELATION_ID: ${{ inputs.hub_correlation_id }}
+          WRITE_SUMMARY: ${{ inputs.write_github_summary }}
         run: |
+          summary_flag="--no-write-github-summary"
+          if [ "$WRITE_SUMMARY" = "true" ]; then
+            summary_flag="--write-github-summary"
+          fi
           cihub ci \
             --workdir "$WORKDIR" \
             --correlation-id "$CORRELATION_ID" \
-            --output-dir .cihub
+            --output-dir .cihub \
+            $summary_flag
 
       - name: Read report outputs
         id: report

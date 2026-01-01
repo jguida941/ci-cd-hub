@@ -634,6 +634,76 @@ class TestCmdEnforce:
             assert result == EXIT_SUCCESS
 
 
+class TestVerifyMatrixKeys:
+    """Tests for verify-matrix-keys helper."""
+
+    def test_verify_matrix_keys_passes(self, tmp_path: Path, monkeypatch) -> None:
+        from cihub.commands import hub_ci
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        hub = tmp_path
+        (hub / ".github" / "workflows").mkdir(parents=True)
+        (hub / "cihub" / "commands").mkdir(parents=True)
+
+        (hub / ".github" / "workflows" / "hub-run-all.yml").write_text(
+            "matrix.foo\n",
+            encoding="utf-8",
+        )
+        # Regex requires newline before key: r'\n\s*"([A-Za-z_][A-Za-z0-9_]*)"\s*:'
+        (hub / "cihub" / "commands" / "discover.py").write_text(
+            'entry = {\n    "foo": "bar"\n}\n',
+            encoding="utf-8",
+        )
+
+        monkeypatch.setattr(hub_ci, "hub_root", lambda: hub)
+        result = hub_ci.cmd_verify_matrix_keys(argparse.Namespace())
+        assert result == EXIT_SUCCESS
+
+    def test_verify_matrix_keys_fails_on_missing(self, tmp_path: Path, monkeypatch) -> None:
+        from cihub.commands import hub_ci
+        from cihub.exit_codes import EXIT_FAILURE
+
+        hub = tmp_path
+        (hub / ".github" / "workflows").mkdir(parents=True)
+        (hub / "cihub" / "commands").mkdir(parents=True)
+
+        (hub / ".github" / "workflows" / "hub-run-all.yml").write_text(
+            "matrix.missing_key\n",
+            encoding="utf-8",
+        )
+        (hub / "cihub" / "commands" / "discover.py").write_text(
+            'entry = {"foo": "bar"}\n',
+            encoding="utf-8",
+        )
+
+        monkeypatch.setattr(hub_ci, "hub_root", lambda: hub)
+        result = hub_ci.cmd_verify_matrix_keys(argparse.Namespace())
+        assert result == EXIT_FAILURE
+
+
+class TestQuarantineCheck:
+    """Tests for quarantine-check helper."""
+
+    def test_quarantine_check_passes(self, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import cmd_quarantine_check
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        args = argparse.Namespace(path=str(tmp_path))
+        result = cmd_quarantine_check(args)
+        assert result == EXIT_SUCCESS
+
+    def test_quarantine_check_fails(self, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import cmd_quarantine_check
+        from cihub.exit_codes import EXIT_FAILURE
+
+        bad_file = tmp_path / "bad.py"
+        bad_file.write_text("from _quarantine import thing\n", encoding="utf-8")
+
+        args = argparse.Namespace(path=str(tmp_path))
+        result = cmd_quarantine_check(args)
+        assert result == EXIT_FAILURE
+
+
 class TestCmdHubCi:
     """Tests for cmd_hub_ci main router."""
 

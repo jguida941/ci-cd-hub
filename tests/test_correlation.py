@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.correlation import (  # noqa: E402
+from cihub.correlation import (  # noqa: E402
     extract_correlation_id_from_artifact,
     find_run_by_correlation_id,
     generate_correlation_id,
@@ -79,7 +79,7 @@ class TestExtractCorrelationIdFromArtifact:
             zf.write(artifact_dir / "report.json", "report.json")
 
         # Mock the download to return our test ZIP
-        with patch("scripts.correlation.download_artifact") as mock_download:
+        with patch("cihub.correlation.download_artifact") as mock_download:
             mock_download.return_value = artifact_dir
 
             result = extract_correlation_id_from_artifact("https://fake-url/artifact.zip", "fake-token")
@@ -92,7 +92,7 @@ class TestExtractCorrelationIdFromArtifact:
         artifact_dir.mkdir()
         (artifact_dir / "report.json").write_text(json.dumps(report_data))
 
-        with patch("scripts.correlation.download_artifact") as mock_download:
+        with patch("cihub.correlation.download_artifact") as mock_download:
             mock_download.return_value = artifact_dir
 
             result = extract_correlation_id_from_artifact("https://fake-url/artifact.zip", "fake-token")
@@ -100,7 +100,7 @@ class TestExtractCorrelationIdFromArtifact:
 
     def test_download_failure(self):
         """Returns None if download fails."""
-        with patch("scripts.correlation.download_artifact") as mock_download:
+        with patch("cihub.correlation.download_artifact") as mock_download:
             mock_download.return_value = None
 
             result = extract_correlation_id_from_artifact("https://fake-url/artifact.zip", "fake-token")
@@ -112,7 +112,7 @@ class TestExtractCorrelationIdFromArtifact:
         artifact_dir.mkdir()
         (artifact_dir / "report.json").write_text("not valid json {{{")
 
-        with patch("scripts.correlation.download_artifact") as mock_download:
+        with patch("cihub.correlation.download_artifact") as mock_download:
             mock_download.return_value = artifact_dir
 
             result = extract_correlation_id_from_artifact("https://fake-url/artifact.zip", "fake-token")
@@ -159,7 +159,7 @@ class TestFindRunByCorrelationId:
             return {}
 
         # Mock artifact extraction to return matching ID for run 222
-        with patch("scripts.correlation.extract_correlation_id_from_artifact") as mock_extract:
+        with patch("cihub.correlation.extract_correlation_id_from_artifact") as mock_extract:
             mock_extract.return_value = "target-correlation-id"
 
             result = find_run_by_correlation_id(
@@ -194,7 +194,7 @@ class TestFindRunByCorrelationId:
                 return artifacts_111
             return {}
 
-        with patch("scripts.correlation.extract_correlation_id_from_artifact") as mock_extract:
+        with patch("cihub.correlation.extract_correlation_id_from_artifact") as mock_extract:
             mock_extract.return_value = "different-correlation-id"
 
             result = find_run_by_correlation_id(
@@ -280,7 +280,7 @@ class TestFindRunByCorrelationId:
                 }
             return {}
 
-        with patch("scripts.correlation.extract_correlation_id_from_artifact") as mock_extract:
+        with patch("cihub.correlation.extract_correlation_id_from_artifact") as mock_extract:
             mock_extract.return_value = "target-id"
 
             result = find_run_by_correlation_id(

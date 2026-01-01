@@ -10,7 +10,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from importlib import util
 from pathlib import Path
 from typing import Any
 
@@ -68,15 +67,6 @@ def _run_command(
         capture_output=True,
         env=env,
     )
-
-
-def _load_script_module(module_name: str, path: Path) -> Any:
-    spec = util.spec_from_file_location(module_name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Unable to load module at {path}")
-    module = util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 def cmd_ruff(args: argparse.Namespace) -> int:
@@ -399,16 +389,14 @@ def cmd_zizmor_check(args: argparse.Namespace) -> int:
 
 
 def cmd_validate_configs(args: argparse.Namespace) -> int:
+    """Validate all repo configs in config/repos/.
+
+    Uses cihub.config.loader (no scripts dependency).
+    """
+    from cihub.config.loader import generate_workflow_inputs, load_config
+
     root = hub_root()
     configs_dir = Path(args.configs_dir) if args.configs_dir else root / "config" / "repos"
-    script_path = root / "scripts" / "load_config.py"
-    if not script_path.exists():
-        print(f"Missing script: {script_path}", file=sys.stderr)
-        return EXIT_FAILURE
-
-    module = _load_script_module("load_config", script_path)
-    load_config = module.load_config
-    generate_workflow_inputs = module.generate_workflow_inputs
 
     for config_path in sorted(configs_dir.glob("*.yaml")):
         repo = config_path.stem
@@ -646,6 +634,122 @@ def cmd_enforce(args: argparse.Namespace) -> int:
     return EXIT_SUCCESS
 
 
+def cmd_verify_matrix_keys(args: argparse.Namespace) -> int:
+    """Verify that all matrix.<key> references in hub-run-all.yml are emitted by cihub discover."""
+    hub = hub_root()
+    wf_path = hub / ".github" / "workflows" / "hub-run-all.yml"
+    discover_path = hub / "cihub" / "commands" / "discover.py"
+
+    if not wf_path.exists():
+        print(f"ERROR: {wf_path} not found", file=sys.stderr)
+        return 2
+    if not discover_path.exists():
+        print(f"ERROR: {discover_path} not found", file=sys.stderr)
+        return 2
+
+    text = wf_path.read_text(encoding="utf-8")
+    builder = discover_path.read_text(encoding="utf-8")
+
+    # Pattern for matrix.key references
+    matrix_ref_re = re.compile(r"\bmatrix\.([A-Za-z_][A-Za-z0-9_]*)\b")
+    # Patterns for keys emitted by discover.py
+    entry_literal_re = re.compile(r'\n\s*"([A-Za-z_][A-Za-z0-9_]*)"\s*:\s*')
+    entry_assign_re = re.compile(r'\bentry\[\s*"([A-Za-z_][A-Za-z0-9_]*)"\s*\]')
+    for_key_tuple_re = re.compile(r"for key in\s*\(\s*(.*?)\s*\)\s*:", re.S)
+    quoted_key_re = re.compile(r'"([A-Za-z_][A-Za-z0-9_]*)"')
+
+    referenced = set(matrix_ref_re.findall(text))
+    emitted = set(entry_literal_re.findall(builder))
+    emitted.update(entry_assign_re.findall(builder))
+
+    for match in for_key_tuple_re.finditer(builder):
+        emitted.update(quoted_key_re.findall(match.group(1)))
+
+    # Baseline keys always present
+    emitted.update({"name", "owner", "language", "config_basename"})
+
+    missing = sorted(referenced - emitted)
+    unused = sorted(emitted - referenced)
+
+    if missing:
+        print("ERROR: matrix keys referenced but not emitted by builder:")
+        for key in missing:
+            print(f"  - {key}")
+        return EXIT_FAILURE
+
+    print("OK: all referenced matrix keys are emitted by the builder.")
+
+    if unused:
+        print("\nWARN: builder emits keys not referenced as matrix.<key> in this workflow:")
+        for key in unused:
+            print(f"  - {key}")
+
+    return EXIT_SUCCESS
+
+
+def cmd_quarantine_check(args: argparse.Namespace) -> int:
+    """Fail if any file imports from _quarantine."""
+    root = Path(getattr(args, "path", None) or hub_root())
+
+    quarantine_patterns = [
+        r"^\s*from\s+_quarantine\b",
+        r"^\s*import\s+_quarantine\b",
+        r"^\s*from\s+hub_release\._quarantine\b",
+        r"^\s*import\s+hub_release\._quarantine\b",
+        r"^\s*from\s+cihub\._quarantine\b",
+        r"^\s*import\s+cihub\._quarantine\b",
+        r"^\s*from\s+\.+_quarantine\b",
+    ]
+    exclude_dirs = {
+        "_quarantine", ".git", "__pycache__", ".pytest_cache",
+        "node_modules", ".ruff_cache", "vendor", "generated",
+    }
+    env_excludes = os.environ.get("QUARANTINE_EXCLUDE_DIRS", "")
+    if env_excludes:
+        exclude_dirs.update(env_excludes.split(","))
+
+    violations: list[tuple[Path, int, str]] = []
+
+    for path in root.rglob("*.py"):
+        if any(excluded in path.parts for excluded in exclude_dirs):
+            continue
+        if not path.is_file():
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, PermissionError):
+            continue
+
+        for line_num, line in enumerate(content.splitlines(), start=1):
+            for pattern in quarantine_patterns:
+                if re.search(pattern, line):
+                    violations.append((path, line_num, line.strip()))
+
+    if not violations:
+        print("Quarantine check PASSED - no imports from _quarantine found")
+        return EXIT_SUCCESS
+
+    print("=" * 60)
+    print("QUARANTINE IMPORT VIOLATION")
+    print("=" * 60)
+    print("\nFiles importing from _quarantine detected!")
+    print("_quarantine is COLD STORAGE - it must not be imported.\n")
+    print("Violations:")
+    print("-" * 60)
+
+    for path, line_num, line in violations:
+        try:
+            rel_path = path.relative_to(root)
+        except ValueError:
+            rel_path = path
+        print(f"  {rel_path}:{line_num}")
+        print(f"    {line}\n")
+
+    print("-" * 60)
+    print(f"Total: {len(violations)} violation(s)")
+    return EXIT_FAILURE
+
+
 def cmd_hub_ci(args: argparse.Namespace) -> int:
     handlers = {
         "ruff": cmd_ruff,
@@ -661,6 +765,8 @@ def cmd_hub_ci(args: argparse.Namespace) -> int:
         "gitleaks-summary": cmd_gitleaks_summary,
         "summary": cmd_summary,
         "enforce": cmd_enforce,
+        "verify-matrix-keys": cmd_verify_matrix_keys,
+        "quarantine-check": cmd_quarantine_check,
     }
     handler = handlers.get(args.subcommand)
     if handler is None:

@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.load_config import generate_workflow_inputs  # noqa: E402
+from cihub.config.loader import generate_workflow_inputs  # noqa: E402
 from scripts.validate_config import validate_config  # noqa: E402
 
 PYTHON_WORKFLOW = ROOT / ".github" / "workflows" / "python-ci.yml"
@@ -26,6 +26,7 @@ WORKFLOW_ONLY_INPUTS = {
     "retention_days",
     "hub_repo",
     "hub_ref",
+    "hub_correlation_id",
     # Docker defaults remain config-only, not dispatch.
     "docker_compose_file",
     "docker_health_endpoint",

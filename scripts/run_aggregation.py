@@ -17,7 +17,11 @@ def main():
     parser.add_argument("--output", type=Path, default=Path("hub-report.json"))
     parser.add_argument("--summary-file", type=Path, default=None)
     parser.add_argument("--defaults-file", type=Path, default=Path("config/defaults.yaml"))
-    parser.add_argument("--token-env", default="HUB_DISPATCH_TOKEN", help="Env var containing GitHub token")
+    parser.add_argument(
+        "--token-env",
+        default="HUB_DISPATCH_TOKEN",  # noqa: S105
+        help="Env var containing GitHub token",
+    )
     parser.add_argument("--strict", action="store_true", help="Fail on repo failures or threshold violations")
     parser.add_argument("--timeout", type=int, default=1800, help="Polling timeout in seconds")
     args = parser.parse_args()
