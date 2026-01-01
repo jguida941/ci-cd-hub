@@ -126,115 +126,33 @@ jobs:
       - name: "[Java] Build & Test"
         if: matrix.language == 'java'
         working-directory: repo
-        run: |
-          echo "::group::Maven Build & Test"
-          if [ -f "mvnw" ]; then
-            chmod +x mvnw
-            ./mvnw -B -ntp verify -Dmaven.test.failure.ignore=true
-          elif [ -f "pom.xml" ]; then
-            mvn -B -ntp verify -Dmaven.test.failure.ignore=true
-          else
-            echo "::warning::No Maven project found"
-          fi
-          echo "::endgroup::"
+        run: cihub hub-ci smoke-java-build --path .
         continue-on-error: true
 
       - name: "[Java] Extract Test Results"
         if: matrix.language == 'java'
         id: java-tests
         working-directory: repo
-        run: |
-          TOTAL=0; PASSED=0; FAILED=0; SKIPPED=0; RUNTIME=0
-
-          while IFS= read -r -d '' report; do
-            T=$(grep -oP 'tests="\K[0-9]+' "$report" 2>/dev/null | head -1 || echo 0)
-            F=$(grep -oP 'failures="\K[0-9]+' "$report" 2>/dev/null | head -1 || echo 0)
-            E=$(grep -oP 'errors="\K[0-9]+' "$report" 2>/dev/null | head -1 || echo 0)
-            S=$(grep -oP 'skipped="\K[0-9]+' "$report" 2>/dev/null | head -1 || echo 0)
-            TIME=$(grep -oP 'time="\K[0-9.]+' "$report" 2>/dev/null | head -1 || echo 0)
-            TOTAL=$((TOTAL + T))
-            FAILED=$((FAILED + F + E))
-            SKIPPED=$((SKIPPED + S))
-            RUNTIME=$(echo "$RUNTIME + $TIME" | bc 2>/dev/null || echo "$RUNTIME")
-          done < <(find . -path "*/surefire-reports/*.xml" -o -path "*/failsafe-reports/*.xml" -print0 2>/dev/null)
-          PASSED=$((TOTAL - FAILED - SKIPPED))
-
-          {
-            echo "total=$TOTAL"
-            echo "passed=$PASSED"
-            echo "failed=$FAILED"
-            echo "skipped=$SKIPPED"
-            echo "runtime=${RUNTIME}s"
-          } >> "$GITHUB_OUTPUT"
-
-          echo "Tests: $TOTAL total, $PASSED passed, $FAILED failed, $SKIPPED skipped"
+        run: cihub hub-ci smoke-java-tests --path . --github-output
 
       - name: "[Java] Extract Coverage"
         if: matrix.language == 'java'
         id: java-coverage
         working-directory: repo
-        run: |
-          COVERED=0; MISSED=0; PERCENT=0
-
-          JACOCO=$(find . -name "jacoco.xml" -path "*/site/*" 2>/dev/null | head -1)
-          if [ -n "$JACOCO" ] && [ -f "$JACOCO" ]; then
-            COVERED=$(grep -oP 'INSTRUCTION.*?covered="\K[0-9]+' "$JACOCO" 2>/dev/null | awk '{s+=$1} END {print s}' || echo 0)
-            MISSED=$(grep -oP 'INSTRUCTION.*?missed="\K[0-9]+' "$JACOCO" 2>/dev/null | awk '{s+=$1} END {print s}' || echo 0)
-            TOTAL=$((COVERED + MISSED))
-            if [ "$TOTAL" -gt 0 ]; then
-              PERCENT=$((COVERED * 100 / TOTAL))
-            fi
-          fi
-
-          {
-            echo "covered=$COVERED"
-            echo "missed=$MISSED"
-            echo "percent=$PERCENT"
-            echo "lines=$COVERED / $((COVERED + MISSED))"
-          } >> "$GITHUB_OUTPUT"
-
-          echo "Coverage: $PERCENT% ($COVERED / $((COVERED + MISSED)) instructions)"
+        run: cihub hub-ci smoke-java-coverage --path . --github-output
 
       - name: "[Java] Checkstyle"
         if: matrix.language == 'java'
         id: java-checkstyle
         working-directory: repo
-        run: |
-          VIOLATIONS=0
-
-          # Use checkstyle:checkstyle to generate full XML report (not :check which only counts errors)
-          if [ -f "mvnw" ]; then
-            ./mvnw -B -ntp -DskipTests checkstyle:checkstyle 2>&1 | tee checkstyle-output.txt || true
-          fi
-
-          # Count all issues from XML reports (includes both warnings and errors)
-          while IFS= read -r -d '' xml; do
-            COUNT=$(grep -c "<error" "$xml" 2>/dev/null || echo 0)
-            VIOLATIONS=$((VIOLATIONS + COUNT))
-          done < <(find . -name "checkstyle-result.xml" -print0 2>/dev/null)
-
-          echo "violations=$VIOLATIONS" >> "$GITHUB_OUTPUT"
-          echo "Checkstyle: $VIOLATIONS issues found"
+        run: cihub hub-ci smoke-java-checkstyle --path . --github-output
         continue-on-error: true
 
       - name: "[Java] SpotBugs"
         if: matrix.language == 'java'
         id: java-spotbugs
         working-directory: repo
-        run: |
-          BUGS=0
-
-          if [ -f "mvnw" ]; then
-            ./mvnw -B -ntp com.github.spotbugs:spotbugs-maven-plugin:check 2>/dev/null || true
-          fi
-
-          while IFS= read -r -d '' xml; do
-            COUNT=$(grep -c "<BugInstance" "$xml" 2>/dev/null || echo 0)
-            BUGS=$((BUGS + COUNT))
-          done < <(find . -name "spotbugsXml.xml" -print0 2>/dev/null)
-
-          echo "count=$BUGS" >> "$GITHUB_OUTPUT"
-          echo "SpotBugs: $BUGS potential bugs"
+        run: cihub hub-ci smoke-java-spotbugs --path . --github-output
         continue-on-error: true
 
       # ========================================
@@ -249,80 +167,27 @@ jobs:
       - name: "[Python] Install Dependencies"
         if: matrix.language == 'python'
         working-directory: repo
-        run: |
-          echo "::group::Install Python Dependencies"
-          pip install --upgrade pip
-          # Core testing
-          pip install pytest pytest-cov
-          # Linting & formatting
-          pip install ruff black
-          # Install repo dependencies
-          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
-          if [ -f "requirements-dev.txt" ]; then pip install -r requirements-dev.txt; fi
-          if [ -f "pyproject.toml" ]; then pip install -e ".[dev]" 2>/dev/null || pip install -e . 2>/dev/null || true; fi
-          echo "::endgroup::"
+        run: cihub hub-ci smoke-python-install --path .
 
       - name: "[Python] Run Tests with Coverage"
         if: matrix.language == 'python'
         id: python-tests
         working-directory: repo
-        run: |
-          echo "::group::pytest with coverage"
-          pytest --cov=. --cov-report=xml --cov-report=term -v 2>&1 | tee test-output.txt || true
-          echo "::endgroup::"
-
-          TOTAL=$(grep -oP '\d+ passed' test-output.txt | tail -1 | grep -oP '\d+' || echo 0)
-          FAILED=$(grep -oP '\d+ failed' test-output.txt | tail -1 | grep -oP '\d+' || echo 0)
-          SKIPPED=$(grep -oP '\d+ skipped' test-output.txt | tail -1 | grep -oP '\d+' || echo 0)
-
-          COVERAGE=0
-          if [ -f "coverage.xml" ]; then
-            COVERAGE=$(grep -oP 'line-rate="\K[0-9.]+' coverage.xml | head -1 | awk '{printf "%.0f", $1 * 100}')
-          fi
-
-          {
-            echo "total=$TOTAL"
-            echo "passed=$TOTAL"
-            echo "failed=$FAILED"
-            echo "skipped=$SKIPPED"
-            echo "coverage=$COVERAGE"
-          } >> "$GITHUB_OUTPUT"
-
-          echo "Tests: $TOTAL passed, $FAILED failed, $SKIPPED skipped"
-          echo "Coverage: $COVERAGE%"
+        run: cihub hub-ci smoke-python-tests --path . --output-file test-output.txt --github-output
         continue-on-error: true
 
       - name: "[Python] Ruff Lint"
         if: matrix.language == 'python'
         id: python-ruff
         working-directory: repo
-        run: |
-          echo "::group::Ruff Linting"
-          ruff check . --output-format=json > ruff-report.json 2>/dev/null || true
-          echo "::endgroup::"
-
-          ERRORS=$(jq 'length' ruff-report.json 2>/dev/null || echo 0)
-          SECURITY=$(jq '[.[] | select(.code | startswith("S"))] | length' ruff-report.json 2>/dev/null || echo 0)
-
-          {
-            echo "errors=$ERRORS"
-            echo "security=$SECURITY"
-          } >> "$GITHUB_OUTPUT"
-          echo "Ruff: $ERRORS issues ($SECURITY security-related)"
+        run: cihub hub-ci smoke-python-ruff --path . --report ruff-report.json --github-output
         continue-on-error: true
 
       - name: "[Python] Black Format Check"
         if: matrix.language == 'python'
         id: python-black
         working-directory: repo
-        run: |
-          echo "::group::Black Format Check"
-          black --check . 2>&1 | tee black-output.txt || true
-          echo "::endgroup::"
-
-          WOULD_REFORMAT=$(grep -c "would reformat" black-output.txt 2>/dev/null || echo 0)
-          echo "issues=$WOULD_REFORMAT" >> "$GITHUB_OUTPUT"
-          echo "Black: $WOULD_REFORMAT files need reformatting"
+        run: cihub hub-ci smoke-python-black --path . --output-file black-output.txt --github-output
         continue-on-error: true
 
       # ========================================

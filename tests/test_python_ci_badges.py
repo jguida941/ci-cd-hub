@@ -1,4 +1,4 @@
-"""Tests for python_ci_badges.py - Badge generation functionality."""
+"""Tests for cihub.badges - Badge generation functionality."""
 
 from __future__ import annotations
 
@@ -13,12 +13,14 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from scripts.python_ci_badges import (  # noqa: E402
+from cihub.badges import (  # noqa: E402
     _badge_dir,
     _badge_enabled,
     _count_color,
     _percent_color,
+    build_badges,
     count_badge,
+    disabled_badge,
     get_env_float,
     get_env_int,
     load_bandit,
@@ -203,7 +205,7 @@ class TestLoadZizmor:
         """Missing file returns None."""
         monkeypatch.delenv("ZIZMOR_SARIF", raising=False)
         # Point to non-existent default location
-        with mock.patch("scripts.python_ci_badges.ROOT", Path("/nonexistent")):
+        with mock.patch("cihub.badges.ROOT", Path("/nonexistent")):
             result = load_zizmor()
             assert result is None
 
@@ -254,13 +256,13 @@ class TestLoadBandit:
 
     def test_missing_file_returns_none(self, monkeypatch):
         """Missing file returns None."""
-        with mock.patch("scripts.python_ci_badges.ROOT", Path("/nonexistent")):
+        with mock.patch("cihub.badges.ROOT", Path("/nonexistent")):
             result = load_bandit()
             assert result is None
 
     def test_counts_high_severity(self, tmp_path: Path, monkeypatch):
         """Counts only HIGH severity issues."""
-        with mock.patch("scripts.python_ci_badges.ROOT", tmp_path):
+        with mock.patch("cihub.badges.ROOT", tmp_path):
             bandit_file = tmp_path / "bandit.json"
             bandit_file.write_text(
                 json.dumps(
@@ -280,7 +282,7 @@ class TestLoadBandit:
 
     def test_empty_results(self, tmp_path: Path, monkeypatch):
         """Empty results returns 0."""
-        with mock.patch("scripts.python_ci_badges.ROOT", tmp_path):
+        with mock.patch("cihub.badges.ROOT", tmp_path):
             bandit_file = tmp_path / "bandit.json"
             bandit_file.write_text(json.dumps({"results": []}))
 
@@ -293,13 +295,13 @@ class TestLoadPipAudit:
 
     def test_missing_file_returns_none(self):
         """Missing file returns None."""
-        with mock.patch("scripts.python_ci_badges.ROOT", Path("/nonexistent")):
+        with mock.patch("cihub.badges.ROOT", Path("/nonexistent")):
             result = load_pip_audit()
             assert result is None
 
     def test_list_format(self, tmp_path: Path):
         """Handles list format output."""
-        with mock.patch("scripts.python_ci_badges.ROOT", tmp_path):
+        with mock.patch("cihub.badges.ROOT", tmp_path):
             audit_file = tmp_path / "pip-audit.json"
             audit_file.write_text(
                 json.dumps(
@@ -315,7 +317,7 @@ class TestLoadPipAudit:
 
     def test_dict_format(self, tmp_path: Path):
         """Handles dict format with dependencies key."""
-        with mock.patch("scripts.python_ci_badges.ROOT", tmp_path):
+        with mock.patch("cihub.badges.ROOT", tmp_path):
             audit_file = tmp_path / "pip-audit.json"
             audit_file.write_text(
                 json.dumps(
@@ -332,7 +334,7 @@ class TestLoadPipAudit:
 
     def test_no_vulns_returns_zero(self, tmp_path: Path):
         """No vulnerabilities returns 0."""
-        with mock.patch("scripts.python_ci_badges.ROOT", tmp_path):
+        with mock.patch("cihub.badges.ROOT", tmp_path):
             audit_file = tmp_path / "pip-audit.json"
             audit_file.write_text(json.dumps([{"name": "pkg1", "vulns": []}]))
 
@@ -445,3 +447,97 @@ class TestMain:
         black_badge = json.loads((badge_dir / "black.json").read_text())
         assert black_badge["message"] == "failed"
         assert black_badge["color"] == "red"
+
+
+# =============================================================================
+# Disabled Badge Tests
+# =============================================================================
+
+
+class TestDisabledBadge:
+    """Tests for disabled_badge function."""
+
+    def test_disabled_badge_returns_lightgrey(self):
+        """Disabled badge has light grey color."""
+        badge = disabled_badge("ruff")
+        assert badge["schemaVersion"] == 1
+        assert badge["label"] == "ruff"
+        assert badge["message"] == "disabled"
+        assert badge["color"] == "lightgrey"
+
+    def test_disabled_badge_various_tools(self):
+        """Disabled badge works for different tool names."""
+        for tool in ["mutmut", "mypy", "bandit", "pip-audit", "zizmor"]:
+            badge = disabled_badge(tool)
+            assert badge["message"] == "disabled"
+            assert badge["color"] == "lightgrey"
+            assert badge["label"] == tool
+
+
+class TestBuildBadgesWithDisabledTools:
+    """Tests for build_badges with disabled_tools parameter."""
+
+    def test_disabled_tools_get_disabled_badges(self, tmp_path: Path):
+        """Disabled tools produce disabled badges."""
+        env = {"UPDATE_BADGES": "true"}
+        badges = build_badges(env=env, root=tmp_path, disabled_tools={"ruff", "mutmut"})
+
+        assert "ruff.json" in badges
+        assert badges["ruff.json"]["message"] == "disabled"
+        assert badges["ruff.json"]["color"] == "lightgrey"
+
+        assert "mutmut.json" in badges
+        assert badges["mutmut.json"]["message"] == "disabled"
+        assert badges["mutmut.json"]["color"] == "lightgrey"
+
+    def test_disabled_tool_ignores_stale_metrics(self, tmp_path: Path):
+        """Disabled tools ignore stale metrics - disabled always wins."""
+        # Even if RUFF_ISSUES env var is set (stale from previous run),
+        # disabled tools should show "disabled" badge
+        env = {"UPDATE_BADGES": "true", "RUFF_ISSUES": "5"}
+        badges = build_badges(env=env, root=tmp_path, disabled_tools={"ruff"})
+
+        # Disabled badge should NOT be overridden by stale metrics
+        assert "ruff.json" in badges
+        assert badges["ruff.json"]["message"] == "disabled"
+        assert badges["ruff.json"]["color"] == "lightgrey"
+
+    def test_pip_audit_disabled_badge(self, tmp_path: Path):
+        """pip_audit disabled produces pip-audit.json badge."""
+        env = {"UPDATE_BADGES": "true"}
+        badges = build_badges(env=env, root=tmp_path, disabled_tools={"pip_audit"})
+
+        assert "pip-audit.json" in badges
+        assert badges["pip-audit.json"]["message"] == "disabled"
+
+    def test_no_disabled_tools_produces_no_extra_badges(self, tmp_path: Path):
+        """Without disabled_tools, no disabled badges are created."""
+        env = {"UPDATE_BADGES": "true"}
+        badges = build_badges(env=env, root=tmp_path, disabled_tools=None)
+
+        # With no metrics and no disabled tools, badges dict is empty
+        assert len(badges) == 0
+
+
+class TestMainWithDisabledTools:
+    """Tests for main() with disabled_tools parameter."""
+
+    def test_main_writes_disabled_badges(self, tmp_path: Path, monkeypatch):
+        """main() writes disabled badge files."""
+        badge_dir = tmp_path / "badges"
+        monkeypatch.setenv("UPDATE_BADGES", "true")
+        monkeypatch.setenv("BADGE_OUTPUT_DIR", str(badge_dir))
+
+        result = main(disabled_tools={"zizmor", "bandit"})
+
+        assert result == 0
+        assert (badge_dir / "zizmor.json").exists()
+        assert (badge_dir / "bandit.json").exists()
+
+        zizmor_badge = json.loads((badge_dir / "zizmor.json").read_text())
+        assert zizmor_badge["message"] == "disabled"
+        assert zizmor_badge["color"] == "lightgrey"
+
+        bandit_badge = json.loads((badge_dir / "bandit.json").read_text())
+        assert bandit_badge["message"] == "disabled"
+        assert bandit_badge["color"] == "lightgrey"

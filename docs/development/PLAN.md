@@ -1,7 +1,7 @@
 # CI/CD Hub - Execution Plan
 
 **Status:** Canonical plan for active work
-**Last Updated:** 2025-12-31
+**Last Updated:** 2026-01-03
 
 ---
 
@@ -17,13 +17,22 @@ Single source of truth for what we are doing now. Other docs can provide depth, 
 - [x] Implement `cihub report dashboard` (HTML + JSON output) replacing scripts/aggregate_reports.py.
 - [x] Add CLI env overrides for tool toggles and summary toggle (`CIHUB_RUN_*`, `CIHUB_WRITE_GITHUB_SUMMARY`).
 - [x] Add Java SBOM support (schema + CLI runner + workflow wiring).
-- [x] **No-inline workflow cleanup complete** - All summary commands implemented, tested, and wired:
-  - `cihub report security-summary` (modes: repo, zap, overall)
-  - `cihub report smoke-summary` (modes: repo, overall)
-  - `cihub report kyverno-summary`
-  - `cihub report orchestrator-summary` (modes: load-config, trigger-record)
-  - Snapshot tests in `tests/test_summary_commands.py` (19 tests) verify parity with old heredocs.
-  - Toggle audit tests verify `CIHUB_WRITE_GITHUB_SUMMARY` env var behavior.
+- [x] Toggle audit + enforcement:
+  - [x] Align defaults for `repo.dispatch_enabled`, `repo.force_all_tools`, and `python.tools.sbom.enabled`.
+  - [x] Add notifications env-var names to schema/defaults and CLI.
+  - [x] Warn when reserved optional feature toggles are enabled.
+  - [x] Gate hub-production-ci jobs via `cihub hub-ci outputs`.
+- [x] **No-inline workflow cleanup:**
+  - [x] Wire summary toggle in `hub-run-all.yml` summary job (`CIHUB_WRITE_GITHUB_SUMMARY`).
+  - [x] Replace zizmor SARIF heredoc in `hub-production-ci.yml` with `cihub hub-ci zizmor-run`.
+  - [x] Remove all multi-line `run: |` blocks by moving logic into `cihub hub-ci` helpers.
+  - [x] Summary commands implemented and wired:
+    - `cihub report security-summary` (modes: repo, zap, overall)
+    - `cihub report smoke-summary` (modes: repo, overall)
+    - `cihub report kyverno-summary`
+    - `cihub report orchestrator-summary` (modes: load-config, trigger-record)
+  - [x] Snapshot tests in `tests/test_summary_commands.py` (19 tests) verify parity with old heredocs.
+  - [x] Toggle audit tests verify `CIHUB_WRITE_GITHUB_SUMMARY` env var behavior.
 
 ## Canonical Sources of Truth
 
@@ -118,6 +127,11 @@ These are references, not competing plans.
 - [ ] Add `make audit` target
 - [ ] Add a “triage bundle” output for failures (machine-readable: command, env, tool output, file snippet, workflow/job/step).
 - [x] Add a template freshness guard (caller templates + legacy dispatch archive).
+  - [x] PR trigger on `template-guard.yml` (validate-local job runs tests/test_templates.py + test_commands_scaffold.py)
+  - [x] Render-diff tests (`TestRenderCallerWorkflow`) verify CLI output matches templates
+  - [x] Contract verification (`cihub verify`) added to `cihub check --full`
+  - [x] Remote sync check (`sync-templates --check`) in `cihub check --full` (skips gracefully if no GH_TOKEN)
+  - [x] All 5 scaffold types tested (python-pyproject, python-setup, java-maven, java-gradle, monorepo)
 
 ### 7) Local/CI Parity (Expand `cihub check`)
 
@@ -126,7 +140,7 @@ These are references, not competing plans.
   - `cihub check` (fast default)
   - `cihub check --audit` (docs links + ADR check + config/profile validation)
   - `cihub check --security` (bandit, pip-audit, gitleaks, trivy; skip if missing)
-  - `cihub check --full` (audit + templates + matrix keys + license + zizmor)
+  - `cihub check --full` (audit + templates + verify-contracts + sync-templates-check + matrix keys + license + zizmor)
   - `cihub check --all` (everything)
 - [x] Add optional tool detection and clear "skipped/missing tool" messaging.
 - [x] Update `docs/guides/GETTING_STARTED.md` with new flags and expected runtimes.

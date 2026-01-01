@@ -9,9 +9,17 @@ from pathlib import Path
 
 from cihub.commands.report import (
     _detect_language as detect_language,
+)
+from cihub.commands.report import (
     _generate_dashboard_summary as generate_summary,
+)
+from cihub.commands.report import (
     _generate_html_dashboard as generate_html_dashboard,
+)
+from cihub.commands.report import (
     _get_report_status as get_status,
+)
+from cihub.commands.report import (
     _load_dashboard_reports as load_reports,
 )
 

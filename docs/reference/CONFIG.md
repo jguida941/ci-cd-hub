@@ -7,10 +7,15 @@ Source: `schema/ci-hub-config.schema.json`
 | Path | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `cache_sentinel` | object | no |  |  |
+| `cache_sentinel.enabled` | boolean | no | false |  |
 | `canary` | object | no |  |  |
+| `canary.enabled` | boolean | no | false |  |
 | `chaos` | object | no |  |  |
+| `chaos.enabled` | boolean | no | false |  |
 | `dr_drill` | object | no |  |  |
+| `dr_drill.enabled` | boolean | no | false |  |
 | `egress_control` | object | no |  |  |
+| `egress_control.enabled` | boolean | no | false |  |
 | `extra_tests` | array | no |  |  |
 | `extra_tests[].command` | string | yes |  |  |
 | `extra_tests[].name` | string | yes |  |  |
@@ -93,14 +98,23 @@ Source: `schema/ci-hub-config.schema.json`
 | `java.tools.trivy.fail_on_high` | boolean | no | false |  |
 | `java.version` | string | no | 21 |  |
 | `kyverno` | object | no |  |  |
+| `kyverno.enabled` | boolean | no | false |  |
 | `language` | string | yes |  | Primary language of the repository |
 | `notifications` | object | no |  |  |
 | `notifications.email` | object | no |  |  |
 | `notifications.email.enabled` | boolean | no | false |  |
+| `notifications.email.recipients_env` | string | no | CIHUB_EMAIL_TO |  |
+| `notifications.email.smtp_from_env` | string | no | SMTP_FROM |  |
+| `notifications.email.smtp_host_env` | string | no | SMTP_HOST |  |
+| `notifications.email.smtp_password_env` | string | no | SMTP_PASSWORD |  |
+| `notifications.email.smtp_port_env` | string | no | SMTP_PORT |  |
+| `notifications.email.smtp_starttls_env` | string | no | SMTP_STARTTLS |  |
+| `notifications.email.smtp_user_env` | string | no | SMTP_USER |  |
 | `notifications.slack` | object | no |  |  |
 | `notifications.slack.enabled` | boolean | no | false |  |
 | `notifications.slack.on_failure` | boolean | no | true |  |
 | `notifications.slack.on_success` | boolean | no | false |  |
+| `notifications.slack.webhook_env` | string | no | CIHUB_SLACK_WEBHOOK_URL |  |
 | `python` | object | no |  |  |
 | `python.tools` | object | no |  |  |
 | `python.tools.bandit` | object | no |  |  |
@@ -175,8 +189,11 @@ Source: `schema/ci-hub-config.schema.json`
 | `reports.github_summary.include_metrics` | boolean | no | true |  |
 | `reports.retention_days` | integer | no | 30 |  |
 | `runner_isolation` | object | no |  |  |
+| `runner_isolation.enabled` | boolean | no | false |  |
 | `supply_chain` | object | no |  |  |
+| `supply_chain.enabled` | boolean | no | false |  |
 | `telemetry` | object | no |  |  |
+| `telemetry.enabled` | boolean | no | false |  |
 | `thresholds` | object | no |  |  |
 | `thresholds.coverage_min` | integer | no | 70 |  |
 | `thresholds.max_black_issues` | integer | no | 0 |  |

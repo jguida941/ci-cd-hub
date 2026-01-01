@@ -32,7 +32,7 @@ def main() -> int:
     parser.add_argument("--debug", action="store_true", help="Show debug output for validation")
     args = parser.parse_args()
 
-    cmd = ["python", "-m", "cihub", "report", "validate", "--report", args.report]
+    cmd = [sys.executable, "-m", "cihub", "report", "validate", "--report", args.report]
     if args.summary:
         cmd.extend(["--summary", args.summary])
     if args.reports_dir:
@@ -43,7 +43,7 @@ def main() -> int:
         cmd.append("--debug")
 
     print("[DEPRECATED] scripts/validate_summary.py: use 'cihub report validate' instead", file=sys.stderr)
-    return subprocess.call(cmd)
+    return subprocess.call(cmd)  # noqa: S603
 
 
 if __name__ == "__main__":

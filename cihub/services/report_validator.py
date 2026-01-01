@@ -405,9 +405,7 @@ def validate_report(
     if summary_text and language:
         summary_configured, summary_ran, summary_success = _parse_summary_tools(summary_text)
         mapping = JAVA_SUMMARY_MAP if language == "java" else PYTHON_SUMMARY_MAP
-        warnings.extend(
-            _compare_summary(summary_configured, summary_ran, tools_configured, tools_ran, mapping)
-        )
+        warnings.extend(_compare_summary(summary_configured, summary_ran, tools_configured, tools_ran, mapping))
 
         for label, key in mapping.items():
             if key not in effective_success and label in summary_success:

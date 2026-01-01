@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import pytest
-
 from cihub.services import ValidationResult, ValidationRules, validate_report, validate_report_file
 
 

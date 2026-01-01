@@ -2,15 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-03 - Workflow CLI Consolidation
+
+### CLI
+- Added hub workflow helper commands under `cihub hub-ci` (actionlint install/run, syntax checks, repo/source checks, security scans, CodeQL build, Kyverno helpers, smoke-test helpers, release tag helpers).
+- `cihub hub-ci badges` now respects `hub_ci.tools` toggles for badge updates.
+- Badge generation skips the Black badge when no Black metrics are present.
+
+### Workflows
+- Removed all multi-line `run: |` blocks; workflows now call CLI helpers for logic.
+- hub-security, smoke-test, kyverno, release, and hub-production workflow steps now delegate parsing/validation to CLI commands.
+- Simplified python-ci/java-ci workflow headers to point at generated CONFIG docs.
+
 ## 2026-01-02 - Java SBOM Support
 
 ### CLI
 - Added `java.tools.sbom` support in config loading and report summaries.
 - Added syft-based SBOM generation in `cihub ci` (format configurable).
+- `cihub hub-ci badges` now runs natively (no scripts dependency).
+- Added `cihub hub-ci badges-commit` to commit badge updates (no-inline workflow compliance).
+- `cihub ci` warns when reserved optional feature toggles are enabled.
+- `cihub ci` can read notification env-var names from config (secrets still in env).
+- `cihub report summary` only prints to stdout when `--write-github-summary` is enabled or an output path is provided.
+
+### Config
+- Added defaults for `repo.dispatch_enabled`, `repo.force_all_tools`, and `python.tools.sbom.enabled`.
+- Added notification env-var name fields for Slack/email settings.
+
+### Docs
+- Updated guides and Makefile targets to use CLI replacements for deprecated scripts.
 
 ### Workflows
 - **hub-ci.yml** now passes `run_sbom` to Java jobs.
 - **java-ci.yml** accepts `run_sbom` and wires `CIHUB_RUN_SBOM`.
+- **hub-production-ci.yml** gates jobs via `cihub hub-ci outputs` and uses hub-ci thresholds for coverage/mutation.
+- **hub-production-ci.yml** generates and commits badges via CLI commands (no inline shell).
 
 ## 2026-01-01 - Summary Commands + Snapshot Tests
 

@@ -24,11 +24,10 @@ warnings.warn(
 
 def main() -> int:
     print(
-        "[DEPRECATED] scripts/verify_hub_matrix_keys.py: "
-        "use 'cihub hub-ci verify-matrix-keys' instead",
+        "[DEPRECATED] scripts/verify_hub_matrix_keys.py: use 'cihub hub-ci verify-matrix-keys' instead",
         file=sys.stderr,
     )
-    return subprocess.call(["python", "-m", "cihub", "hub-ci", "verify-matrix-keys"])
+    return subprocess.call([sys.executable, "-m", "cihub", "hub-ci", "verify-matrix-keys"])  # noqa: S603
 
 
 if __name__ == "__main__":

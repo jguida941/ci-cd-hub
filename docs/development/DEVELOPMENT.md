@@ -99,20 +99,20 @@ command-specific payloads.
 
 ---
 
-## Scripts
+## Scripts (Deprecated Shims)
 
-Located in `scripts/` - standalone utilities.
+Located in `scripts/` - legacy utilities kept for one release.
 
-| Script                        | Purpose                       | Usage                                                                                           |
-|-------------------------------|-------------------------------|-------------------------------------------------------------------------------------------------|
-| `load_config.py`              | Load & display merged config  | `python scripts/load_config.py --repo fixtures-python-passing`                                  |
-| `validate_config.py`          | Validate against schema       | `python scripts/validate_config.py config/repos/fixtures-python-passing.yaml`                   |
-| `apply_profile.py`            | Merge profile onto config     | `python scripts/apply_profile.py templates/profiles/python-fast.yaml config/repos/my-repo.yaml` |
-| `aggregate_reports.py`        | Build dashboard from reports  | `python scripts/aggregate_reports.py --output dashboard.html`                                   |
-| `run_aggregation.py`          | Deprecated shim for aggregation | Use `python -m cihub report aggregate`                                                         |
+| Script                        | Purpose                       | Replacement                                                                                      |
+|-------------------------------|-------------------------------|--------------------------------------------------------------------------------------------------|
+| `load_config.py`              | Load & display merged config  | `python -m cihub config show --repo fixtures-python-passing --effective`                         |
+| `validate_config.py`          | Validate against schema       | `python -m cihub hub-ci validate-configs [--repo NAME]`                                           |
+| `apply_profile.py`            | Merge profile onto config     | `python -m cihub config apply-profile --profile templates/profiles/python-fast.yaml --target config/repos/my-repo.yaml` |
+| `aggregate_reports.py`        | Build dashboard from reports  | `python -m cihub report dashboard --reports-dir reports --output dashboard.html`                 |
+| `run_aggregation.py`          | Deprecated shim for aggregation | `python -m cihub report aggregate`                                                             |
 | `run_cli_integration.py`      | CLI integration tests         | `python scripts/run_cli_integration.py --fixtures-path /path/to/ci-cd-hub-fixtures`             |
-| `check_quarantine_imports.py` | Ensure no quarantine imports  | CI guardrail                                                                                    |
-| `verify_hub_matrix_keys.py`   | Validate workflow matrices    | CI guardrail                                                                                    |
+| `check_quarantine_imports.py` | Ensure no quarantine imports  | `python -m cihub hub-ci quarantine-check`                                                        |
+| `verify_hub_matrix_keys.py`   | Validate workflow matrices    | `python -m cihub hub-ci verify-matrix-keys`                                                      |
 
 ---
 
@@ -273,13 +273,13 @@ make sync-templates-check
 make mutmut
 
 # === VALIDATION ===
-cihub validate --repo .                    # Validate config
+python -m cihub hub-ci validate-configs    # Validate hub configs
+python -m cihub hub-ci validate-configs --repo my-repo  # Validate one repo
 ruff check scripts/ cihub/                 # Lint Python
 pytest tests/                              # Run tests
 
 # === CONFIG ===
-cihub config --repo my-repo show --effective  # See merged config
-python scripts/load_config.py my-repo         # Same via script
+python -m cihub config show --repo my-repo --effective  # See merged config
 
 # === TEMPLATES ===
 cihub sync-templates --check               # Check for drift

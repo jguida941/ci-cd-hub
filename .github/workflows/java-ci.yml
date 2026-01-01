@@ -12,21 +12,9 @@
 #   4. Tools execute based on YOUR enabled: true/false toggles
 #   5. Report + summary written to .cihub/ directory
 #
-# TOGGLE CONFIGURATION (in your repo's .ci-hub.yml):
-#   java:
-#     tools:
-#       jacoco:    { enabled: true }   # Coverage
-#       pitest:    { enabled: true }   # Mutation testing
-#       checkstyle:{ enabled: true }   # Style checks
-#       spotbugs:  { enabled: true }   # Static analysis
-#       pmd:       { enabled: true }   # Static analysis
-#       owasp:     { enabled: true }   # Dependency scan
-#       jqwik:     { enabled: false }  # Property-based testing
-#       semgrep:   { enabled: false }  # SAST (expensive, opt-in)
-#       trivy:     { enabled: false }  # Container scan (expensive, opt-in)
-#       sbom:      { enabled: false }  # SBOM generation (expensive, opt-in)
-#       codeql:    { enabled: false }  # CodeQL (expensive, opt-in)
-#       docker:    { enabled: false }  # Docker build/test (opt-in)
+# CONFIGURATION:
+#   - Tool toggles and thresholds live in .ci-hub.yml.
+#   - See docs/reference/CONFIG.md for the generated, authoritative fields.
 #
 # QUICK START WITH PROFILES (hub-side config):
 #   Use a pre-built profile to generate hub configs:
@@ -34,12 +22,8 @@
 #     cihub new myrepo --profile java-quality     # Core tools (~15-30 min)
 #     cihub new myrepo --profile java-security    # + semgrep, trivy, codeql
 #
-# THRESHOLDS (quality gates in .ci-hub.yml):
-#   thresholds:
-#     coverage_min: 70        # Fail if coverage < 70%
-#     mutation_score_min: 70  # Fail if mutation score < 70%
-#     max_high_vulns: 0       # Fail on any high-severity vulnerability
-#     max_checkstyle_errors: 0
+# THRESHOLDS:
+#   - Defined in .ci-hub.yml under thresholds; see CONFIG.md for details.
 #
 # CALLER EXAMPLE (minimal - config lives in .ci-hub.yml):
 #   # .github/workflows/hub-ci.yml
@@ -255,10 +239,11 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
       - name: Install cihub + tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e "hub[ci]"
+        run: pip install -e "hub[ci]"
 
       - name: Run cihub ci
         env:
@@ -281,8 +266,7 @@ jobs:
 
       - name: Read report outputs
         id: report
-        run: |
-          cihub report outputs --report .cihub/report.json
+        run: cihub report outputs --report .cihub/report.json
 
       - name: Upload CI report
         if: always()
@@ -292,6 +276,7 @@ jobs:
           path: |
             .cihub/report.json
             .cihub/summary.md
+            .cihub/sbom*.json
             .cihub/tool-outputs/*.json
           retention-days: ${{ inputs.retention_days }}
           if-no-files-found: warn

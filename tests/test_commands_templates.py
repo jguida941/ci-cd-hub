@@ -24,6 +24,13 @@ from cihub.commands.templates import cmd_sync_templates  # noqa: E402
 # =============================================================================
 
 
+@pytest.fixture(autouse=True)
+def mock_gh_token(monkeypatch: pytest.MonkeyPatch):
+    """Set GH_TOKEN for all tests so sync-templates proceeds past token check."""
+    monkeypatch.setenv("GH_TOKEN", "test-token-for-mocked-api")
+    yield
+
+
 def make_repo_entry(
     *,
     full: str = "owner/repo",
@@ -82,6 +89,78 @@ class TestSyncTemplatesNoRepos:
             assert isinstance(result, CommandResult)
             assert result.exit_code == 0
             assert "No repos" in result.summary
+
+
+# =============================================================================
+# No Token Tests (skip gracefully in check/dry-run mode)
+# =============================================================================
+
+
+class TestSyncTemplatesNoToken:
+    """Tests for cmd_sync_templates when no token is available."""
+
+    def test_check_mode_skips_without_token(
+        self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch, capsys
+    ) -> None:
+        """Returns 0 (skip) when --check and no token available."""
+        monkeypatch.delenv("GH_TOKEN", raising=False)
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.delenv("HUB_DISPATCH_TOKEN", raising=False)
+        base_args.check = True
+
+        result = cmd_sync_templates(base_args)
+
+        assert result == 0
+        captured = capsys.readouterr()
+        assert "[SKIP]" in captured.err
+        assert "No GitHub token" in captured.err
+
+    def test_dry_run_skips_without_token(
+        self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch, capsys
+    ) -> None:
+        """Returns 0 (skip) when --dry-run and no token available."""
+        monkeypatch.delenv("GH_TOKEN", raising=False)
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.delenv("HUB_DISPATCH_TOKEN", raising=False)
+        base_args.dry_run = True
+
+        result = cmd_sync_templates(base_args)
+
+        assert result == 0
+        captured = capsys.readouterr()
+        assert "[SKIP]" in captured.err
+
+    def test_check_mode_json_skips_without_token(
+        self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Returns CommandResult with skipped=True in JSON mode."""
+        monkeypatch.delenv("GH_TOKEN", raising=False)
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.delenv("HUB_DISPATCH_TOKEN", raising=False)
+        base_args.check = True
+        base_args.json = True
+
+        result = cmd_sync_templates(base_args)
+
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == 0
+        assert result.data.get("skipped") is True
+        assert result.data.get("reason") == "no_token"
+
+    def test_actual_sync_fails_without_token(
+        self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch, capsys
+    ) -> None:
+        """Returns error when actual sync (not check/dry-run) and no token."""
+        monkeypatch.delenv("GH_TOKEN", raising=False)
+        monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.delenv("HUB_DISPATCH_TOKEN", raising=False)
+        # base_args has check=False, dry_run=False by default
+
+        result = cmd_sync_templates(base_args)
+
+        assert result == 2  # EXIT_USAGE
+        captured = capsys.readouterr()
+        assert "Missing GitHub token" in captured.err
 
 
 # =============================================================================

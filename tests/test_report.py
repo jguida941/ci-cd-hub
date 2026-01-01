@@ -364,7 +364,7 @@ class TestCmdReportSummary:
             subcommand="summary",
             report=str(report_path),
             output=None,
-            write_github_summary=False,
+            write_github_summary=True,
             json=False,
         )
 

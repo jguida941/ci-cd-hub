@@ -14,7 +14,7 @@ import sys
 import urllib.request
 from email.message import EmailMessage
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from cihub.ci_config import load_ci_config, load_hub_config
 from cihub.ci_report import (
@@ -85,6 +85,18 @@ JAVA_TOOLS = [
     "codeql",
     "sbom",
     "docker",
+]
+
+RESERVED_FEATURES: list[tuple[str, str]] = [
+    ("chaos", "Chaos testing"),
+    ("dr_drill", "Disaster recovery drills"),
+    ("cache_sentinel", "Cache sentinel"),
+    ("runner_isolation", "Runner isolation"),
+    ("supply_chain", "Supply chain security"),
+    ("egress_control", "Egress control"),
+    ("canary", "Canary deployments"),
+    ("telemetry", "Telemetry"),
+    ("kyverno", "Kyverno policies"),
 ]
 
 PYTHON_RUNNERS = {
@@ -239,6 +251,48 @@ def _parse_env_bool(value: str | None) -> bool | None:
     return None
 
 
+def _get_env_name(config: dict[str, Any], key: str, default: str) -> str:
+    value = config.get(key)
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return default
+
+
+def _get_env_value(
+    env: Mapping[str, str],
+    name: str | None,
+    fallbacks: list[str] | None = None,
+) -> str | None:
+    if name:
+        value = env.get(name)
+        if value:
+            return value
+    if fallbacks:
+        for fallback in fallbacks:
+            value = env.get(fallback)
+            if value:
+                return value
+    return None
+
+
+def _warn_reserved_features(config: dict[str, Any], problems: list[dict[str, Any]]) -> None:
+    for key, label in RESERVED_FEATURES:
+        entry = config.get(key, {})
+        enabled = False
+        if isinstance(entry, dict):
+            enabled = bool(entry.get("enabled", False))
+        elif isinstance(entry, bool):
+            enabled = entry
+        if enabled:
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"{label} is enabled but not implemented yet (toggle reserved).",
+                    "code": "CIHUB-CI-RESERVED-FEATURE",
+                }
+            )
+
+
 def _set_tool_enabled(
     config: dict[str, Any],
     language: str,
@@ -358,13 +412,12 @@ def _run_codecov_upload(
             }
         )
         return
-    try:
-        codecov_bin = resolve_executable("codecov")
-    except FileNotFoundError as exc:
+    codecov_bin = shutil.which("codecov")
+    if not codecov_bin:
         problems.append(
             {
                 "severity": "error" if fail_ci_on_error else "warning",
-                "message": f"Codecov enabled but uploader not found: {exc}",
+                "message": "Codecov enabled but uploader not found in PATH",
                 "code": "CIHUB-CI-CODECOV-MISSING",
             }
         )
@@ -424,32 +477,51 @@ def _send_email(
     subject: str,
     body: str,
     problems: list[dict[str, Any]],
+    email_cfg: dict[str, Any],
+    env: Mapping[str, str],
 ) -> None:
-    host = os.environ.get("SMTP_HOST")
+    host_name = _get_env_name(email_cfg, "smtp_host_env", "SMTP_HOST")
+    host = _get_env_value(env, host_name)
     if not host:
         problems.append(
             {
                 "severity": "warning",
-                "message": "Email notifications enabled but SMTP_HOST is not set",
+                "message": f"Email notifications enabled but {host_name} is not set",
                 "code": "CIHUB-CI-EMAIL-MISSING",
             }
         )
         return
-    port = int(os.environ.get("SMTP_PORT", "25"))
-    username = os.environ.get("SMTP_USER")
-    password = os.environ.get("SMTP_PASSWORD")
-    use_starttls = _parse_env_bool(os.environ.get("SMTP_STARTTLS")) or False
-    sender = os.environ.get("SMTP_FROM", "cihub@localhost")
-    recipients = (
-        os.environ.get("CIHUB_EMAIL_TO")
-        or os.environ.get("SMTP_TO")
-        or os.environ.get("EMAIL_TO")
+    port_name = _get_env_name(email_cfg, "smtp_port_env", "SMTP_PORT")
+    port_value = _get_env_value(env, port_name)
+    port = 25
+    if port_value:
+        try:
+            port = int(port_value)
+        except ValueError:
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"Email notifications enabled but {port_name} is not a valid port",
+                    "code": "CIHUB-CI-EMAIL-MISSING",
+                }
+            )
+            port = 25
+
+    username = _get_env_value(env, _get_env_name(email_cfg, "smtp_user_env", "SMTP_USER"))
+    password = _get_env_value(env, _get_env_name(email_cfg, "smtp_password_env", "SMTP_PASSWORD"))
+    starttls_value = _get_env_value(
+        env,
+        _get_env_name(email_cfg, "smtp_starttls_env", "SMTP_STARTTLS"),
     )
+    use_starttls = _parse_env_bool(starttls_value) or False
+    sender = _get_env_value(env, _get_env_name(email_cfg, "smtp_from_env", "SMTP_FROM")) or "cihub@localhost"
+    recipients_name = _get_env_name(email_cfg, "recipients_env", "CIHUB_EMAIL_TO")
+    recipients = _get_env_value(env, recipients_name, ["SMTP_TO", "EMAIL_TO"])
     if not recipients:
         problems.append(
             {
                 "severity": "warning",
-                "message": "Email notifications enabled but no recipients set (CIHUB_EMAIL_TO/SMTP_TO/EMAIL_TO)",
+                "message": (f"Email notifications enabled but no recipients set ({recipients_name}/SMTP_TO/EMAIL_TO)"),
                 "code": "CIHUB-CI-EMAIL-MISSING",
             }
         )
@@ -483,6 +555,7 @@ def _notify(
     config: dict[str, Any],
     report: dict[str, Any],
     problems: list[dict[str, Any]],
+    env: Mapping[str, str],
 ) -> None:
     notifications = config.get("notifications", {}) or {}
     slack_cfg = notifications.get("slack", {}) or {}
@@ -496,16 +569,13 @@ def _notify(
         on_success = bool(slack_cfg.get("on_success", False))
         on_failure = bool(slack_cfg.get("on_failure", True))
         if (success and on_success) or (not success and on_failure):
-            webhook = (
-                os.environ.get("CIHUB_SLACK_WEBHOOK_URL")
-                or os.environ.get("SLACK_WEBHOOK_URL")
-                or os.environ.get("SLACK_WEBHOOK")
-            )
+            webhook_name = _get_env_name(slack_cfg, "webhook_env", "CIHUB_SLACK_WEBHOOK_URL")
+            webhook = _get_env_value(env, webhook_name, ["SLACK_WEBHOOK_URL", "SLACK_WEBHOOK"])
             if not webhook:
                 problems.append(
                     {
                         "severity": "warning",
-                        "message": "Slack notifications enabled but no webhook set",
+                        "message": f"Slack notifications enabled but {webhook_name} is not set",
                         "code": "CIHUB-CI-SLACK-MISSING",
                     }
                 )
@@ -517,6 +587,8 @@ def _notify(
             f"CIHUB {status}: {repo}",
             f"Repository: {repo}\nBranch: {branch}\nStatus: {status}\n",
             problems,
+            email_cfg,
+            env,
         )
 
 
@@ -861,7 +933,11 @@ def _evaluate_python_gates(
 
     max_semgrep = int(thresholds.get("max_semgrep_findings", 0) or 0)
     semgrep_findings = int(metrics.get("semgrep_findings", 0))
-    if tools_configured.get("semgrep") and _tool_gate_enabled(config, "semgrep", "python") and semgrep_findings > max_semgrep:
+    if (
+        tools_configured.get("semgrep")
+        and _tool_gate_enabled(config, "semgrep", "python")
+        and semgrep_findings > max_semgrep
+    ):
         failures.append(f"semgrep findings {semgrep_findings} > {max_semgrep}")
 
     max_critical = int(thresholds.get("max_critical_vulns", 0) or 0)
@@ -910,12 +986,20 @@ def _evaluate_java_gates(
 
     max_checkstyle = int(thresholds.get("max_checkstyle_errors", 0) or 0)
     checkstyle_issues = int(metrics.get("checkstyle_issues", 0))
-    if tools_configured.get("checkstyle") and _tool_gate_enabled(config, "checkstyle", "java") and checkstyle_issues > max_checkstyle:
+    if (
+        tools_configured.get("checkstyle")
+        and _tool_gate_enabled(config, "checkstyle", "java")
+        and checkstyle_issues > max_checkstyle
+    ):
         failures.append(f"checkstyle issues {checkstyle_issues} > {max_checkstyle}")
 
     max_spotbugs = int(thresholds.get("max_spotbugs_bugs", 0) or 0)
     spotbugs_issues = int(metrics.get("spotbugs_issues", 0))
-    if tools_configured.get("spotbugs") and _tool_gate_enabled(config, "spotbugs", "java") and spotbugs_issues > max_spotbugs:
+    if (
+        tools_configured.get("spotbugs")
+        and _tool_gate_enabled(config, "spotbugs", "java")
+        and spotbugs_issues > max_spotbugs
+    ):
         failures.append(f"spotbugs issues {spotbugs_issues} > {max_spotbugs}")
 
     max_pmd = int(thresholds.get("max_pmd_violations", 0) or 0)
@@ -937,14 +1021,17 @@ def _evaluate_java_gates(
     trivy_crit_gate = bool(trivy_cfg.get("fail_on_critical", True))
     trivy_high_gate = bool(trivy_cfg.get("fail_on_high", True))
     if tools_configured.get("trivy") and (
-        (trivy_crit_gate and trivy_critical > max_critical)
-        or (trivy_high_gate and trivy_high > max_high)
+        (trivy_crit_gate and trivy_critical > max_critical) or (trivy_high_gate and trivy_high > max_high)
     ):
         failures.append(f"trivy critical/high {trivy_critical}/{trivy_high} > {max_critical}/{max_high}")
 
     max_semgrep = int(thresholds.get("max_semgrep_findings", 0) or 0)
     semgrep_findings = int(metrics.get("semgrep_findings", 0))
-    if tools_configured.get("semgrep") and _tool_gate_enabled(config, "semgrep", "java") and semgrep_findings > max_semgrep:
+    if (
+        tools_configured.get("semgrep")
+        and _tool_gate_enabled(config, "semgrep", "java")
+        and semgrep_findings > max_semgrep
+    ):
         failures.append(f"semgrep findings {semgrep_findings} > {max_semgrep}")
 
     return failures
@@ -981,8 +1068,10 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
     language = config.get("language") or ""
     workdir = _resolve_workdir(repo_path, config, args.workdir)
     problems: list[dict[str, Any]] = []
+    env = dict(os.environ)
     _apply_force_all_tools(config, language)
-    _apply_env_overrides(config, language, dict(os.environ), problems)
+    _apply_env_overrides(config, language, env, problems)
+    _warn_reserved_features(config, problems)
 
     if language == "python":
         if args.install_deps:
@@ -1120,7 +1209,7 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
         )
 
     has_errors = any(p.get("severity") == "error" for p in problems)
-    _notify(not has_errors, config, report, problems)
+    _notify(not has_errors, config, report, problems, env)
     exit_code = EXIT_FAILURE if has_errors else EXIT_SUCCESS
     if json_mode:
         artifacts: dict[str, str] = {"report": str(report_path)}

@@ -3,8 +3,6 @@
 import json
 from pathlib import Path
 
-import pytest
-
 from cihub.services import DiscoveryFilters, DiscoveryResult, RepoEntry, discover_repositories
 
 
@@ -124,12 +122,8 @@ repo:
         repos_dir = tmp_path / "config" / "repos"
         repos_dir.mkdir(parents=True)
 
-        (repos_dir / "repo-a.yaml").write_text(
-            "repo:\n  owner: o\n  name: repo-a\n  language: python"
-        )
-        (repos_dir / "repo-b.yaml").write_text(
-            "repo:\n  owner: o\n  name: repo-b\n  language: java"
-        )
+        (repos_dir / "repo-a.yaml").write_text("repo:\n  owner: o\n  name: repo-a\n  language: python")
+        (repos_dir / "repo-b.yaml").write_text("repo:\n  owner: o\n  name: repo-b\n  language: java")
 
         filters = DiscoveryFilters(repos=["repo-a"])
         result = discover_repositories(tmp_path, filters)
@@ -145,9 +139,7 @@ repo:
         (repos_dir / "quick.yaml").write_text(
             "repo:\n  owner: o\n  name: quick\n  language: python\n  run_group: quick"
         )
-        (repos_dir / "full.yaml").write_text(
-            "repo:\n  owner: o\n  name: full\n  language: python\n  run_group: full"
-        )
+        (repos_dir / "full.yaml").write_text("repo:\n  owner: o\n  name: full\n  language: python\n  run_group: full")
 
         filters = DiscoveryFilters(run_groups=["quick"])
         result = discover_repositories(tmp_path, filters)
@@ -181,9 +173,7 @@ repo:
         # Invalid config (missing language)
         (repos_dir / "bad.yaml").write_text("repo:\n  owner: o\n  name: bad")
         # Valid config
-        (repos_dir / "good.yaml").write_text(
-            "repo:\n  owner: o\n  name: good\n  language: python"
-        )
+        (repos_dir / "good.yaml").write_text("repo:\n  owner: o\n  name: good\n  language: python")
 
         result = discover_repositories(tmp_path)
 
@@ -198,9 +188,7 @@ repo:
         repos_dir = tmp_path / "config" / "repos"
         repos_dir.mkdir(parents=True)
 
-        (repos_dir / "test.yaml").write_text(
-            "repo:\n  owner: o\n  name: test\n  language: python"
-        )
+        (repos_dir / "test.yaml").write_text("repo:\n  owner: o\n  name: test\n  language: python")
 
         result = discover_repositories(tmp_path)
         captured = capsys.readouterr()

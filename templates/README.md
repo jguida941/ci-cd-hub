@@ -19,13 +19,15 @@ Quick reference for templates.
 ls templates/profiles
 
 # 2) Merge it into a repo config (creates file if missing)
-python scripts/apply_profile.py templates/profiles/python-fast.yaml config/repos/my-repo.yaml
+python -m cihub config apply-profile --profile templates/profiles/python-fast.yaml --target config/repos/my-repo.yaml
 
 # 3) Edit repo metadata (owner/name/language/subdir)
 $EDITOR config/repos/my-repo.yaml
 
 # 4) Validate
-python scripts/validate_config.py config/repos/my-repo.yaml
+python -m cihub hub-ci validate-configs
+# Or validate a single repo
+python -m cihub hub-ci validate-configs --repo my-repo
 ```
 
 Profiles are additive and can be re-applied; existing repo-specific overrides win over profile defaults.

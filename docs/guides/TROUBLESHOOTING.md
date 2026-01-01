@@ -13,7 +13,8 @@ Common issues and their solutions, organized by category.
 **Cause:** Config file has invalid fields or values.
 
 **Fix:**
-1. Run locally: `python scripts/load_config.py config/repos/my-app.yaml`
+1. Run locally: `python -m cihub hub-ci validate-configs`
+   - Single repo: `python -m cihub hub-ci validate-configs --repo my-repo`
 2. Check error messages for specific field issues
 3. Reference [CONFIG.md](../reference/CONFIG.md) for valid fields
 4. Common issues:

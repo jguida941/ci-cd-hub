@@ -4,7 +4,7 @@ Tiered check modes:
 - Default: Fast checks (lint, format, type, test, docs) ~30s
 - --audit: + drift detection (links, adr, configs) ~45s
 - --security: + security tools (bandit, pip-audit, trivy, gitleaks) ~2min
-- --full: + validation (templates, matrix, license, zizmor) ~3min
+- --full: + validation (templates, contracts, matrix, license, zizmor, sync-check) ~3min
 - --mutation: + mutmut (~15min, opt-in only)
 - --all: Everything (unique set, no duplicates)
 - --install-missing: Prompt to install missing optional tools
@@ -14,6 +14,7 @@ Tiered check modes:
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -473,6 +474,16 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
             ),
         )
 
+        # Template/workflow contract verification
+        add_step(
+            "verify-contracts",
+            _run_process(
+                "verify-contracts",
+                [sys.executable, "-m", "cihub", "verify"],
+                root,
+            ),
+        )
+
         # Matrix key verification
         add_step(
             "verify-matrix-keys",
@@ -492,6 +503,26 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
                 root,
             ),
         )
+
+        # Remote template sync check (requires GH_TOKEN)
+        if os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN"):
+            add_step(
+                "sync-templates-check",
+                _run_process(
+                    "sync-templates-check",
+                    [sys.executable, "-m", "cihub", "sync-templates", "--check"],
+                    root,
+                ),
+            )
+        else:
+            add_step(
+                "sync-templates-check",
+                _missing_tool_result(
+                    "sync-templates-check",
+                    required=require_optional,
+                    detail="GH_TOKEN or GITHUB_TOKEN not set; skipping remote template drift check",
+                ),
+            )
 
     # ========== MUTATION MODE (--mutation or --all) ==========
     if run_mutation:

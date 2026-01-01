@@ -262,12 +262,12 @@ class TestCmdBadges:
     """Tests for cmd_badges command."""
 
     @mock.patch("cihub.commands.hub_ci._compare_badges")
-    @mock.patch("cihub.commands.hub_ci._run_command")
+    @mock.patch("cihub.commands.hub_ci.badge_tools.main")
     @mock.patch("cihub.commands.hub_ci.hub_root")
     def test_check_mode_success(
         self,
         mock_root: mock.Mock,
-        mock_run: mock.Mock,
+        mock_main: mock.Mock,
         mock_compare: mock.Mock,
         tmp_path: Path,
     ) -> None:
@@ -276,7 +276,7 @@ class TestCmdBadges:
 
         mock_root.return_value = tmp_path
         (tmp_path / "badges").mkdir()
-        mock_run.return_value = mock.Mock(returncode=0)
+        mock_main.return_value = 0
         mock_compare.return_value = []
 
         args = argparse.Namespace(
@@ -294,18 +294,18 @@ class TestCmdBadges:
         result = cmd_badges(args)
 
         assert result == EXIT_SUCCESS
-        assert mock_run.call_count == 1
-        env = mock_run.call_args.kwargs["env"]
+        assert mock_main.call_count == 1
+        env = mock_main.call_args.kwargs["env"]
         assert env["UPDATE_BADGES"] == "true"
         assert "BADGE_OUTPUT_DIR" in env
 
     @mock.patch("cihub.commands.hub_ci._compare_badges")
-    @mock.patch("cihub.commands.hub_ci._run_command")
+    @mock.patch("cihub.commands.hub_ci.badge_tools.main")
     @mock.patch("cihub.commands.hub_ci.hub_root")
     def test_check_mode_detects_drift(
         self,
         mock_root: mock.Mock,
-        mock_run: mock.Mock,
+        mock_main: mock.Mock,
         mock_compare: mock.Mock,
         tmp_path: Path,
     ) -> None:
@@ -314,7 +314,7 @@ class TestCmdBadges:
 
         mock_root.return_value = tmp_path
         (tmp_path / "badges").mkdir()
-        mock_run.return_value = mock.Mock(returncode=0)
+        mock_main.return_value = 0
         mock_compare.return_value = ["diff: ruff.json"]
 
         args = argparse.Namespace(
@@ -333,19 +333,19 @@ class TestCmdBadges:
 
         assert result == EXIT_FAILURE
 
-    @mock.patch("cihub.commands.hub_ci._run_command")
+    @mock.patch("cihub.commands.hub_ci.badge_tools.main")
     @mock.patch("cihub.commands.hub_ci.hub_root")
     def test_updates_badges_with_output_dir(
         self,
         mock_root: mock.Mock,
-        mock_run: mock.Mock,
+        mock_main: mock.Mock,
         tmp_path: Path,
     ) -> None:
         from cihub.commands.hub_ci import cmd_badges
         from cihub.exit_codes import EXIT_SUCCESS
 
         mock_root.return_value = tmp_path
-        mock_run.return_value = mock.Mock(returncode=0)
+        mock_main.return_value = 0
 
         output_dir = tmp_path / "badges-out"
         args = argparse.Namespace(
@@ -363,7 +363,7 @@ class TestCmdBadges:
         result = cmd_badges(args)
 
         assert result == EXIT_SUCCESS
-        env = mock_run.call_args.kwargs["env"]
+        env = mock_main.call_args.kwargs["env"]
         assert env["BADGE_OUTPUT_DIR"] == str(output_dir.resolve())
         assert env["RUFF_ISSUES"] == "0"
         assert env["MUTATION_SCORE"] == "88.5"
@@ -387,6 +387,48 @@ class TestCmdBadges:
         cmd_black(args)
         captured = capsys.readouterr()
         assert "issues=2" in captured.out
+
+
+class TestCmdBadgesCommit:
+    """Tests for cmd_badges_commit command."""
+
+    @mock.patch("cihub.commands.hub_ci._run_command")
+    @mock.patch("cihub.commands.hub_ci.hub_root")
+    def test_no_changes(self, mock_root: mock.Mock, mock_run: mock.Mock, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import cmd_badges_commit
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        mock_root.return_value = tmp_path
+        mock_run.side_effect = [
+            mock.Mock(returncode=0),
+            mock.Mock(returncode=0),
+            mock.Mock(returncode=0),
+            mock.Mock(returncode=0),
+        ]
+
+        result = cmd_badges_commit(argparse.Namespace())
+        assert result == EXIT_SUCCESS
+        assert mock_run.call_count == 4
+
+    @mock.patch("cihub.commands.hub_ci._run_command")
+    @mock.patch("cihub.commands.hub_ci.hub_root")
+    def test_commits_and_pushes(self, mock_root: mock.Mock, mock_run: mock.Mock, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import cmd_badges_commit
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        mock_root.return_value = tmp_path
+        mock_run.side_effect = [
+            mock.Mock(returncode=0),
+            mock.Mock(returncode=0),
+            mock.Mock(returncode=0),
+            mock.Mock(returncode=1),
+            mock.Mock(returncode=0),
+            mock.Mock(returncode=0),
+        ]
+
+        result = cmd_badges_commit(argparse.Namespace())
+        assert result == EXIT_SUCCESS
+        assert mock_run.call_count == 6
 
 
 class TestCmdBandit:
@@ -435,6 +477,85 @@ class TestCmdBandit:
         )
         result = cmd_bandit(args)
         assert result == EXIT_FAILURE
+
+
+class TestCmdZizmorRun:
+    """Tests for cmd_zizmor_run command."""
+
+    @mock.patch("subprocess.run")
+    def test_writes_sarif_on_success(self, mock_run: mock.Mock, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import cmd_zizmor_run
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        mock_run.return_value = mock.Mock(
+            returncode=0,
+            stdout='{"runs": [{"results": []}]}',
+        )
+        output_path = tmp_path / "zizmor.sarif"
+        args = argparse.Namespace(
+            output=str(output_path),
+            workflows=".github/workflows/",
+        )
+        result = cmd_zizmor_run(args)
+        assert result == EXIT_SUCCESS
+        assert output_path.exists()
+        assert "runs" in output_path.read_text()
+
+    @mock.patch("subprocess.run")
+    def test_writes_empty_sarif_on_findings(self, mock_run: mock.Mock, tmp_path: Path) -> None:
+        """Non-zero exit always writes empty SARIF (matches old heredoc behavior)."""
+        from cihub.commands.hub_ci import EMPTY_SARIF, cmd_zizmor_run
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        # Even if zizmor outputs findings, we write empty SARIF on non-zero exit
+        mock_run.return_value = mock.Mock(
+            returncode=1,
+            stdout='{"runs": [{"results": [{"level": "error"}]}]}',
+        )
+        output_path = tmp_path / "zizmor.sarif"
+        args = argparse.Namespace(
+            output=str(output_path),
+            workflows=".github/workflows/",
+        )
+        result = cmd_zizmor_run(args)
+        assert result == EXIT_SUCCESS
+        assert output_path.exists()
+        # Key change: empty SARIF, not stdout content
+        assert output_path.read_text() == EMPTY_SARIF
+
+    @mock.patch("subprocess.run")
+    def test_writes_empty_sarif_on_failure(self, mock_run: mock.Mock, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import EMPTY_SARIF, cmd_zizmor_run
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        mock_run.return_value = mock.Mock(
+            returncode=1,
+            stdout="",
+        )
+        output_path = tmp_path / "zizmor.sarif"
+        args = argparse.Namespace(
+            output=str(output_path),
+            workflows=".github/workflows/",
+        )
+        result = cmd_zizmor_run(args)
+        assert result == EXIT_SUCCESS
+        assert output_path.exists()
+        assert output_path.read_text() == EMPTY_SARIF
+
+    @mock.patch("subprocess.run", side_effect=FileNotFoundError)
+    def test_writes_empty_sarif_when_zizmor_missing(self, mock_run: mock.Mock, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import EMPTY_SARIF, cmd_zizmor_run
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        output_path = tmp_path / "zizmor.sarif"
+        args = argparse.Namespace(
+            output=str(output_path),
+            workflows=".github/workflows/",
+        )
+        result = cmd_zizmor_run(args)
+        assert result == EXIT_SUCCESS
+        assert output_path.exists()
+        assert output_path.read_text() == EMPTY_SARIF
 
 
 class TestCmdZizmorCheck:
@@ -646,15 +767,8 @@ class TestVerifyMatrixKeys:
 
         hub = tmp_path
         (hub / ".github" / "workflows").mkdir(parents=True)
-        (hub / "cihub" / "commands").mkdir(parents=True)
-
         (hub / ".github" / "workflows" / "hub-run-all.yml").write_text(
-            "matrix.foo\n",
-            encoding="utf-8",
-        )
-        # Regex requires newline before key: r'\n\s*"([A-Za-z_][A-Za-z0-9_]*)"\s*:'
-        (hub / "cihub" / "commands" / "discover.py").write_text(
-            'entry = {\n    "foo": "bar"\n}\n',
+            "matrix.owner\n",
             encoding="utf-8",
         )
 
@@ -668,14 +782,8 @@ class TestVerifyMatrixKeys:
 
         hub = tmp_path
         (hub / ".github" / "workflows").mkdir(parents=True)
-        (hub / "cihub" / "commands").mkdir(parents=True)
-
         (hub / ".github" / "workflows" / "hub-run-all.yml").write_text(
             "matrix.missing_key\n",
-            encoding="utf-8",
-        )
-        (hub / "cihub" / "commands" / "discover.py").write_text(
-            'entry = {"foo": "bar"}\n',
             encoding="utf-8",
         )
 
@@ -705,6 +813,185 @@ class TestQuarantineCheck:
         args = argparse.Namespace(path=str(tmp_path))
         result = cmd_quarantine_check(args)
         assert result == EXIT_FAILURE
+
+
+class TestCmdRepoCheck:
+    """Tests for cmd_repo_check command."""
+
+    def test_repo_present_outputs_true(self, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import cmd_repo_check
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        repo_path = tmp_path / "repo"
+        (repo_path / ".git").mkdir(parents=True)
+        output_path = tmp_path / "outputs.txt"
+
+        args = argparse.Namespace(
+            path=str(repo_path),
+            owner="owner",
+            name="repo",
+            output=str(output_path),
+            github_output=False,
+        )
+        result = cmd_repo_check(args)
+        assert result == EXIT_SUCCESS
+        assert "present=true" in output_path.read_text(encoding="utf-8")
+
+    def test_repo_missing_outputs_false(self, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import cmd_repo_check
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        repo_path = tmp_path / "repo"
+        repo_path.mkdir()
+        output_path = tmp_path / "outputs.txt"
+
+        args = argparse.Namespace(
+            path=str(repo_path),
+            owner="owner",
+            name="repo",
+            output=str(output_path),
+            github_output=False,
+        )
+        result = cmd_repo_check(args)
+        assert result == EXIT_SUCCESS
+        assert "present=false" in output_path.read_text(encoding="utf-8")
+
+
+class TestCmdSourceCheck:
+    """Tests for cmd_source_check command."""
+
+    def test_detects_python_source(self, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import cmd_source_check
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        repo_path = tmp_path / "repo"
+        repo_path.mkdir()
+        (repo_path / "app.py").write_text("print('hi')\n", encoding="utf-8")
+        output_path = tmp_path / "outputs.txt"
+
+        args = argparse.Namespace(
+            path=str(repo_path),
+            language="python",
+            output=str(output_path),
+            github_output=False,
+        )
+        result = cmd_source_check(args)
+        assert result == EXIT_SUCCESS
+        assert "has_source=true" in output_path.read_text(encoding="utf-8")
+
+    def test_detects_java_source(self, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import cmd_source_check
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        repo_path = tmp_path / "repo"
+        (repo_path / "src").mkdir(parents=True)
+        (repo_path / "src" / "App.java").write_text("class App {}", encoding="utf-8")
+        output_path = tmp_path / "outputs.txt"
+
+        args = argparse.Namespace(
+            path=str(repo_path),
+            language="java",
+            output=str(output_path),
+            github_output=False,
+        )
+        result = cmd_source_check(args)
+        assert result == EXIT_SUCCESS
+        assert "has_source=true" in output_path.read_text(encoding="utf-8")
+
+
+class TestCmdSmokeJava:
+    """Tests for smoke Java commands."""
+
+    def test_smoke_java_tests_parses_junit(self, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import cmd_smoke_java_tests
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        repo_path = tmp_path / "repo"
+        report_dir = repo_path / "target" / "surefire-reports"
+        report_dir.mkdir(parents=True)
+        report_path = report_dir / "TEST.xml"
+        report_path.write_text(
+            '<testsuite tests="10" failures="2" errors="1" skipped="3" time="12.5"></testsuite>',
+            encoding="utf-8",
+        )
+        output_path = tmp_path / "outputs.txt"
+
+        args = argparse.Namespace(
+            path=str(repo_path),
+            output=str(output_path),
+            github_output=False,
+        )
+        result = cmd_smoke_java_tests(args)
+        assert result == EXIT_SUCCESS
+        content = output_path.read_text(encoding="utf-8")
+        # total = passed + failed + skipped = 4 + 3 + 3 = 10
+        assert "total=10" in content
+        assert "passed=4" in content
+        assert "failed=3" in content
+        assert "skipped=3" in content
+
+    def test_smoke_java_coverage_parses_jacoco(self, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import cmd_smoke_java_coverage
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        repo_path = tmp_path / "repo"
+        report_dir = repo_path / "target" / "site"
+        report_dir.mkdir(parents=True)
+        report_path = report_dir / "jacoco.xml"
+        report_path.write_text(
+            '<report><counter type="INSTRUCTION" missed="20" covered="80"/></report>',
+            encoding="utf-8",
+        )
+        output_path = tmp_path / "outputs.txt"
+
+        args = argparse.Namespace(
+            path=str(repo_path),
+            output=str(output_path),
+            github_output=False,
+        )
+        result = cmd_smoke_java_coverage(args)
+        assert result == EXIT_SUCCESS
+        content = output_path.read_text(encoding="utf-8")
+        assert "percent=80" in content
+        assert "covered=80" in content
+        assert "missed=20" in content
+
+
+class TestCmdSmokePython:
+    """Tests for smoke Python commands."""
+
+    @mock.patch("cihub.commands.hub_ci._run_command")
+    def test_smoke_python_tests_parses_output(self, mock_run: mock.Mock, tmp_path: Path) -> None:
+        from cihub.commands.hub_ci import cmd_smoke_python_tests
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        repo_path = tmp_path / "repo"
+        repo_path.mkdir()
+        coverage_file = repo_path / "coverage.xml"
+        coverage_file.write_text('<coverage line-rate="0.85"></coverage>', encoding="utf-8")
+
+        mock_run.return_value = mock.Mock(
+            stdout="10 passed, 2 failed, 1 skipped",
+            stderr="",
+            returncode=1,
+        )
+
+        output_path = tmp_path / "outputs.txt"
+        args = argparse.Namespace(
+            path=str(repo_path),
+            output_file="test-output.txt",
+            output=str(output_path),
+            github_output=False,
+        )
+        result = cmd_smoke_python_tests(args)
+        assert result == EXIT_SUCCESS
+        content = output_path.read_text(encoding="utf-8")
+        # total = passed + failed + skipped = 10 + 2 + 1 = 13
+        assert "total=13" in content
+        assert "passed=10" in content
+        assert "failed=2" in content
+        assert "skipped=1" in content
+        assert "coverage=85" in content
 
 
 class TestCmdHubCi:

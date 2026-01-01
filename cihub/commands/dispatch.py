@@ -13,7 +13,6 @@ from urllib import error as urllib_error
 from urllib import request
 
 from cihub.cli import CommandResult
-from cihub.correlation import generate_correlation_id
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 
 
@@ -140,7 +139,7 @@ def _cmd_dispatch_trigger(args: argparse.Namespace, json_mode: bool) -> int | Co
     token_env = args.token_env or "HUB_DISPATCH_TOKEN"  # noqa: S105
     if not token:
         token = os.environ.get(token_env)
-    if not token and token_env != "GITHUB_TOKEN":
+    if not token and token_env != "GITHUB_TOKEN":  # noqa: S105
         token = os.environ.get("GITHUB_TOKEN")
     if not token:
         message = f"Missing token (expected {token_env} or GITHUB_TOKEN)"

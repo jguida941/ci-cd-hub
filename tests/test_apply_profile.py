@@ -4,6 +4,7 @@ Tests deep_merge and load_yaml_file utilities used by the apply-profile CLI comm
 The original scripts/apply_profile.py is now a deprecated shim.
 """
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -303,12 +304,17 @@ class TestConfigApplyProfileCLI:
         env["CIHUB_ROOT"] = str(tmp_path)
 
         # Run CLI command
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603
             [
-                "python", "-m", "cihub", "config",
-                "--repo", "test-repo",
+                sys.executable,
+                "-m",
+                "cihub",
+                "config",
+                "--repo",
+                "test-repo",
                 "apply-profile",
-                "--profile", str(profile),
+                "--profile",
+                str(profile),
             ],
             cwd=tmp_path,
             capture_output=True,
@@ -337,9 +343,9 @@ class TestConfigApplyProfileCLI:
         env = os.environ.copy()
         env["CIHUB_ROOT"] = str(tmp_path)
 
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603
             [
-                "python",
+                sys.executable,
                 "-m",
                 "cihub",
                 "config",

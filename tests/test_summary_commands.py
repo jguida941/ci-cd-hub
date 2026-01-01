@@ -13,7 +13,6 @@ from textwrap import dedent
 from unittest import mock
 
 from cihub.commands.report import (
-    cmd_report,
     _kyverno_summary,
     _orchestrator_load_summary,
     _orchestrator_trigger_summary,
@@ -22,8 +21,8 @@ from cihub.commands.report import (
     _security_zap_summary,
     _smoke_overall_summary,
     _smoke_repo_summary,
+    cmd_report,
 )
-
 
 # =============================================================================
 # Security Summary Tests

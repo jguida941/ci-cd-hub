@@ -99,10 +99,7 @@ def cmd_discover(args: argparse.Namespace) -> int | CommandResult:
     print(f"Found {len(entries)} repositories")
     for entry in result.entries:
         subdir_info = f" subdir={entry.subdir}" if entry.subdir else ""
-        print(
-            f"- {entry.full} ({entry.language}) "
-            f"run_group={entry.run_group}{subdir_info}"
-        )
+        print(f"- {entry.full} ({entry.language}) run_group={entry.run_group}{subdir_info}")
 
     if not args.github_output:
         # Print matrix as JSON if not writing to GITHUB_OUTPUT

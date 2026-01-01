@@ -45,7 +45,8 @@ These full dispatch workflows are preserved for historical reference only:
 ## Profiles
 See `templates/profiles/*.yaml` (fast, quality, security, minimal, compliance, coverage-gate for Java/Python).
 - Quick reference: `templates/profiles/README.md`
-- Apply helper: `python scripts/apply_profile.py templates/profiles/python-fast.yaml config/repos/my-repo.yaml`
+- Apply helper: `python -m cihub config apply-profile --profile templates/profiles/python-fast.yaml --target config/repos/my-repo.yaml`
+- Validate one repo: `python -m cihub hub-ci validate-configs --repo my-repo`
 - Edit `repo:` block afterward to set owner/name/language/subdir.
 
 ## Guidance

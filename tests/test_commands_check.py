@@ -16,7 +16,14 @@ FAST_STEPS = [
 ]
 AUDIT_STEPS = ["docs-links", "adr-check", "validate-configs", "validate-profiles"]
 SECURITY_STEPS = ["bandit", "pip-audit", "gitleaks", "trivy"]
-FULL_STEPS = ["zizmor", "validate-templates", "verify-matrix-keys", "license-check"]
+FULL_STEPS = [
+    "zizmor",
+    "validate-templates",
+    "verify-contracts",
+    "verify-matrix-keys",
+    "license-check",
+    "sync-templates-check",
+]
 MUTATION_STEPS = ["mutmut"]
 
 

@@ -29,15 +29,15 @@ def main() -> int:
     parser.add_argument("--output", help="Path to summary.md (optional)")
     args = parser.parse_args()
 
-    cmd = ["python", "-m", "cihub", "report", "summary", "--report", args.report]
+    cmd = [sys.executable, "-m", "cihub", "report", "summary", "--report", args.report]
     if args.output:
         cmd.extend(["--output", args.output])
 
     print(
-        f"[DEPRECATED] scripts/render_summary.py: use 'cihub report summary' instead",
+        "[DEPRECATED] scripts/render_summary.py: use 'cihub report summary' instead",
         file=sys.stderr,
     )
-    return subprocess.call(cmd)
+    return subprocess.call(cmd)  # noqa: S603
 
 
 if __name__ == "__main__":

@@ -25,20 +25,23 @@ typecheck: ## Run mypy on core code
 	mypy cihub/ scripts/
 
 .PHONY: validate-config
-validate-config: ## Validate a repo config (REPO required)
-	@[ -n "$(REPO)" ] || (echo "REPO is required. Example: make validate-config REPO=fixtures-java-passing" && exit 2)
-	python scripts/validate_config.py config/repos/$(REPO).yaml
+validate-config: ## Validate hub repo configs (optional REPO)
+	@if [ -n "$(REPO)" ]; then \
+		python -m cihub hub-ci validate-configs --repo $(REPO); \
+	else \
+		python -m cihub hub-ci validate-configs; \
+	fi
 
 .PHONY: load-config
 load-config: ## Load merged config for a repo (REPO required)
 	@[ -n "$(REPO)" ] || (echo "REPO is required. Example: make load-config REPO=fixtures-java-passing" && exit 2)
-	python scripts/load_config.py $(REPO)
+	python -m cihub config show --repo $(REPO) --effective
 
 .PHONY: apply-profile
 apply-profile: ## Apply profile to a repo config (REPO, PROFILE required)
 	@[ -n "$(REPO)" ] || (echo "REPO is required. Example: make apply-profile REPO=my-repo PROFILE=python-fast" && exit 2)
 	@[ -n "$(PROFILE)" ] || (echo "PROFILE is required. Example: make apply-profile REPO=my-repo PROFILE=python-fast" && exit 2)
-	python scripts/apply_profile.py templates/profiles/$(PROFILE).yaml config/repos/$(REPO).yaml
+	python -m cihub config apply-profile --profile templates/profiles/$(PROFILE).yaml --target config/repos/$(REPO).yaml
 
 .PHONY: actionlint
 actionlint: ## Validate workflows (requires actionlint installed)
@@ -92,4 +95,4 @@ mutmut: ## Run mutation testing (requires mutmut)
 
 .PHONY: aggregate-reports
 aggregate-reports: ## Build dashboard.html from reports
-	python scripts/aggregate_reports.py --output dashboard.html
+	python -m cihub report dashboard --reports-dir reports --output dashboard.html

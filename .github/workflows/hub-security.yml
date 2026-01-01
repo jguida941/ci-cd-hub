@@ -116,16 +116,7 @@ jobs:
 
       - name: Verify checkout
         id: repo-check
-        env:
-          MATRIX_OWNER: ${{ matrix.owner }}
-          MATRIX_NAME: ${{ matrix.name }}
-        run: |
-          if [ -d repo/.git ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Repo checkout failed for ${MATRIX_OWNER}/${MATRIX_NAME}"
-          fi
+        run: cihub hub-ci repo-check --path repo --owner "${{ matrix.owner }}" --name "${{ matrix.name }}" --github-output
 
       # ========================================
       # CODEQL ANALYSIS
@@ -133,24 +124,8 @@ jobs:
       - name: Check for source code
         id: source-check
         if: steps.repo-check.outputs.present == 'true'
-        env:
-          MATRIX_LANGUAGE: ${{ matrix.language }}
         working-directory: repo
-        run: |
-          HAS_SOURCE=false
-          if [ "$MATRIX_LANGUAGE" = "java" ]; then
-            # Check for Java/Kotlin source files
-            if find . -name "*.java" -o -name "*.kt" 2>/dev/null | head -1 | grep -q .; then
-              HAS_SOURCE=true
-            fi
-          elif [ "$MATRIX_LANGUAGE" = "python" ]; then
-            # Check for Python source files
-            if find . -name "*.py" 2>/dev/null | head -1 | grep -q .; then
-              HAS_SOURCE=true
-            fi
-          fi
-          echo "has_source=$HAS_SOURCE" >> "$GITHUB_OUTPUT"
-          echo "Source code present: $HAS_SOURCE"
+        run: cihub hub-ci source-check --path . --language "${{ matrix.language }}" --github-output
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
@@ -170,13 +145,7 @@ jobs:
       - name: Build for CodeQL (Java)
         if: steps.repo-check.outputs.present == 'true' && steps.source-check.outputs.has_source == 'true' && matrix.language == 'java'
         working-directory: repo
-        run: |
-          if [ -f "mvnw" ]; then
-            chmod +x mvnw
-            ./mvnw -B -ntp compile -DskipTests
-          elif [ -f "pom.xml" ]; then
-            mvn -B -ntp compile -DskipTests
-          fi
+        run: cihub hub-ci codeql-build --path .
         continue-on-error: true
 
       - name: Perform CodeQL Analysis
@@ -216,44 +185,30 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: "[Python] Install security tools"
+        if: steps.repo-check.outputs.present == 'true' && matrix.language == 'python'
+        working-directory: repo
+        run: pip install pip-audit==2.7.3 bandit==1.7.10 ruff==0.8.4
+
       - name: "[Python] pip-audit"
         if: steps.repo-check.outputs.present == 'true' && matrix.language == 'python'
         id: pip-audit
         working-directory: repo
-        run: |
-          pip install pip-audit==2.7.3
-          pip install -r requirements.txt 2>/dev/null || true
-          pip-audit --format=json --output=pip-audit-report.json 2>/dev/null || true
-          VULNS=$(jq '
-            if type == "array" then
-              [.[] | .vulns // [] | length] | add // 0
-            elif .dependencies then
-              [.dependencies[] | .vulnerabilities // [] | length] | add // 0
-            else 0 end
-          ' pip-audit-report.json 2>/dev/null || echo 0)
-          echo "vulnerabilities=$VULNS" >> "$GITHUB_OUTPUT"
+        run: cihub hub-ci security-pip-audit --path . --report pip-audit-report.json --requirements requirements.txt --github-output
         continue-on-error: true
 
       - name: "[Python] Bandit"
         if: steps.repo-check.outputs.present == 'true' && matrix.language == 'python'
         id: bandit
         working-directory: repo
-        run: |
-          pip install bandit==1.7.10
-          bandit -r . -f json -o bandit-report.json 2>/dev/null || true
-          HIGH=$(jq '[.results[] | select(.issue_severity == "HIGH")] | length' bandit-report.json 2>/dev/null || echo 0)
-          echo "high=$HIGH" >> "$GITHUB_OUTPUT"
+        run: cihub hub-ci security-bandit --path . --report bandit-report.json --github-output
         continue-on-error: true
 
       - name: "[Python] Ruff Security Rules"
         if: steps.repo-check.outputs.present == 'true' && matrix.language == 'python'
         id: ruff-security
         working-directory: repo
-        run: |
-          pip install ruff==0.8.4
-          ruff check . --select=S --output-format=json > ruff-security.json 2>/dev/null || true
-          ISSUES=$(jq 'length' ruff-security.json 2>/dev/null || echo 0)
-          echo "issues=$ISSUES" >> "$GITHUB_OUTPUT"
+        run: cihub hub-ci security-ruff --path . --report ruff-security.json --github-output
         continue-on-error: true
 
       # ========================================
@@ -263,22 +218,7 @@ jobs:
         if: steps.repo-check.outputs.present == 'true' && matrix.language == 'java'
         id: owasp
         working-directory: repo
-        run: |
-          if [ -f "mvnw" ]; then
-            chmod +x mvnw
-            ./mvnw -B -ntp org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=11 2>/dev/null || true
-          fi
-
-          REPORT=$(find . -name "dependency-check-report.json" 2>/dev/null | head -1)
-          CRITICAL=0; HIGH=0
-          if [ -n "$REPORT" ] && [ -f "$REPORT" ]; then
-            CRITICAL=$(jq '[.dependencies[]?.vulnerabilities[]? | select(.severity == "CRITICAL")] | length' "$REPORT" 2>/dev/null || echo 0)
-            HIGH=$(jq '[.dependencies[]?.vulnerabilities[]? | select(.severity == "HIGH")] | length' "$REPORT" 2>/dev/null || echo 0)
-          fi
-          {
-            echo "critical=$CRITICAL"
-            echo "high=$HIGH"
-          } >> "$GITHUB_OUTPUT"
+        run: cihub hub-ci security-owasp --path . --github-output
         continue-on-error: true
 
       # ========================================
@@ -316,6 +256,13 @@ jobs:
       matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
 
     steps:
+      - name: Checkout Hub
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: hub
+          fetch-depth: 1
+          persist-credentials: false
+
       - name: Checkout Target Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -326,36 +273,32 @@ jobs:
           token: ${{ secrets.HUB_DISPATCH_TOKEN || github.token }}
         continue-on-error: true
 
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install cihub
+        run: pip install -e "hub[ci]"
+
       - name: Verify checkout
         id: repo-check
-        env:
-          MATRIX_OWNER: ${{ matrix.owner }}
-          MATRIX_NAME: ${{ matrix.name }}
-        run: |
-          if [ -d repo/.git ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Repo checkout failed for ${MATRIX_OWNER}/${MATRIX_NAME}"
-          fi
+        run: cihub hub-ci repo-check --path repo --owner "${{ matrix.owner }}" --name "${{ matrix.name }}" --github-output
 
       - name: Check for Docker Compose
         if: steps.repo-check.outputs.present == 'true' && inputs.run_zap == true
         id: check-docker
         working-directory: repo
-        run: |
-          if [ -f "docker-compose.yml" ] || [ -f "docker-compose.yaml" ]; then
-            echo "has_docker=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_docker=false" >> "$GITHUB_OUTPUT"
-          fi
+        run: cihub hub-ci docker-compose-check --path . --github-output
 
       - name: Start Application
         if: steps.repo-check.outputs.present == 'true' && inputs.run_zap == true && steps.check-docker.outputs.has_docker == 'true'
         working-directory: repo
-        run: |
-          docker compose up -d
-          sleep 60  # Wait for app to start
+        run: docker compose up -d
+
+      - name: Wait for app startup
+        if: steps.repo-check.outputs.present == 'true' && inputs.run_zap == true && steps.check-docker.outputs.has_docker == 'true'
+        run: sleep 60
 
       - name: ZAP Baseline Scan
         if: steps.repo-check.outputs.present == 'true' && inputs.run_zap == true && steps.check-docker.outputs.has_docker == 'true'

@@ -24,11 +24,10 @@ warnings.warn(
 
 def main() -> int:
     print(
-        "[DEPRECATED] scripts/check_quarantine_imports.py: "
-        "use 'cihub hub-ci quarantine-check' instead",
+        "[DEPRECATED] scripts/check_quarantine_imports.py: use 'cihub hub-ci quarantine-check' instead",
         file=sys.stderr,
     )
-    return subprocess.call(["python", "-m", "cihub", "hub-ci", "quarantine-check"])
+    return subprocess.call([sys.executable, "-m", "cihub", "hub-ci", "quarantine-check"])  # noqa: S603
 
 
 if __name__ == "__main__":

@@ -70,12 +70,11 @@ def main() -> int:
     ]
 
     print(
-        f"DEPRECATED: Running 'cihub report dashboard' instead. "
-        f"Please update your scripts to use the CLI directly.",
+        "DEPRECATED: Running 'cihub report dashboard' instead. Please update your scripts to use the CLI directly.",
         file=sys.stderr,
     )
 
-    result = subprocess.run(cmd, check=False)
+    result = subprocess.run(cmd, check=False)  # noqa: S603
     return result.returncode
 
 

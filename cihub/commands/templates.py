@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from typing import Any
@@ -22,6 +23,30 @@ from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 def cmd_sync_templates(args: argparse.Namespace) -> int | CommandResult:
     """Sync caller workflow templates to target repos."""
     json_mode = getattr(args, "json", False)
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or os.environ.get("HUB_DISPATCH_TOKEN")
+    if not token:
+        # For --check or --dry-run, skip gracefully with warning (matches check.py pattern)
+        if args.check or args.dry_run:
+            message = (
+                "Skipping: No GitHub token available (set GH_TOKEN, GITHUB_TOKEN, or HUB_DISPATCH_TOKEN). "
+                "Cannot verify remote template state without token."
+            )
+            if json_mode:
+                return CommandResult(
+                    exit_code=EXIT_SUCCESS,
+                    summary=message,
+                    data={"skipped": True, "reason": "no_token"},
+                )
+            print(f"[SKIP] {message}", file=sys.stderr)
+            return EXIT_SUCCESS
+        # For actual sync operations, token is required
+        message = "Missing GitHub token (set GH_TOKEN, GITHUB_TOKEN, or HUB_DISPATCH_TOKEN)"
+        if json_mode:
+            return CommandResult(exit_code=EXIT_USAGE, summary=message)
+        print(message, file=sys.stderr)
+        return EXIT_USAGE
+    if "GH_TOKEN" not in os.environ:
+        os.environ["GH_TOKEN"] = token
     results: list[dict[str, Any]] = []
     entries = get_repo_entries(only_dispatch_enabled=not args.include_disabled)
     if args.repo:

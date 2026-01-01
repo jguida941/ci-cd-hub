@@ -93,92 +93,17 @@ jobs:
         run: pip install -e "hub[ci]"
 
       - name: Install Kyverno CLI
+        id: kyverno-install
         env:
           KYVERNO_VERSION: ${{ inputs.kyverno_version }}
-        run: |
-          set -euo pipefail
-          VERSION="$KYVERNO_VERSION"
-
-          echo "Installing Kyverno CLI ${VERSION}..."
-          # Filename keeps the v prefix: kyverno-cli_v1.16.1_linux_x86_64.tar.gz
-          curl -sLO "https://github.com/kyverno/kyverno/releases/download/${VERSION}/kyverno-cli_${VERSION}_linux_x86_64.tar.gz"
-          tar -xzf "kyverno-cli_${VERSION}_linux_x86_64.tar.gz"
-          sudo mv kyverno /usr/local/bin/
-          rm "kyverno-cli_${VERSION}_linux_x86_64.tar.gz"
-          kyverno version
+        run: cihub hub-ci kyverno-install --version "${KYVERNO_VERSION}" --dest .cihub/tools --github-output
 
       - name: Validate policy syntax
         id: validate
         env:
           POLICIES_DIR: ${{ inputs.policies_dir }}
           TEMPLATES_DIR: ${{ inputs.templates_dir }}
-        run: |
-          set -euo pipefail
-          echo "Validating Kyverno policies in $POLICIES_DIR..."
-
-          FAILED=0
-          VALIDATED=0
-
-          # Check if policies directory exists
-          if [ ! -d "$POLICIES_DIR" ]; then
-            echo "::warning::Policies directory '$POLICIES_DIR' not found"
-            {
-              echo "validated=0"
-              echo "failed=0"
-            } >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Validate all policy files using apply --dry-run with a minimal resource
-          for policy in "$POLICIES_DIR"/*.yaml "$POLICIES_DIR"/*.yml; do
-            if [ -f "$policy" ]; then
-              echo "Validating: $policy"
-              # Use apply with /dev/null as resource to validate policy syntax
-              if kyverno apply "$policy" --resource /dev/null 2>&1 | grep -v "no resource found"; then
-                echo "  OK"
-                VALIDATED=$((VALIDATED + 1))
-              else
-                # Check if it's a real error or just "no resource" message
-                OUTPUT=$(kyverno apply "$policy" --resource /dev/null 2>&1)
-                if echo "$OUTPUT" | grep -qi "error\|invalid\|failed"; then
-                  echo "  FAILED"
-                  echo "$OUTPUT"
-                  FAILED=$((FAILED + 1))
-                else
-                  echo "  OK (syntax valid)"
-                  VALIDATED=$((VALIDATED + 1))
-                fi
-              fi
-            fi
-          done
-
-          # Validate templates if directory exists
-          if [ -d "$TEMPLATES_DIR" ]; then
-            for template in "$TEMPLATES_DIR"/*.yaml "$TEMPLATES_DIR"/*.yml; do
-              if [ -f "$template" ]; then
-                echo "Validating template: $template"
-                OUTPUT=$(kyverno apply "$template" --resource /dev/null 2>&1 || true)
-                if echo "$OUTPUT" | grep -qi "error\|invalid\|failed"; then
-                  echo "  FAILED"
-                  echo "$OUTPUT"
-                  FAILED=$((FAILED + 1))
-                else
-                  echo "  OK (syntax valid)"
-                  VALIDATED=$((VALIDATED + 1))
-                fi
-              fi
-            done
-          fi
-
-          echo "validated=$VALIDATED" >> "$GITHUB_OUTPUT"
-          echo "failed=$FAILED" >> "$GITHUB_OUTPUT"
-
-          if [ "$FAILED" -gt 0 ]; then
-            echo "::error::$FAILED policy validation(s) failed"
-            exit 1
-          fi
-
-          echo "All $VALIDATED policies validated successfully"
+        run: cihub hub-ci kyverno-validate --policies-dir "${POLICIES_DIR}" --templates-dir "${TEMPLATES_DIR}" --bin "${{ steps.kyverno-install.outputs.path }}" --github-output
 
       - name: Test policies against fixtures
         if: inputs.run_tests && inputs.fixtures_dir != ''
@@ -186,48 +111,14 @@ jobs:
           FIXTURES_DIR: ${{ inputs.fixtures_dir }}
           POLICIES_DIR: ${{ inputs.policies_dir }}
           FAIL_ON_WARN: ${{ inputs.fail_on_warn }}
-        run: |
-          set -euo pipefail
-          echo "Testing policies against fixtures in $FIXTURES_DIR..."
-
-          if [ ! -d "$FIXTURES_DIR" ]; then
-            echo "::warning::Fixtures directory '$FIXTURES_DIR' not found, skipping tests"
-            exit 0
-          fi
-
-          # Apply each policy to each fixture
-          for policy in "$POLICIES_DIR"/*.yaml "$POLICIES_DIR"/*.yml; do
-            if [ -f "$policy" ]; then
-              POLICY_NAME=$(basename "$policy" .yaml)
-              echo ""
-              echo "=== Testing policy: $POLICY_NAME ==="
-
-              for fixture in "$FIXTURES_DIR"/*.yaml "$FIXTURES_DIR"/*.yml; do
-                if [ -f "$fixture" ]; then
-                  FIXTURE_NAME=$(basename "$fixture")
-                  echo -n "  vs $FIXTURE_NAME: "
-
-                  RESULT=$(kyverno apply "$policy" --resource "$fixture" 2>&1 || true)
-
-                  if echo "$RESULT" | grep -q "pass: 1"; then
-                    echo "PASS"
-                  elif echo "$RESULT" | grep -q "fail: 1"; then
-                    echo "FAIL (policy enforced)"
-                  elif echo "$RESULT" | grep -q "warn: 1"; then
-                    echo "WARN"
-                    if [ "$FAIL_ON_WARN" = "true" ]; then
-                      echo "::warning::Policy $POLICY_NAME warned on $FIXTURE_NAME"
-                    fi
-                  else
-                    echo "SKIP (not applicable)"
-                  fi
-                fi
-              done
-            fi
-          done
+        run: cihub hub-ci kyverno-test --policies-dir "${POLICIES_DIR}" --fixtures-dir "${FIXTURES_DIR}" --bin "${{ steps.kyverno-install.outputs.path }}" --fail-on-warn "${FAIL_ON_WARN}"
 
       - name: Generate Summary
         if: always()
         env:
           CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary }}
-        run: cihub report kyverno-summary --policies-dir "${{ inputs.policies_dir }}" --validated "${{ steps.validate.outputs.validated || '0' }}" --failed "${{ steps.validate.outputs.failed || '0' }}" --run-tests "${{ inputs.run_tests }}" --title "# Kyverno Policy Validation"
+          POLICIES_DIR: ${{ inputs.policies_dir }}
+          VALIDATED: ${{ steps.validate.outputs.validated || '0' }}
+          FAILED: ${{ steps.validate.outputs.failed || '0' }}
+          RUN_TESTS: ${{ inputs.run_tests }}
+        run: cihub report kyverno-summary --policies-dir "${POLICIES_DIR}" --validated "${VALIDATED}" --failed "${FAILED}" --run-tests "${RUN_TESTS}" --title "# Kyverno Policy Validation"

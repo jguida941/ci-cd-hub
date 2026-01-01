@@ -34,38 +34,32 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install actionlint (pinned version with checksum)
-        env:
-          ACTIONLINT_VERSION: "1.7.4"
-          ACTIONLINT_CHECKSUM: "fc0a6886bbb9a23a39eeec4b176193cadb54ddbe77cdbb19b637933919545395"
-        run: |
-          curl -sLO "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
-          echo "${ACTIONLINT_CHECKSUM}  actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" | sha256sum -c -
-          tar -xzf "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" actionlint
-          sudo mv actionlint /usr/local/bin/
-          rm "actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
-          actionlint --version
-
-      - name: Validate reusable workflows
-        run: |
-          echo "Validating python-ci.yml..."
-          actionlint .github/workflows/python-ci.yml
-          echo "Validating java-ci.yml..."
-          actionlint .github/workflows/java-ci.yml
-          echo "All workflows valid!"
-
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '3.12'
 
+      - name: Upgrade pip
+        run: pip install --upgrade pip
+
+      - name: Install cihub
+        run: pip install -e .
+
+      - name: Install actionlint (pinned version with checksum)
+        id: actionlint-install
+        run: cihub hub-ci actionlint-install --version 1.7.4 --checksum fc0a6886bbb9a23a39eeec4b176193cadb54ddbe77cdbb19b637933919545395 --dest .cihub/tools --github-output
+
+      - name: Validate python-ci.yml
+        run: cihub hub-ci actionlint --workflow .github/workflows/python-ci.yml --bin "${{ steps.actionlint-install.outputs.path }}"
+
+      - name: Validate java-ci.yml
+        run: cihub hub-ci actionlint --workflow .github/workflows/java-ci.yml --bin "${{ steps.actionlint-install.outputs.path }}"
+
       - name: Install dependencies
-        run: |
-          pip install pytest pyyaml jsonschema
+        run: pip install pytest pyyaml jsonschema
 
       - name: Run tests
-        run: |
-          pytest tests/ -v
+        run: pytest tests/ -v
 
   release:
     name: Create Release
@@ -79,16 +73,20 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Upgrade pip
+        run: pip install --upgrade pip
+
+      - name: Install cihub
+        run: pip install -e .
+
       - name: Get version from tag
         id: version
-        run: |
-          VERSION="${GITHUB_REF#refs/tags/}"
-          MAJOR=$(echo "$VERSION" | cut -d. -f1)
-          {
-            echo "version=$VERSION"
-            echo "major=$MAJOR"
-          } >> "$GITHUB_OUTPUT"
-          echo "Release version: $VERSION (major: $MAJOR)"
+        run: cihub hub-ci release-parse-tag --github-output
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
@@ -115,22 +113,4 @@ jobs:
             ```
 
       - name: Update floating major tag
-        env:
-          RELEASE_VERSION: ${{ steps.version.outputs.version }}
-          RELEASE_MAJOR: ${{ steps.version.outputs.major }}
-        run: |
-          VERSION="$RELEASE_VERSION"
-          MAJOR="$RELEASE_MAJOR"
-
-          echo "Updating floating tag $MAJOR to point to $VERSION..."
-
-          # Delete local tag if exists
-          git tag -d "$MAJOR" 2>/dev/null || true
-
-          # Create new tag pointing to current commit
-          git tag "$MAJOR"
-
-          # Force push to update remote
-          git push -f origin "$MAJOR"
-
-          echo "Floating tag $MAJOR now points to $VERSION"
+        run: cihub hub-ci release-update-tag --major "${{ steps.version.outputs.major }}" --version "${{ steps.version.outputs.version }}" --remote origin

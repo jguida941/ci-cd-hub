@@ -4,7 +4,7 @@
 Update this doc when workflow triggers or inputs change.
 
 **Templates & Profiles:** For ready-made repo configs and tool profiles.  
-See `templates/README.md` (apply via `python scripts/apply_profile.py ...`).
+See `templates/README.md` (apply via `python -m cihub config apply-profile ...`).
 
 ---
 
@@ -106,17 +106,17 @@ Dispatches workflows inside target repos. This mode requires target repos to hav
 
 **File:** `.github/workflows/config-validate.yml`
 
-Validates all hub repo configs against the JSON schema on config/schema/script changes or manual dispatch.
+Validates all hub repo configs against the JSON schema on config/schema changes or manual dispatch.
 
 ### Triggers
-- `push` to config/**, schema/**, scripts/load_config.py, or the workflow itself
+- `push` to config/**, schema/**, or the workflow itself
 - `pull_request` touching those paths
 - `workflow_dispatch`
 
 ### Steps (summary)
 - Install dependencies from `requirements-dev.txt` or `requirements.txt` (fallback to `pyyaml` + `jsonschema`)
-- Iterate `config/repos/*.yaml` and run `scripts/load_config.py --repo <name> --output workflow-inputs` (schema validation)
-- Validate defaults via `scripts/load_config.py --repo dummy --hub-root . --output workflow-inputs`
+- Run `python -m cihub hub-ci validate-configs` for hub configs
+- Run `python -m cihub hub-ci validate-profiles` for profiles
 
 ---
 

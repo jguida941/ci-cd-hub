@@ -128,6 +128,7 @@ def _load_tool_outputs(tool_dir: Path) -> dict[str, dict[str, Any]]:
 # Report Validation (service-backed)
 # ============================================================================
 
+
 def _validate_report(args: argparse.Namespace, json_mode: bool) -> int | CommandResult:
     """Validate report.json structure and content."""
     report_path = Path(args.report)
@@ -261,15 +262,11 @@ def _load_dashboard_reports(
                 schema_version = report.get("schema_version")
                 if schema_version != "2.0":
                     if schema_mode == "strict":
-                        warnings.append(
-                            f"Skipping {report_file}: schema_version={schema_version}, expected '2.0'"
-                        )
+                        warnings.append(f"Skipping {report_file}: schema_version={schema_version}, expected '2.0'")
                         skipped += 1
                         continue
                     else:
-                        warnings.append(
-                            f"{report_file} has schema_version={schema_version}, expected '2.0'"
-                        )
+                        warnings.append(f"{report_file} has schema_version={schema_version}, expected '2.0'")
 
                 reports.append(report)
         except (json.JSONDecodeError, OSError) as e:
@@ -396,14 +393,10 @@ def _generate_dashboard_summary(reports: list[dict[str, Any]]) -> dict[str, Any]
 
     # Calculate averages
     if summary["coverage"]["count"] > 0:
-        summary["coverage"]["average"] = round(
-            summary["coverage"]["total"] / summary["coverage"]["count"], 1
-        )
+        summary["coverage"]["average"] = round(summary["coverage"]["total"] / summary["coverage"]["count"], 1)
 
     if summary["mutation"]["count"] > 0:
-        summary["mutation"]["average"] = round(
-            summary["mutation"]["total"] / summary["mutation"]["count"], 1
-        )
+        summary["mutation"]["average"] = round(summary["mutation"]["total"] / summary["mutation"]["count"], 1)
 
     # Add tool stats to summary
     if tool_stats:
@@ -709,8 +702,14 @@ def _smoke_repo_summary(args: argparse.Namespace) -> str:
             f"| **Unit Tests** | {args.tests_total} executed | {'PASS' if args.tests_total > 0 else 'FAIL'} |",
             f"| **Test Failures** | {args.tests_failed} failed | {'WARN' if args.tests_failed > 0 else 'PASS'} |",
             f"| **Coverage (JaCoCo)** | {cov}% {_bar(cov)} | {'PASS' if cov >= 50 else 'WARN'} |",
-            f"| **Checkstyle** | {args.checkstyle_violations} violations | {'WARN' if args.checkstyle_violations > 0 else 'PASS'} |",
-            f"| **SpotBugs** | {args.spotbugs_issues} potential bugs | {'WARN' if args.spotbugs_issues > 0 else 'PASS'} |",
+            (
+                f"| **Checkstyle** | {args.checkstyle_violations} violations | "
+                f"{'WARN' if args.checkstyle_violations > 0 else 'PASS'} |"
+            ),
+            (
+                f"| **SpotBugs** | {args.spotbugs_issues} potential bugs | "
+                f"{'WARN' if args.spotbugs_issues > 0 else 'PASS'} |"
+            ),
             "",
             f"**Coverage Details:** {args.coverage_lines} instructions covered",
             "",
@@ -731,7 +730,10 @@ def _smoke_repo_summary(args: argparse.Namespace) -> str:
         f"| **Test Failures** | {args.tests_failed} failed | {'WARN' if args.tests_failed > 0 else 'PASS'} |",
         f"| **Coverage (pytest-cov)** | {cov}% {_bar(cov)} | {'PASS' if cov >= 50 else 'WARN'} |",
         f"| **Ruff Lint** | {args.ruff_errors} issues | {'WARN' if args.ruff_errors > 0 else 'PASS'} |",
-        f"| **Black Format** | {args.black_issues} files need reformatting | {'WARN' if args.black_issues > 0 else 'PASS'} |",
+        (
+            f"| **Black Format** | {args.black_issues} files need reformatting | "
+            f"{'WARN' if args.black_issues > 0 else 'PASS'} |"
+        ),
         "",
         f"**Security:** {args.ruff_security} security-related issues",
         "",
@@ -860,7 +862,7 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
         token_env = args.token_env or "HUB_DISPATCH_TOKEN"  # noqa: S105
         if not token:
             token = os.environ.get(token_env)
-        if not token and token_env != "GITHUB_TOKEN":
+        if not token and token_env != "GITHUB_TOKEN":  # noqa: S105
             token = os.environ.get("GITHUB_TOKEN")
         if not token:
             message = f"Missing token (expected {token_env} or GITHUB_TOKEN)"
@@ -942,13 +944,13 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
     if args.subcommand == "summary":
         report_path = Path(args.report)
         summary_text = render_summary_from_path(report_path)
+        write_summary = _resolve_write_summary(args.write_github_summary)
         output_path = Path(args.output) if args.output else None
         if output_path:
             output_path.write_text(summary_text, encoding="utf-8")
-        else:
-            if _resolve_write_summary(args.write_github_summary):
-                print(summary_text)
-        github_summary = _resolve_summary_path(None, _resolve_write_summary(args.write_github_summary))
+        elif write_summary and not json_mode:
+            print(summary_text)
+        github_summary = _resolve_summary_path(None, write_summary)
         if github_summary:
             github_summary.write_text(summary_text, encoding="utf-8")
         if json_mode:
@@ -1020,14 +1022,14 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
                 print(f"Warning: {warn}")
 
         # Generate summary
-        summary = _generate_dashboard_summary(reports)
+        dashboard_summary = _generate_dashboard_summary(reports)
 
         # Output
         output_path.parent.mkdir(parents=True, exist_ok=True)
         if output_format == "json":
-            output_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+            output_path.write_text(json.dumps(dashboard_summary, indent=2), encoding="utf-8")
         else:
-            html_content = _generate_html_dashboard(summary)
+            html_content = _generate_html_dashboard(dashboard_summary)
             output_path.write_text(html_content, encoding="utf-8")
 
         if not json_mode:

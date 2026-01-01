@@ -14,7 +14,7 @@ Comprehensive documentation for all quality, security, and testing tools support
 
 > **Verification:** Central mode tools are in `hub-run-all.yml`. Grep for tool names to verify.
 >
-> **Note:** Central mode now reads config via `load_config.py` and gates ALL tools based on `enabled: true/false` settings.
+> **Note:** Central mode now reads config via `cihub.config.loader` and gates ALL tools based on `enabled: true/false` settings.
 
 ### Java Tools
 
@@ -62,7 +62,7 @@ Comprehensive documentation for all quality, security, and testing tools support
 ### Central Mode (`hub-run-all.yml`)
 - Hub clones your repo and runs tools directly
 - Tools are controlled by config toggles (`enabled: true/false`)
-- Config is loaded via `scripts/load_config.py` at runtime
+- Config is loaded via `cihub.config.loader` at runtime
 - Hub controls aggregation, summaries, and artifact uploads
 - **Recommended for most users**
 

@@ -769,22 +769,52 @@
   "properties": {
     "cache_sentinel": {
       "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
       "type": "object"
     },
     "canary": {
       "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
       "type": "object"
     },
     "chaos": {
       "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
       "type": "object"
     },
     "dr_drill": {
       "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
       "type": "object"
     },
     "egress_control": {
       "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
       "type": "object"
     },
     "extra_tests": {
@@ -842,6 +872,12 @@
     },
     "kyverno": {
       "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
       "type": "object"
     },
     "language": {
@@ -863,6 +899,34 @@
             "enabled": {
               "default": false,
               "type": "boolean"
+            },
+            "recipients_env": {
+              "default": "CIHUB_EMAIL_TO",
+              "type": "string"
+            },
+            "smtp_from_env": {
+              "default": "SMTP_FROM",
+              "type": "string"
+            },
+            "smtp_host_env": {
+              "default": "SMTP_HOST",
+              "type": "string"
+            },
+            "smtp_password_env": {
+              "default": "SMTP_PASSWORD",
+              "type": "string"
+            },
+            "smtp_port_env": {
+              "default": "SMTP_PORT",
+              "type": "string"
+            },
+            "smtp_starttls_env": {
+              "default": "SMTP_STARTTLS",
+              "type": "string"
+            },
+            "smtp_user_env": {
+              "default": "SMTP_USER",
+              "type": "string"
             }
           },
           "type": "object"
@@ -881,6 +945,10 @@
             "on_success": {
               "default": false,
               "type": "boolean"
+            },
+            "webhook_env": {
+              "default": "CIHUB_SLACK_WEBHOOK_URL",
+              "type": "string"
             }
           },
           "type": "object"
@@ -977,14 +1045,32 @@
     },
     "runner_isolation": {
       "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
       "type": "object"
     },
     "supply_chain": {
       "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
       "type": "object"
     },
     "telemetry": {
       "additionalProperties": true,
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
       "type": "object"
     },
     "thresholds": {

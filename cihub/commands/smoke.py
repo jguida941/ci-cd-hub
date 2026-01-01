@@ -420,9 +420,7 @@ def cmd_smoke_validate(args: argparse.Namespace) -> int | CommandResult:
     failures: list[str] = []
 
     if args.count is not None and args.count < args.min_count:
-        failures.append(
-            f"Expected at least {args.min_count} smoke test repos, found {args.count}"
-        )
+        failures.append(f"Expected at least {args.min_count} smoke test repos, found {args.count}")
 
     if args.status and args.status != "success":
         failures.append("Smoke test failed - check job results")

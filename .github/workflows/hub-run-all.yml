@@ -31,6 +31,11 @@ on:
         required: false
         type: boolean
         default: false
+      write_github_summary:
+        description: 'Write summary to GITHUB_STEP_SUMMARY'
+        required: false
+        type: boolean
+        default: true
 
   schedule:
     # Run nightly at 2 AM UTC
@@ -137,11 +142,8 @@ jobs:
 
       - name: Read report outputs
         id: report
-        if: always()
-        run: |
-          if [ -f .cihub/report.json ]; then
-            cihub report outputs --report .cihub/report.json
-          fi
+        if: ${{ always() && hashFiles('repo/.cihub/report.json') != '' }}
+        run: cihub report outputs --report repo/.cihub/report.json
 
       - name: Upload CI Report
         if: always()
@@ -149,9 +151,9 @@ jobs:
         with:
           name: ${{ matrix.config_basename }}${{ matrix.subdir_safe != '' && format('-{0}', matrix.subdir_safe) || '' }}-ci-report
           path: |
-            .cihub/report.json
-            .cihub/summary.md
-            .cihub/tool-outputs/*.json
+            repo/.cihub/report.json
+            repo/.cihub/summary.md
+            repo/.cihub/tool-outputs/*.json
           retention-days: ${{ matrix.retention_days || 30 }}
           if-no-files-found: warn
 
@@ -192,11 +194,8 @@ jobs:
           TOTAL_REPOS: ${{ needs.discover.outputs.count }}
           GH_RUN_NUMBER: ${{ github.run_number }}
           GH_EVENT_NAME: ${{ github.event_name }}
-        run: |
-          cihub report aggregate \
-            --reports-dir reports \
-            --total-repos "${TOTAL_REPOS}" \
-            --output hub-report.json
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary }}
+        run: cihub report aggregate --reports-dir reports --total-repos "${TOTAL_REPOS}" --output hub-report.json
 
       - name: Upload Hub Report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

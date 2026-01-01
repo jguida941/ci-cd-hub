@@ -108,17 +108,14 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
       - name: Install cihub
         env:
           HUB_REPO: ${{ inputs.hub_repo || vars.HUB_REPO }}
           HUB_REF: ${{ inputs.hub_ref || vars.HUB_REF }}
-        run: |
-          if [ -z "$HUB_REPO" ] || [ -z "$HUB_REF" ]; then
-            echo "::error::Set inputs hub_repo/hub_ref or repo/org vars HUB_REPO and HUB_REF"
-            exit 1
-          fi
-          python -m pip install --upgrade pip
-          python -m pip install "git+https://github.com/${HUB_REPO}.git@${HUB_REF}"
+        run: python -m pip install "git+https://github.com/${HUB_REPO}.git@${HUB_REF}"
 
       - name: Emit config outputs
         id: parse

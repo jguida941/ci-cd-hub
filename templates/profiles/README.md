@@ -63,8 +63,10 @@ _Expected runtimes are rough estimates and depend on repo size and runner speed.
 ### Option 0: Use the apply_profile helper
 
 ```bash
-python scripts/apply_profile.py templates/profiles/python-fast.yaml config/repos/my-repo.yaml
-python scripts/validate_config.py config/repos/my-repo.yaml
+python -m cihub config apply-profile --profile templates/profiles/python-fast.yaml --target config/repos/my-repo.yaml
+python -m cihub hub-ci validate-configs
+# Or validate a single repo
+python -m cihub hub-ci validate-configs --repo my-repo
 ```
 
 ### Option 1: Copy Profile to Repo Config

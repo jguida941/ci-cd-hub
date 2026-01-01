@@ -92,9 +92,7 @@ def _sanitize_subdir(subdir: str) -> str:
     return subdir.replace("/", "-")
 
 
-def _load_single_repo(
-    config_file: Path, hub_root: Path
-) -> tuple[RepoEntry | None, list[str]]:
+def _load_single_repo(config_file: Path, hub_root: Path) -> tuple[RepoEntry | None, list[str]]:
     """Load a single repo config file.
 
     Captures any stderr output as warnings (no prints to terminal).
@@ -176,9 +174,7 @@ def _load_single_repo(
     tools = {key: inputs[key] for key in _TOOL_KEYS if key in inputs}
 
     # Extract thresholds
-    thresholds: dict[str, int | float | None] = {
-        key: inputs[key] for key in _THRESHOLD_KEYS if key in inputs
-    }
+    thresholds: dict[str, int | float | None] = {key: inputs[key] for key in _THRESHOLD_KEYS if key in inputs}
 
     entry = RepoEntry(
         config_basename=repo_basename,
@@ -243,10 +239,7 @@ def discover_repositories(
 
         # Apply repo filter
         if filters.repos:
-            if not any(
-                entry.name == r or entry.full == r or entry.config_basename == r
-                for r in filters.repos
-            ):
+            if not any(entry.name == r or entry.full == r or entry.config_basename == r for r in filters.repos):
                 continue
 
         # Apply run_group filter

@@ -47,7 +47,9 @@ repo:
 
 ```bash
 # Validate your config
-python scripts/validate_config.py config/repos/my-repo.yaml
+python -m cihub hub-ci validate-configs
+# Or validate a single repo
+python -m cihub hub-ci validate-configs --repo my-repo
 
 # Run the hub (via GitHub Actions UI or CLI)
 gh workflow run hub-run-all.yml
