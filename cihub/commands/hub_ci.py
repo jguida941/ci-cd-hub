@@ -1344,11 +1344,19 @@ def cmd_zizmor_run(args: argparse.Namespace) -> int:
             print(f"zizmor completed, SARIF written to {output_path}")
             return EXIT_SUCCESS
         else:
-            # Non-zero exit - always write empty SARIF (matches old heredoc behavior)
-            # This prevents parsing issues from partial/invalid output
-            output_path.write_text(EMPTY_SARIF, encoding="utf-8")
-            print(f"zizmor returned non-zero, empty SARIF written to {output_path}")
-            return EXIT_SUCCESS  # Still success - we produced valid SARIF
+            # Non-zero exit - preserve SARIF if stdout is valid; otherwise write empty.
+            # This keeps findings visible while maintaining a valid SARIF fallback.
+            try:
+                payload = json.loads(result.stdout)
+            except json.JSONDecodeError:
+                payload = None
+            if isinstance(payload, dict) and "runs" in payload:
+                output_path.write_text(result.stdout, encoding="utf-8")
+                print(f"::warning::zizmor returned non-zero, SARIF preserved at {output_path}")
+            else:
+                output_path.write_text(EMPTY_SARIF, encoding="utf-8")
+                print(f"::warning::zizmor returned non-zero, empty SARIF written to {output_path}")
+            return EXIT_SUCCESS  # Still success - zizmor-check gates on SARIF content
     except FileNotFoundError:
         # zizmor not installed
         output_path.write_text(EMPTY_SARIF, encoding="utf-8")

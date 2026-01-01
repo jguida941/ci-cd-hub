@@ -6,13 +6,17 @@ All notable changes to this project will be documented in this file.
 
 ### CLI
 - Added hub workflow helper commands under `cihub hub-ci` (actionlint install/run, syntax checks, repo/source checks, security scans, CodeQL build, Kyverno helpers, smoke-test helpers, release tag helpers).
-- `cihub hub-ci badges` now respects `hub_ci.tools` toggles for badge updates.
-- Badge generation skips the Black badge when no Black metrics are present.
+- Added `cihub hub-ci zizmor-run` to generate SARIF with an empty fallback on failure (no-inline compliance).
+- `cihub hub-ci badges` now respects `hub_ci.tools` toggles and emits deterministic `disabled` badges for disabled tools.
+- Security helpers now warn and set tool_status when a tool fails without valid output.
+- `cihub sync-templates --check/--dry-run` skips gracefully with a warning when no GitHub token is available.
 
 ### Workflows
 - Removed all multi-line `run: |` blocks; workflows now call CLI helpers for logic.
 - hub-security, smoke-test, kyverno, release, and hub-production workflow steps now delegate parsing/validation to CLI commands.
 - Simplified python-ci/java-ci workflow headers to point at generated CONFIG docs.
+- `hub-run-all.yml` summary job now honors `CIHUB_WRITE_GITHUB_SUMMARY`.
+- `hub-production-ci.yml` pins actionlint to v1.7.4 for deterministic runs.
 
 ## 2026-01-02 - Java SBOM Support
 

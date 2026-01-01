@@ -502,12 +502,12 @@ class TestCmdZizmorRun:
         assert "runs" in output_path.read_text()
 
     @mock.patch("subprocess.run")
-    def test_writes_empty_sarif_on_findings(self, mock_run: mock.Mock, tmp_path: Path) -> None:
-        """Non-zero exit always writes empty SARIF (matches old heredoc behavior)."""
-        from cihub.commands.hub_ci import EMPTY_SARIF, cmd_zizmor_run
+    def test_writes_sarif_on_findings(self, mock_run: mock.Mock, tmp_path: Path) -> None:
+        """Non-zero exit preserves SARIF when stdout is valid."""
+        from cihub.commands.hub_ci import cmd_zizmor_run
         from cihub.exit_codes import EXIT_SUCCESS
 
-        # Even if zizmor outputs findings, we write empty SARIF on non-zero exit
+        # Even if zizmor outputs findings, we keep valid SARIF on non-zero exit
         mock_run.return_value = mock.Mock(
             returncode=1,
             stdout='{"runs": [{"results": [{"level": "error"}]}]}',
@@ -520,8 +520,7 @@ class TestCmdZizmorRun:
         result = cmd_zizmor_run(args)
         assert result == EXIT_SUCCESS
         assert output_path.exists()
-        # Key change: empty SARIF, not stdout content
-        assert output_path.read_text() == EMPTY_SARIF
+        assert output_path.read_text() == '{"runs": [{"results": [{"level": "error"}]}]}'
 
     @mock.patch("subprocess.run")
     def test_writes_empty_sarif_on_failure(self, mock_run: mock.Mock, tmp_path: Path) -> None:

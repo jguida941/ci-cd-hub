@@ -505,7 +505,7 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
         )
 
         # Remote template sync check (requires GH_TOKEN)
-        if os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN"):
+        if os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or os.environ.get("HUB_DISPATCH_TOKEN"):
             add_step(
                 "sync-templates-check",
                 _run_process(
@@ -520,7 +520,9 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
                 _missing_tool_result(
                     "sync-templates-check",
                     required=require_optional,
-                    detail="GH_TOKEN or GITHUB_TOKEN not set; skipping remote template drift check",
+                    detail=(
+                        "GH_TOKEN, GITHUB_TOKEN, or HUB_DISPATCH_TOKEN not set; skipping remote template drift check"
+                    ),
                 ),
             )
 
