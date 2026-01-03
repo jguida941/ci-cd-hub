@@ -63,6 +63,7 @@ jobs:
       coverage_min: ${{ steps.parse.outputs.coverage_min }}
       mutation_score_min: ${{ steps.parse.outputs.mutation_score_min }}
       owasp_cvss_fail: ${{ steps.parse.outputs.owasp_cvss_fail }}
+      trivy_cvss_fail: ${{ steps.parse.outputs.trivy_cvss_fail }}
       max_critical_vulns: ${{ steps.parse.outputs.max_critical_vulns }}
       max_high_vulns: ${{ steps.parse.outputs.max_high_vulns }}
       max_semgrep_findings: ${{ steps.parse.outputs.max_semgrep_findings }}
@@ -162,6 +163,7 @@ jobs:
       max_black_issues: ${{ fromJson(needs.config.outputs.max_black_issues) }}
       max_isort_issues: ${{ fromJson(needs.config.outputs.max_isort_issues) }}
       owasp_cvss_fail: ${{ fromJson(needs.config.outputs.owasp_cvss_fail) }}
+      trivy_cvss_fail: ${{ fromJson(needs.config.outputs.trivy_cvss_fail) }}
       retention_days: ${{ fromJson(needs.config.outputs.retention_days) }}
       write_github_summary: ${{ fromJson(needs.config.outputs.write_github_summary) }}
     secrets: inherit
@@ -201,6 +203,7 @@ jobs:
       coverage_min: ${{ fromJson(needs.config.outputs.coverage_min) }}
       mutation_score_min: ${{ fromJson(needs.config.outputs.mutation_score_min) }}
       owasp_cvss_fail: ${{ fromJson(needs.config.outputs.owasp_cvss_fail) }}
+      trivy_cvss_fail: ${{ fromJson(needs.config.outputs.trivy_cvss_fail) }}
       max_critical_vulns: ${{ fromJson(needs.config.outputs.max_critical_vulns) }}
       max_high_vulns: ${{ fromJson(needs.config.outputs.max_high_vulns) }}
       max_semgrep_findings: ${{ fromJson(needs.config.outputs.max_semgrep_findings) }}

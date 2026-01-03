@@ -119,7 +119,11 @@ on:
         type: number
         default: 70
       owasp_cvss_fail:
-        description: 'CVSS score to fail on'
+        description: 'CVSS score to fail on for OWASP (default: 7)'
+        type: number
+        default: 7
+      trivy_cvss_fail:
+        description: 'CVSS score to fail on for Trivy (default: 7)'
         type: number
         default: 7
       max_critical_vulns:
