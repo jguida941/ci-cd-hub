@@ -16,6 +16,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import threading
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -29,7 +30,7 @@ from cihub.config.normalize import normalize_config
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS
 from cihub.services.types import RepoEntry
-from cihub.utils.env import _parse_env_bool
+from cihub.utils.env import _parse_env_bool, env_bool
 from cihub.utils.progress import _bar
 
 # ============================================================================
@@ -102,12 +103,49 @@ def _run_command(
     cwd: Path,
     env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(  # noqa: S603
+    verbose = env_bool("CIHUB_VERBOSE", default=False)
+    if not verbose:
+        return subprocess.run(  # noqa: S603
+            cmd,
+            cwd=str(cwd),
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+    proc = subprocess.Popen(  # noqa: S603
         cmd,
         cwd=str(cwd),
         text=True,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         env=env,
+        bufsize=1,
+    )
+    stdout_chunks: list[str] = []
+    stderr_chunks: list[str] = []
+
+    def _reader(pipe, chunks: list[str]) -> None:
+        if pipe is None:
+            return
+        for line in iter(pipe.readline, ""):
+            chunks.append(line)
+            sys.stderr.write(line)
+            sys.stderr.flush()
+        pipe.close()
+
+    stdout_thread = threading.Thread(target=_reader, args=(proc.stdout, stdout_chunks))
+    stderr_thread = threading.Thread(target=_reader, args=(proc.stderr, stderr_chunks))
+    stdout_thread.start()
+    stderr_thread.start()
+    proc.wait()
+    stdout_thread.join()
+    stderr_thread.join()
+    return subprocess.CompletedProcess(
+        args=cmd,
+        returncode=proc.returncode,
+        stdout="".join(stdout_chunks),
+        stderr="".join(stderr_chunks),
     )
 
 

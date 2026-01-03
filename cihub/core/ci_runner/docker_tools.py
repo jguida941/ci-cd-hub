@@ -97,7 +97,7 @@ def run_docker(
     compose_args = [*compose_cmd, "-f", str(compose_path)]
     output_dir.mkdir(parents=True, exist_ok=True)
     log_path = output_dir / "docker-compose.log"
-    proc_up = shared._run_command([*compose_args, "up", "-d"], workdir)
+    proc_up = shared._run_tool_command("docker", [*compose_args, "up", "-d"], workdir, output_dir)
     ran = True
     success = proc_up.returncode == 0
     health_ok = None
@@ -110,12 +110,12 @@ def run_docker(
         health_ok = _wait_for_health(ports, endpoint, int(health_timeout))
         success = success and health_ok
 
-    proc_logs = shared._run_command([*compose_args, "logs", "--no-color"], workdir)
+    proc_logs = shared._run_tool_command("docker", [*compose_args, "logs", "--no-color"], workdir, output_dir)
     log_contents = f"{proc_logs.stdout or ''}{proc_logs.stderr or ''}"
     if log_contents:
         log_path.write_text(log_contents, encoding="utf-8")
 
-    shared._run_command([*compose_args, "down", "--remove-orphans"], workdir)
+    shared._run_tool_command("docker", [*compose_args, "down", "--remove-orphans"], workdir, output_dir)
 
     metrics: dict[str, object] = {"docker_missing_compose": False}
     if health_endpoint:

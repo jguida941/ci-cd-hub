@@ -8,21 +8,21 @@ This document identifies high-risk code areas in `cihub/` based on cyclomatic co
 
 ### Key Findings
 
-| Principle | Source |
-|-----------|--------|
-| Bugs found later in SDLC cost 100x more to fix | IBM Systems Sciences Institute |
-| High cyclomatic complexity correlates with defect density | Sonar, NASA |
-| Complexity >20 = high risk, >50 = untestable | Industry standard |
-| Testing reduces defects by 80-90% | Pluralsight SDLC Study |
+| Principle                                                 | Source                         |
+|-----------------------------------------------------------|--------------------------------|
+| Bugs found later in SDLC cost 100x more to fix            | IBM Systems Sciences Institute |
+| High cyclomatic complexity correlates with defect density | Sonar, NASA                    |
+| Complexity >20 = high risk, >50 = untestable              | Industry standard              |
+| Testing reduces defects by 80-90%                         | Pluralsight SDLC Study         |
 
 ### Cyclomatic Complexity Thresholds
 
-| Score | Risk Level | Action |
-|-------|------------|--------|
-| 1-10 | Low | Acceptable |
-| 11-20 | Medium | Needs testing |
-| 21-50 | High | Intensive testing required |
-| 50+ | Very High | Refactor immediately |
+| Score | Risk Level | Action                     |
+|-------|------------|----------------------------|
+| 1-10  | Low        | Acceptable                 |
+| 11-20 | Medium     | Needs testing              |
+| 21-50 | High       | Intensive testing required |
+| 50+   | Very High  | Refactor immediately       |
 
 ---
 
@@ -32,14 +32,14 @@ This document identifies high-risk code areas in `cihub/` based on cyclomatic co
 
 Estimated complexity: **50+** (Very High)
 
-| Function | Lines | Complexity | Risk |
-|----------|-------|------------|------|
-| `parse_pom_plugins()` | 151-184 | ~15 | HIGH |
-| `parse_pom_dependencies()` | 204-230 | ~12 | HIGH |
-| `collect_java_pom_warnings()` | 244-302 | ~25 | VERY HIGH |
-| `collect_java_dependency_warnings()` | 316-372 | ~20 | HIGH |
-| `insert_plugins_into_pom()` | 421-464 | ~18 | HIGH |
-| `insert_dependencies_into_pom()` | 477-500+ | ~15 | HIGH |
+| Function                             | Lines    | Complexity | Risk      |
+|--------------------------------------|----------|------------|-----------|
+| `parse_pom_plugins()`                | 151-184  | ~15        | HIGH      |
+| `parse_pom_dependencies()`           | 204-230  | ~12        | HIGH      |
+| `collect_java_pom_warnings()`        | 244-302  | ~25        | VERY HIGH |
+| `collect_java_dependency_warnings()` | 316-372  | ~20        | HIGH      |
+| `insert_plugins_into_pom()`          | 421-464  | ~18        | HIGH      |
+| `insert_dependencies_into_pom()`     | 477-500+ | ~15        | HIGH      |
 
 **Why high risk:**
 - XML namespace handling with multiple code paths
@@ -51,12 +51,12 @@ Estimated complexity: **50+** (Very High)
 
 Estimated complexity: **25-35**
 
-| Function | Complexity | Risk |
-|----------|------------|------|
-| `cmd_setup_secrets()` | ~20 | HIGH |
-| `cmd_setup_nvd()` | ~18 | HIGH |
-| `verify_token()` | ~8 | MEDIUM |
-| `verify_cross_repo_access()` | ~8 | MEDIUM |
+| Function                     | Complexity | Risk   |
+|------------------------------|------------|--------|
+| `cmd_setup_secrets()`        | ~20        | HIGH   |
+| `cmd_setup_nvd()`            | ~18        | HIGH   |
+| `verify_token()`             | ~8         | MEDIUM |
+| `verify_cross_repo_access()` | ~8         | MEDIUM |
 
 **Why high risk:**
 - External API calls (GitHub, NVD)
@@ -68,9 +68,9 @@ Estimated complexity: **25-35**
 
 Estimated complexity: **20-30**
 
-| Function | Complexity | Risk |
-|----------|------------|------|
-| `cmd_sync_templates()` | ~25 | VERY HIGH |
+| Function               | Complexity | Risk      |
+|------------------------|------------|-----------|
+| `cmd_sync_templates()` | ~25        | VERY HIGH |
 
 **Why high risk:**
 - Remote file operations (fetch, update, delete)
@@ -96,22 +96,22 @@ Recursive dict merge. Adequately tested.
 
 ### Before (2025-12-26)
 
-| Module | Size | Est. Complexity | Tests | Gap |
-|--------|------|-----------------|-------|-----|
-| `cli.py` | 40KB | 50+ | 12 | **CRITICAL** |
-| `secrets.py` | 8.5KB | 25-35 | 0 | **CRITICAL** |
-| `templates.py` | 5.5KB | 20-30 | ~10 | HIGH |
-| `config_cmd.py` | 5KB | 15-20 | 0 | MEDIUM |
-| `io.py` | 4.7KB | 5-10 | ~15 | OK |
-| `merge.py` | 3KB | 5-8 | ~19 | OK |
+| Module          | Size  | Est. Complexity | Tests | Gap          |
+|-----------------|-------|-----------------|-------|--------------|
+| `cli.py`        | 40KB  | 50+             | 12    | **CRITICAL** |
+| `secrets.py`    | 8.5KB | 25-35           | 0     | **CRITICAL** |
+| `templates.py`  | 5.5KB | 20-30           | ~10   | HIGH         |
+| `config_cmd.py` | 5KB   | 15-20           | 0     | MEDIUM       |
+| `io.py`         | 4.7KB | 5-10            | ~15   | OK           |
+| `merge.py`      | 3KB   | 5-8             | ~19   | OK           |
 
 ### After (Tests Added)
 
-| Module | New Tests | Coverage |
-|--------|-----------|----------|
-| `cli.py` (POM parsing) | **+46** (`test_pom_parsing.py`) | XML utilities, plugin parsing, dependency parsing, warnings, insertion |
-| `secrets.py` | **+19** (`test_secrets.py`) | Token validation, API verification, cross-repo access, secret setting |
-| `templates.py` | **+9** (`TestSyncTemplatesCommand`) | Sync modes, drift detection, stale cleanup |
+| Module                 | New Tests                           | Coverage                                                               |
+|------------------------|-------------------------------------|------------------------------------------------------------------------|
+| `cli.py` (POM parsing) | **+46** (`test_pom_parsing.py`)     | XML utilities, plugin parsing, dependency parsing, warnings, insertion |
+| `secrets.py`           | **+19** (`test_secrets.py`)         | Token validation, API verification, cross-repo access, secret setting  |
+| `templates.py`         | **+9** (`TestSyncTemplatesCommand`) | Sync modes, drift detection, stale cleanup                             |
 
 **Total tests: 356** (up from ~280)
 

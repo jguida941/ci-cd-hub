@@ -12,17 +12,17 @@ The CI/CD Hub supports two execution modes. **Central mode is the default and re
 
 ## Quick Comparison
 
-| Aspect | Central Mode | Distributed Mode |
-|--------|--------------|------------------|
-| **Default** | Yes | No (opt-in) |
-| **Workflow** | `hub-run-all.yml` | `hub-orchestrator.yml` |
-| **Where CI runs** | In the hub repo | In each target repo |
-| **Repos need workflows** | No | Yes |
-| **Permissions needed** | `contents:read` | `contents:read` + `actions:write` |
-| **Tool availability** | ALL tools | Reusable workflow tools only |
-| **Aggregation** | Immediate | Requires polling + artifact download |
-| **Complexity** | Low | High |
-| **Reliability** | High | Medium (more failure modes) |
+| Aspect                   | Central Mode      | Distributed Mode                     |
+|--------------------------|-------------------|--------------------------------------|
+| **Default**              | Yes               | No (opt-in)                          |
+| **Workflow**             | `hub-run-all.yml` | `hub-orchestrator.yml`               |
+| **Where CI runs**        | In the hub repo   | In each target repo                  |
+| **Repos need workflows** | No                | Yes                                  |
+| **Permissions needed**   | `contents:read`   | `contents:read` + `actions:write`    |
+| **Tool availability**    | ALL tools         | Reusable workflow tools only         |
+| **Aggregation**          | Immediate         | Requires polling + artifact download |
+| **Complexity**           | Low               | High                                 |
+| **Reliability**          | High              | Medium (more failure modes)          |
 
 ---
 

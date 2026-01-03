@@ -10,6 +10,11 @@ All notable changes to this project will be documented in this file.
 - Added `cihub hub-ci trivy-install` for workflow-managed Trivy setup.
 - Added Docker Compose runner for `run_docker` (optional health check + logs).
 - Added `cihub report aggregate --details-output` and `--include-details` for per-repo detail summaries.
+- Added `CIHUB_DEBUG` env toggle for opt-in developer tracebacks and debug context.
+- Added `CIHUB_VERBOSE` env toggle for streaming tool output plus persisted tool logs.
+- Added `CIHUB_DEBUG_CONTEXT` env toggle for opt-in CLI context blocks (ci/report build/aggregate).
+- Added `cihub triage` to emit triage bundles (`triage.json`, `priority.json`, `triage.md`, `history.jsonl`).
+- Added `CIHUB_EMIT_TRIAGE` env toggle for automatic triage emission after `cihub ci`.
 
 ### Config
 - Added `thresholds.trivy_cvss_fail` and `python.tools.trivy.fail_on_cvss`.
@@ -26,6 +31,7 @@ All notable changes to this project will be documented in this file.
 - Run CodeQL in `python-ci.yml`/`java-ci.yml` when `run_codeql` is enabled (SARIF upload via CodeQL action).
 - `hub-orchestrator.yml` can write and upload `hub-report-details.md` and optionally embed per-repo details in the summary.
 - Defaulted `hub-orchestrator.yml` `include_details` to true for manual runs.
+- Added workflow inputs/env passthrough for debug/verbose/triage toggles and triage/log artifacts in CI uploads.
 - `hub-run-all.yml` installs Trivy and runs CodeQL actions when toggles are enabled, and can emit `hub-report-details.md`.
  
 ### Aggregation

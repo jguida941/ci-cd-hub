@@ -175,6 +175,17 @@ These are references, not competing plans.
 - [x] Update `cihub/core/__init__.py` re-exports for new core modules.
 - [ ] Run targeted tests for core modularization changes.
 
+### 8d) CLI Parser Modularization (Phase 6)
+
+- [x] Split CLI parser definitions into `cihub/cli_parsers/` without CLI surface changes.
+- [x] Run CLI help snapshot check after parser split.
+- [x] Add parser group registry to centralize command registration order.
+- [x] Add CLI parser contract tests (handler wiring + JSON flag coverage).
+- [x] Deduplicate CLI aliases to prevent drift (`doctor`/`preflight`).
+- [x] Add `CIHUB_DEBUG` env toggle for developer tracebacks (opt-in).
+- [x] Add `CIHUB_VERBOSE` env toggle for tool output streaming/log capture (opt-in).
+- [x] Add `CIHUB_DEBUG_CONTEXT` env toggle for CLI context blocks (opt-in).
+
 ### 8b) Config Ergonomics (Shorthand + Threshold Presets)
 
 - [x] Expand shorthand booleans to enabled sections (reports, notifications, kyverno, optional features, hub_ci).
@@ -183,8 +194,8 @@ These are references, not competing plans.
 
 ### 9) Triage, Registry, and LLM Bundles (New)
 
-- [ ] Define `cihub-triage-v1` schema with severity/blocker fields and stable versioning.
-- [ ] Implement `cihub triage` to emit:
+- [x] Define `cihub-triage-v1` schema with severity/blocker fields and stable versioning.
+- [x] Implement `cihub triage` to emit:
   - `.cihub/triage.json` (full bundle)
   - `.cihub/priority.json` (sorted failures)
   - `.cihub/triage.md` (LLM prompt pack)

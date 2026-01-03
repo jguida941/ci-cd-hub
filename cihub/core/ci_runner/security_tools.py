@@ -11,7 +11,7 @@ from . import shared
 def run_semgrep(workdir: Path, output_dir: Path) -> ToolResult:
     report_path = output_dir / "semgrep-report.json"
     cmd = ["semgrep", "--config=auto", "--json", "--output", str(report_path), "."]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("semgrep", cmd, workdir, output_dir)
     data = shared._parse_json(report_path)
     parse_ok = data is not None
     findings = 0
@@ -31,7 +31,7 @@ def run_semgrep(workdir: Path, output_dir: Path) -> ToolResult:
 def run_trivy(workdir: Path, output_dir: Path) -> ToolResult:
     report_path = output_dir / "trivy-report.json"
     cmd = ["trivy", "fs", "--format", "json", "--output", str(report_path), "."]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("trivy", cmd, workdir, output_dir)
     data = shared._parse_json(report_path)
     parse_ok = data is not None
     critical = 0

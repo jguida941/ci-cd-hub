@@ -32,6 +32,11 @@ from cihub.services.report_validator import (
     validate_report,
     validate_report_file,
 )
+from cihub.services.triage_service import (
+    TriageBundle,
+    generate_triage_bundle,
+    write_triage_bundle,
+)
 from cihub.services.types import RepoEntry, ServiceResult
 
 __all__ = [
@@ -64,4 +69,8 @@ __all__ = [
     "AggregationResult",
     "aggregate_from_dispatch",
     "aggregate_from_reports_dir",
+    # Triage
+    "TriageBundle",
+    "generate_triage_bundle",
+    "write_triage_bundle",
 ]

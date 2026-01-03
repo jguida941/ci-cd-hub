@@ -29,6 +29,26 @@ on:
         required: false
         type: boolean
         default: true
+      cihub_debug:
+        description: 'Enable CIHUB_DEBUG'
+        required: false
+        type: boolean
+        default: false
+      cihub_verbose:
+        description: 'Enable CIHUB_VERBOSE'
+        required: false
+        type: boolean
+        default: false
+      cihub_debug_context:
+        description: 'Enable CIHUB_DEBUG_CONTEXT'
+        required: false
+        type: boolean
+        default: false
+      cihub_emit_triage:
+        description: 'Enable CIHUB_EMIT_TRIAGE'
+        required: false
+        type: boolean
+        default: false
 
   schedule:
     # Run nightly at 2 AM UTC
@@ -61,6 +81,11 @@ jobs:
     outputs:
       matrix: ${{ steps.config.outputs.matrix }}
       repo_count: ${{ steps.config.outputs.count }}
+    env:
+      CIHUB_DEBUG: ${{ inputs.cihub_debug && 'True' || 'False' }}
+      CIHUB_VERBOSE: ${{ inputs.cihub_verbose && 'True' || 'False' }}
+      CIHUB_DEBUG_CONTEXT: ${{ inputs.cihub_debug_context && 'True' || 'False' }}
+      CIHUB_EMIT_TRIAGE: ${{ inputs.cihub_emit_triage && 'True' || 'False' }}
 
     steps:
       - name: Checkout Hub
@@ -101,6 +126,11 @@ jobs:
     permissions:
       contents: read
       actions: write  # For workflow dispatch
+    env:
+      CIHUB_DEBUG: ${{ inputs.cihub_debug && 'True' || 'False' }}
+      CIHUB_VERBOSE: ${{ inputs.cihub_verbose && 'True' || 'False' }}
+      CIHUB_DEBUG_CONTEXT: ${{ inputs.cihub_debug_context && 'True' || 'False' }}
+      CIHUB_EMIT_TRIAGE: ${{ inputs.cihub_emit_triage && 'True' || 'False' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.load-config.outputs.matrix) }}
@@ -162,6 +192,11 @@ jobs:
     permissions:
       contents: read
       actions: read  # For reading run artifacts
+    env:
+      CIHUB_DEBUG: ${{ inputs.cihub_debug && 'True' || 'False' }}
+      CIHUB_VERBOSE: ${{ inputs.cihub_verbose && 'True' || 'False' }}
+      CIHUB_DEBUG_CONTEXT: ${{ inputs.cihub_debug_context && 'True' || 'False' }}
+      CIHUB_EMIT_TRIAGE: ${{ inputs.cihub_emit_triage && 'True' || 'False' }}
 
     steps:
       - name: Checkout Hub

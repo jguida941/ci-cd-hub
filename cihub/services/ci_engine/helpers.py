@@ -14,6 +14,7 @@ from cihub.utils import (
     resolve_executable,
     validate_subdir,
 )
+from cihub.utils.env import _parse_env_bool as _parse_env_bool_base
 from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
 
 
@@ -134,14 +135,7 @@ def _tool_gate_enabled(config: dict[str, Any], tool: str, language: str) -> bool
 
 
 def _parse_env_bool(value: str | None) -> bool | None:
-    if value is None:
-        return None
-    text = str(value).strip().lower()
-    if text in {"true", "1", "yes", "y", "on"}:
-        return True
-    if text in {"false", "0", "no", "n", "off"}:
-        return False
-    return None
+    return _parse_env_bool_base(value)
 
 
 def _get_env_name(config: dict[str, Any], key: str, default: str) -> str:

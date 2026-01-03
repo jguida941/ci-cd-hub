@@ -14,7 +14,7 @@ from cihub.cli import (
     get_git_remote,
     parse_repo_from_remote,
 )
-from cihub.utils.env import _parse_env_bool
+from cihub.utils.env import _parse_env_bool, env_bool
 
 
 def _tool_enabled(config: dict[str, Any], tool: str, language: str) -> bool:
@@ -110,19 +110,13 @@ def _load_tool_outputs(tool_dir: Path) -> dict[str, dict[str, Any]]:
 def _resolve_write_summary(flag: bool | None) -> bool:
     if flag is not None:
         return flag
-    env_value = _parse_env_bool(os.environ.get("CIHUB_WRITE_GITHUB_SUMMARY"))
-    if env_value is not None:
-        return env_value
-    return True
+    return env_bool("CIHUB_WRITE_GITHUB_SUMMARY", default=True)
 
 
 def _resolve_include_details(flag: bool | None) -> bool:
     if flag is not None:
         return flag
-    env_value = _parse_env_bool(os.environ.get("CIHUB_REPORT_INCLUDE_DETAILS"))
-    if env_value is not None:
-        return env_value
-    return False
+    return env_bool("CIHUB_REPORT_INCLUDE_DETAILS", default=False)
 
 
 def _resolve_summary_path(path_value: str | None, write_summary: bool) -> Path | None:

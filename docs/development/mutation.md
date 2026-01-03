@@ -8,37 +8,37 @@ This guide covers mutation testing setup, test frameworks, and best practices fo
 
 ## Current Coverage
 
-| Metric | Value |
-|--------|-------|
-| **Overall Coverage** | 66% |
-| **Tests** | 413 |
-| **Target** | 70% |
+| Metric               | Value |
+|----------------------|-------|
+| **Overall Coverage** | 66%   |
+| **Tests**            | 413   |
+| **Target**           | 70%   |
 
 ### Coverage by Module
 
-| Module | Coverage | Mutation Score | Status |
-|--------|----------|----------------|--------|
-| `config/merge.py` | 73% | **100%** | Excellent |
-| `config/io.py` | 92% | 93% | Good |
-| `commands/detect.py` | 100% | 85% | Good |
-| `commands/secrets.py` | 87% | 0% (mock issue) | Needs work |
-| `commands/validate.py` | 72% | Pending | Next target |
-| `cli.py` | 80% | ~5% | Critical gap |
-| `commands/new.py` | 0% | N/A | No tests |
-| `wizard/*` | 0% | N/A | No tests |
-| `diagnostics/*` | 0% | N/A | No tests |
+| Module                 | Coverage | Mutation Score  | Status       |
+|------------------------|----------|-----------------|--------------|
+| `config/merge.py`      | 73%      | **100%**        | Excellent    |
+| `config/io.py`         | 92%      | 93%             | Good         |
+| `commands/detect.py`   | 100%     | 85%             | Good         |
+| `commands/secrets.py`  | 87%      | 0% (mock issue) | Needs work   |
+| `commands/validate.py` | 72%      | Pending         | Next target  |
+| `cli.py`               | 80%      | ~5%             | Critical gap |
+| `commands/new.py`      | 0%       | N/A             | No tests     |
+| `wizard/*`             | 0%       | N/A             | No tests     |
+| `diagnostics/*`        | 0%       | N/A             | No tests     |
 
 ### Detailed Mutation Results (2025-12-26)
 
 Mutation testing reveals where bugs can hide undetected by measuring if tests catch code changes.
 
-| Module | Lines | Mutants | Killed | Survived | No Tests | Score |
-|--------|-------|---------|--------|----------|----------|-------|
-| `commands/detect.py` | 20 | 20 | 17 | 3 | 0 | **85%** ✅ |
-| `config/io.py` | 182 | 94 | 75 | 6 | 13 | **93%** ✅ |
-| `config/merge.py` | 26 | 14 | 14 | 0 | 0 | **100%** ✅ |
-| `commands/secrets.py` | 251 | N/A | 0 | 0 | ALL | **0%** ❌ |
-| `cli.py` | 1199 | 2480 | ~17 | ~314+ | ~2000+ | **~5%** ❌ |
+| Module                | Lines | Mutants | Killed | Survived | No Tests | Score      |
+|-----------------------|-------|---------|--------|----------|----------|------------|
+| `commands/detect.py`  | 20    | 20      | 17     | 3        | 0        | **85%** ✅  |
+| `config/io.py`        | 182   | 94      | 75     | 6        | 13       | **93%** ✅  |
+| `config/merge.py`     | 26    | 14      | 14     | 0        | 0        | **100%** ✅ |
+| `commands/secrets.py` | 251   | N/A     | 0      | 0        | ALL      | **0%** ❌   |
+| `cli.py`              | 1199  | 2480    | ~17    | ~314+    | ~2000+   | **~5%** ❌  |
 
 ### Legend
 - 🎉 **Killed**: Test failed when mutation applied (good!)
@@ -104,22 +104,22 @@ mutmut show cihub.config.merge.x_deep_merge__mutmut_5
 
 ### Interpreting Results
 
-| Emoji | Meaning | Action |
-|-------|---------|--------|
-| 🎉 | Killed | Good - test caught the bug |
-| 🫥 | Survived | Bad - add assertion to catch it |
-| ⏰ | Timeout | Mutation caused infinite loop |
-| 🤔 | Suspicious | Unexpected behavior |
-| 🙁 | No tests | No tests cover this code |
+| Emoji | Meaning    | Action                          |
+|-------|------------|---------------------------------|
+| 🎉    | Killed     | Good - test caught the bug      |
+| 🫥    | Survived   | Bad - add assertion to catch it |
+| ⏰     | Timeout    | Mutation caused infinite loop   |
+| 🤔    | Suspicious | Unexpected behavior             |
+| 🙁    | No tests   | No tests cover this code        |
 
 ### Target Scores
 
-| Score | Rating | Action |
-|-------|--------|--------|
-| 80-100% | Excellent | Maintain |
-| 60-79% | Good | Improve edge cases |
-| 40-59% | Needs work | Add missing tests |
-| <40% | Poor | Major test gaps |
+| Score   | Rating     | Action             |
+|---------|------------|--------------------|
+| 80-100% | Excellent  | Maintain           |
+| 60-79%  | Good       | Improve edge cases |
+| 40-59%  | Needs work | Add missing tests  |
+| <40%    | Poor       | Major test gaps    |
 
 ---
 

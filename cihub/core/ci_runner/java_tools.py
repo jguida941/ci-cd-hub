@@ -52,7 +52,7 @@ def run_java_build(
             "-Dmaven.test.failure.ignore=true",
             "verify",
         ]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("build", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
     junit_paths = shared._find_files(
@@ -114,7 +114,7 @@ def run_pitest(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
             "-ntp",
             "org.pitest:pitest-maven:mutationCoverage",
         ]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("pitest", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
     report_paths = shared._find_files(
@@ -148,7 +148,7 @@ def run_checkstyle(workdir: Path, output_dir: Path, build_tool: str) -> ToolResu
             "-DskipTests",
             "checkstyle:checkstyle",
         ]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("checkstyle", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
     report_paths = shared._find_files(workdir, ["checkstyle-result.xml"])
@@ -171,7 +171,7 @@ def run_spotbugs(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult
         cmd = _gradle_cmd(workdir) + ["spotbugsMain", "--continue"]
     else:
         cmd = _maven_cmd(workdir) + ["-B", "-ntp", "spotbugs:spotbugs"]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("spotbugs", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
     report_paths = shared._find_files(workdir, ["spotbugsXml.xml"])
@@ -194,7 +194,7 @@ def run_pmd(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
         cmd = _gradle_cmd(workdir) + ["pmdMain", "--continue"]
     else:
         cmd = _maven_cmd(workdir) + ["-B", "-ntp", "pmd:check"]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("pmd", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
     report_paths = shared._find_files(workdir, ["pmd.xml"])
@@ -236,7 +236,7 @@ def run_owasp(
             "-Ddependencycheck.failOnError=false",
             *nvd_flags,
         ]
-    proc = shared._run_command(cmd, workdir, env=env)
+    proc = shared._run_tool_command("owasp", cmd, workdir, output_dir, env=env)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
     report_paths = shared._find_files(

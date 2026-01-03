@@ -35,7 +35,7 @@ def run_sbom(workdir: Path, output_dir: Path, format_value: str | None = None) -
     syft_format, suffix = _normalize_sbom_format(format_value)
     output_path = output_dir / f"sbom.{suffix}.json"
     cmd = ["syft", "dir:.", "-o", syft_format]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("sbom", cmd, workdir, output_dir)
     if proc.stdout:
         output_path.write_text(proc.stdout, encoding="utf-8")
     parse_ok = shared._parse_json(output_path) is not None

@@ -1,11 +1,11 @@
 usage: cihub [-h] [--version]
-             {detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,docs,adr,config-outputs,discover,dispatch,hub-ci,new,init,update,validate,setup-secrets,setup-nvd,fix-pom,fix-deps,sync-templates,config}
+             {detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,triage,docs,adr,config-outputs,discover,dispatch,hub-ci,new,init,update,validate,setup-secrets,setup-nvd,fix-pom,fix-deps,sync-templates,config}
              ...
 
 CI/CD Hub CLI
 
 positional arguments:
-  {detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,docs,adr,config-outputs,discover,dispatch,hub-ci,new,init,update,validate,setup-secrets,setup-nvd,fix-pom,fix-deps,sync-templates,config}
+  {detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,triage,docs,adr,config-outputs,discover,dispatch,hub-ci,new,init,update,validate,setup-secrets,setup-nvd,fix-pom,fix-deps,sync-templates,config}
     detect              Detect repo language and tools
     preflight           Check environment readiness
     doctor              Alias for preflight
@@ -17,6 +17,7 @@ positional arguments:
     ci                  Run CI based on .ci-hub.yml
     run                 Run one tool and emit JSON output
     report              Build reports and summaries
+    triage              Generate triage bundle outputs
     docs                Generate reference documentation
     adr                 Manage Architecture Decision Records
     config-outputs      Emit config outputs for GitHub Actions

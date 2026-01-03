@@ -14,6 +14,7 @@ from urllib import request
 
 from cihub.cli import CommandResult
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.utils.env import env_bool
 
 
 def _github_request(
@@ -164,6 +165,16 @@ def _cmd_dispatch_trigger(args: argparse.Namespace, json_mode: bool) -> int | Co
     inputs: dict[str, str] = {}
     if correlation_id:
         inputs["hub_correlation_id"] = correlation_id
+
+    def _add_bool_input(input_name: str, env_name: str) -> None:
+        if env_name not in os.environ:
+            return
+        inputs[input_name] = "true" if env_bool(env_name, default=False) else "false"
+
+    _add_bool_input("cihub_debug", "CIHUB_DEBUG")
+    _add_bool_input("cihub_verbose", "CIHUB_VERBOSE")
+    _add_bool_input("cihub_debug_context", "CIHUB_DEBUG_CONTEXT")
+    _add_bool_input("cihub_emit_triage", "CIHUB_EMIT_TRIAGE")
 
     # Record start time for polling
     started_at = time.time()

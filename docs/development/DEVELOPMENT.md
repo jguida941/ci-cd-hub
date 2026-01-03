@@ -185,28 +185,28 @@ hub-release/
 ## Key Files
 
 ### Status & Planning
-| File | What It Is |
-|------|------------|
+| File                          | What It Is                                     |
+|-------------------------------|------------------------------------------------|
 | [STATUS.md](status/STATUS.md) | Current blockers, v1.0 progress, what's broken |
-| [P0.md](specs/P0.md) | MVP requirements checklist (must ship) |
-| [P1.md](specs/P1.md) | Should-have features |
+| [P0.md](specs/P0.md)          | MVP requirements checklist (must ship)         |
+| [P1.md](specs/P1.md)          | Should-have features                           |
 
 ### Configuration
-| File | What It Is |
-|------|------------|
-| [defaults.yaml](../../config/defaults.yaml) | **Master config** - all tool toggles, thresholds |
-| [config/repos/](../../config/repos/) | Per-repo overrides (24 repos configured) |
-| [ci-hub-config.schema.json](../../schema/ci-hub-config.schema.json) | JSON Schema that validates all configs |
-| [templates/profiles/](../../templates/profiles/) | Pre-built profiles (fast, quality, security) |
+| File                                                                | What It Is                                       |
+|---------------------------------------------------------------------|--------------------------------------------------|
+| [defaults.yaml](../../config/defaults.yaml)                         | **Master config** - all tool toggles, thresholds |
+| [config/repos/](../../config/repos/)                                | Per-repo overrides (24 repos configured)         |
+| [ci-hub-config.schema.json](../../schema/ci-hub-config.schema.json) | JSON Schema that validates all configs           |
+| [templates/profiles/](../../templates/profiles/)                    | Pre-built profiles (fast, quality, security)     |
 
 ### Workflows
-| File | What It Is |
-|------|------------|
-| [hub-run-all.yml](../../.github/workflows/hub-run-all.yml) | **Central mode** - hub clones repo, runs all tools |
-| [hub-orchestrator.yml](../../.github/workflows/hub-orchestrator.yml) | **Distributed mode** - dispatches to repo's workflow |
-| [java-ci.yml](../../.github/workflows/java-ci.yml) | Reusable Java workflow (JaCoCo, Checkstyle, SpotBugs, PITest, OWASP) |
-| [python-ci.yml](../../.github/workflows/python-ci.yml) | Reusable Python workflow (pytest, Ruff, Bandit, mutmut, pip-audit) |
-| [hub-production-ci.yml](../../.github/workflows/hub-production-ci.yml) | CI for the hub itself |
+| File                                                                   | What It Is                                                           |
+|------------------------------------------------------------------------|----------------------------------------------------------------------|
+| [hub-run-all.yml](../../.github/workflows/hub-run-all.yml)             | **Central mode** - hub clones repo, runs all tools                   |
+| [hub-orchestrator.yml](../../.github/workflows/hub-orchestrator.yml)   | **Distributed mode** - dispatches to repo's workflow                 |
+| [java-ci.yml](../../.github/workflows/java-ci.yml)                     | Reusable Java workflow (JaCoCo, Checkstyle, SpotBugs, PITest, OWASP) |
+| [python-ci.yml](../../.github/workflows/python-ci.yml)                 | Reusable Python workflow (pytest, Ruff, Bandit, mutmut, pip-audit)   |
+| [hub-production-ci.yml](../../.github/workflows/hub-production-ci.yml) | CI for the hub itself                                                |
 
 ### Architecture
 | File | What It Is |
@@ -251,14 +251,14 @@ python scripts/cli_command_matrix.py --format markdown
 ```
 
 ### Test Files
-| File | What It Tests |
-|------|---------------|
-| `test_commands.py` | All CLI commands |
-| `test_config_module.py` | Config loading, merging, validation |
-| `test_aggregate_reports.py` | Report aggregation |
-| `test_templates.py` | Template rendering |
-| `test_pom_tools.py` | Maven POM parsing |
-| `test_contract_consistency.py` | Schema contracts |
+| File                           | What It Tests                       |
+|--------------------------------|-------------------------------------|
+| `test_commands.py`             | All CLI commands                    |
+| `test_config_module.py`        | Config loading, merging, validation |
+| `test_aggregate_reports.py`    | Report aggregation                  |
+| `test_templates.py`            | Template rendering                  |
+| `test_pom_tools.py`            | Maven POM parsing                   |
+| `test_contract_consistency.py` | Schema contracts                    |
 
 ---
 

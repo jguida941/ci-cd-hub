@@ -24,7 +24,7 @@ def run_pytest(workdir: Path, output_dir: Path, fail_fast: bool = False) -> Tool
     ]
     if fail_fast:
         cmd.append("-x")
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("pytest", cmd, workdir, output_dir)
     metrics = {}
     metrics.update(_parse_junit(junit_path))
     metrics.update(_parse_coverage(coverage_path))
@@ -45,7 +45,7 @@ def run_pytest(workdir: Path, output_dir: Path, fail_fast: bool = False) -> Tool
 def run_ruff(workdir: Path, output_dir: Path) -> ToolResult:
     report_path = output_dir / "ruff-report.json"
     cmd = ["ruff", "check", ".", "--output-format", "json"]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("ruff", cmd, workdir, output_dir)
     report_path.write_text(proc.stdout or "[]", encoding="utf-8")
     data = shared._parse_json(report_path)
     parse_ok = data is not None
@@ -71,7 +71,7 @@ def run_ruff(workdir: Path, output_dir: Path) -> ToolResult:
 def run_black(workdir: Path, output_dir: Path) -> ToolResult:
     log_path = output_dir / "black-output.txt"
     cmd = ["black", "--check", "."]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("black", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
     issues = len(re.findall(r"would reformat", proc.stdout + proc.stderr))
     return ToolResult(
@@ -88,7 +88,7 @@ def run_black(workdir: Path, output_dir: Path) -> ToolResult:
 def run_isort(workdir: Path, output_dir: Path) -> ToolResult:
     log_path = output_dir / "isort-output.txt"
     cmd = ["isort", "--check-only", "--diff", "."]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("isort", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
     issues = len(re.findall(r"^ERROR:", proc.stdout, flags=re.MULTILINE))
     return ToolResult(
@@ -105,7 +105,7 @@ def run_isort(workdir: Path, output_dir: Path) -> ToolResult:
 def run_mypy(workdir: Path, output_dir: Path) -> ToolResult:
     log_path = output_dir / "mypy-output.txt"
     cmd = ["mypy", ".", "--ignore-missing-imports"]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("mypy", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
     errors = len(re.findall(r"\berror:", proc.stdout))
     return ToolResult(
@@ -122,7 +122,7 @@ def run_mypy(workdir: Path, output_dir: Path) -> ToolResult:
 def run_bandit(workdir: Path, output_dir: Path) -> ToolResult:
     report_path = output_dir / "bandit-report.json"
     cmd = ["bandit", "-r", ".", "-f", "json", "-o", str(report_path)]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("bandit", cmd, workdir, output_dir)
     data = shared._parse_json(report_path)
     parse_ok = data is not None
     results = data.get("results", []) if isinstance(data, dict) else []
@@ -158,7 +158,7 @@ def _count_pip_audit_vulns(data: Any) -> int:
 def run_pip_audit(workdir: Path, output_dir: Path) -> ToolResult:
     report_path = output_dir / "pip-audit-report.json"
     cmd = ["pip-audit", "--format=json", "--output", str(report_path)]
-    proc = shared._run_command(cmd, workdir)
+    proc = shared._run_tool_command("pip_audit", cmd, workdir, output_dir)
     data = shared._parse_json(report_path)
     parse_ok = data is not None
     vulns = _count_pip_audit_vulns(data)
@@ -211,9 +211,11 @@ def run_mutmut(workdir: Path, output_dir: Path, timeout_seconds: int) -> ToolRes
     config_path, original = _ensure_mutmut_config(workdir)
     proc = None
     try:
-        proc = shared._run_command(
+        proc = shared._run_tool_command(
+            "mutmut",
             ["mutmut", "run"],
             workdir,
+            output_dir,
             timeout=timeout_seconds,
         )
     except subprocess.TimeoutExpired as exc:

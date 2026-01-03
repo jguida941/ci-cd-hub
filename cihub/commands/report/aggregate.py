@@ -9,8 +9,62 @@ from pathlib import Path
 from cihub.cli import CommandResult
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services import aggregate_from_dispatch, aggregate_from_reports_dir
+from cihub.utils.debug import emit_debug_context
 
 from .helpers import _resolve_include_details, _resolve_write_summary
+
+
+def _emit_aggregate_debug_context(
+    *,
+    args: argparse.Namespace,
+    result,
+    write_summary: bool,
+    include_details: bool,
+    summary_file: Path | None,
+    details_file: Path | None,
+    hub_run_id: str,
+    hub_event: str,
+    total_repos: int,
+    reports_dir: Path | None,
+    token_env: str | None = None,
+    token_source: str | None = None,
+) -> None:
+    report_path = str(result.report_path) if result and getattr(result, "report_path", None) else None
+    summary_path = str(result.summary_path) if result and getattr(result, "summary_path", None) else None
+    details_path = str(result.details_path) if result and getattr(result, "details_path", None) else None
+    entries = [
+        ("mode", "reports_dir" if reports_dir else "dispatch"),
+        ("reports_dir", str(reports_dir) if reports_dir else None),
+        ("dispatch_dir", str(args.dispatch_dir) if not reports_dir else None),
+        ("output_file", str(args.output)),
+        ("defaults_file", str(args.defaults_file)),
+        ("summary_file", str(summary_file) if summary_file else None),
+        ("details_file", str(details_file) if details_file else None),
+        ("write_github_summary", str(write_summary)),
+        ("include_details", str(include_details)),
+        ("total_repos", str(total_repos)),
+        ("hub_run_id", hub_run_id),
+        ("hub_event", hub_event),
+        ("strict", str(bool(args.strict))),
+        ("timeout_sec", str(int(args.timeout)) if not reports_dir else None),
+        ("token_env", token_env if not reports_dir else None),
+        ("token_source", token_source if not reports_dir else None),
+        ("report_path", report_path),
+        ("summary_path", summary_path),
+        ("details_path", details_path),
+        (
+            "dispatched_repos",
+            str(getattr(result, "dispatched_repos", "")) if result and hasattr(result, "dispatched_repos") else None,
+        ),
+        ("passed_count", str(getattr(result, "passed_count", "")) if result and hasattr(result, "passed_count") else None),
+        ("failed_count", str(getattr(result, "failed_count", "")) if result and hasattr(result, "failed_count") else None),
+        (
+            "threshold_exceeded",
+            str(getattr(result, "threshold_exceeded", "")) if result and hasattr(result, "threshold_exceeded") else None,
+        ),
+        ("success", str(bool(getattr(result, "success", False))) if result and hasattr(result, "success") else None),
+    ]
+    emit_debug_context("report aggregate", entries)
 
 
 def _aggregate_report(args: argparse.Namespace, json_mode: bool) -> int | CommandResult:
@@ -42,6 +96,18 @@ def _aggregate_report(args: argparse.Namespace, json_mode: bool) -> int | Comman
             include_details=include_details,
             strict=bool(args.strict),
         )
+        _emit_aggregate_debug_context(
+            args=args,
+            result=result,
+            write_summary=write_summary,
+            include_details=include_details,
+            summary_file=summary_file,
+            details_file=details_file,
+            hub_run_id=hub_run_id,
+            hub_event=hub_event,
+            total_repos=total_repos,
+            reports_dir=Path(reports_dir),
+        )
         exit_code = EXIT_SUCCESS if result.success else EXIT_FAILURE
         if json_mode:
             summary = "Aggregation complete" if result.success else "Aggregation failed"
@@ -58,12 +124,32 @@ def _aggregate_report(args: argparse.Namespace, json_mode: bool) -> int | Comman
 
     token = args.token
     token_env = args.token_env or "HUB_DISPATCH_TOKEN"  # noqa: S105
+    token_source = "arg" if token else None
     if not token:
         token = os.environ.get(token_env)
+        if token:
+            token_source = token_env
     if not token and token_env != "GITHUB_TOKEN":  # noqa: S105
         token = os.environ.get("GITHUB_TOKEN")
+        if token:
+            token_source = "GITHUB_TOKEN"
     if not token:
+        token_source = "missing"
         message = f"Missing token (expected {token_env} or GITHUB_TOKEN)"
+        _emit_aggregate_debug_context(
+            args=args,
+            result=None,
+            write_summary=write_summary,
+            include_details=include_details,
+            summary_file=summary_file,
+            details_file=details_file,
+            hub_run_id=hub_run_id,
+            hub_event=hub_event,
+            total_repos=total_repos,
+            reports_dir=None,
+            token_env=token_env,
+            token_source=token_source,
+        )
         if json_mode:
             return CommandResult(exit_code=EXIT_FAILURE, summary=message)
         print(message)
@@ -82,6 +168,20 @@ def _aggregate_report(args: argparse.Namespace, json_mode: bool) -> int | Comman
         include_details=include_details,
         strict=bool(args.strict),
         timeout_sec=int(args.timeout),
+    )
+    _emit_aggregate_debug_context(
+        args=args,
+        result=result,
+        write_summary=write_summary,
+        include_details=include_details,
+        summary_file=summary_file,
+        details_file=details_file,
+        hub_run_id=hub_run_id,
+        hub_event=hub_event,
+        total_repos=total_repos,
+        reports_dir=None,
+        token_env=token_env,
+        token_source=token_source,
     )
     exit_code = EXIT_SUCCESS if result.success else EXIT_FAILURE
 
