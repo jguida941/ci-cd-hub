@@ -140,11 +140,6 @@ Execution order (avoid rework):
 
   Ready to execute Phase A on simplify-workflows branch.
 
-───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
- Ready to code?
-
- Here is Claude's plan:
-╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
  Plan: Simplified Workflow + PyQt6 GUI
 
  NEW SIMPLIFIED DESIGN (stays under 25 inputs!)
@@ -371,6 +366,7 @@ Execution order (avoid rework):
    - Fix suggestions
 
  UI Layout:
+```
  ┌──────────────────────────────────────────────────────────────────┐
  │  CI/CD Hub Manager                                    [_][□][X]  │
  ├──────────────────────────────────────────────────────────────────┤
@@ -378,25 +374,26 @@ Execution order (avoid rework):
  ├──────────────────────────────────────────────────────────────────┤
  │  ┌────────────┐ ┌──────────────────────────────────────────────┐ │
  │  │ REPOS      │ │  REPO: myorg/my-service                      │ │
- │  │            │ │  ┌──────────────────────────────────────────┐ │ │
- │  │ ▸ myorg/   │ │  │ Language: [Python ▼]  Version: [3.12]   │ │ │
- │  │   my-svc   │ │  │ Branch: [main    ]    Monorepo: [ ]     │ │ │
- │  │   other    │ │  └──────────────────────────────────────────┘ │ │
- │  │ ▸ fixtures │ │  ┌──────────────────────────────────────────┐ │ │
- │  │   java-pass│ │  │ TOOLS                                    │ │ │
- │  │   py-pass  │ │  │ [x] pytest  [x] ruff   [x] bandit        │ │ │
- │  │            │ │  │ [x] black   [ ] mypy   [ ] mutmut        │ │ │
- │  │            │ │  └──────────────────────────────────────────┘ │ │
- │  │            │ │  ┌──────────────────────────────────────────┐ │ │
- │  │            │ │  │ THRESHOLDS                               │ │ │
- │  │            │ │  │ Coverage: [80]%  Mutation: [70]%         │ │ │
- │  │            │ │  └──────────────────────────────────────────┘ │ │
- │  │            │ │                                               │ │
- │  │ [+ Add]    │ │  [Save] [Push to Repo] [Validate] [Delete]    │ │
+ │  │            │ │  ┌────────────────────────────────────────── │ │
+ │  │ ▸ myorg/   │ │  │ Language: [Python ▼]  Version: [3.12]    ││ │
+ │  │   my-svc   │ │  │ Branch: [main    ]    Monorepo: [ ]      ││ │
+ │  │   other    │ │  └──────────────────────────────────────────┘│ │
+ │  │ ▸ fixtures │ │  ┌──────────────────────────────────────────┐│ │
+ │  │   java-pass│ │  │ TOOLS                                    ││ │
+ │  │   py-pass  │ │  │ [x] pytest  [x] ruff   [x] bandit        ││ │
+ │  │            │ │  │ [x] black   [ ] mypy   [ ] mutmut        ││ │
+ │  │            │ │  └──────────────────────────────────────────┘│ │
+ │  │            │ │  ┌──────────────────────────────────────────┐│ │
+ │  │            │ │  │ THRESHOLDS                               ││ │
+ │  │            │ │  │ Coverage: [80]%  Mutation: [70]%         ││ │
+ │  │            │ │  └──────────────────────────────────────────┘│ │
+ │  │            │ │                                              │ │
+ │  │ [+ Add]    │ │  [Save] [Push to Repo] [Validate] [Delete]   │ │
  │  └────────────┘ └──────────────────────────────────────────────┘ │
  ├──────────────────────────────────────────────────────────────────┤
  │  Status: Ready                                                   │
  └──────────────────────────────────────────────────────────────────┘
+```
 
  Step 8: Test
 
@@ -428,6 +425,7 @@ Execution order (avoid rework):
 
  workflow-generator/ Structure (Full GUI App)
 
+```
  workflow-generator/
  ├── main.py                    # Entry point
  ├── requirements.txt           # PyQt6, PyYAML, PyGithub, GitPython
@@ -460,7 +458,7 @@ Execution order (avoid rework):
  │   ├── icons/
  │   └── styles.qss
  └── tests/
-
+```
  ---
  Audit Summary
 
@@ -538,7 +536,7 @@ Execution order (avoid rework):
  Phase 1: Foundation + Proof of Concept
 
  Goal: Basic window that generates valid YAML
-
+```
  New repo structure:
  cihub-desktop/
  ├── main.py                    # Entry point
@@ -567,6 +565,7 @@ Execution order (avoid rework):
  │   ├── icons/
  │   └── styles/
  └── tests/
+```
 
  Phase 1 Deliverables:
  - Window opens
@@ -643,6 +642,7 @@ Execution order (avoid rework):
  - GitHub releases with binaries
 
  ---
+```
  UI Layout (Final Vision)
 
  ┌─────────────────────────────────────────────────────────────────┐
@@ -683,7 +683,7 @@ Execution order (avoid rework):
  │  │  Generate   │  │ Save Files  │  │ Open Folder │              │
  │  └─────────────┘  └─────────────┘  └─────────────┘              │
  └─────────────────────────────────────────────────────────────────┘
-
+```
  ---
  Phase 1 Implementation Steps
 
