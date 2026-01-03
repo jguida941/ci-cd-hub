@@ -233,9 +233,7 @@ def _tool_gate_enabled(config: dict[str, Any], tool: str, language: str) -> bool
             return bool(entry.get("fail_on_issues", True))
         if tool == "bandit":
             return bool(
-                entry.get("fail_on_high", True)
-                or entry.get("fail_on_medium", False)
-                or entry.get("fail_on_low", False)
+                entry.get("fail_on_high", True) or entry.get("fail_on_medium", False) or entry.get("fail_on_low", False)
             )
         if tool == "pip_audit":
             return bool(entry.get("fail_on_vuln", True))

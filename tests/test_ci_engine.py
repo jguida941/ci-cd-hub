@@ -175,9 +175,7 @@ class TestToolGateEnabled:
         assert _tool_gate_enabled(config, "bandit", "python") is False
 
     def test_python_bandit_gate_medium_enabled(self) -> None:
-        config = {
-            "python": {"tools": {"bandit": {"fail_on_high": False, "fail_on_medium": True}}}
-        }
+        config = {"python": {"tools": {"bandit": {"fail_on_high": False, "fail_on_medium": True}}}}
         assert _tool_gate_enabled(config, "bandit", "python") is True
 
     def test_python_bandit_gate_low_enabled(self) -> None:
