@@ -1,7 +1,7 @@
 # ============================================================================
 # Repo Config: fixtures-java-passing
 # ============================================================================
-# Fixture repo (java-maven-pass)
+# Fixture repo - Java Maven project that passes all checks
 # ============================================================================
 
 repo:
@@ -9,7 +9,7 @@ repo:
   name: ci-cd-hub-fixtures
   language: java
   default_branch: main
-  subdir: java-maven-pass
+  subdir: java-passing
   run_group: fixtures
   dispatch_workflow: hub-java-ci.yml  # Use reusable workflow caller
 

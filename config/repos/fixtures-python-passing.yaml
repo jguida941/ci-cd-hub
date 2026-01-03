@@ -1,7 +1,7 @@
 # ============================================================================
 # Repo Config: fixtures-python-passing
 # ============================================================================
-# Fixture repo (python-pyproject-pass)
+# Fixture repo - Python project that passes all checks
 # ============================================================================
 
 repo:
@@ -9,7 +9,7 @@ repo:
   name: ci-cd-hub-fixtures
   language: python
   default_branch: main
-  subdir: python-pyproject-pass
+  subdir: python-passing
   run_group: fixtures
   dispatch_workflow: hub-python-ci.yml  # Use reusable workflow caller
 
