@@ -44,8 +44,10 @@ class TestCliHelpSnapshot:
         assert result.returncode == 0, f"CLI help failed: {result.stderr}"
 
         snapshot_path = SNAPSHOTS_DIR / "cli_help.txt"
-        if not snapshot_path.exists():
-            pytest.skip("Snapshot not found - run once to create")
+        assert snapshot_path.exists(), (
+            f"Snapshot file missing: {snapshot_path}\n"
+            "Create it with: python -m cihub --help > tests/snapshots/cli_help.txt"
+        )
 
         expected = snapshot_path.read_text(encoding="utf-8").strip()
         actual = result.stdout.strip()
@@ -103,20 +105,38 @@ class TestCliFacadeExports:
     even after utilities are moved to cihub/utils/.
     """
 
+    # All items that are imported from cihub.cli by other modules
+    # Must remain accessible after modularization
     CLI_FACADE_EXPORTS = [
+        # Core types and entry points
         "CommandResult",
         "build_parser",
-        "build_repo_config",
-        "get_git_branch",
-        "get_git_remote",
-        "get_repo_entries",
-        "hub_root",
         "main",
-        "parse_repo_from_remote",
-        "resolve_executable",
-        "resolve_language",
+        # Path and validation utilities
+        "hub_root",
         "validate_repo_path",
         "validate_subdir",
+        # Executable resolution
+        "resolve_executable",
+        # Git utilities
+        "GIT_REMOTE_RE",
+        "get_git_branch",
+        "get_git_remote",
+        "parse_repo_from_remote",
+        # GitHub API utilities
+        "delete_remote_file",
+        "fetch_remote_file",
+        "gh_api_json",
+        "update_remote_file",
+        # Repo configuration
+        "build_repo_config",
+        "get_connected_repos",
+        "get_repo_entries",
+        "resolve_language",
+        # Workflow rendering
+        "render_dispatch_workflow",
+        # HTTP utilities
+        "safe_urlopen",
     ]
 
     def test_cli_facade_exports_accessible(self) -> None:
@@ -270,3 +290,62 @@ class TestPrivateHelperAccessibility:
 
         missing = [h for h in required_helpers if not hasattr(report, h)]
         assert not missing, f"Missing report helpers: {missing}"
+
+
+class TestAggregationPartialData:
+    """Verify aggregation works with partial/missing data.
+
+    Aggregate reports must render successfully even when some repos have
+    failed or missing data. This is critical for dashboard reliability.
+    """
+
+    def test_aggregation_with_partial_reports(self, tmp_path: Path) -> None:
+        """Aggregation succeeds when some reports are missing or invalid."""
+        import json
+
+        from cihub.aggregation import run_reports_aggregation
+        from cihub.utils.paths import hub_root
+
+        # Create reports directory
+        reports_dir = tmp_path / "reports"
+        reports_dir.mkdir()
+
+        # Create a valid report
+        valid_report = {
+            "repo": "owner/valid-repo",
+            "language": "python",
+            "tools": {"pytest": {"passed": True}},
+            "badges": {},
+        }
+        (reports_dir / "valid-repo.json").write_text(
+            json.dumps(valid_report), encoding="utf-8"
+        )
+
+        # Create an invalid/empty report
+        (reports_dir / "invalid-repo.json").write_text("{}", encoding="utf-8")
+
+        # Create a malformed JSON file
+        (reports_dir / "malformed.json").write_text("not json", encoding="utf-8")
+
+        # Get defaults file from hub root
+        defaults_file = hub_root() / "config" / "defaults.yaml"
+
+        # Run aggregation - should not raise, should return result
+        result = run_reports_aggregation(
+            reports_dir=reports_dir,
+            output_file=tmp_path / "aggregate.json",
+            summary_file=tmp_path / "summary.md",
+            defaults_file=defaults_file,
+            hub_run_id="test-123",
+            hub_event="workflow_dispatch",
+            total_repos=3,
+            strict=False,  # Allow partial data
+        )
+
+        # Aggregation should succeed despite partial data
+        assert result is not None
+        assert (tmp_path / "aggregate.json").exists()
+
+        # Output should contain the valid repo data
+        output_data = json.loads((tmp_path / "aggregate.json").read_text())
+        assert "repos" in output_data or "reports" in output_data or "timestamp" in output_data

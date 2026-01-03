@@ -255,7 +255,8 @@ class TestGetGitRemote:
 
     def test_returns_remote_url(self, tmp_path: Path) -> None:
         """Returns git remote URL on success."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        # Patch where the function is imported, not where it's defined
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
             with mock.patch("subprocess.run") as mock_run:
                 mock_run.return_value = mock.Mock(
@@ -264,10 +265,11 @@ class TestGetGitRemote:
                 )
                 result = get_git_remote(tmp_path)
                 assert result == "https://github.com/owner/repo.git"
+                assert mock_validate.called
 
     def test_returns_none_on_subprocess_error(self, tmp_path: Path) -> None:
         """Returns None when subprocess fails."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
             with mock.patch("subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError()
@@ -276,14 +278,15 @@ class TestGetGitRemote:
 
     def test_returns_none_on_value_error(self, tmp_path: Path) -> None:
         """Returns None when validation fails."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.side_effect = ValueError("invalid path")
             result = get_git_remote(tmp_path)
             assert result is None
+            assert mock_validate.called
 
     def test_strips_whitespace(self, tmp_path: Path) -> None:
         """Strips trailing whitespace from output."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
             with mock.patch("subprocess.run") as mock_run:
                 mock_run.return_value = mock.Mock(
@@ -295,7 +298,7 @@ class TestGetGitRemote:
 
     def test_returns_none_for_empty_output(self, tmp_path: Path) -> None:
         """Returns None when git returns empty output."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
             with mock.patch("subprocess.run") as mock_run:
                 mock_run.return_value = mock.Mock(
@@ -311,7 +314,7 @@ class TestGetGitBranch:
 
     def test_returns_branch_name(self, tmp_path: Path) -> None:
         """Returns current branch name on success."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
             with mock.patch("subprocess.run") as mock_run:
                 mock_run.return_value = mock.Mock(
@@ -320,10 +323,11 @@ class TestGetGitBranch:
                 )
                 result = get_git_branch(tmp_path)
                 assert result == "main"
+                assert mock_validate.called
 
     def test_returns_none_on_error(self, tmp_path: Path) -> None:
         """Returns None when subprocess fails."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
             with mock.patch("subprocess.run") as mock_run:
                 mock_run.side_effect = FileNotFoundError()
@@ -332,7 +336,7 @@ class TestGetGitBranch:
 
     def test_feature_branch_name(self, tmp_path: Path) -> None:
         """Returns feature branch names correctly."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
             with mock.patch("subprocess.run") as mock_run:
                 mock_run.return_value = mock.Mock(
