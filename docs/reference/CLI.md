@@ -826,7 +826,7 @@ positional arguments:
     ruff                Run ruff and emit issue count
     black               Run black and emit issue count
     mutmut              Run mutmut and emit summary outputs
-    bandit              Run bandit and enforce high severity gate
+    bandit              Run bandit and enforce severity gates
     pip-audit           Run pip-audit and enforce vulnerability gate
     zizmor-run          Run zizmor and produce SARIF (with fallback)
     zizmor-check        Check zizmor SARIF for high findings
@@ -1249,6 +1249,8 @@ options:
 ```
 usage: cihub hub-ci bandit [-h] [--paths PATHS [PATHS ...]] [--output OUTPUT]
                            [--severity SEVERITY] [--confidence CONFIDENCE]
+                           [--fail-on-high] [--no-fail-on-high]
+                           [--fail-on-medium] [--fail-on-low]
                            [--summary SUMMARY] [--github-summary]
 
 options:
@@ -1259,6 +1261,10 @@ options:
   --severity SEVERITY   Bandit severity level
   --confidence CONFIDENCE
                         Bandit confidence level
+  --fail-on-high        Fail if HIGH severity issues found (default: true)
+  --no-fail-on-high     Do not fail on HIGH severity issues
+  --fail-on-medium      Fail if MEDIUM severity issues found (default: false)
+  --fail-on-low         Fail if LOW severity issues found (default: false)
   --summary SUMMARY     Write summary to file
   --github-summary      Append summary to GITHUB_STEP_SUMMARY
 ```

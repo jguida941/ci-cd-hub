@@ -87,5 +87,7 @@ Source: `schema/ci-hub-config.schema.json`
 | `thresholds.max_semgrep_findings` | integer | no | 0 |  |
 | `thresholds.max_spotbugs_bugs` | integer | no | 0 |  |
 | `thresholds.mutation_score_min` | integer | no | 70 |  |
+| `thresholds.owasp_cvss_fail` | integer | no | 7 |  |
+| `thresholds.trivy_cvss_fail` | integer | no | 7 |  |
 | `thresholds_profile` | string | no |  | Named threshold preset (coverage-gate, security, compliance). Explicit thresholds override the profile. |
 | `version` | string | no | 1.0 | Config schema version |

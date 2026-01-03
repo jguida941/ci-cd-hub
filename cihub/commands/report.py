@@ -584,10 +584,11 @@ def _append_summary(text: str, summary_path: Path | None, print_stdout: bool) ->
 
 
 def _bar(value: int) -> str:
+    """Render a visual progress bar using Unicode block characters."""
     if value < 0:
         value = 0
     filled = min(20, max(0, value // 5))
-    return f"{'#' * filled}{'.' * (20 - filled)}"
+    return f"{'█' * filled}{'░' * (20 - filled)}"
 
 
 def _coerce_bool(value: object) -> bool:
