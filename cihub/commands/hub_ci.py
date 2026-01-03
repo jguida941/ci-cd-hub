@@ -1011,6 +1011,85 @@ def cmd_trivy_install(args: argparse.Namespace) -> int:
     return EXIT_SUCCESS
 
 
+def cmd_trivy_summary(args: argparse.Namespace) -> int:
+    """Parse Trivy JSON output and generate summary with counts.
+
+    Reads both filesystem scan (vulnerabilities) and config scan (misconfigurations)
+    JSON files, counts findings by severity, outputs to GITHUB_OUTPUT and GITHUB_STEP_SUMMARY.
+    """
+    fs_json = Path(args.fs_json) if args.fs_json else None
+    config_json = Path(args.config_json) if args.config_json else None
+
+    # Parse filesystem scan results (vulnerabilities)
+    fs_critical = 0
+    fs_high = 0
+    if fs_json and fs_json.exists():
+        try:
+            data = json.loads(fs_json.read_text(encoding="utf-8"))
+            for result in data.get("Results", []):
+                for vuln in result.get("Vulnerabilities", []):
+                    severity = vuln.get("Severity", "").upper()
+                    if severity == "CRITICAL":
+                        fs_critical += 1
+                    elif severity == "HIGH":
+                        fs_high += 1
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"::warning::Failed to parse {fs_json}: {e}")
+
+    # Parse config scan results (misconfigurations)
+    config_critical = 0
+    config_high = 0
+    if config_json and config_json.exists():
+        try:
+            data = json.loads(config_json.read_text(encoding="utf-8"))
+            for result in data.get("Results", []):
+                for misconfig in result.get("Misconfigurations", []):
+                    severity = misconfig.get("Severity", "").upper()
+                    if severity == "CRITICAL":
+                        config_critical += 1
+                    elif severity == "HIGH":
+                        config_high += 1
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"::warning::Failed to parse {config_json}: {e}")
+
+    # Calculate totals
+    total_critical = fs_critical + config_critical
+    total_high = fs_high + config_high
+
+    # Write to GITHUB_OUTPUT if requested
+    if args.github_output:
+        outputs = {
+            "fs_critical": str(fs_critical),
+            "fs_high": str(fs_high),
+            "config_critical": str(config_critical),
+            "config_high": str(config_high),
+            "total_critical": str(total_critical),
+            "total_high": str(total_high),
+        }
+        output_path = _resolve_output_path(None, args.github_output)
+        _write_outputs(outputs, output_path)
+
+    # Write to GITHUB_STEP_SUMMARY if requested
+    if args.github_summary:
+        summary_lines = [
+            "### Trivy Findings Summary",
+            "",
+            "| Scan Type | Critical | High |",
+            "|-----------|----------|------|",
+            f"| Filesystem (vulns) | {fs_critical} | {fs_high} |",
+            f"| Config (misconfigs) | {config_critical} | {config_high} |",
+            f"| **Total** | **{total_critical}** | **{total_high}** |",
+        ]
+        _append_summary("\n".join(summary_lines), None)
+
+    # Print summary to console
+    print(f"Trivy Summary: {total_critical} critical, {total_high} high")
+    print(f"  Filesystem: {fs_critical} critical, {fs_high} high")
+    print(f"  Config: {config_critical} critical, {config_high} high")
+
+    return EXIT_SUCCESS
+
+
 def _iter_yaml_files(path: Path) -> list[Path]:
     return sorted([*path.glob("*.yaml"), *path.glob("*.yml")])
 
@@ -1795,6 +1874,18 @@ def cmd_summary(args: argparse.Namespace) -> int:
     if not has_issues:
         lines.append("| None | success |")
     lines.append("")
+    # Parse Trivy findings from environment
+    trivy_critical = int(os.environ.get("TRIVY_CRITICAL", "0") or "0")
+    trivy_high = int(os.environ.get("TRIVY_HIGH", "0") or "0")
+    trivy_fs_critical = int(os.environ.get("TRIVY_FS_CRITICAL", "0") or "0")
+    trivy_fs_high = int(os.environ.get("TRIVY_FS_HIGH", "0") or "0")
+    trivy_config_critical = int(os.environ.get("TRIVY_CONFIG_CRITICAL", "0") or "0")
+    trivy_config_high = int(os.environ.get("TRIVY_CONFIG_HIGH", "0") or "0")
+
+    # Trivy passes if no critical vulnerabilities (high may be warnings)
+    trivy_status = "Passed" if trivy_critical == 0 else "Failed"
+    trivy_finding_text = f"{trivy_critical} crit, {trivy_high} high"
+
     lines.extend(
         [
             "### Quality Gates",
@@ -1807,10 +1898,27 @@ def cmd_summary(args: argparse.Namespace) -> int:
             f"| Type Check (mypy) | 0 errors | {'Passed' if results['mypy'] == 'success' else 'Failed'} |",
             f"| SAST (bandit) | 0 high | {'Passed' if results['bandit'] == 'success' else 'Failed'} |",
             f"| Secrets (gitleaks) | 0 leaks | {'Passed' if results['gitleaks'] == 'success' else 'Failed'} |",
+            f"| Trivy (vuln+config) | 0 critical | {trivy_status} ({trivy_finding_text}) |",
             "",
-            "Job summary generated at run-time",
         ]
     )
+
+    # Add Trivy breakdown if any findings
+    if trivy_critical > 0 or trivy_high > 0:
+        lines.extend(
+            [
+                "#### Trivy Findings Breakdown",
+                "",
+                "| Scan Type | Critical | High |",
+                "|-----------|----------|------|",
+                f"| Filesystem (vulns) | {trivy_fs_critical} | {trivy_fs_high} |",
+                f"| Config (misconfigs) | {trivy_config_critical} | {trivy_config_high} |",
+                f"| **Total** | **{trivy_critical}** | **{trivy_high}** |",
+                "",
+            ]
+        )
+
+    lines.append("Job summary generated at run-time")
     _append_summary("\n".join(lines), summary_path)
     return EXIT_SUCCESS
 
@@ -2006,6 +2114,7 @@ def cmd_hub_ci(args: argparse.Namespace) -> int:
         "codeql-build": cmd_codeql_build,
         "kyverno-install": cmd_kyverno_install,
         "trivy-install": cmd_trivy_install,
+        "trivy-summary": cmd_trivy_summary,
         "kyverno-validate": cmd_kyverno_validate,
         "kyverno-test": cmd_kyverno_test,
         "smoke-java-build": cmd_smoke_java_build,

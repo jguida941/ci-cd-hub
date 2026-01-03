@@ -465,6 +465,29 @@ def aggregate_results(results: list[dict[str, Any]]) -> dict[str, Any]:
     return aggregated
 
 
+def generate_details_markdown(results: list[dict[str, Any]]) -> str:
+    lines = ["# Per-Repo Details", ""]
+    for entry in results:
+        config = entry.get("config", "unknown")
+        report_data = entry.get("_report_data")
+        status = entry.get("status", "unknown")
+        conclusion = entry.get("conclusion", "unknown")
+        lines.append(f"<details><summary><strong>{config}</strong></summary>")
+        lines.append("")
+        if report_data:
+            try:
+                detailed_summary = render_summary(report_data, include_metrics=True)
+                lines.append(detailed_summary)
+            except Exception as exc:
+                lines.append(f"*Error rendering summary: {exc}*")
+        else:
+            lines.append(f"*No report.json available (status: {status}, conclusion: {conclusion}).*")
+        lines.append("")
+        lines.append("</details>")
+        lines.append("")
+    return "\n".join(lines)
+
+
 def generate_summary_markdown(
     results: list[dict[str, Any]],
     report: dict[str, Any],
@@ -475,6 +498,8 @@ def generate_summary_markdown(
     *,
     dispatched_label: str = "Successfully dispatched",
     missing_label: str = "Missing metadata",
+    include_details: bool = False,
+    details_md: str | None = None,
 ) -> str:
     def fmt(val, suffix=""):
         return f"{val}{suffix}" if val is not None else "-"
@@ -626,23 +651,11 @@ def generate_summary_markdown(
         ]
     )
 
-    # Add detailed per-repo summaries (same format as Run All Repos)
-    repos_with_reports = [r for r in results if r.get("_report_data")]
-    if repos_with_reports:
-        lines.extend(["", "---", "", "# Per-Repo Details", ""])
-        for entry in repos_with_reports:
-            config = entry.get("config", "unknown")
-            report_data = entry.get("_report_data", {})
-            lines.append(f"<details><summary><strong>{config}</strong></summary>")
-            lines.append("")
-            try:
-                detailed_summary = render_summary(report_data, include_metrics=True)
-                lines.append(detailed_summary)
-            except Exception as exc:
-                lines.append(f"*Error rendering summary: {exc}*")
-            lines.append("")
-            lines.append("</details>")
-            lines.append("")
+    if include_details:
+        if details_md is None:
+            details_md = generate_details_markdown(results)
+        lines.extend(["", "---", ""])
+        lines.extend(details_md.splitlines())
 
     return "\n".join(lines)
 
@@ -675,6 +688,8 @@ def run_aggregation(
     *,
     strict: bool = False,
     timeout_sec: int = 1800,
+    details_file: Path | None = None,
+    include_details: bool = False,
 ) -> int:
     api = GitHubAPI(token)
     entries = load_dispatch_metadata(dispatch_dir)
@@ -767,6 +782,10 @@ def run_aggregation(
     output_file.write_text(json.dumps(report, indent=2))
     print(f"Report written to {output_file}")
 
+    details_md = None
+    if include_details or details_file:
+        details_md = generate_details_markdown(results)
+
     if summary_file:
         summary_md = generate_summary_markdown(
             results,
@@ -775,8 +794,14 @@ def run_aggregation(
             dispatched,
             missing,
             missing_run_id,
+            include_details=include_details,
+            details_md=details_md,
         )
         summary_file.write_text(summary_md)
+
+    if details_file and details_md is not None:
+        details_file.parent.mkdir(parents=True, exist_ok=True)
+        details_file.write_text(details_md)
 
     max_critical, max_high = load_thresholds(defaults_file)
     total_critical = int(report.get("total_critical_vulns", 0) or 0)
@@ -851,6 +876,8 @@ def run_reports_aggregation(
     total_repos: int,
     *,
     strict: bool = False,
+    details_file: Path | None = None,
+    include_details: bool = False,
 ) -> int:
     reports_dir = reports_dir.resolve()
     report_paths = sorted(reports_dir.rglob("report.json"))
@@ -906,6 +933,10 @@ def run_reports_aggregation(
     output_file.write_text(json.dumps(report, indent=2))
     print(f"Report written to {output_file}")
 
+    details_md = None
+    if include_details or details_file:
+        details_md = generate_details_markdown(results)
+
     if summary_file:
         summary_md = generate_summary_markdown(
             results,
@@ -916,8 +947,14 @@ def run_reports_aggregation(
             missing_run_id,
             dispatched_label="Reports processed",
             missing_label="Missing reports",
+            include_details=include_details,
+            details_md=details_md,
         )
         summary_file.write_text(summary_md)
+
+    if details_file and details_md is not None:
+        details_file.parent.mkdir(parents=True, exist_ok=True)
+        details_file.write_text(details_md)
 
     max_critical, max_high = load_thresholds(defaults_file)
     total_critical = int(report.get("total_critical_vulns", 0) or 0)

@@ -17,8 +17,6 @@ Clones each configured repository and runs build, tests, and quality tools in th
 ### Triggers
 - `workflow_dispatch` (manual)
 - `schedule` (daily at 02:00 UTC)
-- `push` to main/master on `config/**` or `.github/workflows/hub-orchestrator.yml` changes
-- `schedule` (daily at 02:00 UTC)
 - `push` to main/master when `config/repos/*.yaml` changes
 
 ### Inputs
@@ -28,16 +26,20 @@ Clones each configured repository and runs build, tests, and quality tools in th
 | `repos` | string | Comma-separated repo names to run. Empty means all repos in `config/repos/`. |
 | `run_group` | string | Filter by run group (`full`, `fixtures`, `smoke`, or comma-separated). |
 | `skip_mutation` | boolean | If true, skip mutation testing steps for faster execution. |
+| `write_github_summary` | boolean | Write summary to `GITHUB_STEP_SUMMARY`. |
+| `include_details` | boolean | Include per-repo details in the summary (can be large). Default: true. |
 
 ### Outputs and Artifacts
 - Per-repo artifacts such as test reports and coverage reports
 - GitHub Step Summary with a per-repo metrics table (coverage, mutation, lint, security counts where applicable)
 - Per-repo JSON report under `reports/<config_basename>/report.json` (used by aggregation)
 - Per-repo summary snapshot under `reports/<config_basename>/summary.md`
+- Aggregated `hub-report.json` plus optional `hub-report-details.md` for full per-repo `Configuration Summary` output
 
 ### Notes
 - Central execution is the recommended default mode
 - For deterministic results, configure tool versions in the hub workflow or in a lockfile
+- CodeQL and Trivy run in the hub job when toggles are enabled; `cihub` consumes their results via the report artifacts
 
 ---
 
@@ -82,12 +84,14 @@ Dispatches workflows inside target repos. This mode requires target repos to hav
 | Input | Type | Meaning |
 |-------|------|---------|
 | `repos` | string | Comma-separated repo names to dispatch. Empty means all repos. |
+| `include_details` | boolean | Include per-repo details in the orchestrator summary (can be large). Default: true. |
 
 ### Outputs and Artifacts
 - Dispatch events triggered in target repos, if permissions and `workflow_dispatch` are correctly configured
 - A hub-side summary showing dispatch status per repo
 - Dispatch metadata artifacts (`dispatch-<repo>.json`) containing repo, branch, workflow, run_id, and status
 - Aggregated hub-report.json with per-repo status, conclusions, and rolled coverage/mutation (when artifacts exist)
+- Optional per-repo details artifact (`hub-report-details.md`) with full `Configuration Summary` output
 
 ### Notes
 - Keep this workflow separate from central execution so it cannot break the "repos stay clean" promise

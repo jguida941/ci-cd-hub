@@ -1430,10 +1430,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     report_aggregate.add_argument("--summary-file", help="Path to write summary markdown")
     report_aggregate.add_argument(
+        "--details-output",
+        help="Path to write per-repo detail markdown",
+    )
+    report_aggregate.add_argument(
         "--write-github-summary",
         action=argparse.BooleanOptionalAction,
         default=None,
         help="Write summary to GITHUB_STEP_SUMMARY",
+    )
+    report_aggregate.add_argument(
+        "--include-details",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help="Include per-repo details in the summary output",
     )
     report_aggregate.add_argument(
         "--defaults-file",
@@ -1990,6 +2000,29 @@ def build_parser() -> argparse.ArgumentParser:
     )
     hub_ci_trivy_install.add_argument("--output", help="Write outputs to file")
     hub_ci_trivy_install.add_argument(
+        "--github-output",
+        action="store_true",
+        help="Write outputs to GITHUB_OUTPUT",
+    )
+
+    hub_ci_trivy_summary = hub_ci_sub.add_parser(
+        "trivy-summary",
+        help="Parse Trivy JSON output and generate summary with counts",
+    )
+    hub_ci_trivy_summary.add_argument(
+        "--fs-json",
+        help="Path to trivy filesystem scan JSON (vulnerabilities)",
+    )
+    hub_ci_trivy_summary.add_argument(
+        "--config-json",
+        help="Path to trivy config scan JSON (misconfigurations)",
+    )
+    hub_ci_trivy_summary.add_argument(
+        "--github-summary",
+        action="store_true",
+        help="Write summary to GITHUB_STEP_SUMMARY",
+    )
+    hub_ci_trivy_summary.add_argument(
         "--github-output",
         action="store_true",
         help="Write outputs to GITHUB_OUTPUT",

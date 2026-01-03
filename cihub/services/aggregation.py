@@ -22,6 +22,7 @@ class AggregationResult(ServiceResult):
 
     report_path: Path | None = None
     summary_path: Path | None = None
+    details_path: Path | None = None
     report_data: dict[str, Any] = field(default_factory=dict)
     total_repos: int = 0
     dispatched_repos: int = 0
@@ -41,6 +42,8 @@ def aggregate_from_dispatch(
     summary_file: Path | None = None,
     strict: bool = False,
     timeout_sec: int = 1800,
+    details_file: Path | None = None,
+    include_details: bool = False,
 ) -> AggregationResult:
     """Aggregate reports by fetching artifacts from dispatched workflow runs.
 
@@ -55,6 +58,8 @@ def aggregate_from_dispatch(
         hub_event: Event that triggered the hub run.
         total_repos: Expected total repos (0 = use dispatch count).
         summary_file: Optional path for summary markdown.
+        details_file: Optional path for per-repo detail markdown.
+        include_details: Include per-repo details in the summary output.
         strict: Fail on any failed runs or threshold violations.
         timeout_sec: Timeout for polling workflow completion.
 
@@ -72,12 +77,15 @@ def aggregate_from_dispatch(
         total_repos=total_repos,
         strict=strict,
         timeout_sec=timeout_sec,
+        details_file=details_file,
+        include_details=include_details,
     )
 
     return _build_result(
         exit_code=exit_code,
         output_file=output_file,
         summary_file=summary_file,
+        details_file=details_file,
     )
 
 
@@ -90,6 +98,8 @@ def aggregate_from_reports_dir(
     total_repos: int = 0,
     summary_file: Path | None = None,
     strict: bool = False,
+    details_file: Path | None = None,
+    include_details: bool = False,
 ) -> AggregationResult:
     """Aggregate reports from a local directory of report.json files.
 
@@ -103,6 +113,8 @@ def aggregate_from_reports_dir(
         hub_event: Event that triggered the hub run.
         total_repos: Expected total repos (0 = use found count).
         summary_file: Optional path for summary markdown.
+        details_file: Optional path for per-repo detail markdown.
+        include_details: Include per-repo details in the summary output.
         strict: Fail on any failed runs or threshold violations.
 
     Returns:
@@ -117,12 +129,15 @@ def aggregate_from_reports_dir(
         hub_event=hub_event,
         total_repos=total_repos,
         strict=strict,
+        details_file=details_file,
+        include_details=include_details,
     )
 
     return _build_result(
         exit_code=exit_code,
         output_file=output_file,
         summary_file=summary_file,
+        details_file=details_file,
     )
 
 
@@ -130,6 +145,7 @@ def _build_result(
     exit_code: int,
     output_file: Path,
     summary_file: Path | None,
+    details_file: Path | None,
 ) -> AggregationResult:
     """Build AggregationResult from exit code and written files."""
     errors: list[str] = []
@@ -169,6 +185,7 @@ def _build_result(
         warnings=warnings,
         report_path=output_file if output_file.exists() else None,
         summary_path=summary_file if summary_file and summary_file.exists() else None,
+        details_path=details_file if details_file and details_file.exists() else None,
         report_data=report_data,
         total_repos=total_repos,
         dispatched_repos=dispatched_repos,

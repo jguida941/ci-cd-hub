@@ -563,6 +563,15 @@ def _resolve_write_summary(flag: bool | None) -> bool:
     return True
 
 
+def _resolve_include_details(flag: bool | None) -> bool:
+    if flag is not None:
+        return flag
+    env_value = _parse_env_bool(os.environ.get("CIHUB_REPORT_INCLUDE_DETAILS"))
+    if env_value is not None:
+        return env_value
+    return False
+
+
 def _resolve_summary_path(path_value: str | None, write_summary: bool) -> Path | None:
     if path_value:
         return Path(path_value)
@@ -824,7 +833,9 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
     json_mode = getattr(args, "json", False)
     if args.subcommand == "aggregate":
         write_summary = _resolve_write_summary(getattr(args, "write_github_summary", None))
+        include_details = _resolve_include_details(getattr(args, "include_details", None))
         summary_file = Path(args.summary_file) if args.summary_file else None
+        details_file = Path(args.details_output) if args.details_output else None
         if summary_file is None and write_summary:
             summary_env = os.environ.get("GITHUB_STEP_SUMMARY")
             if summary_env:
@@ -844,6 +855,8 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
                 hub_event=hub_event,
                 total_repos=total_repos,
                 summary_file=summary_file,
+                details_file=details_file,
+                include_details=include_details,
                 strict=bool(args.strict),
             )
             exit_code = EXIT_SUCCESS if result.success else EXIT_FAILURE
@@ -855,6 +868,7 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
                     artifacts={
                         "report": str(result.report_path) if result.report_path else "",
                         "summary": str(result.summary_path) if result.summary_path else "",
+                        "details": str(result.details_path) if result.details_path else "",
                     },
                 )
             return exit_code
@@ -881,6 +895,8 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
             hub_event=hub_event,
             total_repos=total_repos,
             summary_file=summary_file,
+            details_file=details_file,
+            include_details=include_details,
             strict=bool(args.strict),
             timeout_sec=int(args.timeout),
         )
@@ -894,6 +910,7 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
                 artifacts={
                     "report": str(result.report_path) if result.report_path else "",
                     "summary": str(result.summary_path) if result.summary_path else "",
+                    "details": str(result.details_path) if result.details_path else "",
                 },
             )
         return exit_code

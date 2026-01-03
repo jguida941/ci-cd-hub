@@ -329,7 +329,9 @@ options:
 usage: cihub report aggregate [-h] [--json] [--reports-dir REPORTS_DIR]
                               [--dispatch-dir DISPATCH_DIR] [--output OUTPUT]
                               [--summary-file SUMMARY_FILE]
+                              [--details-output DETAILS_OUTPUT]
                               [--write-github-summary | --no-write-github-summary]
+                              [--include-details | --no-include-details]
                               [--defaults-file DEFAULTS_FILE] [--token TOKEN]
                               [--token-env TOKEN_ENV]
                               [--total-repos TOTAL_REPOS]
@@ -348,8 +350,12 @@ options:
   --output OUTPUT       Path to write aggregated report JSON
   --summary-file SUMMARY_FILE
                         Path to write summary markdown
+  --details-output DETAILS_OUTPUT
+                        Path to write per-repo detail markdown
   --write-github-summary, --no-write-github-summary
                         Write summary to GITHUB_STEP_SUMMARY
+  --include-details, --no-include-details
+                        Include per-repo details in the summary output
   --defaults-file DEFAULTS_FILE
                         Defaults file for threshold checks
   --token TOKEN         GitHub token for artifact access

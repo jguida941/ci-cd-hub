@@ -201,6 +201,8 @@ The orchestrator generates separate tables for Java and Python repos:
 
 Tools that didn't run show `-` in the table.
 
+**Per-repo details** (optional): `cihub report aggregate --details-output <path>` writes per-repo summaries using the same `Configuration Summary` format as child workflows. Use `--include-details` (or `CIHUB_REPORT_INCLUDE_DETAILS=true`) to append them into the orchestrator summary when needed. `hub-orchestrator.yml` defaults `include_details` to true for manual runs; set `include_details=false` to keep the summary compact.
+
 ## Related ADRs
 
 - ADR-0001: Central vs. Distributed Execution

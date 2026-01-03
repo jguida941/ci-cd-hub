@@ -186,6 +186,7 @@ class TestBuildResultEdgeCases:
             exit_code=0,
             output_file=output_file,
             summary_file=None,
+            details_file=None,
         )
 
         assert "Failed to read output file" in result.errors[0]
@@ -212,6 +213,7 @@ class TestBuildResultEdgeCases:
             exit_code=1,
             output_file=output_file,
             summary_file=None,
+            details_file=None,
         )
 
         assert result.success is False
@@ -237,6 +239,7 @@ class TestBuildResultEdgeCases:
             exit_code=1,
             output_file=output_file,
             summary_file=None,
+            details_file=None,
         )
 
         assert result.threshold_exceeded is True

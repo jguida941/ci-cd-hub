@@ -600,6 +600,13 @@ jobs:
     permissions:
       contents: read
       security-events: write  # For SARIF upload
+    outputs:
+      total_critical: ${{ steps.parse.outputs.total_critical }}
+      total_high: ${{ steps.parse.outputs.total_high }}
+      fs_critical: ${{ steps.parse.outputs.fs_critical }}
+      fs_high: ${{ steps.parse.outputs.fs_high }}
+      config_critical: ${{ steps.parse.outputs.config_critical }}
+      config_high: ${{ steps.parse.outputs.config_high }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
@@ -610,13 +617,30 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Trivy filesystem scan
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install cihub
+        run: pip install -e .
+
+      - name: Trivy filesystem scan (SARIF for GitHub Security)
         uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # 0.31.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'sarif'
           output: 'trivy-fs.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Trivy filesystem scan (JSON for metrics)
+        uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # 0.31.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'json'
+          output: 'trivy-fs.json'
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy FS SARIF
@@ -626,14 +650,19 @@ jobs:
           sarif_file: trivy-fs.sarif
           category: trivy-fs
 
-      - name: Trivy config scan
+      - name: Trivy config scan (JSON for metrics)
         uses: aquasecurity/trivy-action@76071ef0d7ec797419534a183b498b4d6366cf37 # 0.31.0
         with:
           scan-type: 'config'
           scan-ref: '.'
-          format: 'table'
+          format: 'json'
+          output: 'trivy-config.json'
           exit-code: '0'
           severity: 'CRITICAL,HIGH'
+
+      - name: Parse Trivy results and generate summary
+        id: parse
+        run: python -m cihub hub-ci trivy-summary --fs-json trivy-fs.json --config-json trivy-config.json --github-summary --github-output
 
   # ============================================================================
   # Stage 4: Validation
@@ -947,6 +976,12 @@ jobs:
           RESULT_PIP_AUDIT: ${{ needs.pip-audit.result }}
           RESULT_SECRET_SCAN: ${{ needs.secret-scan.result }}
           RESULT_TRIVY: ${{ needs.trivy.result }}
+          TRIVY_CRITICAL: ${{ needs.trivy.outputs.total_critical || '0' }}
+          TRIVY_HIGH: ${{ needs.trivy.outputs.total_high || '0' }}
+          TRIVY_FS_CRITICAL: ${{ needs.trivy.outputs.fs_critical || '0' }}
+          TRIVY_FS_HIGH: ${{ needs.trivy.outputs.fs_high || '0' }}
+          TRIVY_CONFIG_CRITICAL: ${{ needs.trivy.outputs.config_critical || '0' }}
+          TRIVY_CONFIG_HIGH: ${{ needs.trivy.outputs.config_high || '0' }}
           RESULT_TEMPLATES: ${{ needs.validate-templates.result }}
           RESULT_CONFIGS: ${{ needs.validate-configs.result }}
           RESULT_MATRIX_KEYS: ${{ needs.verify-matrix-keys.result }}
@@ -970,6 +1005,8 @@ jobs:
           RESULT_PIP_AUDIT: ${{ needs.pip-audit.result }}
           RESULT_SECRET_SCAN: ${{ needs.secret-scan.result }}
           RESULT_TRIVY: ${{ needs.trivy.result }}
+          TRIVY_CRITICAL: ${{ needs.trivy.outputs.total_critical || '0' }}
+          TRIVY_HIGH: ${{ needs.trivy.outputs.total_high || '0' }}
           RESULT_TEMPLATES: ${{ needs.validate-templates.result }}
           RESULT_CONFIGS: ${{ needs.validate-configs.result }}
           RESULT_MATRIX_KEYS: ${{ needs.verify-matrix-keys.result }}

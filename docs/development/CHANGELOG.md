@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Added Trivy CVSS threshold outputs for workflow inputs.
 - Added `cihub hub-ci trivy-install` for workflow-managed Trivy setup.
 - Added Docker Compose runner for `run_docker` (optional health check + logs).
+- Added `cihub report aggregate --details-output` and `--include-details` for per-repo detail summaries.
 
 ### Config
 - Added `thresholds.trivy_cvss_fail` and `python.tools.trivy.fail_on_cvss`.
@@ -23,6 +24,9 @@ All notable changes to this project will be documented in this file.
 - Install Trivy in `python-ci.yml`/`java-ci.yml` when `run_trivy` is enabled.
 - Wired hub CI bandit severity env toggles into `hub-production-ci.yml`.
 - Run CodeQL in `python-ci.yml`/`java-ci.yml` when `run_codeql` is enabled (SARIF upload via CodeQL action).
+- `hub-orchestrator.yml` can write and upload `hub-report-details.md` and optionally embed per-repo details in the summary.
+- Defaulted `hub-orchestrator.yml` `include_details` to true for manual runs.
+- `hub-run-all.yml` installs Trivy and runs CodeQL actions when toggles are enabled, and can emit `hub-report-details.md`.
  
 ### Aggregation
 - Mark missing report artifacts as `missing_report` so summaries show `MISSING` instead of empty metrics.

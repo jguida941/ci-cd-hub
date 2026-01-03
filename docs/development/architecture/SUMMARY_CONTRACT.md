@@ -591,9 +591,13 @@ All metrics above plus `tools_ran` dict.
 
 **Note**: This is a DIFFERENT format than the unified 5-column Tools Enabled table in the plan. Orchestrator shows aggregate metrics per-repo, not per-tool breakdown.
 
+**Optional detail output**:
+- `cihub report aggregate --details-output <path>` writes per-repo details using the same `render_summary` format as child workflows.
+- `--include-details` (or `CIHUB_REPORT_INCLUDE_DETAILS=true`) appends those details into the orchestrator summary.
+
 **What would break if plan is implemented**:
 - If we try to unify orchestrator summary format with child workflow format, the CLI aggregation template needs rewrite
-- Recommendation: Keep orchestrator as separate aggregate view
+- Recommendation: Keep orchestrator as separate aggregate view, with optional per-repo details for parity
 
 ---
 

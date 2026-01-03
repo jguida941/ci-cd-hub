@@ -24,6 +24,11 @@ on:
         required: false
         type: boolean
         default: true
+      include_details:
+        description: 'Include per-repo details in the summary (can be large)'
+        required: false
+        type: boolean
+        default: true
 
   schedule:
     # Run nightly at 2 AM UTC
@@ -188,7 +193,8 @@ jobs:
           # Use HUB_DISPATCH_TOKEN for cross-repo artifact access
           HUB_DISPATCH_TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN }}
           CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
-        run: cihub report aggregate --dispatch-dir dispatch-artifacts --output hub-report.json --defaults-file config/defaults.yaml
+          CIHUB_REPORT_INCLUDE_DETAILS: ${{ inputs.include_details || 'false' }}
+        run: cihub report aggregate --dispatch-dir dispatch-artifacts --output hub-report.json --details-output hub-report-details.md --defaults-file config/defaults.yaml
 
       - name: Upload Hub Report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -196,3 +202,12 @@ jobs:
           name: hub-report-${{ github.run_id }}
           path: hub-report.json
           retention-days: 30
+
+      - name: Upload Hub Report Details
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: hub-report-details-${{ github.run_id }}
+          path: hub-report-details.md
+          retention-days: 30
+          if-no-files-found: warn

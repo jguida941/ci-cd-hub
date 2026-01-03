@@ -36,6 +36,11 @@ on:
         required: false
         type: boolean
         default: true
+      include_details:
+        description: 'Include per-repo details in the summary (can be large)'
+        required: false
+        type: boolean
+        default: true
 
   schedule:
     # Run nightly at 2 AM UTC
@@ -132,12 +137,59 @@ jobs:
       - name: Install cihub + tools
         run: pip install -e "hub[ci]"
 
+      - name: Install Trivy
+        if: ${{ matrix.run_trivy }}
+        run: cihub hub-ci trivy-install --dest .cihub/tools --github-path
+
+      - name: Initialize CodeQL (Java)
+        if: ${{ matrix.run_codeql && matrix.language == 'java' }}
+        uses: github/codeql-action/init@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
+        continue-on-error: true
+        with:
+          languages: java
+          source-root: repo
+
+      - name: Build for CodeQL (Java)
+        if: ${{ matrix.run_codeql && matrix.language == 'java' }}
+        env:
+          WORKDIR: repo
+        run: cihub hub-ci codeql-build --path "$WORKDIR"
+        continue-on-error: true
+
+      - name: Analyze CodeQL (Java)
+        if: ${{ matrix.run_codeql && matrix.language == 'java' }}
+        id: codeql_analyze_java
+        uses: github/codeql-action/analyze@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
+        continue-on-error: true
+        with:
+          category: "/language:java"
+
+      - name: Initialize CodeQL (Python)
+        if: ${{ matrix.run_codeql && matrix.language == 'python' }}
+        uses: github/codeql-action/init@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
+        continue-on-error: true
+        with:
+          languages: python
+          source-root: repo
+
+      - name: Analyze CodeQL (Python)
+        if: ${{ matrix.run_codeql && matrix.language == 'python' }}
+        id: codeql_analyze_python
+        uses: github/codeql-action/analyze@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
+        continue-on-error: true
+        with:
+          category: "/language:python"
+
       - name: Run cihub ci
         env:
           CONFIG_BASENAME: ${{ matrix.config_basename }}
           CORRELATION_ID: ${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.config_basename }}
           CIHUB_WRITE_GITHUB_SUMMARY: ${{ matrix.write_github_summary }}
           CIHUB_RUN_MUTMUT: ${{ inputs.skip_mutation && 'false' || matrix.run_mutmut }}
+          CIHUB_RUN_TRIVY: ${{ matrix.run_trivy }}
+          CIHUB_RUN_CODEQL: ${{ matrix.run_codeql }}
+          CIHUB_CODEQL_RAN: ${{ matrix.run_codeql }}
+          CIHUB_CODEQL_SUCCESS: ${{ steps.codeql_analyze_java.outcome == 'success' || steps.codeql_analyze_python.outcome == 'success' }}
         run: cihub ci --repo repo --config-from-hub "$CONFIG_BASENAME" --correlation-id "$CORRELATION_ID" --install-deps --output-dir .cihub
 
       - name: Read report outputs
@@ -195,7 +247,8 @@ jobs:
           GH_RUN_NUMBER: ${{ github.run_number }}
           GH_EVENT_NAME: ${{ github.event_name }}
           CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary }}
-        run: cihub report aggregate --reports-dir reports --total-repos "${TOTAL_REPOS}" --output hub-report.json
+          CIHUB_REPORT_INCLUDE_DETAILS: ${{ inputs.include_details || 'false' }}
+        run: cihub report aggregate --reports-dir reports --total-repos "${TOTAL_REPOS}" --output hub-report.json --details-output hub-report-details.md
 
       - name: Upload Hub Report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -203,3 +256,11 @@ jobs:
           name: hub-report-${{ github.run_id }}
           path: hub-report.json
           retention-days: 30
+
+      - name: Upload Hub Report Details
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: hub-report-details-${{ github.run_id }}
+          path: hub-report-details.md
+          retention-days: 30
+          if-no-files-found: warn
