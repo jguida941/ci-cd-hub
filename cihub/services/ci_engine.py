@@ -744,6 +744,14 @@ def _run_python_tools(
                     if success is None:
                         success = True
                     result = ToolResult(tool=tool, ran=True, success=success)
+                    if not success:
+                        problems.append(
+                            {
+                                "severity": "warning",
+                                "message": "CodeQL analysis failed or was skipped",
+                                "code": "CIHUB-CI-CODEQL",
+                            }
+                        )
                     tool_outputs[tool] = result.to_payload()
                     tools_ran[tool] = True
                     tools_success[tool] = success
@@ -795,11 +803,23 @@ def _run_python_tools(
         tools_ran[tool] = result.ran
         tools_success[tool] = result.success
         if tool == "docker" and result.metrics.get("docker_missing_compose"):
+            docker_cfg = config.get("python", {}).get("tools", {}).get("docker", {}) or {}
+            if not isinstance(docker_cfg, dict):
+                docker_cfg = {}
+            fail_on_missing = bool(docker_cfg.get("fail_on_missing_compose", False))
+            problems.append(
+                {
+                    "severity": "error" if fail_on_missing else "warning",
+                    "message": "Docker compose file not found; docker tool skipped",
+                    "code": "CIHUB-CI-DOCKER-MISSING",
+                }
+            )
+        if tool == "docker" and result.ran and not result.success and not result.metrics.get("docker_missing_compose"):
             problems.append(
                 {
                     "severity": "warning",
-                    "message": "Docker compose file not found; docker tool skipped",
-                    "code": "CIHUB-CI-DOCKER-MISSING",
+                    "message": "Docker tool failed; check docker-compose log output",
+                    "code": "CIHUB-CI-DOCKER-FAILED",
                 }
             )
         result.write_json(tool_output_dir / f"{tool}.json")
@@ -852,6 +872,14 @@ def _run_java_tools(
                     if success is None:
                         success = True
                     result = ToolResult(tool=tool, ran=True, success=success)
+                    if not success:
+                        problems.append(
+                            {
+                                "severity": "warning",
+                                "message": "CodeQL analysis failed or was skipped",
+                                "code": "CIHUB-CI-CODEQL",
+                            }
+                        )
                     tool_outputs[tool] = result.to_payload()
                     tools_ran[tool] = True
                     tools_success[tool] = success
@@ -907,11 +935,23 @@ def _run_java_tools(
         tools_ran[tool] = result.ran
         tools_success[tool] = result.success
         if tool == "docker" and result.metrics.get("docker_missing_compose"):
+            docker_cfg = config.get("java", {}).get("tools", {}).get("docker", {}) or {}
+            if not isinstance(docker_cfg, dict):
+                docker_cfg = {}
+            fail_on_missing = bool(docker_cfg.get("fail_on_missing_compose", False))
+            problems.append(
+                {
+                    "severity": "error" if fail_on_missing else "warning",
+                    "message": "Docker compose file not found; docker tool skipped",
+                    "code": "CIHUB-CI-DOCKER-MISSING",
+                }
+            )
+        if tool == "docker" and result.ran and not result.success and not result.metrics.get("docker_missing_compose"):
             problems.append(
                 {
                     "severity": "warning",
-                    "message": "Docker compose file not found; docker tool skipped",
-                    "code": "CIHUB-CI-DOCKER-MISSING",
+                    "message": "Docker tool failed; check docker-compose log output",
+                    "code": "CIHUB-CI-DOCKER-FAILED",
                 }
             )
         result.write_json(tool_output_dir / f"{tool}.json")
@@ -963,6 +1003,8 @@ def _evaluate_python_gates(
     failures: list[str] = []
     results = report.get("results", {}) or {}
     metrics = report.get("tool_metrics", {}) or {}
+    tools_ran = report.get("tools_ran", {}) or {}
+    tools_success = report.get("tools_success", {}) or {}
 
     tests_failed = int(results.get("tests_failed", 0))
     if tools_configured.get("pytest") and tests_failed > 0:
@@ -1044,6 +1086,28 @@ def _evaluate_python_gates(
     ):
         failures.append(f"trivy high {trivy_high} > {max_high}")
 
+    codeql_cfg = config.get("python", {}).get("tools", {}).get("codeql", {}) or {}
+    fail_codeql = bool(codeql_cfg.get("fail_on_error", True))
+    if tools_configured.get("codeql") and fail_codeql:
+        if not tools_ran.get("codeql"):
+            failures.append("codeql did not run")
+        elif not tools_success.get("codeql"):
+            failures.append("codeql failed")
+
+    docker_cfg = config.get("python", {}).get("tools", {}).get("docker", {}) or {}
+    fail_docker = bool(docker_cfg.get("fail_on_error", True))
+    fail_missing = bool(docker_cfg.get("fail_on_missing_compose", False))
+    docker_missing = bool(metrics.get("docker_missing_compose", False))
+    if tools_configured.get("docker"):
+        if docker_missing:
+            if fail_missing:
+                failures.append("docker compose file missing")
+        elif fail_docker:
+            if not tools_ran.get("docker"):
+                failures.append("docker did not run")
+            elif not tools_success.get("docker"):
+                failures.append("docker failed")
+
     return failures
 
 
@@ -1056,6 +1120,8 @@ def _evaluate_java_gates(
     failures: list[str] = []
     results = report.get("results", {}) or {}
     metrics = report.get("tool_metrics", {}) or {}
+    tools_ran = report.get("tools_ran", {}) or {}
+    tools_success = report.get("tools_success", {}) or {}
 
     tests_failed = int(results.get("tests_failed", 0))
     if tests_failed > 0:
@@ -1120,6 +1186,28 @@ def _evaluate_java_gates(
         and semgrep_findings > max_semgrep
     ):
         failures.append(f"semgrep findings {semgrep_findings} > {max_semgrep}")
+
+    codeql_cfg = config.get("java", {}).get("tools", {}).get("codeql", {}) or {}
+    fail_codeql = bool(codeql_cfg.get("fail_on_error", True))
+    if tools_configured.get("codeql") and fail_codeql:
+        if not tools_ran.get("codeql"):
+            failures.append("codeql did not run")
+        elif not tools_success.get("codeql"):
+            failures.append("codeql failed")
+
+    docker_cfg = config.get("java", {}).get("tools", {}).get("docker", {}) or {}
+    fail_docker = bool(docker_cfg.get("fail_on_error", True))
+    fail_missing = bool(docker_cfg.get("fail_on_missing_compose", False))
+    docker_missing = bool(metrics.get("docker_missing_compose", False))
+    if tools_configured.get("docker"):
+        if docker_missing:
+            if fail_missing:
+                failures.append("docker compose file missing")
+        elif fail_docker:
+            if not tools_ran.get("docker"):
+                failures.append("docker did not run")
+            elif not tools_success.get("docker"):
+                failures.append("docker failed")
 
     return failures
 

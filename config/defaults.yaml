@@ -101,6 +101,7 @@ java:
     codeql:
       enabled: false  # Enable via config when needed - slow SAST analysis
       languages: ["java"]
+      fail_on_error: true
 
     # Docker
     docker:
@@ -108,6 +109,8 @@ java:
       compose_file: "docker-compose.yml"
       health_endpoint: "/actuator/health"
       health_timeout: 300  # seconds
+      fail_on_error: true
+      fail_on_missing_compose: false
 
 # ------------------------------------------------------------------------------
 # Python Defaults
@@ -189,6 +192,7 @@ python:
     codeql:
       enabled: false  # Enable via config when needed - slow SAST analysis
       languages: ["python"]
+      fail_on_error: true
 
     # Docker
     docker:
@@ -196,6 +200,8 @@ python:
       compose_file: "docker-compose.yml"
       health_endpoint: "/actuator/health"
       health_timeout: 300  # seconds
+      fail_on_error: true
+      fail_on_missing_compose: false
 
 # ------------------------------------------------------------------------------
 # Report Settings

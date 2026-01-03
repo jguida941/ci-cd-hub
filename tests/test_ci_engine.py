@@ -744,6 +744,55 @@ class TestEvaluatePythonGates:
 
         assert any("bandit low" in f for f in failures)
 
+    def test_detects_codeql_failure(self) -> None:
+        report = {"tools_ran": {"codeql": True}, "tools_success": {"codeql": False}}
+        thresholds: dict = {}
+        tools_configured = {"codeql": True}
+        config = {"python": {"tools": {"codeql": {"fail_on_error": True}}}}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert "codeql failed" in failures
+
+    def test_detects_docker_not_run(self) -> None:
+        report = {"tools_ran": {"docker": False}, "tools_success": {"docker": False}}
+        thresholds: dict = {}
+        tools_configured = {"docker": True}
+        config = {"python": {"tools": {"docker": {"fail_on_error": True}}}}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert "docker did not run" in failures
+
+    def test_skips_missing_compose_when_toggle_off(self) -> None:
+        report = {
+            "tool_metrics": {"docker_missing_compose": True},
+            "tools_ran": {"docker": False},
+            "tools_success": {"docker": False},
+        }
+        thresholds: dict = {}
+        tools_configured = {"docker": True}
+        config = {"python": {"tools": {"docker": {"fail_on_error": True, "fail_on_missing_compose": False}}}}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert "docker compose file missing" not in failures
+        assert "docker did not run" not in failures
+
+    def test_fails_on_missing_compose_when_enabled(self) -> None:
+        report = {
+            "tool_metrics": {"docker_missing_compose": True},
+            "tools_ran": {"docker": False},
+            "tools_success": {"docker": False},
+        }
+        thresholds: dict = {}
+        tools_configured = {"docker": True}
+        config = {"python": {"tools": {"docker": {"fail_on_missing_compose": True}}}}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert "docker compose file missing" in failures
+
     def test_no_failures_when_all_pass(self) -> None:
         report = {"results": {"coverage": 90, "tests_failed": 0}, "tool_metrics": {"ruff_errors": 0}}
         thresholds = {"coverage_min": 80}
@@ -807,6 +856,55 @@ class TestEvaluateJavaGates:
         failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
 
         assert any("owasp critical/high" in f for f in failures)
+
+    def test_detects_codeql_not_run(self) -> None:
+        report = {"tools_ran": {"codeql": False}, "tools_success": {"codeql": False}}
+        thresholds: dict = {}
+        tools_configured = {"codeql": True}
+        config = {"java": {"tools": {"codeql": {"fail_on_error": True}}}}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert "codeql did not run" in failures
+
+    def test_detects_docker_failure(self) -> None:
+        report = {"tools_ran": {"docker": True}, "tools_success": {"docker": False}}
+        thresholds: dict = {}
+        tools_configured = {"docker": True}
+        config = {"java": {"tools": {"docker": {"fail_on_error": True}}}}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert "docker failed" in failures
+
+    def test_java_skips_missing_compose_when_toggle_off(self) -> None:
+        report = {
+            "tool_metrics": {"docker_missing_compose": True},
+            "tools_ran": {"docker": False},
+            "tools_success": {"docker": False},
+        }
+        thresholds: dict = {}
+        tools_configured = {"docker": True}
+        config = {"java": {"tools": {"docker": {"fail_on_error": True, "fail_on_missing_compose": False}}}}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert "docker compose file missing" not in failures
+        assert "docker did not run" not in failures
+
+    def test_java_fails_on_missing_compose_when_enabled(self) -> None:
+        report = {
+            "tool_metrics": {"docker_missing_compose": True},
+            "tools_ran": {"docker": False},
+            "tools_success": {"docker": False},
+        }
+        thresholds: dict = {}
+        tools_configured = {"docker": True}
+        config = {"java": {"tools": {"docker": {"fail_on_missing_compose": True}}}}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert "docker compose file missing" in failures
 
     def test_no_failures_when_all_pass(self) -> None:
         report = {"results": {"coverage": 85, "tests_failed": 0}, "tool_metrics": {}}

@@ -788,11 +788,11 @@ options:
 
 ```
 usage: cihub hub-ci [-h]
-                    {actionlint-install,actionlint,syntax-check,repo-check,source-check,security-pip-audit,security-bandit,security-ruff,security-owasp,docker-compose-check,codeql-build,kyverno-install,trivy-install,kyverno-validate,kyverno-test,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,release-parse-tag,release-update-tag,ruff,black,mutmut,bandit,pip-audit,zizmor-run,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,badges-commit,summary,outputs,enforce,verify-matrix-keys,quarantine-check}
+                    {actionlint-install,actionlint,syntax-check,repo-check,source-check,security-pip-audit,security-bandit,security-ruff,security-owasp,docker-compose-check,codeql-build,kyverno-install,trivy-install,kyverno-validate,kyverno-test,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,release-parse-tag,release-update-tag,ruff,black,mutmut,bandit,pip-audit,zizmor-run,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,badges-commit,pytest-summary,summary,outputs,enforce,verify-matrix-keys,quarantine-check}
                     ...
 
 positional arguments:
-  {actionlint-install,actionlint,syntax-check,repo-check,source-check,security-pip-audit,security-bandit,security-ruff,security-owasp,docker-compose-check,codeql-build,kyverno-install,trivy-install,kyverno-validate,kyverno-test,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,release-parse-tag,release-update-tag,ruff,black,mutmut,bandit,pip-audit,zizmor-run,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,badges-commit,summary,outputs,enforce,verify-matrix-keys,quarantine-check}
+  {actionlint-install,actionlint,syntax-check,repo-check,source-check,security-pip-audit,security-bandit,security-ruff,security-owasp,docker-compose-check,codeql-build,kyverno-install,trivy-install,kyverno-validate,kyverno-test,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,release-parse-tag,release-update-tag,ruff,black,mutmut,bandit,pip-audit,zizmor-run,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,badges-commit,pytest-summary,summary,outputs,enforce,verify-matrix-keys,quarantine-check}
     actionlint-install  Download the actionlint binary
     actionlint          Run actionlint (optionally with reviewdog)
     syntax-check        Compile Python files to catch syntax errors
@@ -837,6 +837,7 @@ positional arguments:
     gitleaks-summary    Summarize gitleaks results
     badges              Generate or validate CI badges
     badges-commit       Commit and push badge updates
+    pytest-summary      Generate pytest test results summary
     summary             Generate hub CI summary
     outputs             Emit hub CI toggle outputs
     enforce             Fail if critical hub checks failed
@@ -1421,6 +1422,26 @@ usage: cihub hub-ci badges-commit [-h]
 
 options:
   -h, --help  show this help message and exit
+```
+
+## cihub hub-ci pytest-summary
+
+```
+usage: cihub hub-ci pytest-summary [-h] [--junit-xml JUNIT_XML]
+                                   [--coverage-xml COVERAGE_XML]
+                                   [--coverage-min COVERAGE_MIN]
+                                   [--summary SUMMARY] [--github-summary]
+
+options:
+  -h, --help            show this help message and exit
+  --junit-xml JUNIT_XML
+                        Path to pytest JUnit XML file
+  --coverage-xml COVERAGE_XML
+                        Path to coverage XML file
+  --coverage-min COVERAGE_MIN
+                        Minimum coverage percentage (default: 70)
+  --summary SUMMARY     Write summary to file
+  --github-summary      Append summary to GITHUB_STEP_SUMMARY
 ```
 
 ## cihub hub-ci summary

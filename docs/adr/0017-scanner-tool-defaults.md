@@ -227,13 +227,19 @@ Tools gracefully skip when preconditions aren't met:
 | Tool | Skip Condition |
 |------|----------------|
 | Trivy | No Dockerfile present |
-| Docker Build | No Dockerfile present |
+| Docker (compose) | No docker-compose.yml present |
 | OWASP | No pom.xml/build.gradle |
 | pip-audit | No requirements.txt/pyproject.toml |
 
 ## Update (2025-12-30)
 
 - Repo entrypoint is now `hub-ci.yml`; examples that call `python-ci.yml`/`java-ci.yml` are legacy. The wrapper reads `.ci-hub.yml` and forwards tool flags to those internal workflows.
+
+## Update (2026-01-05)
+
+- `run_codeql` now runs `github/codeql-action` in reusable workflows; `cihub ci` records CodeQL status for summaries.
+- `run_docker` runs Docker Compose via `cihub ci` (uses `compose_file` + optional `health_endpoint`).
+- Added `codeql.fail_on_error` and `docker.fail_on_error` gates to control hard-fail behavior.
 
 ### 6. Java Maven Plugin Execution
 

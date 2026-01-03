@@ -64,6 +64,7 @@ java:
     # ---- Security Analysis ----
     codeql:
       enabled: true
+      fail_on_error: true
 
     # ---- Docker ----
     docker:
@@ -71,6 +72,8 @@ java:
       compose_file: docker-compose.yml
       health_endpoint: /actuator/health
       health_timeout: 300
+      fail_on_error: true
+      fail_on_missing_compose: false
 
 # ------------------------------------------------------------------------------
 # Python Configuration (only for Python repos)
@@ -87,6 +90,16 @@ java:
 #       enabled: true
 #     pip_audit:
 #       enabled: true
+#     codeql:
+#       enabled: false
+#       fail_on_error: true
+#     docker:
+#       enabled: false
+#       compose_file: docker-compose.yml
+#       health_endpoint: /actuator/health
+#       health_timeout: 300
+#       fail_on_error: true
+#       fail_on_missing_compose: false
 
 # ------------------------------------------------------------------------------
 # Custom Thresholds (override global gates)

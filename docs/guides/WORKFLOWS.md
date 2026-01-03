@@ -239,6 +239,7 @@ See [CONFIG.md](../reference/CONFIG.md) for the full config field list, and `.gi
 - Some tools require Maven or Gradle plugins configured in the repo (especially JaCoCo and PITest)
 - **CodeQL**: `run_codeql` runs `github/codeql-action` (SARIF upload enabled), and `cihub ci` records CodeQL status for summaries.
 - **Docker testing**: `run_docker` uses `docker-compose.yml` (or `compose_file`) plus an optional `health_endpoint`; ensure the compose file exists. Inputs are available in the reusable workflow but removed from caller templates (GitHub's 25 input limit). Separate `hub-*-docker.yml` templates planned for Docker integration testing.
+- **Gates**: `codeql.fail_on_error` and `docker.fail_on_error` control whether failures hard-stop the run.
 
 ---
 
@@ -266,6 +267,7 @@ See [CONFIG.md](../reference/CONFIG.md) for the full config field list, and `.gi
 - The workflow installs dependencies from `requirements.txt`, `requirements-dev.txt`, and `pyproject.toml` if present
 - **CodeQL**: `run_codeql` runs `github/codeql-action` (SARIF upload enabled), and `cihub ci` records CodeQL status for summaries.
 - **Docker testing**: `run_docker` uses `docker-compose.yml` (or `compose_file`) plus an optional `health_endpoint`; ensure the compose file exists.
+- **Gates**: `codeql.fail_on_error` and `docker.fail_on_error` control whether failures hard-stop the run.
 
 ---
 

@@ -437,7 +437,7 @@ exclude_dirs = tests,docs
 
 **Cause:** Docker not available on runner.
 
-**Fix:** Hub uses GitHub-hosted runners which have Docker. If using self-hosted runners, ensure Docker is installed.
+**Fix:** Hub uses GitHub-hosted runners which have Docker. If using self-hosted runners, ensure Docker is installed. To soften failures, set `docker.fail_on_error: false`.
 
 ---
 

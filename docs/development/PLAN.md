@@ -23,6 +23,7 @@ Single source of truth for what we are doing now. Other docs can provide depth, 
   - [x] Warn when reserved optional feature toggles are enabled.
   - [x] Gate hub-production-ci jobs via `cihub hub-ci outputs`.
 - [x] Ensure workflow toggles install required CLIs (Trivy) and wire bandit severity env toggles.
+- [x] Implement `run_codeql`/`run_docker` execution (CodeQL actions in reusable workflows + docker-compose runner in `cihub ci`, with fail-on-error gates).
 - [x] **No-inline workflow cleanup:**
   - [x] Wire summary toggle in `hub-run-all.yml` summary job (`CIHUB_WRITE_GITHUB_SUMMARY`).
   - [x] Replace zizmor SARIF heredoc in `hub-production-ci.yml` with `cihub hub-ci zizmor-run`.

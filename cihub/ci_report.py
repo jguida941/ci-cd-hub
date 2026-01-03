@@ -167,6 +167,10 @@ def build_python_report(
         "trivy_high": trivy_high,
         "trivy_medium": trivy_medium,
         "trivy_low": trivy_low,
+        "docker_missing_compose": bool(
+            tool_results.get("docker", {}).get("metrics", {}).get("docker_missing_compose", False)
+        ),
+        "docker_health_ok": bool(tool_results.get("docker", {}).get("metrics", {}).get("docker_health_ok", False)),
     }
 
     dependency_severity = {
@@ -276,6 +280,10 @@ def build_java_report(
         "trivy_high": trivy_high,
         "trivy_medium": trivy_medium,
         "trivy_low": trivy_low,
+        "docker_missing_compose": bool(
+            tool_results.get("docker", {}).get("metrics", {}).get("docker_missing_compose", False)
+        ),
+        "docker_health_ok": bool(tool_results.get("docker", {}).get("metrics", {}).get("docker_health_ok", False)),
     }
 
     dependency_severity = {

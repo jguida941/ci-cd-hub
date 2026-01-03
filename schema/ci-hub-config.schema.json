@@ -184,6 +184,7 @@
               "additionalProperties": false,
               "properties": {
                 "enabled": { "default": false, "type": "boolean" },
+                "fail_on_error": { "default": true, "type": "boolean" },
                 "languages": { "default": ["java"], "items": { "type": "string" }, "type": "array" }
               },
               "type": "object"
@@ -199,6 +200,8 @@
                 "compose_file": { "default": "docker-compose.yml", "type": "string" },
                 "dockerfile": { "default": "Dockerfile", "type": "string" },
                 "enabled": { "default": false, "type": "boolean" },
+                "fail_on_error": { "default": true, "type": "boolean" },
+                "fail_on_missing_compose": { "default": false, "type": "boolean" },
                 "health_endpoint": { "default": "/actuator/health", "type": "string" },
                 "health_timeout": { "default": 300, "type": "integer" }
               },
@@ -399,6 +402,10 @@
                   "default": false,
                   "type": "boolean"
                 },
+                "fail_on_error": {
+                  "default": true,
+                  "type": "boolean"
+                },
                 "languages": {
                   "default": ["python"],
                   "items": { "type": "string" },
@@ -417,6 +424,8 @@
               "properties": {
                 "compose_file": { "default": "docker-compose.yml", "type": "string" },
                 "enabled": { "default": false, "type": "boolean" },
+                "fail_on_error": { "default": true, "type": "boolean" },
+                "fail_on_missing_compose": { "default": false, "type": "boolean" },
                 "health_endpoint": { "default": "/actuator/health", "type": "string" },
                 "health_timeout": { "default": 300, "type": "integer" }
               },
