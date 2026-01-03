@@ -167,6 +167,14 @@ These are references, not competing plans.
 - [x] Add report summary service for GUI consumption (`cihub.services.report_summary`).
 - [x] Move CI execution core into services layer; keep CLI as thin adapter.
 
+### 8c) Core Modularization (Phase 5)
+
+- [x] Move `badges.py`, `ci_report.py`, and `reporting.py` into `cihub/core/` with facades.
+- [x] Split `ci_runner.py` into `cihub/core/ci_runner/` with facades.
+- [x] Split `aggregation.py` into `cihub/core/aggregation/` with facades.
+- [x] Update `cihub/core/__init__.py` re-exports for new core modules.
+- [ ] Run targeted tests for core modularization changes.
+
 ### 8b) Config Ergonomics (Shorthand + Threshold Presets)
 
 - [x] Expand shorthand booleans to enabled sections (reports, notifications, kyverno, optional features, hub_ci).

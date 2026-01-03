@@ -205,7 +205,7 @@ class TestLoadZizmor:
         """Missing file returns None."""
         monkeypatch.delenv("ZIZMOR_SARIF", raising=False)
         # Point to non-existent default location
-        with mock.patch("cihub.badges.ROOT", Path("/nonexistent")):
+        with mock.patch("cihub.core.badges.ROOT", Path("/nonexistent")):
             result = load_zizmor()
             assert result is None
 
@@ -256,13 +256,13 @@ class TestLoadBandit:
 
     def test_missing_file_returns_none(self, monkeypatch):
         """Missing file returns None."""
-        with mock.patch("cihub.badges.ROOT", Path("/nonexistent")):
+        with mock.patch("cihub.core.badges.ROOT", Path("/nonexistent")):
             result = load_bandit()
             assert result is None
 
     def test_counts_all_severities(self, tmp_path: Path, monkeypatch):
         """Counts all severity issues for total visibility in badge."""
-        with mock.patch("cihub.badges.ROOT", tmp_path):
+        with mock.patch("cihub.core.badges.ROOT", tmp_path):
             bandit_file = tmp_path / "bandit.json"
             bandit_file.write_text(
                 json.dumps(
@@ -283,7 +283,7 @@ class TestLoadBandit:
 
     def test_empty_results(self, tmp_path: Path, monkeypatch):
         """Empty results returns 0."""
-        with mock.patch("cihub.badges.ROOT", tmp_path):
+        with mock.patch("cihub.core.badges.ROOT", tmp_path):
             bandit_file = tmp_path / "bandit.json"
             bandit_file.write_text(json.dumps({"results": []}))
 
@@ -296,13 +296,13 @@ class TestLoadPipAudit:
 
     def test_missing_file_returns_none(self):
         """Missing file returns None."""
-        with mock.patch("cihub.badges.ROOT", Path("/nonexistent")):
+        with mock.patch("cihub.core.badges.ROOT", Path("/nonexistent")):
             result = load_pip_audit()
             assert result is None
 
     def test_list_format(self, tmp_path: Path):
         """Handles list format output."""
-        with mock.patch("cihub.badges.ROOT", tmp_path):
+        with mock.patch("cihub.core.badges.ROOT", tmp_path):
             audit_file = tmp_path / "pip-audit.json"
             audit_file.write_text(
                 json.dumps(
@@ -318,7 +318,7 @@ class TestLoadPipAudit:
 
     def test_dict_format(self, tmp_path: Path):
         """Handles dict format with dependencies key."""
-        with mock.patch("cihub.badges.ROOT", tmp_path):
+        with mock.patch("cihub.core.badges.ROOT", tmp_path):
             audit_file = tmp_path / "pip-audit.json"
             audit_file.write_text(
                 json.dumps(
@@ -335,7 +335,7 @@ class TestLoadPipAudit:
 
     def test_no_vulns_returns_zero(self, tmp_path: Path):
         """No vulnerabilities returns 0."""
-        with mock.patch("cihub.badges.ROOT", tmp_path):
+        with mock.patch("cihub.core.badges.ROOT", tmp_path):
             audit_file = tmp_path / "pip-audit.json"
             audit_file.write_text(json.dumps([{"name": "pkg1", "vulns": []}]))
 

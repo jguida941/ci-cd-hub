@@ -1,14 +1,13 @@
-"""Correlation helpers for hub orchestration.
+"""Core business logic modules for cihub.
 
-This is a facade module that re-exports from cihub.core.correlation
-for backward compatibility. New code should import from cihub.core.correlation.
+This package contains the core algorithms and data processing logic
+that are independent of CLI and service layers.
 """
 
 from __future__ import annotations
 
-# Re-export request for mock.patch compatibility (tests patch cihub.correlation.request.urlopen)
-from urllib import request
-
+# Re-export modules and symbols for convenience
+from cihub.core import aggregation, badges, ci_report, ci_runner, reporting
 from cihub.core.correlation import (
     download_artifact,
     extract_correlation_id_from_artifact,
@@ -18,10 +17,15 @@ from cihub.core.correlation import (
 )
 
 __all__ = [
+    "aggregation",
+    "badges",
+    "ci_report",
+    "ci_runner",
+    "reporting",
+    # correlation
     "download_artifact",
     "extract_correlation_id_from_artifact",
     "find_run_by_correlation_id",
     "generate_correlation_id",
     "validate_correlation_id",
-    "request",  # For mock.patch compatibility
 ]
