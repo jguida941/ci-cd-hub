@@ -300,32 +300,43 @@ class TestAggregationPartialData:
     """
 
     def test_aggregation_with_partial_reports(self, tmp_path: Path) -> None:
-        """Aggregation succeeds when some reports are missing or invalid."""
+        """Aggregation succeeds when some reports are missing or invalid.
+
+        run_reports_aggregation uses reports_dir.rglob("report.json") to find
+        reports, so we create subdirectories with report.json files.
+        """
         import json
 
         from cihub.aggregation import run_reports_aggregation
         from cihub.utils.paths import hub_root
 
-        # Create reports directory
+        # Create reports directory structure
+        # run_reports_aggregation looks for report.json files via rglob
         reports_dir = tmp_path / "reports"
         reports_dir.mkdir()
 
-        # Create a valid report
+        # Create a valid report in a subdirectory
+        valid_dir = reports_dir / "valid-repo"
+        valid_dir.mkdir()
         valid_report = {
             "repo": "owner/valid-repo",
             "language": "python",
             "tools": {"pytest": {"passed": True}},
             "badges": {},
         }
-        (reports_dir / "valid-repo.json").write_text(
+        (valid_dir / "report.json").write_text(
             json.dumps(valid_report), encoding="utf-8"
         )
 
-        # Create an invalid/empty report
-        (reports_dir / "invalid-repo.json").write_text("{}", encoding="utf-8")
+        # Create an invalid/empty report in another subdirectory
+        invalid_dir = reports_dir / "invalid-repo"
+        invalid_dir.mkdir()
+        (invalid_dir / "report.json").write_text("{}", encoding="utf-8")
 
-        # Create a malformed JSON file
-        (reports_dir / "malformed.json").write_text("not json", encoding="utf-8")
+        # Create a malformed JSON report in another subdirectory
+        malformed_dir = reports_dir / "malformed-repo"
+        malformed_dir.mkdir()
+        (malformed_dir / "report.json").write_text("not json", encoding="utf-8")
 
         # Get defaults file from hub root
         defaults_file = hub_root() / "config" / "defaults.yaml"

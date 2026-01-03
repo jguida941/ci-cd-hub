@@ -55,6 +55,7 @@ from cihub.cli import (
 from cihub.exit_codes import EXIT_FAILURE, EXIT_INTERNAL_ERROR, EXIT_SUCCESS
 from cihub.reporting import render_summary
 from cihub.services.types import ServiceResult
+from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
 
 
 @dataclass
@@ -71,49 +72,7 @@ class CiRunResult(ServiceResult):
     problems: list[dict[str, Any]] = field(default_factory=list)
 
 
-PYTHON_TOOLS = [
-    "pytest",
-    "ruff",
-    "black",
-    "isort",
-    "mypy",
-    "bandit",
-    "pip_audit",
-    "sbom",
-    "semgrep",
-    "trivy",
-    "codeql",
-    "docker",
-    "hypothesis",
-    "mutmut",
-]
-
-JAVA_TOOLS = [
-    "jacoco",
-    "pitest",
-    "jqwik",
-    "checkstyle",
-    "spotbugs",
-    "pmd",
-    "owasp",
-    "semgrep",
-    "trivy",
-    "codeql",
-    "sbom",
-    "docker",
-]
-
-RESERVED_FEATURES: list[tuple[str, str]] = [
-    ("chaos", "Chaos testing"),
-    ("dr_drill", "Disaster recovery drills"),
-    ("cache_sentinel", "Cache sentinel"),
-    ("runner_isolation", "Runner isolation"),
-    ("supply_chain", "Supply chain security"),
-    ("egress_control", "Egress control"),
-    ("canary", "Canary deployments"),
-    ("telemetry", "Telemetry"),
-    ("kyverno", "Kyverno policies"),
-]
+# PYTHON_TOOLS, JAVA_TOOLS, RESERVED_FEATURES imported from cihub.tools.registry
 
 PYTHON_RUNNERS = {
     "pytest": run_pytest,
