@@ -6,8 +6,6 @@ import json
 from pathlib import Path
 from unittest import mock
 
-import pytest
-
 from cihub.services.report_summary import (
     ReportSummaryResult,
     render_summary_from_path,

@@ -65,8 +65,9 @@ class TestDownloadArtifact:
 
     def test_download_success(self, tmp_path: Path):
         """Successfully downloads and extracts artifact."""
-        from cihub.correlation import download_artifact
         from io import BytesIO
+
+        from cihub.correlation import download_artifact
 
         # Create a mock ZIP file
         zip_content = tmp_path / "source"

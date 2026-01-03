@@ -270,7 +270,7 @@ class TestAggregateFromDispatch:
                 dispatch_dir=dispatch_dir,
                 output_file=output_file,
                 defaults_file=defaults_file,
-                token="test-token",
+                token="test-token",  # noqa: S106 - test token
                 hub_run_id="hub-123",
                 hub_event="workflow_dispatch",
                 total_repos=5,

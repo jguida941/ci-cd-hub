@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from scripts.cli_command_matrix import (
     CommandSpec,
     _build_commands,
@@ -128,9 +126,10 @@ def test_format_markdown_output() -> None:
 
 def test_run_command_success() -> None:
     """Test _run_command returns exit code 0 for successful command."""
-    from scripts.cli_command_matrix import _run_command
-    from unittest import mock
     import subprocess
+    from unittest import mock
+
+    from scripts.cli_command_matrix import _run_command
 
     spec = CommandSpec(
         name="test",
@@ -148,9 +147,10 @@ def test_run_command_success() -> None:
 
 def test_run_command_failure() -> None:
     """Test _run_command returns non-zero exit code on failure."""
-    from scripts.cli_command_matrix import _run_command
-    from unittest import mock
     import subprocess
+    from unittest import mock
+
+    from scripts.cli_command_matrix import _run_command
 
     spec = CommandSpec(
         name="test",
@@ -167,8 +167,9 @@ def test_run_command_failure() -> None:
 
 def test_main_list_mode(monkeypatch, capsys) -> None:
     """Test main() in list mode (no --run flag)."""
-    from scripts.cli_command_matrix import main
     import sys
+
+    from scripts.cli_command_matrix import main
 
     monkeypatch.setattr(sys, "argv", ["cli_command_matrix.py"])
 
@@ -182,8 +183,9 @@ def test_main_list_mode(monkeypatch, capsys) -> None:
 
 def test_main_markdown_format(monkeypatch, capsys) -> None:
     """Test main() with markdown format."""
-    from scripts.cli_command_matrix import main
     import sys
+
+    from scripts.cli_command_matrix import main
 
     monkeypatch.setattr(sys, "argv", ["cli_command_matrix.py", "--format", "markdown"])
 
@@ -196,8 +198,9 @@ def test_main_markdown_format(monkeypatch, capsys) -> None:
 
 def test_main_with_only_filter(monkeypatch, capsys) -> None:
     """Test main() with --only filter."""
-    from scripts.cli_command_matrix import main
     import sys
+
+    from scripts.cli_command_matrix import main
 
     monkeypatch.setattr(sys, "argv", ["cli_command_matrix.py", "--only", "version"])
 
@@ -210,8 +213,9 @@ def test_main_with_only_filter(monkeypatch, capsys) -> None:
 
 def test_main_run_mode_skips_ci_only(monkeypatch, capsys) -> None:
     """Test main() in run mode skips CI-only commands."""
-    from scripts.cli_command_matrix import main
     import sys
+
+    from scripts.cli_command_matrix import main
 
     # Run only version command which should succeed
     monkeypatch.setattr(
@@ -227,14 +231,15 @@ def test_main_run_mode_skips_ci_only(monkeypatch, capsys) -> None:
 
 def test_main_run_skips_missing_repo(monkeypatch, capsys) -> None:
     """Test main() skips commands needing --repo when not provided."""
-    from scripts.cli_command_matrix import main
     import sys
+
+    from scripts.cli_command_matrix import main
 
     monkeypatch.setattr(
         sys, "argv", ["cli_command_matrix.py", "--run", "--only", "detect"]
     )
 
-    code = main()
+    main()  # Return code not checked - we verify behavior via output
 
     out = capsys.readouterr().out
     assert "SKIP" in out or "missing" in out.lower()
@@ -242,14 +247,15 @@ def test_main_run_skips_missing_repo(monkeypatch, capsys) -> None:
 
 def test_main_run_skips_gh_required(monkeypatch, capsys) -> None:
     """Test main() skips GH-required commands without --include-remote."""
-    from scripts.cli_command_matrix import main
     import sys
+
+    from scripts.cli_command_matrix import main
 
     monkeypatch.setattr(
         sys, "argv", ["cli_command_matrix.py", "--run", "--only", "verify-remote"]
     )
 
-    code = main()
+    main()  # Return code not checked - we verify behavior via output
 
     out = capsys.readouterr().out
     assert "SKIP" in out

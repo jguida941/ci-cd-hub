@@ -9,6 +9,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from cihub.services.ci_engine import (
+    JAVA_TOOLS,
+    PYTHON_TOOLS,
     _apply_force_all_tools,
     _build_context,
     _collect_codecov_files,
@@ -31,8 +33,6 @@ from cihub.services.ci_engine import (
     _tool_enabled,
     _tool_gate_enabled,
     _warn_reserved_features,
-    JAVA_TOOLS,
-    PYTHON_TOOLS,
 )
 
 

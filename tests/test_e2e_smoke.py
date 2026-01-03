@@ -10,8 +10,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
 from cihub.cli import main
 from cihub.exit_codes import EXIT_SUCCESS
 
@@ -202,7 +200,8 @@ class TestUpdateWorkflow:
         ])
         assert result == EXIT_SUCCESS
 
-        original_workflow = (repo / ".github" / "workflows" / "hub-ci.yml").read_text()
+        # Verify workflow exists before update
+        assert (repo / ".github" / "workflows" / "hub-ci.yml").exists()
 
         # Step 2: Update with force
         result = main([
@@ -261,7 +260,7 @@ class TestJsonModeWorkflow:
 
     def test_validate_json_on_error(self, tmp_path: Path, capsys) -> None:
         """Validate returns structured JSON even on error."""
-        result = main(["validate", "--repo", str(tmp_path), "--json"])
+        main(["validate", "--repo", str(tmp_path), "--json"])
 
         # Should fail but return valid JSON
         out = capsys.readouterr().out
@@ -314,7 +313,7 @@ class TestHubOperationsWorkflow:
 
     def test_discover_produces_matrix(self, capsys) -> None:
         """Discover command produces repo matrix."""
-        result = main(["discover"])
+        main(["discover"])
 
         out = capsys.readouterr().out
         # Should produce JSON array or object
@@ -330,7 +329,7 @@ class TestHubOperationsWorkflow:
         result = main(["preflight"])
 
         # Should produce output about checks
-        out = capsys.readouterr()
+        capsys.readouterr()  # Consume output
         assert result in (EXIT_SUCCESS, 1)  # May fail if tools missing
 
     def test_adr_list_shows_decisions(self, capsys) -> None:
@@ -338,7 +337,7 @@ class TestHubOperationsWorkflow:
         result = main(["adr", "list"])
 
         # Should list ADRs or indicate none found
-        out = capsys.readouterr()
+        capsys.readouterr()  # Consume output
         assert result in (EXIT_SUCCESS, 1)
 
 
