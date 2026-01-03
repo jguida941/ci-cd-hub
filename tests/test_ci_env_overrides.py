@@ -1,6 +1,6 @@
-"""Tests for CLI environment overrides in cihub.commands.ci."""
+"""Tests for CLI environment overrides in cihub.services.ci_engine."""
 
-from cihub.commands.ci import _apply_env_overrides, _parse_env_bool
+from cihub.services.ci_engine import _apply_env_overrides, _parse_env_bool
 
 
 def _base_config(language: str) -> dict:

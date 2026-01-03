@@ -358,6 +358,7 @@ def test_load_config_applies_thresholds_profile(tmp_path: Path) -> None:
     defaults = {
         "repo": {"owner": "owner", "name": "base", "language": "python"},
         "language": "python",
+        "python": {"tools": {}},
         "thresholds": {"coverage_min": 70, "mutation_score_min": 70},
     }
     repo_override = {
