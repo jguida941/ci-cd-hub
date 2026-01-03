@@ -5,8 +5,8 @@ from __future__ import annotations
 import copy
 from typing import Any
 
-from cihub.config.paths import PathConfig
 from cihub.config.normalize import normalize_tool_configs
+from cihub.config.paths import PathConfig
 
 
 def deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
