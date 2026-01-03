@@ -565,7 +565,8 @@ class TestRunPythonTools:
         problems: list = []
 
         mock_result = ToolResult(tool="ruff", ran=True, success=True, metrics={"ruff_errors": 0})
-        with patch("cihub.services.ci_engine.run_ruff", return_value=mock_result):
+        # Patch PYTHON_RUNNERS dict directly since it stores function references at import time
+        with patch.dict("cihub.services.ci_engine.PYTHON_RUNNERS", {"ruff": lambda *args, **kwargs: mock_result}):
             outputs, ran, success = _run_python_tools(config, tmp_path, "repo", output_dir, problems)
 
         assert ran.get("ruff") is True
