@@ -27,8 +27,8 @@ def test_get_repo_name_from_config(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
 
 def test_get_repo_name_from_remote(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
-    with mock.patch.object(ci_engine, "get_git_remote", return_value="git@github.com:org/project.git"):
-        with mock.patch.object(ci_engine, "parse_repo_from_remote", return_value=("org", "project")):
+    with mock.patch("cihub.services.ci_engine.helpers.get_git_remote", return_value="git@github.com:org/project.git"):
+        with mock.patch("cihub.services.ci_engine.helpers.parse_repo_from_remote", return_value=("org", "project")):
             assert ci_engine._get_repo_name({}, tmp_path) == "org/project"
 
 

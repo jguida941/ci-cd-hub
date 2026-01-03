@@ -12,8 +12,6 @@ import yaml
 
 from cihub.cli import (
     CommandResult,
-    apply_dependency_fixes,
-    apply_pom_fixes,
     build_repo_config,
     collect_java_dependency_warnings,
     collect_java_pom_warnings,
@@ -22,6 +20,7 @@ from cihub.cli import (
     resolve_language,
     write_text,
 )
+from cihub.commands.pom import apply_dependency_fixes, apply_pom_fixes
 from cihub.config.io import load_yaml_file, save_yaml_file
 from cihub.config.merge import deep_merge
 from cihub.exit_codes import EXIT_SUCCESS, EXIT_USAGE
