@@ -80,15 +80,7 @@ def _bool_str(value: bool) -> str:
     return "true" if value else "false"
 
 
-def _parse_env_bool(value: str | None) -> bool | None:
-    if value is None:
-        return None
-    text = str(value).strip().lower()
-    if text in {"true", "1", "yes", "y", "on"}:
-        return True
-    if text in {"false", "0", "no", "n", "off"}:
-        return False
-    return None
+from cihub.utils.env import _parse_env_bool  # noqa: E402 - re-export for compatibility
 
 
 def _load_config(path: Path | None) -> dict[str, Any]:
@@ -1696,12 +1688,7 @@ def _env_result(name: str) -> str:
     return os.environ.get(name, "skipped")
 
 
-def _bar(value: int) -> str:
-    """Render a visual progress bar using Unicode block characters."""
-    if value < 0:
-        value = 0
-    filled = min(20, max(0, value // 5))
-    return f"{'█' * filled}{'░' * (20 - filled)}"
+from cihub.utils.progress import _bar  # noqa: E402 - re-export for compatibility
 
 
 def cmd_pytest_summary(args: argparse.Namespace) -> int:

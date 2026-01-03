@@ -543,15 +543,7 @@ def _generate_html_dashboard(summary: dict[str, Any]) -> str:
     return html_output
 
 
-def _parse_env_bool(value: str | None) -> bool | None:
-    if value is None:
-        return None
-    text = str(value).strip().lower()
-    if text in {"true", "1", "yes", "y", "on"}:
-        return True
-    if text in {"false", "0", "no", "n", "off"}:
-        return False
-    return None
+from cihub.utils.env import _parse_env_bool  # noqa: E402 - re-export for compatibility
 
 
 def _resolve_write_summary(flag: bool | None) -> bool:
@@ -592,12 +584,7 @@ def _append_summary(text: str, summary_path: Path | None, print_stdout: bool) ->
             handle.write("\n")
 
 
-def _bar(value: int) -> str:
-    """Render a visual progress bar using Unicode block characters."""
-    if value < 0:
-        value = 0
-    filled = min(20, max(0, value // 5))
-    return f"{'█' * filled}{'░' * (20 - filled)}"
+from cihub.utils.progress import _bar  # noqa: E402 - re-export for compatibility
 
 
 def _coerce_bool(value: object) -> bool:
