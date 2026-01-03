@@ -260,8 +260,8 @@ class TestLoadBandit:
             result = load_bandit()
             assert result is None
 
-    def test_counts_high_severity(self, tmp_path: Path, monkeypatch):
-        """Counts only HIGH severity issues."""
+    def test_counts_all_severities(self, tmp_path: Path, monkeypatch):
+        """Counts all severity issues for total visibility in badge."""
         with mock.patch("cihub.badges.ROOT", tmp_path):
             bandit_file = tmp_path / "bandit.json"
             bandit_file.write_text(
@@ -278,7 +278,8 @@ class TestLoadBandit:
             )
 
             result = load_bandit()
-            assert result == 2
+            # Badge shows total count (4), CI fail thresholds are configured separately
+            assert result == 4
 
     def test_empty_results(self, tmp_path: Path, monkeypatch):
         """Empty results returns 0."""

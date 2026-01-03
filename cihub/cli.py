@@ -2167,7 +2167,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Append summary to GITHUB_STEP_SUMMARY",
     )
 
-    hub_ci_bandit = hub_ci_sub.add_parser("bandit", help="Run bandit and enforce high severity gate")
+    hub_ci_bandit = hub_ci_sub.add_parser("bandit", help="Run bandit and enforce severity gates")
     hub_ci_bandit.add_argument(
         "--paths",
         nargs="+",
@@ -2177,6 +2177,30 @@ def build_parser() -> argparse.ArgumentParser:
     hub_ci_bandit.add_argument("--output", default="bandit.json", help="Bandit JSON output path")
     hub_ci_bandit.add_argument("--severity", default="medium", help="Bandit severity level")
     hub_ci_bandit.add_argument("--confidence", default="medium", help="Bandit confidence level")
+    hub_ci_bandit.add_argument(
+        "--fail-on-high",
+        action="store_true",
+        default=True,
+        help="Fail if HIGH severity issues found (default: true)",
+    )
+    hub_ci_bandit.add_argument(
+        "--no-fail-on-high",
+        dest="fail_on_high",
+        action="store_false",
+        help="Do not fail on HIGH severity issues",
+    )
+    hub_ci_bandit.add_argument(
+        "--fail-on-medium",
+        action="store_true",
+        default=False,
+        help="Fail if MEDIUM severity issues found (default: false)",
+    )
+    hub_ci_bandit.add_argument(
+        "--fail-on-low",
+        action="store_true",
+        default=False,
+        help="Fail if LOW severity issues found (default: false)",
+    )
     hub_ci_bandit.add_argument("--summary", help="Write summary to file")
     hub_ci_bandit.add_argument(
         "--github-summary",

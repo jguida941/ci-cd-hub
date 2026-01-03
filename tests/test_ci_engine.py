@@ -174,6 +174,16 @@ class TestToolGateEnabled:
         config = {"python": {"tools": {"bandit": {"fail_on_high": False}}}}
         assert _tool_gate_enabled(config, "bandit", "python") is False
 
+    def test_python_bandit_gate_medium_enabled(self) -> None:
+        config = {
+            "python": {"tools": {"bandit": {"fail_on_high": False, "fail_on_medium": True}}}
+        }
+        assert _tool_gate_enabled(config, "bandit", "python") is True
+
+    def test_python_bandit_gate_low_enabled(self) -> None:
+        config = {"python": {"tools": {"bandit": {"fail_on_low": True}}}}
+        assert _tool_gate_enabled(config, "bandit", "python") is True
+
     def test_python_pip_audit_gate(self) -> None:
         config = {"python": {"tools": {"pip_audit": {"fail_on_vuln": False}}}}
         assert _tool_gate_enabled(config, "pip_audit", "python") is False
@@ -715,6 +725,26 @@ class TestEvaluatePythonGates:
         failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
 
         assert any("bandit high" in f for f in failures)
+
+    def test_detects_bandit_medium_vulns_when_enabled(self) -> None:
+        report = {"tool_metrics": {"bandit_medium": 2}}
+        thresholds = {"max_high_vulns": 0}
+        tools_configured = {"bandit": True}
+        config = {"python": {"tools": {"bandit": {"fail_on_medium": True}}}}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert any("bandit medium" in f for f in failures)
+
+    def test_detects_bandit_low_vulns_when_enabled(self) -> None:
+        report = {"tool_metrics": {"bandit_low": 1}}
+        thresholds = {"max_high_vulns": 0}
+        tools_configured = {"bandit": True}
+        config = {"python": {"tools": {"bandit": {"fail_on_low": True}}}}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert any("bandit low" in f for f in failures)
 
     def test_no_failures_when_all_pass(self) -> None:
         report = {"results": {"coverage": 90, "tests_failed": 0}, "tool_metrics": {"ruff_errors": 0}}

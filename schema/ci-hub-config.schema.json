@@ -75,6 +75,18 @@
                   "default": true,
                   "type": "boolean"
                 },
+                "bandit_fail_high": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "bandit_fail_medium": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "bandit_fail_low": {
+                  "default": false,
+                  "type": "boolean"
+                },
                 "dependency_review": {
                   "default": true,
                   "type": "boolean"
@@ -338,6 +350,14 @@
                 },
                 "fail_on_high": {
                   "default": true,
+                  "type": "boolean"
+                },
+                "fail_on_medium": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "fail_on_low": {
+                  "default": false,
                   "type": "boolean"
                 }
               },

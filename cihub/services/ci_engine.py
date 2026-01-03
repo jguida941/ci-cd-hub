@@ -232,7 +232,11 @@ def _tool_gate_enabled(config: dict[str, Any], tool: str, language: str) -> bool
         if tool == "isort":
             return bool(entry.get("fail_on_issues", True))
         if tool == "bandit":
-            return bool(entry.get("fail_on_high", True))
+            return bool(
+                entry.get("fail_on_high", True)
+                or entry.get("fail_on_medium", False)
+                or entry.get("fail_on_low", False)
+            )
         if tool == "pip_audit":
             return bool(entry.get("fail_on_vuln", True))
         if tool == "semgrep":
@@ -938,8 +942,19 @@ def _evaluate_python_gates(
 
     max_high = int(thresholds.get("max_high_vulns", 0) or 0)
     bandit_high = int(metrics.get("bandit_high", 0))
-    if tools_configured.get("bandit") and _tool_gate_enabled(config, "bandit", "python") and bandit_high > max_high:
-        failures.append(f"bandit high {bandit_high} > {max_high}")
+    bandit_medium = int(metrics.get("bandit_medium", 0))
+    bandit_low = int(metrics.get("bandit_low", 0))
+    bandit_cfg = config.get("python", {}).get("tools", {}).get("bandit", {}) or {}
+    fail_on_high = bool(bandit_cfg.get("fail_on_high", True))
+    fail_on_medium = bool(bandit_cfg.get("fail_on_medium", False))
+    fail_on_low = bool(bandit_cfg.get("fail_on_low", False))
+    if tools_configured.get("bandit"):
+        if fail_on_high and bandit_high > max_high:
+            failures.append(f"bandit high {bandit_high} > {max_high}")
+        if fail_on_medium and bandit_medium > 0:
+            failures.append(f"bandit medium {bandit_medium} > 0")
+        if fail_on_low and bandit_low > 0:
+            failures.append(f"bandit low {bandit_low} > 0")
 
     pip_vulns = int(metrics.get("pip_audit_vulns", 0))
     max_pip = int(thresholds.get("max_pip_audit_vulns", max_high) or 0)

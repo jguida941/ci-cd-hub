@@ -128,7 +128,11 @@ def load_zizmor(env: Mapping[str, str] | None = None, root: Path | None = None) 
 
 
 def load_bandit(root: Path | None = None) -> Optional[int]:
-    """Parse bandit.json for high severity issue count."""
+    """Parse bandit.json for total issue count (all severities).
+
+    Badge shows total count for visibility. CI fail thresholds are
+    configured separately via bandit_fail_high/medium/low settings.
+    """
     base = root or ROOT
     report = base / "bandit.json"
     if not report.exists():
@@ -136,8 +140,7 @@ def load_bandit(root: Path | None = None) -> Optional[int]:
     try:
         data = json.loads(report.read_text(encoding="utf-8"))
         results = data.get("results", [])
-        high = sum(1 for r in results if r.get("issue_severity") == "HIGH")
-        return high
+        return len(results)  # Total count of all severities
     except (json.JSONDecodeError, KeyError):
         return None
 
@@ -236,9 +239,9 @@ def build_badges(
             badges["mypy.json"] = count_badge("mypy", mypy_errors, "errors")
 
     if "bandit" not in disabled_tools:
-        bandit_high = load_bandit(base)
-        if bandit_high is not None:
-            badges["bandit.json"] = count_badge("bandit", bandit_high, "high")
+        bandit_total = load_bandit(base)
+        if bandit_total is not None:
+            badges["bandit.json"] = count_badge("bandit", bandit_total, "issues")
 
     if "pip_audit" not in disabled_tools and "pip-audit" not in disabled_tools:
         pip_vulns = load_pip_audit(base)

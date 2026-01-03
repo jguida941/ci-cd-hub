@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 
 ### Config
 - Added `thresholds.trivy_cvss_fail` and `python.tools.trivy.fail_on_cvss`.
+- Added `python.tools.bandit.fail_on_medium` and `python.tools.bandit.fail_on_low` gates.
+- Added hub CI bandit gate toggles (`hub_ci.tools.bandit_fail_high/medium/low`).
 - Documented normalize-only config pipeline for workflow input generation.
 
 ### Workflows

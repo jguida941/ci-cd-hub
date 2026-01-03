@@ -65,6 +65,16 @@ run_codeql: false       # Expensive
 run_docker: false       # Expensive + needs Dockerfile
 ```
 
+**Bandit severity gates (Python):**
+```yaml
+python:
+  tools:
+    bandit:
+      fail_on_high: true
+      fail_on_medium: false
+      fail_on_low: false
+```
+
 **Java CI:**
 ```yaml
 run_jacoco: true        # Core

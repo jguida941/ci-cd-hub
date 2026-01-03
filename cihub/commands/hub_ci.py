@@ -70,6 +70,17 @@ def _bool_str(value: bool) -> str:
     return "true" if value else "false"
 
 
+def _parse_env_bool(value: str | None) -> bool | None:
+    if value is None:
+        return None
+    text = str(value).strip().lower()
+    if text in {"true", "1", "yes", "y", "on"}:
+        return True
+    if text in {"false", "0", "no", "n", "off"}:
+        return False
+    return None
+
+
 def _load_config(path: Path | None) -> dict[str, Any]:
     if path is None:
         return {}
@@ -213,12 +224,12 @@ def cmd_mutmut(args: argparse.Namespace) -> int:
     log_path = output_dir / "mutmut-run.log"
 
     proc = _run_command(["mutmut", "run"], workdir)
-    log_path.write_text((proc.stdout or "") + (proc.stderr or ""), encoding="utf-8")
+    log_text = (proc.stdout or "") + (proc.stderr or "")
+    log_path.write_text(log_text, encoding="utf-8")
     if proc.returncode != 0:
         print("::error::mutmut run failed - check for import errors or test failures")
+        print(log_text)  # Print log to help debug CI failures
         return EXIT_FAILURE
-
-    log_text = log_path.read_text(encoding="utf-8")
     if "mutations/second" not in log_text:
         print("::error::mutmut did not complete successfully")
         print(log_text)
@@ -428,6 +439,9 @@ def cmd_outputs(args: argparse.Namespace) -> int:
         "run_pytest": _bool_str(bool(tools.get("pytest", True))),
         "run_mutmut": _bool_str(bool(tools.get("mutmut", True))),
         "run_bandit": _bool_str(bool(tools.get("bandit", True))),
+        "bandit_fail_high": _bool_str(bool(tools.get("bandit_fail_high", True))),
+        "bandit_fail_medium": _bool_str(bool(tools.get("bandit_fail_medium", False))),
+        "bandit_fail_low": _bool_str(bool(tools.get("bandit_fail_low", False))),
         "run_pip_audit": _bool_str(bool(tools.get("pip_audit", True))),
         "run_gitleaks": _bool_str(bool(tools.get("gitleaks", True))),
         "run_trivy": _bool_str(bool(tools.get("trivy", True))),
@@ -463,24 +477,66 @@ def cmd_bandit(args: argparse.Namespace) -> int:
     ]
     _run_command(cmd, Path("."))
 
+    # Count issues by severity
     high = 0
+    medium = 0
+    low = 0
     if output_path.exists():
         try:
             data = json.loads(output_path.read_text(encoding="utf-8"))
             results = data.get("results", []) if isinstance(data, dict) else []
             high = sum(1 for item in results if item.get("issue_severity") == "HIGH")
+            medium = sum(1 for item in results if item.get("issue_severity") == "MEDIUM")
+            low = sum(1 for item in results if item.get("issue_severity") == "LOW")
         except json.JSONDecodeError:
-            high = 0
+            pass
 
+    total = high + medium + low
+
+    # Write summary with breakdown table
     summary_path = _resolve_summary_path(args.summary, args.github_summary)
-    _append_summary(f"## Bandit SAST\nHigh severity: {high}\n", summary_path)
+    fail_on_high = getattr(args, "fail_on_high", True)
+    fail_on_medium = getattr(args, "fail_on_medium", False)
+    fail_on_low = getattr(args, "fail_on_low", False)
 
-    if high > 0:
+    env_fail_high = _parse_env_bool(os.environ.get("CIHUB_BANDIT_FAIL_HIGH"))
+    env_fail_medium = _parse_env_bool(os.environ.get("CIHUB_BANDIT_FAIL_MEDIUM"))
+    env_fail_low = _parse_env_bool(os.environ.get("CIHUB_BANDIT_FAIL_LOW"))
+    if env_fail_high is not None:
+        fail_on_high = env_fail_high
+    if env_fail_medium is not None:
+        fail_on_medium = env_fail_medium
+    if env_fail_low is not None:
+        fail_on_low = env_fail_low
+
+    summary = (
+        "## Bandit SAST\n\n"
+        "| Severity | Count | Fail Threshold |\n"
+        "|----------|-------|----------------|\n"
+        f"| High | {high} | {'enabled' if fail_on_high else 'disabled'} |\n"
+        f"| Medium | {medium} | {'enabled' if fail_on_medium else 'disabled'} |\n"
+        f"| Low | {low} | {'enabled' if fail_on_low else 'disabled'} |\n"
+        f"| **Total** | **{total}** | |\n"
+    )
+    _append_summary(summary, summary_path)
+
+    # Check thresholds - fail if any enabled threshold is exceeded
+    fail_reasons = []
+
+    if fail_on_high and high > 0:
+        fail_reasons.append(f"{high} HIGH")
+    if fail_on_medium and medium > 0:
+        fail_reasons.append(f"{medium} MEDIUM")
+    if fail_on_low and low > 0:
+        fail_reasons.append(f"{low} LOW")
+
+    if fail_reasons:
+        # Show details for failing severities
         subprocess.run(  # noqa: S603
-            ["bandit", "-r", *args.paths, "--severity-level", "high"],  # noqa: S607
+            ["bandit", "-r", *args.paths, "--severity-level", "low"],  # noqa: S607
             text=True,
         )
-        print(f"::error::Found {high} high-severity issues")
+        print(f"::error::Found {', '.join(fail_reasons)} severity issues")
         return EXIT_FAILURE
 
     return EXIT_SUCCESS

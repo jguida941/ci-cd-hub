@@ -683,7 +683,8 @@ Execution order (avoid rework):
  │  │  Generate   │  │ Save Files  │  │ Open Folder │              │
  │  └─────────────┘  └─────────────┘  └─────────────┘              │
  └─────────────────────────────────────────────────────────────────┘
-```
+```ignored? sults ar saiyng thsi isnt accuarete 
+
  ---
  Phase 1 Implementation Steps
 

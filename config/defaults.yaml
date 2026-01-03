@@ -132,6 +132,8 @@ python:
     bandit:
       enabled: true
       fail_on_high: true
+      fail_on_medium: false
+      fail_on_low: false
 
     # Dependency Audit
     pip_audit:
@@ -326,6 +328,9 @@ hub_ci:
 
     # Security
     bandit: true
+    bandit_fail_high: true
+    bandit_fail_medium: false
+    bandit_fail_low: false
     pip_audit: true
     gitleaks: true
     trivy: true
