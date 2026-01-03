@@ -14,7 +14,8 @@ from cihub.config.loader import (  # noqa: E402
     generate_workflow_inputs,
     load_config,
 )
-from cihub.config.normalize import normalize_tool_configs  # noqa: E402
+from cihub.config.merge import deep_merge  # noqa: E402
+from cihub.config.normalize import normalize_config, normalize_tool_configs  # noqa: E402
 from scripts.validate_config import validate_config  # noqa: E402
 
 
@@ -208,6 +209,56 @@ def test_normalize_tool_configs_preserves_other_keys():
     assert result["thresholds"] == {"coverage_min": 80}
 
 
+def test_normalize_config_reports_notifications_shorthand() -> None:
+    config = {
+        "reports": {"github_summary": False, "codecov": True},
+        "notifications": {"email": True, "slack": False},
+        "kyverno": True,
+        "chaos": False,
+        "hub_ci": False,
+    }
+
+    result = normalize_config(config)
+
+    assert result["reports"]["github_summary"] == {"enabled": False}
+    assert result["reports"]["codecov"] == {"enabled": True}
+    assert result["notifications"]["email"] == {"enabled": True}
+    assert result["notifications"]["slack"] == {"enabled": False}
+    assert result["kyverno"] == {"enabled": True}
+    assert result["chaos"] == {"enabled": False}
+    assert result["hub_ci"] == {"enabled": False}
+
+
+def test_normalize_config_preserves_report_defaults() -> None:
+    defaults = {
+        "reports": {"github_summary": {"enabled": True, "include_metrics": True}},
+    }
+    overrides = {"reports": {"github_summary": False}}
+
+    merged = deep_merge(normalize_config(defaults), normalize_config(overrides))
+
+    assert merged["reports"]["github_summary"]["enabled"] is False
+    assert merged["reports"]["github_summary"]["include_metrics"] is True
+
+
+def test_thresholds_profile_applies_defaults() -> None:
+    config = {"thresholds_profile": "coverage-gate"}
+
+    result = normalize_config(config)
+
+    assert result["thresholds"]["coverage_min"] == 90
+    assert result["thresholds"]["mutation_score_min"] == 80
+
+
+def test_thresholds_profile_allows_overrides() -> None:
+    config = {"thresholds_profile": "security", "thresholds": {"max_high_vulns": 2}}
+
+    result = normalize_config(config)
+
+    assert result["thresholds"]["max_critical_vulns"] == 0
+    assert result["thresholds"]["max_high_vulns"] == 2
+
+
 def test_generate_workflow_inputs_with_shorthand_booleans():
     """Test that generate_workflow_inputs handles shorthand booleans."""
     cfg = {
@@ -288,3 +339,34 @@ def test_load_config_with_shorthand_booleans(tmp_path: Path):
 
     assert cfg["python"]["tools"]["pytest"] == {"enabled": True, "min_coverage": 80}
     assert cfg["python"]["tools"]["ruff"] == {"enabled": False, "max_errors": 0}
+
+
+def test_load_config_applies_thresholds_profile(tmp_path: Path) -> None:
+    hub_root = tmp_path
+    schema_src = ROOT / "schema" / "ci-hub-config.schema.json"
+    schema_dst = hub_root / "schema"
+    schema_dst.mkdir(parents=True, exist_ok=True)
+    schema_dst.joinpath("ci-hub-config.schema.json").write_text(
+        schema_src.read_text(), encoding="utf-8"
+    )
+
+    defaults = {
+        "repo": {"owner": "owner", "name": "base", "language": "python"},
+        "language": "python",
+        "thresholds": {"coverage_min": 70, "mutation_score_min": 70},
+    }
+    repo_override = {
+        "repo": {"owner": "owner", "name": "example", "language": "python"},
+        "thresholds_profile": "coverage-gate",
+    }
+
+    (hub_root / "config" / "repos").mkdir(parents=True, exist_ok=True)
+    (hub_root / "config" / "defaults.yaml").write_text(json.dumps(defaults), encoding="utf-8")
+    (hub_root / "config" / "repos" / "example.yaml").write_text(
+        json.dumps(repo_override), encoding="utf-8"
+    )
+
+    cfg = load_config(repo_name="example", hub_root=hub_root, exit_on_validation_error=False)
+
+    assert cfg["thresholds"]["coverage_min"] == 90
+    assert cfg["thresholds"]["mutation_score_min"] == 80

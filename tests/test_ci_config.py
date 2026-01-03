@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from cihub.ci_config import FALLBACK_DEFAULTS, load_ci_config
+from cihub.ci_config import FALLBACK_DEFAULTS, load_ci_config, load_hub_config
 
 
 class TestFallbackDefaults:
@@ -97,6 +97,45 @@ class TestLoadCiConfig:
             mock_root.return_value = tmp_path
             result = load_ci_config(tmp_path)
 
+        assert result["python"]["tools"]["pytest"]["enabled"] is True
+        assert result["python"]["tools"]["pytest"]["min_coverage"] == 75
+        assert result["python"]["tools"]["ruff"]["enabled"] is False
+        assert result["python"]["tools"]["ruff"]["max_errors"] == 3
+
+    def test_hub_config_shorthand_preserves_tool_defaults(self, tmp_path: Path) -> None:
+        config_dir = tmp_path / "config"
+        repos_dir = config_dir / "repos"
+        repos_dir.mkdir(parents=True)
+        (config_dir / "defaults.yaml").write_text(
+            "repo:\n"
+            "  owner: owner\n"
+            "  name: base\n"
+            "  language: python\n"
+            "python:\n"
+            "  tools:\n"
+            "    pytest:\n"
+            "      enabled: true\n"
+            "      min_coverage: 75\n"
+            "    ruff:\n"
+            "      enabled: true\n"
+            "      max_errors: 3\n"
+        )
+        (repos_dir / "example.yaml").write_text(
+            "repo:\n"
+            "  owner: owner\n"
+            "  name: example\n"
+            "  language: python\n"
+            "python:\n"
+            "  tools:\n"
+            "    pytest: true\n"
+            "    ruff: false\n"
+        )
+
+        with patch("cihub.ci_config.hub_root") as mock_root:
+            mock_root.return_value = tmp_path
+            result = load_hub_config("example")
+
+        assert result["language"] == "python"
         assert result["python"]["tools"]["pytest"]["enabled"] is True
         assert result["python"]["tools"]["pytest"]["min_coverage"] == 75
         assert result["python"]["tools"]["ruff"]["enabled"] is False

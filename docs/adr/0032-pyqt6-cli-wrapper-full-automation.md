@@ -3,7 +3,7 @@
 **Status**: Accepted  
 **Date:** 2025-12-26  
 **Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Last Reviewed:** 2026-01-03  
 
 ## Context
 
@@ -18,6 +18,12 @@ The **PyQt6 GUI is a thin wrapper around the CLI** and must provide full
 automation for onboarding and managing repos. The GUI never reimplements
 business logic; it only calls CLI commands (via QProcess) and renders JSON
 responses.
+
+### Service Layer Option
+
+When the GUI runs in-process, it may call `cihub.services.*` directly for a
+stable Python API. The CLI remains the primary adapter and JSON contract for
+out-of-process use.
 
 ### Rationale
 

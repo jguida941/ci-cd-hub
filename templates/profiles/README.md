@@ -25,6 +25,7 @@ _Expected runtimes are rough estimates and depend on repo size and runner speed.
 - Profile values are merged into hub config (`config/repos/*.yaml`), then overridden by a repo’s `.ci-hub.yml` (repo wins).
 - Use one source of truth for thresholds: prefer `thresholds.*`; tool-level `min_*` defaults are just starting points.
 - Only the language block matching `repo.language` is used; ignore/remove the other language block.
+- For quick gates without full profiles, use `thresholds_profile` (`coverage-gate`, `security`, `compliance`) and override via `thresholds.*`.
 
 ## When to Use Each Profile
 

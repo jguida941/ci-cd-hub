@@ -18,7 +18,9 @@ from typing import Any
 import yaml
 from jsonschema import Draft7Validator
 
-from cihub.config.normalize import normalize_tool_configs
+from cihub.config.io import load_yaml_file
+from cihub.config.merge import deep_merge
+from cihub.config.normalize import normalize_config
 
 
 class ConfigValidationError(Exception):
@@ -29,29 +31,12 @@ class ConfigValidationError(Exception):
         self.errors = errors or []
 
 
-def deep_merge(base: dict, override: dict) -> dict:
-    """
-    Deep merge two dictionaries. Override values take precedence.
-    """
-    result = base.copy()
-
-    for key, value in override.items():
-        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-            result[key] = deep_merge(result[key], value)
-        else:
-            result[key] = value
-
-    return result
-
-
-def load_yaml_file(path: Path) -> dict:
-    """Load a YAML file, return empty dict if not found."""
-    if not path.exists():
-        return {}
-
-    with open(path, encoding="utf-8") as f:
-        content = yaml.safe_load(f)
-        return content if content else {}
+def _load_yaml(path: Path, source: str) -> dict:
+    """Load YAML with consistent error handling for the loader."""
+    try:
+        return load_yaml_file(path)
+    except ValueError as exc:
+        raise ConfigValidationError(f"{source}: {exc}") from exc
 
 
 def load_config(
@@ -97,23 +82,23 @@ def load_config(
 
     # 1. Load defaults (lowest priority)
     defaults_path = hub_root / "config" / "defaults.yaml"
-    config = load_yaml_file(defaults_path)
+    config = _load_yaml(defaults_path, "defaults")
 
     if not config:
         print(f"Warning: No defaults found at {defaults_path}", file=sys.stderr)
         config = {}
-    config = normalize_tool_configs(config)
+    config = normalize_config(config)
 
     # 2. Merge hub's repo-specific config
     repo_override_path = hub_root / "config" / "repos" / f"{repo_name}.yaml"
-    repo_override = normalize_tool_configs(load_yaml_file(repo_override_path))
+    repo_override = normalize_config(_load_yaml(repo_override_path, "hub override"))
 
     if repo_override:
         config = deep_merge(config, repo_override)
 
     # 3. Merge repo's own .ci-hub.yml (highest priority)
     if repo_config_path:
-        repo_local_config = load_yaml_file(repo_config_path)
+        repo_local_config = _load_yaml(repo_config_path, "repo local config")
         if repo_local_config:
             # Block repo-local from overriding protected keys (hub controls these)
             repo_block = repo_local_config.get("repo", {})
@@ -124,7 +109,7 @@ def load_config(
                 repo_block.pop("dispatch_workflow", None)
                 repo_block.pop("dispatch_enabled", None)
                 repo_local_config["repo"] = repo_block
-            repo_local_config = normalize_tool_configs(repo_local_config)
+            repo_local_config = normalize_config(repo_local_config)
             config = deep_merge(config, repo_local_config)
 
     # Validate merged config once more
@@ -192,7 +177,7 @@ def generate_workflow_inputs(config: dict) -> dict:
     Returns a flat dict. Keys prefixed with _ are for internal use, not dispatch.
     """
     # Normalize shorthand booleans (e.g., pytest: true -> pytest: {enabled: true})
-    config = normalize_tool_configs(config)
+    config = normalize_config(config, apply_thresholds_profile=False)
 
     # Determine language
     language = config.get("language") or config.get("repo", {}).get("language", "java")
@@ -325,7 +310,7 @@ def _main() -> None:
     if args.output == "json":
         print(json.dumps(config, indent=2))
     elif args.output == "yaml":
-        print(yaml.dump(config, default_flow_style=False, sort_keys=False))
+        print(yaml.safe_dump(config, default_flow_style=False, sort_keys=False))
     elif args.output == "workflow-inputs":
         inputs = generate_workflow_inputs(config)
         print(json.dumps(inputs, indent=2))

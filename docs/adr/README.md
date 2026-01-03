@@ -36,6 +36,9 @@ Existing:
 - [ADR-0032: PyQt6 GUI Wrapper for Full Automation](0032-pyqt6-cli-wrapper-full-automation.md)
 - [ADR-0033: CLI Distribution and Automation Enhancements](0033-cli-distribution-and-automation.md)
 - [ADR-0034: Repo Template Includes Both Language Sections](0034-repo-template-dual-language.md)
+- [ADR-0035: Registry, Triage, and LLM Bundle](0035-registry-triage-llm-bundle.md)
+- [ADR-0036: Service Layer APIs for GUI Integration](0036-service-layer-gui-adapter.md)
+- [ADR-0037: Shorthand Enabled Sections + Threshold Profiles](0037-shorthand-enabled-sections-and-threshold-profiles.md)
 
 Template starter:
 ```markdown

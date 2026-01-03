@@ -291,6 +291,22 @@ make verify       # Full pre-push gate (remote drift check)
 make verify-integration  # Clone repos and run cihub ci (slow)
 ```
 
+### CLI Command Matrix (Guide Runner)
+
+Use the command matrix script to list or execute the guide-aligned commands.
+It skips CI-only or GH-auth steps unless explicitly included.
+
+```bash
+# List commands with notes
+python scripts/cli_command_matrix.py --format markdown
+
+# Run safe local commands
+python scripts/cli_command_matrix.py --run --repo /path/to/repo --report /path/to/.cihub/report.json
+
+# Include remote or mutating steps
+python scripts/cli_command_matrix.py --run --include-remote --include-mutating --keep-going
+```
+
 ### Notes
 - `cihub validate --repo .` validates **repo-local** `.ci-hub.yml`.
 - `make validate-config REPO=<name>` validates **hub configs** in `config/repos/`.
@@ -343,6 +359,30 @@ python:
 The shorthand `tool: true` is equivalent to `tool: { enabled: true }`.
 Both formats work for all Python and Java tools.
 Shorthand is normalized at load time, so default tool settings stay in effect unless overridden.
+
+### Shorthand Toggles for Enabled Sections
+
+Other sections that are `enabled`-driven can also use shorthand booleans:
+
+```yaml
+reports:
+  github_summary: false
+  codecov: true
+notifications:
+  slack: true
+kyverno: true
+chaos: false
+```
+
+### Threshold Presets (Simple Gates)
+
+Use a named preset, then override specific values if needed:
+
+```yaml
+thresholds_profile: coverage-gate
+thresholds:
+  max_high_vulns: 2
+```
 
 ### Key Commands
 

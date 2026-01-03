@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from typing import Any
 
-from cihub.config.normalize import normalize_tool_configs
+from cihub.config.normalize import normalize_config
 from cihub.config.paths import PathConfig
 
 
@@ -62,15 +62,15 @@ def build_effective_config(
     Returns:
         The merged effective configuration.
     """
-    result = normalize_tool_configs(defaults)
+    result = normalize_config(defaults)
 
     if profile:
-        result = deep_merge(result, normalize_tool_configs(profile))
+        result = deep_merge(result, normalize_config(profile))
 
     if repo_config:
-        result = deep_merge(result, normalize_tool_configs(repo_config))
+        result = deep_merge(result, normalize_config(repo_config))
 
-    return normalize_tool_configs(result)
+    return normalize_config(result, apply_thresholds_profile=False)
 
 
 def get_effective_config_for_repo(

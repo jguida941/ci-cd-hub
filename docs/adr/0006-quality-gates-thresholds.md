@@ -3,7 +3,7 @@
 **Status**: Accepted  
 **Date:** 2025-12-14  
 **Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Last Reviewed:** 2026-01-03  
 
 ## Context
 
@@ -28,10 +28,12 @@ CI pipelines need pass/fail criteria. Questions:
 
 **Configuration Hierarchy:**
 1. Per-tool settings (e.g., `java.tools.jacoco.min_coverage: 80`)
-2. Global thresholds (e.g., `thresholds.coverage_min: 70`)
-3. Hub defaults (`config/defaults.yaml`)
+2. Threshold presets via `thresholds_profile` (coverage-gate, security, compliance)
+3. Global thresholds (e.g., `thresholds.coverage_min: 70`)
+4. Hub defaults (`config/defaults.yaml`)
 
 Per-tool settings take precedence over global thresholds.
+Explicit `thresholds.*` values override the preset.
 
 **Enforcement Behavior:**
 
@@ -104,4 +106,3 @@ Per-tool settings take precedence over global thresholds.
 - Add Semgrep/Trivy findings to vuln counts
 - Consider unified "quality gate" summary job
 - Add threshold trend tracking (is coverage improving?)
-

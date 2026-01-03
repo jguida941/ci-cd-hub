@@ -10,9 +10,14 @@ All notable changes to this project will be documented in this file.
 - `cihub hub-ci badges` now respects `hub_ci.tools` toggles and emits deterministic `disabled` badges for disabled tools.
 - Security helpers now warn and set tool_status when a tool fails without valid output.
 - `cihub sync-templates --check/--dry-run` skips gracefully with a warning when no GitHub token is available.
+- Added services layer wrappers for CI runs, config helpers, and report summaries (`cihub.services.*`).
+- Added `scripts/cli_command_matrix.py` to list/run guide-aligned CLI command checks.
 
 ### Config
 - Allow shorthand booleans for tool configs and normalize at load boundaries to preserve defaults.
+- Consolidated config loader I/O/merge to shared utilities.
+- Added `thresholds_profile` presets with explicit overrides via `thresholds`.
+- Expanded shorthand booleans to enabled sections (reports, notifications, kyverno, optional features, hub_ci).
 
 ### Workflows
 - Removed all multi-line `run: |` blocks; workflows now call CLI helpers for logic.
@@ -20,6 +25,10 @@ All notable changes to this project will be documented in this file.
 - Simplified python-ci/java-ci workflow headers to point at generated CONFIG docs.
 - `hub-run-all.yml` summary job now honors `CIHUB_WRITE_GITHUB_SUMMARY`.
 - `hub-production-ci.yml` pins actionlint to v1.7.4 for deterministic runs.
+
+### Docs
+- Config reference now renders shorthand tool types as `boolean|object`.
+- Updated ADRs and guides for service-layer APIs and command-matrix validation.
 
 ## 2026-01-02 - Java SBOM Support
 

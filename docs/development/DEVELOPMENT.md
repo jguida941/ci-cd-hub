@@ -245,6 +245,9 @@ pytest tests/test_config_module.py -v
 
 # Run CLI integration tests
 python scripts/run_cli_integration.py --verbose
+
+# List or run the CLI command matrix (guide-aligned)
+python scripts/cli_command_matrix.py --format markdown
 ```
 
 ### Test Files

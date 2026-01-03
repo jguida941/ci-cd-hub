@@ -6,94 +6,53 @@ Source: `schema/ci-hub-config.schema.json`
 
 | Path | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `cache_sentinel` | object | no |  |  |
-| `cache_sentinel.enabled` | boolean | no | false |  |
-| `canary` | object | no |  |  |
-| `canary.enabled` | boolean | no | false |  |
-| `chaos` | object | no |  |  |
-| `chaos.enabled` | boolean | no | false |  |
-| `dr_drill` | object | no |  |  |
-| `dr_drill.enabled` | boolean | no | false |  |
-| `egress_control` | object | no |  |  |
-| `egress_control.enabled` | boolean | no | false |  |
+| `cache_sentinel` | boolean|object | no |  |  |
+| `canary` | boolean|object | no |  |  |
+| `chaos` | boolean|object | no |  |  |
+| `dr_drill` | boolean|object | no |  |  |
+| `egress_control` | boolean|object | no |  |  |
 | `extra_tests` | array | no |  |  |
 | `extra_tests[].command` | string | yes |  |  |
 | `extra_tests[].name` | string | yes |  |  |
-| `hub_ci` | object | no |  | Configuration for hub's own CI pipeline (hub-production-ci.yml) |
-| `hub_ci.enabled` | boolean | no | true |  |
-| `hub_ci.thresholds` | object | no |  | Quality gate thresholds for hub CI |
-| `hub_ci.thresholds.coverage_min` | integer | no | 70 |  |
-| `hub_ci.thresholds.mutation_score_min` | integer | no | 70 |  |
-| `hub_ci.tools` | object | no |  | Tools enabled for hub-production-ci.yml |
-| `hub_ci.tools.actionlint` | boolean | no | true |  |
-| `hub_ci.tools.bandit` | boolean | no | true |  |
-| `hub_ci.tools.dependency_review` | boolean | no | true |  |
-| `hub_ci.tools.gitleaks` | boolean | no | true |  |
-| `hub_ci.tools.license_check` | boolean | no | true |  |
-| `hub_ci.tools.mutmut` | boolean | no | true |  |
-| `hub_ci.tools.mypy` | boolean | no | true |  |
-| `hub_ci.tools.pip_audit` | boolean | no | true |  |
-| `hub_ci.tools.pytest` | boolean | no | true |  |
-| `hub_ci.tools.ruff` | boolean | no | true |  |
-| `hub_ci.tools.scorecard` | boolean | no | true |  |
-| `hub_ci.tools.syntax` | boolean | no | true |  |
-| `hub_ci.tools.trivy` | boolean | no | true |  |
-| `hub_ci.tools.validate_configs` | boolean | no | true |  |
-| `hub_ci.tools.validate_templates` | boolean | no | true |  |
-| `hub_ci.tools.verify_matrix_keys` | boolean | no | true |  |
-| `hub_ci.tools.yamllint` | boolean | no | true |  |
-| `hub_ci.tools.zizmor` | boolean | no | true |  |
+| `hub_ci` | boolean|object | no |  |  |
 | `java` | object | no |  |  |
 | `java.build_tool` | string | no | maven |  |
 | `java.distribution` | string | no | temurin |  |
 | `java.tools` | object | no |  |  |
-| `java.tools.checkstyle` | oneOf | no |  |  |
-| `java.tools.codeql` | oneOf | no |  |  |
-| `java.tools.docker` | oneOf | no |  |  |
-| `java.tools.jacoco` | oneOf | no |  |  |
-| `java.tools.jqwik` | oneOf | no |  |  |
-| `java.tools.owasp` | oneOf | no |  |  |
-| `java.tools.pitest` | oneOf | no |  |  |
-| `java.tools.pmd` | oneOf | no |  |  |
-| `java.tools.semgrep` | oneOf | no |  |  |
-| `java.tools.sbom` | oneOf | no |  |  |
-| `java.tools.spotbugs` | oneOf | no |  |  |
-| `java.tools.trivy` | oneOf | no |  |  |
+| `java.tools.checkstyle` | boolean|object | no |  |  |
+| `java.tools.codeql` | boolean|object | no |  |  |
+| `java.tools.docker` | boolean|object | no |  |  |
+| `java.tools.jacoco` | boolean|object | no |  |  |
+| `java.tools.jqwik` | boolean|object | no |  |  |
+| `java.tools.owasp` | boolean|object | no |  |  |
+| `java.tools.pitest` | boolean|object | no |  |  |
+| `java.tools.pmd` | boolean|object | no |  |  |
+| `java.tools.semgrep` | boolean|object | no |  |  |
+| `java.tools.sbom` | boolean|object | no |  |  |
+| `java.tools.spotbugs` | boolean|object | no |  |  |
+| `java.tools.trivy` | boolean|object | no |  |  |
 | `java.version` | string | no | 21 |  |
-| `kyverno` | object | no |  |  |
-| `kyverno.enabled` | boolean | no | false |  |
+| `kyverno` | boolean|object | no |  |  |
 | `language` | string | yes |  | Primary language of the repository |
 | `notifications` | object | no |  |  |
-| `notifications.email` | object | no |  |  |
-| `notifications.email.enabled` | boolean | no | false |  |
-| `notifications.email.recipients_env` | string | no | CIHUB_EMAIL_TO |  |
-| `notifications.email.smtp_from_env` | string | no | SMTP_FROM |  |
-| `notifications.email.smtp_host_env` | string | no | SMTP_HOST |  |
-| `notifications.email.smtp_password_env` | string | no | SMTP_PASSWORD |  |
-| `notifications.email.smtp_port_env` | string | no | SMTP_PORT |  |
-| `notifications.email.smtp_starttls_env` | string | no | SMTP_STARTTLS |  |
-| `notifications.email.smtp_user_env` | string | no | SMTP_USER |  |
-| `notifications.slack` | object | no |  |  |
-| `notifications.slack.enabled` | boolean | no | false |  |
-| `notifications.slack.on_failure` | boolean | no | true |  |
-| `notifications.slack.on_success` | boolean | no | false |  |
-| `notifications.slack.webhook_env` | string | no | CIHUB_SLACK_WEBHOOK_URL |  |
+| `notifications.email` | boolean|object | no |  |  |
+| `notifications.slack` | boolean|object | no |  |  |
 | `python` | object | no |  |  |
 | `python.tools` | object | no |  |  |
-| `python.tools.bandit` | oneOf | no |  |  |
-| `python.tools.black` | oneOf | no |  |  |
-| `python.tools.codeql` | oneOf | no |  |  |
-| `python.tools.docker` | oneOf | no |  |  |
-| `python.tools.hypothesis` | oneOf | no |  |  |
-| `python.tools.isort` | oneOf | no |  |  |
-| `python.tools.mutmut` | oneOf | no |  |  |
-| `python.tools.mypy` | oneOf | no |  |  |
-| `python.tools.pip_audit` | oneOf | no |  |  |
-| `python.tools.pytest` | oneOf | no |  |  |
-| `python.tools.ruff` | oneOf | no |  |  |
-| `python.tools.sbom` | oneOf | no |  |  |
-| `python.tools.semgrep` | oneOf | no |  |  |
-| `python.tools.trivy` | oneOf | no |  |  |
+| `python.tools.bandit` | boolean|object | no |  |  |
+| `python.tools.black` | boolean|object | no |  |  |
+| `python.tools.codeql` | boolean|object | no |  |  |
+| `python.tools.docker` | boolean|object | no |  |  |
+| `python.tools.hypothesis` | boolean|object | no |  |  |
+| `python.tools.isort` | boolean|object | no |  |  |
+| `python.tools.mutmut` | boolean|object | no |  |  |
+| `python.tools.mypy` | boolean|object | no |  |  |
+| `python.tools.pip_audit` | boolean|object | no |  |  |
+| `python.tools.pytest` | boolean|object | no |  |  |
+| `python.tools.ruff` | boolean|object | no |  |  |
+| `python.tools.sbom` | boolean|object | no |  |  |
+| `python.tools.semgrep` | boolean|object | no |  |  |
+| `python.tools.trivy` | boolean|object | no |  |  |
 | `python.version` | string | no | 3.12 |  |
 | `repo` | object | yes |  |  |
 | `repo.default_branch` | string | no | main |  |
@@ -108,22 +67,13 @@ Source: `schema/ci-hub-config.schema.json`
 | `repo.subdir` | string | no |  | Optional subdirectory within the repo |
 | `repo.use_central_runner` | boolean | no | true | Use central runner mode (hub clones and executes) vs distributed mode (dispatch to target repo workflow) |
 | `reports` | object | no |  |  |
-| `reports.badges` | object | no |  |  |
-| `reports.badges.branch` | string | no | main |  |
-| `reports.badges.enabled` | boolean | no | true |  |
-| `reports.codecov` | object | no |  |  |
-| `reports.codecov.enabled` | boolean | no | true |  |
-| `reports.codecov.fail_ci_on_error` | boolean | no | false |  |
-| `reports.github_summary` | object | no |  |  |
-| `reports.github_summary.enabled` | boolean | no | true |  |
-| `reports.github_summary.include_metrics` | boolean | no | true |  |
+| `reports.badges` | boolean|object | no |  |  |
+| `reports.codecov` | boolean|object | no |  |  |
+| `reports.github_summary` | boolean|object | no |  |  |
 | `reports.retention_days` | integer | no | 30 |  |
-| `runner_isolation` | object | no |  |  |
-| `runner_isolation.enabled` | boolean | no | false |  |
-| `supply_chain` | object | no |  |  |
-| `supply_chain.enabled` | boolean | no | false |  |
-| `telemetry` | object | no |  |  |
-| `telemetry.enabled` | boolean | no | false |  |
+| `runner_isolation` | boolean|object | no |  |  |
+| `supply_chain` | boolean|object | no |  |  |
+| `telemetry` | boolean|object | no |  |  |
 | `thresholds` | object | no |  |  |
 | `thresholds.coverage_min` | integer | no | 70 |  |
 | `thresholds.max_black_issues` | integer | no | 0 |  |
@@ -137,4 +87,5 @@ Source: `schema/ci-hub-config.schema.json`
 | `thresholds.max_semgrep_findings` | integer | no | 0 |  |
 | `thresholds.max_spotbugs_bugs` | integer | no | 0 |  |
 | `thresholds.mutation_score_min` | integer | no | 70 |  |
+| `thresholds_profile` | string | no |  | Named threshold preset (coverage-gate, security, compliance). Explicit thresholds override the profile. |
 | `version` | string | no | 1.0 | Config schema version |

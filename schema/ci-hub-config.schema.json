@@ -34,113 +34,118 @@
   ],
   "definitions": {
     "hubCi": {
-      "additionalProperties": false,
-      "description": "Configuration for hub's own CI pipeline (hub-production-ci.yml)",
-      "properties": {
-        "enabled": {
-          "default": true,
-          "type": "boolean"
-        },
-        "thresholds": {
+      "oneOf": [
+        { "type": "boolean" },
+        {
           "additionalProperties": false,
-          "description": "Quality gate thresholds for hub CI",
+          "description": "Configuration for hub's own CI pipeline (hub-production-ci.yml)",
           "properties": {
-            "coverage_min": {
-              "default": 70,
-              "maximum": 100,
-              "minimum": 0,
-              "type": "integer"
-            },
-            "mutation_score_min": {
-              "default": 70,
-              "maximum": 100,
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          "type": "object"
-        },
-        "tools": {
-          "additionalProperties": false,
-          "description": "Tools enabled for hub-production-ci.yml",
-          "properties": {
-            "actionlint": {
+            "enabled": {
               "default": true,
               "type": "boolean"
             },
-            "bandit": {
-              "default": true,
-              "type": "boolean"
+            "thresholds": {
+              "additionalProperties": false,
+              "description": "Quality gate thresholds for hub CI",
+              "properties": {
+                "coverage_min": {
+                  "default": 70,
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "mutation_score_min": {
+                  "default": 70,
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "type": "object"
             },
-            "dependency_review": {
-              "default": true,
-              "type": "boolean"
-            },
-            "gitleaks": {
-              "default": true,
-              "type": "boolean"
-            },
-            "license_check": {
-              "default": true,
-              "type": "boolean"
-            },
-            "mutmut": {
-              "default": true,
-              "type": "boolean"
-            },
-            "mypy": {
-              "default": true,
-              "type": "boolean"
-            },
-            "pip_audit": {
-              "default": true,
-              "type": "boolean"
-            },
-            "pytest": {
-              "default": true,
-              "type": "boolean"
-            },
-            "ruff": {
-              "default": true,
-              "type": "boolean"
-            },
-            "scorecard": {
-              "default": true,
-              "type": "boolean"
-            },
-            "syntax": {
-              "default": true,
-              "type": "boolean"
-            },
-            "trivy": {
-              "default": true,
-              "type": "boolean"
-            },
-            "validate_configs": {
-              "default": true,
-              "type": "boolean"
-            },
-            "validate_templates": {
-              "default": true,
-              "type": "boolean"
-            },
-            "verify_matrix_keys": {
-              "default": true,
-              "type": "boolean"
-            },
-            "yamllint": {
-              "default": true,
-              "type": "boolean"
-            },
-            "zizmor": {
-              "default": true,
-              "type": "boolean"
+            "tools": {
+              "additionalProperties": false,
+              "description": "Tools enabled for hub-production-ci.yml",
+              "properties": {
+                "actionlint": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "bandit": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "dependency_review": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "gitleaks": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "license_check": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "mutmut": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "mypy": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "pip_audit": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "pytest": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "ruff": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "scorecard": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "syntax": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "trivy": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "validate_configs": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "validate_templates": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "verify_matrix_keys": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "yamllint": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "zizmor": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
             }
           },
           "type": "object"
         }
-      },
-      "type": "object"
+      ]
     },
     "javaTools": {
       "additionalProperties": false,
@@ -537,46 +542,61 @@
       "additionalProperties": false,
       "properties": {
         "badges": {
-          "additionalProperties": false,
-          "properties": {
-            "branch": {
-              "default": "main",
-              "type": "string"
-            },
-            "enabled": {
-              "default": true,
-              "type": "boolean"
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "branch": {
+                  "default": "main",
+                  "type": "string"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
             }
-          },
-          "type": "object"
+          ]
         },
         "codecov": {
-          "additionalProperties": false,
-          "properties": {
-            "enabled": {
-              "default": true,
-              "type": "boolean"
-            },
-            "fail_ci_on_error": {
-              "default": false,
-              "type": "boolean"
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "fail_ci_on_error": {
+                  "default": false,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
             }
-          },
-          "type": "object"
+          ]
         },
         "github_summary": {
-          "additionalProperties": false,
-          "properties": {
-            "enabled": {
-              "default": true,
-              "type": "boolean"
-            },
-            "include_metrics": {
-              "default": true,
-              "type": "boolean"
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "include_metrics": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "type": "object"
             }
-          },
-          "type": "object"
+          ]
         },
         "retention_days": {
           "default": 30,
@@ -669,54 +689,79 @@
   "description": "Schema for .ci-hub.yml files in connected repositories",
   "properties": {
     "cache_sentinel": {
-      "additionalProperties": true,
-      "properties": {
-        "enabled": {
-          "default": false,
-          "type": "boolean"
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "type": "object"
         }
-      },
-      "type": "object"
+      ]
     },
     "canary": {
-      "additionalProperties": true,
-      "properties": {
-        "enabled": {
-          "default": false,
-          "type": "boolean"
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "type": "object"
         }
-      },
-      "type": "object"
+      ]
     },
     "chaos": {
-      "additionalProperties": true,
-      "properties": {
-        "enabled": {
-          "default": false,
-          "type": "boolean"
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "type": "object"
         }
-      },
-      "type": "object"
+      ]
     },
     "dr_drill": {
-      "additionalProperties": true,
-      "properties": {
-        "enabled": {
-          "default": false,
-          "type": "boolean"
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "type": "object"
         }
-      },
-      "type": "object"
+      ]
     },
     "egress_control": {
-      "additionalProperties": true,
-      "properties": {
-        "enabled": {
-          "default": false,
-          "type": "boolean"
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "type": "object"
         }
-      },
-      "type": "object"
+      ]
     },
     "extra_tests": {
       "items": {
@@ -772,14 +817,19 @@
       "type": "object"
     },
     "kyverno": {
-      "additionalProperties": true,
-      "properties": {
-        "enabled": {
-          "default": false,
-          "type": "boolean"
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "type": "object"
         }
-      },
-      "type": "object"
+      ]
     },
     "language": {
       "description": "Primary language of the repository",
@@ -795,64 +845,74 @@
       "additionalProperties": false,
       "properties": {
         "email": {
-          "additionalProperties": false,
-          "properties": {
-            "enabled": {
-              "default": false,
-              "type": "boolean"
-            },
-            "recipients_env": {
-              "default": "CIHUB_EMAIL_TO",
-              "type": "string"
-            },
-            "smtp_from_env": {
-              "default": "SMTP_FROM",
-              "type": "string"
-            },
-            "smtp_host_env": {
-              "default": "SMTP_HOST",
-              "type": "string"
-            },
-            "smtp_password_env": {
-              "default": "SMTP_PASSWORD",
-              "type": "string"
-            },
-            "smtp_port_env": {
-              "default": "SMTP_PORT",
-              "type": "string"
-            },
-            "smtp_starttls_env": {
-              "default": "SMTP_STARTTLS",
-              "type": "string"
-            },
-            "smtp_user_env": {
-              "default": "SMTP_USER",
-              "type": "string"
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "recipients_env": {
+                  "default": "CIHUB_EMAIL_TO",
+                  "type": "string"
+                },
+                "smtp_from_env": {
+                  "default": "SMTP_FROM",
+                  "type": "string"
+                },
+                "smtp_host_env": {
+                  "default": "SMTP_HOST",
+                  "type": "string"
+                },
+                "smtp_password_env": {
+                  "default": "SMTP_PASSWORD",
+                  "type": "string"
+                },
+                "smtp_port_env": {
+                  "default": "SMTP_PORT",
+                  "type": "string"
+                },
+                "smtp_starttls_env": {
+                  "default": "SMTP_STARTTLS",
+                  "type": "string"
+                },
+                "smtp_user_env": {
+                  "default": "SMTP_USER",
+                  "type": "string"
+                }
+              },
+              "type": "object"
             }
-          },
-          "type": "object"
+          ]
         },
         "slack": {
-          "additionalProperties": false,
-          "properties": {
-            "enabled": {
-              "default": false,
-              "type": "boolean"
-            },
-            "on_failure": {
-              "default": true,
-              "type": "boolean"
-            },
-            "on_success": {
-              "default": false,
-              "type": "boolean"
-            },
-            "webhook_env": {
-              "default": "CIHUB_SLACK_WEBHOOK_URL",
-              "type": "string"
+          "oneOf": [
+            { "type": "boolean" },
+            {
+              "additionalProperties": false,
+              "properties": {
+                "enabled": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "on_failure": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "on_success": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "webhook_env": {
+                  "default": "CIHUB_SLACK_WEBHOOK_URL",
+                  "type": "string"
+                }
+              },
+              "type": "object"
             }
-          },
-          "type": "object"
+          ]
         }
       },
       "type": "object"
@@ -945,37 +1005,61 @@
       "$ref": "#/definitions/reports"
     },
     "runner_isolation": {
-      "additionalProperties": true,
-      "properties": {
-        "enabled": {
-          "default": false,
-          "type": "boolean"
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "type": "object"
         }
-      },
-      "type": "object"
+      ]
     },
     "supply_chain": {
-      "additionalProperties": true,
-      "properties": {
-        "enabled": {
-          "default": false,
-          "type": "boolean"
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "type": "object"
         }
-      },
-      "type": "object"
+      ]
     },
     "telemetry": {
-      "additionalProperties": true,
-      "properties": {
-        "enabled": {
-          "default": false,
-          "type": "boolean"
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "additionalProperties": true,
+          "properties": {
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          "type": "object"
         }
-      },
-      "type": "object"
+      ]
     },
     "thresholds": {
       "$ref": "#/definitions/thresholds"
+    },
+    "thresholds_profile": {
+      "description": "Named threshold preset (coverage-gate, security, compliance). Explicit thresholds override the profile.",
+      "enum": [
+        "coverage-gate",
+        "security",
+        "compliance"
+      ],
+      "type": "string"
     },
     "version": {
       "default": "1.0",

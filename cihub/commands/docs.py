@@ -268,7 +268,17 @@ def _format_type(prop: dict[str, Any]) -> str:
     if "enum" in prop:
         return "enum"
     if "oneOf" in prop:
-        return "oneOf"
+        options: list[str] = []
+        for option in prop["oneOf"]:
+            if isinstance(option, dict):
+                option_type = _format_type(option)
+                if option_type:
+                    options.append(option_type)
+        deduped: list[str] = []
+        for option in options:
+            if option not in deduped:
+                deduped.append(option)
+        return "|".join(deduped) if deduped else "oneOf"
     if "anyOf" in prop:
         return "anyOf"
     if "properties" in prop:

@@ -22,6 +22,7 @@ from typing import Any
 from cihub import badges as badge_tools
 from cihub.cli import hub_root
 from cihub.config.io import load_yaml_file
+from cihub.config.normalize import normalize_config
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS
 from cihub.services.types import RepoEntry
@@ -73,7 +74,7 @@ def _load_config(path: Path | None) -> dict[str, Any]:
     if path is None:
         return {}
     try:
-        return load_yaml_file(path)
+        return normalize_config(load_yaml_file(path))
     except Exception as exc:  # noqa: BLE001
         print(f"Failed to load config: {exc}")
         return {}

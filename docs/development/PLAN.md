@@ -157,6 +157,14 @@ These are references, not competing plans.
   - avoid duplicate maps/logic between service and CLI
 - [x] Wire `cihub report validate` to the service and keep CLI-only output/verbosity in the adapter.
 - [x] Add aggregation service (Phase 5A pattern) and wire CLI adapter.
+- [x] Add CI service wrapper for GUI/programmatic access (`cihub.services.ci`).
+- [x] Add config service helpers for load/edit operations (`cihub.services.configuration`).
+- [x] Add report summary service for GUI consumption (`cihub.services.report_summary`).
+
+### 8b) Config Ergonomics (Shorthand + Threshold Presets)
+
+- [x] Expand shorthand booleans to enabled sections (reports, notifications, kyverno, optional features, hub_ci).
+- [x] Add `thresholds_profile` presets with explicit `thresholds` overrides.
 
 ### 9) Triage, Registry, and LLM Bundles (New)
 
