@@ -55,6 +55,8 @@ def resolve_thresholds(config: dict[str, Any], language: str) -> dict[str, Any]:
         _set_threshold(thresholds, "max_isort_issues", isort_cfg.get("max_issues"))
         _set_threshold(thresholds, "max_semgrep_findings", semgrep_cfg.get("max_findings"))
         _set_threshold(thresholds, "trivy_cvss_fail", trivy_cfg.get("fail_on_cvss"))
+        if "trivy_cvss_fail" not in thresholds and "owasp_cvss_fail" in thresholds:
+            thresholds["trivy_cvss_fail"] = thresholds["owasp_cvss_fail"]
         if "max_pip_audit_vulns" not in thresholds:
             max_high = thresholds.get("max_high_vulns")
             if max_high is not None:

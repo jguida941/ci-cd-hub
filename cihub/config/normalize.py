@@ -76,6 +76,14 @@ def _apply_thresholds_profile_inplace(config: dict[str, Any]) -> None:
     config["thresholds"] = merged
 
 
+def _apply_cvss_fallbacks_inplace(config: dict[str, Any]) -> None:
+    thresholds = config.get("thresholds")
+    if not isinstance(thresholds, dict):
+        return
+    if "trivy_cvss_fail" not in thresholds and "owasp_cvss_fail" in thresholds:
+        thresholds["trivy_cvss_fail"] = thresholds["owasp_cvss_fail"]
+
+
 def normalize_config(config: dict[str, Any], apply_thresholds_profile: bool = True) -> dict[str, Any]:
     """Normalize shorthand configs and apply threshold profiles."""
     if not isinstance(config, dict):
@@ -85,6 +93,7 @@ def normalize_config(config: dict[str, Any], apply_thresholds_profile: bool = Tr
     _normalize_enabled_sections_inplace(normalized)
     if apply_thresholds_profile:
         _apply_thresholds_profile_inplace(normalized)
+    _apply_cvss_fallbacks_inplace(normalized)
     return normalized
 
 

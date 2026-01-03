@@ -712,6 +712,7 @@ All metrics above plus `tools_ran` dict.
     "coverage_min": number,
     "mutation_score_min": number,
     "owasp_cvss_fail": number,
+    "trivy_cvss_fail": number,
     "max_pmd_violations": number
   }
 }
@@ -727,6 +728,7 @@ All metrics above plus `tools_ran` dict.
     "coverage_min": number,
     "mutation_score_min": number,
     "owasp_cvss_fail": number,
+    "trivy_cvss_fail": number,
     "max_pmd_violations": number,
     // Missing:
     "max_critical_vulns": number,
@@ -1097,6 +1099,7 @@ def generate_tool_aggregate_table(results: list[dict]) -> str:
       "coverage_min": { "type": ["number", "null"] },
       "mutation_score_min": { "type": ["number", "null"] },
       "owasp_cvss_fail": { "type": ["number", "null"] },
+      "trivy_cvss_fail": { "type": ["number", "null"] },
       "max_pmd_violations": { "type": ["integer", "null"] },
       // ADD:
       "max_critical_vulns": { "type": ["integer", "null"] },

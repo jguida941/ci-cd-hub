@@ -29,6 +29,7 @@ def test_generate_workflow_inputs_java():
             "tools": {
                 "jacoco": {"enabled": True, "min_coverage": 80},
                 "pitest": {"enabled": True, "min_mutation_score": 75},
+                "owasp": {"enabled": True, "fail_on_cvss": 6},
                 "semgrep": {"enabled": True},
             },
         },
@@ -49,6 +50,8 @@ def test_generate_workflow_inputs_java():
     assert inputs["mutation_score_min"] == cfg["java"]["tools"]["pitest"]["min_mutation_score"]
     assert inputs["max_critical_vulns"] == cfg["thresholds"]["max_critical_vulns"]
     assert inputs["max_high_vulns"] == cfg["thresholds"]["max_high_vulns"]
+    assert inputs["owasp_cvss_fail"] == 6
+    assert inputs["trivy_cvss_fail"] == 6
 
 
 def test_generate_workflow_inputs_python():
@@ -60,7 +63,7 @@ def test_generate_workflow_inputs_python():
             "tools": {
                 "pytest": {"enabled": True, "min_coverage": 85},
                 "mutmut": {"enabled": True, "min_mutation_score": 70},
-                "trivy": {"enabled": True},
+                "trivy": {"enabled": True, "fail_on_cvss": 8},
             },
         },
         "thresholds": {"max_critical_vulns": 0, "max_high_vulns": 0},
@@ -79,6 +82,8 @@ def test_generate_workflow_inputs_python():
     assert inputs["mutation_score_min"] == cfg["python"]["tools"]["mutmut"]["min_mutation_score"]
     assert inputs["max_critical_vulns"] == cfg["thresholds"]["max_critical_vulns"]
     assert inputs["max_high_vulns"] == cfg["thresholds"]["max_high_vulns"]
+    assert inputs["trivy_cvss_fail"] == 8
+    assert inputs["owasp_cvss_fail"] == 8
 
 
 def test_load_config_merge_and_no_exit(tmp_path: Path):
@@ -275,7 +280,7 @@ def test_generate_workflow_inputs_with_shorthand_booleans():
         },
     }
 
-    inputs = generate_workflow_inputs(cfg)
+    inputs = generate_workflow_inputs(normalize_config(cfg))
 
     # Verify shorthand booleans work correctly
     assert inputs["run_pytest"] is True
@@ -300,7 +305,7 @@ def test_generate_workflow_inputs_java_with_shorthand():
         },
     }
 
-    inputs = generate_workflow_inputs(cfg)
+    inputs = generate_workflow_inputs(normalize_config(cfg))
 
     assert inputs["run_jacoco"] is True
     assert inputs["run_pitest"] is False

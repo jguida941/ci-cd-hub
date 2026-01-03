@@ -47,6 +47,7 @@ _THRESHOLD_KEYS = (
     "coverage_min",
     "mutation_score_min",
     "owasp_cvss_fail",
+    "trivy_cvss_fail",
     "max_critical_vulns",
     "max_high_vulns",
     "max_semgrep_findings",

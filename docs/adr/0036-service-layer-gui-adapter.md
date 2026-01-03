@@ -30,6 +30,10 @@ workflows, while keeping the CLI as the primary adapter.
 - Config load + edit helpers (`cihub.services.configuration`)
 - Report summary rendering (`cihub.services.report_summary`)
 
+### Implementation Notes
+
+- Core CI execution now lives in `cihub.services` with `cihub.commands.ci` acting as a thin CLI adapter.
+
 ## Consequences
 
 **Positive:**

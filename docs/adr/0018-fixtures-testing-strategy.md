@@ -199,6 +199,7 @@ max_semgrep_findings: 10  # Focus is Docker/Trivy, not code quality
 coverage_min: 0           # Intentional low coverage
 mutation_score_min: 0     # Expected to have low score
 owasp_cvss_fail: 11       # 11 > max CVSS (10), so never fails - allows capturing
+trivy_cvss_fail: 11       # 11 > max CVSS (10), so never fails - allows capturing
 max_critical_vulns: 999   # Allow findings to be captured
 max_high_vulns: 999       # Allow findings to be captured
 max_semgrep_findings: 999 # Semgrep finds issues - we want to see them, not fail

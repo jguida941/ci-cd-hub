@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-04 - Service Boundary + CVSS Split
+
+### CLI
+- Moved CI execution core into `cihub.services` with CLI adapter delegation.
+- Added Trivy CVSS threshold outputs for workflow inputs.
+
+### Config
+- Added `thresholds.trivy_cvss_fail` and `python.tools.trivy.fail_on_cvss`.
+- Documented normalize-only config pipeline for workflow input generation.
+
+### Workflows
+- Added `trivy_cvss_fail` input to `python-ci.yml` and passthrough from `hub-ci.yml`.
+
+### Docs
+- Updated ADRs and workflow docs for split CVSS thresholds and services boundary.
+
 ## 2026-01-03 - Workflow CLI Consolidation
 
 ### CLI

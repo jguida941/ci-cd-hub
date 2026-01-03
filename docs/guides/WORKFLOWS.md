@@ -228,7 +228,7 @@ See [CONFIG.md](../reference/CONFIG.md) for the full config field list, and `.gi
 
 - Environment: `java_version`, `build_tool`, `workdir`, `artifact_prefix`, `retention_days`
 - Tool flags: `run_*` (jacoco, checkstyle, spotbugs, owasp, pitest, jqwik, pmd, semgrep, trivy, codeql, docker)
-- Thresholds: `coverage_min`, `mutation_score_min`, `owasp_cvss_fail`, `max_*` (vulns, checkstyle errors, spotbugs bugs, pmd violations, semgrep findings)
+- Thresholds: `coverage_min`, `mutation_score_min`, `owasp_cvss_fail`, `trivy_cvss_fail`, `max_*` (vulns, checkstyle errors, spotbugs bugs, pmd violations, semgrep findings)
 - Docker: `run_docker`, `docker_compose_file`, `docker_health_endpoint`
 
 ### Outputs and Artifacts

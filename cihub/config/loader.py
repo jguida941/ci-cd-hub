@@ -175,9 +175,8 @@ def generate_workflow_inputs(config: dict) -> dict:
     - Internal metadata: _dispatch_enabled, _run_group, _force_all_tools (_-prefixed)
 
     Returns a flat dict. Keys prefixed with _ are for internal use, not dispatch.
+    Expects config to be normalized via normalize_config at load boundaries.
     """
-    # Normalize shorthand booleans (e.g., pytest: true -> pytest: {enabled: true})
-    config = normalize_config(config, apply_thresholds_profile=False)
 
     # Determine language
     language = config.get("language") or config.get("repo", {}).get("language", "java")
@@ -215,6 +214,10 @@ def generate_workflow_inputs(config: dict) -> dict:
         thresholds["coverage_min"] = tools.get("jacoco", {}).get("min_coverage", 70)
         thresholds["mutation_score_min"] = tools.get("pitest", {}).get("min_mutation_score", 70)
         thresholds["owasp_cvss_fail"] = tools.get("owasp", {}).get("fail_on_cvss", 7)
+        thresholds["trivy_cvss_fail"] = tools.get("trivy", {}).get(
+            "fail_on_cvss",
+            thresholds["owasp_cvss_fail"],
+        )
         thresholds["max_checkstyle_errors"] = tools.get("checkstyle", {}).get("max_errors", 0)
         thresholds["max_spotbugs_bugs"] = tools.get("spotbugs", {}).get("max_bugs", 0)
         thresholds["max_pmd_violations"] = tools.get("pmd", {}).get("max_violations", 0)
@@ -246,7 +249,9 @@ def generate_workflow_inputs(config: dict) -> dict:
         thresholds["coverage_min"] = tools.get("pytest", {}).get("min_coverage", 70)
         thresholds["mutation_score_min"] = tools.get("mutmut", {}).get("min_mutation_score", 70)
         # For Trivy CVSS gate - check trivy config, global thresholds, or default to 7
-        thresholds["owasp_cvss_fail"] = tools.get("trivy", {}).get("fail_on_cvss", 7)
+        thresholds["trivy_cvss_fail"] = tools.get("trivy", {}).get("fail_on_cvss", 7)
+        # Back-compat: mirror to owasp_cvss_fail for older workflows/outputs
+        thresholds["owasp_cvss_fail"] = thresholds["trivy_cvss_fail"]
         thresholds["max_ruff_errors"] = tools.get("ruff", {}).get("max_errors", 0)
         thresholds["max_black_issues"] = tools.get("black", {}).get("max_issues", 0)
         thresholds["max_isort_issues"] = tools.get("isort", {}).get("max_issues", 0)
@@ -260,6 +265,12 @@ def generate_workflow_inputs(config: dict) -> dict:
         thresholds["mutation_score_min"] = global_thresholds["mutation_score_min"]
     if "owasp_cvss_fail" in global_thresholds:
         thresholds["owasp_cvss_fail"] = global_thresholds["owasp_cvss_fail"]
+    if "trivy_cvss_fail" in global_thresholds:
+        thresholds["trivy_cvss_fail"] = global_thresholds["trivy_cvss_fail"]
+    if "trivy_cvss_fail" not in thresholds and "owasp_cvss_fail" in thresholds:
+        thresholds["trivy_cvss_fail"] = thresholds["owasp_cvss_fail"]
+    if language == "python" and "trivy_cvss_fail" in thresholds:
+        thresholds["owasp_cvss_fail"] = thresholds["trivy_cvss_fail"]
     thresholds["max_critical_vulns"] = global_thresholds.get("max_critical_vulns", 0)
     thresholds["max_high_vulns"] = global_thresholds.get("max_high_vulns", 0)
 

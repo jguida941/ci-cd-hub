@@ -179,6 +179,7 @@
         "coverage_min": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
         "mutation_score_min": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
         "owasp_cvss_fail": { "type": ["number", "null"], "minimum": 0 },
+        "trivy_cvss_fail": { "type": ["number", "null"], "minimum": 0 },
         "max_pmd_violations": { "type": ["integer", "null"], "minimum": 0 },
         "max_critical_vulns": { "type": ["integer", "null"], "minimum": 0 },
         "max_high_vulns": { "type": ["integer", "null"], "minimum": 0 },

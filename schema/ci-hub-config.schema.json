@@ -313,7 +313,8 @@
               "properties": {
                 "enabled": { "default": false, "type": "boolean" },
                 "fail_on_critical": { "default": false, "type": "boolean" },
-                "fail_on_high": { "default": false, "type": "boolean" }
+                "fail_on_high": { "default": false, "type": "boolean" },
+                "fail_on_cvss": { "default": 7, "maximum": 10, "minimum": 0, "type": "integer" }
               },
               "type": "object"
             }
@@ -679,6 +680,18 @@
         "mutation_score_min": {
           "default": 70,
           "maximum": 100,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "owasp_cvss_fail": {
+          "default": 7,
+          "maximum": 10,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "trivy_cvss_fail": {
+          "default": 7,
+          "maximum": 10,
           "minimum": 0,
           "type": "integer"
         }

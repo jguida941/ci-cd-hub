@@ -221,6 +221,7 @@ java:
 **Workflow inputs (java-ci.yml):**
 - `run_owasp`: boolean (default: true)
 - `owasp_cvss_fail`: number (default: 7)
+- `trivy_cvss_fail`: number (default: 7)
 
 **Secrets:**
 - `NVD_API_KEY`: Get from https://nvd.nist.gov/developers/request-an-api-key

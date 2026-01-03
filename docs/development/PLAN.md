@@ -160,11 +160,13 @@ These are references, not competing plans.
 - [x] Add CI service wrapper for GUI/programmatic access (`cihub.services.ci`).
 - [x] Add config service helpers for load/edit operations (`cihub.services.configuration`).
 - [x] Add report summary service for GUI consumption (`cihub.services.report_summary`).
+- [x] Move CI execution core into services layer; keep CLI as thin adapter.
 
 ### 8b) Config Ergonomics (Shorthand + Threshold Presets)
 
 - [x] Expand shorthand booleans to enabled sections (reports, notifications, kyverno, optional features, hub_ci).
 - [x] Add `thresholds_profile` presets with explicit `thresholds` overrides.
+- [x] Split CVSS thresholds for OWASP/Trivy and add workflow input parity.
 
 ### 9) Triage, Registry, and LLM Bundles (New)
 

@@ -109,12 +109,13 @@ def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
     python_thresholds = {
         "coverage_min": _tool_int(config, "python", "pytest", "min_coverage", 70),
         "mutation_score_min": _tool_int(config, "python", "mutmut", "min_mutation_score", 70),
-        "owasp_cvss_fail": _tool_int(config, "python", "trivy", "fail_on_cvss", 7),
+        "trivy_cvss_fail": _tool_int(config, "python", "trivy", "fail_on_cvss", 7),
         "max_semgrep_findings": _tool_int(config, "python", "semgrep", "max_findings", 0),
         "max_ruff_errors": _tool_int(config, "python", "ruff", "max_errors", 0),
         "max_black_issues": _tool_int(config, "python", "black", "max_issues", 0),
         "max_isort_issues": _tool_int(config, "python", "isort", "max_issues", 0),
     }
+    python_thresholds["owasp_cvss_fail"] = python_thresholds["trivy_cvss_fail"]
 
     java_thresholds = {
         "coverage_min": _tool_int(config, "java", "jacoco", "min_coverage", 70),
@@ -125,9 +126,10 @@ def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
         "max_spotbugs_bugs": _tool_int(config, "java", "spotbugs", "max_bugs", 0),
         "max_pmd_violations": _tool_int(config, "java", "pmd", "max_violations", 0),
     }
+    java_thresholds["trivy_cvss_fail"] = java_thresholds["owasp_cvss_fail"]
 
     global_thresholds = config.get("thresholds", {}) or {}
-    for key in ("coverage_min", "mutation_score_min", "owasp_cvss_fail"):
+    for key in ("coverage_min", "mutation_score_min", "owasp_cvss_fail", "trivy_cvss_fail"):
         if key in global_thresholds and global_thresholds[key] is not None:
             threshold_value = int(global_thresholds[key])
             python_thresholds[key] = threshold_value
@@ -178,6 +180,7 @@ def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
         "coverage_min": str(python_thresholds["coverage_min"]),
         "mutation_score_min": str(python_thresholds["mutation_score_min"]),
         "owasp_cvss_fail": str(python_thresholds["owasp_cvss_fail"]),
+        "trivy_cvss_fail": str(python_thresholds["trivy_cvss_fail"]),
         "max_semgrep_findings": str(python_thresholds["max_semgrep_findings"]),
         "max_ruff_errors": str(python_thresholds["max_ruff_errors"]),
         "max_black_issues": str(python_thresholds["max_black_issues"]),
@@ -193,6 +196,7 @@ def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
         outputs["coverage_min"] = str(java_thresholds["coverage_min"])
         outputs["mutation_score_min"] = str(java_thresholds["mutation_score_min"])
         outputs["owasp_cvss_fail"] = str(java_thresholds["owasp_cvss_fail"])
+        outputs["trivy_cvss_fail"] = str(java_thresholds["trivy_cvss_fail"])
         outputs["max_semgrep_findings"] = str(java_thresholds["max_semgrep_findings"])
 
     if json_mode:

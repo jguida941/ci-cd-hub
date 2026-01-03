@@ -91,7 +91,8 @@ run_docker: false       # Expensive + needs Dockerfile
 | `max_black_issues` | 0 | Zero tolerance for formatting |
 | `max_isort_issues` | 0 | Zero tolerance for import order |
 | `max_ruff_errors` | 0 | Zero tolerance for lint errors |
-| `owasp_cvss_fail` | 7.0 | High severity |
+| `owasp_cvss_fail` | 7.0 | High severity (OWASP) |
+| `trivy_cvss_fail` | 7.0 | High severity (Trivy) |
 
 ### 3a. Relaxed Thresholds for Test Fixtures
 
@@ -107,6 +108,8 @@ max_semgrep_findings: 999
 max_black_issues: 999
 max_isort_issues: 999
 max_ruff_errors: 999
+owasp_cvss_fail: 11
+trivy_cvss_fail: 11
 ```
 
 **Purpose**: Failing fixtures intentionally contain issues (bad formatting, lint errors, security issues). Relaxed thresholds allow the CI to complete and generate full reports showing detected issues.

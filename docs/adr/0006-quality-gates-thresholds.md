@@ -22,7 +22,7 @@ CI pipelines need pass/fail criteria. Questions:
 | Coverage (min %) | 70 | Yes | Per-tool plugin (JaCoCo/pytest-cov) |
 | Mutation score (min %) | 70 | Yes | Warning only (not blocking) |
 | OWASP CVSS (fail >=) | 7 | Yes | Workflow step + plugin fails build |
-| Trivy CVSS (fail >=) | 7 | Yes | Workflow step (parity with OWASP) |
+| Trivy CVSS (fail >=) | 7 | Yes | Workflow step (Trivy-specific gate) |
 | Critical vulns (max) | 0 | Yes | Workflow step enforces count |
 | High vulns (max) | 0 | Yes | Workflow step enforces count |
 
@@ -33,7 +33,8 @@ CI pipelines need pass/fail criteria. Questions:
 4. Hub defaults (`config/defaults.yaml`)
 
 Per-tool settings take precedence over global thresholds.
-Explicit `thresholds.*` values override the preset.
+Explicit `thresholds.*` values override the preset. If `thresholds.trivy_cvss_fail`
+is not set, it falls back to `thresholds.owasp_cvss_fail` for backward compatibility.
 
 **Enforcement Behavior:**
 
@@ -53,8 +54,8 @@ Explicit `thresholds.*` values override the preset.
    - Fails if any dependency has CVSS >= threshold
 
 4. **Trivy (Python/Java):**
-   - Workflow step enforces CVSS threshold (parity with OWASP)
-   - Uses same `owasp_cvss_fail` config for consistency
+   - Workflow step enforces CVSS threshold (Trivy-specific)
+   - Uses `thresholds.trivy_cvss_fail` (falls back to `thresholds.owasp_cvss_fail`)
    - Fails if any vulnerability has CVSS >= threshold
 
 5. **Vulnerability counts:**

@@ -130,8 +130,12 @@ on:
         description: 'Maximum allowed high vulnerabilities across scanners'
         type: number
         default: 0
-      owasp_cvss_fail:
+      trivy_cvss_fail:
         description: 'CVSS score to fail on for Trivy (default: 7)'
+        type: number
+        default: 7
+      owasp_cvss_fail:
+        description: 'Legacy alias for trivy_cvss_fail (default: 7)'
         type: number
         default: 7
       max_semgrep_findings:
