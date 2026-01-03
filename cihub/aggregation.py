@@ -61,7 +61,7 @@ class GitHubAPI:
         class NoRedirectHandler(request.HTTPRedirectHandler):
             def redirect_request(
                 self,
-                req: request.Request,  # type: ignore[override]
+                req: request.Request,
                 fp: Any,
                 code: int,
                 msg: str,
