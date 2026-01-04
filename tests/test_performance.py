@@ -132,7 +132,7 @@ class TestValidatePerformance:
     def test_validate_speed(self, benchmark, python_repo: Path) -> None:
         """Validate should be fast for simple configs."""
         # Create config
-        (python_repo / ".ci-hub.yml").write_text("language: python\n")
+        (python_repo / ".ci-hub.yml").write_text("language: python\nrepo:\n  owner: test\n  name: repo\n")
 
         def run():
             return main(["validate", "--repo", str(python_repo)])

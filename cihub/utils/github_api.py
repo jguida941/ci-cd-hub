@@ -101,3 +101,19 @@ def update_remote_file(
     if sha:
         payload["sha"] = sha
     gh_api_json(f"/repos/{repo}/contents/{path}", method="PUT", payload=payload)
+
+
+def delete_remote_file(
+    repo: str,
+    path: str,
+    branch: str,
+    sha: str,
+    message: str,
+) -> None:
+    """Delete a file from a GitHub repo via the GitHub API."""
+    payload: dict[str, Any] = {
+        "message": message,
+        "sha": sha,
+        "branch": branch,
+    }
+    gh_api_json(f"/repos/{repo}/contents/{path}", method="DELETE", payload=payload)

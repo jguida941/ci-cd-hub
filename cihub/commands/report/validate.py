@@ -6,9 +6,9 @@ import argparse
 import json
 from pathlib import Path
 
-from cihub.cli import CommandResult
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services import ValidationRules, validate_report
+from cihub.types import CommandResult
 
 
 def _validate_report(args: argparse.Namespace, json_mode: bool) -> int | CommandResult:

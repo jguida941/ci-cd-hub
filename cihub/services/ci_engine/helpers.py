@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Mapping
 
+from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
 from cihub.utils import (
     get_git_remote,
     parse_repo_from_remote,
@@ -15,7 +16,6 @@ from cihub.utils import (
     validate_subdir,
 )
 from cihub.utils.env import _parse_env_bool as _parse_env_bool_base
-from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
 
 
 def _get_repo_name(config: dict[str, Any], repo_path: Path) -> str:

@@ -12,9 +12,9 @@ from cihub.ci_report import (
     build_python_report,
     resolve_thresholds,
 )
-from cihub.cli import CommandResult
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.reporting import render_summary_from_path
+from cihub.types import CommandResult
 from cihub.utils import hub_root
 from cihub.utils.debug import emit_debug_context
 
@@ -64,9 +64,12 @@ def _emit_build_debug_context(
         elif "java_version" in report:
             language = "java"
 
-    tools_configured = report.get("tools_configured", {}) if isinstance(report, dict) else {}
-    tools_ran = report.get("tools_ran", {}) if isinstance(report, dict) else {}
-    tools_success = report.get("tools_success", {}) if isinstance(report, dict) else {}
+    _tools_configured = report.get("tools_configured", {}) if isinstance(report, dict) else {}
+    _tools_ran = report.get("tools_ran", {}) if isinstance(report, dict) else {}
+    _tools_success = report.get("tools_success", {}) if isinstance(report, dict) else {}
+    tools_configured: dict[str, bool] = _tools_configured if isinstance(_tools_configured, dict) else {}
+    tools_ran: dict[str, bool] = _tools_ran if isinstance(_tools_ran, dict) else {}
+    tools_success: dict[str, bool] = _tools_success if isinstance(_tools_success, dict) else {}
 
     enabled_tools = [tool for tool, enabled in tools_configured.items() if enabled]
     disabled_tools = [tool for tool, enabled in tools_configured.items() if not enabled]

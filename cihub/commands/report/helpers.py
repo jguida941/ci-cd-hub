@@ -9,11 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from cihub.ci_report import RunContext
-from cihub.cli import (
-    get_git_branch,
-    get_git_remote,
-    parse_repo_from_remote,
-)
+from cihub.utils import get_git_branch, get_git_remote, parse_repo_from_remote
 from cihub.utils.env import _parse_env_bool, env_bool
 
 

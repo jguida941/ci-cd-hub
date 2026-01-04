@@ -8,6 +8,9 @@ from unittest.mock import patch
 import pytest
 
 from cihub.ci_config import FALLBACK_DEFAULTS, load_ci_config, load_hub_config
+from cihub.config.loader import ConfigValidationError
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 class TestFallbackDefaults:
@@ -54,7 +57,7 @@ class TestLoadCiConfig:
 
     def test_loads_local_config(self, tmp_path: Path) -> None:
         ci_hub = tmp_path / ".ci-hub.yml"
-        ci_hub.write_text("language: python\n")
+        ci_hub.write_text("language: python\nrepo:\n  owner: acme\n  name: demo\n")
 
         with patch("cihub.ci_config.hub_root") as mock_root:
             mock_root.return_value = tmp_path
@@ -64,7 +67,7 @@ class TestLoadCiConfig:
 
     def test_merges_with_defaults(self, tmp_path: Path) -> None:
         ci_hub = tmp_path / ".ci-hub.yml"
-        ci_hub.write_text("language: java\njava:\n  version: '17'\n")
+        ci_hub.write_text("language: java\nrepo:\n  owner: acme\n  name: demo\njava:\n  version: '17'\n")
 
         with patch("cihub.ci_config.hub_root") as mock_root:
             mock_root.return_value = tmp_path
@@ -77,7 +80,16 @@ class TestLoadCiConfig:
 
     def test_shorthand_preserves_tool_defaults(self, tmp_path: Path) -> None:
         ci_hub = tmp_path / ".ci-hub.yml"
-        ci_hub.write_text("language: python\npython:\n  tools:\n    pytest: true\n    ruff: false\n")
+        ci_hub.write_text(
+            "language: python\n"
+            "repo:\n"
+            "  owner: acme\n"
+            "  name: demo\n"
+            "python:\n"
+            "  tools:\n"
+            "    pytest: true\n"
+            "    ruff: false\n"
+        )
         config_dir = tmp_path / "config"
         config_dir.mkdir()
         (config_dir / "defaults.yaml").write_text(
@@ -141,7 +153,7 @@ class TestLoadCiConfig:
 
     def test_uses_fallback_when_defaults_file_missing(self, tmp_path: Path) -> None:
         ci_hub = tmp_path / ".ci-hub.yml"
-        ci_hub.write_text("language: python\n")
+        ci_hub.write_text("language: python\nrepo:\n  owner: acme\n  name: demo\n")
 
         with patch("cihub.ci_config.hub_root") as mock_root:
             mock_root.return_value = tmp_path  # No config/defaults.yaml
@@ -153,7 +165,7 @@ class TestLoadCiConfig:
 
     def test_uses_fallback_when_defaults_file_empty(self, tmp_path: Path) -> None:
         ci_hub = tmp_path / ".ci-hub.yml"
-        ci_hub.write_text("language: python\n")
+        ci_hub.write_text("language: python\nrepo:\n  owner: acme\n  name: demo\n")
         config_dir = tmp_path / "config"
         config_dir.mkdir()
         (config_dir / "defaults.yaml").write_text("")  # Empty file
@@ -167,7 +179,7 @@ class TestLoadCiConfig:
 
     def test_loads_defaults_from_hub_root(self, tmp_path: Path) -> None:
         ci_hub = tmp_path / ".ci-hub.yml"
-        ci_hub.write_text("language: java\n")
+        ci_hub.write_text("language: java\nrepo:\n  owner: acme\n  name: demo\n")
         config_dir = tmp_path / "config"
         config_dir.mkdir()
         (config_dir / "defaults.yaml").write_text("java:\n  version: '11'\n  build_tool: gradle\n")
@@ -182,7 +194,13 @@ class TestLoadCiConfig:
 
     def test_extracts_language_from_repo_section(self, tmp_path: Path) -> None:
         ci_hub = tmp_path / ".ci-hub.yml"
-        ci_hub.write_text("repo:\n  language: java\n  name: myapp\n")
+        ci_hub.write_text(
+            "language: python\n"
+            "repo:\n"
+            "  owner: acme\n"
+            "  name: myapp\n"
+            "  language: java\n"
+        )
 
         with patch("cihub.ci_config.hub_root") as mock_root:
             mock_root.return_value = tmp_path
@@ -192,7 +210,7 @@ class TestLoadCiConfig:
 
     def test_top_level_language_not_overwritten_by_repo(self, tmp_path: Path) -> None:
         ci_hub = tmp_path / ".ci-hub.yml"
-        ci_hub.write_text("language: python\nrepo:\n  language: java\n")
+        ci_hub.write_text("language: python\nrepo:\n  owner: acme\n  name: demo\n  language: java\n")
 
         with patch("cihub.ci_config.hub_root") as mock_root:
             mock_root.return_value = tmp_path
@@ -205,17 +223,29 @@ class TestLoadCiConfig:
     def test_handles_non_dict_repo(self, tmp_path: Path) -> None:
         ci_hub = tmp_path / ".ci-hub.yml"
         ci_hub.write_text("language: python\nrepo: null\n")
+        schema_dst = tmp_path / "schema"
+        schema_dst.mkdir(parents=True, exist_ok=True)
+        schema_src = ROOT / "schema" / "ci-hub-config.schema.json"
+        schema_dst.joinpath("ci-hub-config.schema.json").write_text(
+            schema_src.read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
 
         with patch("cihub.ci_config.hub_root") as mock_root:
             mock_root.return_value = tmp_path
-            result = load_ci_config(tmp_path)
-
-        assert result["language"] == "python"
+            with pytest.raises(ConfigValidationError):
+                load_ci_config(tmp_path)
 
 
 def test_load_ci_config_applies_thresholds_profile(tmp_path: Path) -> None:
     ci_hub = tmp_path / ".ci-hub.yml"
-    ci_hub.write_text("language: python\nthresholds_profile: coverage-gate\n")
+    ci_hub.write_text(
+        "language: python\n"
+        "repo:\n"
+        "  owner: acme\n"
+        "  name: demo\n"
+        "thresholds_profile: coverage-gate\n"
+    )
     config_dir = tmp_path / "config"
     config_dir.mkdir()
     (config_dir / "defaults.yaml").write_text("thresholds:\n  coverage_min: 70\n  mutation_score_min: 70\n")
@@ -299,7 +329,15 @@ def test_load_hub_config_with_repo_path_merges_local(tmp_path: Path) -> None:
     repo_dir = tmp_path / "target-repo"
     repo_dir.mkdir()
     (repo_dir / ".ci-hub.yml").write_text(
-        "python:\n  tools:\n    pytest:\n      enabled: true\n      min_coverage: 95\ncustom_setting: from_repo\n"
+        "language: python\n"
+        "repo:\n"
+        "  owner: acme\n"
+        "  name: target-repo\n"
+        "python:\n"
+        "  tools:\n"
+        "    pytest:\n"
+        "      enabled: true\n"
+        "      min_coverage: 95\n"
     )
 
     with patch("cihub.ci_config.hub_root") as mock_root:
@@ -309,7 +347,7 @@ def test_load_hub_config_with_repo_path_merges_local(tmp_path: Path) -> None:
     # Hub config should be used for version
     assert result["python"]["version"] == "3.11"
     # Repo's .ci-hub.yml settings should be merged
-    assert result.get("custom_setting") == "from_repo"
+    assert result["python"]["tools"]["pytest"]["min_coverage"] == 95
 
 
 def test_load_hub_config_with_repo_path_blocks_protected_keys(tmp_path: Path) -> None:
@@ -323,14 +361,14 @@ def test_load_hub_config_with_repo_path_blocks_protected_keys(tmp_path: Path) ->
     repo_dir = tmp_path / "target-repo"
     repo_dir.mkdir()
     (repo_dir / ".ci-hub.yml").write_text(
+        "language: python\n"
         "repo:\n"
         "  owner: malicious-owner\n"  # Should be blocked
         "  name: malicious-name\n"  # Should be blocked
         "  language: java\n"  # Should be blocked
         "  dispatch_workflow: hack.yml\n"  # Should be blocked
         "  dispatch_enabled: true\n"  # Should be blocked
-        "  custom_key: allowed\n"  # Should be allowed
-        "other_setting: value\n"
+        "  subdir: service\n"  # Allowed
     )
 
     with patch("cihub.ci_config.hub_root") as mock_root:
@@ -342,8 +380,7 @@ def test_load_hub_config_with_repo_path_blocks_protected_keys(tmp_path: Path) ->
     assert result["repo"]["name"] == "hub-project"
     assert result["language"] == "python"
     # Non-protected keys from repo should be allowed
-    assert result["repo"].get("custom_key") == "allowed"
-    assert result.get("other_setting") == "value"
+    assert result["repo"].get("subdir") == "service"
 
 
 def test_load_hub_config_with_repo_path_no_ci_hub_yml(tmp_path: Path) -> None:

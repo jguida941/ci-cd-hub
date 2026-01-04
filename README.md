@@ -20,8 +20,8 @@ Centralized CI/CD for Java and Python repos with config-driven toggles, reusable
 
 ## Toolchains
 
-- Java: JaCoCo, Checkstyle, SpotBugs, PMD, OWASP DC, PITest, jqwik, Semgrep, Trivy, CodeQL, Docker.
-- Python: pytest, Ruff, Black, isort, Bandit, pip-audit, mypy, mutmut, Hypothesis, Semgrep, Trivy, CodeQL, Docker.
+- Java: JaCoCo, Checkstyle, SpotBugs, PMD, OWASP DC, PITest, jqwik, Semgrep, Trivy, CodeQL, SBOM, Docker.
+- Python: pytest, Ruff, Black, isort, Bandit, pip-audit, mypy, mutmut, Hypothesis, Semgrep, Trivy, CodeQL, SBOM, Docker.
 
 ## Quick Start
 
@@ -48,9 +48,15 @@ gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub -f run_group=fixtures
 
 ## Prerequisites
 
-- Python 3.11+
+- Python 3.10+ (3.12 used in CI)
 - GitHub Actions for workflow execution
 - GitHub CLI (`gh`) recommended for dispatching workflows
+
+## Debugging & Triage
+
+- Tracebacks: `CIHUB_DEBUG=True`
+- Tool logs: `CIHUB_VERBOSE=True`
+- Triage bundle: `CIHUB_EMIT_TRIAGE=True` (writes `.cihub/triage.json`, `priority.json`, `triage.md`)
 
 ## Installation (local development)
 

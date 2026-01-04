@@ -1,53 +1,41 @@
 from __future__ import annotations
 
 import argparse
-import base64
 import json
-import os
-import re
-import subprocess
 import sys
-import textwrap
 import time
 import traceback
-import urllib.error
-import urllib.request
-from pathlib import Path
-from typing import Any, Mapping
-from urllib.parse import urlparse
+from typing import Mapping
 
-from cihub import __version__
-from cihub.cli_parsers.registry import register_parser_groups
+from cihub.cli_parsers.builder import build_parser as _build_parser
 from cihub.cli_parsers.types import CommandHandlers
-from cihub.config.io import load_yaml_file
-from cihub.config.merge import deep_merge
-from cihub.config.normalize import normalize_config
 from cihub.exit_codes import EXIT_FAILURE, EXIT_INTERNAL_ERROR, EXIT_SUCCESS
-from cihub.types import CommandResult  # noqa: E402 - re-export for compatibility
-from cihub.utils import (  # noqa: E402 - re-exports for compatibility
-    GIT_REMOTE_RE,
-    fetch_remote_file,
-    get_git_branch,
-    get_git_remote,
-    gh_api_json,
-    hub_root,
-    parse_repo_from_remote,
-    resolve_executable,
-    update_remote_file,
-    validate_repo_path,
-    validate_subdir,
+from cihub.services.configuration import load_effective_config  # noqa: F401 - re-export
+from cihub.services.detection import detect_language, resolve_language  # noqa: F401 - re-export
+from cihub.services.repo_config import (  # noqa: F401 - re-export
+    get_connected_repos,
+    get_repo_entries,
 )
-from cihub.utils.env import env_bool
-from cihub.utils.java_pom import (  # noqa: E402 - re-exports for compatibility
-    JAVA_TOOL_DEPENDENCIES,
-    JAVA_TOOL_PLUGINS,
+from cihub.services.templates import (  # noqa: F401 - re-export
+    build_repo_config,
+    render_caller_workflow,
+    render_dispatch_workflow,
+)
+from cihub.types import CommandResult  # noqa: E402, F401 - re-export for compatibility
+from cihub.utils import (  # noqa: E402, F401 - re-exports for compatibility
+    GIT_REMOTE_RE,
     collect_java_dependency_warnings,
     collect_java_pom_warnings,
     dependency_matches,
     elem_text,
+    fetch_remote_file,
     find_tag_spans,
+    get_git_branch,
+    get_git_remote,
     get_java_tool_flags,
     get_xml_namespace,
+    gh_api_json,
+    hub_root,
     indent_block,
     insert_dependencies_into_pom,
     insert_plugins_into_pom,
@@ -58,10 +46,19 @@ from cihub.utils.java_pom import (  # noqa: E402 - re-exports for compatibility
     parse_pom_dependencies,
     parse_pom_modules,
     parse_pom_plugins,
+    parse_repo_from_remote,
     parse_xml_file,
     parse_xml_text,
     plugin_matches,
+    resolve_executable,
+    update_remote_file,
+    validate_repo_path,
+    validate_subdir,
 )
+from cihub.utils.env import env_bool
+from cihub.utils.fs import write_text  # noqa: F401 - re-export
+from cihub.utils.github_api import delete_remote_file  # noqa: F401 - re-export
+from cihub.utils.net import safe_urlopen  # noqa: F401 - re-export
 
 # apply_pom_fixes and apply_dependency_fixes are now in cihub.commands.pom
 # They are not re-exported here to avoid circular imports
@@ -69,52 +66,6 @@ from cihub.utils.java_pom import (  # noqa: E402 - re-exports for compatibility
 
 # CommandResult imported from cihub.types (re-exported for backward compatibility)
 # hub_root imported from cihub.utils (re-exported for backward compatibility)
-
-
-def write_text(path: Path, content: str, dry_run: bool, emit: bool = True) -> None:
-    if dry_run:
-        if emit:
-            print(f"# Would write: {path}")
-            print(content)
-        return
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
-
-
-def detect_language(repo_path: Path) -> tuple[str | None, list[str]]:
-    checks = {
-        "java": ["pom.xml", "build.gradle", "build.gradle.kts"],
-        "python": ["pyproject.toml", "requirements.txt", "setup.py"],
-    }
-    matches: dict[str, list[str]] = {"java": [], "python": []}
-    for language, files in checks.items():
-        for name in files:
-            if (repo_path / name).exists():
-                matches[language].append(name)
-
-    java_found = bool(matches["java"])
-    python_found = bool(matches["python"])
-
-    if java_found and not python_found:
-        return "java", matches["java"]
-    if python_found and not java_found:
-        return "python", matches["python"]
-    if java_found and python_found:
-        return None, matches["java"] + matches["python"]
-    return None, []
-
-
-def load_effective_config(repo_path: Path) -> dict[str, Any]:
-    defaults_path = hub_root() / "config" / "defaults.yaml"
-    defaults = normalize_config(load_yaml_file(defaults_path))
-    local_path = repo_path / ".ci-hub.yml"
-    local_config = normalize_config(load_yaml_file(local_path))
-    merged = deep_merge(defaults, local_config)
-    merged = normalize_config(merged, apply_thresholds_profile=False)
-    repo_info = merged.get("repo", {})
-    if repo_info.get("language"):
-        merged["language"] = repo_info["language"]
-    return merged
 
 
 # get_java_tool_flags imported from cihub.utils.java_pom (re-exported for backward compatibility)
@@ -126,13 +77,6 @@ def load_effective_config(repo_path: Path) -> dict[str, Any]:
 # validate_subdir imported from cihub.utils (re-exported for backward compatibility)
 # parse_xml_text imported from cihub.utils.java_pom (re-exported for backward compatibility)
 # parse_xml_file imported from cihub.utils.java_pom (re-exported for backward compatibility)
-
-
-def safe_urlopen(req: urllib.request.Request, timeout: int):
-    parsed = urlparse(req.full_url)
-    if parsed.scheme != "https":
-        raise ValueError(f"Unsupported URL scheme: {parsed.scheme}")
-    return urllib.request.urlopen(req, timeout=timeout)  # noqa: S310
 
 
 def is_debug_enabled(env: Mapping[str, str] | None = None) -> bool:
@@ -159,60 +103,6 @@ def is_debug_enabled(env: Mapping[str, str] | None = None) -> bool:
 # get_git_branch imported from cihub.utils (re-exported for backward compatibility)
 
 
-def build_repo_config(
-    language: str,
-    owner: str,
-    name: str,
-    branch: str,
-    subdir: str | None = None,
-) -> dict[str, Any]:
-    template_path = hub_root() / "templates" / "repo" / ".ci-hub.yml"
-    base = load_yaml_file(template_path)
-
-    repo_block = base.get("repo", {}) if isinstance(base.get("repo"), dict) else {}
-    repo_block["owner"] = owner
-    repo_block["name"] = name
-    repo_block["language"] = language
-    repo_block["default_branch"] = branch
-    repo_block.setdefault("dispatch_workflow", "hub-ci.yml")
-    if subdir:
-        repo_block["subdir"] = subdir
-    base["repo"] = repo_block
-
-    base["language"] = language
-
-    if language == "java":
-        base.pop("python", None)
-    elif language == "python":
-        base.pop("java", None)
-
-    base.setdefault("version", "1.0")
-    return base
-
-
-def render_caller_workflow(language: str) -> str:
-    templates_dir = hub_root() / "templates" / "repo"
-    if language == "java":
-        template_path = templates_dir / "hub-java-ci.yml"
-        replacement = "hub-java-ci.yml"
-    else:
-        template_path = templates_dir / "hub-python-ci.yml"
-        replacement = "hub-python-ci.yml"
-
-    content = template_path.read_text(encoding="utf-8")
-    content = content.replace(replacement, "hub-ci.yml")
-    header = "# Generated by cihub init - DO NOT EDIT\n"
-    return header + content
-
-
-def resolve_language(repo_path: Path, override: str | None) -> tuple[str, list[str]]:
-    if override:
-        return override, []
-    detected, reasons = detect_language(repo_path)
-    if not detected:
-        reason_text = ", ".join(reasons) if reasons else "no language markers found"
-        raise ValueError(f"Unable to detect language ({reason_text}); use --language.")
-    return detected, reasons
 
 
 def cmd_detect(args: argparse.Namespace) -> int | CommandResult:
@@ -333,116 +223,9 @@ def cmd_fix_deps(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
-def get_connected_repos(
-    only_dispatch_enabled: bool = True,
-    language_filter: str | None = None,
-) -> list[str]:
-    """Get unique repos from hub config/repos/*.yaml.
-
-    Args:
-        only_dispatch_enabled: If True, skip repos with dispatch_enabled=False
-        language_filter: If set, only return repos with this language (java/python)
-    """
-    repos_dir = hub_root() / "config" / "repos"
-    seen: set[str] = set()
-    repos: list[str] = []
-    for cfg_file in repos_dir.glob("*.yaml"):
-        if cfg_file.name.endswith(".disabled"):
-            continue
-        try:
-            data = load_yaml_file(cfg_file)
-            repo = data.get("repo", {})
-            if only_dispatch_enabled and repo.get("dispatch_enabled", True) is False:
-                continue
-            if language_filter:
-                repo_lang = repo.get("language", "")
-                if repo_lang != language_filter:
-                    continue
-            owner = repo.get("owner", "")
-            name = repo.get("name", "")
-            if owner and name:
-                full = f"{owner}/{name}"
-                if full not in seen:
-                    seen.add(full)
-                    repos.append(full)
-        except Exception as exc:
-            print(f"Warning: failed to read {cfg_file}: {exc}", file=sys.stderr)
-    return repos
-
-
-def get_repo_entries(
-    only_dispatch_enabled: bool = True,
-) -> list[dict[str, str]]:
-    """Return repo metadata from config/repos/*.yaml."""
-    repos_dir = hub_root() / "config" / "repos"
-    entries: list[dict[str, str]] = []
-    seen: set[str] = set()
-    for cfg_file in repos_dir.glob("*.yaml"):
-        if cfg_file.name.endswith(".disabled"):
-            continue
-        try:
-            data = load_yaml_file(cfg_file)
-            repo = data.get("repo", {})
-            if only_dispatch_enabled and repo.get("dispatch_enabled", True) is False:
-                continue
-            owner = repo.get("owner", "")
-            name = repo.get("name", "")
-            if not owner or not name:
-                continue
-            full = f"{owner}/{name}"
-            dispatch_workflow = repo.get("dispatch_workflow") or "hub-ci.yml"
-            # Deduplicate by (repo, dispatch_workflow) to allow syncing
-            # multiple workflow files for repos with both Java and Python configs
-            key = f"{full}:{dispatch_workflow}"
-            if key in seen:
-                continue
-            seen.add(key)
-            entries.append(
-                {
-                    "full": full,
-                    "language": repo.get("language", ""),
-                    "dispatch_workflow": dispatch_workflow,
-                    "default_branch": repo.get("default_branch", "main"),
-                }
-            )
-        except Exception as exc:
-            print(f"Warning: failed to read {cfg_file}: {exc}", file=sys.stderr)
-            continue
-    return entries
-
-
-def render_dispatch_workflow(language: str, dispatch_workflow: str) -> str:
-    templates_dir = hub_root() / "templates" / "repo"
-    if dispatch_workflow == "hub-ci.yml":
-        if not language:
-            raise ValueError("language is required for hub-ci.yml rendering")
-        return render_caller_workflow(language)
-    if dispatch_workflow == "hub-java-ci.yml":
-        return (templates_dir / "hub-java-ci.yml").read_text(encoding="utf-8")
-    if dispatch_workflow == "hub-python-ci.yml":
-        return (templates_dir / "hub-python-ci.yml").read_text(encoding="utf-8")
-    raise ValueError(f"Unsupported dispatch_workflow: {dispatch_workflow}")
-
-
 # gh_api_json imported from cihub.utils (re-exported for backward compatibility)
 # fetch_remote_file imported from cihub.utils (re-exported for backward compatibility)
 # update_remote_file imported from cihub.utils (re-exported for backward compatibility)
-
-
-def delete_remote_file(
-    repo: str,
-    path: str,
-    branch: str,
-    sha: str,
-    message: str,
-) -> None:
-    """Delete a file from a GitHub repo via the GitHub API."""
-    payload: dict[str, Any] = {
-        "message": message,
-        "sha": sha,
-        "branch": branch,
-    }
-    gh_api_json(f"/repos/{repo}/contents/{path}", method="DELETE", payload=payload)
 
 
 def cmd_setup_secrets(args: argparse.Namespace) -> int | CommandResult:
@@ -500,17 +283,6 @@ def cmd_dispatch(args: argparse.Namespace) -> int | CommandResult:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="cihub", description="CI/CD Hub CLI")
-    parser.add_argument("--version", action="version", version=f"cihub {__version__}")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    def add_json_flag(target: argparse.ArgumentParser) -> None:
-        target.add_argument(
-            "--json",
-            action="store_true",
-            help="Output machine-readable JSON",
-        )
-
     handlers = CommandHandlers(
         cmd_detect=cmd_detect,
         cmd_preflight=cmd_preflight,
@@ -541,10 +313,7 @@ def build_parser() -> argparse.ArgumentParser:
         cmd_sync_templates=cmd_sync_templates,
         cmd_config=cmd_config,
     )
-
-    register_parser_groups(subparsers, add_json_flag, handlers)
-
-    return parser
+    return _build_parser(handlers)
 
 
 def main(argv: list[str] | None = None) -> int:

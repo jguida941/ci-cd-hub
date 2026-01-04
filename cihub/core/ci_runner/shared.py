@@ -84,7 +84,7 @@ def _run_command(
             timeout=exc.timeout,
             output=stdout_text,
             stderr=stderr_text,
-        )
+        ) from exc
     stdout_thread.join()
     stderr_thread.join()
     return subprocess.CompletedProcess(

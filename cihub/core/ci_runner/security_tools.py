@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .base import ToolResult
 from . import shared
+from .base import ToolResult
 
 
 def run_semgrep(workdir: Path, output_dir: Path) -> ToolResult:

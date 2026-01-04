@@ -11,8 +11,8 @@ from pathlib import Path
 from typing import Any
 
 from cihub.ci_runner import ToolResult
-from cihub.utils import resolve_executable
 from cihub.tools.registry import PYTHON_TOOLS
+from cihub.utils import resolve_executable
 
 from .helpers import _parse_env_bool, _tool_enabled
 

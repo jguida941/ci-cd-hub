@@ -186,6 +186,12 @@ These are references, not competing plans.
 - [x] Add `CIHUB_VERBOSE` env toggle for tool output streaming/log capture (opt-in).
 - [x] Add `CIHUB_DEBUG_CONTEXT` env toggle for CLI context blocks (opt-in).
 
+### 8e) Modularization Guardrails (CLI-First)
+
+- [x] Canonicalize `load_ci_config`/`load_hub_config` to delegate to `cihub.config.loader` validation.
+- [x] Remove `cihub.cli` imports from command modules (commands use services/utils only).
+- [x] Enforce Stage 2 AST layer boundaries (core/services/commands) in tests.
+
 ### 8b) Config Ergonomics (Shorthand + Threshold Presets)
 
 - [x] Expand shorthand booleans to enabled sections (reports, notifications, kyverno, optional features, hub_ci).

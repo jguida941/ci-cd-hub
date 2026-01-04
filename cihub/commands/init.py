@@ -10,20 +10,7 @@ from pathlib import Path
 
 import yaml
 
-from cihub.cli import (
-    CommandResult,
-    build_repo_config,
-    collect_java_dependency_warnings,
-    collect_java_pom_warnings,
-    get_git_branch,
-    get_git_remote,
-    hub_root,
-    load_effective_config,
-    parse_repo_from_remote,
-    render_caller_workflow,
-    resolve_language,
-    write_text,
-)
+from cihub.ci_config import load_ci_config
 from cihub.commands.pom import apply_dependency_fixes, apply_pom_fixes
 from cihub.config.io import load_yaml_file, save_yaml_file
 from cihub.config.paths import PathConfig
@@ -33,6 +20,18 @@ from cihub.exit_codes import (
     EXIT_SUCCESS,
     EXIT_USAGE,
 )
+from cihub.services.detection import resolve_language
+from cihub.services.templates import build_repo_config, render_caller_workflow
+from cihub.types import CommandResult
+from cihub.utils import (
+    collect_java_dependency_warnings,
+    collect_java_pom_warnings,
+    get_git_branch,
+    get_git_remote,
+    parse_repo_from_remote,
+)
+from cihub.utils.fs import write_text
+from cihub.utils.paths import hub_root
 from cihub.wizard import HAS_WIZARD, WizardCancelled
 
 
@@ -148,7 +147,7 @@ def cmd_init(args: argparse.Namespace) -> int | CommandResult:
 
     pom_warning_problems: list[dict[str, str]] = []
     if language == "java" and not dry_run:
-        effective = load_effective_config(repo_path)
+        effective = load_ci_config(repo_path)
         pom_warnings, _ = collect_java_pom_warnings(repo_path, effective)
         dep_warnings, _ = collect_java_dependency_warnings(repo_path, effective)
         pom_warning_list = pom_warnings + dep_warnings

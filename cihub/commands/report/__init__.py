@@ -15,14 +15,10 @@ from cihub.ci_report import (
     build_java_report,
     build_python_report,
 )
-from cihub.cli import (
-    CommandResult,
-    get_git_branch,
-    get_git_remote,
-    parse_repo_from_remote,
-)
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.reporting import render_summary_from_path
+from cihub.types import CommandResult
+from cihub.utils import get_git_branch, get_git_remote, parse_repo_from_remote
 from cihub.utils.env import _parse_env_bool
 from cihub.utils.progress import _bar
 

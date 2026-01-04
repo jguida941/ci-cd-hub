@@ -6,11 +6,9 @@ maintaining backward compatibility by re-exporting all public symbols.
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import os
-import platform
 import re
 import stat
 import subprocess
@@ -21,17 +19,17 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-import defusedxml.ElementTree as ET  # Secure XML parsing (prevents XXE)
+import defusedxml.ElementTree as ET  # noqa: F401 - re-export for submodules
 
-from cihub import badges as badge_tools
-from cihub.cli import hub_root
+from cihub import badges as badge_tools  # noqa: F401 - re-export
 from cihub.config.io import load_yaml_file
 from cihub.config.normalize import normalize_config
-from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
-from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS
-from cihub.services.types import RepoEntry
+from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE  # noqa: F401 - re-export
+from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS  # noqa: F401 - re-export
+from cihub.services.types import RepoEntry  # noqa: F401 - re-export
 from cihub.utils.env import _parse_env_bool, env_bool
-from cihub.utils.progress import _bar
+from cihub.utils.paths import hub_root  # noqa: F401 - re-export
+from cihub.utils.progress import _bar  # noqa: F401 - re-export
 
 # ============================================================================
 # Shared Helpers (lines 33-151 from original hub_ci.py)
@@ -251,37 +249,15 @@ EMPTY_SARIF = (
 
 # ============================================================================
 # Import and re-export all cmd_* functions from submodules
+# These imports are intentionally at the bottom to avoid circular imports
 # ============================================================================
 
-from cihub.commands.hub_ci.python_tools import (
-    cmd_black,
-    cmd_mutmut,
-    cmd_ruff,
-)
-from cihub.commands.hub_ci.badges import (
+from cihub.commands.hub_ci.badges import (  # noqa: E402
     cmd_badges,
     cmd_badges_commit,
     cmd_outputs,
 )
-from cihub.commands.hub_ci.security import (
-    cmd_bandit,
-    cmd_pip_audit,
-    cmd_security_bandit,
-    cmd_security_owasp,
-    cmd_security_pip_audit,
-    cmd_security_ruff,
-)
-from cihub.commands.hub_ci.validation import (
-    cmd_docker_compose_check,
-    cmd_quarantine_check,
-    cmd_repo_check,
-    cmd_source_check,
-    cmd_syntax_check,
-    cmd_validate_configs,
-    cmd_validate_profiles,
-    cmd_verify_matrix_keys,
-)
-from cihub.commands.hub_ci.java_tools import (
+from cihub.commands.hub_ci.java_tools import (  # noqa: E402
     cmd_codeql_build,
     cmd_smoke_java_build,
     cmd_smoke_java_checkstyle,
@@ -289,14 +265,12 @@ from cihub.commands.hub_ci.java_tools import (
     cmd_smoke_java_spotbugs,
     cmd_smoke_java_tests,
 )
-from cihub.commands.hub_ci.smoke import (
-    _last_regex_int,
-    cmd_smoke_python_black,
-    cmd_smoke_python_install,
-    cmd_smoke_python_ruff,
-    cmd_smoke_python_tests,
+from cihub.commands.hub_ci.python_tools import (  # noqa: E402
+    cmd_black,
+    cmd_mutmut,
+    cmd_ruff,
 )
-from cihub.commands.hub_ci.release import (
+from cihub.commands.hub_ci.release import (  # noqa: E402
     cmd_actionlint,
     cmd_actionlint_install,
     cmd_enforce,
@@ -314,7 +288,32 @@ from cihub.commands.hub_ci.release import (
     cmd_zizmor_check,
     cmd_zizmor_run,
 )
-from cihub.commands.hub_ci.router import cmd_hub_ci
+from cihub.commands.hub_ci.router import cmd_hub_ci  # noqa: E402
+from cihub.commands.hub_ci.security import (  # noqa: E402
+    cmd_bandit,
+    cmd_pip_audit,
+    cmd_security_bandit,
+    cmd_security_owasp,
+    cmd_security_pip_audit,
+    cmd_security_ruff,
+)
+from cihub.commands.hub_ci.smoke import (  # noqa: E402
+    _last_regex_int,
+    cmd_smoke_python_black,
+    cmd_smoke_python_install,
+    cmd_smoke_python_ruff,
+    cmd_smoke_python_tests,
+)
+from cihub.commands.hub_ci.validation import (  # noqa: E402
+    cmd_docker_compose_check,
+    cmd_quarantine_check,
+    cmd_repo_check,
+    cmd_source_check,
+    cmd_syntax_check,
+    cmd_validate_configs,
+    cmd_validate_profiles,
+    cmd_verify_matrix_keys,
+)
 
 # ============================================================================
 # Public API

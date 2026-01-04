@@ -17,6 +17,7 @@ from typing import Any
 
 import yaml
 
+from cihub.config.fallbacks import FALLBACK_DEFAULTS
 from cihub.config.io import load_yaml_file
 from cihub.config.merge import deep_merge
 from cihub.config.normalize import normalize_config
@@ -87,11 +88,12 @@ def load_config(
 
     if not config:
         print(f"Warning: No defaults found at {defaults_path}", file=sys.stderr)
-        config = {}
+        config = FALLBACK_DEFAULTS
     config = normalize_config(config)
 
     # 2. Merge hub's repo-specific config
     repo_override_path = hub_root / "config" / "repos" / f"{repo_name}.yaml"
+    repo_override_exists = repo_override_path.exists()
     repo_override = normalize_config(_load_yaml(repo_override_path, "hub override"))
 
     if repo_override:
@@ -101,14 +103,15 @@ def load_config(
     if repo_config_path:
         repo_local_config = _load_yaml(repo_config_path, "repo local config")
         if repo_local_config:
-            # Block repo-local from overriding protected keys (hub controls these)
-            repo_block = repo_local_config.get("repo", {})
-            if isinstance(repo_block, dict):
-                repo_block.pop("owner", None)
-                repo_block.pop("name", None)
-                repo_block.pop("language", None)
-                repo_block.pop("dispatch_workflow", None)
-                repo_block.pop("dispatch_enabled", None)
+            # Block repo-local from overriding protected keys when hub override exists.
+            if repo_override_exists:
+                repo_block = repo_local_config.get("repo", {})
+                if isinstance(repo_block, dict):
+                    repo_block.pop("owner", None)
+                    repo_block.pop("name", None)
+                    repo_block.pop("language", None)
+                    repo_block.pop("dispatch_workflow", None)
+                    repo_block.pop("dispatch_enabled", None)
                 repo_local_config["repo"] = repo_block
             repo_local_config = normalize_config(repo_local_config)
             config = deep_merge(config, repo_local_config)
@@ -116,7 +119,7 @@ def load_config(
     # Validate merged config once more
     # Ensure top-level language is set from repo.language if present
     repo_info = config.get("repo", {})
-    if repo_info.get("language"):
+    if isinstance(repo_info, dict) and repo_info.get("language"):
         config["language"] = repo_info["language"]
 
     try:

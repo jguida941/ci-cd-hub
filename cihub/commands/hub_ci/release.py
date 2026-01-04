@@ -15,7 +15,6 @@ from pathlib import Path
 
 import defusedxml.ElementTree as ET  # Secure XML parsing
 
-from cihub.cli import hub_root
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.utils.progress import _bar
 
@@ -24,11 +23,11 @@ from . import (
     _append_github_path,
     _append_summary,
     _download_file,
+    _extract_tarball_member,
     _resolve_output_path,
     _resolve_summary_path,
     _run_command,
     _sha256,
-    _extract_tarball_member,
     _write_outputs,
 )
 

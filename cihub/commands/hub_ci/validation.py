@@ -8,10 +8,10 @@ import py_compile
 import re
 from pathlib import Path
 
-from cihub.cli import hub_root
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS
 from cihub.services.types import RepoEntry
+from cihub.utils.paths import hub_root
 
 from . import (
     _bool_str,

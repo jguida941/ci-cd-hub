@@ -6,17 +6,14 @@ import argparse
 import sys
 from pathlib import Path
 
-from cihub.cli import (
-    CommandResult,
-    collect_java_dependency_warnings,
-    collect_java_pom_warnings,
-    hub_root,
-    load_effective_config,
-)
+from cihub.ci_config import load_ci_config
 from cihub.config.io import load_yaml_file
 from cihub.config.paths import PathConfig
 from cihub.config.schema import validate_config as validate_config_schema
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
+from cihub.types import CommandResult
+from cihub.utils import collect_java_dependency_warnings, collect_java_pom_warnings
+from cihub.utils.paths import hub_root
 
 
 def cmd_validate(args: argparse.Namespace) -> int | CommandResult:
@@ -65,7 +62,7 @@ def cmd_validate(args: argparse.Namespace) -> int | CommandResult:
         return EXIT_FAILURE
     if not json_mode:
         print("Config OK")
-    effective = load_effective_config(repo_path)
+    effective = load_ci_config(repo_path)
     if effective.get("language") == "java":
         pom_warnings, _ = collect_java_pom_warnings(repo_path, effective)
         dep_warnings, _ = collect_java_dependency_warnings(repo_path, effective)

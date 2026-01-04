@@ -5,9 +5,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from cihub.cli import CommandResult
 from cihub.services.ci import CiRunResult, run_ci
 from cihub.services.triage_service import generate_triage_bundle, write_triage_bundle
+from cihub.types import CommandResult
 from cihub.utils import hub_root
 from cihub.utils.debug import emit_debug_context
 from cihub.utils.env import env_bool

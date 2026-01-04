@@ -5,8 +5,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from .base import ToolResult
 from . import shared
+from .base import ToolResult
 
 
 def _normalize_sbom_format(format_value: str | None) -> tuple[str, str]:

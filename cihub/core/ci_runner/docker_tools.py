@@ -8,8 +8,8 @@ from pathlib import Path
 
 import yaml
 
-from .base import ToolResult
 from . import shared
+from .base import ToolResult
 
 
 def _resolve_docker_compose_command() -> list[str]:

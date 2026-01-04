@@ -10,6 +10,7 @@ from typing import Any
 
 from cihub.config.loader import ConfigValidationError, load_config
 from cihub.services.types import ServiceResult
+from cihub.utils.paths import hub_root
 
 
 @dataclass
@@ -54,6 +55,18 @@ def load_repo_config(
         warnings.extend(f"{repo_name}: {line}" for line in stderr_output.splitlines())
 
     return ConfigLoadResult(success=True, warnings=warnings, config=cfg)
+
+
+def load_effective_config(repo_path: Path) -> dict[str, Any]:
+    """Load defaults + repo .ci-hub.yml with schema validation."""
+    config = load_config(
+        repo_name=repo_path.name,
+        hub_root=hub_root(),
+        repo_config_path=repo_path / ".ci-hub.yml",
+        exit_on_validation_error=False,
+    )
+    config.pop("_meta", None)
+    return config
 
 
 def set_nested_value(config: dict[str, Any], path: str, value: Any) -> None:

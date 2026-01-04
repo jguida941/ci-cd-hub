@@ -8,7 +8,6 @@ from pathlib import Path
 
 import yaml
 
-from cihub.cli import CommandResult, build_repo_config, hub_root
 from cihub.config.io import (
     ensure_dirs,
     load_defaults,
@@ -24,6 +23,9 @@ from cihub.exit_codes import (
     EXIT_SUCCESS,
     EXIT_USAGE,
 )
+from cihub.services.templates import build_repo_config
+from cihub.types import CommandResult
+from cihub.utils.paths import hub_root
 from cihub.wizard import HAS_WIZARD, WizardCancelled
 
 

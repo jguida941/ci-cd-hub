@@ -7,9 +7,10 @@ import json
 import os
 from pathlib import Path
 
-from cihub.cli import CommandResult, hub_root
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services import DiscoveryFilters, discover_repositories
+from cihub.types import CommandResult
+from cihub.utils.paths import hub_root
 
 
 def cmd_discover(args: argparse.Namespace) -> int | CommandResult:

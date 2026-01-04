@@ -6,8 +6,9 @@ import argparse
 import shutil
 from pathlib import Path
 
-from cihub.cli import CommandResult, hub_root
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
+from cihub.types import CommandResult
+from cihub.utils.paths import hub_root
 
 SCAFFOLD_TYPES: dict[str, str] = {
     "python-pyproject": "Minimal Python project with pyproject.toml",

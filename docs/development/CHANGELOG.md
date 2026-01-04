@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-05 - Config Loader Canonicalization + CLI Layering
+
+### CLI
+- Moved CLI helper imports in commands to services/utils (no CLI surface changes).
+- Added a parser builder helper to support docs generation without importing `cihub.cli`.
+
+### Config
+- `load_ci_config`/`load_hub_config` now delegate to the canonical validated loader.
+- Default config loading falls back to built-in defaults when `defaults.yaml` is empty or missing.
+- Preserve repo-local `repo.owner`/`repo.name`/`repo.language` when no hub override exists.
+- `load_effective_config` now delegates to the validated loader (schema-enforced).
+
+### Tests
+- Added Stage 2 AST boundary enforcement for core/services/commands layering.
+- Updated .ci-hub.yml fixtures to include required repo fields and top-level language.
+
 ## 2026-01-04 - Service Boundary + CVSS Split
 
 ### CLI

@@ -9,18 +9,19 @@ from cihub.core.ci_runner import shared
 from cihub.utils.debug import emit_debug_context
 
 
-def test_emit_debug_context_opt_in(monkeypatch, capsys):
+def test_emit_debug_context_opt_in(monkeypatch, capsys, tmp_path: Path):
     monkeypatch.delenv("CIHUB_DEBUG_CONTEXT", raising=False)
 
-    emit_debug_context("ci context", [("repo_path", "/tmp/repo")])
+    repo_path = tmp_path / "repo"
+    emit_debug_context("ci context", [("repo_path", str(repo_path))])
     captured = capsys.readouterr()
     assert captured.err == ""
 
     monkeypatch.setenv("CIHUB_DEBUG_CONTEXT", "True")
-    emit_debug_context("ci context", [("repo_path", "/tmp/repo")])
+    emit_debug_context("ci context", [("repo_path", str(repo_path))])
     captured = capsys.readouterr()
     assert "[cihub debug]" in captured.err
-    assert "repo_path: /tmp/repo" in captured.err
+    assert f"repo_path: {repo_path}" in captured.err
 
 
 def test_run_tool_command_respects_verbose(monkeypatch, tmp_path: Path):

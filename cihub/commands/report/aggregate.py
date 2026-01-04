@@ -6,9 +6,9 @@ import argparse
 import os
 from pathlib import Path
 
-from cihub.cli import CommandResult
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services import aggregate_from_dispatch, aggregate_from_reports_dir
+from cihub.types import CommandResult
 from cihub.utils.debug import emit_debug_context
 
 from .helpers import _resolve_include_details, _resolve_write_summary
@@ -56,13 +56,24 @@ def _emit_aggregate_debug_context(
             "dispatched_repos",
             str(getattr(result, "dispatched_repos", "")) if result and hasattr(result, "dispatched_repos") else None,
         ),
-        ("passed_count", str(getattr(result, "passed_count", "")) if result and hasattr(result, "passed_count") else None),
-        ("failed_count", str(getattr(result, "failed_count", "")) if result and hasattr(result, "failed_count") else None),
+        (
+            "passed_count",
+            str(getattr(result, "passed_count", "")) if result and hasattr(result, "passed_count") else None,
+        ),
+        (
+            "failed_count",
+            str(getattr(result, "failed_count", "")) if result and hasattr(result, "failed_count") else None,
+        ),
         (
             "threshold_exceeded",
-            str(getattr(result, "threshold_exceeded", "")) if result and hasattr(result, "threshold_exceeded") else None,
+            str(getattr(result, "threshold_exceeded", ""))
+            if result and hasattr(result, "threshold_exceeded")
+            else None,
         ),
-        ("success", str(bool(getattr(result, "success", False))) if result and hasattr(result, "success") else None),
+        (
+            "success",
+            str(bool(getattr(result, "success", False))) if result and hasattr(result, "success") else None,
+        ),
     ]
     emit_debug_context("report aggregate", entries)
 
@@ -132,9 +143,9 @@ def _aggregate_report(args: argparse.Namespace, json_mode: bool) -> int | Comman
     if not token and token_env != "GITHUB_TOKEN":  # noqa: S105
         token = os.environ.get("GITHUB_TOKEN")
         if token:
-            token_source = "GITHUB_TOKEN"
+            token_source = "GITHUB_TOKEN"  # noqa: S105
     if not token:
-        token_source = "missing"
+        token_source = "missing"  # noqa: S105
         message = f"Missing token (expected {token_env} or GITHUB_TOKEN)"
         _emit_aggregate_debug_context(
             args=args,

@@ -5,9 +5,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from cihub.cli import CommandResult
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services.triage_service import generate_triage_bundle, write_triage_bundle
+from cihub.types import CommandResult
 
 
 def _build_meta(args: argparse.Namespace) -> dict[str, object]:

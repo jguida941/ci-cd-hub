@@ -16,6 +16,7 @@ from cihub.services.configuration import (
     set_nested_value,
     set_tool_enabled,
 )
+from cihub.services.detection import detect_language, resolve_language
 from cihub.services.discovery import (
     DiscoveryFilters,
     DiscoveryResult,
@@ -52,6 +53,9 @@ __all__ = [
     "resolve_tool_path",
     "set_nested_value",
     "set_tool_enabled",
+    # Detection
+    "detect_language",
+    "resolve_language",
     # Discovery
     "DiscoveryFilters",
     "DiscoveryResult",

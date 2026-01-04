@@ -12,8 +12,8 @@ from typing import Any
 from urllib import error as urllib_error
 from urllib import request
 
-from cihub.cli import CommandResult
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.types import CommandResult
 from cihub.utils.env import env_bool
 
 

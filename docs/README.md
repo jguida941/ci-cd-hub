@@ -33,9 +33,9 @@ User-facing how-tos and setup guides:
 - [INTEGRATION_SMOKE_TEST.md](guides/INTEGRATION_SMOKE_TEST.md) - CLI validation
 
 **Archived (superseded by GETTING_STARTED.md):**
-- [ONBOARDING.md](guides/ONBOARDING.md) - ⚠️ Merged
-- [MODES.md](guides/MODES.md) - ⚠️ Merged
-- [DISPATCH_SETUP.md](guides/DISPATCH_SETUP.md) - ⚠️ Merged
+- [ONBOARDING.md](development/archive/ONBOARDING.md) - archived
+- [MODES.md](development/archive/MODES.md) - archived
+- [DISPATCH_SETUP.md](development/archive/DISPATCH_SETUP.md) - archived
 
 ---
 

@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import argparse
 import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
 from cihub import badges as badge_tools
-from cihub.cli import hub_root
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.utils.paths import hub_root
 
 from . import (
     _bool_str,

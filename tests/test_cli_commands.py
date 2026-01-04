@@ -251,7 +251,7 @@ class TestUpdateCommand:
     def test_update_with_existing_config(self, tmp_path: Path) -> None:
         """update works with existing .ci-hub.yml."""
         ci_hub = tmp_path / ".ci-hub.yml"
-        ci_hub.write_text("language: python\n")
+        ci_hub.write_text("language: python\nrepo:\n  owner: test\n  name: repo\n")
 
         result = main(
             [
@@ -396,7 +396,7 @@ class TestRunCommand:
 
     def test_run_unknown_tool(self, tmp_path: Path, capsys) -> None:
         """run fails for unknown tool with proper error message."""
-        (tmp_path / ".ci-hub.yml").write_text("language: python\n")
+        (tmp_path / ".ci-hub.yml").write_text("language: python\nrepo:\n  owner: test\n  name: repo\n")
 
         # Tool is positional, not --tool
         result = main(

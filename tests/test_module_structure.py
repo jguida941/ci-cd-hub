@@ -35,7 +35,7 @@ class TestCliHelpSnapshot:
 
     def test_cli_help_unchanged(self) -> None:
         """CLI help output must match snapshot."""
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603 - trusted test command
             [sys.executable, "-m", "cihub", "--help"],
             capture_output=True,
             text=True,
@@ -228,7 +228,7 @@ class TestMockPatchTargets:
 
         if unresolvable:
             pytest.fail(
-                f"Unresolvable mock.patch targets in tests/:\n"
+                "Unresolvable mock.patch targets in tests/:\n"
                 + "\n".join(unresolvable[:20])
                 + (f"\n... and {len(unresolvable) - 20} more" if len(unresolvable) > 20 else "")
             )
@@ -248,7 +248,7 @@ class TestMockPatchTargets:
 
         if unresolvable:
             pytest.fail(
-                f"Unresolvable mock.patch targets in mutants/tests/:\n"
+                "Unresolvable mock.patch targets in mutants/tests/:\n"
                 + "\n".join(unresolvable[:20])
                 + (f"\n... and {len(unresolvable) - 20} more" if len(unresolvable) > 20 else "")
             )
@@ -360,3 +360,124 @@ class TestAggregationPartialData:
         # Output should contain the valid repo data
         output_data = json.loads((tmp_path / "aggregate.json").read_text())
         assert "repos" in output_data or "reports" in output_data or "timestamp" in output_data
+
+
+class TestLayerBoundaries:
+    """AST-based enforcement of module layering rules.
+
+    Layering rules (from modularization plan):
+    - utils/types: stdlib only (plus allowed third-party)
+    - config: utils/types
+    - core: utils/types/config
+    - services: utils/types/config/core
+    - commands: services + core + utils
+    - cli: commands + services + utils
+
+    Stage 1 (Phase 0): Enforce utils purity only
+    - utils cannot import services/core/commands/cli/cli_parsers
+    """
+
+    UTILS_DIR = REPO_ROOT / "cihub" / "utils"
+    CORE_DIR = REPO_ROOT / "cihub" / "core"
+    SERVICES_DIR = REPO_ROOT / "cihub" / "services"
+    COMMANDS_DIR = REPO_ROOT / "cihub" / "commands"
+
+    # Forbidden import prefixes for utils/ modules
+    FORBIDDEN_FOR_UTILS = [
+        "cihub.services",
+        "cihub.core",
+        "cihub.commands",
+        "cihub.cli_parsers",
+        "cihub.cli",  # direct cli imports forbidden
+    ]
+
+    # Allowed cihub imports for utils/
+    ALLOWED_FOR_UTILS = [
+        "cihub.utils",
+        "cihub.types",
+        "cihub.config",  # config is a lower layer, utils may need it
+        "cihub.exit_codes",
+    ]
+
+    @staticmethod
+    def _extract_imports(file_path: Path) -> Iterator[tuple[int, str]]:
+        """Extract all import statements from a Python file.
+
+        Yields (line_number, module_path) for each import.
+        """
+        try:
+            source = file_path.read_text(encoding="utf-8")
+            tree = ast.parse(source)
+        except SyntaxError:
+            return
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    yield (node.lineno, alias.name)
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    yield (node.lineno, node.module)
+
+    def test_utils_purity(self) -> None:
+        """Utils modules must not import from higher layers.
+
+        This prevents utils from becoming a dependency sink and ensures
+        clean layering for the modularization effort.
+        """
+        violations = []
+
+        for py_file in self.UTILS_DIR.rglob("*.py"):
+            for line_no, module in self._extract_imports(py_file):
+                # Only check cihub imports
+                if not module.startswith("cihub"):
+                    continue
+
+                # Check if it's a forbidden import
+                is_forbidden = any(
+                    module == forbidden or module.startswith(f"{forbidden}.")
+                    for forbidden in self.FORBIDDEN_FOR_UTILS
+                )
+
+                # But allow explicit exceptions
+                is_allowed = any(
+                    module == allowed or module.startswith(f"{allowed}.")
+                    for allowed in self.ALLOWED_FOR_UTILS
+                )
+
+                if is_forbidden and not is_allowed:
+                    rel_path = py_file.relative_to(REPO_ROOT)
+                    violations.append(f"{rel_path}:{line_no} imports {module}")
+
+        if violations:
+            pytest.fail(
+                "Utils layer boundary violations (utils must not import from "
+                "services/core/commands/cli):\n" + "\n".join(violations)
+            )
+
+    def test_stage2_layer_boundaries(self) -> None:
+        """Enforce core/services/commands layering rules."""
+        rules = [
+            (self.CORE_DIR, ["cihub.commands", "cihub.cli_parsers", "cihub.cli"]),
+            (self.SERVICES_DIR, ["cihub.commands", "cihub.cli"]),
+            (self.COMMANDS_DIR, ["cihub.cli"]),
+        ]
+        violations = []
+
+        for base_dir, forbidden_prefixes in rules:
+            for py_file in base_dir.rglob("*.py"):
+                for line_no, module in self._extract_imports(py_file):
+                    if not module.startswith("cihub"):
+                        continue
+                    if any(
+                        module == forbidden or module.startswith(f"{forbidden}.")
+                        for forbidden in forbidden_prefixes
+                    ):
+                        rel_path = py_file.relative_to(REPO_ROOT)
+                        violations.append(f"{rel_path}:{line_no} imports {module}")
+
+        if violations:
+            pytest.fail(
+                "Layer boundary violations (core/services/commands must not "
+                "import from higher layers):\n" + "\n".join(violations)
+            )

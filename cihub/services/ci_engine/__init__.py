@@ -39,6 +39,10 @@ from cihub.ci_runner import (
     run_spotbugs,
     run_trivy,
 )
+from cihub.exit_codes import EXIT_FAILURE, EXIT_INTERNAL_ERROR, EXIT_SUCCESS
+from cihub.reporting import render_summary
+from cihub.services.types import ServiceResult
+from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
 from cihub.utils import (
     get_git_branch,
     get_git_remote,
@@ -46,10 +50,6 @@ from cihub.utils import (
     resolve_executable,
     validate_subdir,
 )
-from cihub.exit_codes import EXIT_FAILURE, EXIT_INTERNAL_ERROR, EXIT_SUCCESS
-from cihub.reporting import render_summary
-from cihub.services.types import ServiceResult
-from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
 
 # Import from submodules
 from .gates import _build_context, _evaluate_java_gates, _evaluate_python_gates

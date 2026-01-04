@@ -11,8 +11,10 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable
 
-from cihub.cli import CommandResult, build_parser, hub_root
+from cihub.cli_parsers.builder import build_parser
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.types import CommandResult
+from cihub.utils.paths import hub_root
 
 # Regex to match markdown links: [text](path) or [text](path#anchor)
 MARKDOWN_LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")

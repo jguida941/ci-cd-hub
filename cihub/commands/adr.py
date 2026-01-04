@@ -9,8 +9,9 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-from cihub.cli import CommandResult, hub_root
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.types import CommandResult
+from cihub.utils.paths import hub_root
 
 ADR_DIR = "docs/adr"
 ADR_PATTERN = re.compile(r"^(\d{4})-(.+)\.md$")

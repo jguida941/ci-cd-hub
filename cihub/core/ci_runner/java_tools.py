@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from . import shared
 from .base import ToolResult
 from .parsers import (
     _parse_checkstyle_files,
@@ -15,7 +16,6 @@ from .parsers import (
     _parse_pmd_files,
     _parse_spotbugs_files,
 )
-from . import shared
 
 
 def _maven_cmd(workdir: Path) -> list[str]:

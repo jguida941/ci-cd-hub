@@ -7,9 +7,9 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
+from . import shared
 from .base import ToolResult
 from .parsers import _parse_coverage, _parse_junit
-from . import shared
 
 
 def run_pytest(workdir: Path, output_dir: Path, fail_fast: bool = False) -> ToolResult:

@@ -10,9 +10,12 @@ import tempfile
 from pathlib import Path
 from typing import Any, cast
 
-from cihub.cli import CommandResult, get_repo_entries, hub_root, resolve_executable
 from cihub.config.io import load_yaml_file
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.services.repo_config import get_repo_entries
+from cihub.types import CommandResult
+from cihub.utils import resolve_executable
+from cihub.utils.paths import hub_root
 
 REQUIRED_TEMPLATE_INPUTS = {"hub_repo", "hub_ref"}
 

@@ -8,8 +8,8 @@ import subprocess
 import sys
 from typing import Any
 
-from cihub.cli import CommandResult
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.types import CommandResult
 
 
 def _command_exists(command: str) -> str | None:

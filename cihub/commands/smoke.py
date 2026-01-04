@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from cihub.cli import CommandResult, validate_repo_path
 from cihub.commands.ci import cmd_ci
 from cihub.commands.detect import cmd_detect
 from cihub.commands.init import cmd_init
@@ -16,6 +15,8 @@ from cihub.commands.scaffold import SCAFFOLD_TYPES, scaffold_fixture
 from cihub.commands.validate import cmd_validate
 from cihub.config.io import load_yaml_file, save_yaml_file
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
+from cihub.types import CommandResult
+from cihub.utils.paths import validate_repo_path
 
 DEFAULT_TYPES = ["python-pyproject", "java-maven"]
 ALL_TYPES = [

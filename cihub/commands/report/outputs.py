@@ -7,8 +7,8 @@ import json
 import os
 from pathlib import Path
 
-from cihub.cli import CommandResult
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
+from cihub.types import CommandResult
 
 
 def _report_outputs(args: argparse.Namespace, json_mode: bool) -> int | CommandResult:

@@ -13,6 +13,8 @@ import yaml
 from cihub.config.io import load_yaml_file
 from cihub.config.merge import deep_merge
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 class TestLoadYamlFile:
     """Tests for load_yaml_file function."""
@@ -302,6 +304,11 @@ class TestConfigApplyProfileCLI:
         # Build env with CIHUB_ROOT
         env = os.environ.copy()
         env["CIHUB_ROOT"] = str(tmp_path)
+        env["PYTHONPATH"] = (
+            str(ROOT)
+            if not env.get("PYTHONPATH")
+            else f"{ROOT}{os.pathsep}{env['PYTHONPATH']}"
+        )
 
         # Run CLI command
         result = subprocess.run(  # noqa: S603

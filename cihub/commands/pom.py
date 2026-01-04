@@ -10,8 +10,9 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from typing import Any
 
-from cihub.cli import CommandResult, load_effective_config
+from cihub.ci_config import load_ci_config
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
+from cihub.types import CommandResult
 from cihub.utils.java_pom import (
     collect_java_dependency_warnings,
     collect_java_pom_warnings,
@@ -155,7 +156,7 @@ def cmd_fix_pom(args: argparse.Namespace) -> int | CommandResult:
             return CommandResult(exit_code=EXIT_USAGE, summary=message)
         print(message, file=sys.stderr)
         return EXIT_USAGE
-    config = load_effective_config(repo_path)
+    config = load_ci_config(repo_path)
     if config.get("language") != "java":
         message = "fix-pom is only supported for Java repos."
         if json_mode:
@@ -193,7 +194,7 @@ def cmd_fix_deps(args: argparse.Namespace) -> int | CommandResult:
             return CommandResult(exit_code=EXIT_USAGE, summary=message)
         print(message, file=sys.stderr)
         return EXIT_USAGE
-    config = load_effective_config(repo_path)
+    config = load_ci_config(repo_path)
     if config.get("language") != "java":
         message = "fix-deps is only supported for Java repos."
         if json_mode:

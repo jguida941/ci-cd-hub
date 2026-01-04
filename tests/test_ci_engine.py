@@ -629,7 +629,15 @@ class TestRunJavaTools:
 
         mock_build = ToolResult(tool="build", ran=True, success=True, metrics={})
         with patch("cihub.services.ci_engine.java_tools.run_java_build", return_value=mock_build):
-            outputs, ran, success = _run_java_tools(config, tmp_path, "repo", output_dir, "maven", problems, JAVA_RUNNERS)
+            outputs, ran, success = _run_java_tools(
+                config,
+                tmp_path,
+                "repo",
+                output_dir,
+                "maven",
+                problems,
+                JAVA_RUNNERS,
+            )
 
         assert "build" in outputs
 
