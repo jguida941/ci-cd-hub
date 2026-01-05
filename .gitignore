@@ -28,6 +28,7 @@ Thumbs.db
 .coverage
 .hypothesis/
 mutants/
+.cihub/
 
 # Reports (generated)
 reports/*.json
