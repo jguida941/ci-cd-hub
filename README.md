@@ -72,7 +72,7 @@ pip install -r requirements/requirements-dev.txt
 - [Architecture Overview](docs/development/architecture/ARCH_OVERVIEW.md)
 - [Current Status](docs/development/status/STATUS.md)
 - [Troubleshooting](docs/guides/TROUBLESHOOTING.md)
-- [Smoke Test Guide](docs/development/execution/SMOKE_TEST.md)
+- [Smoke Test Guide (Maintainers)](docs/guides/INTEGRATION_SMOKE_TEST.md)
 
 ## Contributing
 

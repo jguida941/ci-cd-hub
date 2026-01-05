@@ -154,7 +154,7 @@ After running smoke test:
 
 ### Immediate
 1. Record the run URL in this summary (done)
-2. Mark smoke test checkbox in `docs/development/specs/P0.md` if successful
+2. Mark smoke test checkbox in `docs/development/specs/REQUIREMENTS.md` (P0 Release Gates -> Templates + Smoke Test) if successful
 
 ### Future Improvements
 1. Consider creating dedicated fixture repositories for more predictable results
@@ -193,7 +193,7 @@ hub-release/
 
 ## P0 Requirement Status
 
-From `docs/development/specs/P0.md`:
+Historical excerpt from `docs/development/archive/P0.md` (superseded by `docs/development/specs/REQUIREMENTS.md`):
 
 ```
 ## 4. Smoke Test

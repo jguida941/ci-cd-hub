@@ -1,6 +1,10 @@
- # CLI Modularization Plan - Refined (v2)
- 
- Turn cihub/cli.py from a "utility dumping ground" into a thin facade while keeping every import path and CLI behavior stable.
+# CLI Modularization Plan - Refined (v2)
+
+> **⚠️ SUPERSEDED** - This plan was executed and completed on 2026-01-03/04.
+> See [MASTER_PLAN.md](../MASTER_PLAN.md) for current execution status and [status/STATUS.md](../status/STATUS.md) for ongoing work.
+> Archived to [archive/Jan3.md](archive/Jan3.md).
+
+Turn cihub/cli.py from a "utility dumping ground" into a thin facade while keeping every import path and CLI behavior stable.
 
  Key Principles
 

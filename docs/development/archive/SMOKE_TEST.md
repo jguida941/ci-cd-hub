@@ -507,7 +507,7 @@ These would be purpose-built for testing and could include:
 
 After smoke test passes:
 
-1. ✅ Mark smoke test checkbox in `hub-release/docs/development/specs/P0.md`
+1. ✅ Mark smoke test checkbox in `docs/development/specs/REQUIREMENTS.md` (P0 Release Gates -> Templates + Smoke Test)
 2. Run smoke test on CI/CD (not just manually)
 3. Add smoke test to pre-release checklist
 4. Document smoke test in release notes
@@ -517,7 +517,7 @@ After smoke test passes:
 
 ## References
 
-- [P0 Requirements](../specs/P0.md) - Smoke test acceptance criteria
+- [Requirements](../specs/REQUIREMENTS.md) - Smoke test acceptance criteria (P0 Release Gates)
 - [Workflows Reference](../../guides/WORKFLOWS.md) - Hub workflow documentation
 - [Config Reference](../../reference/CONFIG.md) - Configuration options
 - [Tools Reference](../../reference/TOOLS.md) - Tool descriptions and outputs

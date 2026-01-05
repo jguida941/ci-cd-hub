@@ -285,4 +285,4 @@ See `docs/development/CURRENT_STATUS.md` for the authoritative status log.
 - [Architecture Plan (Archived)](../archive/ARCHITECTURE_PLAN.md)
 - [Current Status](../status/STATUS.md)
 - [Troubleshooting](../../guides/TROUBLESHOOTING.md)
-- [Smoke Test Guide](../execution/SMOKE_TEST.md)
+- [Smoke Test Guide](../../guides/INTEGRATION_SMOKE_TEST.md)

@@ -1,7 +1,7 @@
 # CI-CD Hub - Complete Architecture Plan (Archived)
 
 > Archived on 2025-12-30. This document is historical context, not active guidance.
-> The canonical execution plan is `docs/development/PLAN.md`.
+> The canonical execution plan is `docs/development/MASTER_PLAN.md`.
 > The current architecture overview is `docs/development/architecture/ARCH_OVERVIEW.md`.
 >
 > **Status:** Proposed  

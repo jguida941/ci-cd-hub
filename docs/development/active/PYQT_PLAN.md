@@ -1,4 +1,4 @@
-> Reference only — the canonical execution plan lives in `docs/development/PLAN.md`.
+> Reference only — the canonical execution plan lives in `docs/development/MASTER_PLAN.md`.
 
 ## Plan for Simplified Workflow + PyQt6 GUI
 

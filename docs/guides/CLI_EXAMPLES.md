@@ -1,5 +1,8 @@
 # CLI Examples
 
+> **Quick Reference** — This is a companion to [GETTING_STARTED.md](GETTING_STARTED.md).
+> Use this for copy-paste commands. For full context, see the Getting Started guide.
+
 Practical, copy-paste command examples. For full flags and options, see `docs/reference/CLI.md` or run `python -m cihub <command> --help`.
 
 ---
@@ -83,7 +86,7 @@ Inspect and edit:
 
 ```bash
 python -m cihub config --repo my-repo show
-python -m cihub config --repo my-repo set python.tools.pytest.threshold 80
+python -m cihub config --repo my-repo set python.tools.pytest.min_coverage 80
 python -m cihub config --repo my-repo enable bandit
 python -m cihub config --repo my-repo disable mutmut
 python -m cihub config --repo my-repo edit

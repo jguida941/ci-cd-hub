@@ -2,6 +2,93 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-05 - v1.0 Cutline + Plan Alignment
+
+### MASTER_PLAN.md Updates
+- Added **v1.0 Cutline** section with Quick Wins, Heavy Lifts, and Verification items.
+- Created **Post v1.0 Backlog** section for explicitly deferred items:
+  - Registry & Versioning (centralized registry CLI, versioning/rollback)
+  - Triage Enhancements (schema validation, DORA metrics)
+  - Governance (RBAC, approval workflows)
+  - Optional Tooling (act integration, Gradle, Docker multi-stage)
+  - PyQt6 GUI wrapper (deferred until CLI stabilizes)
+- v1.0 Quick Wins: docs stale, docs audit, config validate, audit umbrella, --json everywhere, _tool_enabled consolidation, gate-spec refactor, CI-engine tests.
+- v1.0 Heavy Lifts: env/context wrapper, runner/adapter boundaries.
+
+### AGENTS.md Updates
+- Updated "Current Focus" to link to MASTER_PLAN.md v1.0 cutline (single source of truth).
+- Listed v1.0 Quick Wins in order for immediate reference.
+- Removed duplicate/stale "Current Focus" items now covered by MASTER_PLAN.md.
+- Extracted CI Parity Map (~50 lines) to `docs/development/CI_PARITY.md`; replaced with summary + link.
+- Fixed aspirational claims: CLI output contract now notes hub-ci gaps, workflow install rule consolidated.
+- Corrected parity map: verify-matrix-keys uses CLI (not script), license-check is partial match (CI adds --github-summary).
+
+### New Documentation
+- **`docs/development/CI_PARITY.md`**: Full CI parity map with Exact/Partial/CI-only/Local-only categories, check tier mapping, and maintenance notes.
+
+### Governance
+- Verified design doc references aligned between MASTER_PLAN.md and STATUS.md.
+- All active design docs (CLEAN_CODE.md, DOC_AUTOMATION_AUDIT.md, PYQT_PLAN.md) properly referenced.
+- Updated STATUS.md directory structure to include CI_PARITY.md.
+
+## 2026-01-04 - Maintainability Audit (MASTER_PLAN.md §10)
+
+### Audit Findings
+- Multi-agent audit of CLI (87 commands), services, workflows, and automation plans.
+- Identified 5 implementations of `_tool_enabled()` (54 usages) — consolidation needed.
+- `test_services_ci.py` has only 2 tests — major coverage gap.
+- `hub-ci` subcommands (47 commands) explicitly block `--json` flag.
+- 21 unpinned `step-security/harden-runner` uses in workflows.
+- 38+ `if language ==` branches — Language Strategies pattern needed.
+
+### MASTER_PLAN.md Updates
+- Added Section 10 (Maintainability Improvements) with CLI-compatible action items.
+- All items follow ADR-0031 (CLI-first) — no composite actions or workflow logic.
+- Linked to `active/CLEAN_CODE.md` for Language Strategies design.
+- Added 4 new items from second audit pass:
+  - Env/context wrapper (`GitHubContext` centralizes 17 `GITHUB_*` reads)
+  - Runner/adapter boundaries (subprocess only in `ci_runner/`)
+  - Output normalization (forbid `print()` in commands)
+  - Performance guardrails + "no inline logic" workflow guard
+
+### Dropped Recommendations
+- Composite actions (violates CLI-first architecture).
+- Workflow consolidation via modes (adds YAML complexity).
+- Typer/pdoc migrations (nice-to-have, not needed).
+
+## 2026-01-04 - Governance Alignment + Doc Automation Backlog
+
+### Documentation Governance
+- Expanded MASTER_PLAN.md References section to include all active design docs (CLEAN_CODE.md, DOC_AUTOMATION_AUDIT.md, PYQT_PLAN.md).
+- Added Scope Guardrails #5 and #6 for active docs lifecycle (`active/` → `archive/` with superseded header).
+- Added Section 6b (Documentation Automation) with full backlog from DOC_AUTOMATION_AUDIT.md design doc.
+- Connected Section 9 (Triage/Registry/LLM) to doc freshness tooling via `.cihub/tool-outputs/`.
+- Fixed AGENTS.md stale references: `PLAN.md` → `MASTER_PLAN.md` (3 occurrences).
+
+### Documentation Automation Backlog (MASTER_PLAN.md §6b)
+- `cihub docs stale`: AST symbol extraction, schema key diffing, CLI surface drift, file move/delete detection.
+- `cihub docs audit`: active ↔ STATUS.md sync, archive header validation, plain-text reference scan, ADR metadata lint.
+- `.cihub/tool-outputs/` artifacts: `docs_stale.json`, `docs_stale.prompt.md`, `docs_audit.json`.
+- Doc manifest (`docs_manifest.json`) for LLM context.
+- Generated references expansion: TOOLS.md from registry, WORKFLOWS.md from workflows.
+
+## 2026-01-04 - Doc Lifecycle + ADR Updates
+
+### Documentation
+- Created `docs/development/active/` folder for in-flight design docs.
+- Moved CLEAN_CODE.md, DOC_AUTOMATION_AUDIT.md, PYQT_PLAN.md to `active/`.
+- Updated docs/README.md, MASTER_PLAN.md, STATUS.md with new folder structure.
+- Added `cihub docs audit` spec to MASTER_PLAN.md (active ↔ STATUS.md consistency checks).
+- Archived `docs/MAKE.md` → `development/archive/MAKE.md`.
+- Consolidated Make guidance into GETTING_STARTED.md (pre-push workflow) and DEVELOPMENT.md (config/debug targets).
+- Added "Make targets are CLI wrappers" note to both docs.
+- Added Make target drift check to `cihub docs audit` spec (verify referenced targets exist in Makefile).
+
+### ADRs
+- ADR-0035: Changed Status from Proposed → Accepted; added Implementation Note.
+- ADR-0031: Added Enforcement Addendum (what's allowed inline vs must use CLI).
+- ADR-0018: Fixed broken link to SMOKE_TEST.md → INTEGRATION_SMOKE_TEST.md.
+
 ## 2026-01-05 - Config Loader Canonicalization + CLI Layering
 
 ### CLI
@@ -17,6 +104,12 @@ All notable changes to this project will be documented in this file.
 ### Tests
 - Added Stage 2 AST boundary enforcement for core/services/commands layering.
 - Updated .ci-hub.yml fixtures to include required repo fields and top-level language.
+
+### Documentation
+- Consolidated P0/P1/nonfunctional checklists into `docs/development/specs/REQUIREMENTS.md`.
+- Archived legacy spec files and updated references to the consolidated requirements.
+- Marked `docs/development/research/RESEARCH_LOG.md` as historical reference-only.
+- Updated doc index/status to reflect specs and research locations.
 
 ## 2026-01-04 - Service Boundary + CVSS Split
 
@@ -269,7 +362,7 @@ All notable changes to this project will be documented in this file.
 - Added pre-commit hooks for actionlint, zizmor, and lychee link checking.
 
 ### Documentation & Governance
-- Added canonical plan: `docs/development/PLAN.md`.
+- Added canonical plan: `docs/development/MASTER_PLAN.md`.
 - Added reference-only banners to `pyqt/planqt.md` and archived `docs/development/archive/ARCHITECTURE_PLAN.md`.
 - Updated ADRs to reflect `hub-ci.yml` wrapper and CLI-first verification.
 - Refreshed `docs/development/status/STATUS.md`.

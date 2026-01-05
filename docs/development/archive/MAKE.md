@@ -1,5 +1,15 @@
 # Developer Commands
 
+> **⚠️ SUPERSEDED** — This document has been archived.
+> Make guidance is now in:
+> - [GETTING_STARTED.md](../../guides/GETTING_STARTED.md) (user shortcuts)
+> - [DEVELOPMENT.md](../DEVELOPMENT.md) (developer targets)
+>
+> **Reason:** CLI is the source of truth; Make targets are convenience wrappers.
+> Archived: 2026-01-04
+
+---
+
 Use the root `Makefile` as the single entry point for development tasks.
 
 ## Quick Start

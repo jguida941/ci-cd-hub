@@ -1,9 +1,16 @@
 # ADR-0035: Centralized Registry, Triage Bundle, and LLM-Ready Reports
 
-**Status**: Proposed
+**Status**: Accepted
 **Date:** 2025-12-31
 **Developer:** Justin Guida
-**Last Reviewed:** 2025-12-31
+**Last Reviewed:** 2026-01-04
+
+**Implementation Note (2026-01-04):**
+- ✅ Triage bundle + LLM prompt pack implemented behind `CIHUB_EMIT_TRIAGE` env toggle
+- ✅ Outputs: `.cihub/triage.json`, `priority.json`, `triage.md`, `history.jsonl`
+- ⏳ Centralized registry CLI (`cihub registry`) remains TODO
+- ⏳ LLM diff outputs and `cihub assist` remain TODO
+- ⏳ Formal JSON Schema (`schema/triage.schema.json`) deferred until validation command ships
 
 ## Context
 

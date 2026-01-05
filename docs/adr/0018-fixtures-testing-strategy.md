@@ -262,4 +262,4 @@ The fixture naming scheme has been expanded to encode language, build system, la
 **Heavy tool fixtures (optional):**
 Heavy tools (Trivy, CodeQL) are off by default for speed. Optional `fixtures-*-heavy.yaml` configs enable them for nightly/release validation.
 
-See `docs/development/execution/SMOKE_TEST.md` for the full matrix and naming convention.
+See `docs/guides/INTEGRATION_SMOKE_TEST.md` for the full matrix and naming convention.

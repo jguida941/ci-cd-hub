@@ -1,5 +1,7 @@
 # Non-Functional Requirements
 
+> **Status:** Superseded. See `docs/development/specs/REQUIREMENTS.md` for current requirements.
+
 Quality targets for hub-release.
 
 ---

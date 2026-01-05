@@ -116,5 +116,4 @@ https://user.github.io/ci-cd-hub/
 
 ## Current Status
 
-**NOT YET IMPLEMENTED.** This ADR documents the planned approach. Implementation is tracked in docs/development/specs/P1.md section 4.
-
+**NOT YET IMPLEMENTED.** This ADR documents the planned approach. Implementation is tracked in docs/development/specs/REQUIREMENTS.md (P1 targets: Dashboard).

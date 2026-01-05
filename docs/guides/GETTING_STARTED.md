@@ -277,18 +277,24 @@ Run `make verify` (or `cihub check --all` + `cihub verify --remote`) before push
 
 ### Make Shortcuts (Alternative)
 
+> **Note:** Make targets are convenience wrappers around the CLI. The CLI is the source of truth.
+
 ```bash
-make preflight    # Environment checks
+# Pre-push workflow (run these before pushing)
+make preflight    # Environment checks (cihub doctor)
 make lint         # Ruff lint
+make format       # Ruff + black + isort formatting
 make typecheck    # mypy
 make test         # pytest
 make actionlint   # workflow syntax
-make docs-check   # docs drift
-make links        # broken link check
+make docs-check   # docs drift (cihub docs check)
+make links        # broken link check (cihub docs links)
 make smoke        # full smoke test on scaffold
-make check        # Runs cihub check
+make check        # Runs cihub check (fast local validation)
 make verify       # Full pre-push gate (remote drift check)
 make verify-integration  # Clone repos and run cihub ci (slow)
+
+# Run 'make help' for all available targets
 ```
 
 ### CLI Command Matrix (Guide Runner)

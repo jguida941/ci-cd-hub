@@ -117,3 +117,25 @@ These commands are required for the thin workflow model:
 
 - Repo callers now target the `hub-ci.yml` wrapper workflow as the single entrypoint.
 - `python-ci.yml`/`java-ci.yml` remain internal to the hub and are invoked by the wrapper.
+
+## Enforcement Addendum (2026-01-04)
+
+**What "thin workflows" means in practice:**
+
+| Allowed Inline (`run:`) | Must Use CLI |
+|-------------------------|--------------|
+| `actions/checkout` | Threshold enforcement |
+| `actions/setup-python` / `setup-java` | Report generation |
+| `pip install cihub` / tool installation | Summary rendering |
+| `actions/upload-artifact` | Config parsing |
+| CodeQL init/analyze actions | Tool execution logic |
+| Trivy action invocation | Failure aggregation |
+
+**Enforcement mechanism:**
+- Code review enforces this policy
+- `actionlint` catches YAML syntax but not business logic placement
+- Future: `cihub adr lint-workflows` could check for disallowed multi-line `run: |` blocks containing parsing/threshold logic
+
+**Exceptions:**
+- Setup blocks (checkout, tool install) are acceptable inline
+- GitHub-native actions (CodeQL, Trivy) may run as actions, but their output parsing must go through CLI

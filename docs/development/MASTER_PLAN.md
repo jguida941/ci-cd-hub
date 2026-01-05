@@ -1,7 +1,9 @@
-# CI/CD Hub - Execution Plan
+# CI/CD Hub - Master Plan
 
-**Status:** Canonical plan for active work
-**Last Updated:** 2026-01-03
+**Status:** Canonical plan for all active work
+**Last Updated:** 2026-01-05
+
+> This is THE plan. All action items live here. STATUS.md tracks current state.
 
 ---
 
@@ -9,9 +11,57 @@
 
 Single source of truth for what we are doing now. Other docs can provide depth, but this file owns priorities, scope, and sequencing.
 
+---
+
+## v1.0 Cutline
+
+> **What must ship for v1.0 vs what is explicitly deferred.**
+> Items below the cutline move to "Post v1.0 Backlog" at the end of this document.
+
+### Quick Wins (Do First)
+
+**CLI Commands:**
+- [ ] `cihub docs stale` — Detect stale code references in docs (design in `active/DOC_AUTOMATION_AUDIT.md`)
+- [ ] `cihub docs audit` — Doc lifecycle consistency checks
+- [ ] `cihub config validate` — Validate hub configs
+- [ ] `cihub audit` — Umbrella command (docs check + links + adr check + config validate)
+- [ ] `--json` flag for all commands including hub-ci subcommands
+
+**Documentation:**
+- [ ] Generate `docs/reference/TOOLS.md` from `cihub/tools/registry.py`
+- [ ] Generate `docs/reference/WORKFLOWS.md` from `.github/workflows/*.yml`
+- [ ] Plain-text reference scan for stale `docs/...` strings
+- [ ] Universal header enforcement for manual docs
+- [ ] `.cihub/tool-outputs/` artifacts for doc automation
+
+**Clean Code:**
+- [ ] `_tool_enabled()` consolidation (5 implementations → 1)
+- [ ] Gate-spec refactor (table-driven, ~100 lines)
+- [ ] Language strategy extraction (Python/Java)
+- [ ] Expand CI-engine tests (2 → 20+)
+- [ ] Output normalization (forbid `print()` in commands)
+
+**Security/CI Hygiene:**
+- [ ] Pin `step-security/harden-runner` versions (21 uses)
+- [ ] Standardize all action version pins
+
+### Heavy Lifts (After Quick Wins)
+
+- [ ] Env/context wrapper (`GitHubContext` for 17 `GITHUB_*` reads)
+- [ ] Runner/adapter boundaries (subprocess only in `ci_runner/`)
+- [ ] "No inline logic" workflow guard
+- [ ] Performance guardrails for docs stale/audit (<5s on ~28k corpus)
+
+### Verification (Final Step)
+
+- [ ] Re-run hub production workflows after all v1.0 changes
+- [ ] Record smoke test + pytest results in STATUS.md
+
+---
+
 ## Current Focus (ADR-0035)
 
-- [ ] Implement triage bundles + priority output + LLM prompt pack.
+- [x] Implement triage bundles + priority output + LLM prompt pack (behind `CIHUB_EMIT_TRIAGE` env toggle).
 - [ ] Implement registry CLI + versioning/rollback.
 - [x] Make aggregate reports resilient to failed repos (render partial summaries instead of aborting).
 - [x] Implement `cihub report dashboard` (HTML + JSON output) replacing scripts/aggregate_reports.py.
@@ -47,7 +97,12 @@ Single source of truth for what we are doing now. Other docs can provide depth, 
 
 ## References (Background Only)
 
-- `pyqt/planqt.md` (PyQt concept scope)
+**Active Design Docs** (in-progress designs, listed in `status/STATUS.md`):
+- `docs/development/active/CLEAN_CODE.md` (architecture improvements: polymorphism, encapsulation)
+- `docs/development/active/DOC_AUTOMATION_AUDIT.md` (doc automation design: `cihub docs stale`, `cihub docs audit`)
+- `docs/development/active/PYQT_PLAN.md` (PyQt concept scope)
+
+**Architecture:**
 - `docs/development/architecture/ARCH_OVERVIEW.md` (current architecture overview)
 - `docs/development/archive/ARCHITECTURE_PLAN.md` (archived deep-dive plan)
 
@@ -68,7 +123,7 @@ These are references, not competing plans.
 ### 1) Plan Consolidation (Immediate)
 
 - [x] Create this file as the canonical plan.
-- [x] Add reference banners to `pyqt/planqt.md` and `docs/development/archive/ARCHITECTURE_PLAN.md` stating this plan is canonical.
+- [x] Add reference banners to `docs/development/active/PYQT_PLAN.md` and `docs/development/archive/ARCHITECTURE_PLAN.md` stating this plan is canonical.
 
 ### 2) CLI as Source of Truth (Core)
 
@@ -95,18 +150,26 @@ These are references, not competing plans.
 - [x] Archive `docs/development/architecture/ARCHITECTURE_PLAN.md`.
 - [ ] Move remaining legacy/duplicate docs to `docs/development/archive/` with a superseded header (no deletion).
 - [x] Archive legacy dispatch templates under `templates/legacy/` and update docs/tests to match.
-- [ ] Make reference docs generated, not hand-written (CLI/CONFIG done; TOOLS still manual).
-  - Execution docs: merge `docs/development/execution/SMOKE_TEST*.md` into `docs/guides/INTEGRATION_SMOKE_TEST.md` or archive.
-  - Status docs: keep `docs/development/status/STATUS.md` canonical; archive snapshots.
-  - Specs docs: keep `docs/development/specs/` as reference (no merge yet).
-  - Research docs: keep `docs/development/research/` as reference.
-  - Architecture docs: keep `docs/development/architecture/ARCH_OVERVIEW.md` + `SUMMARY_CONTRACT.md` as active references.
+- [ ] Make reference docs generated, not hand-written (CLI/CONFIG done; TOOLS/WORKFLOWS next).
+  - [ ] Generate `docs/reference/TOOLS.md` from `cihub/tools/registry.py` via `cihub docs generate`.
+  - [ ] Generate `docs/reference/WORKFLOWS.md` (triggers/inputs tables) from `.github/workflows/*.yml`.
+  - Keep `guides/WORKFLOWS.md` narrative-only; tables go in generated reference.
+  - Status docs: `development/status/STATUS.md` is single source for active design docs.
+  - [x] Consolidate specs into `docs/development/specs/REQUIREMENTS.md` (P0/P1/nonfunctional archived).
+  - [x] Mark `docs/development/research/RESEARCH_LOG.md` as historical reference.
+  - Architecture docs: keep `docs/development/architecture/ARCH_OVERVIEW.md` as active reference.
 
 ### 4) Staleness Audit (Doc + ADR)
 
-- [ ] Run a full stale-reference audit (docs/ADRs/scripts/workflows).
+- [x] Run a full stale-reference audit (docs/ADRs/scripts/workflows). → See `status/STATUS.md`
 - [x] Record findings in a single audit ledger (`claude_audit.md`).
 - [x] Update ADRs that reference old workflow entrypoints and fixture strategy.
+- [x] Fix inaccurate config references (pytest.threshold, nvd_api_key_required).
+- [x] Fix broken internal links (ARCH_OVERVIEW.md smoke test link).
+- [ ] Add superseded banners to archive files (CONFIG_REFERENCE, DISPATCH_SETUP, MODES, ONBOARDING).
+- [ ] Review ADR-0005 (Dashboard) status — still "Proposed" after 2+ weeks.
+- [ ] Clarify ADR-0035 timeline — which features are v1 vs deferred.
+- [ ] Add doc drift scan for plain-text `docs/...` references to catch stale mentions (wire into `cihub check --audit`).
 
 ### 5) Verification
 
@@ -128,15 +191,53 @@ These are references, not competing plans.
 - [x] `cihub hub-ci badges` — Generate/validate CI badges from workflow artifacts.
 - [ ] `cihub config validate` (or `cihub validate --hub`) — Validate hub configs (resolves validate ambiguity)
 - [ ] `cihub audit` — Umbrella: docs check + links + adr check + config validate
+- [ ] `cihub docs stale` — Detect stale doc references via AST symbol extraction. Design: `active/DOC_AUTOMATION_AUDIT.md`
+- [ ] `cihub docs workflows` — Generate workflow tables from `.github/workflows/*.yml` (replaces manual guides/WORKFLOWS.md)
+- [ ] `cihub docs audit` — Doc lifecycle consistency checks (wire into `cihub check --audit`):
+  - [ ] Every doc in `status/STATUS.md` Active Design Docs table must exist under `development/active/`
+  - [ ] Every file under `development/active/` must be listed in STATUS.md
+  - [ ] Files under `development/archive/` must have a superseded header
+  - [ ] Path changes in `active/` or `archive/` require `docs/README.md` + `status/STATUS.md` updates in same diff
+  - [ ] Validate MASTER_PLAN.md references only real paths (no active/ vs non-active mismatches)
+  - [ ] Make targets referenced in docs exist in Makefile (CLI is the product; Make is a wrapper)
 - [x] Add `make links` target
 - [ ] Add `make audit` target
-- [ ] Add a “triage bundle” output for failures (machine-readable: command, env, tool output, file snippet, workflow/job/step).
+- [x] Add a "triage bundle" output for failures (machine-readable: command, env, tool output, file snippet, workflow/job/step). *(Implemented via `CIHUB_EMIT_TRIAGE`)*
 - [x] Add a template freshness guard (caller templates + legacy dispatch archive).
   - [x] PR trigger on `template-guard.yml` (validate-local job runs tests/test_templates.py + test_commands_scaffold.py)
   - [x] Render-diff tests (`TestRenderCallerWorkflow`) verify CLI output matches templates
   - [x] Contract verification (`cihub verify`) added to `cihub check --full`
   - [x] Remote sync check (`sync-templates --check`) in `cihub check --full` (skips gracefully if no GH_TOKEN)
   - [x] All 5 scaffold types tested (python-pyproject, python-setup, java-maven, java-gradle, monorepo)
+
+### 6b) Documentation Automation (Design: `active/DOC_AUTOMATION_AUDIT.md`)
+
+> **Design doc:** Full requirements and architecture in `docs/development/active/DOC_AUTOMATION_AUDIT.md`
+
+- [ ] `cihub docs stale` — Detect stale code references in docs:
+  - [ ] Python AST symbol extraction (base vs head comparison)
+  - [ ] Schema key path diffing
+  - [ ] CLI surface drift detection (help snapshot comparison)
+  - [ ] File move/delete detection (`--name-status --find-renames`)
+  - [ ] Output modes: human, `--json`, `--ai` (LLM prompt pack)
+- [ ] `cihub docs audit` — Doc lifecycle consistency checks:
+  - [ ] Validate `active/` ↔ `STATUS.md` sync
+  - [ ] Validate `archive/` files have superseded headers
+  - [ ] Plain-text reference scan for `docs/...` strings
+  - [ ] ADR metadata lint (Status/Date/Superseded-by)
+  - [ ] Universal header enforcement for manual docs
+  - [ ] Specs hygiene: only `REQUIREMENTS.md` is active under `development/specs/` with required header fields
+- [ ] `.cihub/tool-outputs/` artifacts for doc automation:
+  - [ ] `docs_stale.json` — Machine-readable stale reference report
+  - [ ] `docs_stale.prompt.md` — LLM-ready prompt pack
+  - [ ] `docs_audit.json` — Lifecycle/reference findings
+- [ ] Doc manifest (`docs_manifest.json`) for LLM context:
+  - [ ] Path, category (guide/reference/active/archived)
+  - [ ] Generated vs manual flag
+  - [ ] Last-reviewed date
+- [ ] Generated references expansion:
+  - [ ] `docs/reference/TOOLS.md` from `cihub/tools/registry.py`
+  - [ ] `docs/reference/WORKFLOWS.md` from `.github/workflows/*.yml`
 
 ### 7) Local/CI Parity (Expand `cihub check`)
 
@@ -200,13 +301,17 @@ These are references, not competing plans.
 
 ### 9) Triage, Registry, and LLM Bundles (New)
 
-- [x] Define `cihub-triage-v1` schema with severity/blocker fields and stable versioning.
+> **Implementation Note:** Triage bundles + prompt pack exist behind `CIHUB_EMIT_TRIAGE` env toggle.
+> Centralized registry + LLM diff outputs remain TODO.
+
+- [x] Define `cihub-triage-v1` schema with severity/blocker fields and stable versioning. *(Version constant in code; formal JSON Schema deferred to `--validate-schema` item below)*
 - [x] Implement `cihub triage` to emit:
   - `.cihub/triage.json` (full bundle)
   - `.cihub/priority.json` (sorted failures)
   - `.cihub/triage.md` (LLM prompt pack)
   - `.cihub/history.jsonl` (append-only run log)
 - [ ] Standardize artifact layout under `.cihub/artifacts/<tool>/` with a small manifest.
+- [ ] Extend `cihub triage` to surface docs drift findings from `.cihub/tool-outputs/` (category `docs`). See **6b) Documentation Automation**.
 - [ ] Normalize core outputs to standard formats (SARIF, Stryker mutation, pytest-json/CTRF, Cobertura/lcov, CycloneDX/SPDX).
 - [ ] Add severity map defaults (0-10) with category + fixability flags.
 - [ ] Add `cihub fix --safe` (deterministic auto-fixes only).
@@ -221,6 +326,61 @@ These are references, not competing plans.
 - [ ] Add continuous reconciliation (opt-in auto-sync).
 - [ ] Add RBAC guidance (defer to GitHub permissions for MVP).
 - [ ] Add DORA metrics derived from history (optional).
+
+### 10) Maintainability Improvements (From 2026-01-04 Audit)
+
+> **Audit Source:** Multi-agent CLI/services/workflow audit + web research.
+> **Principle:** All fixes stay in Python (CLI-first per ADR-0031). No composite actions or workflow logic.
+
+**Code Deduplication (High Priority):**
+- [ ] Consolidate `_tool_enabled()` — 5 implementations → 1 canonical in `cihub/config/loader/core.py`
+  - Locations: `config/loader/core.py`, `services/ci_engine/helpers.py`, `commands/report/helpers.py`, `commands/run.py`, `commands/config_outputs.py`
+  - 54 usages across codebase; any bug fix currently requires 5 updates
+- [ ] Refactor gate evaluation (`services/ci_engine/gates.py`) — extract pattern, data-drive config
+  - Current: 260 lines with 28 repetitive threshold checks
+  - Target: ~100 lines with generic `check_metric_gate()` helper
+
+**Test Coverage (High Priority):**
+- [ ] Expand `test_services_ci.py` — 2 tests → 20+ tests
+  - Missing: Python/Java branching, tool execution, gate evaluation, notifications, env overrides
+- [ ] Add dedicated unit tests for `services/ci_engine/helpers.py` (272 lines, no test file)
+- [ ] Add dedicated unit tests for `services/ci_engine/gates.py` (260 lines, no test file)
+
+**CLI Consistency:**
+- [ ] Enable `--json` flag for `hub-ci` subcommands (47 commands currently blocked)
+  - Issue: `hub_ci.py` explicitly deletes the JSON flag parameter
+- [ ] Require subcommand for `cihub config` and `cihub adr` (currently optional, confusing UX)
+
+**Architecture (Medium Priority):**
+- [ ] Extract Language Strategies — `cihub/core/languages/` with polymorphic pattern
+  - Eliminates 38+ `if language == "python"` / `elif language == "java"` branches
+  - Files: `base.py` (ABC), `python.py`, `java.py`, `registry.py`
+  - See `active/CLEAN_CODE.md` Part 2.1 for design
+
+**Workflow Security (Quick Fix):**
+- [ ] Pin `step-security/harden-runner` versions (21 unpinned uses across workflows)
+
+**Centralization & Boundaries (From Audit):**
+- [ ] Env/context wrapper — `cihub/utils/github.py:GitHubContext`
+  - Centralizes 17 files with direct `os.environ.get("GITHUB_*")` reads
+  - Property accessors for common values (repo, sha, ref, actor, etc.)
+  - Lint/test to enforce usage (no direct `GITHUB_*` reads in commands)
+- [ ] Runner/adapter boundaries — All subprocess execution in `cihub/core/ci_runner/shared.py`
+  - Adapters build specs; strategies orchestrate; no ad-hoc `subprocess.run` in commands
+  - Add lint/test to forbid subprocess imports outside `ci_runner/`
+- [ ] Output normalization — Forbid `print()` in command modules
+  - Commands return `CommandResult` with summary/details/problems
+  - Human formatting only in `cli.py` layer
+  - Add lint/test that walks commands/ and flags print statements
+
+**Performance & Enforcement (From Audit):**
+- [ ] Performance guardrails for `cihub docs stale` / `cihub docs audit`
+  - Target: <5s on ~28k-line docs corpus
+  - Add simple perf test to keep `cihub check --audit` usable
+- [ ] "No inline logic" workflow guard
+  - Lint that flags multi-line `run: |` blocks in workflows (except allowlist: checkout, setup-python, pip install)
+  - Reinforces ADR-0031 without composite actions
+  - Wire into `cihub docs audit` or `cihub check --full`
 
 ---
 
@@ -238,6 +398,8 @@ These are references, not competing plans.
 2. No deleting docs; archive instead.
 3. ADR alignment comes before cleanup decisions.
 4. Fixtures repo stays for CI/regression; local dev uses scaffold/smoke.
+5. Active design docs live in `docs/development/active/` and must be listed in `status/STATUS.md`.
+6. When a design doc is implemented, move to `docs/development/archive/` with a superseded header.
 
 ---
 
@@ -262,3 +424,38 @@ These are references, not competing plans.
 - [x] CLI automation: `docs links` (with `--external` flag, fallback to Python).
 - [x] CLI automation: `adr new/list/check` commands.
 - [ ] CLI automation: `config validate`, `audit` (remaining).
+
+---
+
+## Post v1.0 Backlog
+
+> **Explicitly deferred.** These items are valuable but not blocking v1.0 release.
+> Move to v1.0 Cutline when ready to prioritize.
+
+### Registry & Versioning
+- [ ] Implement registry CLI + versioning/rollback (`cihub registry list/show/set/diff/sync`)
+- [ ] Add `config/registry.json` (Ask First before implementing)
+- [ ] Add drift detection by cohort (language + profile + hub)
+- [ ] Add registry versioning + rollback (immutable version history)
+
+### Triage Enhancements
+- [ ] Add triage schema validation (`cihub triage --validate-schema`)
+- [ ] Add retention policies (`cihub triage prune --days N`)
+- [ ] Add aggregate pass rules (composite gating)
+- [ ] Add post-mortem logging for drift incidents
+- [ ] Add continuous reconciliation (opt-in auto-sync)
+- [ ] Normalize core outputs to standard formats (SARIF, Stryker, pytest-json, Cobertura, CycloneDX)
+- [ ] Add severity map defaults (0-10) with category + fixability flags
+- [ ] Add `cihub fix --safe` (deterministic auto-fixes only)
+- [ ] Add `cihub assist --prompt` (LLM-ready prompt pack from triage bundle)
+
+### Governance & Metrics
+- [ ] Add RBAC guidance (defer to GitHub permissions for MVP)
+- [ ] Add DORA metrics derived from history (optional)
+
+### Optional Tooling
+- [ ] Evaluate `act` integration for local workflow simulation (document limitations)
+- [ ] Doc manifest (`docs_manifest.json`) for LLM context (path, category, generated flag, last-reviewed)
+
+### PyQt6 GUI (Phase 2)
+- [ ] See `active/PYQT_PLAN.md` for full scope — deferred until CLI stabilizes
