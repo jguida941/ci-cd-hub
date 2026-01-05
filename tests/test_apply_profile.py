@@ -304,11 +304,7 @@ class TestConfigApplyProfileCLI:
         # Build env with CIHUB_ROOT
         env = os.environ.copy()
         env["CIHUB_ROOT"] = str(tmp_path)
-        env["PYTHONPATH"] = (
-            str(ROOT)
-            if not env.get("PYTHONPATH")
-            else f"{ROOT}{os.pathsep}{env['PYTHONPATH']}"
-        )
+        env["PYTHONPATH"] = str(ROOT) if not env.get("PYTHONPATH") else f"{ROOT}{os.pathsep}{env['PYTHONPATH']}"
 
         # Run CLI command
         result = subprocess.run(  # noqa: S603

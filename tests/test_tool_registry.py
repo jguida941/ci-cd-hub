@@ -43,9 +43,7 @@ class TestToolRegistryConsistency:
         summary_tools = set(PYTHON_SUMMARY_MAP.values())
         tools_set = set(PYTHON_TOOLS)
 
-        assert summary_tools <= tools_set, (
-            f"PYTHON_SUMMARY_MAP references unknown tools: {summary_tools - tools_set}"
-        )
+        assert summary_tools <= tools_set, f"PYTHON_SUMMARY_MAP references unknown tools: {summary_tools - tools_set}"
 
     def test_java_summary_map_covers_tools(self) -> None:
         """JAVA_SUMMARY_MAP values must be subset of JAVA_TOOLS."""
@@ -54,9 +52,7 @@ class TestToolRegistryConsistency:
         summary_tools = set(JAVA_SUMMARY_MAP.values())
         tools_set = set(JAVA_TOOLS)
 
-        assert summary_tools <= tools_set, (
-            f"JAVA_SUMMARY_MAP references unknown tools: {summary_tools - tools_set}"
-        )
+        assert summary_tools <= tools_set, f"JAVA_SUMMARY_MAP references unknown tools: {summary_tools - tools_set}"
 
     def test_tool_keys_cover_all_run_flags(self) -> None:
         """TOOL_KEYS must include run_* flags for all tools."""

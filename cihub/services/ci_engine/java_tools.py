@@ -78,21 +78,21 @@ def _run_java_tools(
             continue
         try:
             if tool == "pitest":
-                result = runner(workdir_path, output_dir, build_tool)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir, build_tool)
             elif tool == "checkstyle":
-                result = runner(workdir_path, output_dir, build_tool)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir, build_tool)
             elif tool == "spotbugs":
-                result = runner(workdir_path, output_dir, build_tool)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir, build_tool)
             elif tool == "pmd":
-                result = runner(workdir_path, output_dir, build_tool)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir, build_tool)
             elif tool == "owasp":
-                result = runner(workdir_path, output_dir, build_tool, use_nvd_api_key)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir, build_tool, use_nvd_api_key)
             elif tool == "sbom":
                 sbom_cfg = config.get("java", {}).get("tools", {}).get("sbom", {})
                 if not isinstance(sbom_cfg, dict):
                     sbom_cfg = {}
                 sbom_format = sbom_cfg.get("format", "cyclonedx")
-                result = runner(workdir_path, output_dir, sbom_format)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir, sbom_format)
             elif tool == "docker":
                 docker_cfg = config.get("java", {}).get("tools", {}).get("docker", {}) or {}
                 if not isinstance(docker_cfg, dict):
@@ -100,9 +100,9 @@ def _run_java_tools(
                 compose_file = docker_cfg.get("compose_file", "docker-compose.yml")
                 health_endpoint = docker_cfg.get("health_endpoint")
                 health_timeout = docker_cfg.get("health_timeout", 300)
-                result = runner(workdir_path, output_dir, compose_file, health_endpoint, health_timeout)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir, compose_file, health_endpoint, health_timeout)
             else:
-                result = runner(workdir_path, output_dir)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir)
         except FileNotFoundError as exc:
             problems.append(
                 {

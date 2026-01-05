@@ -52,10 +52,7 @@ class TestCliHelpSnapshot:
         expected = snapshot_path.read_text(encoding="utf-8").strip()
         actual = result.stdout.strip()
 
-        assert actual == expected, (
-            "CLI --help output changed! "
-            "If intentional, update tests/snapshots/cli_help.txt"
-        )
+        assert actual == expected, "CLI --help output changed! If intentional, update tests/snapshots/cli_help.txt"
 
 
 class TestImportSmoke:
@@ -182,9 +179,7 @@ class TestMockPatchTargets:
 
             if is_patch and node.args:
                 first_arg = node.args[0]
-                if isinstance(first_arg, ast.Constant) and isinstance(
-                    first_arg.value, str
-                ):
+                if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
                     target = first_arg.value
                     # Only check cihub targets
                     if target.startswith("cihub."):
@@ -324,9 +319,7 @@ class TestAggregationPartialData:
             "tools": {"pytest": {"passed": True}},
             "badges": {},
         }
-        (valid_dir / "report.json").write_text(
-            json.dumps(valid_report), encoding="utf-8"
-        )
+        (valid_dir / "report.json").write_text(json.dumps(valid_report), encoding="utf-8")
 
         # Create an invalid/empty report in another subdirectory
         invalid_dir = reports_dir / "invalid-repo"
@@ -435,14 +428,12 @@ class TestLayerBoundaries:
 
                 # Check if it's a forbidden import
                 is_forbidden = any(
-                    module == forbidden or module.startswith(f"{forbidden}.")
-                    for forbidden in self.FORBIDDEN_FOR_UTILS
+                    module == forbidden or module.startswith(f"{forbidden}.") for forbidden in self.FORBIDDEN_FOR_UTILS
                 )
 
                 # But allow explicit exceptions
                 is_allowed = any(
-                    module == allowed or module.startswith(f"{allowed}.")
-                    for allowed in self.ALLOWED_FOR_UTILS
+                    module == allowed or module.startswith(f"{allowed}.") for allowed in self.ALLOWED_FOR_UTILS
                 )
 
                 if is_forbidden and not is_allowed:
@@ -470,8 +461,7 @@ class TestLayerBoundaries:
                     if not module.startswith("cihub"):
                         continue
                     if any(
-                        module == forbidden or module.startswith(f"{forbidden}.")
-                        for forbidden in forbidden_prefixes
+                        module == forbidden or module.startswith(f"{forbidden}.") for forbidden in forbidden_prefixes
                     ):
                         rel_path = py_file.relative_to(REPO_ROOT)
                         violations.append(f"{rel_path}:{line_no} imports {module}")

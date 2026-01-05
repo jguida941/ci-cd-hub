@@ -103,8 +103,6 @@ def is_debug_enabled(env: Mapping[str, str] | None = None) -> bool:
 # get_git_branch imported from cihub.utils (re-exported for backward compatibility)
 
 
-
-
 def cmd_detect(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.detect import cmd_detect as handler
 

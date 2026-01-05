@@ -1,0 +1,23 @@
+{
+  "schema_version": "cihub-priority-v1",
+  "failures": [
+    {
+      "id": "cihub:missing_report",
+      "category": "cihub",
+      "severity": "blocker",
+      "tool": "cihub",
+      "status": "missing_report",
+      "reason": "missing_report",
+      "message": "report.json not found",
+      "artifacts": [],
+      "reproduce": {
+        "command": "cihub ci --repo /Users/jguida941/new_github_projects/hub-release --output-dir /Users/jguida941/new_github_projects/hub-release/.cihub",
+        "cwd": "/Users/jguida941/new_github_projects/hub-release"
+      },
+      "hints": [
+        "Confirm the workflow completed and produced report.json",
+        "Re-run cihub ci to regenerate report outputs"
+      ]
+    }
+  ]
+}

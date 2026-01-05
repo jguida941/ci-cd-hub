@@ -163,7 +163,7 @@ These are references, not competing plans.
 ### 4) Staleness Audit (Doc + ADR)
 
 - [x] Run a full stale-reference audit (docs/ADRs/scripts/workflows). → See `status/STATUS.md`
-- [x] Record findings in a single audit ledger (`claude_audit.md`).
+- [x] Record findings in a single audit ledger (`docs/development/archive/audit.md`).
 - [x] Update ADRs that reference old workflow entrypoints and fixture strategy.
 - [x] Fix inaccurate config references (pytest.threshold, nvd_api_key_required).
 - [x] Fix broken internal links (ARCH_OVERVIEW.md smoke test link).

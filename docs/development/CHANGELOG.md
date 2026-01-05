@@ -366,7 +366,7 @@ All notable changes to this project will be documented in this file.
 - Added reference-only banners to `pyqt/planqt.md` and archived `docs/development/archive/ARCHITECTURE_PLAN.md`.
 - Updated ADRs to reflect `hub-ci.yml` wrapper and CLI-first verification.
 - Refreshed `docs/development/status/STATUS.md`.
-- Rewrote `claude_audit.md` into a factual audit ledger.
+- Rewrote the audit ledger as `docs/development/archive/audit.md`.
 - Generated `docs/reference/CLI.md` and `docs/reference/CONFIG.md` from code.
 
 ## 2025-12-26 - Security Hardening & Boolean Config Fix

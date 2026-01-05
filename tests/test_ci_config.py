@@ -194,13 +194,7 @@ class TestLoadCiConfig:
 
     def test_extracts_language_from_repo_section(self, tmp_path: Path) -> None:
         ci_hub = tmp_path / ".ci-hub.yml"
-        ci_hub.write_text(
-            "language: python\n"
-            "repo:\n"
-            "  owner: acme\n"
-            "  name: myapp\n"
-            "  language: java\n"
-        )
+        ci_hub.write_text("language: python\nrepo:\n  owner: acme\n  name: myapp\n  language: java\n")
 
         with patch("cihub.ci_config.hub_root") as mock_root:
             mock_root.return_value = tmp_path
@@ -239,13 +233,7 @@ class TestLoadCiConfig:
 
 def test_load_ci_config_applies_thresholds_profile(tmp_path: Path) -> None:
     ci_hub = tmp_path / ".ci-hub.yml"
-    ci_hub.write_text(
-        "language: python\n"
-        "repo:\n"
-        "  owner: acme\n"
-        "  name: demo\n"
-        "thresholds_profile: coverage-gate\n"
-    )
+    ci_hub.write_text("language: python\nrepo:\n  owner: acme\n  name: demo\nthresholds_profile: coverage-gate\n")
     config_dir = tmp_path / "config"
     config_dir.mkdir()
     (config_dir / "defaults.yaml").write_text("thresholds:\n  coverage_min: 70\n  mutation_score_min: 70\n")

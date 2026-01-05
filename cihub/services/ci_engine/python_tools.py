@@ -176,16 +176,16 @@ def _run_python_tools(
             if tool == "pytest":
                 pytest_cfg = config.get("python", {}).get("tools", {}).get("pytest", {}) or {}
                 fail_fast = bool(pytest_cfg.get("fail_fast", False))
-                result = runner(workdir_path, output_dir, fail_fast)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir, fail_fast)
             elif tool == "mutmut":
                 timeout = config.get("python", {}).get("tools", {}).get("mutmut", {}).get("timeout_minutes", 15)
-                result = runner(workdir_path, output_dir, int(timeout) * 60)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir, int(timeout) * 60)
             elif tool == "sbom":
                 sbom_cfg = config.get("python", {}).get("tools", {}).get("sbom", {})
                 if not isinstance(sbom_cfg, dict):
                     sbom_cfg = {}
                 sbom_format = sbom_cfg.get("format", "cyclonedx")
-                result = runner(workdir_path, output_dir, sbom_format)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir, sbom_format)
             elif tool == "docker":
                 docker_cfg = config.get("python", {}).get("tools", {}).get("docker", {}) or {}
                 if not isinstance(docker_cfg, dict):
@@ -193,9 +193,9 @@ def _run_python_tools(
                 compose_file = docker_cfg.get("compose_file", "docker-compose.yml")
                 health_endpoint = docker_cfg.get("health_endpoint")
                 health_timeout = docker_cfg.get("health_timeout", 300)
-                result = runner(workdir_path, output_dir, compose_file, health_endpoint, health_timeout)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir, compose_file, health_endpoint, health_timeout)
             else:
-                result = runner(workdir_path, output_dir)  # type: ignore[operator]
+                result = runner(workdir_path, output_dir)
         except FileNotFoundError as exc:
             problems.append(
                 {

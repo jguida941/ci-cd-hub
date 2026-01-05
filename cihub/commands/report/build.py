@@ -74,9 +74,7 @@ def _emit_build_debug_context(
     enabled_tools = [tool for tool, enabled in tools_configured.items() if enabled]
     disabled_tools = [tool for tool, enabled in tools_configured.items() if not enabled]
     skipped_tools = [tool for tool in enabled_tools if not tools_ran.get(tool, False)]
-    failed_tools = [
-        tool for tool in enabled_tools if tools_ran.get(tool, False) and not tools_success.get(tool, False)
-    ]
+    failed_tools = [tool for tool in enabled_tools if tools_ran.get(tool, False) and not tools_success.get(tool, False)]
 
     entries = [
         ("repo_path", str(repo_path)),

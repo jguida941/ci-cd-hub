@@ -30,10 +30,7 @@ def test_load_effective_config_validates_schema(tmp_path: Path) -> None:
     repo_path = tmp_path / "cihub-effective-config-test"
     repo_path.mkdir()
     (repo_path / ".ci-hub.yml").write_text(
-        "repo:\n"
-        "  owner: test\n"
-        "  name: cihub-effective-config-test\n"
-        "language: python\n",
+        "repo:\n  owner: test\n  name: cihub-effective-config-test\nlanguage: python\n",
         encoding="utf-8",
     )
 

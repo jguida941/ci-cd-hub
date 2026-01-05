@@ -256,9 +256,7 @@ def generate_triage_bundle(
         workdir = environment.get("workdir")
 
         tools_configured = (
-            report.get("tools_configured", {})
-            if isinstance(report.get("tools_configured"), dict)
-            else {}
+            report.get("tools_configured", {}) if isinstance(report.get("tools_configured"), dict) else {}
         )
         tools_ran = report.get("tools_ran", {}) if isinstance(report.get("tools_ran"), dict) else {}
         tools_success = report.get("tools_success", {}) if isinstance(report.get("tools_success"), dict) else {}
