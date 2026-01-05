@@ -591,7 +591,8 @@ options:
 
 ```
 usage: cihub triage [-h] [--json] [--output-dir OUTPUT_DIR] [--report REPORT]
-                    [--summary SUMMARY]
+                    [--summary SUMMARY] [--run RUN_ID] [--artifacts-dir PATH]
+                    [--repo OWNER/REPO]
 
 options:
   -h, --help            show this help message and exit
@@ -601,6 +602,12 @@ options:
   --report REPORT       Path to report.json (default: <output-
                         dir>/report.json)
   --summary SUMMARY     Path to summary.md (default: <output-dir>/summary.md)
+  --run RUN_ID          GitHub workflow run ID to analyze (fetches
+                        artifacts/logs via gh CLI)
+  --artifacts-dir PATH  Path to pre-downloaded artifacts directory (offline
+                        mode)
+  --repo OWNER/REPO     Target repository for remote run analysis (default:
+                        current repo)
 ```
 
 ## cihub docs

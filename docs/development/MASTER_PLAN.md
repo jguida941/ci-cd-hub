@@ -440,11 +440,53 @@ These are references, not competing plans.
 - [ ] Add registry versioning + rollback (immutable version history)
 
 ### Triage Enhancements
+
+**Remote Run Analysis (CLI-First, ADR-0035 aligned):**
+
+> **Status:** Initial implementation exists (`--run`, `--artifacts-dir`, `--repo` flags added).
+> Needs enhancement for multi-repo/matrix runs and artifact-first strategy.
+
+- [x] Add `cihub triage --run <run_id>` — Basic implementation (log parsing fallback)
+- [x] Add `cihub triage --artifacts-dir <path>` — Offline mode (basic support)
+- [x] Add `cihub triage --repo <owner/repo>` — Target different repository
+
+**Production Enhancements (Required for real workflows):**
+- [ ] **Artifact-first strategy**: Download artifacts before falling back to logs
+  - `gh run download <run_id>` to fetch `*-ci-report` artifacts
+  - Parse `report.json`, `summary.md`, `tool-outputs/*.json` from each artifact
+  - Only fall back to `--log-failed` if no artifacts exist
+- [ ] **Multi-repo/matrix support**: Handle orchestrator runs with multiple repos
+  - `hub-run-all` uploads one artifact per repo (e.g., `repo-name-ci-report`)
+  - `hub-orchestrator` uploads dispatch metadata
+  - Produce one triage bundle per repo OR a merged aggregate view
+  - Add `--aggregate` flag to merge all repo bundles into single triage
+- [ ] **CI parity**: Same bundle shape for local and remote
+  - Local: reads from `.cihub/report.json`
+  - Remote: downloads to temp dir, reads same structure
+  - Both produce identical `triage.json`, `priority.json`, `triage.md`
+- [ ] **Auth/opt-in**: Require explicit flag/env for remote fetch
+  - Default mode stays local/offline
+  - `--run` requires `GH_TOKEN` or authenticated `gh` CLI
+  - Add `--no-fetch` to skip artifact download and use cached
+- [ ] **Graceful gaps**: Handle missing data properly
+  - If `report.json` missing: add `missing_report` failure, note any tool outputs found
+  - If artifacts AND logs missing: fail with clear message
+  - If some repos succeeded and some failed: include both in aggregate
+- [ ] **Performance/safety**:
+  - Limit download size (skip artifacts > 100MB)
+  - Allow `--artifacts-dir` to reuse already-downloaded artifacts
+  - Add timeouts for remote operations (default 60s)
+- [ ] Add `cihub triage --workflow <name>` — Analyze latest failure from named workflow
+- [ ] Add `cihub triage --branch <branch>` — Analyze latest failure on branch
+
+**Schema & Retention:**
 - [ ] Add triage schema validation (`cihub triage --validate-schema`)
 - [ ] Add retention policies (`cihub triage prune --days N`)
 - [ ] Add aggregate pass rules (composite gating)
 - [ ] Add post-mortem logging for drift incidents
 - [ ] Add continuous reconciliation (opt-in auto-sync)
+
+**Output Normalization:**
 - [ ] Normalize core outputs to standard formats (SARIF, Stryker, pytest-json, Cobertura, CycloneDX)
 - [ ] Add severity map defaults (0-10) with category + fixability flags
 - [ ] Add `cihub fix --safe` (deterministic auto-fixes only)

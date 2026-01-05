@@ -27,4 +27,20 @@ def add_triage_command(
         "--summary",
         help="Path to summary.md (default: <output-dir>/summary.md)",
     )
+    # Remote run analysis
+    triage.add_argument(
+        "--run",
+        metavar="RUN_ID",
+        help="GitHub workflow run ID to analyze (fetches artifacts/logs via gh CLI)",
+    )
+    triage.add_argument(
+        "--artifacts-dir",
+        metavar="PATH",
+        help="Path to pre-downloaded artifacts directory (offline mode)",
+    )
+    triage.add_argument(
+        "--repo",
+        metavar="OWNER/REPO",
+        help="Target repository for remote run analysis (default: current repo)",
+    )
     triage.set_defaults(func=handlers.cmd_triage)
