@@ -167,6 +167,7 @@ def _parse_dependency_check(path: Path) -> dict[str, Any]:
     high = 0
     medium = 0
     low = 0
+    max_cvss: float = 0.0
     if isinstance(data, dict):
         for dep in data.get("dependencies", []) or []:
             for vuln in dep.get("vulnerabilities", []) or []:
@@ -179,9 +180,25 @@ def _parse_dependency_check(path: Path) -> dict[str, Any]:
                     medium += 1
                 elif severity == "LOW":
                     low += 1
+                # Extract CVSS score (prefer v3 over v2)
+                cvss_score = 0.0
+                cvssv3 = vuln.get("cvssv3", {}) or {}
+                cvssv2 = vuln.get("cvssv2", {}) or {}
+                if isinstance(cvssv3, dict) and "baseScore" in cvssv3:
+                    try:
+                        cvss_score = float(cvssv3["baseScore"])
+                    except (ValueError, TypeError):
+                        pass
+                elif isinstance(cvssv2, dict) and "score" in cvssv2:
+                    try:
+                        cvss_score = float(cvssv2["score"])
+                    except (ValueError, TypeError):
+                        pass
+                max_cvss = max(max_cvss, cvss_score)
     return {
         "owasp_critical": critical,
         "owasp_high": high,
         "owasp_medium": medium,
         "owasp_low": low,
+        "owasp_max_cvss": max_cvss,
     }

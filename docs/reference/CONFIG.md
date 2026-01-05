@@ -14,6 +14,30 @@ Source: `schema/ci-hub-config.schema.json`
 | `extra_tests` | array | no |  |  |
 | `extra_tests[].command` | string | yes |  |  |
 | `extra_tests[].name` | string | yes |  |  |
+| `gates` | object | no |  | Gate policies for require_run_or_fail behavior |
+| `gates.require_run_or_fail` | boolean | no | false | Global default: fail CI if configured tool didn't run |
+| `gates.tool_defaults` | object | no |  | Per-tool require_run_or_fail defaults |
+| `gates.tool_defaults.pytest` | boolean | no | true |  |
+| `gates.tool_defaults.ruff` | boolean | no | true |  |
+| `gates.tool_defaults.bandit` | boolean | no | true |  |
+| `gates.tool_defaults.pip_audit` | boolean | no | true |  |
+| `gates.tool_defaults.mypy` | boolean | no | false |  |
+| `gates.tool_defaults.black` | boolean | no | false |  |
+| `gates.tool_defaults.isort` | boolean | no | false |  |
+| `gates.tool_defaults.mutmut` | boolean | no | false |  |
+| `gates.tool_defaults.hypothesis` | boolean | no | false |  |
+| `gates.tool_defaults.semgrep` | boolean | no | false |  |
+| `gates.tool_defaults.trivy` | boolean | no | true |  |
+| `gates.tool_defaults.codeql` | boolean | no | true |  |
+| `gates.tool_defaults.docker` | boolean | no | false |  |
+| `gates.tool_defaults.sbom` | boolean | no | false |  |
+| `gates.tool_defaults.jacoco` | boolean | no | true |  |
+| `gates.tool_defaults.checkstyle` | boolean | no | true |  |
+| `gates.tool_defaults.spotbugs` | boolean | no | true |  |
+| `gates.tool_defaults.pmd` | boolean | no | false |  |
+| `gates.tool_defaults.owasp` | boolean | no | true |  |
+| `gates.tool_defaults.pitest` | boolean | no | false |  |
+| `gates.tool_defaults.jqwik` | boolean | no | false |  |
 | `hub_ci` | boolean|object | no |  |  |
 | `java` | object | no |  |  |
 | `java.build_tool` | string | no | maven |  |
@@ -87,7 +111,7 @@ Source: `schema/ci-hub-config.schema.json`
 | `thresholds.max_semgrep_findings` | integer | no | 0 |  |
 | `thresholds.max_spotbugs_bugs` | integer | no | 0 |  |
 | `thresholds.mutation_score_min` | integer | no | 70 |  |
-| `thresholds.owasp_cvss_fail` | integer | no | 7 |  |
-| `thresholds.trivy_cvss_fail` | integer | no | 7 |  |
+| `thresholds.owasp_cvss_fail` | number | no | 7 |  |
+| `thresholds.trivy_cvss_fail` | number | no | 7 |  |
 | `thresholds_profile` | string | no |  | Named threshold preset (coverage-gate, security, compliance). Explicit thresholds override the profile. |
 | `version` | string | no | 1.0 | Config schema version |

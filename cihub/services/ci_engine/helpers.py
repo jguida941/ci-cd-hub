@@ -8,6 +8,8 @@ import subprocess
 from pathlib import Path
 from typing import Any, Mapping
 
+from cihub.config import tool_enabled as _tool_enabled_canonical
+from cihub.core.languages import get_strategy
 from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
 from cihub.utils import (
     get_git_remote,
@@ -86,13 +88,8 @@ def _detect_java_project_type(workdir: Path) -> str:
 
 
 def _tool_enabled(config: dict[str, Any], tool: str, language: str) -> bool:
-    tools = config.get(language, {}).get("tools", {}) or {}
-    entry = tools.get(tool, {}) if isinstance(tools, dict) else {}
-    if isinstance(entry, bool):
-        return entry
-    if isinstance(entry, dict):
-        return bool(entry.get("enabled", False))
-    return False
+    """Check if a tool is enabled. Delegates to canonical cihub.config.tool_enabled."""
+    return _tool_enabled_canonical(config, tool, language)
 
 
 def _tool_gate_enabled(config: dict[str, Any], tool: str, language: str) -> bool:
@@ -261,7 +258,13 @@ def _apply_force_all_tools(config: dict[str, Any], language: str) -> None:
     repo_cfg = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
     if not repo_cfg.get("force_all_tools", False):
         return
-    tool_list = PYTHON_TOOLS if language == "python" else JAVA_TOOLS
+    # Use strategy pattern to get language-specific tool list
+    try:
+        strategy = get_strategy(language)
+        tool_list = strategy.get_default_tools()
+    except ValueError:
+        # Fall back to registry for unsupported languages
+        tool_list = PYTHON_TOOLS if language == "python" else JAVA_TOOLS
     for tool in tool_list:
         _set_tool_enabled(config, language, tool, True)
 

@@ -255,6 +255,7 @@ def run_owasp(
             "owasp_high": 0,
             "owasp_medium": 0,
             "owasp_low": 0,
+            "owasp_max_cvss": 0.0,
         }
     )
     ran = bool(report_paths)

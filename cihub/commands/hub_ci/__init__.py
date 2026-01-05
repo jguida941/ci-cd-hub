@@ -16,6 +16,7 @@ import sys
 import tarfile
 import threading
 import urllib.request
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -27,7 +28,9 @@ from cihub.config.normalize import normalize_config
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE  # noqa: F401 - re-export
 from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS  # noqa: F401 - re-export
 from cihub.services.types import RepoEntry  # noqa: F401 - re-export
+from cihub.types import CommandResult
 from cihub.utils.env import _parse_env_bool, env_bool
+from cihub.utils.github_context import OutputContext  # noqa: F401 - re-export
 from cihub.utils.paths import hub_root  # noqa: F401 - re-export
 from cihub.utils.progress import _bar  # noqa: F401 - re-export
 
@@ -84,6 +87,251 @@ def _append_github_path(path_value: Path) -> None:
 
 def _bool_str(value: bool) -> str:
     return "true" if value else "false"
+
+
+# ============================================================================
+# Public GitHub Output/Summary Helpers (Phase 2 Consolidation)
+# ============================================================================
+
+
+def write_github_outputs(
+    values: dict[str, str],
+    output_path: str | None = None,
+    github_output: bool = False,
+) -> None:
+    """Write key=value pairs to GitHub Actions output.
+
+    Combines _resolve_output_path + _write_outputs into a single call.
+    Eliminates the common 2-step pattern throughout hub-ci commands.
+
+    Args:
+        values: Dictionary of key=value pairs to write.
+        output_path: Explicit path to write outputs (takes precedence).
+        github_output: If True, write to GITHUB_OUTPUT env var path.
+
+    Example:
+        # Before (2 steps):
+        output_path = _resolve_output_path(args.output, args.github_output)
+        _write_outputs({"key": "value"}, output_path)
+
+        # After (1 step):
+        write_github_outputs({"key": "value"}, args.output, args.github_output)
+    """
+    resolved_path = _resolve_output_path(output_path, github_output)
+    _write_outputs(values, resolved_path)
+
+
+def write_github_summary(
+    text: str,
+    summary_path: str | None = None,
+    github_summary: bool = False,
+) -> None:
+    """Append text to GitHub Actions step summary.
+
+    Combines _resolve_summary_path + _append_summary into a single call.
+
+    Args:
+        text: Markdown text to append to summary.
+        summary_path: Explicit path to write summary (takes precedence).
+        github_summary: If True, write to GITHUB_STEP_SUMMARY env var path.
+
+    Example:
+        # Before (2 steps):
+        summary_path = _resolve_summary_path(args.summary, args.github_summary)
+        _append_summary(md_text, summary_path)
+
+        # After (1 step):
+        write_github_summary(md_text, args.summary, args.github_summary)
+    """
+    resolved_path = _resolve_summary_path(summary_path, github_summary)
+    _append_summary(text, resolved_path)
+
+
+# ============================================================================
+# Tool Execution Helpers (Phase 2 Consolidation)
+# ============================================================================
+
+
+@dataclass
+class ToolResult:
+    """Result from running a tool with optional JSON output.
+
+    Attributes:
+        success: Whether the tool ran successfully (returncode == 0).
+        returncode: The process return code.
+        stdout: Captured stdout text.
+        stderr: Captured stderr text.
+        json_data: Parsed JSON output (None if parsing failed or no JSON).
+        json_error: Error message if JSON parsing failed.
+        report_path: Path where JSON report was written (if applicable).
+    """
+
+    success: bool
+    returncode: int
+    stdout: str
+    stderr: str
+    json_data: Any = None
+    json_error: str | None = None
+    report_path: Path | None = None
+
+
+def ensure_executable(path: Path) -> bool:
+    """Make a file executable if it exists.
+
+    This consolidates the common pattern:
+        if wrapper.exists():
+            wrapper.chmod(wrapper.stat().st_mode | stat.S_IEXEC)
+
+    Args:
+        path: Path to the file to make executable.
+
+    Returns:
+        True if file exists and was made executable, False otherwise.
+
+    Example:
+        # Before (verbose):
+        mvnw = repo_path / "mvnw"
+        if mvnw.exists():
+            mvnw.chmod(mvnw.stat().st_mode | stat.S_IEXEC)
+            _run_command(["./mvnw", ...], repo_path)
+
+        # After (clean):
+        mvnw = repo_path / "mvnw"
+        if ensure_executable(mvnw):
+            _run_command(["./mvnw", ...], repo_path)
+    """
+    if not path.exists():
+        return False
+    path.chmod(path.stat().st_mode | stat.S_IEXEC)
+    return True
+
+
+def load_json_report(
+    path: Path,
+    default: Any = None,
+) -> tuple[Any, str | None]:
+    """Safely load a JSON report file with error handling.
+
+    This consolidates the common pattern:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            data = default
+
+    Args:
+        path: Path to the JSON file.
+        default: Value to return if file doesn't exist or JSON is invalid.
+
+    Returns:
+        Tuple of (parsed_data, error_message).
+        - If successful: (data, None)
+        - If file missing: (default, "File not found: {path}")
+        - If invalid JSON: (default, "Invalid JSON: {error}")
+
+    Example:
+        # Before (verbose):
+        try:
+            data = json.loads(report_path.read_text(encoding="utf-8"))
+            vulns = count_vulns(data)
+        except json.JSONDecodeError:
+            data = []
+            vulns = 0
+
+        # After (clean):
+        data, error = load_json_report(report_path, default=[])
+        if error:
+            problems.append({"severity": "warning", "message": error})
+        vulns = count_vulns(data)
+    """
+    if not path.exists():
+        return default, f"File not found: {path}"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data, None
+    except json.JSONDecodeError as exc:
+        return default, f"Invalid JSON in {path}: {exc}"
+
+
+def run_tool_with_json_report(
+    cmd: list[str],
+    cwd: Path,
+    report_path: Path,
+    default_on_missing: str | None = None,
+    env: dict[str, str] | None = None,
+) -> ToolResult:
+    """Run a tool that produces JSON output and parse the result.
+
+    This consolidates the common pattern found in security commands:
+    1. Run tool with JSON output flag
+    2. Check if report file was created
+    3. Create fallback content if missing
+    4. Parse JSON with error handling
+    5. Return structured result
+
+    Args:
+        cmd: Command to run.
+        cwd: Working directory.
+        report_path: Path where the tool writes its JSON report.
+        default_on_missing: JSON string to write if report not created.
+            If None, no fallback is created.
+        env: Optional environment variables.
+
+    Returns:
+        ToolResult with success status, parsed JSON data, and any errors.
+
+    Example:
+        # Before (verbose):
+        proc = _run_command(["bandit", "-f", "json", "-o", str(report)], cwd)
+        tool_status = "success"
+        if not report.exists():
+            report.write_text('{"results":[]}', encoding="utf-8")
+            if proc.returncode != 0:
+                tool_status = "failed"
+        try:
+            data = json.loads(report.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            data = {"results": []}
+            tool_status = "failed"
+
+        # After (clean):
+        result = run_tool_with_json_report(
+            cmd=["bandit", "-f", "json", "-o", str(report)],
+            cwd=cwd,
+            report_path=report,
+            default_on_missing='{"results":[]}',
+        )
+        data = result.json_data or {"results": []}
+        tool_status = "success" if result.success else "failed"
+    """
+    proc = _run_command(cmd, cwd, env=env)
+
+    # Handle missing report file
+    if not report_path.exists():
+        if default_on_missing is not None:
+            report_path.write_text(default_on_missing, encoding="utf-8")
+        else:
+            return ToolResult(
+                success=False,
+                returncode=proc.returncode,
+                stdout=proc.stdout or "",
+                stderr=proc.stderr or "",
+                json_data=None,
+                json_error=f"Tool did not create report: {report_path}",
+                report_path=report_path,
+            )
+
+    # Parse JSON
+    json_data, json_error = load_json_report(report_path)
+
+    return ToolResult(
+        success=proc.returncode == 0 and json_error is None,
+        returncode=proc.returncode,
+        stdout=proc.stdout or "",
+        stderr=proc.stderr or "",
+        json_data=json_data,
+        json_error=json_error,
+        report_path=report_path,
+    )
 
 
 def _load_config(path: Path | None) -> dict[str, Any]:
@@ -145,6 +393,108 @@ def _run_command(
         stdout="".join(stdout_chunks),
         stderr="".join(stderr_chunks),
     )
+
+
+# ============================================================================
+# CommandResult Helpers - reduce boilerplate for cmd_* functions
+# ============================================================================
+
+
+def result_ok(
+    summary: str,
+    *,
+    data: dict[str, Any] | None = None,
+    problems: list[dict[str, Any]] | None = None,
+    files_generated: list[str] | None = None,
+    files_modified: list[str] | None = None,
+) -> CommandResult:
+    """Create a successful CommandResult.
+
+    Use this helper to reduce boilerplate when returning success from commands.
+
+    Args:
+        summary: Human-readable success message
+        data: Optional structured data for --json output
+        problems: Optional warnings (non-fatal issues)
+        files_generated: Optional list of generated file paths
+        files_modified: Optional list of modified file paths
+
+    Returns:
+        CommandResult with exit_code=EXIT_SUCCESS
+    """
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=summary,
+        data=data or {},
+        problems=problems or [],
+        files_generated=files_generated or [],
+        files_modified=files_modified or [],
+    )
+
+
+def result_fail(
+    summary: str,
+    *,
+    problems: list[dict[str, Any]] | None = None,
+    data: dict[str, Any] | None = None,
+) -> CommandResult:
+    """Create a failed CommandResult.
+
+    Use this helper to reduce boilerplate when returning errors from commands.
+
+    Args:
+        summary: Human-readable error message
+        problems: List of problem dicts (severity, message, optionally code)
+        data: Optional structured data for debugging
+
+    Returns:
+        CommandResult with exit_code=EXIT_FAILURE
+    """
+    # If no problems provided, create one from the summary
+    if problems is None:
+        problems = [{"severity": "error", "message": summary}]
+    return CommandResult(
+        exit_code=EXIT_FAILURE,
+        summary=summary,
+        problems=problems,
+        data=data or {},
+    )
+
+
+def run_and_capture(
+    cmd: list[str],
+    cwd: Path,
+    *,
+    tool_name: str = "",
+    env: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """Run a command and capture its output for structured results.
+
+    Use this helper when you need to run a tool and capture its output
+    for inclusion in a CommandResult.
+
+    Args:
+        cmd: Command and arguments to execute
+        cwd: Working directory for the command
+        tool_name: Name of the tool (for error messages)
+        env: Optional environment variables
+
+    Returns:
+        Dict with keys: stdout, stderr, returncode, success, tool
+    """
+    proc = _run_command(cmd, cwd, env=env)
+    return {
+        "stdout": proc.stdout or "",
+        "stderr": proc.stderr or "",
+        "returncode": proc.returncode,
+        "success": proc.returncode == 0,
+        "tool": tool_name or cmd[0] if cmd else "",
+    }
+
+
+# ============================================================================
+# Additional Shared Helpers
+# ============================================================================
 
 
 def _download_file(url: str, dest: Path) -> None:
@@ -320,7 +670,13 @@ from cihub.commands.hub_ci.validation import (  # noqa: E402
 # ============================================================================
 
 __all__ = [
-    # Shared helpers
+    # OutputContext (new pattern - replaces 2-step output/summary helpers)
+    "OutputContext",
+    # CommandResult helpers (reduce boilerplate)
+    "result_ok",
+    "result_fail",
+    "run_and_capture",
+    # Shared helpers (deprecated - use OutputContext instead)
     "_write_outputs",
     "_append_summary",
     "_resolve_output_path",

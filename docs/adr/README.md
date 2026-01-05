@@ -39,6 +39,12 @@ Existing:
 - [ADR-0035: Registry, Triage, and LLM Bundle](0035-registry-triage-llm-bundle.md)
 - [ADR-0036: Service Layer APIs for GUI Integration](0036-service-layer-gui-adapter.md)
 - [ADR-0037: Shorthand Enabled Sections + Threshold Profiles](0037-shorthand-enabled-sections-and-threshold-profiles.md)
+- [ADR-0038: GateSpec Registry (Single Source of Truth)](0038-gatespec-registry.md)
+- [ADR-0039: Require Run or Fail Policy](0039-require-run-or-fail-policy.md)
+- [ADR-0040: Virtual Tools Pattern (Hypothesis, jqwik)](0040-virtual-tools-pattern.md)
+- [ADR-0041: Language Strategy Pattern](0041-language-strategy-pattern.md)
+- [ADR-0042: CommandResult Pattern for CLI Output](0042-command-result-pattern.md)
+- [ADR-0043: Triage Service Modularization](0043-triage-service-modularization.md)
 
 Template starter:
 ```markdown

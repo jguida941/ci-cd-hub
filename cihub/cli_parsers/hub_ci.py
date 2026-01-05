@@ -2,12 +2,19 @@
 
 from __future__ import annotations
 
+from cihub.cli_parsers.common import (
+    add_output_args,
+    add_output_dir_args,
+    add_path_args,
+    add_repo_args,
+    add_summary_args,
+)
 from cihub.cli_parsers.types import CommandHandlers
 
 
-def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -> None:
-    del _add_json_flag
+def add_hub_ci_commands(subparsers, add_json_flag, handlers: CommandHandlers) -> None:
     hub_ci = subparsers.add_parser("hub-ci", help="Hub production CI helpers")
+    add_json_flag(hub_ci)  # Add --json flag at parent level for all subcommands
     hub_ci.set_defaults(func=handlers.cmd_hub_ci)
     hub_ci_sub = hub_ci.add_subparsers(dest="subcommand", required=True)
 
@@ -26,12 +33,7 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
         default=".cihub/tools",
         help="Destination directory for actionlint",
     )
-    hub_ci_actionlint_install.add_argument("--output", help="Write outputs to file")
-    hub_ci_actionlint_install.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_actionlint_install)
 
     hub_ci_actionlint = hub_ci_sub.add_parser(
         "actionlint",
@@ -65,34 +67,24 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
         "repo-check",
         help="Check if a repo checkout is present",
     )
-    hub_ci_repo_check.add_argument("--path", default="repo", help="Repo path")
+    add_path_args(hub_ci_repo_check)
     hub_ci_repo_check.add_argument("--owner", help="Repo owner (for warnings)")
     hub_ci_repo_check.add_argument("--name", help="Repo name (for warnings)")
-    hub_ci_repo_check.add_argument("--output", help="Write outputs to file")
-    hub_ci_repo_check.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_repo_check)
 
     hub_ci_source_check = hub_ci_sub.add_parser(
         "source-check",
         help="Detect source files for a repo",
     )
-    hub_ci_source_check.add_argument("--path", default="repo", help="Repo path")
+    add_path_args(hub_ci_source_check)
     hub_ci_source_check.add_argument("--language", required=True, help="Repo language")
-    hub_ci_source_check.add_argument("--output", help="Write outputs to file")
-    hub_ci_source_check.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_source_check)
 
     hub_ci_security_pip_audit = hub_ci_sub.add_parser(
         "security-pip-audit",
         help="Run pip-audit for hub-security workflows",
     )
-    hub_ci_security_pip_audit.add_argument("--path", default="repo", help="Repo path")
+    add_path_args(hub_ci_security_pip_audit)
     hub_ci_security_pip_audit.add_argument(
         "--report",
         default="pip-audit-report.json",
@@ -104,76 +96,51 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
         default=["requirements.txt"],
         help="Requirements files to install",
     )
-    hub_ci_security_pip_audit.add_argument("--output", help="Write outputs to file")
-    hub_ci_security_pip_audit.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_security_pip_audit)
 
     hub_ci_security_bandit = hub_ci_sub.add_parser(
         "security-bandit",
         help="Run bandit for hub-security workflows",
     )
-    hub_ci_security_bandit.add_argument("--path", default="repo", help="Repo path")
+    add_path_args(hub_ci_security_bandit)
     hub_ci_security_bandit.add_argument(
         "--report",
         default="bandit-report.json",
         help="Output report path (relative to repo)",
     )
-    hub_ci_security_bandit.add_argument("--output", help="Write outputs to file")
-    hub_ci_security_bandit.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_security_bandit)
 
     hub_ci_security_ruff = hub_ci_sub.add_parser(
         "security-ruff",
         help="Run Ruff security rules for hub-security workflows",
     )
-    hub_ci_security_ruff.add_argument("--path", default="repo", help="Repo path")
+    add_path_args(hub_ci_security_ruff)
     hub_ci_security_ruff.add_argument(
         "--report",
         default="ruff-security.json",
         help="Output report path (relative to repo)",
     )
-    hub_ci_security_ruff.add_argument("--output", help="Write outputs to file")
-    hub_ci_security_ruff.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_security_ruff)
 
     hub_ci_security_owasp = hub_ci_sub.add_parser(
         "security-owasp",
         help="Run OWASP Dependency-Check for hub-security workflows",
     )
-    hub_ci_security_owasp.add_argument("--path", default="repo", help="Repo path")
-    hub_ci_security_owasp.add_argument("--output", help="Write outputs to file")
-    hub_ci_security_owasp.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_path_args(hub_ci_security_owasp)
+    add_output_args(hub_ci_security_owasp)
 
     hub_ci_docker_check = hub_ci_sub.add_parser(
         "docker-compose-check",
         help="Check for docker-compose files in a repo",
     )
-    hub_ci_docker_check.add_argument("--path", default="repo", help="Repo path")
-    hub_ci_docker_check.add_argument("--output", help="Write outputs to file")
-    hub_ci_docker_check.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_path_args(hub_ci_docker_check)
+    add_output_args(hub_ci_docker_check)
 
     hub_ci_codeql_build = hub_ci_sub.add_parser(
         "codeql-build",
         help="Run Java build for CodeQL analysis",
     )
-    hub_ci_codeql_build.add_argument("--path", default="repo", help="Repo path")
+    add_path_args(hub_ci_codeql_build)
 
     hub_ci_kyverno_install = hub_ci_sub.add_parser(
         "kyverno-install",
@@ -189,12 +156,7 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
         default=".cihub/tools",
         help="Destination directory for kyverno",
     )
-    hub_ci_kyverno_install.add_argument("--output", help="Write outputs to file")
-    hub_ci_kyverno_install.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_kyverno_install)
 
     hub_ci_trivy_install = hub_ci_sub.add_parser(
         "trivy-install",
@@ -215,12 +177,7 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
         action="store_true",
         help="Append destination dir to GITHUB_PATH",
     )
-    hub_ci_trivy_install.add_argument("--output", help="Write outputs to file")
-    hub_ci_trivy_install.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_trivy_install)
 
     hub_ci_trivy_summary = hub_ci_sub.add_parser(
         "trivy-summary",
@@ -259,12 +216,7 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
         help="Templates directory",
     )
     hub_ci_kyverno_validate.add_argument("--bin", help="Path to kyverno binary")
-    hub_ci_kyverno_validate.add_argument("--output", help="Write outputs to file")
-    hub_ci_kyverno_validate.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_kyverno_validate)
 
     hub_ci_kyverno_test = hub_ci_sub.add_parser(
         "kyverno-test",
@@ -291,152 +243,109 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
         "smoke-java-build",
         help="Run Java smoke build/test",
     )
-    hub_ci_smoke_java_build.add_argument("--path", default="repo", help="Repo path")
+    add_path_args(hub_ci_smoke_java_build)
 
     hub_ci_smoke_java_tests = hub_ci_sub.add_parser(
         "smoke-java-tests",
         help="Extract Java smoke test results",
     )
-    hub_ci_smoke_java_tests.add_argument("--path", default="repo", help="Repo path")
-    hub_ci_smoke_java_tests.add_argument("--output", help="Write outputs to file")
-    hub_ci_smoke_java_tests.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_path_args(hub_ci_smoke_java_tests)
+    add_output_args(hub_ci_smoke_java_tests)
 
     hub_ci_smoke_java_coverage = hub_ci_sub.add_parser(
         "smoke-java-coverage",
         help="Extract Java smoke coverage metrics",
     )
-    hub_ci_smoke_java_coverage.add_argument("--path", default="repo", help="Repo path")
-    hub_ci_smoke_java_coverage.add_argument("--output", help="Write outputs to file")
-    hub_ci_smoke_java_coverage.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_path_args(hub_ci_smoke_java_coverage)
+    add_output_args(hub_ci_smoke_java_coverage)
 
     hub_ci_smoke_java_checkstyle = hub_ci_sub.add_parser(
         "smoke-java-checkstyle",
         help="Run Checkstyle and extract violations",
     )
-    hub_ci_smoke_java_checkstyle.add_argument("--path", default="repo", help="Repo path")
-    hub_ci_smoke_java_checkstyle.add_argument("--output", help="Write outputs to file")
-    hub_ci_smoke_java_checkstyle.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_path_args(hub_ci_smoke_java_checkstyle)
+    add_output_args(hub_ci_smoke_java_checkstyle)
 
     hub_ci_smoke_java_spotbugs = hub_ci_sub.add_parser(
         "smoke-java-spotbugs",
         help="Run SpotBugs and extract issues",
     )
-    hub_ci_smoke_java_spotbugs.add_argument("--path", default="repo", help="Repo path")
-    hub_ci_smoke_java_spotbugs.add_argument("--output", help="Write outputs to file")
-    hub_ci_smoke_java_spotbugs.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_path_args(hub_ci_smoke_java_spotbugs)
+    add_output_args(hub_ci_smoke_java_spotbugs)
 
     hub_ci_smoke_python_install = hub_ci_sub.add_parser(
         "smoke-python-install",
         help="Install dependencies for Python smoke tests",
     )
-    hub_ci_smoke_python_install.add_argument("--path", default="repo", help="Repo path")
+    add_path_args(hub_ci_smoke_python_install)
 
     hub_ci_smoke_python_tests = hub_ci_sub.add_parser(
         "smoke-python-tests",
         help="Run Python smoke tests and extract metrics",
     )
-    hub_ci_smoke_python_tests.add_argument("--path", default="repo", help="Repo path")
+    add_path_args(hub_ci_smoke_python_tests)
     hub_ci_smoke_python_tests.add_argument(
         "--output-file",
         default="test-output.txt",
         help="Output file for pytest logs",
     )
-    hub_ci_smoke_python_tests.add_argument("--output", help="Write outputs to file")
-    hub_ci_smoke_python_tests.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_smoke_python_tests)
 
     hub_ci_smoke_python_ruff = hub_ci_sub.add_parser(
         "smoke-python-ruff",
         help="Run Ruff for Python smoke tests",
     )
-    hub_ci_smoke_python_ruff.add_argument("--path", default="repo", help="Repo path")
+    add_path_args(hub_ci_smoke_python_ruff)
     hub_ci_smoke_python_ruff.add_argument(
         "--report",
         default="ruff-report.json",
         help="Output report path (relative to repo)",
     )
-    hub_ci_smoke_python_ruff.add_argument("--output", help="Write outputs to file")
-    hub_ci_smoke_python_ruff.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_smoke_python_ruff)
 
     hub_ci_smoke_python_black = hub_ci_sub.add_parser(
         "smoke-python-black",
         help="Run Black for Python smoke tests",
     )
-    hub_ci_smoke_python_black.add_argument("--path", default="repo", help="Repo path")
+    add_path_args(hub_ci_smoke_python_black)
     hub_ci_smoke_python_black.add_argument(
         "--output-file",
         default="black-output.txt",
         help="Output file for Black logs",
     )
-    hub_ci_smoke_python_black.add_argument("--output", help="Write outputs to file")
-    hub_ci_smoke_python_black.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_smoke_python_black)
 
     hub_ci_release_parse = hub_ci_sub.add_parser(
         "release-parse-tag",
         help="Parse tag ref into version outputs",
     )
     hub_ci_release_parse.add_argument("--ref", help="Tag ref (defaults to GITHUB_REF)")
-    hub_ci_release_parse.add_argument("--output", help="Write outputs to file")
-    hub_ci_release_parse.add_argument(
-        "--github-output",
-        action="store_true",
-        help="Write outputs to GITHUB_OUTPUT",
-    )
+    add_output_args(hub_ci_release_parse)
 
     hub_ci_release_update = hub_ci_sub.add_parser(
         "release-update-tag",
         help="Update floating major tag",
     )
-    hub_ci_release_update.add_argument("--repo", default=".", help="Repo path")
+    add_repo_args(hub_ci_release_update)
     hub_ci_release_update.add_argument("--major", required=True, help="Major tag name (e.g., v1)")
     hub_ci_release_update.add_argument("--version", required=True, help="Release version")
     hub_ci_release_update.add_argument("--remote", default="origin", help="Git remote name")
 
     hub_ci_ruff = hub_ci_sub.add_parser("ruff", help="Run ruff and emit issue count")
-    hub_ci_ruff.add_argument("--path", default=".", help="Path to lint")
+    add_path_args(hub_ci_ruff, default=".", help_text="Path to lint")
     hub_ci_ruff.add_argument("--force-exclude", action="store_true", help="Force ruff exclude rules")
-    hub_ci_ruff.add_argument("--output", help="Write outputs to file")
-    hub_ci_ruff.add_argument("--github-output", action="store_true", help="Write outputs to GITHUB_OUTPUT")
+    add_output_args(hub_ci_ruff)
 
     hub_ci_black = hub_ci_sub.add_parser("black", help="Run black and emit issue count")
-    hub_ci_black.add_argument("--path", default=".", help="Path to check")
-    hub_ci_black.add_argument("--output", help="Write outputs to file")
-    hub_ci_black.add_argument("--github-output", action="store_true", help="Write outputs to GITHUB_OUTPUT")
+    add_path_args(hub_ci_black, default=".", help_text="Path to check")
+    add_output_args(hub_ci_black)
 
     hub_ci_mutmut = hub_ci_sub.add_parser("mutmut", help="Run mutmut and emit summary outputs")
     hub_ci_mutmut.add_argument("--workdir", default=".", help="Workdir to scan")
-    hub_ci_mutmut.add_argument("--output-dir", default=".", help="Directory for mutmut logs")
+    add_output_dir_args(hub_ci_mutmut, help_text="Directory for mutmut logs")
     hub_ci_mutmut.add_argument("--min-score", type=int, default=70, help="Minimum mutation score")
-    hub_ci_mutmut.add_argument("--output", help="Write outputs to file")
-    hub_ci_mutmut.add_argument("--github-output", action="store_true", help="Write outputs to GITHUB_OUTPUT")
-    hub_ci_mutmut.add_argument("--summary", help="Write summary to file")
+    add_output_args(hub_ci_mutmut)
+    add_summary_args(hub_ci_mutmut)
     hub_ci_mutmut.add_argument(
         "--github-summary",
         action="store_true",
@@ -477,7 +386,7 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
         default=False,
         help="Fail if LOW severity issues found (default: false)",
     )
-    hub_ci_bandit.add_argument("--summary", help="Write summary to file")
+    add_summary_args(hub_ci_bandit)
     hub_ci_bandit.add_argument(
         "--github-summary",
         action="store_true",
@@ -492,7 +401,7 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
         help="Requirements files",
     )
     hub_ci_pip_audit.add_argument("--output", default="pip-audit.json", help="pip-audit JSON output path")
-    hub_ci_pip_audit.add_argument("--summary", help="Write summary to file")
+    add_summary_args(hub_ci_pip_audit)
     hub_ci_pip_audit.add_argument(
         "--github-summary",
         action="store_true",
@@ -505,7 +414,7 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
 
     hub_ci_zizmor = hub_ci_sub.add_parser("zizmor-check", help="Check zizmor SARIF for high findings")
     hub_ci_zizmor.add_argument("--sarif", default="zizmor.sarif", help="Path to SARIF file")
-    hub_ci_zizmor.add_argument("--summary", help="Write summary to file")
+    add_summary_args(hub_ci_zizmor)
     hub_ci_zizmor.add_argument(
         "--github-summary",
         action="store_true",
@@ -523,7 +432,7 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
     hub_ci_validate_profiles.add_argument("--profiles-dir", help="Directory containing profiles")
 
     hub_ci_license = hub_ci_sub.add_parser("license-check", help="Run license checks for dependencies")
-    hub_ci_license.add_argument("--summary", help="Write summary to file")
+    add_summary_args(hub_ci_license)
     hub_ci_license.add_argument(
         "--github-summary",
         action="store_true",
@@ -532,7 +441,7 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
 
     hub_ci_gitleaks = hub_ci_sub.add_parser("gitleaks-summary", help="Summarize gitleaks results")
     hub_ci_gitleaks.add_argument("--outcome", help="Gitleaks outcome")
-    hub_ci_gitleaks.add_argument("--summary", help="Write summary to file")
+    add_summary_args(hub_ci_gitleaks)
     hub_ci_gitleaks.add_argument(
         "--github-summary",
         action="store_true",
@@ -587,7 +496,7 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
         default=70,
         help="Minimum coverage percentage (default: 70)",
     )
-    hub_ci_pytest_summary.add_argument("--summary", help="Write summary to file")
+    add_summary_args(hub_ci_pytest_summary)
     hub_ci_pytest_summary.add_argument(
         "--github-summary",
         action="store_true",
@@ -595,7 +504,7 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
     )
 
     hub_ci_summary = hub_ci_sub.add_parser("summary", help="Generate hub CI summary")
-    hub_ci_summary.add_argument("--summary", help="Write summary to file")
+    add_summary_args(hub_ci_summary)
     hub_ci_summary.add_argument(
         "--github-summary",
         action="store_true",
@@ -607,8 +516,7 @@ def add_hub_ci_commands(subparsers, _add_json_flag, handlers: CommandHandlers) -
         "--config",
         help="Config file with hub_ci settings (defaults to config/defaults.yaml)",
     )
-    hub_ci_outputs.add_argument("--output", help="Write outputs to file")
-    hub_ci_outputs.add_argument("--github-output", action="store_true", help="Write outputs to GITHUB_OUTPUT")
+    add_output_args(hub_ci_outputs)
 
     _hub_ci_enforce = hub_ci_sub.add_parser("enforce", help="Fail if critical hub checks failed")  # noqa: F841
 

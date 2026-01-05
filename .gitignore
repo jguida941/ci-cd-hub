@@ -29,6 +29,7 @@ Thumbs.db
 .hypothesis/
 mutants/
 .cihub/
+.tmp/
 
 # Reports (generated)
 reports/*.json
@@ -58,3 +59,6 @@ scripts/ci-report/
 
 # Personal dev notes (local only)
 personal_dev/
+
+# Remediation plans
+QUALITY_GATE_FIXES.md

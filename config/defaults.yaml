@@ -41,6 +41,7 @@ java:
     jacoco:
       enabled: true
       min_coverage: 70  # fail if below this %
+      require_run_or_fail: true  # Tests MUST run if configured
 
     # Code Style
     checkstyle:
@@ -62,6 +63,7 @@ java:
       enabled: true
       fail_on_cvss: 7  # fail if any vuln >= this score
       use_nvd_api_key: true  # use NVD API key for faster scans (requires NVD_API_KEY secret)
+      require_run_or_fail: true  # Security MUST run if configured
 
     # Mutation Testing (expensive - disabled by default)
     pitest:
@@ -69,6 +71,7 @@ java:
       min_mutation_score: 70  # fail if below this %
       threads: 4
       timeout_multiplier: 2
+      require_run_or_fail: false  # Optional - don't fail if it doesn't run
 
     # Property-Based Testing
     jqwik:
@@ -124,6 +127,7 @@ python:
       enabled: true
       min_coverage: 70
       fail_fast: false
+      require_run_or_fail: true  # Tests MUST run if configured
 
     # Linting
     ruff:
@@ -137,11 +141,13 @@ python:
       fail_on_high: true
       fail_on_medium: false
       fail_on_low: false
+      require_run_or_fail: true  # Security MUST run if configured
 
     # Dependency Audit
     pip_audit:
       enabled: true
       fail_on_vuln: true
+      require_run_or_fail: true  # Security MUST run if configured
 
     # Type Checking
     mypy:
@@ -164,6 +170,7 @@ python:
       enabled: true  # Mutation testing - can be slow for large codebases
       min_mutation_score: 70
       timeout_minutes: 15
+      require_run_or_fail: false  # Optional - don't fail if it doesn't run
 
     # Property-Based Testing
     # Note: Hypothesis runs automatically with pytest if tests use @given decorators
@@ -251,10 +258,71 @@ notifications:
 # ------------------------------------------------------------------------------
 thresholds:
   # Build must pass these to be considered "green"
+
+  # Coverage & Mutation
   coverage_min: 70
   mutation_score_min: 70
+
+  # Security Vulnerabilities (vuln counts)
   max_critical_vulns: 0
   max_high_vulns: 0
+  max_pip_audit_vulns: 0
+
+  # CVSS Score Thresholds (fail if any vuln >= threshold)
+  owasp_cvss_fail: 7.0
+  trivy_cvss_fail: 7.0
+
+  # SAST Findings
+  max_semgrep_findings: 0
+
+  # Linting (0 = must be clean)
+  max_ruff_errors: 0
+  max_black_issues: 0
+  max_isort_issues: 0
+
+  # Java Linting/Static Analysis (0 = must be clean)
+  max_checkstyle_errors: 0
+  max_spotbugs_bugs: 0
+  max_pmd_violations: 0
+
+# ------------------------------------------------------------------------------
+# Gate Policies
+# ------------------------------------------------------------------------------
+# Control how configured-but-not-run tools are handled.
+# require_run_or_fail: true → fail CI if tool was configured but didn't run
+# require_run_or_fail: false → warn but don't fail (show NOT RUN)
+gates:
+  # Global default - can be overridden per-tool
+  require_run_or_fail: false
+
+  # Per-tool defaults (override in java.tools.X or python.tools.X)
+  # Tests and security tools default to true - they MUST run if configured
+  tool_defaults:
+    # Tests - must run
+    pytest: true
+    jacoco: true
+    # Security - must run
+    bandit: true
+    pip_audit: true
+    owasp: true
+    trivy: true
+    codeql: true
+    # Quality - must run
+    checkstyle: true
+    spotbugs: true
+    ruff: true
+    # Optional/expensive - don't require
+    mutmut: false
+    pitest: false
+    semgrep: false
+    docker: false
+    sbom: false
+    mypy: false
+    black: false
+    isort: false
+    pmd: false
+    jqwik: false
+    hypothesis: false
 
 # ==============================================================================
 # OPTIONAL FEATURES (all disabled by default)

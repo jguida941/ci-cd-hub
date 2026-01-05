@@ -11,18 +11,16 @@ from pathlib import Path
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS
 from cihub.services.types import RepoEntry
+from cihub.types import CommandResult
+from cihub.utils.github_context import OutputContext
 from cihub.utils.paths import hub_root
 
-from . import (
-    _bool_str,
-    _resolve_output_path,
-    _write_outputs,
-)
+from . import _bool_str
 
 
-def cmd_syntax_check(args: argparse.Namespace) -> int:
+def cmd_syntax_check(args: argparse.Namespace) -> int | CommandResult:
     base = Path(args.root).resolve()
-    errors = 0
+    error_list: list[dict[str, str]] = []
     for path in args.paths:
         target = (base / path).resolve()
         if target.is_file():
@@ -36,26 +34,47 @@ def cmd_syntax_check(args: argparse.Namespace) -> int:
             try:
                 py_compile.compile(str(file_path), doraise=True)
             except py_compile.PyCompileError as exc:
-                errors += 1
-                print(f"::error::{file_path}: {exc.msg}")
+                error_list.append({
+                    "severity": "error",
+                    "message": f"{file_path}: {exc.msg}",
+                    "file": str(file_path),
+                })
 
-    if errors:
-        return EXIT_FAILURE
-    print("\u2713 Python syntax valid")
-    return EXIT_SUCCESS
+    if error_list:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Syntax errors found: {len(error_list)}",
+            problems=[{"severity": "error", "message": e["message"]} for e in error_list],
+            data={"errors": error_list},
+        )
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="✓ Python syntax valid",
+    )
 
 
-def cmd_repo_check(args: argparse.Namespace) -> int:
+def cmd_repo_check(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     present = (repo_path / ".git").exists()
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"present": _bool_str(present)}, output_path)
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"present": _bool_str(present)})
+
+    problems: list[dict[str, str]] = []
     if not present and args.owner and args.name:
-        print(f"::warning::Repo checkout failed for {args.owner}/{args.name}")
-    return EXIT_SUCCESS
+        problems.append({
+            "severity": "warning",
+            "message": f"Repo checkout failed for {args.owner}/{args.name}",
+        })
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Repository present: {present}",
+        problems=problems,
+        data={"present": present, "path": str(repo_path)},
+    )
 
 
-def cmd_source_check(args: argparse.Namespace) -> int:
+def cmd_source_check(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     language = args.language.lower()
     patterns: tuple[str, ...]
@@ -72,21 +91,30 @@ def cmd_source_check(args: argparse.Namespace) -> int:
             has_source = True
             break
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"has_source": _bool_str(has_source)}, output_path)
-    print(f"Source code present: {has_source}")
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"has_source": _bool_str(has_source)})
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Source code present: {has_source}",
+        data={"has_source": has_source, "language": language, "patterns": patterns},
+    )
 
 
-def cmd_docker_compose_check(args: argparse.Namespace) -> int:
+def cmd_docker_compose_check(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     has_docker = (repo_path / "docker-compose.yml").exists() or (repo_path / "docker-compose.yaml").exists()
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"has_docker": _bool_str(has_docker)}, output_path)
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"has_docker": _bool_str(has_docker)})
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Docker compose present: {has_docker}",
+        data={"has_docker": has_docker, "path": str(repo_path)},
+    )
 
 
-def cmd_validate_configs(args: argparse.Namespace) -> int:
+def cmd_validate_configs(args: argparse.Namespace) -> int | CommandResult:
     """Validate all repo configs in config/repos/.
 
     Uses cihub.config.loader (no scripts dependency).
@@ -101,38 +129,55 @@ def cmd_validate_configs(args: argparse.Namespace) -> int:
         repos = [args.repo]
         config_path = configs_dir / f"{args.repo}.yaml"
         if not config_path.exists():
-            print(f"Config not found: {config_path}", file=__import__("sys").stderr)
-            return EXIT_FAILURE
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=f"Config not found: {config_path}",
+                problems=[{"severity": "error", "message": f"Config not found: {config_path}"}],
+            )
     else:
         repos = [path.stem for path in sorted(configs_dir.glob("*.yaml"))]
 
+    validated: list[str] = []
     for repo in repos:
-        print(f"Validating {repo}")
         config = load_config(repo_name=repo, hub_root=root)
         generate_workflow_inputs(config)
+        validated.append(repo)
 
-    print("\u2713 All configs valid")
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"✓ All configs valid ({len(validated)} repos)",
+        data={"validated_repos": validated, "configs_dir": str(configs_dir)},
+    )
 
 
-def cmd_validate_profiles(args: argparse.Namespace) -> int:
-    import sys
-
+def cmd_validate_profiles(args: argparse.Namespace) -> int | CommandResult:
     root = hub_root()
     profiles_dir = Path(args.profiles_dir) if args.profiles_dir else root / "templates" / "profiles"
     try:
         import yaml
     except ImportError as exc:
-        print(f"Missing PyYAML: {exc}", file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Missing PyYAML: {exc}",
+            problems=[{"severity": "error", "message": f"Missing PyYAML: {exc}"}],
+        )
 
+    validated: list[str] = []
     for path in sorted(profiles_dir.glob("*.yaml")):
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
         if not isinstance(data, dict):
-            print(f"{path} not a dict", file=sys.stderr)
-            return EXIT_FAILURE
-        print(f"\u2713 {path.name}")
-    return EXIT_SUCCESS
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=f"Invalid profile: {path}",
+                problems=[{"severity": "error", "message": f"{path} not a dict"}],
+            )
+        validated.append(path.name)
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"✓ All profiles valid ({len(validated)} profiles)",
+        data={"validated_profiles": validated, "profiles_dir": str(profiles_dir)},
+    )
 
 
 def _expected_matrix_keys() -> set[str]:
@@ -161,16 +206,17 @@ def _expected_matrix_keys() -> set[str]:
     return set(entry.to_matrix_entry().keys())
 
 
-def cmd_verify_matrix_keys(args: argparse.Namespace) -> int:
+def cmd_verify_matrix_keys(args: argparse.Namespace) -> int | CommandResult:
     """Verify that all matrix.<key> references in hub-run-all.yml are emitted by cihub discover."""
-    import sys
-
     hub = hub_root()
     wf_path = hub / ".github" / "workflows" / "hub-run-all.yml"
 
     if not wf_path.exists():
-        print(f"ERROR: {wf_path} not found", file=sys.stderr)
-        return 2
+        return CommandResult(
+            exit_code=2,
+            summary=f"Workflow not found: {wf_path}",
+            problems=[{"severity": "error", "message": f"{wf_path} not found"}],
+        )
 
     text = wf_path.read_text(encoding="utf-8")
 
@@ -183,22 +229,26 @@ def cmd_verify_matrix_keys(args: argparse.Namespace) -> int:
     unused = sorted(emitted - referenced)
 
     if missing:
-        print("ERROR: matrix keys referenced but not emitted by builder:")
-        for key in missing:
-            print(f"  - {key}")
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Missing matrix keys: {len(missing)}",
+            problems=[{"severity": "error", "message": f"Matrix key not emitted: {key}"} for key in missing],
+            data={"missing_keys": missing, "unused_keys": unused},
+        )
 
-    print("OK: all referenced matrix keys are emitted by the builder.")
-
+    warnings: list[dict[str, str]] = []
     if unused:
-        print("\nWARN: builder emits keys not referenced as matrix.<key> in this workflow:")
-        for key in unused:
-            print(f"  - {key}")
+        warnings = [{"severity": "warning", "message": f"Unused matrix key: {key}"} for key in unused]
 
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="OK: all referenced matrix keys are emitted by the builder",
+        problems=warnings,
+        data={"referenced_keys": sorted(referenced), "emitted_keys": sorted(emitted), "unused_keys": unused},
+    )
 
 
-def cmd_quarantine_check(args: argparse.Namespace) -> int:
+def cmd_quarantine_check(args: argparse.Namespace) -> int | CommandResult:
     """Fail if any file imports from _quarantine."""
     root = Path(getattr(args, "path", None) or hub_root())
 
@@ -225,7 +275,7 @@ def cmd_quarantine_check(args: argparse.Namespace) -> int:
     if env_excludes:
         exclude_dirs.update(env_excludes.split(","))
 
-    violations: list[tuple[Path, int, str]] = []
+    violations: list[dict[str, str | int]] = []
 
     for path in root.rglob("*.py"):
         if any(excluded in path.parts for excluded in exclude_dirs):
@@ -240,28 +290,29 @@ def cmd_quarantine_check(args: argparse.Namespace) -> int:
         for line_num, line in enumerate(content.splitlines(), start=1):
             for pattern in quarantine_patterns:
                 if re.search(pattern, line):
-                    violations.append((path, line_num, line.strip()))
+                    try:
+                        rel_path = str(path.relative_to(root))
+                    except ValueError:
+                        rel_path = str(path)
+                    violations.append({
+                        "file": rel_path,
+                        "line": line_num,
+                        "content": line.strip(),
+                    })
 
     if not violations:
-        print("Quarantine check PASSED - no imports from _quarantine found")
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="Quarantine check PASSED - no imports from _quarantine found",
+            data={"violations": [], "scanned_root": str(root)},
+        )
 
-    print("=" * 60)
-    print("QUARANTINE IMPORT VIOLATION")
-    print("=" * 60)
-    print("\nFiles importing from _quarantine detected!")
-    print("_quarantine is COLD STORAGE - it must not be imported.\n")
-    print("Violations:")
-    print("-" * 60)
-
-    for path, line_num, line in violations:
-        try:
-            rel_path = path.relative_to(root)
-        except ValueError:
-            rel_path = path
-        print(f"  {rel_path}:{line_num}")
-        print(f"    {line}\n")
-
-    print("-" * 60)
-    print(f"Total: {len(violations)} violation(s)")
-    return EXIT_FAILURE
+    return CommandResult(
+        exit_code=EXIT_FAILURE,
+        summary=f"QUARANTINE IMPORT VIOLATION: {len(violations)} violation(s)",
+        problems=[
+            {"severity": "error", "message": f"{v['file']}:{v['line']}: {v['content']}"}
+            for v in violations
+        ],
+        data={"violations": violations, "scanned_root": str(root)},
+    )

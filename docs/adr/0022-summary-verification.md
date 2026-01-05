@@ -1,9 +1,15 @@
 # ADR-0022: Summary Verification Against Reports
 
-**Status**: Accepted  
-**Date:** 2025-12-24  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-24
+**Developer:** Justin Guida
+**Last Reviewed:** 2026-01-05
+
+**Implementation Update (2026-01-05):**
+- ✅ Contract tests implemented (`tests/test_contract_consistency.py`)
+- ✅ Self-validation in `cihub ci` catches summary/report drift automatically
+- ✅ GateSpec registry ensures gates.py and reporting.py use identical definitions
+- ✅ 8 contract tests verify Python/Java gates match summary rendering  
 
 ## Context
 
@@ -60,6 +66,35 @@ python scripts/validate_summary.py \
 
 - Consider extending summary capture to reusable workflows if summary validation is needed there.
 
+## Contract Tests (Added 2026-01-05)
+
+`tests/test_contract_consistency.py` ensures gates.py decisions match reporting.py rendering:
+
+```python
+# Tests verify both layers agree on:
+# - tests_total == 0 → both show failure/NOT RUN
+# - Tests pass → both show pass
+# - Tests fail → both show failure
+# - Tool not run → shows NOT RUN
+# - Security vulns → both show failure
+```
+
+**Test Coverage:**
+
+| Test | Verifies |
+|------|----------|
+| `test_python_zero_tests_both_fail` | gates.py fails, summary shows NOT RUN |
+| `test_python_tests_pass_both_pass` | gates.py passes, summary shows Passed |
+| `test_python_tests_fail_both_fail` | gates.py fails, summary shows Failed |
+| `test_python_tool_not_run` | Summary shows NOT RUN for unconfigured tools |
+| `test_java_zero_tests_both_fail` | Java gates/summary consistency |
+| `test_java_tests_pass_both_pass` | Java gates/summary consistency |
+| `test_java_tests_fail_both_fail` | Java gates/summary consistency |
+| `test_java_owasp_vulns_both_fail` | Security gates/summary consistency |
+
 ## Related
 
 - ADR-0021: Java POM Compatibility and CLI Enforcement
+- ADR-0006: Quality Gates and Thresholds (gate definitions)
+- ADR-0019: Report Validation Policy (validation modes)
+- ADR-0038: GateSpec Registry (single source of truth)

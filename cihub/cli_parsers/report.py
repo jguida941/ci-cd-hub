@@ -5,6 +5,11 @@ from __future__ import annotations
 import argparse
 from typing import Callable
 
+from cihub.cli_parsers.common import (
+    add_repo_args,
+    add_report_args,
+    add_summary_args,
+)
 from cihub.cli_parsers.types import CommandHandlers
 
 
@@ -20,7 +25,7 @@ def add_report_commands(
 
     report_build = report_sub.add_parser("build", help="Build report.json from tool outputs")
     add_json_flag(report_build)
-    report_build.add_argument("--repo", default=".", help="Path to repo (default: .)")
+    add_repo_args(report_build)
     report_build.add_argument("--workdir", help="Override workdir/subdir")
     report_build.add_argument("--correlation-id", help="Hub correlation id")
     report_build.add_argument(
@@ -32,13 +37,13 @@ def add_report_commands(
         "--tool-dir",
         help="Directory containing tool output JSON files",
     )
-    report_build.add_argument("--report", help="Override report.json path")
-    report_build.add_argument("--summary", help="Override summary.md path")
+    add_report_args(report_build, help_text="Override report.json path")
+    add_summary_args(report_build, summary_help="Override summary.md path")
     report_build.set_defaults(func=handlers.cmd_report)
 
     report_summary = report_sub.add_parser("summary", help="Render summary from report.json")
     add_json_flag(report_summary)
-    report_summary.add_argument("--report", required=True, help="Path to report.json")
+    add_report_args(report_summary, required=True)
     report_summary.add_argument("--output", help="Output summary.md path")
     report_summary.add_argument(
         "--write-github-summary",
@@ -49,7 +54,7 @@ def add_report_commands(
 
     report_outputs = report_sub.add_parser("outputs", help="Write workflow outputs from report.json")
     add_json_flag(report_outputs)
-    report_outputs.add_argument("--report", required=True, help="Path to report.json")
+    add_report_args(report_outputs, required=True)
     report_outputs.add_argument("--output", help="Path to write outputs (defaults to GITHUB_OUTPUT)")
     report_outputs.set_defaults(func=handlers.cmd_report)
 
@@ -115,7 +120,7 @@ def add_report_commands(
 
     report_validate = report_sub.add_parser("validate", help="Validate report.json structure and content")
     add_json_flag(report_validate)
-    report_validate.add_argument("--report", required=True, help="Path to report.json")
+    add_report_args(report_validate, required=True)
     report_validate.add_argument(
         "--expect",
         choices=["clean", "issues"],
@@ -138,12 +143,17 @@ def add_report_commands(
         action="store_true",
         help="Show all checks (including passed ones)",
     )
-    report_validate.add_argument("--summary", help="Path to summary.md for cross-checking")
+    add_summary_args(report_validate, summary_help="Path to summary.md for cross-checking")
     report_validate.add_argument("--reports-dir", help="Directory containing tool artifacts")
     report_validate.add_argument(
         "--debug",
         action="store_true",
         help="Show debug output for validation",
+    )
+    report_validate.add_argument(
+        "--schema",
+        action="store_true",
+        help="Validate against JSON schema (ci-report.v2.json)",
     )
     report_validate.set_defaults(func=handlers.cmd_report)
 
@@ -195,7 +205,7 @@ def add_report_commands(
     report_security_summary.add_argument("--has-docker", default="false", help="Docker Compose present")
     report_security_summary.add_argument("--repo-count", type=int, default=0, help="Total repos scanned")
     report_security_summary.add_argument("--run-number", type=int, default=0, help="Run number")
-    report_security_summary.add_argument("--summary", help="Write summary to file")
+    add_summary_args(report_security_summary)
     report_security_summary.add_argument(
         "--write-github-summary",
         action=argparse.BooleanOptionalAction,
@@ -229,7 +239,7 @@ def add_report_commands(
     report_smoke_summary.add_argument("--run-number", type=int, default=0, help="Run number")
     report_smoke_summary.add_argument("--event-name", default="", help="Trigger event")
     report_smoke_summary.add_argument("--test-result", default="success", help="Matrix job result")
-    report_smoke_summary.add_argument("--summary", help="Write summary to file")
+    add_summary_args(report_smoke_summary)
     report_smoke_summary.add_argument(
         "--write-github-summary",
         action=argparse.BooleanOptionalAction,
@@ -248,7 +258,7 @@ def add_report_commands(
         default="# Kyverno Policy Validation",
         help="Summary title",
     )
-    report_kyverno_summary.add_argument("--summary", help="Write summary to file")
+    add_summary_args(report_kyverno_summary)
     report_kyverno_summary.add_argument(
         "--write-github-summary",
         action=argparse.BooleanOptionalAction,
@@ -272,7 +282,7 @@ def add_report_commands(
     report_orchestrator_summary.add_argument("--workflow-id", default="", help="Workflow ID")
     report_orchestrator_summary.add_argument("--run-id", default="", help="Run ID")
     report_orchestrator_summary.add_argument("--status", default="Triggered", help="Run status")
-    report_orchestrator_summary.add_argument("--summary", help="Write summary to file")
+    add_summary_args(report_orchestrator_summary)
     report_orchestrator_summary.add_argument(
         "--write-github-summary",
         action=argparse.BooleanOptionalAction,

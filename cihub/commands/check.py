@@ -313,7 +313,7 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
                 for suggestion in getattr(outcome, "suggestions", []) or []:
                     msg = suggestion.get("message", "")
                     if msg:
-                        print(f"  💡 {msg}")
+                        print(f"  * {msg}")
 
     # ========== FAST MODE (always runs) ==========
     preflight_args = argparse.Namespace(json=True, full=True)
@@ -325,7 +325,16 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
         "ruff-format",
         _run_process("ruff-format", ["ruff", "format", "--check", "."], root),
     )
-    # Note: Black removed - using Ruff format only (faster, single formatter)
+
+    # Black and isort for CI parity (optional but run if available)
+    add_step(
+        "black",
+        _run_process("black", ["black", "--check", "."], root),
+    )
+    add_step(
+        "isort",
+        _run_process("isort", ["isort", "--check-only", "."], root),
+    )
 
     # Type check
     add_step(
@@ -393,7 +402,7 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
             "validate-configs",
             _run_process(
                 "validate-configs",
-                ["python", "-m", "cihub", "hub-ci", "validate-configs"],
+                [sys.executable, "-m", "cihub", "hub-ci", "validate-configs"],
                 root,
             ),
         )
@@ -401,10 +410,22 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
             "validate-profiles",
             _run_process(
                 "validate-profiles",
-                ["python", "-m", "cihub", "hub-ci", "validate-profiles"],
+                [sys.executable, "-m", "cihub", "hub-ci", "validate-profiles"],
                 root,
             ),
         )
+
+        # Report validation (Issue 10: enforce report consistency)
+        report_path = root / ".cihub" / "report.json"
+        if report_path.exists():
+            add_step(
+                "report-validate",
+                _run_process(
+                    "report-validate",
+                    [sys.executable, "-m", "cihub", "report", "validate", "--report", str(report_path), "--strict"],
+                    root,
+                ),
+            )
 
     # ========== SECURITY MODE (--security or --all) ==========
     if run_security:
@@ -500,7 +521,7 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
             "license-check",
             _run_process(
                 "license-check",
-                ["python", "-m", "cihub", "hub-ci", "license-check"],
+                [sys.executable, "-m", "cihub", "hub-ci", "license-check"],
                 root,
             ),
         )
@@ -533,7 +554,7 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
             "mutmut",
             _run_process(
                 "mutmut",
-                ["python", "-m", "cihub", "hub-ci", "mutmut", "--min-score", "70"],
+                [sys.executable, "-m", "cihub", "hub-ci", "mutmut", "--min-score", "70"],
                 root,
             ),
         )

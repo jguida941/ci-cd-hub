@@ -227,21 +227,20 @@ class TestSafeUrlopen:
             safe_urlopen(req, timeout=10)
             mock_urlopen.assert_called_once()
 
-    def test_http_url_blocked(self) -> None:
-        """HTTP URLs are blocked."""
-        req = urllib.request.Request("http://api.github.com/user")
-        with pytest.raises(ValueError, match="Unsupported URL scheme"):
-            safe_urlopen(req, timeout=10)
-
-    def test_ftp_url_blocked(self) -> None:
-        """FTP URLs are blocked."""
-        req = urllib.request.Request("ftp://files.example.com/file.txt")  # noqa: S310
-        with pytest.raises(ValueError, match="Unsupported URL scheme"):
-            safe_urlopen(req, timeout=10)
-
-    def test_file_url_blocked(self) -> None:
-        """File URLs are blocked."""
-        req = urllib.request.Request("file:///etc/passwd")  # noqa: S310
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "http://api.github.com/user",
+            "ftp://files.example.com/file.txt",
+            "file:///etc/passwd",
+            "javascript:alert(1)",
+            "data:text/html,<script>alert(1)</script>",
+        ],
+        ids=["http", "ftp", "file", "javascript", "data"],
+    )
+    def test_unsafe_url_schemes_blocked(self, url: str) -> None:
+        """Property: non-HTTPS URL schemes are blocked."""
+        req = urllib.request.Request(url)  # noqa: S310
         with pytest.raises(ValueError, match="Unsupported URL scheme"):
             safe_urlopen(req, timeout=10)
 
@@ -259,10 +258,19 @@ class TestGetGitRemote:
         # Patch where the function is imported, not where it's defined
         with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
+            git_marker = tmp_path / ".git"
+            original_exists = Path.exists
+
+            def fake_exists(self: Path) -> bool:
+                if self == git_marker:
+                    return True
+                return original_exists(self)
+
             with mock.patch("subprocess.check_output") as mock_check:
                 # check_output returns the output directly as a string
                 mock_check.return_value = "https://github.com/owner/repo.git\n"
-                result = get_git_remote(tmp_path)
+                with mock.patch.object(Path, "exists", fake_exists):
+                    result = get_git_remote(tmp_path)
                 assert result == "https://github.com/owner/repo.git"
                 assert mock_validate.called
                 assert mock_check.called
@@ -271,18 +279,36 @@ class TestGetGitRemote:
         """Returns None when subprocess fails."""
         with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
+            git_marker = tmp_path / ".git"
+            original_exists = Path.exists
+
+            def fake_exists(self: Path) -> bool:
+                if self == git_marker:
+                    return True
+                return original_exists(self)
+
             with mock.patch("subprocess.check_output") as mock_check:
                 mock_check.side_effect = FileNotFoundError()
-                result = get_git_remote(tmp_path)
+                with mock.patch.object(Path, "exists", fake_exists):
+                    result = get_git_remote(tmp_path)
                 assert result is None
 
     def test_returns_none_on_called_process_error(self, tmp_path: Path) -> None:
         """Returns None when git command returns non-zero."""
         with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
+            git_marker = tmp_path / ".git"
+            original_exists = Path.exists
+
+            def fake_exists(self: Path) -> bool:
+                if self == git_marker:
+                    return True
+                return original_exists(self)
+
             with mock.patch("subprocess.check_output") as mock_check:
                 mock_check.side_effect = subprocess.CalledProcessError(1, "git")
-                result = get_git_remote(tmp_path)
+                with mock.patch.object(Path, "exists", fake_exists):
+                    result = get_git_remote(tmp_path)
                 assert result is None
 
     def test_returns_none_on_value_error(self, tmp_path: Path) -> None:
@@ -297,18 +323,36 @@ class TestGetGitRemote:
         """Strips trailing whitespace from output."""
         with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
+            git_marker = tmp_path / ".git"
+            original_exists = Path.exists
+
+            def fake_exists(self: Path) -> bool:
+                if self == git_marker:
+                    return True
+                return original_exists(self)
+
             with mock.patch("subprocess.check_output") as mock_check:
                 mock_check.return_value = "  https://github.com/owner/repo.git  \n"
-                result = get_git_remote(tmp_path)
+                with mock.patch.object(Path, "exists", fake_exists):
+                    result = get_git_remote(tmp_path)
                 assert result == "https://github.com/owner/repo.git"
 
     def test_returns_none_for_empty_output(self, tmp_path: Path) -> None:
         """Returns None when git returns empty output."""
         with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
+            git_marker = tmp_path / ".git"
+            original_exists = Path.exists
+
+            def fake_exists(self: Path) -> bool:
+                if self == git_marker:
+                    return True
+                return original_exists(self)
+
             with mock.patch("subprocess.check_output") as mock_check:
                 mock_check.return_value = "   \n"
-                result = get_git_remote(tmp_path)
+                with mock.patch.object(Path, "exists", fake_exists):
+                    result = get_git_remote(tmp_path)
                 assert result is None
 
 
@@ -319,9 +363,18 @@ class TestGetGitBranch:
         """Returns current branch name on success."""
         with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
+            git_marker = tmp_path / ".git"
+            original_exists = Path.exists
+
+            def fake_exists(self: Path) -> bool:
+                if self == git_marker:
+                    return True
+                return original_exists(self)
+
             with mock.patch("subprocess.check_output") as mock_check:
                 mock_check.return_value = "main\n"
-                result = get_git_branch(tmp_path)
+                with mock.patch.object(Path, "exists", fake_exists):
+                    result = get_git_branch(tmp_path)
                 assert result == "main"
                 assert mock_validate.called
                 assert mock_check.called
@@ -330,27 +383,54 @@ class TestGetGitBranch:
         """Returns None when subprocess fails."""
         with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
+            git_marker = tmp_path / ".git"
+            original_exists = Path.exists
+
+            def fake_exists(self: Path) -> bool:
+                if self == git_marker:
+                    return True
+                return original_exists(self)
+
             with mock.patch("subprocess.check_output") as mock_check:
                 mock_check.side_effect = FileNotFoundError()
-                result = get_git_branch(tmp_path)
+                with mock.patch.object(Path, "exists", fake_exists):
+                    result = get_git_branch(tmp_path)
                 assert result is None
 
     def test_returns_none_on_called_process_error(self, tmp_path: Path) -> None:
         """Returns None when git command returns non-zero."""
         with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
+            git_marker = tmp_path / ".git"
+            original_exists = Path.exists
+
+            def fake_exists(self: Path) -> bool:
+                if self == git_marker:
+                    return True
+                return original_exists(self)
+
             with mock.patch("subprocess.check_output") as mock_check:
                 mock_check.side_effect = subprocess.CalledProcessError(1, "git")
-                result = get_git_branch(tmp_path)
+                with mock.patch.object(Path, "exists", fake_exists):
+                    result = get_git_branch(tmp_path)
                 assert result is None
 
     def test_feature_branch_name(self, tmp_path: Path) -> None:
         """Returns feature branch names correctly."""
         with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
+            git_marker = tmp_path / ".git"
+            original_exists = Path.exists
+
+            def fake_exists(self: Path) -> bool:
+                if self == git_marker:
+                    return True
+                return original_exists(self)
+
             with mock.patch("subprocess.check_output") as mock_check:
                 mock_check.return_value = "feature/add-new-feature\n"
-                result = get_git_branch(tmp_path)
+                with mock.patch.object(Path, "exists", fake_exists):
+                    result = get_git_branch(tmp_path)
                 assert result == "feature/add-new-feature"
 
 
@@ -408,16 +488,15 @@ class TestCommandResult:
 class TestMainFunction:
     """Tests for main() function (lines 1335-1389)."""
 
-    def test_main_with_help_flag(self):
-        """Main exits with help flag."""
+    @pytest.mark.parametrize(
+        "flag",
+        ["--help", "--version"],
+        ids=["help", "version"],
+    )
+    def test_main_with_info_flags_exits_zero(self, flag: str):
+        """Property: --help and --version exit with code 0."""
         with pytest.raises(SystemExit) as exc_info:
-            main(["--help"])
-        assert exc_info.value.code == 0
-
-    def test_main_with_version_flag(self):
-        """Main exits with version flag."""
-        with pytest.raises(SystemExit) as exc_info:
-            main(["--version"])
+            main([flag])
         assert exc_info.value.code == 0
 
     def test_main_no_command_shows_help(self, capsys):
@@ -425,38 +504,44 @@ class TestMainFunction:
         with pytest.raises(SystemExit):
             main([])
 
-    def test_main_json_output_on_success(self, capsys):
-        """Main outputs JSON when --json flag is used with successful command."""
-        # Mock cmd_config which handles all config subcommands
+    @pytest.mark.parametrize(
+        "exit_code,expected_status",
+        [
+            (0, "success"),
+            (1, "failure"),
+            (2, "failure"),
+        ],
+        ids=["success", "failure_1", "failure_2"],
+    )
+    def test_main_json_output_status(self, capsys, exit_code: int, expected_status: str):
+        """Property: JSON output status matches exit code."""
         with mock.patch("cihub.cli.cmd_config") as mock_cmd:
             mock_cmd.return_value = CommandResult(
-                exit_code=0,
-                summary="Config shown",
+                exit_code=exit_code,
+                summary="Test result",
             )
             result = main(["config", "--repo", "test", "show", "--json"])
 
-        assert result == 0
+        assert result == exit_code
         captured = capsys.readouterr()
         output = json.loads(captured.out)
-        assert output["status"] == "success"
-        assert output["exit_code"] == 0
+        assert output["status"] == expected_status
+        assert output["exit_code"] == exit_code
 
-    def test_main_json_output_on_failure(self, capsys):
-        """Main outputs JSON when --json flag is used with failed command."""
+    def test_main_json_output_includes_problems(self, capsys):
+        """Main JSON output includes problems list."""
         with mock.patch("cihub.cli.cmd_config") as mock_cmd:
             mock_cmd.return_value = CommandResult(
                 exit_code=1,
                 summary="Config not found",
                 problems=[{"message": "File not found", "severity": "error"}],
             )
-            result = main(["config", "--repo", "nonexistent", "show", "--json"])
+            main(["config", "--repo", "nonexistent", "show", "--json"])
 
-        assert result == 1
         captured = capsys.readouterr()
         output = json.loads(captured.out)
-        assert output["status"] == "failure"
-        assert output["exit_code"] == 1
         assert len(output["problems"]) == 1
+        assert output["problems"][0]["message"] == "File not found"
 
     def test_main_json_output_on_exception(self, capsys):
         """Main outputs JSON error on unhandled exception."""

@@ -11,6 +11,7 @@ from cihub.reporting import (
     build_environment_table,
     build_java_metrics,
     build_python_metrics,
+    build_quality_gates,
     build_thresholds_table,
     build_tools_table,
     detect_language,
@@ -159,6 +160,48 @@ class TestBuildToolsTable:
         assert "maven" in "".join(lines)
         assert "| JaCoCo Coverage |" in "".join(lines)
 
+    def test_build_status_shows_true_when_build_ran(self) -> None:
+        """Issue 11: Build row should reflect actual build status from report."""
+        report = {
+            "tools_ran": {"build": True},
+            "tools_success": {"build": True},
+            "results": {"build": "success"},
+            "environment": {"build_tool": "gradle"},
+        }
+        lines = list(build_tools_table(report, "java"))
+        output = "".join(lines)
+
+        # Build row should show true for Configured, Ran, and Success
+        assert "| gradle | true | true | true |" in output
+
+    def test_build_status_shows_false_when_build_not_ran(self) -> None:
+        """Issue 11: Build row should show false when build didn't run."""
+        report = {
+            "tools_ran": {},
+            "tools_success": {},
+            "results": {},  # No build status means build didn't run
+            "environment": {"build_tool": "maven"},
+        }
+        lines = list(build_tools_table(report, "java"))
+        output = "".join(lines)
+
+        # Build row should show false for Configured, Ran, and Success
+        assert "| maven | false | false | false |" in output
+
+    def test_build_status_shows_failure_correctly(self) -> None:
+        """Issue 11: Build row should show failure when build failed."""
+        report = {
+            "tools_ran": {"build": True},
+            "tools_success": {"build": False},
+            "results": {"build": "failure"},
+            "environment": {"build_tool": "maven"},
+        }
+        lines = list(build_tools_table(report, "java"))
+        output = "".join(lines)
+
+        # Build ran but failed
+        assert "| maven | true | true | false |" in output
+
 
 class TestBuildThresholdsTable:
     """Tests for build_thresholds_table function."""
@@ -304,6 +347,126 @@ class TestBuildJavaMetrics:
         assert "53 executed" in table_text
         assert "900 / 1000 lines covered" in table_text
         assert "0 crit, 2 high, 5 med" in table_text
+
+
+class TestBuildQualityGates:
+    """Tests for build_quality_gates function."""
+
+    def test_java_marks_configured_but_not_run_tools_as_not_run(self) -> None:
+        report = {
+            "results": {
+                "tests_passed": 0,
+                "tests_failed": 0,
+                "tests_skipped": 0,
+                "coverage": 0,
+                "mutation_score": 0,
+            },
+            "tool_metrics": {
+                "owasp_critical": 0,
+                "owasp_high": 0,
+                "semgrep_findings": 0,
+                "trivy_critical": 0,
+                "trivy_high": 0,
+                "docker_missing_compose": False,
+            },
+            "thresholds": {
+                "coverage_min": 50,
+                "mutation_score_min": 0,
+                "max_critical_vulns": 100,
+                "max_high_vulns": 100,
+            },
+            "tools_configured": {
+                "jacoco": True,
+                "pitest": True,
+                "owasp": True,
+                "codeql": True,
+                "docker": True,
+                "sbom": True,
+            },
+            "tools_ran": {
+                "jacoco": False,
+                "pitest": False,
+                "owasp": False,
+                "codeql": False,
+                "docker": False,
+                "sbom": False,
+            },
+            "tools_success": {},
+        }
+        table_text = "".join(build_quality_gates(report, "java"))
+
+        # All NOT RUN statuses now have emoji indicators (⚠️ for soft-skip, ⛔ for hard-fail)
+        assert "| Unit Tests | ⚠️ NOT RUN |" in table_text
+        assert "JaCoCo Coverage |" in table_text and "NOT RUN" in table_text
+        assert "PITest Mutation |" in table_text and "NOT RUN" in table_text
+        assert "OWASP Check |" in table_text and "NOT RUN" in table_text
+        assert "CodeQL |" in table_text and "NOT RUN" in table_text
+        assert "Docker |" in table_text and "NOT RUN" in table_text
+        assert "SBOM |" in table_text and "NOT RUN" in table_text
+
+    def test_python_includes_trivy_codeql_docker_sbom_rows(self) -> None:
+        report = {
+            "results": {
+                "tests_passed": 1,
+                "tests_failed": 0,
+                "tests_skipped": 0,
+                "mutation_score": 0,
+            },
+            "tool_metrics": {"docker_missing_compose": False},
+            "thresholds": {
+                "mutation_score_min": 0,
+                "max_critical_vulns": 0,
+                "max_high_vulns": 0,
+            },
+            "tools_configured": {
+                "pytest": True,
+                "mutmut": True,
+                "trivy": False,
+                "codeql": False,
+                "docker": False,
+                "sbom": False,
+            },
+            "tools_ran": {"pytest": True, "mutmut": False},
+            "tools_success": {},
+        }
+        table_text = "".join(build_quality_gates(report, "python"))
+
+        # NOT RUN now has emoji prefix (⚠️ for soft-skip)
+        assert "mutmut |" in table_text and "NOT RUN" in table_text
+        # SKIP is plain text (no emoji)
+        assert "| Trivy | SKIP |" in table_text
+        assert "| CodeQL | SKIP |" in table_text
+        assert "| Docker | SKIP |" in table_text
+        assert "| SBOM | SKIP |" in table_text
+
+    def test_not_run_annotates_hard_fail_vs_soft_skip(self) -> None:
+        """Tests Issue 21: NOT RUN shows X for hard-fail tools, warning for soft-skip."""
+        report = {
+            "results": {"tests_passed": 0, "tests_failed": 0, "tests_skipped": 0},
+            "tool_metrics": {},
+            "thresholds": {},
+            "tools_configured": {
+                "pytest": True,  # require_run=True -> hard-fail
+                "bandit": True,  # require_run=True -> hard-fail
+                "mutmut": True,  # require_run=False -> soft-skip
+            },
+            "tools_ran": {"pytest": False, "bandit": False, "mutmut": False},
+            "tools_success": {},
+            "tools_require_run": {
+                "pytest": True,  # Hard-fail: configured but didn't run
+                "bandit": True,  # Hard-fail
+                "mutmut": False,  # Soft-skip: just a warning
+            },
+        }
+        table_text = "".join(build_quality_gates(report, "python"))
+
+        # Hard-fail tools should show X icon
+        assert "| pytest | ❌ NOT RUN |" in table_text
+        assert "| Bandit | ❌ NOT RUN |" in table_text
+        # Soft-skip tools should show warning NOT RUN
+        assert "| mutmut | ⚠️ NOT RUN |" in table_text
+        # Make sure we don't have the hard-fail icon on soft-skip
+        assert "mutmut | ❌ NOT RUN" not in table_text
 
 
 class TestRenderSummaryFromPath:

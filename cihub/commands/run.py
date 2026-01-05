@@ -20,6 +20,7 @@ from cihub.ci_runner import (
     run_semgrep,
     run_trivy,
 )
+from cihub.config import tool_enabled as _tool_enabled_canonical
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.types import CommandResult
 from cihub.utils.paths import validate_subdir
@@ -40,14 +41,8 @@ RUNNERS: dict[str, Callable[..., ToolResult]] = {
 
 
 def _tool_enabled(config: dict[str, Any], tool: str) -> bool:
-    python_block = config.get("python", {})
-    tools = python_block.get("tools", {}) if isinstance(python_block, dict) else {}
-    entry = tools.get(tool, {}) if isinstance(tools, dict) else {}
-    if isinstance(entry, bool):
-        return entry
-    if isinstance(entry, dict):
-        return bool(entry.get("enabled", False))
-    return False
+    """Check if a Python tool is enabled. Delegates to canonical cihub.config.tool_enabled."""
+    return _tool_enabled_canonical(config, tool, "python")
 
 
 def cmd_run(args: argparse.Namespace) -> int | CommandResult:

@@ -155,7 +155,7 @@ hub-release/
 │   │   ├── status/        # STATUS.md - current state
 │   │   ├── specs/         # REQUIREMENTS.md - consolidated requirements
 │   │   ├── research/      # Historical research log
-│   │   ├── architecture/  # ARCH_OVERVIEW, SUMMARY_CONTRACT
+│   │   ├── architecture/  # ARCH_OVERVIEW and other design docs
 │   │   └── archive/       # Old/superseded docs
 │   └── adr/               # Architecture Decision Records
 ├── schema/
@@ -202,7 +202,7 @@ hub-release/
 | File | What It Is |
 |------|------------|
 | [ARCH_OVERVIEW.md](architecture/ARCH_OVERVIEW.md) | System design with diagrams |
-| [SUMMARY_CONTRACT.md](architecture/SUMMARY_CONTRACT.md) | Report schema, workflow outputs |
+| [ci-report.v2.json](../../schema/ci-report.v2.json) | Report JSON schema contract (source of truth) |
 | [docs/adr/](../adr/) | Architecture Decision Records |
 
 ### Reference

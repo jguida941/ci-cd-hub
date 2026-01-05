@@ -32,6 +32,7 @@ EXPECTED_JSON_PATHS = {
     "fix-deps",
     "fix-pom",
     "init",
+    "hub-ci",
     "new",
     "preflight",
     "report",

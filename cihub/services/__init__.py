@@ -30,12 +30,21 @@ from cihub.services.report_summary import (
 from cihub.services.report_validator import (
     ValidationResult,
     ValidationRules,
+    validate_against_schema,
     validate_report,
     validate_report_file,
 )
 from cihub.services.triage_service import (
+    MultiTriageResult,
+    ToolEvidence,
+    ToolStatus,
     TriageBundle,
+    aggregate_triage_bundles,
+    build_tool_evidence,
+    detect_flaky_patterns,
+    detect_test_count_regression,
     generate_triage_bundle,
+    validate_artifact_evidence,
     write_triage_bundle,
 )
 from cihub.services.types import RepoEntry, ServiceResult
@@ -63,6 +72,7 @@ __all__ = [
     # Validation
     "ValidationRules",
     "ValidationResult",
+    "validate_against_schema",
     "validate_report",
     "validate_report_file",
     # Summary
@@ -74,7 +84,15 @@ __all__ = [
     "aggregate_from_dispatch",
     "aggregate_from_reports_dir",
     # Triage
+    "MultiTriageResult",
+    "ToolEvidence",
+    "ToolStatus",
     "TriageBundle",
+    "aggregate_triage_bundles",
+    "build_tool_evidence",
+    "detect_flaky_patterns",
+    "detect_test_count_regression",
     "generate_triage_bundle",
+    "validate_artifact_evidence",
     "write_triage_bundle",
 ]

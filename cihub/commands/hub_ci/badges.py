@@ -4,26 +4,25 @@ from __future__ import annotations
 
 import argparse
 import shutil
-import subprocess
-import sys
 import tempfile
 from pathlib import Path
 
 from cihub import badges as badge_tools
-from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.types import CommandResult
+from cihub.utils.github_context import OutputContext
 from cihub.utils.paths import hub_root
 
 from . import (
     _bool_str,
     _compare_badges,
     _load_config,
-    _resolve_output_path,
     _run_command,
-    _write_outputs,
+    result_fail,
+    result_ok,
 )
 
 
-def cmd_badges(args: argparse.Namespace) -> int:
+def cmd_badges(args: argparse.Namespace) -> CommandResult:
     import os
 
     root = hub_root()
@@ -31,8 +30,7 @@ def cmd_badges(args: argparse.Namespace) -> int:
     config = _load_config(config_path)
     badges_cfg = config.get("reports", {}).get("badges", {}) or {}
     if badges_cfg.get("enabled") is False:
-        print("Badges disabled via reports.badges.enabled")
-        return EXIT_SUCCESS
+        return result_ok("Badges disabled via reports.badges.enabled")
     tools_cfg = config.get("hub_ci", {}).get("tools", {}) if isinstance(config.get("hub_ci"), dict) else {}
 
     def tool_enabled(name: str, default: bool = True) -> bool:
@@ -82,78 +80,92 @@ def cmd_badges(args: argparse.Namespace) -> int:
     if args.check:
         with tempfile.TemporaryDirectory(prefix="cihub-badges-") as tmpdir:
             env["BADGE_OUTPUT_DIR"] = tmpdir
-            result = badge_tools.main(env=env, root=root, disabled_tools=disabled_tools)
-            if result != 0:
-                return EXIT_FAILURE
+            gen_result = badge_tools.main(env=env, root=root, disabled_tools=disabled_tools)
+            if gen_result != 0:
+                return result_fail("Badge generation failed")
             issues = _compare_badges(root / "badges", Path(tmpdir))
             if issues:
-                print("Badge drift detected:")
-                for issue in issues:
-                    print(f"- {issue}")
-                return EXIT_FAILURE
-            print("Badges are up to date.")
-            return EXIT_SUCCESS
+                problems = [{"severity": "error", "message": issue} for issue in issues]
+                return result_fail(
+                    "Badge drift detected",
+                    problems=problems,
+                    data={"drift_issues": issues},
+                )
+            return result_ok("Badges are up to date")
 
-    result = badge_tools.main(env=env, root=root, disabled_tools=disabled_tools)
-    if result != 0:
-        return EXIT_FAILURE
-    return EXIT_SUCCESS
+    gen_result = badge_tools.main(env=env, root=root, disabled_tools=disabled_tools)
+    if gen_result != 0:
+        return result_fail("Badge generation failed")
+    return result_ok(
+        "Badges updated successfully",
+        data={"disabled_tools": list(disabled_tools)},
+    )
 
 
-def cmd_badges_commit(_: argparse.Namespace) -> int:
+def cmd_badges_commit(_: argparse.Namespace) -> CommandResult:
     root = hub_root()
-    message = "chore: update CI badges [skip ci]"
+    commit_message = "chore: update CI badges [skip ci]"
 
-    def run_git(args: list[str]) -> "subprocess.CompletedProcess[str]":
-        return _run_command(["git", *args], root)
+    def run_git(git_args: list[str]) -> dict[str, str | int | bool]:
+        proc = _run_command(["git", *git_args], root)
+        return {
+            "stdout": proc.stdout or "",
+            "stderr": proc.stderr or "",
+            "returncode": proc.returncode,
+            "success": proc.returncode == 0,
+        }
 
+    # Configure git user
     config_steps = (
         ["config", "user.name", "github-actions[bot]"],
         ["config", "user.email", "github-actions[bot]@users.noreply.github.com"],
     )
     for config_args in config_steps:
-        proc = run_git(config_args)
-        if proc.returncode != 0:
-            message = (proc.stdout or proc.stderr or "").strip()
-            if message:
-                print(message, file=sys.stderr)
-            return EXIT_FAILURE
+        result = run_git(config_args)
+        if not result["success"]:
+            error_msg = (str(result["stdout"]) or str(result["stderr"])).strip()
+            return result_fail(
+                f"Git config failed: {error_msg}" if error_msg else "Git config failed",
+            )
 
-    proc = run_git(["add", "badges/"])
-    if proc.returncode != 0:
-        message = (proc.stdout or proc.stderr or "").strip()
-        if message:
-            print(message, file=sys.stderr)
-        return EXIT_FAILURE
+    # Stage badge changes
+    add_result = run_git(["add", "badges/"])
+    if not add_result["success"]:
+        error_msg = (str(add_result["stdout"]) or str(add_result["stderr"])).strip()
+        return result_fail(
+            f"Git add failed: {error_msg}" if error_msg else "Git add failed",
+        )
 
-    diff_proc = run_git(["diff", "--staged", "--quiet"])
-    if diff_proc.returncode == 0:
-        print("No badge changes to commit.")
-        return EXIT_SUCCESS
-    if diff_proc.returncode != 1:
-        message = (diff_proc.stdout or diff_proc.stderr or "").strip()
-        if message:
-            print(message, file=sys.stderr)
-        return EXIT_FAILURE
+    # Check if there are changes to commit
+    diff_result = run_git(["diff", "--staged", "--quiet"])
+    if diff_result["returncode"] == 0:
+        return result_ok("No badge changes to commit")
+    if diff_result["returncode"] != 1:
+        error_msg = (str(diff_result["stdout"]) or str(diff_result["stderr"])).strip()
+        return result_fail(
+            f"Git diff failed: {error_msg}" if error_msg else "Git diff failed",
+        )
 
-    commit_proc = run_git(["commit", "-m", message])
-    if commit_proc.returncode != 0:
-        message = (commit_proc.stdout or commit_proc.stderr or "").strip()
-        if message:
-            print(message, file=sys.stderr)
-        return EXIT_FAILURE
+    # Commit changes
+    commit_result = run_git(["commit", "-m", commit_message])
+    if not commit_result["success"]:
+        error_msg = (str(commit_result["stdout"]) or str(commit_result["stderr"])).strip()
+        return result_fail(
+            f"Git commit failed: {error_msg}" if error_msg else "Git commit failed",
+        )
 
-    push_proc = run_git(["push"])
-    if push_proc.returncode != 0:
-        message = (push_proc.stdout or push_proc.stderr or "").strip()
-        if message:
-            print(message, file=sys.stderr)
-        return EXIT_FAILURE
+    # Push changes
+    push_result = run_git(["push"])
+    if not push_result["success"]:
+        error_msg = (str(push_result["stdout"]) or str(push_result["stderr"])).strip()
+        return result_fail(
+            f"Git push failed: {error_msg}" if error_msg else "Git push failed",
+        )
 
-    return EXIT_SUCCESS
+    return result_ok("Badge changes committed and pushed")
 
 
-def cmd_outputs(args: argparse.Namespace) -> int:
+def cmd_outputs(args: argparse.Namespace) -> CommandResult:
     config_path = Path(args.config).resolve() if args.config else hub_root() / "config" / "defaults.yaml"
     config = _load_config(config_path)
     hub_cfg = config.get("hub_ci", {}) if isinstance(config.get("hub_ci"), dict) else {}
@@ -188,6 +200,9 @@ def cmd_outputs(args: argparse.Namespace) -> int:
         "mutation_score_min": str(thresholds.get("mutation_score_min", 70)),
     }
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs(outputs, output_path)
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs(outputs)
+    return result_ok(
+        "Configuration outputs written",
+        data={"outputs": outputs},
+    )

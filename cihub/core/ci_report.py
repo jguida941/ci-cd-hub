@@ -48,6 +48,10 @@ def resolve_thresholds(config: dict[str, Any], language: str) -> dict[str, Any]:
         semgrep_cfg = tools.get("semgrep", {}) or {}
         trivy_cfg = tools.get("trivy", {}) or {}
 
+        bandit_cfg = tools.get("bandit", {}) or {}
+        pip_audit_cfg = tools.get("pip_audit", {}) or {}
+        mypy_cfg = tools.get("mypy", {}) or {}
+
         _set_threshold(thresholds, "coverage_min", pytest_cfg.get("min_coverage"))
         _set_threshold(thresholds, "mutation_score_min", mutmut_cfg.get("min_mutation_score"))
         _set_threshold(thresholds, "max_ruff_errors", ruff_cfg.get("max_errors"))
@@ -61,6 +65,28 @@ def resolve_thresholds(config: dict[str, Any], language: str) -> dict[str, Any]:
             max_high = thresholds.get("max_high_vulns")
             if max_high is not None:
                 thresholds["max_pip_audit_vulns"] = max_high
+
+        # Internal/derived thresholds - NOT user-configurable via .ci-hub.yml
+        # These are either:
+        # 1. Always 0 (mypy has no config to allow N errors)
+        # 2. Toggle-driven (bandit medium/low are controlled by fail_on_* toggles)
+        # 3. Mirrors of other thresholds (trivy critical/high mirror max_critical_vulns/max_high_vulns)
+        # The config schema (ci-hub-config.schema.json) intentionally excludes these keys.
+        thresholds.setdefault("max_mypy_errors", 0)
+        # Bandit severity thresholds - 0 when toggle enabled (fail_on_medium/fail_on_low)
+        if bandit_cfg.get("fail_on_medium", False):
+            thresholds.setdefault("max_bandit_medium", 0)
+        if bandit_cfg.get("fail_on_low", False):
+            thresholds.setdefault("max_bandit_low", 0)
+        # Trivy critical/high mirror the general max_critical_vulns/max_high_vulns
+        if "max_trivy_critical" not in thresholds:
+            max_crit = thresholds.get("max_critical_vulns")
+            if max_crit is not None:
+                thresholds["max_trivy_critical"] = max_crit
+        if "max_trivy_high" not in thresholds:
+            max_high = thresholds.get("max_high_vulns")
+            if max_high is not None:
+                thresholds["max_trivy_high"] = max_high
     else:
         tools = config.get("java", {}).get("tools", {}) or {}
         jacoco_cfg = tools.get("jacoco", {}) or {}
@@ -71,13 +97,27 @@ def resolve_thresholds(config: dict[str, Any], language: str) -> dict[str, Any]:
         owasp_cfg = tools.get("owasp", {}) or {}
         semgrep_cfg = tools.get("semgrep", {}) or {}
 
+        trivy_cfg = tools.get("trivy", {}) or {}
+
         _set_threshold(thresholds, "coverage_min", jacoco_cfg.get("min_coverage"))
         _set_threshold(thresholds, "mutation_score_min", pitest_cfg.get("min_mutation_score"))
         _set_threshold(thresholds, "max_checkstyle_errors", checkstyle_cfg.get("max_errors"))
         _set_threshold(thresholds, "max_spotbugs_bugs", spotbugs_cfg.get("max_bugs"))
         _set_threshold(thresholds, "max_pmd_violations", pmd_cfg.get("max_violations"))
         _set_threshold(thresholds, "owasp_cvss_fail", owasp_cfg.get("fail_on_cvss"))
+        _set_threshold(thresholds, "trivy_cvss_fail", trivy_cfg.get("fail_on_cvss"))
         _set_threshold(thresholds, "max_semgrep_findings", semgrep_cfg.get("max_findings"))
+
+        # Internal/derived thresholds - trivy critical/high mirror max_critical_vulns/max_high_vulns
+        # (NOT user-configurable, see Python section comment above)
+        if "max_trivy_critical" not in thresholds:
+            max_crit = thresholds.get("max_critical_vulns")
+            if max_crit is not None:
+                thresholds["max_trivy_critical"] = max_crit
+        if "max_trivy_high" not in thresholds:
+            max_high = thresholds.get("max_high_vulns")
+            if max_high is not None:
+                thresholds["max_trivy_high"] = max_high
     return thresholds
 
 
@@ -107,6 +147,8 @@ def build_python_report(
     tools_success: dict[str, bool],
     thresholds: dict[str, Any],
     context: RunContext,
+    *,
+    tools_require_run: dict[str, bool] | None = None,
 ) -> dict[str, Any]:
     pytest_enabled = tools_configured.get("pytest", False)
     tests_failed = int(_get_metric(tool_results, "pytest", "tests_failed", 0))
@@ -153,6 +195,8 @@ def build_python_report(
         "low_vulns": bandit_low + trivy_low,
     }
 
+    trivy_max_cvss = float(_get_metric(tool_results, "trivy", "trivy_max_cvss", 0.0))
+
     tool_metrics = {
         "ruff_errors": _get_metric(tool_results, "ruff", "ruff_errors", 0),
         "mypy_errors": _get_metric(tool_results, "mypy", "mypy_errors", 0),
@@ -167,6 +211,7 @@ def build_python_report(
         "trivy_high": trivy_high,
         "trivy_medium": trivy_medium,
         "trivy_low": trivy_low,
+        "trivy_max_cvss": trivy_max_cvss,
         "docker_missing_compose": bool(
             tool_results.get("docker", {}).get("metrics", {}).get("docker_missing_compose", False)
         ),
@@ -200,6 +245,7 @@ def build_python_report(
         "tools_configured": tools_configured,
         "tools_ran": tools_ran,
         "tools_success": tools_success,
+        "tools_require_run": tools_require_run or {},
         "thresholds": thresholds,
         "environment": {
             "workdir": context.workdir,
@@ -218,6 +264,8 @@ def build_java_report(
     tools_success: dict[str, bool],
     thresholds: dict[str, Any],
     context: RunContext,
+    *,
+    tools_require_run: dict[str, bool] | None = None,
 ) -> dict[str, Any]:
     build_payload = tool_results.get("build", {})
     build_success = bool(build_payload.get("success", False))
@@ -267,6 +315,9 @@ def build_java_report(
         "low_vulns": owasp_low + trivy_low,
     }
 
+    owasp_max_cvss = float(_get_metric(tool_results, "owasp", "owasp_max_cvss", 0.0))
+    trivy_max_cvss = float(_get_metric(tool_results, "trivy", "trivy_max_cvss", 0.0))
+
     tool_metrics = {
         "checkstyle_issues": _get_metric(tool_results, "checkstyle", "checkstyle_issues", 0),
         "spotbugs_issues": _get_metric(tool_results, "spotbugs", "spotbugs_issues", 0),
@@ -275,11 +326,13 @@ def build_java_report(
         "owasp_high": owasp_high,
         "owasp_medium": owasp_medium,
         "owasp_low": owasp_low,
+        "owasp_max_cvss": owasp_max_cvss,
         "semgrep_findings": _get_metric(tool_results, "semgrep", "semgrep_findings", 0),
         "trivy_critical": trivy_critical,
         "trivy_high": trivy_high,
         "trivy_medium": trivy_medium,
         "trivy_low": trivy_low,
+        "trivy_max_cvss": trivy_max_cvss,
         "docker_missing_compose": bool(
             tool_results.get("docker", {}).get("metrics", {}).get("docker_missing_compose", False)
         ),
@@ -313,6 +366,7 @@ def build_java_report(
         "tools_configured": tools_configured,
         "tools_ran": tools_ran,
         "tools_success": tools_success,
+        "tools_require_run": tools_require_run or {},
         "thresholds": thresholds,
         "environment": {
             "workdir": context.workdir,

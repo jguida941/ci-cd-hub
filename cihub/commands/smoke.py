@@ -253,6 +253,9 @@ def _run_case(
             install_deps=install_deps,
             report=None,
             summary=None,
+            no_summary=False,
+            write_github_summary=False,
+            config_from_hub=None,
             json=True,
         )
         ci_result = _as_command_result(cmd_ci(ci_args))
@@ -264,6 +267,32 @@ def _run_case(
                 problems=ci_result.problems,
             )
         )
+
+        # Issue 10: Report validation after ci run
+        report_path = case.repo_path / ".cihub" / "report.json"
+        if report_path.exists():
+            from cihub.commands.report.validate import _validate_report
+
+            validate_report_args = argparse.Namespace(
+                report=str(report_path),
+                expect="clean",
+                coverage_min=0,  # Relaxed for smoke tests
+                strict=True,
+                verbose=False,
+                summary=None,
+                reports_dir=None,
+                debug=False,
+                json=True,
+            )
+            validate_report_result = _as_command_result(_validate_report(validate_report_args, json_mode=True))
+            steps.append(
+                SmokeStep(
+                    name="report-validate",
+                    exit_code=validate_report_result.exit_code,
+                    summary=validate_report_result.summary,
+                    problems=validate_report_result.problems,
+                )
+            )
 
     return steps, language
 

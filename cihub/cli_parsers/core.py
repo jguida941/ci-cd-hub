@@ -5,6 +5,11 @@ from __future__ import annotations
 import argparse
 from typing import Callable
 
+from cihub.cli_parsers.common import (
+    add_repo_args,
+    add_report_args,
+    add_summary_args,
+)
 from cihub.cli_parsers.types import CommandHandlers
 
 
@@ -32,7 +37,7 @@ def add_core_commands(
 ) -> None:
     detect = subparsers.add_parser("detect", help="Detect repo language and tools")
     add_json_flag(detect)
-    detect.add_argument("--repo", required=True, help="Path to repo")
+    add_repo_args(detect, required=True)
     detect.add_argument(
         "--language",
         choices=["java", "python"],
@@ -213,7 +218,7 @@ def add_core_commands(
 
     ci = subparsers.add_parser("ci", help="Run CI based on .ci-hub.yml")
     add_json_flag(ci)
-    ci.add_argument("--repo", default=".", help="Path to repo (default: .)")
+    add_repo_args(ci)
     ci.add_argument("--workdir", help="Override workdir/subdir")
     ci.add_argument("--correlation-id", help="Hub correlation id")
     ci.add_argument(
@@ -231,8 +236,8 @@ def add_core_commands(
         action="store_true",
         help="Install repo dependencies before running tools",
     )
-    ci.add_argument("--report", help="Override report.json path")
-    ci.add_argument("--summary", help="Override summary.md path")
+    add_report_args(ci, help_text="Override report.json path")
+    add_summary_args(ci, summary_help="Override summary.md path")
     ci.add_argument(
         "--no-summary",
         action="store_true",
@@ -255,7 +260,7 @@ def add_core_commands(
     run = subparsers.add_parser("run", help="Run one tool and emit JSON output")
     add_json_flag(run)
     run.add_argument("tool", help="Tool name (pytest, ruff, bandit, etc.)")
-    run.add_argument("--repo", default=".", help="Path to repo (default: .)")
+    add_repo_args(run)
     run.add_argument("--workdir", help="Override workdir/subdir")
     run.add_argument(
         "--output-dir",

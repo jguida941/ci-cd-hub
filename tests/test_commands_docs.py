@@ -1,8 +1,9 @@
 import argparse
+import json
 from pathlib import Path
 
 from cihub.cli import CommandResult
-from cihub.commands.docs import _check_internal_links, cmd_docs
+from cihub.commands.docs import _check_internal_links, _run_lychee, cmd_docs
 
 
 def test_docs_generate_writes_files(tmp_path: Path) -> None:
@@ -126,3 +127,69 @@ def test_internal_links_reference_definitions_broken(tmp_path: Path) -> None:
     problems = _check_internal_links(tmp_path)
     assert len(problems) == 1
     assert "missing.md" in problems[0]["target"]
+
+
+def test_internal_links_skip_development_archive(tmp_path: Path) -> None:
+    """Archived docs are excluded from link checking to avoid churn."""
+    archive_dir = tmp_path / "development" / "archive"
+    archive_dir.mkdir(parents=True)
+    (archive_dir / "OLD.md").write_text("See [missing](missing.md).", encoding="utf-8")
+
+    guides_dir = tmp_path / "guides"
+    guides_dir.mkdir(parents=True)
+    (guides_dir / "GUIDE.md").write_text("See [missing](missing.md).", encoding="utf-8")
+
+    problems = _check_internal_links(tmp_path)
+    assert len(problems) == 1
+    assert problems[0]["file"].endswith("GUIDE.md")
+
+
+def test_run_lychee_parses_json_errors(tmp_path: Path, monkeypatch) -> None:
+    """Lychee JSON output is parsed into actionable per-link problems."""
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (tmp_path / "README.md").write_text("# Root", encoding="utf-8")
+
+    captured: dict[str, object] = {}
+
+    class _Proc:
+        def __init__(self) -> None:
+            self.returncode = 2
+            self.stdout = json.dumps(
+                {
+                    "error_map": {
+                        "docs/guides/GETTING_STARTED.md": [
+                            {
+                                "url": "file:///missing.md",
+                                "status": {"text": "Cannot find file", "details": "File not found"},
+                            }
+                        ]
+                    }
+                }
+            )
+            self.stderr = ""
+
+    def fake_run(cmd, cwd, capture_output, text):  # noqa: ANN001 - test stub
+        captured["cmd"] = cmd
+        captured["cwd"] = cwd
+        captured["capture_output"] = capture_output
+        captured["text"] = text
+        return _Proc()
+
+    monkeypatch.setattr("cihub.commands.docs.subprocess.run", fake_run)
+
+    exit_code, problems = _run_lychee(docs_dir, external=False)
+
+    assert exit_code == 2
+    assert len(problems) == 1
+    assert problems[0]["file"] == "docs/guides/GETTING_STARTED.md"
+    assert problems[0]["url"] == "file:///missing.md"
+    assert problems[0]["status"] == "Cannot find file"
+    assert problems[0]["details"] == "File not found"
+
+    cmd = captured["cmd"]
+    assert isinstance(cmd, list)
+    assert cmd[:3] == ["lychee", "docs", "README.md"]
+    assert "--offline" in cmd
+    assert "--format" in cmd and "json" in cmd
+    assert "--exclude-path" in cmd

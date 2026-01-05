@@ -12,6 +12,22 @@
 - ⏳ LLM diff outputs and `cihub assist` remain TODO
 - ⏳ Formal JSON Schema (`schema/triage.schema.json`) deferred until validation command ships
 
+**Implementation Update (2026-01-05):**
+- ✅ **Artifact-first remote triage**: `cihub triage --run <id>` downloads to persistent path
+- ✅ **Persistent artifact storage**: `.cihub/runs/{run_id}/artifacts/` (durable, re-triageable)
+- ✅ **Multi-report auto-detection**: Finds all `report.json` files, routes to aggregation
+- ✅ **Multi-triage output**: `multi-triage.json` + `multi-triage.md` for N > 1 reports
+- ✅ **Artifact evidence audit**: Validates tool outputs, emits `evidence_issues` into bundles
+- ✅ **Schema + consistency validation**: Integrated into `generate_triage_bundle()`
+- ✅ **required_not_run detection**: Tools that should run but didn't appear as blockers
+
+**Implementation Update (2026-01-05, late):**
+- ✅ **Workflow/branch filtering**: `cihub triage --workflow hub-ci.yml --branch main`
+- ✅ **Multi-report output modes**: `--aggregate` (combined) vs `--per-repo` (separate bundles + index)
+- ✅ **Historical gate tracking**: `cihub triage --gate-history` analyzes gate status changes
+- ✅ **Flaky test detection**: `cihub triage --detect-flaky` identifies flaky patterns from history
+- ✅ **Gate history in bundles**: `history.jsonl` now tracks `gate_failures`, `gate_passed_count`, `gate_failed_count`
+
 ## Context
 
 The hub manages multiple repositories with varying quality standards (coverage thresholds, mutation testing, vulnerability tolerance). Currently:

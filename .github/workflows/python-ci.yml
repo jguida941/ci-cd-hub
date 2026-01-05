@@ -155,6 +155,10 @@ on:
         description: 'Maximum allowed Ruff errors (default: 0 = fail on any)'
         type: number
         default: 0
+      max_pip_audit_vulns:
+        description: 'Maximum allowed pip-audit vulnerabilities (default: 0 = fail on any)'
+        type: number
+        default: 0
 
       # ---- Reports ----
       retention_days:

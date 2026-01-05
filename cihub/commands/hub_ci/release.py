@@ -9,26 +9,23 @@ import platform
 import re
 import shutil
 import subprocess
-import sys
 import tarfile
 from pathlib import Path
 
 import defusedxml.ElementTree as ET  # Secure XML parsing
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.types import CommandResult
+from cihub.utils.github_context import OutputContext
 from cihub.utils.progress import _bar
 
 from . import (
     EMPTY_SARIF,
     _append_github_path,
-    _append_summary,
     _download_file,
     _extract_tarball_member,
-    _resolve_output_path,
-    _resolve_summary_path,
     _run_command,
     _sha256,
-    _write_outputs,
 )
 
 
@@ -50,12 +47,15 @@ def _resolve_actionlint_version(version: str) -> str:
     return tag.lstrip("v")
 
 
-def cmd_actionlint_install(args: argparse.Namespace) -> int:
+def cmd_actionlint_install(args: argparse.Namespace) -> int | CommandResult:
     try:
         version = _resolve_actionlint_version(args.version)
     except RuntimeError as exc:
-        print(str(exc), file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"actionlint-install: {exc}",
+            problems=[{"severity": "error", "message": str(exc)}],
+        )
     tar_name = f"actionlint_{version}_linux_amd64.tar.gz"
     url = f"https://github.com/rhysd/actionlint/releases/download/v{version}/{tar_name}"
     dest_dir = Path(args.dest).resolve()
@@ -64,43 +64,57 @@ def cmd_actionlint_install(args: argparse.Namespace) -> int:
     try:
         _download_file(url, tar_path)
     except OSError as exc:
-        print(f"Failed to download actionlint: {exc}", file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"actionlint-install: download failed - {exc}",
+            problems=[{"severity": "error", "message": f"Failed to download actionlint: {exc}"}],
+        )
 
     if args.checksum:
         actual = _sha256(tar_path)
         if actual.lower() != args.checksum.lower():
-            print("actionlint checksum mismatch", file=sys.stderr)
-            print(f"expected={args.checksum}", file=sys.stderr)
-            print(f"actual={actual}", file=sys.stderr)
-            return EXIT_FAILURE
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary="actionlint-install: checksum mismatch",
+                problems=[{"severity": "error", "message": "actionlint checksum mismatch"}],
+                data={"expected": args.checksum, "actual": actual},
+            )
 
     try:
         bin_path = _extract_tarball_member(tar_path, "actionlint", dest_dir)
     except (OSError, tarfile.TarError, KeyError) as exc:
-        print(f"Failed to extract actionlint: {exc}", file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"actionlint-install: extraction failed - {exc}",
+            problems=[{"severity": "error", "message": f"Failed to extract actionlint: {exc}"}],
+        )
     finally:
         try:
             tar_path.unlink()
         except OSError:
             pass
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"path": str(bin_path)}, output_path)
-    print(f"actionlint installed at {bin_path}")
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"path": str(bin_path)})
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"actionlint installed at {bin_path}",
+        data={"path": str(bin_path), "version": version},
+    )
 
 
-def cmd_actionlint(args: argparse.Namespace) -> int:
+def cmd_actionlint(args: argparse.Namespace) -> int | CommandResult:
     bin_path = args.bin or shutil.which("actionlint") or ""
     if not bin_path:
         local = Path("actionlint")
         if local.exists():
             bin_path = str(local.resolve())
     if not bin_path:
-        print("actionlint binary not found (install first)", file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="actionlint: binary not found",
+            problems=[{"severity": "error", "message": "actionlint binary not found (install first)"}],
+        )
 
     proc = subprocess.run(  # noqa: S603
         [bin_path, "-oneline", args.workflow],
@@ -111,8 +125,11 @@ def cmd_actionlint(args: argparse.Namespace) -> int:
 
     if args.reviewdog:
         if not shutil.which("reviewdog"):
-            print("reviewdog not found (install reviewdog/action-setup)", file=sys.stderr)
-            return EXIT_FAILURE
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary="actionlint: reviewdog not found",
+                problems=[{"severity": "error", "message": "reviewdog not found (install reviewdog/action-setup)"}],
+            )
         input_text = "\n".join(f"e:{line}" for line in output_lines)
         if input_text:
             input_text += "\n"
@@ -130,18 +147,27 @@ def cmd_actionlint(args: argparse.Namespace) -> int:
             text=True,
         )
         if proc.returncode != 0 and not output_lines:
-            print(proc.stderr or "actionlint failed", file=sys.stderr)
-            return EXIT_FAILURE
-        return EXIT_SUCCESS if reviewdog_proc.returncode == 0 else EXIT_FAILURE
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary="actionlint: failed",
+                problems=[{"severity": "error", "message": proc.stderr or "actionlint failed"}],
+            )
+        success = reviewdog_proc.returncode == 0
+        return CommandResult(
+            exit_code=EXIT_SUCCESS if success else EXIT_FAILURE,
+            summary=f"actionlint: {'passed' if success else 'failed'} (reviewdog)",
+            data={"issues": len(output_lines), "reviewdog": True},
+        )
 
-    if proc.stdout:
-        print(proc.stdout)
-    if proc.stderr:
-        print(proc.stderr, file=sys.stderr)
-    return EXIT_SUCCESS if proc.returncode == 0 else EXIT_FAILURE
+    success = proc.returncode == 0
+    return CommandResult(
+        exit_code=EXIT_SUCCESS if success else EXIT_FAILURE,
+        summary=f"actionlint: {len(output_lines)} issues found" if output_lines else "actionlint: passed",
+        data={"issues": len(output_lines), "output": proc.stdout},
+    )
 
 
-def cmd_kyverno_install(args: argparse.Namespace) -> int:
+def cmd_kyverno_install(args: argparse.Namespace) -> int | CommandResult:
     version = args.version
     if not version.startswith("v"):
         version = f"v{version}"
@@ -153,24 +179,33 @@ def cmd_kyverno_install(args: argparse.Namespace) -> int:
     try:
         _download_file(url, tar_path)
     except OSError as exc:
-        print(f"Failed to download kyverno: {exc}", file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"kyverno-install: download failed - {exc}",
+            problems=[{"severity": "error", "message": f"Failed to download kyverno: {exc}"}],
+        )
 
     try:
         bin_path = _extract_tarball_member(tar_path, "kyverno", dest_dir)
     except (OSError, tarfile.TarError, KeyError) as exc:
-        print(f"Failed to extract kyverno: {exc}", file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"kyverno-install: extraction failed - {exc}",
+            problems=[{"severity": "error", "message": f"Failed to extract kyverno: {exc}"}],
+        )
     finally:
         try:
             tar_path.unlink()
         except OSError:
             pass
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"path": str(bin_path)}, output_path)
-    print(f"kyverno installed at {bin_path}")
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"path": str(bin_path)})
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"kyverno installed at {bin_path}",
+        data={"path": str(bin_path), "version": version},
+    )
 
 
 def _trivy_asset_name(version: str) -> str:
@@ -195,13 +230,16 @@ def _trivy_asset_name(version: str) -> str:
     return f"trivy_{version}_{suffix}.tar.gz"
 
 
-def cmd_trivy_install(args: argparse.Namespace) -> int:
+def cmd_trivy_install(args: argparse.Namespace) -> int | CommandResult:
     version = args.version.lstrip("v")
     try:
         tar_name = _trivy_asset_name(version)
     except ValueError as exc:
-        print(f"Failed to resolve trivy asset: {exc}", file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"trivy-install: {exc}",
+            problems=[{"severity": "error", "message": f"Failed to resolve trivy asset: {exc}"}],
+        )
 
     url = f"https://github.com/aquasecurity/trivy/releases/download/v{version}/{tar_name}"
     dest_dir = Path(args.dest).resolve()
@@ -210,14 +248,20 @@ def cmd_trivy_install(args: argparse.Namespace) -> int:
     try:
         _download_file(url, tar_path)
     except OSError as exc:
-        print(f"Failed to download trivy: {exc}", file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"trivy-install: download failed - {exc}",
+            problems=[{"severity": "error", "message": f"Failed to download trivy: {exc}"}],
+        )
 
     try:
         bin_path = _extract_tarball_member(tar_path, "trivy", dest_dir)
     except (OSError, tarfile.TarError, KeyError) as exc:
-        print(f"Failed to extract trivy: {exc}", file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"trivy-install: extraction failed - {exc}",
+            problems=[{"severity": "error", "message": f"Failed to extract trivy: {exc}"}],
+        )
     finally:
         try:
             tar_path.unlink()
@@ -227,13 +271,16 @@ def cmd_trivy_install(args: argparse.Namespace) -> int:
     if args.github_path:
         _append_github_path(dest_dir)
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"path": str(bin_path)}, output_path)
-    print(f"trivy installed at {bin_path}")
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"path": str(bin_path)})
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"trivy installed at {bin_path}",
+        data={"path": str(bin_path), "version": version},
+    )
 
 
-def cmd_trivy_summary(args: argparse.Namespace) -> int:
+def cmd_trivy_summary(args: argparse.Namespace) -> int | CommandResult:
     """Parse Trivy JSON output and generate summary with counts.
 
     Reads both filesystem scan (vulnerabilities) and config scan (misconfigurations)
@@ -241,6 +288,7 @@ def cmd_trivy_summary(args: argparse.Namespace) -> int:
     """
     fs_json = Path(args.fs_json) if args.fs_json else None
     config_json = Path(args.config_json) if args.config_json else None
+    problems: list[dict[str, str]] = []
 
     # Parse filesystem scan results (vulnerabilities)
     fs_critical = 0
@@ -256,7 +304,7 @@ def cmd_trivy_summary(args: argparse.Namespace) -> int:
                     elif severity == "HIGH":
                         fs_high += 1
         except (json.JSONDecodeError, KeyError) as e:
-            print(f"::warning::Failed to parse {fs_json}: {e}")
+            problems.append({"severity": "warning", "message": f"Failed to parse {fs_json}: {e}"})
 
     # Parse config scan results (misconfigurations)
     config_critical = 0
@@ -272,13 +320,14 @@ def cmd_trivy_summary(args: argparse.Namespace) -> int:
                     elif severity == "HIGH":
                         config_high += 1
         except (json.JSONDecodeError, KeyError) as e:
-            print(f"::warning::Failed to parse {config_json}: {e}")
+            problems.append({"severity": "warning", "message": f"Failed to parse {config_json}: {e}"})
 
     # Calculate totals
     total_critical = fs_critical + config_critical
     total_high = fs_high + config_high
 
-    # Write to GITHUB_OUTPUT if requested
+    # Write to GITHUB_OUTPUT/SUMMARY if requested
+    ctx = OutputContext.from_args(args)
     if args.github_output:
         outputs = {
             "fs_critical": str(fs_critical),
@@ -288,10 +337,8 @@ def cmd_trivy_summary(args: argparse.Namespace) -> int:
             "total_critical": str(total_critical),
             "total_high": str(total_high),
         }
-        output_path = _resolve_output_path(None, args.github_output)
-        _write_outputs(outputs, output_path)
+        ctx.write_outputs(outputs)
 
-    # Write to GITHUB_STEP_SUMMARY if requested
     if args.github_summary:
         summary_lines = [
             "### Trivy Findings Summary",
@@ -302,14 +349,21 @@ def cmd_trivy_summary(args: argparse.Namespace) -> int:
             f"| Config (misconfigs) | {config_critical} | {config_high} |",
             f"| **Total** | **{total_critical}** | **{total_high}** |",
         ]
-        _append_summary("\n".join(summary_lines), None)
+        ctx.write_summary("\n".join(summary_lines))
 
-    # Print summary to console
-    print(f"Trivy Summary: {total_critical} critical, {total_high} high")
-    print(f"  Filesystem: {fs_critical} critical, {fs_high} high")
-    print(f"  Config: {config_critical} critical, {config_high} high")
-
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Trivy Summary: {total_critical} critical, {total_high} high",
+        problems=problems,
+        data={
+            "fs_critical": fs_critical,
+            "fs_high": fs_high,
+            "config_critical": config_critical,
+            "config_high": config_high,
+            "total_critical": total_critical,
+            "total_high": total_high,
+        },
+    )
 
 
 def _iter_yaml_files(path: Path) -> list[Path]:
@@ -322,67 +376,74 @@ def _kyverno_apply(policy: Path, resource: Path, bin_path: str | None = None) ->
     return (proc.stdout or "") + (proc.stderr or "")
 
 
-def cmd_kyverno_validate(args: argparse.Namespace) -> int:
+def cmd_kyverno_validate(args: argparse.Namespace) -> int | CommandResult:
     policies_dir = Path(args.policies_dir)
     templates_dir = Path(args.templates_dir) if args.templates_dir else None
 
     failed = 0
     validated = 0
+    problems: list[dict[str, str]] = []
 
     if not policies_dir.exists():
-        print(f"::warning::Policies directory '{policies_dir}' not found")
-        output_path = _resolve_output_path(args.output, args.github_output)
-        _write_outputs({"validated": "0", "failed": "0"}, output_path)
-        return EXIT_SUCCESS
+        problems.append({"severity": "warning", "message": f"Policies directory '{policies_dir}' not found"})
+        ctx = OutputContext.from_args(args)
+        ctx.write_outputs({"validated": "0", "failed": "0"})
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="kyverno-validate: no policies found",
+            problems=problems,
+            data={"validated": 0, "failed": 0},
+        )
 
     for policy in _iter_yaml_files(policies_dir):
-        print(f"Validating: {policy}")
         output = _kyverno_apply(policy, Path("/dev/null"), args.bin)
         lowered = output.lower()
         if "error" in lowered or "invalid" in lowered or "failed" in lowered:
-            print("  FAILED")
-            print(output)
             failed += 1
+            problems.append({"severity": "error", "message": f"Policy {policy} failed validation"})
         else:
-            print("  OK")
             validated += 1
 
     if templates_dir and templates_dir.exists():
         for template in _iter_yaml_files(templates_dir):
-            print(f"Validating template: {template}")
             output = _kyverno_apply(template, Path("/dev/null"), args.bin)
             lowered = output.lower()
             if "error" in lowered or "invalid" in lowered or "failed" in lowered:
-                print("  FAILED")
-                print(output)
                 failed += 1
+                problems.append({"severity": "error", "message": f"Template {template} failed validation"})
             else:
-                print("  OK")
                 validated += 1
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"validated": str(validated), "failed": str(failed)}, output_path)
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"validated": str(validated), "failed": str(failed)})
 
-    if failed:
-        print(f"::error::{failed} policy validation(s) failed")
-        return EXIT_FAILURE
+    success = failed == 0
+    return CommandResult(
+        exit_code=EXIT_SUCCESS if success else EXIT_FAILURE,
+        summary=f"kyverno-validate: {validated} passed, {failed} failed",
+        problems=problems,
+        data={"validated": validated, "failed": failed},
+    )
 
-    print(f"All {validated} policies validated successfully")
-    return EXIT_SUCCESS
 
-
-def cmd_kyverno_test(args: argparse.Namespace) -> int:
+def cmd_kyverno_test(args: argparse.Namespace) -> int | CommandResult:
     policies_dir = Path(args.policies_dir)
     fixtures_dir = Path(args.fixtures_dir)
     fail_on_warn = str(args.fail_on_warn).strip().lower() in {"true", "1", "yes", "y", "on"}
+    problems: list[dict[str, str]] = []
+    test_results: list[dict[str, str]] = []
 
     if not fixtures_dir.exists():
-        print(f"::warning::Fixtures directory '{fixtures_dir}' not found, skipping tests")
-        return EXIT_SUCCESS
+        problems.append({"severity": "warning", "message": f"Fixtures directory '{fixtures_dir}' not found"})
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="kyverno-test: skipped (no fixtures)",
+            problems=problems,
+            data={"tested": 0},
+        )
 
     for policy in _iter_yaml_files(policies_dir):
         policy_name = policy.stem
-        print(f"\n=== Testing policy: {policy_name} ===")
         for fixture in _iter_yaml_files(fixtures_dir):
             fixture_name = fixture.name
             result = _kyverno_apply(policy, fixture, args.bin)
@@ -393,51 +454,77 @@ def cmd_kyverno_test(args: argparse.Namespace) -> int:
             elif "warn: 1" in result:
                 status = "WARN"
                 if fail_on_warn:
-                    print(f"::warning::Policy {policy_name} warned on {fixture_name}")
+                    problems.append({
+                        "severity": "warning",
+                        "message": f"Policy {policy_name} warned on {fixture_name}",
+                    })
             else:
                 status = "SKIP (not applicable)"
-            print(f"  vs {fixture_name}: {status}")
+            test_results.append({"policy": policy_name, "fixture": fixture_name, "status": status})
 
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"kyverno-test: {len(test_results)} tests executed",
+        problems=problems,
+        data={"tested": len(test_results), "results": test_results},
+    )
 
 
-def cmd_release_parse_tag(args: argparse.Namespace) -> int:
+def cmd_release_parse_tag(args: argparse.Namespace) -> int | CommandResult:
     ref = args.ref or os.environ.get("GITHUB_REF", "")
     if not ref.startswith("refs/tags/"):
-        print("GITHUB_REF is not a tag ref", file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="release-parse-tag: GITHUB_REF is not a tag ref",
+            problems=[{"severity": "error", "message": "GITHUB_REF is not a tag ref"}],
+        )
     version = ref.replace("refs/tags/", "", 1)
     major = version.split(".")[0]
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"version": version, "major": major}, output_path)
-    print(f"Release version: {version} (major: {major})")
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"version": version, "major": major})
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Release version: {version} (major: {major})",
+        data={"version": version, "major": major},
+    )
 
 
-def cmd_release_update_tag(args: argparse.Namespace) -> int:
+def cmd_release_update_tag(args: argparse.Namespace) -> int | CommandResult:
     root = Path(args.repo).resolve()
     major = args.major
     remote = args.remote
+    problems: list[dict[str, str]] = []
 
     def run_git(cmd_args: list[str], allow_fail: bool = False) -> bool:
         proc = _run_command(["git", *cmd_args], root)
         if proc.returncode != 0 and not allow_fail:
             message = (proc.stdout or proc.stderr or "").strip()
             if message:
-                print(message, file=sys.stderr)
+                problems.append({"severity": "error", "message": message})
             return False
         return True
 
     run_git(["tag", "-d", major], allow_fail=True)
     if not run_git(["tag", major]):
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"release-update-tag: failed to create tag {major}",
+            problems=problems,
+        )
     if not run_git(["push", "-f", remote, major]):
-        return EXIT_FAILURE
-    print(f"Floating tag {major} now points to {args.version}")
-    return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"release-update-tag: failed to push tag {major}",
+            problems=problems,
+        )
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Floating tag {major} now points to {args.version}",
+        data={"major": major, "version": args.version, "remote": remote},
+    )
 
 
-def cmd_zizmor_run(args: argparse.Namespace) -> int:
+def cmd_zizmor_run(args: argparse.Namespace) -> int | CommandResult:
     """Run zizmor and produce SARIF output, with fallback on failure.
 
     This replaces the inline heredoc in hub-production-ci.yml to satisfy
@@ -445,6 +532,7 @@ def cmd_zizmor_run(args: argparse.Namespace) -> int:
     """
     workflows_path = getattr(args, "workflows", ".github/workflows/")
     output_path = Path(args.output)
+    problems: list[dict[str, str]] = []
 
     # Run zizmor
     cmd = ["zizmor", "--format", "sarif", workflows_path]
@@ -457,34 +545,49 @@ def cmd_zizmor_run(args: argparse.Namespace) -> int:
         if result.returncode == 0:
             # Success - write the SARIF output
             output_path.write_text(result.stdout, encoding="utf-8")
-            print(f"zizmor completed, SARIF written to {output_path}")
-            return EXIT_SUCCESS
+            return CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=f"zizmor completed, SARIF written to {output_path}",
+                data={"sarif_path": str(output_path)},
+            )
         else:
             # Non-zero exit - preserve SARIF if stdout is valid; otherwise write empty.
-            # This keeps findings visible while maintaining a valid SARIF fallback.
             try:
                 payload = json.loads(result.stdout)
             except json.JSONDecodeError:
                 payload = None
             if isinstance(payload, dict) and "runs" in payload:
                 output_path.write_text(result.stdout, encoding="utf-8")
-                print(f"::warning::zizmor returned non-zero, SARIF preserved at {output_path}")
+                problems.append({"severity": "warning", "message": "zizmor returned non-zero, SARIF preserved"})
             else:
                 output_path.write_text(EMPTY_SARIF, encoding="utf-8")
-                print(f"::warning::zizmor returned non-zero, empty SARIF written to {output_path}")
-            return EXIT_SUCCESS  # Still success - zizmor-check gates on SARIF content
+                problems.append({"severity": "warning", "message": "zizmor returned non-zero, empty SARIF written"})
+            return CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=f"zizmor completed with warnings, SARIF at {output_path}",
+                problems=problems,
+                data={"sarif_path": str(output_path)},
+            )
     except FileNotFoundError:
         # zizmor not installed
         output_path.write_text(EMPTY_SARIF, encoding="utf-8")
-        print(f"::warning::zizmor not found, empty SARIF written to {output_path}")
-        return EXIT_SUCCESS  # Don't fail the build if tool is missing
+        problems.append({"severity": "warning", "message": "zizmor not found, empty SARIF written"})
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="zizmor not found, empty SARIF written",
+            problems=problems,
+            data={"sarif_path": str(output_path)},
+        )
 
 
-def cmd_zizmor_check(args: argparse.Namespace) -> int:
+def cmd_zizmor_check(args: argparse.Namespace) -> int | CommandResult:
     sarif_path = Path(args.sarif)
     if not sarif_path.exists():
-        print(f"::error::SARIF file not found: {sarif_path}")
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"zizmor-check: SARIF file not found: {sarif_path}",
+            problems=[{"severity": "error", "message": f"SARIF file not found: {sarif_path}"}],
+        )
 
     high = 0
     try:
@@ -496,25 +599,42 @@ def cmd_zizmor_check(args: argparse.Namespace) -> int:
     except json.JSONDecodeError:
         high = 0
 
-    summary_path = _resolve_summary_path(args.summary, args.github_summary)
-    _append_summary(
-        f"## Zizmor Workflow Security\nHigh/Warning findings: {high}\n",
-        summary_path,
-    )
+    ctx = OutputContext.from_args(args)
+    ctx.write_summary(f"## Zizmor Workflow Security\nHigh/Warning findings: {high}\n")
 
     if high > 0:
-        print("::error::Found workflow security findings - review in Security tab")
-        return EXIT_FAILURE
-    return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"zizmor-check: {high} workflow security findings",
+            problems=[{"severity": "error", "message": "Found workflow security findings - review in Security tab"}],
+            data={"findings": high},
+        )
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="zizmor-check: no findings",
+        data={"findings": 0},
+    )
 
 
-def cmd_license_check(args: argparse.Namespace) -> int:
-    proc = _run_command(["pip-licenses", "--format=csv"], Path("."))
+def cmd_license_check(args: argparse.Namespace) -> int | CommandResult:
+    problems: list[dict[str, str]] = []
+    try:
+        proc = _run_command(["pip-licenses", "--format=csv"], Path("."))
+    except FileNotFoundError:
+        # pip-licenses is a dev-time dependency; don't fail CIHub if it's missing locally.
+        ctx = OutputContext.from_args(args)
+        ctx.write_summary("## License Check\nSKIPPED - pip-licenses not installed\n")
+        problems.append({"severity": "warning", "message": "pip-licenses not found; skipping license check"})
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="license-check: skipped (pip-licenses not found)",
+            problems=problems,
+        )
     lines = [line for line in (proc.stdout or "").splitlines() if line.strip()]
     total = len(lines)
     copyleft = len([line for line in lines if re.search(r"GPL|AGPL", line, re.I)])
 
-    summary_path = _resolve_summary_path(args.summary, args.github_summary)
+    ctx = OutputContext.from_args(args)
     summary = "## License Check\n"
     summary += f"Total packages: {total}\n"
     summary += f"Copyleft (GPL/AGPL): {copyleft}\n"
@@ -522,16 +642,25 @@ def cmd_license_check(args: argparse.Namespace) -> int:
         summary += "\nCopyleft packages (dev dependencies are acceptable):\n"
         summary += "\n".join([line for line in lines if re.search(r"GPL|AGPL", line, re.I)])
         summary += "\n"
-        _append_summary(summary, summary_path)
-        print(f"::warning::Found {copyleft} packages with copyleft licenses")
-        return EXIT_SUCCESS
+        ctx.write_summary(summary)
+        problems.append({"severity": "warning", "message": f"Found {copyleft} packages with copyleft licenses"})
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=f"license-check: {copyleft} copyleft packages",
+            problems=problems,
+            data={"total": total, "copyleft": copyleft},
+        )
 
     summary += "PASS - no copyleft licenses\n"
-    _append_summary(summary, summary_path)
-    return EXIT_SUCCESS
+    ctx.write_summary(summary)
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="license-check: passed (no copyleft)",
+        data={"total": total, "copyleft": 0},
+    )
 
 
-def cmd_gitleaks_summary(args: argparse.Namespace) -> int:
+def cmd_gitleaks_summary(args: argparse.Namespace) -> int | CommandResult:
     repo_root = Path(".")
     commits = _run_command(["git", "rev-list", "--count", "HEAD"], repo_root).stdout
     files = _run_command(["git", "ls-files"], repo_root).stdout
@@ -541,7 +670,7 @@ def cmd_gitleaks_summary(args: argparse.Namespace) -> int:
     leak_text = "0" if outcome == "success" else "CHECK LOGS"
     result_text = "PASS" if outcome == "success" else "FAIL"
 
-    summary_path = _resolve_summary_path(args.summary, args.github_summary)
+    ctx = OutputContext.from_args(args)
     summary = (
         "## Secret Detection (gitleaks)\n"
         "| Metric | Value |\n"
@@ -551,17 +680,27 @@ def cmd_gitleaks_summary(args: argparse.Namespace) -> int:
         f"| Leaks found | {leak_text} |\n"
         f"| Result | {result_text} |\n"
     )
-    _append_summary(summary, summary_path)
-    return EXIT_SUCCESS
+    ctx.write_summary(summary)
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"gitleaks-summary: {result_text}",
+        data={
+            "commits_scanned": commits_count,
+            "files_count": files_count,
+            "outcome": outcome,
+            "result": result_text,
+        },
+    )
 
 
 def _env_result(name: str) -> str:
     return os.environ.get(name, "skipped")
 
 
-def cmd_pytest_summary(args: argparse.Namespace) -> int:
+def cmd_pytest_summary(args: argparse.Namespace) -> int | CommandResult:
     """Generate a summary for pytest results matching smoke test format."""
-    summary_path = _resolve_summary_path(args.summary, args.github_summary)
+    ctx = OutputContext.from_args(args)
+    problems: list[dict[str, str]] = []
 
     # Parse test-results.xml (JUnit format)
     tests_total = 0
@@ -587,7 +726,7 @@ def cmd_pytest_summary(args: argparse.Namespace) -> int:
 
             tests_passed = tests_total - tests_failed - tests_skipped
         except ET.ParseError as e:
-            print(f"Warning: Failed to parse {junit_path}: {e}", file=sys.stderr)
+            problems.append({"severity": "warning", "message": f"Failed to parse {junit_path}: {e}"})
 
     # Parse coverage.xml (Cobertura format)
     coverage_pct = 0
@@ -605,7 +744,7 @@ def cmd_pytest_summary(args: argparse.Namespace) -> int:
             lines_covered = int(root.get("lines-covered", 0))
             lines_total = int(root.get("lines-valid", 0))
         except ET.ParseError as e:
-            print(f"Warning: Failed to parse {coverage_path}: {e}", file=sys.stderr)
+            problems.append({"severity": "warning", "message": f"Failed to parse {coverage_path}: {e}"})
 
     # Determine status
     tests_pass = tests_total > 0 and tests_failed == 0
@@ -634,12 +773,26 @@ def cmd_pytest_summary(args: argparse.Namespace) -> int:
         ),
     ]
 
-    _append_summary("\n".join(lines), summary_path)
-    return EXIT_SUCCESS if tests_pass else EXIT_FAILURE
+    ctx.write_summary("\n".join(lines))
+    success = tests_pass
+    return CommandResult(
+        exit_code=EXIT_SUCCESS if success else EXIT_FAILURE,
+        summary=f"pytest-summary: {tests_passed}/{tests_total} passed, {coverage_pct}% coverage",
+        problems=problems,
+        data={
+            "tests_total": tests_total,
+            "tests_passed": tests_passed,
+            "tests_failed": tests_failed,
+            "tests_skipped": tests_skipped,
+            "coverage_pct": coverage_pct,
+            "lines_covered": lines_covered,
+            "lines_total": lines_total,
+        },
+    )
 
 
-def cmd_summary(args: argparse.Namespace) -> int:
-    summary_path = _resolve_summary_path(args.summary, args.github_summary)
+def cmd_summary(args: argparse.Namespace) -> int | CommandResult:
+    ctx = OutputContext.from_args(args)
     repo = os.environ.get("GH_REPOSITORY", "")
     branch = os.environ.get("GH_REF_NAME", "")
     run_number = os.environ.get("GH_RUN_NUMBER", "")
@@ -774,11 +927,15 @@ def cmd_summary(args: argparse.Namespace) -> int:
         )
 
     lines.append("Job summary generated at run-time")
-    _append_summary("\n".join(lines), summary_path)
-    return EXIT_SUCCESS
+    ctx.write_summary("\n".join(lines))
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="summary: generated CI summary",
+        data={"results": results, "has_issues": has_issues},
+    )
 
 
-def cmd_enforce(args: argparse.Namespace) -> int:
+def cmd_enforce(args: argparse.Namespace) -> int | CommandResult:
     checks = [
         ("actionlint", _env_result("RESULT_ACTIONLINT"), "fix workflow syntax"),
         ("zizmor", _env_result("RESULT_ZIZMOR"), "address workflow security findings"),
@@ -812,13 +969,22 @@ def cmd_enforce(args: argparse.Namespace) -> int:
         ("scorecard", _env_result("RESULT_SCORECARD"), "scorecard checks failed"),
     ]
 
-    failed = False
+    problems: list[dict[str, str]] = []
+    failed_checks: list[str] = []
     for name, result, message in checks:
         if result in ("failure", "cancelled"):
-            print(f"::error::{name} failed - {message}")
-            failed = True
+            problems.append({"severity": "error", "message": f"{name} failed - {message}"})
+            failed_checks.append(name)
 
-    if failed:
-        return EXIT_FAILURE
-    print("All critical checks passed")
-    return EXIT_SUCCESS
+    if failed_checks:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"enforce: {len(failed_checks)} checks failed",
+            problems=problems,
+            data={"failed": failed_checks},
+        )
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="enforce: all critical checks passed",
+        data={"failed": []},
+    )

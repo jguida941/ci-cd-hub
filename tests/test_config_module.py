@@ -34,45 +34,35 @@ from cihub.config import (
 class TestPathConfig:
     """Tests for PathConfig dataclass."""
 
-    def test_config_dir_path(self):
-        """config_dir is root/config."""
+    @pytest.mark.parametrize(
+        "attr,expected",
+        [
+            ("config_dir", "/hub/config"),
+            ("repos_dir", "/hub/config/repos"),
+            ("defaults_file", "/hub/config/defaults.yaml"),
+            ("profiles_dir", "/hub/templates/profiles"),
+            ("schema_dir", "/hub/schema"),
+        ],
+        ids=["config_dir", "repos_dir", "defaults_file", "profiles_dir", "schema_dir"],
+    )
+    def test_path_attributes(self, attr: str, expected: str):
+        """PathConfig attributes return correct paths."""
         paths = PathConfig(root="/hub")
-        assert paths.config_dir == "/hub/config"
+        assert getattr(paths, attr) == expected
 
-    def test_repos_dir_path(self):
-        """repos_dir is root/config/repos."""
+    @pytest.mark.parametrize(
+        "method,arg,expected",
+        [
+            ("repo_file", "my-repo", "/hub/config/repos/my-repo.yaml"),
+            ("repo_file", "org-name_repo", "/hub/config/repos/org-name_repo.yaml"),
+            ("profile_file", "java-security", "/hub/templates/profiles/java-security.yaml"),
+        ],
+        ids=["repo_file_basic", "repo_file_special_chars", "profile_file"],
+    )
+    def test_path_methods(self, method: str, arg: str, expected: str):
+        """PathConfig methods return correct paths."""
         paths = PathConfig(root="/hub")
-        assert paths.repos_dir == "/hub/config/repos"
-
-    def test_defaults_file_path(self):
-        """defaults_file is root/config/defaults.yaml."""
-        paths = PathConfig(root="/hub")
-        assert paths.defaults_file == "/hub/config/defaults.yaml"
-
-    def test_profiles_dir_path(self):
-        """profiles_dir is root/templates/profiles."""
-        paths = PathConfig(root="/hub")
-        assert paths.profiles_dir == "/hub/templates/profiles"
-
-    def test_schema_dir_path(self):
-        """schema_dir is root/schema."""
-        paths = PathConfig(root="/hub")
-        assert paths.schema_dir == "/hub/schema"
-
-    def test_repo_file_path(self):
-        """repo_file returns correct path for repo name."""
-        paths = PathConfig(root="/hub")
-        assert paths.repo_file("my-repo") == "/hub/config/repos/my-repo.yaml"
-
-    def test_repo_file_with_special_chars(self):
-        """repo_file handles repo names with special characters."""
-        paths = PathConfig(root="/hub")
-        assert paths.repo_file("org-name_repo") == "/hub/config/repos/org-name_repo.yaml"
-
-    def test_profile_file_path(self):
-        """profile_file returns correct path for profile name."""
-        paths = PathConfig(root="/hub")
-        assert paths.profile_file("java-security") == "/hub/templates/profiles/java-security.yaml"
+        assert getattr(paths, method)(arg) == expected
 
     def test_frozen_dataclass(self):
         """PathConfig is immutable."""
@@ -839,3 +829,116 @@ class TestConfigIntegration:
             data = load_profile(paths, profile)
             assert isinstance(data, dict)
             assert len(data) > 0  # Each profile has content
+
+
+# =============================================================================
+# Threshold Sanity Check Tests
+# =============================================================================
+
+
+class TestThresholdSanityChecks:
+    """Tests for threshold sanity checking (Issue 18)."""
+
+    def test_no_warnings_for_strict_config(self):
+        """Strict config with 0 vulns allowed produces no warnings."""
+        from cihub.config.schema import check_threshold_sanity
+
+        config = {
+            "thresholds": {
+                "max_critical_vulns": 0,
+                "max_high_vulns": 0,
+            }
+        }
+        warnings = check_threshold_sanity(config)
+        assert warnings == []
+
+    def test_warns_on_permissive_critical_vulns(self):
+        """Warns when max_critical_vulns > 0."""
+        from cihub.config.schema import check_threshold_sanity
+
+        config = {
+            "thresholds": {
+                "max_critical_vulns": 5,
+            }
+        }
+        warnings = check_threshold_sanity(config)
+        assert len(warnings) == 1
+        assert "max_critical_vulns=5" in warnings[0]
+        assert "Critical vulnerabilities" in warnings[0]
+
+    def test_warns_on_permissive_high_vulns(self):
+        """Warns when max_high_vulns > 2."""
+        from cihub.config.schema import check_threshold_sanity
+
+        config = {
+            "thresholds": {
+                "max_high_vulns": 100,
+            }
+        }
+        warnings = check_threshold_sanity(config)
+        assert len(warnings) == 1
+        assert "max_high_vulns=100" in warnings[0]
+
+    def test_warns_on_high_cvss_threshold(self):
+        """Warns when CVSS threshold > 9."""
+        from cihub.config.schema import check_threshold_sanity
+
+        config = {
+            "java": {
+                "tools": {
+                    "owasp": {
+                        "fail_on_cvss": 10,
+                    }
+                }
+            }
+        }
+        warnings = check_threshold_sanity(config)
+        assert len(warnings) == 1
+        assert "fail_on_cvss=10" in warnings[0]
+
+    def test_warns_on_low_coverage_threshold(self):
+        """Warns when coverage threshold < 50%."""
+        from cihub.config.schema import check_threshold_sanity
+
+        config = {
+            "python": {
+                "tools": {
+                    "pytest": {
+                        "min_coverage": 20,
+                    }
+                }
+            }
+        }
+        warnings = check_threshold_sanity(config)
+        assert len(warnings) == 1
+        assert "min_coverage=20" in warnings[0]
+
+    def test_empty_config_no_warnings(self):
+        """Empty config produces no warnings."""
+        from cihub.config.schema import check_threshold_sanity
+
+        warnings = check_threshold_sanity({})
+        assert warnings == []
+
+    def test_validate_config_with_sanity(self, tmp_path: Path):
+        """validate_config_with_sanity returns both errors and warnings."""
+        from cihub.config.schema import validate_config_with_sanity
+
+        # Need schema file to exist
+        schema_dir = tmp_path / "schema"
+        schema_dir.mkdir()
+        (schema_dir / "ci-hub-config.schema.json").write_text('{"type": "object"}')
+
+        paths = PathConfig(root=str(tmp_path))
+        config = {
+            "thresholds": {
+                "max_critical_vulns": 10,  # Will warn
+            }
+        }
+
+        errors, warnings = validate_config_with_sanity(config, paths)
+        # Schema validation passes (type: object)
+        assert len(errors) == 0
+        # Sanity check warns
+        assert len(warnings) == 1
+        assert "max_critical_vulns" in warnings[0]

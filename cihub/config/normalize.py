@@ -104,3 +104,44 @@ def normalize_tool_configs(config: dict[str, Any]) -> dict[str, Any]:
     normalized = copy.deepcopy(config)
     _normalize_tool_configs_inplace(normalized)
     return normalized
+
+
+def tool_enabled(
+    config: dict[str, Any],
+    tool: str,
+    language: str,
+    *,
+    default: bool = False,
+) -> bool:
+    """Check if a tool is enabled in the config.
+
+    This is the canonical implementation. All other `_tool_enabled` functions
+    should be replaced with imports from this module.
+
+    Args:
+        config: The effective config dict
+        tool: Tool key (e.g., "pytest", "bandit", "jacoco")
+        language: Language key ("python" or "java")
+        default: Default value if tool config is missing (default: False)
+
+    Returns:
+        True if the tool is enabled, False otherwise.
+
+    Examples:
+        >>> tool_enabled(config, "pytest", "python")
+        True
+        >>> tool_enabled(config, "sbom", "java", default=False)
+        False
+    """
+    lang_block = config.get(language, {})
+    if not isinstance(lang_block, dict):
+        return default
+    tools = lang_block.get("tools", {}) or {}
+    entry = tools.get(tool, {}) if isinstance(tools, dict) else {}
+    if isinstance(entry, bool):
+        return entry
+    if isinstance(entry, dict):
+        enabled = entry.get("enabled")
+        if isinstance(enabled, bool):
+            return enabled
+    return default

@@ -39,6 +39,10 @@ def get_git_remote(repo_path: Path) -> str | None:
     try:
         # Validate repo path to prevent path traversal
         validated_path = validate_repo_path(repo_path)
+        # Treat repo_path as the repository root. Avoid discovering a parent repo
+        # when repo_path is just a directory inside another git worktree.
+        if not (validated_path / ".git").exists():
+            return None
         git_bin = resolve_executable("git")
         output = subprocess.check_output(  # noqa: S603
             [
@@ -69,6 +73,10 @@ def get_git_branch(repo_path: Path) -> str | None:
     try:
         # Validate repo path to prevent path traversal
         validated_path = validate_repo_path(repo_path)
+        # Treat repo_path as the repository root. Avoid discovering a parent repo
+        # when repo_path is just a directory inside another git worktree.
+        if not (validated_path / ".git").exists():
+            return None
         git_bin = resolve_executable("git")
         output = subprocess.check_output(  # noqa: S603
             [git_bin, "-C", str(validated_path), "symbolic-ref", "--short", "HEAD"],

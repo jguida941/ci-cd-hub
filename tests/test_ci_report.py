@@ -121,7 +121,8 @@ class TestResolveThresholds:
 
     def test_handles_empty_config(self) -> None:
         result = resolve_thresholds({}, "python")
-        assert result == {}
+        # Internal thresholds (like max_mypy_errors) are always set for Python
+        assert result == {"max_mypy_errors": 0}
 
     def test_python_pip_audit_fallback(self) -> None:
         config = {
@@ -222,13 +223,15 @@ class TestResolveThresholds:
         """Handles None as tools dict."""
         config = {"python": {"tools": None}}
         result = resolve_thresholds(config, "python")
-        assert result == {}
+        # Internal thresholds (like max_mypy_errors) are always set for Python
+        assert result == {"max_mypy_errors": 0}
 
     def test_handles_none_thresholds(self) -> None:
         """Handles None as thresholds."""
         config = {"thresholds": None, "python": {"tools": {}}}
         result = resolve_thresholds(config, "python")
-        assert result == {}
+        # Internal thresholds (like max_mypy_errors) are always set for Python
+        assert result == {"max_mypy_errors": 0}
 
 
 class TestGetMetric:

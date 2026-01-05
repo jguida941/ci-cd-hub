@@ -7,6 +7,8 @@ FAST_STEPS = [
     "preflight",
     "ruff-lint",
     "ruff-format",
+    "black",
+    "isort",
     "typecheck",
     "yamllint",
     "test",

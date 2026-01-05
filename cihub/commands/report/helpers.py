@@ -9,18 +9,14 @@ from pathlib import Path
 from typing import Any
 
 from cihub.ci_report import RunContext
+from cihub.config import tool_enabled as _tool_enabled_canonical
 from cihub.utils import get_git_branch, get_git_remote, parse_repo_from_remote
 from cihub.utils.env import _parse_env_bool, env_bool
 
 
 def _tool_enabled(config: dict[str, Any], tool: str, language: str) -> bool:
-    tools = config.get(language, {}).get("tools", {}) or {}
-    entry = tools.get(tool, {}) if isinstance(tools, dict) else {}
-    if isinstance(entry, bool):
-        return entry
-    if isinstance(entry, dict):
-        return bool(entry.get("enabled", False))
-    return False
+    """Check if a tool is enabled. Delegates to canonical cihub.config.tool_enabled."""
+    return _tool_enabled_canonical(config, tool, language)
 
 
 def _get_repo_name(config: dict[str, Any], repo_path: Path) -> str:

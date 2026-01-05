@@ -9,13 +9,13 @@ from pathlib import Path
 import defusedxml.ElementTree as ET  # Secure XML parsing
 
 from cihub.exit_codes import EXIT_SUCCESS
+from cihub.types import CommandResult
+from cihub.utils.github_context import OutputContext
 
 from . import (
     _parse_float,
     _parse_int,
-    _resolve_output_path,
     _run_command,
-    _write_outputs,
 )
 
 
@@ -58,45 +58,62 @@ def _parse_junit_report(path: Path) -> tuple[int, int, int, int, float]:
     return total
 
 
-def cmd_codeql_build(args: argparse.Namespace) -> int:
+def cmd_codeql_build(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     mvnw = repo_path / "mvnw"
+    build_type = "none"
     if mvnw.exists():
         mvnw.chmod(mvnw.stat().st_mode | stat.S_IEXEC)
         _run_command(
             ["./mvnw", "-B", "-ntp", "compile", "-DskipTests"],
             repo_path,
         )
-        return EXIT_SUCCESS
-    if (repo_path / "pom.xml").exists():
+        build_type = "mvnw"
+    elif (repo_path / "pom.xml").exists():
         _run_command(
             ["mvn", "-B", "-ntp", "compile", "-DskipTests"],
             repo_path,
         )
-    return EXIT_SUCCESS
+        build_type = "mvn"
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"CodeQL build completed ({build_type})",
+        data={"build_type": build_type},
+    )
 
 
-def cmd_smoke_java_build(args: argparse.Namespace) -> int:
+def cmd_smoke_java_build(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     mvnw = repo_path / "mvnw"
+    build_type = "none"
+    problems: list[dict[str, str]] = []
+
     if mvnw.exists():
         mvnw.chmod(mvnw.stat().st_mode | stat.S_IEXEC)
         _run_command(
             ["./mvnw", "-B", "-ntp", "verify", "-Dmaven.test.failure.ignore=true"],
             repo_path,
         )
-        return EXIT_SUCCESS
-    if (repo_path / "pom.xml").exists():
+        build_type = "mvnw"
+    elif (repo_path / "pom.xml").exists():
         _run_command(
             ["mvn", "-B", "-ntp", "verify", "-Dmaven.test.failure.ignore=true"],
             repo_path,
         )
-        return EXIT_SUCCESS
-    print("::warning::No Maven project found")
-    return EXIT_SUCCESS
+        build_type = "mvn"
+    else:
+        problems.append({"severity": "warning", "message": "No Maven project found"})
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Java smoke build completed ({build_type})",
+        problems=problems,
+        data={"build_type": build_type},
+    )
 
 
-def cmd_smoke_java_tests(args: argparse.Namespace) -> int:
+def cmd_smoke_java_tests(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     totals = {"tests": 0, "failures": 0, "errors": 0, "skipped": 0, "time": 0.0}
 
@@ -112,22 +129,29 @@ def cmd_smoke_java_tests(args: argparse.Namespace) -> int:
     passed = totals["tests"] - failed - totals["skipped"]
     runtime = f"{totals['time']:.2f}s"
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs(
-        {
-            "total": str(totals["tests"]),
-            "passed": str(passed),
-            "failed": str(failed),
-            "skipped": str(totals["skipped"]),
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({
+        "total": str(totals["tests"]),
+        "passed": str(passed),
+        "failed": str(failed),
+        "skipped": str(totals["skipped"]),
+        "runtime": runtime,
+    })
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Tests: {totals['tests']} total, {passed} passed, {failed} failed, {totals['skipped']} skipped",
+        data={
+            "total": totals["tests"],
+            "passed": passed,
+            "failed": failed,
+            "skipped": totals["skipped"],
             "runtime": runtime,
         },
-        output_path,
     )
-    print(f"Tests: {totals['tests']} total, {passed} passed, {failed} failed, {totals['skipped']} skipped")
-    return EXIT_SUCCESS
 
 
-def cmd_smoke_java_coverage(args: argparse.Namespace) -> int:
+def cmd_smoke_java_coverage(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     jacoco_files = list(repo_path.rglob("jacoco.xml"))
     covered = 0
@@ -144,21 +168,22 @@ def cmd_smoke_java_coverage(args: argparse.Namespace) -> int:
 
     total = covered + missed
     percent = int((covered * 100) / total) if total > 0 else 0
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs(
-        {
-            "covered": str(covered),
-            "missed": str(missed),
-            "percent": str(percent),
-            "lines": f"{covered} / {total}",
-        },
-        output_path,
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({
+        "covered": str(covered),
+        "missed": str(missed),
+        "percent": str(percent),
+        "lines": f"{covered} / {total}",
+    })
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Coverage: {percent}% ({covered} / {total} instructions)",
+        data={"covered": covered, "missed": missed, "percent": percent, "total": total},
     )
-    print(f"Coverage: {percent}% ({covered} / {total} instructions)")
-    return EXIT_SUCCESS
 
 
-def cmd_smoke_java_checkstyle(args: argparse.Namespace) -> int:
+def cmd_smoke_java_checkstyle(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     mvnw = repo_path / "mvnw"
     if mvnw.exists():
@@ -176,13 +201,17 @@ def cmd_smoke_java_checkstyle(args: argparse.Namespace) -> int:
             continue
         violations += len(list(tree.getroot().iter("error")))
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"violations": str(violations)}, output_path)
-    print(f"Checkstyle: {violations} issues found")
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"violations": str(violations)})
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Checkstyle: {violations} issues found",
+        data={"violations": violations},
+    )
 
 
-def cmd_smoke_java_spotbugs(args: argparse.Namespace) -> int:
+def cmd_smoke_java_spotbugs(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     mvnw = repo_path / "mvnw"
     if mvnw.exists():
@@ -200,7 +229,11 @@ def cmd_smoke_java_spotbugs(args: argparse.Namespace) -> int:
             continue
         count += len(list(tree.getroot().iter("BugInstance")))
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"count": str(count)}, output_path)
-    print(f"SpotBugs: {count} potential bugs")
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"count": str(count)})
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"SpotBugs: {count} potential bugs",
+        data={"count": count},
+    )

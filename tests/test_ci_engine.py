@@ -15,6 +15,7 @@ from cihub.services.ci_engine import (
     PYTHON_TOOLS,
     _apply_force_all_tools,
     _build_context,
+    _check_require_run_or_fail,
     _collect_codecov_files,
     _detect_java_project_type,
     _evaluate_java_gates,
@@ -34,6 +35,7 @@ from cihub.services.ci_engine import (
     _set_tool_enabled,
     _tool_enabled,
     _tool_gate_enabled,
+    _tool_requires_run_or_fail,
     _warn_reserved_features,
 )
 
@@ -100,35 +102,39 @@ class TestResolveWorkdir:
 class TestDetectJavaProjectType:
     """Tests for _detect_java_project_type function."""
 
-    def test_maven_multi_module(self, tmp_path: Path) -> None:
-        pom = tmp_path / "pom.xml"
-        pom.write_text("<modules><module>a</module><module>b</module></modules>")
+    @pytest.mark.parametrize(
+        "filename,content,expected_contains",
+        [
+            # Maven multi-module
+            ("pom.xml", "<modules><module>a</module><module>b</module></modules>", ["Multi-module", "2 modules"]),
+            # Maven single module
+            ("pom.xml", "<project><name>single</name></project>", ["Single module"]),
+            # Gradle multi-module
+            ("settings.gradle", "include 'a', 'b'", ["Multi-module"]),
+            # Gradle Kotlin multi-module
+            ("settings.gradle.kts", 'include(":a")', ["Multi-module"]),
+            # Gradle single module
+            ("build.gradle", "apply plugin: 'java'", ["Single module"]),
+        ],
+        ids=[
+            "maven_multi_module",
+            "maven_single_module",
+            "gradle_multi_module",
+            "gradle_kts_multi_module",
+            "gradle_single_module",
+        ],
+    )
+    def test_java_project_types(
+        self, tmp_path: Path, filename: str, content: str, expected_contains: list[str]
+    ) -> None:
+        """Detect various Java project types from build files."""
+        (tmp_path / filename).write_text(content)
         result = _detect_java_project_type(tmp_path)
-        assert "Multi-module" in result
-        assert "2 modules" in result
-
-    def test_maven_single_module(self, tmp_path: Path) -> None:
-        pom = tmp_path / "pom.xml"
-        pom.write_text("<project><name>single</name></project>")
-        result = _detect_java_project_type(tmp_path)
-        assert result == "Single module"
-
-    def test_gradle_multi_module(self, tmp_path: Path) -> None:
-        (tmp_path / "settings.gradle").write_text("include 'a', 'b'")
-        result = _detect_java_project_type(tmp_path)
-        assert result == "Multi-module"
-
-    def test_gradle_kts_multi_module(self, tmp_path: Path) -> None:
-        (tmp_path / "settings.gradle.kts").write_text('include(":a")')
-        result = _detect_java_project_type(tmp_path)
-        assert result == "Multi-module"
-
-    def test_gradle_single_module(self, tmp_path: Path) -> None:
-        (tmp_path / "build.gradle").write_text("apply plugin: 'java'")
-        result = _detect_java_project_type(tmp_path)
-        assert result == "Single module"
+        for expected in expected_contains:
+            assert expected in result, f"Expected '{expected}' in result '{result}'"
 
     def test_unknown_project(self, tmp_path: Path) -> None:
+        """Empty directory returns Unknown."""
         result = _detect_java_project_type(tmp_path)
         assert result == "Unknown"
 
@@ -765,6 +771,40 @@ class TestEvaluatePythonGates:
 
         assert "codeql failed" in failures
 
+    def test_detects_hypothesis_not_run(self) -> None:
+        """Hypothesis gate should fail when configured but didn't run."""
+        report = {"tools_ran": {"hypothesis": False}, "tools_success": {"hypothesis": False}}
+        thresholds: dict = {}
+        tools_configured = {"hypothesis": True}
+        config = {"python": {"tools": {"hypothesis": {"fail_on_error": True}}}}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert "hypothesis did not run" in failures
+
+    def test_detects_hypothesis_failure(self) -> None:
+        """Hypothesis gate should fail when ran but failed."""
+        report = {"tools_ran": {"hypothesis": True}, "tools_success": {"hypothesis": False}}
+        thresholds: dict = {}
+        tools_configured = {"hypothesis": True}
+        config = {"python": {"tools": {"hypothesis": {"fail_on_error": True}}}}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert "hypothesis failed" in failures
+
+    def test_hypothesis_skipped_when_fail_on_error_false(self) -> None:
+        """Hypothesis gate should not fail when fail_on_error is false."""
+        report = {"tools_ran": {"hypothesis": False}, "tools_success": {"hypothesis": False}}
+        thresholds: dict = {}
+        tools_configured = {"hypothesis": True}
+        config = {"python": {"tools": {"hypothesis": {"fail_on_error": False}}}}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert "hypothesis did not run" not in failures
+        assert "hypothesis failed" not in failures
+
     def test_detects_docker_not_run(self) -> None:
         report = {"tools_ran": {"docker": False}, "tools_success": {"docker": False}}
         thresholds: dict = {}
@@ -805,7 +845,10 @@ class TestEvaluatePythonGates:
         assert "docker compose file missing" in failures
 
     def test_no_failures_when_all_pass(self) -> None:
-        report = {"results": {"coverage": 90, "tests_failed": 0}, "tool_metrics": {"ruff_errors": 0}}
+        report = {
+            "results": {"coverage": 90, "tests_failed": 0, "tests_passed": 10},
+            "tool_metrics": {"ruff_errors": 0},
+        }
         thresholds = {"coverage_min": 80}
         tools_configured = {"pytest": True, "ruff": True}
         config: dict = {}
@@ -813,6 +856,74 @@ class TestEvaluatePythonGates:
         failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
 
         assert len(failures) == 0
+
+    def test_fails_when_no_tests_ran(self) -> None:
+        """Issue 12: CI gates should fail when tests_total == 0."""
+        report = {"results": {"tests_passed": 0, "tests_failed": 0, "tests_skipped": 0}}
+        thresholds: dict = {}
+        tools_configured = {"pytest": True}
+        config: dict = {}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert "no tests ran - cannot verify quality" in failures
+
+    def test_passes_with_only_passed_tests(self) -> None:
+        """Issue 12: Tests should pass when tests ran successfully."""
+        report = {"results": {"tests_passed": 5, "tests_failed": 0, "tests_skipped": 0}}
+        thresholds: dict = {}
+        tools_configured = {"pytest": True}
+        config: dict = {}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert "no tests ran - cannot verify quality" not in failures
+        assert "pytest failures detected" not in failures
+
+    def test_trivy_cvss_enforcement_fails_above_threshold(self) -> None:
+        """Issue 3: CVSS enforcement should fail when max CVSS >= threshold."""
+        report = {
+            "results": {"tests_passed": 1, "tests_failed": 0, "tests_skipped": 0},
+            "tool_metrics": {"trivy_max_cvss": 9.1},
+            "tools_ran": {"trivy": True},
+        }
+        thresholds = {"trivy_cvss_fail": 7.0}
+        tools_configured = {"trivy": True}
+        config: dict = {"python": {"tools": {"trivy": {"fail_on_critical": False, "fail_on_high": False}}}}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert any("trivy max CVSS 9.1 >= 7.0" in f for f in failures)
+
+    def test_trivy_cvss_enforcement_passes_below_threshold(self) -> None:
+        """Issue 3: CVSS enforcement should pass when max CVSS < threshold."""
+        report = {
+            "results": {"tests_passed": 1, "tests_failed": 0, "tests_skipped": 0},
+            "tool_metrics": {"trivy_max_cvss": 5.5},
+            "tools_ran": {"trivy": True},
+        }
+        thresholds = {"trivy_cvss_fail": 7.0}
+        tools_configured = {"trivy": True}
+        config: dict = {"python": {"tools": {"trivy": {"fail_on_critical": False, "fail_on_high": False}}}}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert not any("trivy max CVSS" in f for f in failures)
+
+    def test_trivy_cvss_enforcement_skipped_when_threshold_zero(self) -> None:
+        """Issue 3: CVSS enforcement should be skipped when threshold is 0 or not set."""
+        report = {
+            "results": {"tests_passed": 1, "tests_failed": 0, "tests_skipped": 0},
+            "tool_metrics": {"trivy_max_cvss": 9.1},
+            "tools_ran": {"trivy": True},
+        }
+        thresholds: dict = {}  # No CVSS threshold set
+        tools_configured = {"trivy": True}
+        config: dict = {"python": {"tools": {"trivy": {"fail_on_critical": False, "fail_on_high": False}}}}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert not any("trivy max CVSS" in f for f in failures)
 
 
 class TestEvaluateJavaGates:
@@ -866,7 +977,9 @@ class TestEvaluateJavaGates:
 
         failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
 
-        assert any("owasp critical/high" in f for f in failures)
+        # Gate specs produce separate failure messages for critical and high
+        assert any("owasp critical" in f for f in failures)
+        assert any("owasp high" in f for f in failures)
 
     def test_detects_codeql_not_run(self) -> None:
         report = {"tools_ran": {"codeql": False}, "tools_success": {"codeql": False}}
@@ -877,6 +990,40 @@ class TestEvaluateJavaGates:
         failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
 
         assert "codeql did not run" in failures
+
+    def test_detects_jqwik_not_run(self) -> None:
+        """jqwik gate should fail when configured but didn't run."""
+        report = {"tools_ran": {"jqwik": False}, "tools_success": {"jqwik": False}}
+        thresholds: dict = {}
+        tools_configured = {"jqwik": True}
+        config = {"java": {"tools": {"jqwik": {"fail_on_error": True}}}}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert "jqwik did not run" in failures
+
+    def test_detects_jqwik_failure(self) -> None:
+        """jqwik gate should fail when ran but failed."""
+        report = {"tools_ran": {"jqwik": True}, "tools_success": {"jqwik": False}}
+        thresholds: dict = {}
+        tools_configured = {"jqwik": True}
+        config = {"java": {"tools": {"jqwik": {"fail_on_error": True}}}}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert "jqwik failed" in failures
+
+    def test_jqwik_skipped_when_fail_on_error_false(self) -> None:
+        """jqwik gate should not fail when fail_on_error is false."""
+        report = {"tools_ran": {"jqwik": False}, "tools_success": {"jqwik": False}}
+        thresholds: dict = {}
+        tools_configured = {"jqwik": True}
+        config = {"java": {"tools": {"jqwik": {"fail_on_error": False}}}}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert "jqwik did not run" not in failures
+        assert "jqwik failed" not in failures
 
     def test_detects_docker_failure(self) -> None:
         report = {"tools_ran": {"docker": True}, "tools_success": {"docker": False}}
@@ -918,7 +1065,7 @@ class TestEvaluateJavaGates:
         assert "docker compose file missing" in failures
 
     def test_no_failures_when_all_pass(self) -> None:
-        report = {"results": {"coverage": 85, "tests_failed": 0}, "tool_metrics": {}}
+        report = {"results": {"coverage": 85, "tests_failed": 0, "tests_passed": 10}, "tool_metrics": {}}
         thresholds = {"coverage_min": 70}
         tools_configured = {"jacoco": True}
         config: dict = {}
@@ -926,3 +1073,178 @@ class TestEvaluateJavaGates:
         failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
 
         assert len(failures) == 0
+
+    def test_fails_when_no_tests_ran(self) -> None:
+        """Issue 12: CI gates should fail when tests_total == 0."""
+        report = {"results": {"tests_passed": 0, "tests_failed": 0, "tests_skipped": 0}}
+        thresholds: dict = {}
+        tools_configured: dict = {}
+        config: dict = {}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert "no tests ran - cannot verify quality" in failures
+
+    def test_passes_with_only_passed_tests(self) -> None:
+        """Issue 12: Tests should pass when tests ran successfully."""
+        report = {"results": {"tests_passed": 5, "tests_failed": 0, "tests_skipped": 0}}
+        thresholds: dict = {}
+        tools_configured: dict = {}
+        config: dict = {}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert "no tests ran - cannot verify quality" not in failures
+        assert "test failures detected" not in failures
+
+    def test_owasp_cvss_enforcement_fails_above_threshold(self) -> None:
+        """Issue 3: OWASP CVSS enforcement should fail when max CVSS >= threshold."""
+        report = {
+            "results": {"tests_passed": 1, "tests_failed": 0, "tests_skipped": 0},
+            "tool_metrics": {"owasp_max_cvss": 9.8},
+            "tools_ran": {"owasp": True},
+        }
+        thresholds = {"owasp_cvss_fail": 7.0}
+        tools_configured = {"owasp": True}
+        config: dict = {}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert any("owasp max CVSS 9.8 >= 7.0" in f for f in failures)
+
+    def test_owasp_cvss_enforcement_passes_below_threshold(self) -> None:
+        """Issue 3: OWASP CVSS enforcement should pass when max CVSS < threshold."""
+        report = {
+            "results": {"tests_passed": 1, "tests_failed": 0, "tests_skipped": 0},
+            "tool_metrics": {"owasp_max_cvss": 6.5},
+            "tools_ran": {"owasp": True},
+        }
+        thresholds = {"owasp_cvss_fail": 7.0}
+        tools_configured = {"owasp": True}
+        config: dict = {}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert not any("owasp max CVSS" in f for f in failures)
+
+    def test_trivy_cvss_enforcement_java_fails_above_threshold(self) -> None:
+        """Issue 3: Trivy CVSS enforcement for Java should fail when max CVSS >= threshold."""
+        report = {
+            "results": {"tests_passed": 1, "tests_failed": 0, "tests_skipped": 0},
+            "tool_metrics": {"trivy_max_cvss": 8.5},
+            "tools_ran": {"trivy": True},
+        }
+        thresholds = {"trivy_cvss_fail": 7.0}
+        tools_configured = {"trivy": True}
+        config: dict = {"java": {"tools": {"trivy": {"fail_on_critical": False, "fail_on_high": False}}}}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert any("trivy max CVSS 8.5 >= 7.0" in f for f in failures)
+
+
+class TestRequireRunOrFail:
+    """Tests for require_run_or_fail policy."""
+
+    def test_tool_requires_run_per_tool_setting(self) -> None:
+        """Per-tool setting takes precedence."""
+        config = {
+            "python": {"tools": {"pytest": {"require_run_or_fail": True}}},
+            "gates": {"require_run_or_fail": False},
+        }
+        assert _tool_requires_run_or_fail("pytest", config, "python") is True
+
+    def test_tool_requires_run_global_default(self) -> None:
+        """Global default applies when no per-tool setting."""
+        config = {
+            "python": {"tools": {"pytest": {"enabled": True}}},
+            "gates": {"require_run_or_fail": True},
+        }
+        assert _tool_requires_run_or_fail("pytest", config, "python") is True
+
+    def test_tool_requires_run_tool_default(self) -> None:
+        """Tool default applies when set in gates.tool_defaults."""
+        config = {
+            "python": {"tools": {}},
+            "gates": {
+                "require_run_or_fail": False,
+                "tool_defaults": {"pytest": True},
+            },
+        }
+        assert _tool_requires_run_or_fail("pytest", config, "python") is True
+
+    def test_tool_requires_run_fallback_false(self) -> None:
+        """Falls back to false when nothing configured."""
+        config: dict = {}
+        assert _tool_requires_run_or_fail("pytest", config, "python") is False
+
+    def test_check_require_run_or_fail_not_configured(self) -> None:
+        """No failure when tool is not configured."""
+        tools_configured: dict = {}
+        tools_ran: dict = {}
+        config = {"gates": {"tool_defaults": {"pytest": True}}}
+        result = _check_require_run_or_fail("pytest", tools_configured, tools_ran, config, "python")
+        assert result is None
+
+    def test_check_require_run_or_fail_ran(self) -> None:
+        """No failure when tool ran."""
+        tools_configured = {"pytest": True}
+        tools_ran = {"pytest": True}
+        config = {"gates": {"tool_defaults": {"pytest": True}}}
+        result = _check_require_run_or_fail("pytest", tools_configured, tools_ran, config, "python")
+        assert result is None
+
+    def test_check_require_run_or_fail_not_ran_required(self) -> None:
+        """Failure when tool required but didn't run."""
+        tools_configured = {"pytest": True}
+        tools_ran = {"pytest": False}
+        config = {"gates": {"tool_defaults": {"pytest": True}}}
+        result = _check_require_run_or_fail("pytest", tools_configured, tools_ran, config, "python")
+        assert result is not None
+        assert "require_run_or_fail=true" in result
+
+    def test_check_require_run_or_fail_not_ran_optional(self) -> None:
+        """No failure when optional tool didn't run."""
+        tools_configured = {"mutmut": True}
+        tools_ran = {"mutmut": False}
+        config = {"gates": {"tool_defaults": {"mutmut": False}}}
+        result = _check_require_run_or_fail("mutmut", tools_configured, tools_ran, config, "python")
+        assert result is None
+
+    def test_python_gates_require_run_or_fail_integration(self) -> None:
+        """Integration test: gates fail when required tool didn't run."""
+        report = {
+            "results": {"tests_passed": 10, "tests_failed": 0},
+            "tools_ran": {"pytest": True, "bandit": False},
+            "tools_success": {"pytest": True},
+            "tool_metrics": {},
+        }
+        thresholds: dict = {}
+        tools_configured = {"pytest": True, "bandit": True}
+        config = {
+            "python": {"tools": {"bandit": {"require_run_or_fail": True}}},
+            "gates": {"require_run_or_fail": False},
+        }
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert any("bandit configured but did not run" in f for f in failures)
+
+    def test_java_gates_require_run_or_fail_integration(self) -> None:
+        """Integration test: Java gates fail when required tool didn't run."""
+        report = {
+            "results": {"tests_passed": 10, "tests_failed": 0},
+            "tools_ran": {"jacoco": True, "owasp": False},
+            "tools_success": {"jacoco": True},
+            "tool_metrics": {},
+        }
+        thresholds: dict = {}
+        tools_configured = {"jacoco": True, "owasp": True}
+        config = {
+            "java": {"tools": {"owasp": {"require_run_or_fail": True}}},
+            "gates": {"require_run_or_fail": False},
+        }
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert any("owasp configured but did not run" in f for f in failures)

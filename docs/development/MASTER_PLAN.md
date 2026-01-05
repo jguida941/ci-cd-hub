@@ -1,7 +1,7 @@
 # CI/CD Hub - Master Plan
 
 **Status:** Canonical plan for all active work
-**Last Updated:** 2026-01-05
+**Last Updated:** 2026-01-05 (OutputContext migration + CLI consolidation + 1939 tests)
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
 
@@ -35,20 +35,68 @@ Single source of truth for what we are doing now. Other docs can provide depth, 
 - [ ] `.cihub/tool-outputs/` artifacts for doc automation
 - [ ] Tooling integration checklist: toggle -> CLI runner (no inline workflow logic) -> tool-outputs -> report summaries/dashboards -> templates/profiles -> docs refs -> template sync tests
 
-**Clean Code:**
-- [ ] `_tool_enabled()` consolidation (5 implementations → 1)
-- [ ] Gate-spec refactor (table-driven, ~100 lines)
-- [ ] Language strategy extraction (Python/Java)
-- [ ] Expand CI-engine tests (2 → 20+)
-- [ ] Output normalization (forbid `print()` in commands)
+**Clean Code:** *(See `active/CLEAN_CODE.md` for details — audit updated 2026-01-05)*
+- [x] `_tool_enabled()` consolidation (5 implementations → 1 canonical) ✅
+  - Added `tool_enabled()` to `cihub/config/normalize.py` as canonical implementation
+  - Updated 4 call sites to delegate to canonical function
+- [x] Gate-spec enforcement wiring (ThresholdSpec evaluation in gates.py) ✅
+  - Added `_check_threshold()` helper to gates.py
+  - Defined 27 ThresholdSpecs (Python: 15, Java: 12) in gate_specs.py
+  - Wired 26 threshold checks (Python: 14, Java: 12) to use `evaluate_threshold` from gate_specs
+  - All 155 gate-related tests pass (test_ci_engine.py + test_gate_specs.py); full suite 1804 tests pass
+- [x] Language strategy extraction (Python/Java) — Complete ✅
+  - Created `cihub/core/languages/` with base.py, python.py, java.py, registry.py
+  - Delegation pattern: strategies delegate to existing `_run_*_tools()` functions
+  - 33 tests covering registry, strategies, build tool detection, language detection
+  - Refactored `run_ci()` to use strategy as primary dispatch
+  - Updated `helpers.py` to use `strategy.get_default_tools()`
+  - All 1837 tests pass
+- [x] Hub-CI CommandResult migration (43 functions → return CommandResult) — **Complete** ✅
+  - [x] validation.py: 8 functions migrated ✅
+  - [x] security.py: 6 functions migrated ✅
+  - [x] smoke.py: 4 functions migrated ✅
+  - [x] python_tools.py: 3 functions migrated ✅
+  - [x] java_tools.py: 6 functions migrated ✅
+  - [x] release.py: 16 functions migrated ✅
+  - Router bug fixed (CommandResult vs int comparison)
+- [x] Expand CI-engine tests (2 → 151) ✅ — 118 CI engine tests + 33 strategy tests
+- [x] Testing framework improvements ✅ (See `active/CLEAN_CODE.md` Part 10)
+  - [x] Phase T1: conftest.py, pytest-xdist, hypothesis
+  - [x] Phase T2: Parameterized tests (5 files refactored)
+  - [x] Phase T3: Property-based testing (12 Hypothesis tests)
+  - **Total: 1978 tests passing** *(updated 2026-01-05)*
+- [ ] Output normalization (forbid `print()` in commands — 485+ calls across 48 files)
+
+**Quality Gate Consistency:**
+- [ ] Summary vs report validator: compare `summary.md` gate rows to `report.json` + `tools_ran/tools_success`
+- [ ] Self-validate after `cihub ci`: run `cihub report validate --strict` on `report.json` + `summary.md`
+- [ ] Enforce report validation in `cihub check --audit` and `cihub smoke --full`
+- [ ] CI gate evaluation must fail/warn when `tests_total == 0`
+- [ ] Contract test: `gates.py`, `reporting.py`, and `report_validator` agree on outcomes
+- [ ] Configured-but-not-run policy: decide warning vs hard-fail and enforce consistently
+- [ ] `fail_on_not_run` policy flag (global + per-tool) with enforcement in gates/summary/triage
+- [ ] Threshold completeness rule: no `-` values in summaries; validator fails on missing thresholds
+- [ ] Gate result semantics: decide `tools_success` meaning vs adding `gate_results` block
+- [ ] Threshold sanity checks: warn/fail for permissive production thresholds (fixtures exempt)
+- [x] Artifact-first triage (`cihub triage --run/--workflow/--branch`) with report validation + mismatch warnings ✅
+- [x] Artifact evidence audit in triage (non-empty tool outputs, expected fields) ✅
+- [x] Multi-report triage aggregation (`cihub triage --multi --reports-dir`) ✅
+- [x] Per-tool evidence (configured/ran/required/result) with human-readable explanations ✅
+- [ ] Gate toggle visibility in summaries (expose effective gate flags or load config alongside report)
+- [x] Build tool status: reflect real build state in Tools Enabled + gates (not always Ran=true) ✅
+- [x] CVSS parsing + gating: extract max CVSS from OWASP/Trivy reports and enforce `*_cvss_fail` ✅
+- [x] JSON schema validation at runtime (`cihub report validate --schema`) ✅
 
 **Security/CI Hygiene:**
 - [ ] Pin `step-security/harden-runner` versions (21 uses)
 - [ ] Standardize all action version pins
+- [ ] Workflow input contract tests: ensure `.github/workflows/*-ci.yml` cover all `TOOL_KEYS` + `THRESHOLD_KEYS`
+- [ ] Template artifact guard: templates must upload `report.json` + `.cihub/tool-outputs/*`
 
 ### Heavy Lifts (After Quick Wins)
 
-- [ ] Env/context wrapper (`GitHubContext` for 17 `GITHUB_*` reads)
+- [x] Output/summary context wrapper (`OutputContext` for GITHUB_OUTPUT/GITHUB_STEP_SUMMARY) ✅
+- [ ] Env/context wrapper (`GitHubEnv` for 17 other `GITHUB_*` reads — extend `github_context.py`)
 - [ ] Runner/adapter boundaries (subprocess only in `ci_runner/`)
 - [ ] "No inline logic" workflow guard
 - [ ] Performance guardrails for docs stale/audit (<5s on ~28k corpus)
@@ -275,6 +323,12 @@ These are references, not competing plans.
 - [x] Split `ci_runner.py` into `cihub/core/ci_runner/` with facades.
 - [x] Split `aggregation.py` into `cihub/core/aggregation/` with facades.
 - [x] Update `cihub/core/__init__.py` re-exports for new core modules.
+- [x] **Split `triage_service.py` into `cihub/services/triage/` package (1134→565 lines, 50% reduction)** ✅
+  - `types.py`: ToolStatus, ToolEvidence, TriageBundle dataclasses
+  - `evidence.py`: build_tool_evidence, validate_artifact_evidence
+  - `detection.py`: detect_flaky_patterns, detect_test_count_regression
+  - `__init__.py`: Clean facade with re-exports
+  - **Reference pattern for future modularization** (see CLEAN_CODE.md Part 1.5)
 - [ ] Run targeted tests for core modularization changes.
 
 ### 8d) CLI Parser Modularization (Phase 6)
@@ -303,9 +357,13 @@ These are references, not competing plans.
 ### 9) Triage, Registry, and LLM Bundles (New)
 
 > **Implementation Note:** Triage bundles + prompt pack exist behind `CIHUB_EMIT_TRIAGE` env toggle.
+> **Update 2026-01-05:** Triage schema bumped to `cihub-triage-v2` with `tool_evidence` and `evidence_issues` sections.
 > Centralized registry + LLM diff outputs remain TODO.
 
-- [x] Define `cihub-triage-v1` schema with severity/blocker fields and stable versioning. *(Version constant in code; formal JSON Schema deferred to `--validate-schema` item below)*
+- [x] Define `cihub-triage-v2` schema with severity/blocker fields, tool evidence, and stable versioning. ✅
+  - `tool_evidence`: per-tool configured/ran/required/result status with explanations
+  - `evidence_issues`: validation warnings for tools lacking expected metrics/artifacts
+  - `summary.required_not_run_count`: count of HARD FAIL (require_run but didn't run) tools
 - [x] Implement `cihub triage` to emit:
   - `.cihub/triage.json` (full bundle)
   - `.cihub/priority.json` (sorted failures)
@@ -334,18 +392,18 @@ These are references, not competing plans.
 > **Principle:** All fixes stay in Python (CLI-first per ADR-0031). No composite actions or workflow logic.
 
 **Code Deduplication (High Priority):**
-- [ ] Consolidate `_tool_enabled()` — 5 implementations → 1 canonical in `cihub/config/loader/core.py`
-  - Locations: `config/loader/core.py`, `services/ci_engine/helpers.py`, `commands/report/helpers.py`, `commands/run.py`, `commands/config_outputs.py`
-  - 54 usages across codebase; any bug fix currently requires 5 updates
-- [ ] Refactor gate evaluation (`services/ci_engine/gates.py`) — extract pattern, data-drive config
-  - Current: 260 lines with 28 repetitive threshold checks
-  - Target: ~100 lines with generic `check_metric_gate()` helper
+- [x] Consolidate `_tool_enabled()` — 5 implementations → 1 canonical ✅ *(See Quick Wins above)*
+  - Canonical `tool_enabled()` added to `cihub/config/normalize.py`
+  - 4 call sites now delegate to canonical function
+- [x] Refactor gate evaluation (`services/ci_engine/gates.py`) — data-driven thresholds ✅ *(See Quick Wins above)*
+  - Added `_check_threshold()` helper wired to `gate_specs.evaluate_threshold`
+  - 16 threshold checks now use centralized evaluation
 
 **Test Coverage (High Priority):**
 - [ ] Expand `test_services_ci.py` — 2 tests → 20+ tests
   - Missing: Python/Java branching, tool execution, gate evaluation, notifications, env overrides
-- [ ] Add dedicated unit tests for `services/ci_engine/helpers.py` (272 lines, no test file)
-- [ ] Add dedicated unit tests for `services/ci_engine/gates.py` (260 lines, no test file)
+- [x] Add dedicated unit tests for `services/ci_engine/gates.py` ✅ — 161 tests in test_ci_engine.py + test_gate_specs.py
+- [ ] Add dedicated unit tests for `services/ci_engine/helpers.py` (272 lines, limited coverage)
 
 **CLI Consistency:**
 - [ ] Enable `--json` flag for `hub-ci` subcommands (47 commands currently blocked)
@@ -353,18 +411,34 @@ These are references, not competing plans.
 - [ ] Require subcommand for `cihub config` and `cihub adr` (currently optional, confusing UX)
 
 **Architecture (Medium Priority):**
-- [ ] Extract Language Strategies — `cihub/core/languages/` with polymorphic pattern
+- [x] Extract Language Strategies — `cihub/core/languages/` with polymorphic pattern ✅
   - Eliminates 38+ `if language == "python"` / `elif language == "java"` branches
   - Files: `base.py` (ABC), `python.py`, `java.py`, `registry.py`
+  - 33+ tests in `test_language_strategies.py`
   - See `active/CLEAN_CODE.md` Part 2.1 for design
+- [x] CLI argument factory consolidation — `cihub/cli_parsers/common.py` ✅
+  - 8 factory functions: `add_output_args`, `add_summary_args`, `add_repo_args`, `add_report_args`, `add_path_args`, `add_output_dir_args`, `add_ci_output_args`, `add_tool_runner_args`
+  - `hub_ci.py`: 628 → 535 lines (93 lines, 15% reduction)
+  - Refactored `report.py` and `core.py` to use factories
+  - 30 parameterized tests in `test_cli_common.py`
+- [x] OutputContext dataclass — `cihub/utils/github_context.py` ✅ *(2026-01-05)*
+  - Replaces 2-step pattern: `_resolve_output_path()` + `_write_outputs()` → `ctx.write_outputs()`
+  - 32 call sites migrated across 7 hub-ci files
+  - 38 tests (parameterized + Hypothesis property-based)
+  - See `active/CLEAN_CODE.md` Phase 2
 
 **Workflow Security (Quick Fix):**
 - [ ] Pin `step-security/harden-runner` versions (21 unpinned uses across workflows)
 
 **Centralization & Boundaries (From Audit):**
-- [ ] Env/context wrapper — `cihub/utils/github.py:GitHubContext`
+- [x] Output/Summary context wrapper — `cihub/utils/github_context.py:OutputContext` ✅ *(2026-01-05)*
+  - Centralizes GITHUB_OUTPUT/GITHUB_STEP_SUMMARY handling
+  - `from_args()` factory + `write_outputs()`/`write_summary()` methods
+  - 32 call sites migrated, 38 tests
+- [ ] Env/context wrapper — extend `cihub/utils/github_context.py` with `GitHubEnv`
   - Centralizes 17 files with direct `os.environ.get("GITHUB_*")` reads
   - Property accessors for common values (repo, sha, ref, actor, etc.)
+  - Can extend existing `github_context.py` module
   - Lint/test to enforce usage (no direct `GITHUB_*` reads in commands)
 - [ ] Runner/adapter boundaries — All subprocess execution in `cihub/core/ci_runner/shared.py`
   - Adapters build specs; strategies orchestrate; no ad-hoc `subprocess.run` in commands
@@ -443,23 +517,37 @@ These are references, not competing plans.
 
 **Remote Run Analysis (CLI-First, ADR-0035 aligned):**
 
-> **Status:** Initial implementation exists (`--run`, `--artifacts-dir`, `--repo` flags added).
-> Needs enhancement for multi-repo/matrix runs and artifact-first strategy.
+> **Status:** Full artifact-first implementation complete. Tool evidence + multi-report aggregation implemented.
 
 - [x] Add `cihub triage --run <run_id>` — Basic implementation (log parsing fallback)
 - [x] Add `cihub triage --artifacts-dir <path>` — Offline mode (basic support)
 - [x] Add `cihub triage --repo <owner/repo>` — Target different repository
+- [x] Add `cihub triage --multi --reports-dir <path>` — Multi-report aggregation mode
 
-**Production Enhancements (Required for real workflows):**
-- [ ] **Artifact-first strategy**: Download artifacts before falling back to logs
+**Artifact-First Triage (Implemented):**
+- [x] **Per-tool evidence**: `tool_evidence` section in triage.json shows configured/ran/required/result status
+  - `ToolStatus` enum: PASSED, FAILED, SKIPPED, REQUIRED_NOT_RUN, NOT_CONFIGURED
+  - Human-readable explanations for each tool's status
+  - Includes tool metrics and artifact presence info
+- [x] **Artifact evidence validation**: `validate_artifact_evidence()` warns when tools lack evidence
+  - Warns when ran+success but no metrics/artifacts
+  - Info note when failed tool has no artifacts for debugging
+- [x] **Multi-report aggregation**: `aggregate_triage_bundles()` for orchestrator runs
+  - Summarizes pass/fail across N repos
+  - `failures_by_tool`: which tools failed in which repos
+  - `failures_by_repo`: which repos failed which tools
+  - Generates markdown summary table
+
+**Production Enhancements (Remaining):**
+- [x] **Artifact-first strategy**: Download artifacts before falling back to logs ✅
   - `gh run download <run_id>` to fetch `*-ci-report` artifacts
   - Parse `report.json`, `summary.md`, `tool-outputs/*.json` from each artifact
   - Only fall back to `--log-failed` if no artifacts exist
-- [ ] **Multi-repo/matrix support**: Handle orchestrator runs with multiple repos
+- [x] **Multi-repo/matrix support**: Handle orchestrator runs with multiple repos ✅
   - `hub-run-all` uploads one artifact per repo (e.g., `repo-name-ci-report`)
   - `hub-orchestrator` uploads dispatch metadata
   - Produce one triage bundle per repo OR a merged aggregate view
-  - Add `--aggregate` flag to merge all repo bundles into single triage
+  - `--multi --reports-dir` merges all repo bundles into single multi-triage.json
 - [ ] **CI parity**: Same bundle shape for local and remote
   - Local: reads from `.cihub/report.json`
   - Remote: downloads to temp dir, reads same structure
@@ -495,6 +583,7 @@ These are references, not competing plans.
 ### Governance & Metrics
 - [ ] Add RBAC guidance (defer to GitHub permissions for MVP)
 - [ ] Add DORA metrics derived from history (optional)
+- [ ] Add flaky test detection + test-count drop alerts from triage history (CLI-first)
 
 ### Optional Tooling
 - [ ] Evaluate `act` integration for local workflow simulation (document limitations)

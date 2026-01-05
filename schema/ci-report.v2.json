@@ -61,12 +61,19 @@
         "test": { "type": "string" },
         "build": { "type": "string" },
         "coverage": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "coverage_lines_covered": { "type": ["integer", "null"], "minimum": 0 },
+        "coverage_lines_total": { "type": ["integer", "null"], "minimum": 0 },
         "mutation_score": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+        "mutation_killed": { "type": ["integer", "null"], "minimum": 0 },
+        "mutation_survived": { "type": ["integer", "null"], "minimum": 0 },
         "tests_passed": { "type": ["integer", "null"], "minimum": 0 },
         "tests_failed": { "type": ["integer", "null"], "minimum": 0 },
+        "tests_skipped": { "type": ["integer", "null"], "minimum": 0 },
+        "tests_runtime_seconds": { "type": ["number", "null"], "minimum": 0 },
         "critical_vulns": { "type": ["integer", "null"], "minimum": 0 },
         "high_vulns": { "type": ["integer", "null"], "minimum": 0 },
-        "medium_vulns": { "type": ["integer", "null"], "minimum": 0 }
+        "medium_vulns": { "type": ["integer", "null"], "minimum": 0 },
+        "low_vulns": { "type": ["integer", "null"], "minimum": 0 }
       }
     },
     "tool_metrics": {
@@ -77,6 +84,7 @@
         "mypy_errors": { "type": ["integer", "null"], "minimum": 0 },
         "bandit_high": { "type": ["integer", "null"], "minimum": 0 },
         "bandit_medium": { "type": ["integer", "null"], "minimum": 0 },
+        "bandit_low": { "type": ["integer", "null"], "minimum": 0 },
         "black_issues": { "type": ["integer", "null"], "minimum": 0 },
         "isort_issues": { "type": ["integer", "null"], "minimum": 0 },
         "pip_audit_vulns": { "type": ["integer", "null"], "minimum": 0 },
@@ -85,9 +93,17 @@
         "pmd_violations": { "type": ["integer", "null"], "minimum": 0 },
         "owasp_critical": { "type": ["integer", "null"], "minimum": 0 },
         "owasp_high": { "type": ["integer", "null"], "minimum": 0 },
+        "owasp_medium": { "type": ["integer", "null"], "minimum": 0 },
+        "owasp_low": { "type": ["integer", "null"], "minimum": 0 },
+        "owasp_max_cvss": { "type": ["number", "null"], "minimum": 0, "maximum": 10 },
         "semgrep_findings": { "type": ["integer", "null"], "minimum": 0 },
         "trivy_critical": { "type": ["integer", "null"], "minimum": 0 },
-        "trivy_high": { "type": ["integer", "null"], "minimum": 0 }
+        "trivy_high": { "type": ["integer", "null"], "minimum": 0 },
+        "trivy_medium": { "type": ["integer", "null"], "minimum": 0 },
+        "trivy_low": { "type": ["integer", "null"], "minimum": 0 },
+        "trivy_max_cvss": { "type": ["number", "null"], "minimum": 0, "maximum": 10 },
+        "docker_missing_compose": { "type": ["boolean", "null"] },
+        "docker_health_ok": { "type": ["boolean", "null"] }
       }
     },
     "tools_ran": {
@@ -104,6 +120,7 @@
         "black": { "type": "boolean" },
         "isort": { "type": "boolean" },
         "mutmut": { "type": "boolean" },
+        "build": { "type": "boolean" },
         "jacoco": { "type": "boolean" },
         "checkstyle": { "type": "boolean" },
         "spotbugs": { "type": "boolean" },
@@ -114,7 +131,8 @@
         "semgrep": { "type": "boolean" },
         "trivy": { "type": "boolean" },
         "docker": { "type": "boolean" },
-        "codeql": { "type": "boolean" }
+        "codeql": { "type": "boolean" },
+        "sbom": { "type": "boolean" }
       }
     },
     "tools_configured": {
@@ -131,6 +149,7 @@
         "black": { "type": "boolean" },
         "isort": { "type": "boolean" },
         "mutmut": { "type": "boolean" },
+        "build": { "type": "boolean" },
         "jacoco": { "type": "boolean" },
         "checkstyle": { "type": "boolean" },
         "spotbugs": { "type": "boolean" },
@@ -141,7 +160,8 @@
         "semgrep": { "type": "boolean" },
         "trivy": { "type": "boolean" },
         "docker": { "type": "boolean" },
-        "codeql": { "type": "boolean" }
+        "codeql": { "type": "boolean" },
+        "sbom": { "type": "boolean" }
       }
     },
     "tools_success": {
@@ -158,6 +178,7 @@
         "black": { "type": "boolean" },
         "isort": { "type": "boolean" },
         "mutmut": { "type": "boolean" },
+        "build": { "type": "boolean" },
         "jacoco": { "type": "boolean" },
         "checkstyle": { "type": "boolean" },
         "spotbugs": { "type": "boolean" },
@@ -168,7 +189,37 @@
         "semgrep": { "type": "boolean" },
         "trivy": { "type": "boolean" },
         "docker": { "type": "boolean" },
-        "codeql": { "type": "boolean" }
+        "codeql": { "type": "boolean" },
+        "sbom": { "type": "boolean" }
+      }
+    },
+    "tools_require_run": {
+      "type": "object",
+      "description": "Which tools have require_run_or_fail=true (configured but not run = hard fail)",
+      "additionalProperties": false,
+      "properties": {
+        "pytest": { "type": "boolean" },
+        "ruff": { "type": "boolean" },
+        "bandit": { "type": "boolean" },
+        "pip_audit": { "type": "boolean" },
+        "mypy": { "type": "boolean" },
+        "hypothesis": { "type": "boolean" },
+        "black": { "type": "boolean" },
+        "isort": { "type": "boolean" },
+        "mutmut": { "type": "boolean" },
+        "build": { "type": "boolean" },
+        "jacoco": { "type": "boolean" },
+        "checkstyle": { "type": "boolean" },
+        "spotbugs": { "type": "boolean" },
+        "pmd": { "type": "boolean" },
+        "owasp": { "type": "boolean" },
+        "pitest": { "type": "boolean" },
+        "jqwik": { "type": "boolean" },
+        "semgrep": { "type": "boolean" },
+        "trivy": { "type": "boolean" },
+        "docker": { "type": "boolean" },
+        "codeql": { "type": "boolean" },
+        "sbom": { "type": "boolean" }
       }
     },
     "thresholds": {
@@ -178,17 +229,47 @@
       "properties": {
         "coverage_min": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
         "mutation_score_min": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
-        "owasp_cvss_fail": { "type": ["number", "null"], "minimum": 0 },
-        "trivy_cvss_fail": { "type": ["number", "null"], "minimum": 0 },
+        "owasp_cvss_fail": { "type": ["number", "null"], "minimum": 0, "maximum": 10 },
+        "trivy_cvss_fail": { "type": ["number", "null"], "minimum": 0, "maximum": 10 },
         "max_pmd_violations": { "type": ["integer", "null"], "minimum": 0 },
         "max_critical_vulns": { "type": ["integer", "null"], "minimum": 0 },
         "max_high_vulns": { "type": ["integer", "null"], "minimum": 0 },
+        "max_pip_audit_vulns": { "type": ["integer", "null"], "minimum": 0 },
         "max_semgrep_findings": { "type": ["integer", "null"], "minimum": 0 },
         "max_checkstyle_errors": { "type": ["integer", "null"], "minimum": 0 },
         "max_spotbugs_bugs": { "type": ["integer", "null"], "minimum": 0 },
         "max_ruff_errors": { "type": ["integer", "null"], "minimum": 0 },
         "max_black_issues": { "type": ["integer", "null"], "minimum": 0 },
-        "max_isort_issues": { "type": ["integer", "null"], "minimum": 0 }
+        "max_isort_issues": { "type": ["integer", "null"], "minimum": 0 },
+        "max_mypy_errors": { "type": ["integer", "null"], "minimum": 0 },
+        "max_bandit_medium": { "type": ["integer", "null"], "minimum": 0 },
+        "max_bandit_low": { "type": ["integer", "null"], "minimum": 0 },
+        "max_trivy_critical": { "type": ["integer", "null"], "minimum": 0 },
+        "max_trivy_high": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "description": "Runtime environment details",
+      "additionalProperties": false,
+      "properties": {
+        "workdir": { "type": ["string", "null"] },
+        "retention_days": { "type": ["integer", "null"], "minimum": 1 },
+        "build_tool": { "type": ["string", "null"] },
+        "project_type": { "type": ["string", "null"] },
+        "docker_compose_file": { "type": ["string", "null"] },
+        "docker_health_endpoint": { "type": ["string", "null"] }
+      }
+    },
+    "dependency_severity": {
+      "type": "object",
+      "description": "Aggregated vulnerability counts by severity",
+      "additionalProperties": false,
+      "properties": {
+        "critical": { "type": ["integer", "null"], "minimum": 0 },
+        "high": { "type": ["integer", "null"], "minimum": 0 },
+        "medium": { "type": ["integer", "null"], "minimum": 0 },
+        "low": { "type": ["integer", "null"], "minimum": 0 }
       }
     }
   }

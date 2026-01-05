@@ -6,67 +6,11 @@ import json
 from pathlib import Path
 from typing import Any, Iterable
 
-JAVA_TOOL_ROWS = [
-    ("Build", "Build", "__build__"),
-    ("Testing", "JaCoCo Coverage", "jacoco"),
-    ("Testing", "PITest", "pitest"),
-    ("Testing", "jqwik", "jqwik"),
-    ("Linting", "Checkstyle", "checkstyle"),
-    ("Linting", "PMD", "pmd"),
-    ("Linting", "SpotBugs", "spotbugs"),
-    ("Security", "OWASP Dependency-Check", "owasp"),
-    ("Security", "Semgrep", "semgrep"),
-    ("Security", "Trivy", "trivy"),
-    ("Security", "CodeQL", "codeql"),
-    ("Security", "SBOM", "sbom"),
-    ("Container", "Docker", "docker"),
-]
+from cihub.core.gate_specs import threshold_rows, tool_rows
 
 BAR_WIDTH = 20
 BAR_FULL = chr(0x2588)
 BAR_EMPTY = chr(0x2591)
-
-PYTHON_TOOL_ROWS = [
-    ("Testing", "pytest", "pytest"),
-    ("Testing", "mutmut", "mutmut"),
-    ("Testing", "Hypothesis", "hypothesis"),
-    ("Linting", "Ruff", "ruff"),
-    ("Linting", "Black", "black"),
-    ("Linting", "isort", "isort"),
-    ("Linting", "mypy", "mypy"),
-    ("Security", "Bandit", "bandit"),
-    ("Security", "pip-audit", "pip_audit"),
-    ("Security", "Semgrep", "semgrep"),
-    ("Security", "Trivy", "trivy"),
-    ("Security", "CodeQL", "codeql"),
-    ("Security", "SBOM", "sbom"),
-    ("Container", "Docker", "docker"),
-]
-
-JAVA_THRESHOLD_ROWS = [
-    ("Min Coverage", "coverage_min", "%"),
-    ("Min Mutation Score", "mutation_score_min", "%"),
-    ("OWASP CVSS Fail", "owasp_cvss_fail", ""),
-    ("Max Critical Vulns", "max_critical_vulns", ""),
-    ("Max High Vulns", "max_high_vulns", ""),
-    ("Max Semgrep Findings", "max_semgrep_findings", ""),
-    ("Max PMD Violations", "max_pmd_violations", ""),
-    ("Max Checkstyle Errors", "max_checkstyle_errors", ""),
-    ("Max SpotBugs Bugs", "max_spotbugs_bugs", ""),
-]
-
-PYTHON_THRESHOLD_ROWS = [
-    ("Min Coverage", "coverage_min", "%"),
-    ("Min Mutation Score", "mutation_score_min", "%"),
-    ("Trivy CVSS Fail", "trivy_cvss_fail", ""),
-    ("Max Critical Vulns", "max_critical_vulns", ""),
-    ("Max High Vulns", "max_high_vulns", ""),
-    ("Max pip-audit Vulns", "max_pip_audit_vulns", ""),
-    ("Max Semgrep Findings", "max_semgrep_findings", ""),
-    ("Max Ruff Errors", "max_ruff_errors", ""),
-    ("Max Black Issues", "max_black_issues", ""),
-    ("Max isort Issues", "max_isort_issues", ""),
-]
 
 ENV_ROWS = [
     ("Java Version", "java_version"),
@@ -152,7 +96,7 @@ def build_tools_table(report: dict[str, Any], language: str) -> Iterable[str]:
     results = report.get("results", {}) or {}
     env = report.get("environment", {}) or {}
 
-    rows = JAVA_TOOL_ROWS if language == "java" else PYTHON_TOOL_ROWS
+    rows = tool_rows(language)
     lines = [
         "## Tools Enabled",
         "| Category | Tool | Configured | Ran | Success |",
@@ -161,10 +105,17 @@ def build_tools_table(report: dict[str, Any], language: str) -> Iterable[str]:
 
     for category, label, key in rows:
         if key == "__build__":
+            # Build tool uses "build" as the report key, not "__build__"
             build_tool = env.get("build_tool") or report.get("build_tool") or "build"
             build_status = results.get("build")
+            # Check actual build status from report - build is configured if it ran
+            build_ran = bool(tools_ran.get("build", False)) or build_status is not None
+            build_configured = build_ran  # Build is implicitly configured if it ran
             build_success = fmt_bool(build_status == "success")
-            lines.append(f"| {category} | {build_tool} | true | true | {build_success} |")
+            lines.append(
+                f"| {category} | {build_tool} | {fmt_bool(build_configured)} "
+                f"| {fmt_bool(build_ran)} | {build_success} |"
+            )
             continue
         configured = fmt_bool(tools_configured.get(key, False))
         ran = fmt_bool(tools_ran.get(key, False))
@@ -177,7 +128,7 @@ def build_tools_table(report: dict[str, Any], language: str) -> Iterable[str]:
 
 def build_thresholds_table(report: dict[str, Any], language: str) -> Iterable[str]:
     thresholds = report.get("thresholds", {}) or {}
-    rows = JAVA_THRESHOLD_ROWS if language == "java" else PYTHON_THRESHOLD_ROWS
+    rows = threshold_rows(language)
     lines = [
         "## Thresholds (effective)",
         "| Setting | Value |",
@@ -415,9 +366,28 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
     tool_metrics = report.get("tool_metrics", {}) or {}
     thresholds = report.get("thresholds", {}) or {}
     tools_configured = report.get("tools_configured", {}) or {}
+    tools_ran = report.get("tools_ran", {}) or {}
+    tools_success = report.get("tools_success", {}) or {}
+    tools_require_run = report.get("tools_require_run", {}) or {}
 
     def gate_status(condition: bool, fail_label: str) -> str:
-        return "Passed" if condition else fail_label
+        """Return gate status with color indicator."""
+        if condition:
+            return "✅ Passed"
+        return f"❌ {fail_label}"
+
+    def ran(tool: str) -> bool:
+        return bool(tools_ran.get(tool, False))
+
+    def not_run_status(tool: str) -> str:
+        """Return NOT RUN status with annotation for hard-fail vs soft-skip."""
+        if tools_require_run.get(tool, False):
+            return "❌ NOT RUN"  # Hard-fail: will cause CI to fail
+        return "⚠️ NOT RUN"  # Soft-skip: warning only
+
+    def skip_status() -> str:
+        """Return SKIP status."""
+        return "SKIP"
 
     lines = [
         "## Quality Gates",
@@ -426,135 +396,261 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
     ]
 
     tests_failed = format_number(results.get("tests_failed"))
-    lines.append(f"| Unit Tests | {gate_status(tests_failed == 0, 'Failed')} |")
+    tests_passed = format_number(results.get("tests_passed"))
+    tests_skipped = format_number(results.get("tests_skipped"))
+    tests_total = tests_failed + tests_passed + tests_skipped
+    if tests_total == 0:
+        lines.append("| Unit Tests | ⚠️ NOT RUN |")
+    else:
+        lines.append(f"| Unit Tests | {gate_status(tests_failed == 0, 'Failed')} |")
 
     if language == "java":
         if tools_configured.get("jacoco", False):
-            cov = format_number(results.get("coverage"))
-            min_cov = format_number(thresholds.get("coverage_min"))
-            cov_status = gate_status(cov >= min_cov, "Failed")
-            lines.append(f"| JaCoCo Coverage | {cov_status} |")
+            if not ran("jacoco"):
+                lines.append(f"| JaCoCo Coverage | {not_run_status('jacoco')} |")
+            else:
+                cov = format_number(results.get("coverage"))
+                min_cov = format_number(thresholds.get("coverage_min"))
+                cov_status = gate_status(cov >= min_cov, "Failed")
+                lines.append(f"| JaCoCo Coverage | {cov_status} |")
         else:
             lines.append("| JaCoCo Coverage | SKIP |")
 
         if tools_configured.get("pitest", False):
-            mut = format_number(results.get("mutation_score"))
-            min_mut = format_number(thresholds.get("mutation_score_min"))
-            mut_status = gate_status(mut >= min_mut, "Failed")
-            lines.append(f"| PITest Mutation | {mut_status} |")
+            if not ran("pitest"):
+                lines.append(f"| PITest Mutation | {not_run_status('pitest')} |")
+            else:
+                mut = format_number(results.get("mutation_score"))
+                min_mut = format_number(thresholds.get("mutation_score_min"))
+                mut_status = gate_status(mut >= min_mut, "Failed")
+                lines.append(f"| PITest Mutation | {mut_status} |")
         else:
             lines.append("| PITest Mutation | SKIP |")
 
         if tools_configured.get("checkstyle", False):
-            issues = format_number(tool_metrics.get("checkstyle_issues"))
-            max_issues = format_number(thresholds.get("max_checkstyle_errors"))
-            lines.append(f"| Checkstyle | {gate_status(issues <= max_issues, 'Violations')} |")
+            if not ran("checkstyle"):
+                lines.append(f"| Checkstyle | {not_run_status('checkstyle')} |")
+            else:
+                issues = format_number(tool_metrics.get("checkstyle_issues"))
+                max_issues = format_number(thresholds.get("max_checkstyle_errors"))
+                lines.append(f"| Checkstyle | {gate_status(issues <= max_issues, 'Violations')} |")
         else:
             lines.append("| Checkstyle | SKIP |")
 
         if tools_configured.get("spotbugs", False):
-            issues = format_number(tool_metrics.get("spotbugs_issues"))
-            max_issues = format_number(thresholds.get("max_spotbugs_bugs"))
-            lines.append(f"| SpotBugs | {gate_status(issues <= max_issues, 'Bugs found')} |")
+            if not ran("spotbugs"):
+                lines.append(f"| SpotBugs | {not_run_status('spotbugs')} |")
+            else:
+                issues = format_number(tool_metrics.get("spotbugs_issues"))
+                max_issues = format_number(thresholds.get("max_spotbugs_bugs"))
+                lines.append(f"| SpotBugs | {gate_status(issues <= max_issues, 'Bugs found')} |")
         else:
             lines.append("| SpotBugs | SKIP |")
 
         if tools_configured.get("pmd", False):
-            issues = format_number(tool_metrics.get("pmd_violations"))
-            max_issues = format_number(thresholds.get("max_pmd_violations"))
-            lines.append(f"| PMD | {gate_status(issues <= max_issues, 'Violations')} |")
+            if not ran("pmd"):
+                lines.append(f"| PMD | {not_run_status('pmd')} |")
+            else:
+                issues = format_number(tool_metrics.get("pmd_violations"))
+                max_issues = format_number(thresholds.get("max_pmd_violations"))
+                lines.append(f"| PMD | {gate_status(issues <= max_issues, 'Violations')} |")
         else:
             lines.append("| PMD | SKIP |")
 
         if tools_configured.get("owasp", False):
-            crit = format_number(tool_metrics.get("owasp_critical"))
-            high = format_number(tool_metrics.get("owasp_high"))
-            max_crit = format_number(thresholds.get("max_critical_vulns"))
-            max_high = format_number(thresholds.get("max_high_vulns"))
-            ok = crit <= max_crit and high <= max_high
-            lines.append(f"| OWASP Check | {gate_status(ok, 'Vulnerabilities')} |")
+            if not ran("owasp"):
+                lines.append(f"| OWASP Check | {not_run_status('owasp')} |")
+            else:
+                crit = format_number(tool_metrics.get("owasp_critical"))
+                high = format_number(tool_metrics.get("owasp_high"))
+                max_crit = format_number(thresholds.get("max_critical_vulns"))
+                max_high = format_number(thresholds.get("max_high_vulns"))
+                ok = crit <= max_crit and high <= max_high
+                lines.append(f"| OWASP Check | {gate_status(ok, 'Vulnerabilities')} |")
         else:
             lines.append("| OWASP Check | SKIP |")
 
         if tools_configured.get("semgrep", False):
-            findings = format_number(tool_metrics.get("semgrep_findings"))
-            max_findings = format_number(thresholds.get("max_semgrep_findings"))
-            lines.append(f"| Semgrep | {gate_status(findings <= max_findings, 'Findings')} |")
+            if not ran("semgrep"):
+                lines.append(f"| Semgrep | {not_run_status('semgrep')} |")
+            else:
+                findings = format_number(tool_metrics.get("semgrep_findings"))
+                max_findings = format_number(thresholds.get("max_semgrep_findings"))
+                lines.append(f"| Semgrep | {gate_status(findings <= max_findings, 'Findings')} |")
         else:
             lines.append("| Semgrep | SKIP |")
 
         if tools_configured.get("trivy", False):
-            crit = format_number(tool_metrics.get("trivy_critical"))
-            high = format_number(tool_metrics.get("trivy_high"))
-            max_crit = format_number(thresholds.get("max_critical_vulns"))
-            max_high = format_number(thresholds.get("max_high_vulns"))
-            ok = crit <= max_crit and high <= max_high
-            lines.append(f"| Trivy | {gate_status(ok, 'Findings')} |")
+            if not ran("trivy"):
+                lines.append(f"| Trivy | {not_run_status('trivy')} |")
+            else:
+                crit = format_number(tool_metrics.get("trivy_critical"))
+                high = format_number(tool_metrics.get("trivy_high"))
+                max_crit = format_number(thresholds.get("max_critical_vulns"))
+                max_high = format_number(thresholds.get("max_high_vulns"))
+                ok = crit <= max_crit and high <= max_high
+                lines.append(f"| Trivy | {gate_status(ok, 'Findings')} |")
         else:
             lines.append("| Trivy | SKIP |")
 
+        if tools_configured.get("codeql", False):
+            if not ran("codeql"):
+                lines.append(f"| CodeQL | {not_run_status('codeql')} |")
+            else:
+                lines.append(f"| CodeQL | {gate_status(bool(tools_success.get('codeql', False)), 'Failed')} |")
+        else:
+            lines.append("| CodeQL | SKIP |")
+
+        if tools_configured.get("docker", False):
+            docker_missing = bool(tool_metrics.get("docker_missing_compose", False))
+            if docker_missing:
+                lines.append("| Docker | Missing compose |")
+            elif not ran("docker"):
+                lines.append(f"| Docker | {not_run_status('docker')} |")
+            else:
+                lines.append(f"| Docker | {gate_status(bool(tools_success.get('docker', False)), 'Failed')} |")
+        else:
+            lines.append("| Docker | SKIP |")
+
+        if tools_configured.get("sbom", False):
+            if not ran("sbom"):
+                lines.append(f"| SBOM | {not_run_status('sbom')} |")
+            else:
+                lines.append(f"| SBOM | {gate_status(bool(tools_success.get('sbom', False)), 'Failed')} |")
+        else:
+            lines.append("| SBOM | SKIP |")
+
     else:
         if tools_configured.get("pytest", False):
-            lines.append(f"| pytest | {gate_status(tests_failed == 0, 'Failed')} |")
+            if not ran("pytest"):
+                lines.append(f"| pytest | {not_run_status('pytest')} |")
+            elif tests_total == 0:
+                lines.append(f"| pytest | {not_run_status('pytest')} |")
+            else:
+                lines.append(f"| pytest | {gate_status(tests_failed == 0, 'Failed')} |")
         else:
             lines.append("| pytest | SKIP |")
 
         if tools_configured.get("mutmut", False):
-            mut = format_number(results.get("mutation_score"))
-            min_mut = format_number(thresholds.get("mutation_score_min"))
-            lines.append(f"| mutmut | {gate_status(mut >= min_mut, 'Failed')} |")
+            if not ran("mutmut"):
+                lines.append(f"| mutmut | {not_run_status('mutmut')} |")
+            else:
+                mut = format_number(results.get("mutation_score"))
+                min_mut = format_number(thresholds.get("mutation_score_min"))
+                lines.append(f"| mutmut | {gate_status(mut >= min_mut, 'Failed')} |")
         else:
             lines.append("| mutmut | SKIP |")
 
         if tools_configured.get("ruff", False):
-            issues = format_number(tool_metrics.get("ruff_errors"))
-            max_issues = format_number(thresholds.get("max_ruff_errors"))
-            lines.append(f"| Ruff | {gate_status(issues <= max_issues, 'Issues')} |")
+            if not ran("ruff"):
+                lines.append(f"| Ruff | {not_run_status('ruff')} |")
+            else:
+                issues = format_number(tool_metrics.get("ruff_errors"))
+                max_issues = format_number(thresholds.get("max_ruff_errors"))
+                lines.append(f"| Ruff | {gate_status(issues <= max_issues, 'Issues')} |")
         else:
             lines.append("| Ruff | SKIP |")
 
         if tools_configured.get("black", False):
-            issues = format_number(tool_metrics.get("black_issues"))
-            max_issues = format_number(thresholds.get("max_black_issues"))
-            lines.append(f"| Black | {gate_status(issues <= max_issues, 'Issues')} |")
+            if not ran("black"):
+                lines.append(f"| Black | {not_run_status('black')} |")
+            else:
+                issues = format_number(tool_metrics.get("black_issues"))
+                max_issues = format_number(thresholds.get("max_black_issues"))
+                lines.append(f"| Black | {gate_status(issues <= max_issues, 'Issues')} |")
         else:
             lines.append("| Black | SKIP |")
 
         if tools_configured.get("isort", False):
-            issues = format_number(tool_metrics.get("isort_issues"))
-            max_issues = format_number(thresholds.get("max_isort_issues"))
-            lines.append(f"| isort | {gate_status(issues <= max_issues, 'Issues')} |")
+            if not ran("isort"):
+                lines.append(f"| isort | {not_run_status('isort')} |")
+            else:
+                issues = format_number(tool_metrics.get("isort_issues"))
+                max_issues = format_number(thresholds.get("max_isort_issues"))
+                lines.append(f"| isort | {gate_status(issues <= max_issues, 'Issues')} |")
         else:
             lines.append("| isort | SKIP |")
 
         if tools_configured.get("mypy", False):
-            issues = format_number(tool_metrics.get("mypy_errors"))
-            lines.append(f"| mypy | {gate_status(issues == 0, 'Errors')} |")
+            if not ran("mypy"):
+                lines.append(f"| mypy | {not_run_status('mypy')} |")
+            else:
+                issues = format_number(tool_metrics.get("mypy_errors"))
+                lines.append(f"| mypy | {gate_status(issues == 0, 'Errors')} |")
         else:
             lines.append("| mypy | SKIP |")
 
         if tools_configured.get("bandit", False):
-            high = format_number(tool_metrics.get("bandit_high"))
-            max_high = format_number(thresholds.get("max_high_vulns"))
-            lines.append(f"| Bandit | {gate_status(high <= max_high, 'Findings')} |")
+            if not ran("bandit"):
+                lines.append(f"| Bandit | {not_run_status('bandit')} |")
+            else:
+                high = format_number(tool_metrics.get("bandit_high"))
+                max_high = format_number(thresholds.get("max_high_vulns"))
+                lines.append(f"| Bandit | {gate_status(high <= max_high, 'Findings')} |")
         else:
             lines.append("| Bandit | SKIP |")
 
         if tools_configured.get("pip_audit", False):
-            vulns = format_number(tool_metrics.get("pip_audit_vulns"))
-            max_high = format_number(thresholds.get("max_high_vulns"))
-            raw_pip = thresholds.get("max_pip_audit_vulns")
-            limit = format_number(raw_pip) if raw_pip is not None else max_high
-            lines.append(f"| pip-audit | {gate_status(vulns <= limit, 'Findings')} |")
+            if not ran("pip_audit"):
+                lines.append(f"| pip-audit | {not_run_status('pip_audit')} |")
+            else:
+                vulns = format_number(tool_metrics.get("pip_audit_vulns"))
+                max_high = format_number(thresholds.get("max_high_vulns"))
+                raw_pip = thresholds.get("max_pip_audit_vulns")
+                limit = format_number(raw_pip) if raw_pip is not None else max_high
+                lines.append(f"| pip-audit | {gate_status(vulns <= limit, 'Findings')} |")
         else:
             lines.append("| pip-audit | SKIP |")
 
         if tools_configured.get("semgrep", False):
-            findings = format_number(tool_metrics.get("semgrep_findings"))
-            max_findings = format_number(thresholds.get("max_semgrep_findings"))
-            lines.append(f"| Semgrep | {gate_status(findings <= max_findings, 'Findings')} |")
+            if not ran("semgrep"):
+                lines.append(f"| Semgrep | {not_run_status('semgrep')} |")
+            else:
+                findings = format_number(tool_metrics.get("semgrep_findings"))
+                max_findings = format_number(thresholds.get("max_semgrep_findings"))
+                lines.append(f"| Semgrep | {gate_status(findings <= max_findings, 'Findings')} |")
         else:
             lines.append("| Semgrep | SKIP |")
+
+        if tools_configured.get("trivy", False):
+            if not ran("trivy"):
+                lines.append(f"| Trivy | {not_run_status('trivy')} |")
+            else:
+                crit = format_number(tool_metrics.get("trivy_critical"))
+                high = format_number(tool_metrics.get("trivy_high"))
+                max_crit = format_number(thresholds.get("max_critical_vulns"))
+                max_high = format_number(thresholds.get("max_high_vulns"))
+                ok = crit <= max_crit and high <= max_high
+                lines.append(f"| Trivy | {gate_status(ok, 'Findings')} |")
+        else:
+            lines.append("| Trivy | SKIP |")
+
+        if tools_configured.get("codeql", False):
+            if not ran("codeql"):
+                lines.append(f"| CodeQL | {not_run_status('codeql')} |")
+            else:
+                lines.append(f"| CodeQL | {gate_status(bool(tools_success.get('codeql', False)), 'Failed')} |")
+        else:
+            lines.append("| CodeQL | SKIP |")
+
+        if tools_configured.get("docker", False):
+            docker_missing = bool(tool_metrics.get("docker_missing_compose", False))
+            if docker_missing:
+                lines.append("| Docker | Missing compose |")
+            elif not ran("docker"):
+                lines.append(f"| Docker | {not_run_status('docker')} |")
+            else:
+                lines.append(f"| Docker | {gate_status(bool(tools_success.get('docker', False)), 'Failed')} |")
+        else:
+            lines.append("| Docker | SKIP |")
+
+        if tools_configured.get("sbom", False):
+            if not ran("sbom"):
+                lines.append(f"| SBOM | {not_run_status('sbom')} |")
+            else:
+                lines.append(f"| SBOM | {gate_status(bool(tools_success.get('sbom', False)), 'Failed')} |")
+        else:
+            lines.append("| SBOM | SKIP |")
 
     lines.append("")
     return lines

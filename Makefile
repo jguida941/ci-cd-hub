@@ -20,6 +20,17 @@ lint: ## Run ruff lint
 format: ## Run ruff formatter
 	ruff format cihub/ tests/ scripts/
 
+.PHONY: format-black
+format-black: ## Run black formatter
+	black cihub/ tests/ scripts/
+
+.PHONY: format-isort
+format-isort: ## Run isort import sorter
+	isort cihub/ tests/ scripts/
+
+.PHONY: format-all
+format-all: format format-black format-isort ## Run all formatters (ruff + black + isort)
+
 .PHONY: typecheck
 typecheck: ## Run mypy on core code
 	mypy cihub/ scripts/

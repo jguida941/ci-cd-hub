@@ -38,6 +38,7 @@ def run_trivy(workdir: Path, output_dir: Path) -> ToolResult:
     high = 0
     medium = 0
     low = 0
+    max_cvss: float = 0.0
     if isinstance(data, dict):
         for result in data.get("Results", []) or []:
             for vuln in result.get("Vulnerabilities", []) or []:
@@ -50,6 +51,18 @@ def run_trivy(workdir: Path, output_dir: Path) -> ToolResult:
                     medium += 1
                 elif severity == "LOW":
                     low += 1
+                # Extract CVSS score from any provider (nvd, redhat, etc.)
+                cvss_data = vuln.get("CVSS", {}) or {}
+                for provider_data in cvss_data.values():
+                    if isinstance(provider_data, dict):
+                        # Try V3Score first, then V2Score
+                        for key in ("V3Score", "V2Score"):
+                            if key in provider_data:
+                                try:
+                                    score = float(provider_data[key])
+                                    max_cvss = max(max_cvss, score)
+                                except (ValueError, TypeError):
+                                    pass
     return ToolResult(
         tool="trivy",
         ran=True,
@@ -59,6 +72,7 @@ def run_trivy(workdir: Path, output_dir: Path) -> ToolResult:
             "trivy_high": high,
             "trivy_medium": medium,
             "trivy_low": low,
+            "trivy_max_cvss": max_cvss,
             "parse_error": not parse_ok,
         },
         artifacts={"report": str(report_path)},

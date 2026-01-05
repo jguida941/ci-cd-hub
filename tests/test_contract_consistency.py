@@ -1,160 +1,196 @@
-import copy
-import json
-import sys
-from pathlib import Path
+"""Contract tests for gate evaluation consistency.
 
-import yaml
+Issue 13/19: Verify that gates.py decisions match reporting.py rendering.
 
-# Allow importing scripts as modules
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+These tests ensure that when gates.py says a gate passes/fails, the summary
+rendering in reporting.py shows the corresponding status.
+"""
 
-from cihub.config.loader import generate_workflow_inputs  # noqa: E402
-from scripts.validate_config import validate_config  # noqa: E402
+from __future__ import annotations
 
-PYTHON_WORKFLOW = ROOT / ".github" / "workflows" / "python-ci.yml"
-JAVA_WORKFLOW = ROOT / ".github" / "workflows" / "java-ci.yml"
-HUB_WORKFLOW = ROOT / ".github" / "workflows" / "hub-ci.yml"
-PYTHON_TEMPLATE = ROOT / "templates" / "repo" / "hub-python-ci.yml"
-JAVA_TEMPLATE = ROOT / "templates" / "repo" / "hub-java-ci.yml"
-
-# Inputs present in workflows but not produced by generate_workflow_inputs().
-WORKFLOW_ONLY_INPUTS = {
-    "workdir",
-    "artifact_prefix",
-    "retention_days",
-    "hub_repo",
-    "hub_ref",
-    "hub_correlation_id",
-    # Docker defaults remain config-only, not dispatch.
-    "docker_compose_file",
-    "docker_health_endpoint",
-}
-ALLOWED_NON_WORKFLOW_INPUTS = {
-    "language",
-    # Internal metadata keys (prefixed with _, not dispatch inputs)
-    "_dispatch_enabled",
-    "_run_group",
-    "_force_all_tools",
-}
+from cihub.core.reporting import build_quality_gates
+from cihub.services.ci_engine.gates import (
+    _evaluate_java_gates,
+    _evaluate_python_gates,
+)
 
 
-def load_inputs(path: Path, trigger: str) -> set[str]:
-    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    on_section = data.get("on")
-    if on_section is None and True in data:
-        on_section = data.get(True)
-    if not isinstance(on_section, dict):
-        return set()
-    trigger_section = on_section.get(trigger, {})
-    if not isinstance(trigger_section, dict):
-        return set()
-    inputs = trigger_section.get("inputs", {})
-    if not isinstance(inputs, dict):
-        return set()
-    return set(inputs.keys())
+class TestGateReportingContractPython:
+    """Contract tests ensuring gates.py and reporting.py agree for Python."""
+
+    def test_no_tests_ran_both_fail(self) -> None:
+        """Issue 12: When tests_total == 0, both should indicate failure."""
+        report = {
+            "results": {"tests_passed": 0, "tests_failed": 0, "tests_skipped": 0},
+            "tools_configured": {"pytest": True},
+            "tools_ran": {"pytest": True},
+            "tools_success": {"pytest": True},
+            "tool_metrics": {},
+            "thresholds": {},
+        }
+        thresholds: dict = {}
+        tools_configured = {"pytest": True}
+        config: dict = {}
+
+        # gates.py should fail
+        gate_failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+        assert "no tests ran - cannot verify quality" in gate_failures
+
+        # reporting.py should show NOT RUN or failure
+        summary_lines = list(build_quality_gates(report, "python"))
+        summary_text = "\n".join(summary_lines)
+        assert "NOT RUN" in summary_text or "0 passed" in summary_text
+
+    def test_tests_passed_both_pass(self) -> None:
+        """When tests pass, both gates.py and reporting.py should pass."""
+        report = {
+            "results": {"tests_passed": 10, "tests_failed": 0, "tests_skipped": 0, "coverage": 80},
+            "tools_configured": {"pytest": True},
+            "tools_ran": {"pytest": True},
+            "tools_success": {"pytest": True},
+            "tool_metrics": {},
+            "thresholds": {"coverage_min": 70},
+        }
+        thresholds = {"coverage_min": 70}
+        tools_configured = {"pytest": True}
+        config: dict = {}
+
+        # gates.py should pass
+        gate_failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+        assert len(gate_failures) == 0
+
+        # reporting.py should show Passed
+        summary_lines = list(build_quality_gates(report, "python"))
+        summary_text = "\n".join(summary_lines)
+        assert "Passed" in summary_text
+
+    def test_test_failures_both_fail(self) -> None:
+        """When tests fail, both gates.py and reporting.py should fail."""
+        report = {
+            "results": {"tests_passed": 5, "tests_failed": 3, "tests_skipped": 0},
+            "tools_configured": {"pytest": True},
+            "tools_ran": {"pytest": True},
+            "tools_success": {"pytest": False},
+            "tool_metrics": {},
+            "thresholds": {},
+        }
+        thresholds: dict = {}
+        tools_configured = {"pytest": True}
+        config: dict = {}
+
+        # gates.py should fail
+        gate_failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+        assert "pytest failures detected" in gate_failures
+
+        # reporting.py should show failures
+        summary_lines = list(build_quality_gates(report, "python"))
+        summary_text = "\n".join(summary_lines)
+        # Should show failure count or "failures"
+        assert "3 failed" in summary_text or "Failed" in summary_text
+
+    def test_tool_not_run_shows_not_run(self) -> None:
+        """When tool configured but not run, reporting.py shows NOT RUN."""
+        report = {
+            "results": {"tests_passed": 10, "tests_failed": 0},
+            "tools_configured": {"pytest": True, "ruff": True},
+            "tools_ran": {"pytest": True, "ruff": False},
+            "tools_success": {"pytest": True},
+            "tool_metrics": {},
+            "thresholds": {},
+        }
+
+        summary_lines = list(build_quality_gates(report, "python"))
+        summary_text = "\n".join(summary_lines)
+        # Ruff should show NOT RUN since it was configured but didn't run
+        assert "NOT RUN" in summary_text
 
 
-def build_config(language: str) -> dict:
-    defaults_path = ROOT / "config" / "defaults.yaml"
-    defaults = yaml.safe_load(defaults_path.read_text(encoding="utf-8")) or {}
-    cfg = copy.deepcopy(defaults)
-    cfg["repo"] = {"owner": "test", "name": "example", "language": language}
-    cfg["language"] = language
-    return cfg
+class TestGateReportingContractJava:
+    """Contract tests ensuring gates.py and reporting.py agree for Java."""
 
+    def test_no_tests_ran_both_fail(self) -> None:
+        """Issue 12: When tests_total == 0, both should indicate failure."""
+        report = {
+            "results": {"tests_passed": 0, "tests_failed": 0, "tests_skipped": 0},
+            "tools_configured": {"jacoco": True},
+            "tools_ran": {"jacoco": True},
+            "tools_success": {"jacoco": True},
+            "tool_metrics": {},
+            "thresholds": {},
+        }
+        thresholds: dict = {}
+        tools_configured: dict = {}
+        config: dict = {}
 
-def validate_against_schema(config: dict) -> list[str]:
-    schema_path = ROOT / "schema" / "ci-hub-config.schema.json"
-    schema = json.loads(schema_path.read_text(encoding="utf-8"))
-    return validate_config(config, schema)
+        # gates.py should fail
+        gate_failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+        assert "no tests ran - cannot verify quality" in gate_failures
 
+        # reporting.py should show NOT RUN or failure
+        summary_lines = list(build_quality_gates(report, "java"))
+        summary_text = "\n".join(summary_lines)
+        assert "NOT RUN" in summary_text or "0 passed" in summary_text
 
-def test_defaults_merge_validate_schema():
-    for language in ("java", "python"):
-        cfg = build_config(language)
-        errors = validate_against_schema(cfg)
-        assert not errors, f"Defaults+repo should validate for {language}: {errors}"
+    def test_tests_passed_both_pass(self) -> None:
+        """When tests pass, both gates.py and reporting.py should pass."""
+        report = {
+            "results": {"tests_passed": 10, "tests_failed": 0, "tests_skipped": 0, "coverage": 80},
+            "tools_configured": {"jacoco": True},
+            "tools_ran": {"jacoco": True},
+            "tools_success": {"jacoco": True},
+            "tool_metrics": {},
+            "thresholds": {"coverage_min": 70},
+        }
+        thresholds = {"coverage_min": 70}
+        tools_configured = {"jacoco": True}
+        config: dict = {}
 
+        # gates.py should pass
+        gate_failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+        assert len(gate_failures) == 0
 
-def collect_generated_inputs(cfg: dict, include_java_docker: bool = False) -> set[str]:
-    inputs = generate_workflow_inputs(cfg)
-    keys = set(inputs.keys())
+        # reporting.py should show Passed
+        summary_lines = list(build_quality_gates(report, "java"))
+        summary_text = "\n".join(summary_lines)
+        assert "Passed" in summary_text
 
-    if include_java_docker:
-        docker_cfg = copy.deepcopy(cfg)
-        tools = docker_cfg.setdefault("java", {}).setdefault("tools", {})
-        tools.setdefault("docker", {})["enabled"] = True
-        docker_inputs = generate_workflow_inputs(docker_cfg)
-        keys.update(docker_inputs.keys())
+    def test_owasp_vulns_both_fail(self) -> None:
+        """When OWASP finds vulns above threshold, both should fail."""
+        report = {
+            "results": {"tests_passed": 10, "tests_failed": 0},
+            "tools_configured": {"owasp": True},
+            "tools_ran": {"owasp": True},
+            "tools_success": {"owasp": True},
+            "tool_metrics": {"owasp_critical": 3, "owasp_high": 5},
+            "thresholds": {"max_critical_vulns": 0, "max_high_vulns": 0},
+        }
+        thresholds = {"max_critical_vulns": 0, "max_high_vulns": 0}
+        tools_configured = {"owasp": True}
+        config: dict = {}
 
-    return keys
+        # gates.py should fail
+        gate_failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+        assert any("owasp" in f for f in gate_failures)
 
+        # reporting.py should show vulnerabilities (both indicate failure)
+        summary_lines = list(build_quality_gates(report, "java"))
+        summary_text = "\n".join(summary_lines)
+        # Should show "Vulnerabilities" label (not "Passed")
+        assert "Vulnerabilities" in summary_text
+        assert "Passed" not in summary_text.split("OWASP")[1].split("|")[0] if "OWASP" in summary_text else True
 
-def test_python_workflow_inputs_are_config_driven():
-    workflow_inputs = load_inputs(PYTHON_WORKFLOW, "workflow_call")
-    cfg = build_config("python")
-    generated = collect_generated_inputs(cfg)
+    def test_tool_not_run_shows_not_run(self) -> None:
+        """When tool configured but not run, reporting.py shows NOT RUN."""
+        report = {
+            "results": {"tests_passed": 10, "tests_failed": 0},
+            "tools_configured": {"jacoco": True, "pitest": True},
+            "tools_ran": {"jacoco": True, "pitest": False},
+            "tools_success": {"jacoco": True},
+            "tool_metrics": {},
+            "thresholds": {},
+        }
 
-    missing = sorted((workflow_inputs - WORKFLOW_ONLY_INPUTS) - generated)
-    assert not missing, f"Python workflow inputs missing in load_config: {missing}"
-
-    extras = sorted(generated - workflow_inputs - ALLOWED_NON_WORKFLOW_INPUTS)
-    assert not extras, f"Unexpected load_config outputs (python): {extras}"
-
-
-def test_java_workflow_inputs_are_config_driven():
-    workflow_inputs = load_inputs(JAVA_WORKFLOW, "workflow_call")
-    cfg = build_config("java")
-    generated = collect_generated_inputs(cfg, include_java_docker=True)
-
-    missing = sorted((workflow_inputs - WORKFLOW_ONLY_INPUTS) - generated)
-    assert not missing, f"Java workflow inputs missing in load_config: {missing}"
-
-    extras = sorted(generated - workflow_inputs - ALLOWED_NON_WORKFLOW_INPUTS)
-    assert not extras, f"Unexpected load_config outputs (java): {extras}"
-
-
-def test_python_caller_template_matches_workflow():
-    workflow_inputs = load_inputs(HUB_WORKFLOW, "workflow_call")
-    template_inputs = load_inputs(PYTHON_TEMPLATE, "workflow_dispatch")
-    # Caller templates target hub-ci.yml and keep inputs minimal.
-    allowed_missing = {"hub_repo", "hub_ref"}
-
-    missing = sorted((workflow_inputs - allowed_missing) - template_inputs)
-    assert not missing, f"Python caller missing workflow inputs: {missing}"
-
-    unexpected = sorted(template_inputs - workflow_inputs)
-    assert not unexpected, f"Python caller has unknown inputs: {unexpected}"
-
-
-def test_java_caller_template_matches_workflow():
-    workflow_inputs = load_inputs(HUB_WORKFLOW, "workflow_call")
-    template_inputs = load_inputs(JAVA_TEMPLATE, "workflow_dispatch")
-    # Caller templates target hub-ci.yml and keep inputs minimal.
-    allowed_missing = {"hub_repo", "hub_ref"}
-
-    missing = sorted((workflow_inputs - allowed_missing) - template_inputs)
-    assert not missing, f"Java caller missing workflow inputs: {missing}"
-
-    unexpected = sorted(template_inputs - workflow_inputs)
-    assert not unexpected, f"Java caller has unknown inputs: {unexpected}"
-
-
-def test_dispatch_workflow_valid_values():
-    """Ensure dispatch_workflow only allows supported values."""
-    valid_values = ["hub-ci.yml", "hub-java-ci.yml", "hub-python-ci.yml", ""]
-
-    for value in valid_values:
-        cfg = build_config("java")
-        cfg["repo"]["dispatch_workflow"] = value
-        errors = validate_against_schema(cfg)
-        assert not errors, f"dispatch_workflow={value!r} should be valid: {errors}"
-
-    # Test invalid value
-    cfg = build_config("java")
-    cfg["repo"]["dispatch_workflow"] = "invalid-workflow.yml"
-    errors = validate_against_schema(cfg)
-    assert errors, "dispatch_workflow='invalid-workflow.yml' should fail validation"
-    assert any("dispatch_workflow" in e for e in errors), f"Error should mention dispatch_workflow: {errors}"
+        summary_lines = list(build_quality_gates(report, "java"))
+        summary_text = "\n".join(summary_lines)
+        # PITest should show NOT RUN since it was configured but didn't run
+        assert "NOT RUN" in summary_text

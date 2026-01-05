@@ -64,6 +64,16 @@ def _check_internal_links(docs_dir: Path) -> list[dict[str, Any]]:
         md_files.append(root_readme)
 
     for md_file in md_files:
+        # Archived docs are historical; they are excluded from link checking to avoid
+        # requiring churn to keep old/superseded docs up to date.
+        try:
+            rel = md_file.relative_to(docs_dir).as_posix()
+            if rel.startswith("development/archive/"):
+                continue
+        except ValueError:
+            # Root README.md is checked too; keep it in scope.
+            pass
+
         content = md_file.read_text(encoding="utf-8")
         content = _strip_fenced_blocks(content)
 
@@ -132,13 +142,31 @@ def _run_lychee(docs_dir: Path, external: bool) -> tuple[int, list[dict[str, Any
     Returns:
         Tuple of (exit_code, problems).
     """
-    cmd = ["lychee", str(docs_dir)]
+    repo_root = docs_dir.parent
+    inputs = ["docs"]
+    if (repo_root / "README.md").exists():
+        inputs.append("README.md")
+
+    cmd = [
+        "lychee",
+        *inputs,
+        "--no-progress",
+        "--mode",
+        "plain",
+        "--format",
+        "json",
+        "--root-dir",
+        str(repo_root),
+        "--exclude-path",
+        r"docs/development/archive/.*",
+    ]
     if not external:
         cmd.append("--offline")
 
     try:
         result = subprocess.run(  # noqa: S603
             cmd,
+            cwd=str(repo_root),
             capture_output=True,
             text=True,
         )
@@ -147,33 +175,52 @@ def _run_lychee(docs_dir: Path, external: bool) -> tuple[int, list[dict[str, Any
 
     problems: list[dict[str, Any]] = []
     if result.returncode != 0:
-        # Parse lychee output for broken links
-        for line in result.stdout.splitlines():
-            line = line.strip()
-            if line and not line.startswith(("[", "✓", "→")):
-                problems.append(
-                    {
-                        "severity": "error",
-                        "message": line,
-                        "code": "CIHUB-DOCS-LYCHEE",
-                    }
-                )
-        # Also include stderr if present
-        if result.stderr:
-            for line in result.stderr.splitlines():
-                if "error" in line.lower() or "fail" in line.lower():
+        # Parse lychee JSON output for broken links.
+        try:
+            payload = json.loads(result.stdout or "{}")
+        except json.JSONDecodeError:
+            payload = {}
+
+        error_map = payload.get("error_map") if isinstance(payload, dict) else None
+        if isinstance(error_map, dict):
+            for doc_path, entries in error_map.items():
+                if not isinstance(entries, list):
+                    continue
+                for entry in entries:
+                    if not isinstance(entry, dict):
+                        continue
+                    url = str(entry.get("url") or "-")
+                    status_raw = entry.get("status")
+                    status: dict[str, Any] = status_raw if isinstance(status_raw, dict) else {}
+                    status_text = str(status.get("text") or "").strip()
+                    status_details = str(status.get("details") or "").strip()
+
+                    extra = ""
+                    if status_text and status_details:
+                        extra = f" | {status_text} ({status_details})"
+                    elif status_text:
+                        extra = f" | {status_text}"
+
                     problems.append(
                         {
                             "severity": "error",
-                            "message": line.strip(),
+                            "message": f"{doc_path}: {url}{extra}",
                             "code": "CIHUB-DOCS-LYCHEE",
+                            "file": str(doc_path),
+                            "url": url,
+                            "status": status_text,
+                            "details": status_details,
                         }
                     )
+
+        # Fallback: surface lychee stderr/stdout if JSON parsing failed or provided no details.
         if not problems:
+            detail = (result.stderr or "").strip() or (result.stdout or "").strip()
             problems.append(
                 {
                     "severity": "error",
                     "message": f"lychee failed with exit {result.returncode}",
+                    "detail": detail,
                     "code": "CIHUB-DOCS-LYCHEE",
                 }
             )

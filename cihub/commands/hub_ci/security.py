@@ -10,19 +10,17 @@ import subprocess
 from pathlib import Path
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.types import CommandResult
 from cihub.utils.env import _parse_env_bool
+from cihub.utils.github_context import OutputContext
 
 from . import (
-    _append_summary,
     _count_pip_audit_vulns,
-    _resolve_output_path,
-    _resolve_summary_path,
     _run_command,
-    _write_outputs,
 )
 
 
-def cmd_bandit(args: argparse.Namespace) -> int:
+def cmd_bandit(args: argparse.Namespace) -> int | CommandResult:
     output_path = Path(args.output)
     cmd = [
         "bandit",
@@ -56,7 +54,7 @@ def cmd_bandit(args: argparse.Namespace) -> int:
     total = high + medium + low
 
     # Write summary with breakdown table
-    summary_path = _resolve_summary_path(args.summary, args.github_summary)
+    ctx = OutputContext.from_args(args)
     fail_on_high = getattr(args, "fail_on_high", True)
     fail_on_medium = getattr(args, "fail_on_medium", False)
     fail_on_low = getattr(args, "fail_on_low", False)
@@ -80,10 +78,10 @@ def cmd_bandit(args: argparse.Namespace) -> int:
         f"| Low | {low} | {'enabled' if fail_on_low else 'disabled'} |\n"
         f"| **Total** | **{total}** | |\n"
     )
-    _append_summary(summary, summary_path)
+    ctx.write_summary(summary)
 
     # Check thresholds - fail if any enabled threshold is exceeded
-    fail_reasons = []
+    fail_reasons: list[str] = []
 
     if fail_on_high and high > 0:
         fail_reasons.append(f"{high} HIGH")
@@ -92,19 +90,35 @@ def cmd_bandit(args: argparse.Namespace) -> int:
     if fail_on_low and low > 0:
         fail_reasons.append(f"{low} LOW")
 
+    result_data = {
+        "high": high,
+        "medium": medium,
+        "low": low,
+        "total": total,
+        "report_path": str(output_path),
+    }
+
     if fail_reasons:
         # Show details for failing severities
         subprocess.run(  # noqa: S603
             ["bandit", "-r", *args.paths, "--severity-level", "low"],  # noqa: S607
             text=True,
         )
-        print(f"::error::Found {', '.join(fail_reasons)} severity issues")
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Bandit found {', '.join(fail_reasons)} severity issues",
+            problems=[{"severity": "error", "message": f"Found {', '.join(fail_reasons)} severity issues"}],
+            data=result_data,
+        )
 
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Bandit SAST passed ({total} issues, none exceed thresholds)",
+        data=result_data,
+    )
 
 
-def cmd_pip_audit(args: argparse.Namespace) -> int:
+def cmd_pip_audit(args: argparse.Namespace) -> int | CommandResult:
     output_path = Path(args.output)
     cmd = [
         "pip-audit",
@@ -124,11 +138,10 @@ def cmd_pip_audit(args: argparse.Namespace) -> int:
         except json.JSONDecodeError:
             vulns = 0
 
-    summary_path = _resolve_summary_path(args.summary, args.github_summary)
-    _append_summary(
-        f"## Dependency Vulnerabilities\nFound: {vulns}\n",
-        summary_path,
-    )
+    ctx = OutputContext.from_args(args)
+    ctx.write_summary(f"## Dependency Vulnerabilities\nFound: {vulns}\n")
+
+    result_data = {"vulnerabilities": vulns, "report_path": str(output_path)}
 
     if vulns > 0:
         markdown = subprocess.run(  # noqa: S603
@@ -137,14 +150,22 @@ def cmd_pip_audit(args: argparse.Namespace) -> int:
             capture_output=True,
         )
         if markdown.stdout:
-            _append_summary(markdown.stdout, summary_path)
-        print(f"::error::Found {vulns} dependency vulnerabilities")
-        return EXIT_FAILURE
+            ctx.write_summary(markdown.stdout)
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Found {vulns} dependency vulnerabilities",
+            problems=[{"severity": "error", "message": f"Found {vulns} dependency vulnerabilities"}],
+            data=result_data,
+        )
 
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="No dependency vulnerabilities found",
+        data=result_data,
+    )
 
 
-def cmd_security_pip_audit(args: argparse.Namespace) -> int:
+def cmd_security_pip_audit(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     report_path = (repo_path / args.report).resolve()
     requirements = args.requirements or []
@@ -161,12 +182,16 @@ def cmd_security_pip_audit(args: argparse.Namespace) -> int:
     )
 
     tool_status = "success"
+    problems: list[dict[str, str]] = []
     if not report_path.exists():
         report_path.write_text("[]", encoding="utf-8")
         if proc.returncode != 0:
             # Tool failed without producing output - warn but continue
             tool_status = "failed"
-            print(f"::warning::pip-audit failed (exit {proc.returncode}): {proc.stderr or 'no output'}")
+            problems.append({
+                "severity": "warning",
+                "message": f"pip-audit failed (exit {proc.returncode}): {proc.stderr or 'no output'}",
+            })
 
     vulns = 0
     try:
@@ -176,14 +201,23 @@ def cmd_security_pip_audit(args: argparse.Namespace) -> int:
         vulns = 0
         if proc.returncode != 0:
             tool_status = "failed"
-            print(f"::warning::pip-audit produced invalid JSON (exit {proc.returncode})")
+            problems.append({
+                "severity": "warning",
+                "message": f"pip-audit produced invalid JSON (exit {proc.returncode})",
+            })
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"vulnerabilities": str(vulns), "tool_status": tool_status}, output_path)
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"vulnerabilities": str(vulns), "tool_status": tool_status})
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"pip-audit: {vulns} vulnerabilities found (status: {tool_status})",
+        problems=problems,
+        data={"vulnerabilities": vulns, "tool_status": tool_status, "report_path": str(report_path)},
+    )
 
 
-def cmd_security_bandit(args: argparse.Namespace) -> int:
+def cmd_security_bandit(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     report_path = (repo_path / args.report).resolve()
 
@@ -193,12 +227,16 @@ def cmd_security_bandit(args: argparse.Namespace) -> int:
     )
 
     tool_status = "success"
+    problems: list[dict[str, str]] = []
     if not report_path.exists():
         report_path.write_text('{"results":[]}', encoding="utf-8")
         if proc.returncode != 0:
             # Tool failed without producing output - warn but continue
             tool_status = "failed"
-            print(f"::warning::bandit failed (exit {proc.returncode}): {proc.stderr or 'no output'}")
+            problems.append({
+                "severity": "warning",
+                "message": f"bandit failed (exit {proc.returncode}): {proc.stderr or 'no output'}",
+            })
 
     high = 0
     try:
@@ -209,14 +247,23 @@ def cmd_security_bandit(args: argparse.Namespace) -> int:
         high = 0
         if proc.returncode != 0:
             tool_status = "failed"
-            print(f"::warning::bandit produced invalid JSON (exit {proc.returncode})")
+            problems.append({
+                "severity": "warning",
+                "message": f"bandit produced invalid JSON (exit {proc.returncode})",
+            })
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"high": str(high), "tool_status": tool_status}, output_path)
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"high": str(high), "tool_status": tool_status})
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"bandit: {high} high severity issues (status: {tool_status})",
+        problems=problems,
+        data={"high": high, "tool_status": tool_status, "report_path": str(report_path)},
+    )
 
 
-def cmd_security_ruff(args: argparse.Namespace) -> int:
+def cmd_security_ruff(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     report_path = (repo_path / args.report).resolve()
 
@@ -227,6 +274,7 @@ def cmd_security_ruff(args: argparse.Namespace) -> int:
     report_path.write_text(proc.stdout or "[]", encoding="utf-8")
 
     tool_status = "success"
+    problems: list[dict[str, str]] = []
     issues = 0
     try:
         data = json.loads(report_path.read_text(encoding="utf-8"))
@@ -235,17 +283,27 @@ def cmd_security_ruff(args: argparse.Namespace) -> int:
         issues = 0
         # ruff returns non-zero when issues found (normal), but invalid JSON is a problem
         tool_status = "failed"
-        print(f"::warning::ruff produced invalid JSON (exit {proc.returncode}): {proc.stderr or 'no output'}")
+        problems.append({
+            "severity": "warning",
+            "message": f"ruff produced invalid JSON (exit {proc.returncode}): {proc.stderr or 'no output'}",
+        })
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"issues": str(issues), "tool_status": tool_status}, output_path)
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"issues": str(issues), "tool_status": tool_status})
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"ruff security: {issues} issues (status: {tool_status})",
+        problems=problems,
+        data={"issues": issues, "tool_status": tool_status, "report_path": str(report_path)},
+    )
 
 
-def cmd_security_owasp(args: argparse.Namespace) -> int:
+def cmd_security_owasp(args: argparse.Namespace) -> int | CommandResult:
     repo_path = Path(args.path).resolve()
     mvnw = repo_path / "mvnw"
     tool_status = "success"
+    problems: list[dict[str, str]] = []
     proc = None
     if mvnw.exists():
         mvnw.chmod(mvnw.stat().st_mode | stat.S_IEXEC)
@@ -277,12 +335,29 @@ def cmd_security_owasp(args: argparse.Namespace) -> int:
             high = 0
             if proc and proc.returncode != 0:
                 tool_status = "failed"
-                print(f"::warning::OWASP dependency-check produced invalid JSON (exit {proc.returncode})")
+                problems.append({
+                    "severity": "warning",
+                    "message": f"OWASP dependency-check produced invalid JSON (exit {proc.returncode})",
+                })
     elif proc and proc.returncode != 0:
         # Tool ran but produced no report
         tool_status = "failed"
-        print(f"::warning::OWASP dependency-check failed (exit {proc.returncode}): no report generated")
+        problems.append({
+            "severity": "warning",
+            "message": f"OWASP dependency-check failed (exit {proc.returncode}): no report generated",
+        })
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"critical": str(critical), "high": str(high), "tool_status": tool_status}, output_path)
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"critical": str(critical), "high": str(high), "tool_status": tool_status})
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"OWASP: {critical} critical, {high} high (status: {tool_status})",
+        problems=problems,
+        data={
+            "critical": critical,
+            "high": high,
+            "tool_status": tool_status,
+            "report_path": str(report_path) if report_path else None,
+        },
+    )

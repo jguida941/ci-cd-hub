@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from cihub.ci_config import load_ci_config
+from cihub.config import tool_enabled as _tool_enabled_canonical
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
 
@@ -53,14 +54,8 @@ def _tool_enabled(
     tool: str,
     default: bool,
 ) -> bool:
-    entry = _tool_entry(config, language, tool)
-    if isinstance(entry, bool):
-        return entry
-    if isinstance(entry, dict):
-        enabled = entry.get("enabled")
-        if isinstance(enabled, bool):
-            return enabled
-    return default
+    """Check if a tool is enabled. Delegates to canonical cihub.config.tool_enabled."""
+    return _tool_enabled_canonical(config, tool, language, default=default)
 
 
 def _tool_int(

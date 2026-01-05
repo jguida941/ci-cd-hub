@@ -5,9 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shutil
 import subprocess
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +18,9 @@ from cihub.services.triage_service import (
     _build_markdown,
     _sort_failures,
     _timestamp,
+    aggregate_triage_bundles,
+    detect_flaky_patterns,
+    detect_gate_changes,
     generate_triage_bundle,
     write_triage_bundle,
 )
@@ -70,6 +71,32 @@ def _fetch_run_info(run_id: str, repo: str | None) -> dict[str, Any]:
     return data
 
 
+def _list_runs(
+    repo: str | None,
+    workflow: str | None = None,
+    branch: str | None = None,
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """List recent workflow runs with optional filtering."""
+    gh_bin = resolve_executable("gh")
+    json_fields = "databaseId,name,status,conclusion,headBranch,createdAt"
+    cmd = [gh_bin, "run", "list", "--json", json_fields, "--limit", str(limit)]
+    if repo:
+        cmd.extend(["--repo", repo])
+    if workflow:
+        cmd.extend(["--workflow", workflow])
+    if branch:
+        cmd.extend(["--branch", branch])
+
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False)  # noqa: S603
+    if result.returncode != 0:
+        raise RuntimeError(f"Failed to list runs: {result.stderr.strip()}")
+    data = json.loads(result.stdout)
+    if not isinstance(data, list):
+        return []
+    return data
+
+
 def _download_artifacts(run_id: str, repo: str | None, dest_dir: Path) -> bool:
     """Download workflow artifacts via gh CLI. Returns True if artifacts found."""
     gh_bin = resolve_executable("gh")
@@ -85,10 +112,15 @@ def _download_artifacts(run_id: str, repo: str | None, dest_dir: Path) -> bool:
 
 
 def _find_report_in_artifacts(artifacts_dir: Path) -> Path | None:
-    """Find report.json in downloaded artifacts (may be nested in subdirs)."""
+    """Find first report.json in downloaded artifacts (may be nested in subdirs)."""
     for report_path in artifacts_dir.rglob("report.json"):
         return report_path
     return None
+
+
+def _find_all_reports_in_artifacts(artifacts_dir: Path) -> list[Path]:
+    """Find all report.json files in downloaded artifacts."""
+    return sorted(artifacts_dir.rglob("report.json"), key=lambda p: str(p))
 
 
 def _find_tool_outputs_in_artifacts(artifacts_dir: Path) -> Path | None:
@@ -112,7 +144,7 @@ def _fetch_failed_logs(run_id: str, repo: str | None) -> str:
     return result.stdout
 
 
-def _parse_log_failures(logs: str) -> list[dict[str, Any]]:
+def _parse_log_failures(logs: str, run_id: str = "", repo: str | None = None) -> list[dict[str, Any]]:
     """Parse failure information from gh run view --log-failed output."""
     failures: list[dict[str, Any]] = []
     current_job = ""
@@ -131,7 +163,7 @@ def _parse_log_failures(logs: str) -> list[dict[str, Any]]:
                 if step and step != current_step:
                     # Save previous errors
                     if error_lines and current_step:
-                        failures.append(_create_log_failure(current_job, current_step, error_lines))
+                        failures.append(_create_log_failure(current_job, current_step, error_lines, run_id, repo))
                     current_step = step
                     error_lines = []
 
@@ -144,7 +176,7 @@ def _parse_log_failures(logs: str) -> list[dict[str, Any]]:
 
     # Save last batch
     if error_lines and current_step:
-        failures.append(_create_log_failure(current_job, current_step, error_lines))
+        failures.append(_create_log_failure(current_job, current_step, error_lines, run_id, repo))
 
     return failures
 
@@ -171,11 +203,18 @@ def _infer_tool_from_step(step: str) -> str:
     return "workflow"
 
 
-def _create_log_failure(job: str, step: str, errors: list[str]) -> dict[str, Any]:
+def _create_log_failure(
+    job: str, step: str, errors: list[str], run_id: str = "", repo: str | None = None
+) -> dict[str, Any]:
     """Create a failure entry from log parsing."""
     tool = _infer_tool_from_step(step)
     category = CATEGORY_BY_TOOL.get(tool, "workflow")
     severity = SEVERITY_BY_CATEGORY.get(category, "medium")
+
+    # Build reproduce command with run_id if available
+    reproduce_cmd = f"gh run view {run_id} --log-failed" if run_id else "gh run view --log-failed"
+    if repo:
+        reproduce_cmd += f" --repo {repo}"
 
     return {
         "id": f"{tool}:{job}:{step}",
@@ -189,7 +228,7 @@ def _create_log_failure(job: str, step: str, errors: list[str]) -> dict[str, Any
         "step": step,
         "errors": errors[:20],  # Limit to first 20 errors
         "artifacts": [],
-        "reproduce": {"command": f"gh run view {job} --log-failed", "cwd": ".", "env": {}},
+        "reproduce": {"command": reproduce_cmd, "cwd": ".", "env": {}},
         "hints": [
             f"Review the {step} step output for details",
             "Check the error messages above for specific fixes",
@@ -201,39 +240,51 @@ def _generate_remote_triage_bundle(
     run_id: str,
     repo: str | None,
     output_dir: Path,
-) -> TriageBundle:
+    *,
+    force_aggregate: bool = False,
+    force_per_repo: bool = False,
+) -> TriageBundle | tuple[dict[str, Path], dict[str, Any]]:
     """Generate triage bundle from a remote GitHub workflow run.
 
     Strategy:
-    1. Try to download artifacts (report.json, tool-outputs/)
-    2. If artifacts found, use existing generate_triage_bundle for structured analysis
-    3. If no artifacts, fall back to parsing log output
+    1. Download artifacts to persistent path: {output_dir}/runs/{run_id}/artifacts/
+    2. Auto-detect report.json files:
+       - 1 report  → single triage bundle (returns TriageBundle)
+       - N reports → multi-triage aggregation (returns artifacts dict + result dict)
+    3. If no artifacts, fall back to parsing log output (returns TriageBundle)
+
+    Args:
+        run_id: GitHub workflow run ID
+        repo: Repository in owner/repo format
+        output_dir: Output directory for triage artifacts
+        force_aggregate: Force aggregated output for multi-report mode
+        force_per_repo: Force per-repo output for multi-report mode (separate bundles)
+
+    Returns:
+        TriageBundle for single-report or log-fallback mode.
+        tuple[dict, dict] for multi-report mode (artifacts, result_data).
     """
     run_info = _fetch_run_info(run_id, repo)
     notes: list[str] = [f"Analyzed from remote run: {run_id}"]
 
-    # Try to download artifacts first
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        artifacts_dir = Path(tmp_dir) / "artifacts"
-        artifacts_dir.mkdir(parents=True, exist_ok=True)
+    # Persistent artifact storage
+    run_dir = output_dir / "runs" / run_id
+    artifacts_dir = run_dir / "artifacts"
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-        has_artifacts = _download_artifacts(run_id, repo, artifacts_dir)
+    has_artifacts = _download_artifacts(run_id, repo, artifacts_dir)
 
-        if has_artifacts:
-            # Look for report.json in downloaded artifacts
-            report_path = _find_report_in_artifacts(artifacts_dir)
-            tool_outputs_dir = _find_tool_outputs_in_artifacts(artifacts_dir)
+    if has_artifacts:
+        # Find ALL report.json files (may be multiple for orchestrator runs)
+        report_paths = _find_all_reports_in_artifacts(artifacts_dir)
 
-            if report_path:
-                notes.append(f"Using structured artifacts from: {report_path.parent}")
-                # Copy tool-outputs if found
-                if tool_outputs_dir:
-                    local_tool_outputs = output_dir / "tool-outputs"
-                    if local_tool_outputs.exists():
-                        shutil.rmtree(local_tool_outputs)
-                    shutil.copytree(tool_outputs_dir, local_tool_outputs)
+        if len(report_paths) > 1:
+            # Multi-report mode: aggregate all reports (unless per-repo mode)
+            notes.append(f"Found {len(report_paths)} reports")
+            bundles: list[TriageBundle] = []
+            per_repo_paths: dict[str, Path] = {}
 
-                # Use existing structured analysis
+            for report_path in report_paths:
                 meta = {
                     "command": f"cihub triage --run {run_id}",
                     "args": [],
@@ -248,20 +299,91 @@ def _generate_remote_triage_bundle(
                     report_path=report_path,
                     meta=meta,
                 )
-                # Add notes about artifact source
-                triage_data = dict(bundle.triage)
-                triage_data["notes"] = notes + (triage_data.get("notes") or [])
-                return TriageBundle(
-                    triage=triage_data,
-                    priority=bundle.priority,
-                    markdown=_build_markdown(triage_data, max_failures=20),
-                    history_entry=bundle.history_entry,
-                )
+                bundles.append(bundle)
+
+                # Write individual bundle if per-repo mode
+                if force_per_repo:
+                    # Use artifact folder name as identifier
+                    repo_name = report_path.parent.name
+                    triage_path = run_dir / f"triage-{repo_name}.json"
+                    md_path = run_dir / f"triage-{repo_name}.md"
+                    triage_path.write_text(json.dumps(bundle.to_dict(), indent=2), encoding="utf-8")
+                    md_path.write_text(bundle.summary_markdown, encoding="utf-8")
+                    per_repo_paths[repo_name] = triage_path
+
+            # Per-repo mode: return index of individual bundles
+            if force_per_repo:
+                index_path = run_dir / "triage-index.json"
+                index_data = {
+                    "run_id": run_id,
+                    "repo_count": len(bundles),
+                    "bundles": {name: str(path) for name, path in per_repo_paths.items()},
+                }
+                index_path.write_text(json.dumps(index_data, indent=2), encoding="utf-8")
+
+                artifacts_out = {
+                    "index": index_path,
+                    "artifacts_dir": artifacts_dir,
+                    **{f"triage_{name}": path for name, path in per_repo_paths.items()},
+                }
+                result_data = {
+                    "mode": "per-repo",
+                    "repo_count": len(bundles),
+                    "passed_count": sum(1 for b in bundles if b.overall_status == "passed"),
+                    "failed_count": sum(1 for b in bundles if b.overall_status == "failed"),
+                    "bundles": list(per_repo_paths.keys()),
+                }
+                return artifacts_out, result_data
+
+            # Aggregate and write multi-triage output (default)
+            result = aggregate_triage_bundles(bundles)
+            multi_triage_path = run_dir / "multi-triage.json"
+            multi_md_path = run_dir / "multi-triage.md"
+
+            multi_triage_path.write_text(json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+            multi_md_path.write_text(result.summary_markdown, encoding="utf-8")
+
+            artifacts_out = {
+                "multi_triage": multi_triage_path,
+                "multi_markdown": multi_md_path,
+                "artifacts_dir": artifacts_dir,
+            }
+            return artifacts_out, result.to_dict()
+
+        elif len(report_paths) == 1:
+            # Single report mode
+            report_path = report_paths[0]
+            notes.append(f"Using structured artifacts from: {report_path.parent}")
+
+            meta = {
+                "command": f"cihub triage --run {run_id}",
+                "args": [],
+                "correlation_id": run_id,
+                "repo": repo or _get_current_repo() or "",
+                "branch": run_info.get("headBranch", ""),
+                "commit_sha": run_info.get("headSha", ""),
+                "workflow_ref": run_info.get("url", ""),
+            }
+            bundle = generate_triage_bundle(
+                output_dir=report_path.parent,
+                report_path=report_path,
+                meta=meta,
+            )
+            # Add notes about artifact source
+            triage_data = dict(bundle.triage)
+            triage_data["notes"] = notes + (triage_data.get("notes") or [])
+            triage_data["paths"]["artifacts_dir"] = str(artifacts_dir)
+            return TriageBundle(
+                triage=triage_data,
+                priority=bundle.priority,
+                markdown=_build_markdown(triage_data, max_failures=20),
+                history_entry=bundle.history_entry,
+            )
 
     # Fall back to log parsing if no artifacts
     notes.append("No artifacts found, using log parsing")
     logs = _fetch_failed_logs(run_id, repo)
-    failures = _parse_log_failures(logs)
+    failures = _parse_log_failures(logs, run_id, repo)
     priority = _sort_failures(failures)
 
     run_data = {
@@ -282,7 +404,10 @@ def _generate_remote_triage_bundle(
         "overall_status": run_info.get("conclusion", "failure"),
         "failure_count": failure_count,
         "warning_count": 0,
+        "info_count": 0,
+        "evidence_error_count": 0,
         "skipped_count": 0,
+        "required_not_run_count": 0,
         "tool_counts": {"configured": 0, "ran": 0},
     }
 
@@ -291,11 +416,14 @@ def _generate_remote_triage_bundle(
         "generated_at": _timestamp(),
         "run": run_data,
         "paths": {
-            "output_dir": str(output_dir),
+            "output_dir": str(run_dir),
+            "artifacts_dir": str(artifacts_dir),
             "report_path": "",
             "summary_path": "",
         },
         "summary": summary,
+        "tool_evidence": [],
+        "evidence_issues": [],
         "failures": priority,
         "warnings": [],
         "notes": notes,
@@ -309,7 +437,7 @@ def _generate_remote_triage_bundle(
     history_entry = {
         "timestamp": triage["generated_at"],
         "correlation_id": run_id,
-        "output_dir": str(output_dir),
+        "output_dir": str(run_dir),
         "overall_status": summary["overall_status"],
         "failure_count": summary["failure_count"],
     }
@@ -324,18 +452,211 @@ def _generate_remote_triage_bundle(
     )
 
 
+def _generate_multi_report_triage(
+    reports_dir: Path,
+    output_dir: Path,
+) -> tuple[dict[str, Path], dict[str, Any]]:
+    """Generate triage for multiple report.json files in a directory.
+
+    Returns (artifacts dict, multi-triage result dict).
+    """
+    bundles: list[TriageBundle] = []
+
+    # Find all report.json files
+    for report_path in reports_dir.rglob("report.json"):
+        # Use the report's parent directory as output_dir context
+        report_output_dir = report_path.parent
+        bundle = generate_triage_bundle(
+            output_dir=report_output_dir,
+            report_path=report_path,
+            meta={"command": "cihub triage --multi"},
+        )
+        bundles.append(bundle)
+
+    if not bundles:
+        raise RuntimeError(f"No report.json files found in {reports_dir}")
+
+    # Aggregate bundles
+    result = aggregate_triage_bundles(bundles)
+
+    # Write outputs
+    output_dir.mkdir(parents=True, exist_ok=True)
+    multi_triage_path = output_dir / "multi-triage.json"
+    multi_md_path = output_dir / "multi-triage.md"
+
+    multi_triage_path.write_text(json.dumps(result.to_dict(), indent=2), encoding="utf-8")
+    multi_md_path.write_text(result.summary_markdown, encoding="utf-8")
+
+    artifacts = {
+        "multi_triage": multi_triage_path,
+        "multi_markdown": multi_md_path,
+    }
+
+    return artifacts, result.to_dict()
+
+
 def cmd_triage(args: argparse.Namespace) -> int | CommandResult:
     json_mode = getattr(args, "json", False)
     output_dir = Path(args.output_dir or ".cihub")
     run_id = getattr(args, "run", None)
     artifacts_dir = getattr(args, "artifacts_dir", None)
     repo = getattr(args, "repo", None)
+    multi_mode = getattr(args, "multi", False)
+    reports_dir = getattr(args, "reports_dir", None)
+    detect_flaky = getattr(args, "detect_flaky", False)
+    gate_history = getattr(args, "gate_history", False)
+    workflow_filter = getattr(args, "workflow", None)
+    branch_filter = getattr(args, "branch", None)
+    aggregate_mode = getattr(args, "aggregate", False)
+    per_repo_mode = getattr(args, "per_repo", False)
+
+    # Handle --gate-history mode (standalone analysis)
+    if gate_history:
+        history_path = output_dir / "history.jsonl"
+        gate_result = detect_gate_changes(history_path)
+
+        if json_mode:
+            return CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=gate_result["summary"],
+                data=gate_result,
+            )
+
+        # Pretty print gate history analysis
+        print("\nGate History Analysis")
+        print("=" * 50)
+        print(f"Runs analyzed: {gate_result['runs_analyzed']}")
+
+        if gate_result.get("new_failures"):
+            print(f"\nNew failures: {', '.join(gate_result['new_failures'])}")
+
+        if gate_result.get("fixed_gates"):
+            print(f"\n✅ Fixed gates: {', '.join(gate_result['fixed_gates'])}")
+
+        if gate_result.get("recurring_failures"):
+            print("\nRecurring issues:")
+            for item in gate_result["recurring_failures"]:
+                print(f"  • {item['gate']} (fails {item['fail_rate']}%): {''.join(item['history'])}")
+
+        if gate_result.get("gate_history"):
+            print("\nGate timeline (last 10 runs):")
+            for gate, timeline in gate_result["gate_history"].items():
+                print(f"  • {gate}: {''.join(timeline)}")
+
+        print(f"\nSummary: {gate_result['summary']}")
+        return EXIT_SUCCESS
+
+    # Handle --detect-flaky mode (standalone analysis)
+    if detect_flaky:
+        history_path = output_dir / "history.jsonl"  # Same as write_triage_bundle uses
+        flaky_result = detect_flaky_patterns(history_path)
+
+        if json_mode:
+            return CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=(
+                    f"Flaky analysis: score={flaky_result['flakiness_score']}%, "
+                    f"suspected={flaky_result['suspected_flaky']}"
+                ),
+                data=flaky_result,
+            )
+
+        # Pretty print flaky analysis
+        print("\nFlaky Test Analysis")
+        print("=" * 50)
+        print(f"Runs analyzed: {flaky_result['runs_analyzed']}")
+        print(f"State changes: {flaky_result['state_changes']}")
+        print(f"Flakiness score: {flaky_result['flakiness_score']}%")
+        print(f"Suspected flaky: {'⚠️ YES' if flaky_result['suspected_flaky'] else '✅ No'}")
+
+        if flaky_result.get("recent_history"):
+            print(f"\nRecent runs (newest last): {flaky_result['recent_history']}")
+
+        if flaky_result.get("details"):
+            print("\nDetails:")
+            for detail in flaky_result["details"]:
+                print(f"  • {detail}")
+
+        print(f"\nRecommendation:\n{flaky_result['recommendation']}")
+        return EXIT_SUCCESS
 
     try:
+        # Multi-report mode
+        if multi_mode:
+            if not reports_dir:
+                raise ValueError("--reports-dir is required with --multi")
+            reports_path = Path(reports_dir)
+            if not reports_path.exists():
+                raise ValueError(f"Reports directory not found: {reports_path}")
+
+            artifacts, result_data = _generate_multi_report_triage(reports_path, output_dir)
+
+            if json_mode:
+                return CommandResult(
+                    exit_code=EXIT_SUCCESS,
+                    summary=f"Multi-triage generated for {result_data['repo_count']} repos",
+                    artifacts={key: str(path) for key, path in artifacts.items()},
+                    data=result_data,
+                )
+
+            passed = result_data["passed_count"]
+            failed = result_data["failed_count"]
+            print(f"Aggregated {result_data['repo_count']} repos: {passed} passed, {failed} failed")
+            print(f"Wrote multi-triage: {artifacts['multi_triage']}")
+            print(f"Wrote multi-markdown: {artifacts['multi_markdown']}")
+            return EXIT_SUCCESS
+
+        # Handle --workflow/--branch filters without explicit --run
+        if (workflow_filter or branch_filter) and not run_id:
+            runs = _list_runs(repo, workflow=workflow_filter, branch=branch_filter, limit=10)
+            if not runs:
+                filter_desc = []
+                if workflow_filter:
+                    filter_desc.append(f"workflow={workflow_filter}")
+                if branch_filter:
+                    filter_desc.append(f"branch={branch_filter}")
+                raise ValueError(f"No runs found matching: {', '.join(filter_desc)}")
+
+            # Use the most recent run
+            run_id = str(runs[0]["databaseId"])
+            if not json_mode:
+                print(f"Using most recent run: {run_id} ({runs[0].get('name', 'unknown')})")
+                if len(runs) > 1:
+                    print(f"  (Found {len(runs)} matching runs, use --run to specify)")
+
         if run_id:
-            # Remote run analysis mode
-            bundle = _generate_remote_triage_bundle(run_id, repo, output_dir)
-            artifacts = write_triage_bundle(bundle, output_dir)
+            # Remote run analysis mode (with persistent artifacts)
+            result = _generate_remote_triage_bundle(
+                run_id, repo, output_dir,
+                force_aggregate=aggregate_mode,
+                force_per_repo=per_repo_mode,
+            )
+
+            # Check if multi-report mode was triggered (returns tuple)
+            if isinstance(result, tuple):
+                artifacts_out, result_data = result
+                run_dir = output_dir / "runs" / run_id
+
+                if json_mode:
+                    return CommandResult(
+                        exit_code=EXIT_SUCCESS,
+                        summary=f"Multi-triage for run {run_id}: {result_data['repo_count']} repos",
+                        artifacts={k: str(v) for k, v in artifacts_out.items()},
+                        data=result_data,
+                    )
+
+                passed = result_data["passed_count"]
+                failed = result_data["failed_count"]
+                print(f"Run {run_id}: {result_data['repo_count']} repos, {passed} passed, {failed} failed")
+                print(f"Artifacts: {artifacts_out['artifacts_dir']}")
+                print(f"Multi-triage: {artifacts_out['multi_triage']}")
+                print(f"Multi-markdown: {artifacts_out['multi_markdown']}")
+                return EXIT_SUCCESS
+
+            # Single report or log-fallback mode (returns TriageBundle)
+            bundle = result
+            run_dir = output_dir / "runs" / run_id
+            artifacts = write_triage_bundle(bundle, run_dir)
         elif artifacts_dir:
             # Offline artifacts mode
             artifacts_path = Path(artifacts_dir)

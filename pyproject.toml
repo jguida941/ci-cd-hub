@@ -22,10 +22,14 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "pytest-benchmark>=5.0.0",
+    "pytest-xdist>=3.0",  # Parallel test execution
+    "hypothesis>=6.0",  # Property-based testing
     "syrupy>=5.0.0",
     "mutmut>=2.4.0",
     # Linting & Formatting
     "ruff>=0.8.0",
+    "black>=24.0",  # Optional formatter (CI parity)
+    "isort>=5.12.0",  # Import sorting (CI parity)
     "yamllint>=1.33.0",
     "zizmor>=0.9.0",
     # Type Checking
@@ -60,8 +64,10 @@ wizard = [
 ]
 
 [project.scripts]
-hub-config = "scripts.load_config:main"
-hub-report = "scripts.aggregate_reports:main"
+# DEPRECATED: hub-config and hub-report removed (use cihub CLI instead)
+# Removal date: 2026-02-01
+# - hub-config → cihub config show
+# - hub-report → cihub report dashboard
 cihub = "cihub.__main__:main"
 
 [tool.setuptools.packages.find]
@@ -92,6 +98,11 @@ ignore_missing_imports = true
 line-length = 120
 target-version = ["py310"]
 extend-exclude = "_quarantine"
+
+[tool.isort]
+profile = "black"
+line_length = 120
+skip = ["_quarantine"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

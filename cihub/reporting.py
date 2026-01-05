@@ -7,14 +7,16 @@ compatibility.
 from __future__ import annotations
 
 from cihub.core import reporting as _core
+from cihub.core.gate_specs import threshold_rows, tool_rows
 
-JAVA_TOOL_ROWS = _core.JAVA_TOOL_ROWS
+# Backward compatibility: derive these from the gate_specs registry
+JAVA_TOOL_ROWS = tool_rows("java")
+PYTHON_TOOL_ROWS = tool_rows("python")
+JAVA_THRESHOLD_ROWS = threshold_rows("java")
+PYTHON_THRESHOLD_ROWS = threshold_rows("python")
 BAR_WIDTH = _core.BAR_WIDTH
 BAR_FULL = _core.BAR_FULL
 BAR_EMPTY = _core.BAR_EMPTY
-PYTHON_TOOL_ROWS = _core.PYTHON_TOOL_ROWS
-JAVA_THRESHOLD_ROWS = _core.JAVA_THRESHOLD_ROWS
-PYTHON_THRESHOLD_ROWS = _core.PYTHON_THRESHOLD_ROWS
 ENV_ROWS = _core.ENV_ROWS
 
 load_report = _core.load_report

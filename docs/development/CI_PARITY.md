@@ -99,7 +99,7 @@ cihub check              # Fast (~30s)
 ├── test (pytest + coverage gate)
 ├── actionlint (optional)
 ├── docs-check
-└── smoke
+└── smoke (scaffold + validate only; does NOT run `cihub ci` unless `--full` is set)
 
 cihub check --audit      # + ~15s
 ├── docs-links
@@ -126,6 +126,10 @@ cihub check --mutation   # + ~15min
 
 cihub check --all        # Everything
 ```
+
+**Important:** `cihub check --full` (and `--all`) also runs the `smoke` step in full mode
+(equivalent to `cihub smoke --full`), which executes `cihub ci` in the fixture repos and
+then validates the generated artifacts.
 
 ---
 

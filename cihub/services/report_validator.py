@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
+
+import jsonschema
 
 from cihub.services.types import ServiceResult
 from cihub.tools.registry import (
@@ -20,7 +23,38 @@ from cihub.tools.registry import (
     PYTHON_TOOL_METRICS,
 )
 
-# All tool definitions imported from cihub.tools.registry
+# Path to the JSON schema file (relative to package root)
+_SCHEMA_PATH = Path(__file__).parent.parent.parent / "schema" / "ci-report.v2.json"
+_SCHEMA_CACHE: dict[str, Any] | None = None
+
+
+def _load_schema() -> dict[str, Any]:
+    """Load and cache the JSON schema."""
+    global _SCHEMA_CACHE
+    if _SCHEMA_CACHE is None:
+        _SCHEMA_CACHE = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
+    return _SCHEMA_CACHE
+
+
+def validate_against_schema(report: dict[str, Any]) -> list[str]:
+    """Validate report against JSON schema.
+
+    Args:
+        report: Report dict to validate.
+
+    Returns:
+        List of schema validation errors (empty if valid).
+    """
+    schema = _load_schema()
+    errors: list[str] = []
+
+    validator = jsonschema.Draft7Validator(schema)
+    for error in validator.iter_errors(report):
+        # Format error path for clarity
+        path = ".".join(str(p) for p in error.absolute_path) if error.absolute_path else "root"
+        errors.append(f"Schema error at '{path}': {error.message}")
+
+    return errors
 
 
 @dataclass
@@ -30,6 +64,8 @@ class ValidationRules:
     expect_clean: bool = True  # Expect no issues (vs expect_issues for failing fixtures)
     coverage_min: int = 70
     strict: bool = False  # Fail on warnings
+    validate_schema: bool = False  # Validate against JSON schema
+    consistency_only: bool = False  # Validate structure/consistency only (no clean/issue expectations)
 
 
 @dataclass
@@ -123,10 +159,34 @@ def _parse_summary_tools(
 
 
 def _iter_existing_patterns(root: Path, patterns: Iterable[str]) -> bool:
+    """Check if any files matching patterns exist in root directory."""
     for pattern in patterns:
         if list(root.glob(pattern)):
             return True
     return False
+
+
+def _check_artifacts_non_empty(root: Path, patterns: Iterable[str]) -> tuple[bool, list[str]]:
+    """Check if artifacts exist AND are non-empty.
+
+    Returns:
+        tuple: (all_non_empty, list of empty file paths)
+    """
+    empty_files: list[str] = []
+    found_any = False
+
+    for pattern in patterns:
+        for path in root.glob(pattern):
+            found_any = True
+            if path.is_file():
+                try:
+                    size = path.stat().st_size
+                    if size == 0:
+                        empty_files.append(str(path))
+                except OSError:
+                    empty_files.append(f"{path} (unreadable)")
+
+    return found_any and len(empty_files) == 0, empty_files
 
 
 def _compare_summary(
@@ -219,21 +279,37 @@ def _validate_tool_execution(
         if metrics_found:
             if artifact_map and reports_dir and tool in artifact_map:
                 patterns = artifact_map[tool]
-                if patterns and not _iter_existing_patterns(reports_dir, patterns):
-                    debug.append(
-                        f"Debug: {tool} has metrics but missing artifacts "
-                        f"(patterns: {patterns}) - metrics take precedence"
-                    )
+                if patterns:
+                    exists = _iter_existing_patterns(reports_dir, patterns)
+                    if not exists:
+                        debug.append(
+                            f"Debug: {tool} has metrics but missing artifacts "
+                            f"(patterns: {patterns}) - metrics take precedence"
+                        )
+                    else:
+                        # Check artifacts are non-empty even if metrics exist
+                        non_empty, empty_files = _check_artifacts_non_empty(reports_dir, patterns)
+                        if empty_files:
+                            warnings.append(f"tool '{tool}' has empty output files: {', '.join(empty_files)}")
             continue
 
         if artifact_map and reports_dir and tool in artifact_map:
             patterns = artifact_map[tool]
             if patterns and _iter_existing_patterns(reports_dir, patterns):
-                debug.append(
-                    f"Debug: {tool} missing metrics but artifacts found - "
-                    "consider adding metrics for primary validation"
-                )
-                continue
+                # Check if artifacts are non-empty before trusting them
+                non_empty, empty_files = _check_artifacts_non_empty(reports_dir, patterns)
+                if non_empty:
+                    debug.append(
+                        f"Debug: {tool} missing metrics but non-empty artifacts found - "
+                        "consider adding metrics for primary validation"
+                    )
+                    continue
+                else:
+                    # Artifacts exist but are empty - don't trust them
+                    warnings.append(
+                        f"tool '{tool}' has empty output files (cannot trust tools_success): {', '.join(empty_files)}"
+                    )
+                    # Fall through to "no proof found" if succeeded
 
         if succeeded:
             warnings.append(
@@ -264,6 +340,12 @@ def validate_report(
     errors: list[str] = []
     warnings: list[str] = []
     debug_messages: list[str] = []
+    schema_errors: list[str] = []
+
+    # 0. JSON Schema validation (if enabled)
+    if rules.validate_schema:
+        schema_errors = validate_against_schema(report)
+        errors.extend(schema_errors)
 
     # Detect language
     if "java_version" in report:
@@ -279,28 +361,30 @@ def validate_report(
     if schema_version != "2.0":
         errors.append(f"schema_version is '{schema_version}', expected '2.0'")
 
-    # 2. Test results
+    # 2. Test results (skip policy expectations in consistency_only mode)
     results = report.get("results", {}) or {}
-    tests_passed = results.get("tests_passed")
-    tests_failed = results.get("tests_failed", 0)
+    if not rules.consistency_only:
+        tests_passed = results.get("tests_passed")
+        tests_failed = results.get("tests_failed", 0)
 
-    if tests_passed is None:
-        errors.append("results.tests_passed is null - tests may not have run")
-    elif tests_passed == 0 and rules.expect_clean:
-        errors.append("tests_passed is 0 - at least some tests should pass")
+        if tests_passed is None:
+            errors.append("results.tests_passed is null - tests may not have run")
+        elif tests_passed == 0 and rules.expect_clean:
+            errors.append("tests_passed is 0 - at least some tests should pass")
 
-    if rules.expect_clean:
-        if tests_failed is None:
-            errors.append("results.tests_failed is null")
-        elif tests_failed > 0:
-            errors.append(f"tests_failed is {tests_failed}, expected 0 for clean build")
+        if rules.expect_clean:
+            if tests_failed is None:
+                errors.append("results.tests_failed is null")
+            elif tests_failed > 0:
+                errors.append(f"tests_failed is {tests_failed}, expected 0 for clean build")
 
-    # 3. Coverage
-    coverage = results.get("coverage")
-    if coverage is None:
-        errors.append("results.coverage is null")
-    elif rules.expect_clean and coverage < rules.coverage_min:
-        errors.append(f"coverage is {coverage}%, expected >= {rules.coverage_min}%")
+    # 3. Coverage (skip policy expectations in consistency_only mode)
+    if not rules.consistency_only:
+        coverage = results.get("coverage")
+        if coverage is None:
+            errors.append("results.coverage is null")
+        elif rules.expect_clean and coverage < rules.coverage_min:
+            errors.append(f"coverage is {coverage}%, expected >= {rules.coverage_min}%")
 
     # 4. tools_ran
     tools_ran = report.get("tools_ran", {})
@@ -329,6 +413,26 @@ def validate_report(
     if tools_configured:
         warnings.extend(_compare_configured_vs_ran(tools_configured, tools_ran))
 
+    # Check tools_require_run - if tool was configured, required, but didn't run = error
+    #
+    # NOTE: In consistency-only mode we intentionally skip policy enforcement checks
+    # (like require_run_or_fail) because they are represented elsewhere (gates/triage)
+    # and would otherwise double-count failures.
+    if not rules.consistency_only:
+        tools_require_run = report.get("tools_require_run", {}) or {}
+        for tool, configured in tools_configured.items():
+            if not configured:
+                continue
+            ran = tools_ran.get(tool, False)
+            required = tools_require_run.get(tool, False)
+            if not ran and required:
+                errors.append(
+                    (
+                        f"REQUIRED TOOL NOT RUN: '{tool}' was configured and required "
+                        "(require_run_or_fail=true) but did not run"
+                    )
+                )
+
     # 5. Validate tool execution
     tool_metrics = report.get("tool_metrics", {}) or {}
     if language:
@@ -346,7 +450,7 @@ def validate_report(
         debug_messages.extend(tool_debug)
 
     # 6. Clean build checks (lint/security metrics must be 0)
-    if rules.expect_clean and language:
+    if (not rules.consistency_only) and rules.expect_clean and language:
         lint_metrics = PYTHON_LINT_METRICS if language == "python" else JAVA_LINT_METRICS
         security_metrics = PYTHON_SECURITY_METRICS if language == "python" else JAVA_SECURITY_METRICS
 
@@ -358,11 +462,19 @@ def validate_report(
                 errors.append(f"tool_metrics.{metric} is {val}, expected 0 for clean build")
 
     # 7. Issue detection for failing fixtures
-    if not rules.expect_clean and language:
+    if (not rules.consistency_only) and (not rules.expect_clean) and language:
         lint_metrics = PYTHON_LINT_METRICS if language == "python" else JAVA_LINT_METRICS
         total_issues = sum(tool_metrics.get(m, 0) or 0 for m in lint_metrics)
         if total_issues == 0:
             errors.append("No lint issues detected - failing fixture MUST have issues")
+
+    # 8. Threshold completeness check (Issue Section 7)
+    # Warn when core thresholds are missing (will render as "-" in summary)
+    thresholds = report.get("thresholds", {}) or {}
+    core_thresholds = ["coverage_min", "mutation_score_min"]
+    for key in core_thresholds:
+        if key not in thresholds or thresholds[key] is None:
+            warnings.append(f"Missing threshold '{key}' - will render as '-' in summary")
 
     # Determine success based on errors and strict mode
     success = len(errors) == 0
@@ -374,7 +486,7 @@ def validate_report(
         language=language,
         errors=errors,
         warnings=warnings,
-        schema_errors=[e for e in errors if "schema" in e.lower()],
+        schema_errors=schema_errors if schema_errors else [e for e in errors if "schema" in e.lower()],
         threshold_violations=[e for e in errors if "coverage" in e or "expected 0" in e],
         tool_warnings=warnings,
         debug_messages=debug_messages,

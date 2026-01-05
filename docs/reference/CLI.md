@@ -380,7 +380,7 @@ usage: cihub report validate [-h] [--json] --report REPORT
                              [--expect {clean,issues}]
                              [--coverage-min COVERAGE_MIN] [--strict]
                              [--verbose] [--summary SUMMARY]
-                             [--reports-dir REPORTS_DIR] [--debug]
+                             [--reports-dir REPORTS_DIR] [--debug] [--schema]
 
 options:
   -h, --help            show this help message and exit
@@ -397,6 +397,7 @@ options:
   --reports-dir REPORTS_DIR
                         Directory containing tool artifacts
   --debug               Show debug output for validation
+  --schema              Validate against JSON schema (ci-report.v2.json)
 ```
 
 ## cihub report dashboard
@@ -592,7 +593,8 @@ options:
 ```
 usage: cihub triage [-h] [--json] [--output-dir OUTPUT_DIR] [--report REPORT]
                     [--summary SUMMARY] [--run RUN_ID] [--artifacts-dir PATH]
-                    [--repo OWNER/REPO]
+                    [--repo OWNER/REPO] [--multi] [--reports-dir PATH]
+                    [--detect-flaky]
 
 options:
   -h, --help            show this help message and exit
@@ -608,6 +610,11 @@ options:
                         mode)
   --repo OWNER/REPO     Target repository for remote run analysis (default:
                         current repo)
+  --multi               Enable multi-report mode (aggregate multiple
+                        report.json files)
+  --reports-dir PATH    Directory containing multiple report.json files (for
+                        --multi mode)
+  --detect-flaky        Analyze triage history for flaky test patterns
 ```
 
 ## cihub docs
@@ -817,7 +824,7 @@ options:
 ## cihub hub-ci
 
 ```
-usage: cihub hub-ci [-h]
+usage: cihub hub-ci [-h] [--json]
                     {actionlint-install,actionlint,syntax-check,repo-check,source-check,security-pip-audit,security-bandit,security-ruff,security-owasp,docker-compose-check,codeql-build,kyverno-install,trivy-install,trivy-summary,kyverno-validate,kyverno-test,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,release-parse-tag,release-update-tag,ruff,black,mutmut,bandit,pip-audit,zizmor-run,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,badges-commit,pytest-summary,summary,outputs,enforce,verify-matrix-keys,quarantine-check}
                     ...
 
@@ -879,6 +886,7 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
+  --json                Output machine-readable JSON
 ```
 
 ## cihub hub-ci actionlint-install

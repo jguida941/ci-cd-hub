@@ -13,11 +13,6 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from cihub.ci_config import load_ci_config, load_hub_config
-from cihub.ci_report import (
-    build_java_report,
-    build_python_report,
-    resolve_thresholds,
-)
 from cihub.ci_runner import (
     run_bandit,
     run_black,
@@ -39,6 +34,7 @@ from cihub.ci_runner import (
     run_spotbugs,
     run_trivy,
 )
+from cihub.core.languages import get_strategy
 from cihub.exit_codes import EXIT_FAILURE, EXIT_INTERNAL_ERROR, EXIT_SUCCESS
 from cihub.reporting import render_summary
 from cihub.services.types import ServiceResult
@@ -52,7 +48,13 @@ from cihub.utils import (
 )
 
 # Import from submodules
-from .gates import _build_context, _evaluate_java_gates, _evaluate_python_gates
+from .gates import (
+    _build_context,
+    _check_require_run_or_fail,
+    _evaluate_java_gates,
+    _evaluate_python_gates,
+    _tool_requires_run_or_fail,
+)
 from .helpers import (
     _apply_env_overrides,
     _apply_force_all_tools,
@@ -170,125 +172,12 @@ def run_ci(
     _apply_env_overrides(config, language, env_map, problems)
     _warn_reserved_features(config, problems)
 
-    report: dict[str, Any] = {}
-    tool_outputs: dict[str, dict[str, Any]] = {}
-    tools_ran: dict[str, bool] = {}
-    tools_success: dict[str, bool] = {}
-    gate_failures: list[str] = []
-
-    if language == "python":
-        if install_deps:
-            _install_python_dependencies(config, repo_path / run_workdir, problems)
-        try:
-            tool_outputs, tools_ran, tools_success = _run_python_tools(
-                config,
-                repo_path,
-                run_workdir,
-                output_dir,
-                problems,
-                PYTHON_RUNNERS,
-            )
-        except Exception as exc:
-            message = f"Tool execution failed: {exc}"
-            problems.append(
-                {
-                    "severity": "error",
-                    "message": message,
-                    "code": "CIHUB-CI-TOOL-FAILURE",
-                }
-            )
-            errors, warnings = _split_problems(problems)
-            return CiRunResult(
-                success=False,
-                errors=errors,
-                warnings=warnings,
-                exit_code=EXIT_INTERNAL_ERROR,
-                problems=problems,
-            )
-
-        tools_configured = {tool: _tool_enabled(config, tool, "python") for tool in PYTHON_TOOLS}
-        thresholds = resolve_thresholds(config, "python")
-        docker_cfg = config.get("python", {}).get("tools", {}).get("docker", {}) or {}
-        if not isinstance(docker_cfg, dict):
-            docker_cfg = {}
-        docker_compose = (
-            docker_cfg.get("compose_file", "docker-compose.yml") if tools_configured.get("docker") else None
-        )
-        docker_health = docker_cfg.get("health_endpoint") if tools_configured.get("docker") else None
-        context = _build_context(
-            repo_path,
-            config,
-            run_workdir,
-            correlation_id,
-            docker_compose_file=docker_compose,
-            docker_health_endpoint=docker_health,
-        )
-        report = build_python_report(
-            config,
-            tool_outputs,
-            tools_configured,
-            tools_ran,
-            tools_success,
-            thresholds,
-            context,
-        )
-        gate_failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
-
-    elif language == "java":
-        build_tool = config.get("java", {}).get("build_tool", "maven").strip().lower() or "maven"
-        if build_tool not in {"maven", "gradle"}:
-            build_tool = "maven"
-        project_type = _detect_java_project_type(repo_path / run_workdir)
-        docker_cfg = config.get("java", {}).get("tools", {}).get("docker", {}) or {}
-        docker_compose = docker_cfg.get("compose_file")
-        docker_health = docker_cfg.get("health_endpoint")
-
-        try:
-            tool_outputs, tools_ran, tools_success = _run_java_tools(
-                config, repo_path, run_workdir, output_dir, build_tool, problems, JAVA_RUNNERS
-            )
-        except Exception as exc:
-            message = f"Tool execution failed: {exc}"
-            problems.append(
-                {
-                    "severity": "error",
-                    "message": message,
-                    "code": "CIHUB-CI-TOOL-FAILURE",
-                }
-            )
-            errors, warnings = _split_problems(problems)
-            return CiRunResult(
-                success=False,
-                errors=errors,
-                warnings=warnings,
-                exit_code=EXIT_INTERNAL_ERROR,
-                problems=problems,
-            )
-
-        tools_configured = {tool: _tool_enabled(config, tool, "java") for tool in JAVA_TOOLS}
-        thresholds = resolve_thresholds(config, "java")
-        context = _build_context(
-            repo_path,
-            config,
-            run_workdir,
-            correlation_id,
-            build_tool=build_tool,
-            project_type=project_type,
-            docker_compose_file=docker_compose,
-            docker_health_endpoint=docker_health,
-        )
-        report = build_java_report(
-            config,
-            tool_outputs,
-            tools_configured,
-            tools_ran,
-            tools_success,
-            thresholds,
-            context,
-        )
-        gate_failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
-
-    else:
+    # -------------------------------------------------------------------------
+    # Language Strategy Pattern: get strategy early, fail fast for unsupported
+    # -------------------------------------------------------------------------
+    try:
+        strategy = get_strategy(language)
+    except ValueError:
         message = f"cihub ci supports python or java (got '{language}')"
         problems = [{"severity": "error", "message": message, "code": "CIHUB-CI-LANGUAGE"}]
         errors, warnings = _split_problems(problems)
@@ -299,6 +188,94 @@ def run_ci(
             exit_code=EXIT_FAILURE,
             problems=problems,
         )
+
+    report: dict[str, Any] = {}
+    tool_outputs: dict[str, dict[str, Any]] = {}
+    tools_ran: dict[str, bool] = {}
+    tools_success: dict[str, bool] = {}
+    gate_failures: list[str] = []
+
+    # -------------------------------------------------------------------------
+    # Run tools via strategy (language-specific kwargs merged via strategy)
+    # -------------------------------------------------------------------------
+    try:
+        # Get language-specific kwargs merged with caller-provided kwargs
+        run_kwargs = strategy.get_run_kwargs(config, install_deps=install_deps)
+        tool_outputs, tools_ran, tools_success = strategy.run_tools(
+            config, repo_path, run_workdir, output_dir, problems,
+            **run_kwargs,
+        )
+    except Exception as exc:
+        message = f"Tool execution failed: {exc}"
+        problems.append(
+            {
+                "severity": "error",
+                "message": message,
+                "code": "CIHUB-CI-TOOL-FAILURE",
+            }
+        )
+        errors, warnings = _split_problems(problems)
+        return CiRunResult(
+            success=False,
+            errors=errors,
+            warnings=warnings,
+            exit_code=EXIT_INTERNAL_ERROR,
+            problems=problems,
+        )
+
+    # -------------------------------------------------------------------------
+    # Build tools_configured and tools_require_run using strategy
+    # -------------------------------------------------------------------------
+    all_tools = strategy.get_default_tools()
+    tools_configured = {tool: _tool_enabled(config, tool, language) for tool in all_tools}
+    tools_require_run = {tool: _tool_requires_run_or_fail(tool, config, language) for tool in all_tools}
+
+    # -------------------------------------------------------------------------
+    # Resolve thresholds via strategy
+    # -------------------------------------------------------------------------
+    thresholds = strategy.resolve_thresholds(config)
+
+    # -------------------------------------------------------------------------
+    # Extract docker config via strategy (encapsulates language-specific access)
+    # -------------------------------------------------------------------------
+    docker_cfg = strategy.get_docker_config(config)
+    docker_compose = docker_cfg.get("compose_file")
+    docker_health = docker_cfg.get("health_endpoint")
+    # Apply language-specific default for compose_file
+    if tools_configured.get("docker") and not docker_compose:
+        docker_compose = strategy.get_docker_compose_default()
+    # Only include docker config if docker is actually configured
+    if not tools_configured.get("docker"):
+        docker_compose = None
+        docker_health = None
+
+    # -------------------------------------------------------------------------
+    # Build context (language-specific extras via strategy)
+    # -------------------------------------------------------------------------
+    context_kwargs: dict[str, Any] = {
+        "docker_compose_file": docker_compose,
+        "docker_health_endpoint": docker_health,
+    }
+    # Add language-specific context fields (e.g., Java's build_tool, project_type)
+    context_extras = strategy.get_context_extras(config, repo_path / run_workdir)
+    context_kwargs.update(context_extras)
+
+    context = _build_context(repo_path, config, run_workdir, correlation_id, **context_kwargs)
+
+    # -------------------------------------------------------------------------
+    # Build report and evaluate gates via strategy
+    # -------------------------------------------------------------------------
+    report = strategy.build_report(
+        config,
+        tool_outputs,
+        tools_configured,
+        tools_ran,
+        tools_success,
+        thresholds,
+        context,
+        tools_require_run=tools_require_run,
+    )
+    gate_failures = strategy.evaluate_gates(report, thresholds, tools_configured, config)
 
     resolved_report_path = report_path or output_dir / "report.json"
     if not resolved_report_path.is_absolute():
@@ -323,6 +300,76 @@ def run_ci(
     github_summary_env = env_map.get("GITHUB_STEP_SUMMARY")
     if write_summary and github_summary_env:
         Path(github_summary_env).write_text(summary_text, encoding="utf-8")
+
+    # -------------------------------------------------------------------------
+    # Self-validation (production invariant): fail on contradictions between the
+    # artifacts we just wrote (report/summary) and the report contract.
+    #
+    # This is intentionally *consistency-only* (not gate policy): it should not
+    # invent quality thresholds. The goal is to catch drift/contradictions like:
+    # - Summary Tools table says ran=true but report.tools_ran says false
+    # - Report is missing required structural fields
+    #
+    # Schema validation is enforced in CI (GITHUB_ACTIONS) and reported as a
+    # warning locally when git metadata may be unavailable.
+    # -------------------------------------------------------------------------
+    try:
+        from cihub.services.report_validator import (
+            ValidationRules,
+            validate_against_schema,
+            validate_report,
+        )
+
+        schema_errors = validate_against_schema(report)
+        schema_severity = "error" if env_map.get("GITHUB_ACTIONS") else "warning"
+        for msg in schema_errors:
+            problems.append(
+                {
+                    "severity": schema_severity,
+                    "message": msg,
+                    "code": "CIHUB-CI-REPORT-SCHEMA",
+                }
+            )
+
+        validation = validate_report(
+            report,
+            ValidationRules(consistency_only=True, strict=False, validate_schema=False),
+            summary_text=summary_text,
+            reports_dir=output_dir,
+        )
+        for msg in validation.errors:
+            problems.append(
+                {
+                    "severity": "error",
+                    "message": msg,
+                    "code": "CIHUB-CI-REPORT-SELF-VALIDATE",
+                }
+            )
+
+        # Escalate summary/report mismatches to errors (hard contradictions).
+        for msg in validation.warnings:
+            lowered = msg.lower()
+            is_contradiction = (
+                "configured mismatch" in lowered
+                or "ran mismatch" in lowered
+                or "summary missing tool row" in lowered
+                or "report.json missing tools_ran" in lowered
+            )
+            problems.append(
+                {
+                    "severity": "error" if is_contradiction else "warning",
+                    "message": msg,
+                    "code": "CIHUB-CI-REPORT-SELF-VALIDATE",
+                }
+            )
+    except Exception as exc:  # noqa: BLE001 - best effort: surface and fail-safe
+        problems.append(
+            {
+                "severity": "error",
+                "message": f"self-validation failed: {exc}",
+                "code": "CIHUB-CI-REPORT-SELF-VALIDATE",
+            }
+        )
 
     codecov_cfg = config.get("reports", {}).get("codecov", {}) or {}
     if codecov_cfg.get("enabled", True):
@@ -414,6 +461,8 @@ __all__ = [
     "_build_context",
     "_evaluate_python_gates",
     "_evaluate_java_gates",
+    "_tool_requires_run_or_fail",
+    "_check_require_run_or_fail",
     # Re-exports from cihub.cli for backward compatibility
     "get_git_branch",
     "get_git_remote",

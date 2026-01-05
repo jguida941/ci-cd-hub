@@ -9,18 +9,16 @@ import subprocess
 from pathlib import Path
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.types import CommandResult
+from cihub.utils.github_context import OutputContext
 
 from . import (
-    _append_summary,
     _extract_count,
-    _resolve_output_path,
-    _resolve_summary_path,
     _run_command,
-    _write_outputs,
 )
 
 
-def cmd_ruff(args: argparse.Namespace) -> int:
+def cmd_ruff(args: argparse.Namespace) -> int | CommandResult:
     cmd = ["ruff", "check", args.path]
     if args.force_exclude:
         cmd.append("--force-exclude")
@@ -33,28 +31,39 @@ def cmd_ruff(args: argparse.Namespace) -> int:
     except json.JSONDecodeError:
         issues = 0
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"issues": str(issues)}, output_path)
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"issues": str(issues)})
 
     github_proc = subprocess.run(  # noqa: S603
         cmd + ["--output-format=github"],
         text=True,
     )
-    return EXIT_SUCCESS if github_proc.returncode == 0 else EXIT_FAILURE
+    passed = github_proc.returncode == 0
+    return CommandResult(
+        exit_code=EXIT_SUCCESS if passed else EXIT_FAILURE,
+        summary=f"Ruff: {issues} issues found" if issues else "Ruff: no issues",
+        problems=[{"severity": "error", "message": f"Ruff found {issues} issues"}] if not passed else [],
+        data={"issues": issues, "passed": passed},
+    )
 
 
-def cmd_black(args: argparse.Namespace) -> int:
+def cmd_black(args: argparse.Namespace) -> int | CommandResult:
     proc = _run_command(["black", "--check", args.path], Path("."))
     output = (proc.stdout or "") + (proc.stderr or "")
     issues = len(re.findall(r"would reformat", output))
     if proc.returncode != 0 and issues == 0:
         issues = 1
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs({"issues": str(issues)}, output_path)
-    return EXIT_SUCCESS
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"issues": str(issues)})
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Black: {issues} files need reformatting" if issues else "Black: all files formatted",
+        data={"issues": issues},
+    )
 
 
-def cmd_mutmut(args: argparse.Namespace) -> int:
+def cmd_mutmut(args: argparse.Namespace) -> int | CommandResult:
     workdir = Path(args.workdir).resolve()
     output_dir = Path(args.output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -64,21 +73,31 @@ def cmd_mutmut(args: argparse.Namespace) -> int:
     log_text = (proc.stdout or "") + (proc.stderr or "")
     log_path.write_text(log_text, encoding="utf-8")
     if proc.returncode != 0:
-        print("::error::mutmut run failed - check for import errors or test failures")
-        print(log_text)  # Print log to help debug CI failures
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="mutmut run failed - check for import errors or test failures",
+            problems=[{"severity": "error", "message": "mutmut run failed"}],
+            data={"log": log_text[:2000]},  # Truncate log for data field
+        )
     if "mutations/second" not in log_text:
-        print("::error::mutmut did not complete successfully")
-        print(log_text)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="mutmut did not complete successfully",
+            problems=[{"severity": "error", "message": "mutmut did not complete"}],
+            data={"log": log_text[:2000]},
+        )
 
     final_line = ""
     for line in log_text.splitlines():
         if re.search(r"\d+/\d+", line):
             final_line = line
     if not final_line:
-        print("::error::mutmut output missing final counts")
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="mutmut output missing final counts",
+            problems=[{"severity": "error", "message": "mutmut output missing final counts"}],
+            data={},
+        )
 
     killed = _extract_count(final_line, "\U0001f389")
     survived = _extract_count(final_line, "\U0001f641")
@@ -88,24 +107,23 @@ def cmd_mutmut(args: argparse.Namespace) -> int:
 
     tested = killed + survived + timeout + suspicious
     if tested == 0:
-        print("::error::No mutants were tested - check test coverage")
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="No mutants were tested - check test coverage",
+            problems=[{"severity": "error", "message": "No mutants were tested"}],
+            data={},
+        )
 
     score = (killed * 100) // tested
 
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs(
-        {
-            "mutation_score": str(score),
-            "killed": str(killed),
-            "survived": str(survived),
-            "timeout": str(timeout),
-            "suspicious": str(suspicious),
-        },
-        output_path,
-    )
-
-    summary_path = _resolve_summary_path(args.summary, args.github_summary)
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({
+        "mutation_score": str(score),
+        "killed": str(killed),
+        "survived": str(survived),
+        "timeout": str(timeout),
+        "suspicious": str(suspicious),
+    })
     summary = (
         "## Mutation Testing\n\n"
         "| Metric | Value |\n"
@@ -118,12 +136,34 @@ def cmd_mutmut(args: argparse.Namespace) -> int:
         f"| Skipped | {skipped} |\n"
         f"| Total Tested | {tested} |\n"
     )
+
+    result_data = {
+        "mutation_score": score,
+        "killed": killed,
+        "survived": survived,
+        "timeout": timeout,
+        "suspicious": suspicious,
+        "skipped": skipped,
+        "tested": tested,
+        "min_score": args.min_score,
+    }
+
     if score < args.min_score:
         summary += f"\n**FAILED**: Score {score}% below {args.min_score}% threshold\n"
-        _append_summary(summary, summary_path)
-        print(f"::error::Mutation score {score}% below {args.min_score}% threshold")
-        print(log_text)
-        return EXIT_FAILURE
+        ctx.write_summary(summary)
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Mutation score {score}% below {args.min_score}% threshold",
+            problems=[
+                {"severity": "error", "message": f"Mutation score {score}% below {args.min_score}% threshold"}
+            ],
+            data=result_data,
+        )
     summary += f"\n**PASSED**: Score {score}% meets {args.min_score}% threshold\n"
-    _append_summary(summary, summary_path)
-    return EXIT_SUCCESS
+    ctx.write_summary(summary)
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Mutation testing passed: {score}% (threshold: {args.min_score}%)",
+        data=result_data,
+    )

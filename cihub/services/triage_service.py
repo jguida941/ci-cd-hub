@@ -1,137 +1,98 @@
-"""Triage bundle generation service."""
+"""Triage bundle generation service.
+
+This module is being modularized into cihub/services/triage/.
+Imports from this file continue to work for backward compatibility.
+
+See cihub/services/triage/__init__.py for the modular structure.
+"""
 
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-TRIAGE_SCHEMA_VERSION = "cihub-triage-v1"
-PRIORITY_SCHEMA_VERSION = "cihub-priority-v1"
+# Re-export types from the new triage package (backward compatibility)
+from cihub.services.triage.detection import (
+    detect_flaky_patterns,
+    detect_gate_changes,
+    detect_test_count_regression,
+)
+from cihub.services.triage.evidence import (
+    _check_tool_has_artifacts,
+    _format_list,
+    _get_nested,
+    _get_tool_metrics,
+    _load_json,
+    _load_tool_outputs,
+    _normalize_category,
+    _severity_for,
+    _tool_artifacts,
+    _tool_env_name,
+    build_tool_evidence,
+    validate_artifact_evidence,
+)
+from cihub.services.triage.types import (
+    CATEGORY_BY_TOOL,
+    CATEGORY_ORDER,
+    MULTI_TRIAGE_SCHEMA_VERSION,
+    PRIORITY_SCHEMA_VERSION,
+    SEVERITY_BY_CATEGORY,
+    SEVERITY_ORDER,
+    TRIAGE_SCHEMA_VERSION,
+    MultiTriageResult,
+    ToolEvidence,
+    ToolStatus,
+    TriageBundle,
+)
 
-SEVERITY_ORDER = {"blocker": 0, "high": 1, "medium": 2, "low": 3}
-CATEGORY_ORDER = ["workflow", "security", "test", "lint", "docs", "build", "cihub"]
+# Explicit re-exports for backward compatibility
+__all__ = [
+    # Types
+    "ToolStatus",
+    "ToolEvidence",
+    "MultiTriageResult",
+    "TriageBundle",
+    # Constants
+    "TRIAGE_SCHEMA_VERSION",
+    "PRIORITY_SCHEMA_VERSION",
+    "MULTI_TRIAGE_SCHEMA_VERSION",
+    "SEVERITY_ORDER",
+    "CATEGORY_ORDER",
+    "CATEGORY_BY_TOOL",
+    "SEVERITY_BY_CATEGORY",
+    # Evidence functions
+    "build_tool_evidence",
+    "validate_artifact_evidence",
+    # Detection functions
+    "detect_flaky_patterns",
+    "detect_test_count_regression",
+    # Bundle generation (defined in this module)
+    "aggregate_triage_bundles",
+    "generate_triage_bundle",
+    "write_triage_bundle",
+    # Legacy helper re-exports
+    "_load_json",
+    "_load_tool_outputs",
+    "_format_list",
+    "_normalize_category",
+    "_severity_for",
+    "_tool_env_name",
+    "_tool_artifacts",
+    "_get_nested",
+    "_get_tool_metrics",
+    "_check_tool_has_artifacts",
+]
 
-CATEGORY_BY_TOOL = {
-    "pytest": "test",
-    "mutmut": "test",
-    "hypothesis": "test",
-    "build": "build",
-    "jacoco": "test",
-    "pitest": "test",
-    "checkstyle": "lint",
-    "spotbugs": "lint",
-    "pmd": "lint",
-    "ruff": "lint",
-    "black": "lint",
-    "isort": "lint",
-    "mypy": "lint",
-    "bandit": "security",
-    "pip_audit": "security",
-    "semgrep": "security",
-    "trivy": "security",
-    "owasp": "security",
-    "codeql": "security",
-    "sbom": "security",
-    "docker": "build",
-}
 
-SEVERITY_BY_CATEGORY = {
-    "workflow": "blocker",
-    "security": "high",
-    "test": "medium",
-    "lint": "low",
-    "docs": "low",
-    "build": "medium",
-    "cihub": "blocker",
-}
-
-
-@dataclass(frozen=True)
-class TriageBundle:
-    triage: dict[str, Any]
-    priority: dict[str, Any]
-    markdown: str
-    history_entry: dict[str, Any]
+# ---------------------------------------------------------------------------
+# Local helpers for bundle generation (not yet migrated to triage/ package)
+# ---------------------------------------------------------------------------
 
 
 def _timestamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _load_json(path: Path) -> dict[str, Any] | None:
-    if not path.exists():
-        return None
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError:
-        return None
-    return data if isinstance(data, dict) else None
-
-
-def _load_tool_outputs(tool_dir: Path) -> dict[str, dict[str, Any]]:
-    outputs: dict[str, dict[str, Any]] = {}
-    if not tool_dir.exists():
-        return outputs
-    for path in tool_dir.glob("*.json"):
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(data, dict):
-            continue
-        tool = str(data.get("tool") or path.stem)
-        outputs[tool] = data
-    return outputs
-
-
-def _format_list(values: list[str]) -> str:
-    return ", ".join(values) if values else "-"
-
-
-def _normalize_category(tool: str) -> str:
-    return CATEGORY_BY_TOOL.get(tool, "cihub")
-
-
-def _severity_for(category: str) -> str:
-    return SEVERITY_BY_CATEGORY.get(category, "medium")
-
-
-def _tool_env_name(tool: str) -> str:
-    return f"CIHUB_RUN_{tool.replace('-', '_').upper()}"
-
-
-def _tool_artifacts(output_dir: Path, tool: str, payload: dict[str, Any]) -> list[dict[str, str]]:
-    artifacts: list[dict[str, str]] = []
-    tool_outputs = output_dir / "tool-outputs"
-    seen = set()
-
-    def _add(path: Path | str, kind: str) -> None:
-        path_str = str(path)
-        if not path_str or path_str in seen:
-            return
-        seen.add(path_str)
-        artifacts.append({"path": path_str, "kind": kind})
-
-    json_path = tool_outputs / f"{tool}.json"
-    if json_path.exists():
-        _add(json_path, "tool_result")
-
-    stdout_path = tool_outputs / f"{tool}.stdout.log"
-    stderr_path = tool_outputs / f"{tool}.stderr.log"
-    if stdout_path.exists():
-        _add(stdout_path, "stdout")
-    if stderr_path.exists():
-        _add(stderr_path, "stderr")
-
-    for key, value in (payload.get("artifacts") or {}).items():
-        if not value:
-            continue
-        _add(value, key)
-
-    return artifacts
 
 
 def _repro_command(tool: str, repo_path: Path, workdir: str | None, output_dir: Path) -> dict[str, Any]:
@@ -153,6 +114,9 @@ def _failure_entry(
 ) -> dict[str, Any]:
     category = _normalize_category(tool)
     severity = _severity_for(category)
+    # If a tool is required to run but did not, this is always a hard failure.
+    if status == "required_not_run":
+        severity = "blocker"
     return {
         "id": f"{tool}:{status}",
         "category": category,
@@ -173,7 +137,9 @@ def _failure_entry(
 def _build_markdown(bundle: dict[str, Any], max_failures: int = 10) -> str:
     run = bundle.get("run", {}) if isinstance(bundle.get("run"), dict) else {}
     paths = bundle.get("paths", {}) if isinstance(bundle.get("paths"), dict) else {}
+    summary = bundle.get("summary", {}) if isinstance(bundle.get("summary"), dict) else {}
     failures = bundle.get("failures", []) if isinstance(bundle.get("failures"), list) else []
+    evidence_issues = bundle.get("evidence_issues", []) if isinstance(bundle.get("evidence_issues"), list) else []
 
     lines = [
         "# CIHub Triage",
@@ -183,13 +149,16 @@ def _build_markdown(bundle: dict[str, Any], max_failures: int = 10) -> str:
         f"Commit: {run.get('commit_sha') or '-'}",
         f"Correlation ID: {run.get('correlation_id') or '-'}",
         f"Output Dir: {paths.get('output_dir') or '-'}",
+        f"Status: {summary.get('overall_status') or '-'}",
         "",
         "## Priority Failures",
     ]
 
     if not failures:
-        lines.append("No failures detected.")
-        return "\n".join(lines).strip() + "\n"
+        if evidence_issues:
+            lines.append("No tool failures detected, but evidence issues exist (see below).")
+        else:
+            lines.append("No failures detected.")
 
     for failure in failures[:max_failures]:
         artifacts = failure.get("artifacts", []) if isinstance(failure.get("artifacts"), list) else []
@@ -197,6 +166,18 @@ def _build_markdown(bundle: dict[str, Any], max_failures: int = 10) -> str:
         reproduce = failure.get("reproduce", {}) if isinstance(failure.get("reproduce"), dict) else {}
         env = reproduce.get("env", {}) if isinstance(reproduce.get("env"), dict) else {}
         env_str = ", ".join([f"{k}={v}" for k, v in env.items()]) if env else "-"
+
+        # Include actual error details if available
+        errors = failure.get("errors", []) if isinstance(failure.get("errors"), list) else []
+        error_lines = []
+        if errors:
+            error_lines.append("- Errors:")
+            for err in errors[:5]:  # Limit to first 5 errors
+                # Truncate long error messages
+                err_str = str(err)[:200] + "..." if len(str(err)) > 200 else str(err)
+                error_lines.append(f"  - {err_str}")
+            if len(errors) > 5:
+                error_lines.append(f"  - ... and {len(errors) - 5} more error(s)")
 
         lines.extend(
             [
@@ -206,6 +187,7 @@ def _build_markdown(bundle: dict[str, Any], max_failures: int = 10) -> str:
                 f"- Category: {failure.get('category')}",
                 f"- Reason: {failure.get('reason')}",
                 f"- Message: {failure.get('message')}",
+                *error_lines,
                 f"- Reproduce: {reproduce.get('command') or '-'}",
                 f"- Env: {env_str}",
                 "- Artifacts:",
@@ -216,6 +198,21 @@ def _build_markdown(bundle: dict[str, Any], max_failures: int = 10) -> str:
                 "  - Apply deterministic fixes from tool output",
             ]
         )
+
+    if evidence_issues:
+        lines.extend(["", "## Evidence Issues", ""])
+        # Show errors first, then warnings, then info.
+        order = {"error": 0, "warning": 1, "info": 2}
+        sorted_issues = sorted(
+            evidence_issues,
+            key=lambda i: (order.get(str(i.get("severity")), 99), str(i.get("tool") or ""), str(i.get("issue") or "")),
+        )
+        for item in sorted_issues[:20]:
+            tool = item.get("tool") or "-"
+            sev = item.get("severity") or "-"
+            issue = item.get("issue") or "-"
+            msg = item.get("message") or "-"
+            lines.append(f"- [{sev}] {tool}: {issue} — {msg}")
 
     return "\n".join(lines).strip() + "\n"
 
@@ -233,12 +230,133 @@ def _sort_failures(failures: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(failures, key=_sort_key)
 
 
+# ---------------------------------------------------------------------------
+# Public API: Bundle generation and aggregation
+# ---------------------------------------------------------------------------
+
+
+def aggregate_triage_bundles(
+    bundles: list[TriageBundle],
+) -> MultiTriageResult:
+    """Aggregate multiple triage bundles into a multi-repo summary.
+
+    Used for orchestrator runs that produce N report.json files.
+    """
+    timestamp = _timestamp()
+    repos: list[dict[str, Any]] = []
+    failures_by_tool: dict[str, list[str]] = {}
+    failures_by_repo: dict[str, list[str]] = {}
+
+    passed_count = 0
+    failed_count = 0
+
+    for bundle in bundles:
+        triage = bundle.triage
+        run_info = triage.get("run", {}) or {}
+        summary = triage.get("summary", {}) or {}
+        failures = triage.get("failures", []) or []
+
+        repo_name = run_info.get("repo", "unknown")
+        overall_status = summary.get("overall_status", "unknown")
+
+        if overall_status == "passed":
+            passed_count += 1
+        else:
+            failed_count += 1
+
+        # Track which tools failed for this repo
+        repo_failed_tools: list[str] = []
+        for failure in failures:
+            tool = failure.get("tool", "unknown")
+            repo_failed_tools.append(tool)
+
+            # Add to failures_by_tool
+            if tool not in failures_by_tool:
+                failures_by_tool[tool] = []
+            if repo_name not in failures_by_tool[tool]:
+                failures_by_tool[tool].append(repo_name)
+
+        if repo_failed_tools:
+            failures_by_repo[repo_name] = repo_failed_tools
+
+        repos.append(
+            {
+                "repo": repo_name,
+                "status": overall_status,
+                "failure_count": summary.get("failure_count", 0),
+                "failed_tools": repo_failed_tools,
+                "branch": run_info.get("branch", ""),
+                "commit": run_info.get("commit_sha", "")[:8] if run_info.get("commit_sha") else "",
+            }
+        )
+
+    # Build summary markdown
+    md_lines = [
+        "# Multi-Repo Triage Summary",
+        "",
+        f"**Total Repos**: {len(bundles)}",
+        f"**Passed**: {passed_count}",
+        f"**Failed**: {failed_count}",
+        "",
+        "## Failures by Tool",
+        "",
+    ]
+
+    if failures_by_tool:
+        for tool, failed_repos in sorted(failures_by_tool.items(), key=lambda x: -len(x[1])):
+            repos_preview = ", ".join(failed_repos[:5])
+            ellipsis = "..." if len(failed_repos) > 5 else ""
+            md_lines.append(f"- **{tool}**: {len(failed_repos)} repos ({repos_preview}{ellipsis})")
+    else:
+        md_lines.append("No failures detected.")
+
+    md_lines.extend(
+        [
+            "",
+            "## Repo Status",
+            "",
+            "| Repo | Status | Failed Tools |",
+            "|------|--------|--------------|",
+        ]
+    )
+
+    for repo in repos:
+        status_emoji = "✅" if repo["status"] == "passed" else "❌"
+        failed_tools = ", ".join(repo["failed_tools"][:3]) or "-"
+        if len(repo["failed_tools"]) > 3:
+            failed_tools += "..."
+        md_lines.append(f"| {repo['repo']} | {status_emoji} {repo['status']} | {failed_tools} |")
+
+    return MultiTriageResult(
+        schema_version=MULTI_TRIAGE_SCHEMA_VERSION,
+        generated_at=timestamp,
+        repo_count=len(bundles),
+        passed_count=passed_count,
+        failed_count=failed_count,
+        repos=repos,
+        failures_by_tool=failures_by_tool,
+        failures_by_repo=failures_by_repo,
+        summary_markdown="\n".join(md_lines),
+    )
+
+
 def generate_triage_bundle(
     output_dir: Path,
     report_path: Path | None = None,
     summary_path: Path | None = None,
     meta: dict[str, Any] | None = None,
 ) -> TriageBundle:
+    """Generate a triage bundle from CI output.
+
+    Args:
+        output_dir: Directory containing CI output (report.json, tool-outputs/, etc.)
+        report_path: Optional path to report.json (defaults to output_dir/report.json)
+        summary_path: Optional path to summary.md (defaults to output_dir/summary.md)
+        meta: Optional metadata dict for missing report fallback
+
+    Returns:
+        TriageBundle with triage, priority, markdown, and history_entry
+    """
     output_dir = output_dir.resolve()
     report_path = report_path or output_dir / "report.json"
     summary_path = summary_path or output_dir / "summary.md"
@@ -260,6 +378,9 @@ def generate_triage_bundle(
         )
         tools_ran = report.get("tools_ran", {}) if isinstance(report.get("tools_ran"), dict) else {}
         tools_success = report.get("tools_success", {}) if isinstance(report.get("tools_success"), dict) else {}
+        tools_require_run = (
+            report.get("tools_require_run", {}) if isinstance(report.get("tools_require_run"), dict) else {}
+        )
 
         for tool, enabled in tools_configured.items():
             if not enabled:
@@ -268,9 +389,20 @@ def generate_triage_bundle(
             success = bool(tools_success.get(tool, False))
             if success:
                 continue
-            status = "failed" if ran else "skipped"
-            reason = "tool_failed" if ran else "tool_skipped"
-            message = f"Tool '{tool}' {status}"
+            if ran:
+                status = "failed"
+                reason = "tool_failed"
+                message = f"Tool '{tool}' failed"
+            else:
+                require_run = bool(tools_require_run.get(tool, False))
+                if require_run:
+                    status = "required_not_run"
+                    reason = "tool_required_not_run"
+                    message = f"Tool '{tool}' was required but did not run"
+                else:
+                    status = "skipped"
+                    reason = "tool_skipped"
+                    message = f"Tool '{tool}' skipped"
             payload = tool_outputs.get(tool, {})
             failures.append(
                 _failure_entry(
@@ -313,9 +445,25 @@ def generate_triage_bundle(
     if meta.get("error"):
         notes.append(f"error: {meta['error']}")
 
+    # Build tool evidence for artifact-first explainability
+    tool_evidence: list[dict[str, Any]] = []
+    evidence_issues: list[dict[str, Any]] = []
+    if report:
+        evidence_list = build_tool_evidence(report, output_dir)
+        tool_evidence = [e.to_dict() for e in evidence_list]
+        evidence_issues = validate_artifact_evidence(report, output_dir)
+
     priority = _sort_failures(failures)
-    failure_count = len([f for f in failures if f.get("status") in {"failed", "missing_report"}])
+    evidence_error_count = len([i for i in evidence_issues if i.get("severity") == "error"])
+    evidence_warning_count = len([i for i in evidence_issues if i.get("severity") == "warning"])
+    evidence_info_count = len([i for i in evidence_issues if i.get("severity") == "info"])
+
+    base_failure_count = len(
+        [f for f in failures if f.get("status") in {"failed", "missing_report", "required_not_run"}]
+    )
+    failure_count = base_failure_count + evidence_error_count
     skipped_count = len([f for f in failures if f.get("status") == "skipped"])
+    required_not_run_count = len([e for e in tool_evidence if e.get("status") == "required_not_run"])
 
     run = {
         "correlation_id": report.get("hub_correlation_id") if report else meta.get("correlation_id"),
@@ -329,16 +477,36 @@ def generate_triage_bundle(
         "args": meta.get("args", []),
     }
 
-    summary = {
-        "overall_status": "failed" if failures else "passed",
-        "failure_count": failure_count,
-        "warning_count": 0,
-        "skipped_count": skipped_count,
-        "tool_counts": {
-            "configured": len(report.get("tools_configured", {})) if report else 0,
-            "ran": len([t for t in (report.get("tools_ran", {}) if report else {}).values() if t]),
-        },
+    tool_counts: dict[str, int] = {
+        "configured": len(report.get("tools_configured", {})) if report else 0,
+        "ran": len([t for t in (report.get("tools_ran", {}) if report else {}).values() if t]),
+        "passed": len([e for e in tool_evidence if e.get("status") == "passed"]),
+        "failed": len([e for e in tool_evidence if e.get("status") == "failed"]),
     }
+
+    summary: dict[str, Any] = {
+        "overall_status": (
+            "failed" if failures or required_not_run_count > 0 or evidence_error_count > 0 else "passed"
+        ),
+        "failure_count": failure_count,
+        "warning_count": evidence_warning_count,
+        "info_count": evidence_info_count,
+        "evidence_error_count": evidence_error_count,
+        "skipped_count": skipped_count,
+        "required_not_run_count": required_not_run_count,
+        "tool_counts": tool_counts,
+    }
+
+    # Extract test counts for trend analysis (Issue 16)
+    results = report.get("results", {}) if report else {}
+    tests_passed = results.get("tests_passed", 0) or 0
+    tests_failed = results.get("tests_failed", 0) or 0
+    tests_skipped = results.get("tests_skipped", 0) or 0
+    tests_total = tests_passed + tests_failed + tests_skipped
+
+    # Detect test count regressions (Issue 16)
+    history_path = output_dir / "history.jsonl"
+    regression_warnings = detect_test_count_regression(history_path, tests_total)
 
     triage = {
         "schema_version": TRIAGE_SCHEMA_VERSION,
@@ -350,8 +518,10 @@ def generate_triage_bundle(
             "summary_path": str(summary_path) if summary_path.exists() else "",
         },
         "summary": summary,
+        "tool_evidence": tool_evidence,
+        "evidence_issues": evidence_issues,
         "failures": priority,
-        "warnings": [],
+        "warnings": regression_warnings,  # Include test count drop warnings
         "notes": notes,
     }
 
@@ -360,12 +530,42 @@ def generate_triage_bundle(
         "failures": priority,
     }
 
+    # Additional metrics for history entry
+    coverage = results.get("coverage", 0) or 0
+    mutation_score = results.get("mutation_score", 0) or 0
+
+    # Extract gate failures for historical tracking
+    gate_failures = [
+        f.get("tool", f.get("id", "unknown"))
+        for f in failures
+        if f.get("category") in {"gate", "test", "security", "lint"}
+        and f.get("status") in {"failed", "required_not_run"}
+    ]
+    gate_passed_count = tool_counts["passed"]
+    gate_failed_count = len(gate_failures)
+
     history_entry = {
         "timestamp": triage["generated_at"],
         "correlation_id": run.get("correlation_id") or "",
         "output_dir": str(output_dir),
         "overall_status": summary["overall_status"],
         "failure_count": summary["failure_count"],
+        # Test counts for trend analysis (Issue 16)
+        "tests_total": tests_total,
+        "tests_passed": tests_passed,
+        "tests_failed": tests_failed,
+        "tests_skipped": tests_skipped,
+        "coverage": coverage,
+        "mutation_score": mutation_score,
+        # Tool counts for drift detection
+        "tools_configured": tool_counts["configured"],
+        "tools_ran": tool_counts["ran"],
+        "tools_passed": tool_counts["passed"],
+        "tools_failed": tool_counts["failed"],
+        # Gate status for historical tracking
+        "gate_failures": gate_failures,
+        "gate_passed_count": gate_passed_count,
+        "gate_failed_count": gate_failed_count,
     }
 
     markdown = _build_markdown(triage, max_failures=10)
@@ -379,6 +579,15 @@ def generate_triage_bundle(
 
 
 def write_triage_bundle(bundle: TriageBundle, output_dir: Path) -> dict[str, Path]:
+    """Write a triage bundle to disk.
+
+    Args:
+        bundle: The TriageBundle to write
+        output_dir: Directory to write files to
+
+    Returns:
+        Dict mapping file type to path (triage, priority, markdown, history)
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     triage_path = output_dir / "triage.json"
     priority_path = output_dir / "priority.json"

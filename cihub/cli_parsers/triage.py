@@ -43,4 +43,51 @@ def add_triage_command(
         metavar="OWNER/REPO",
         help="Target repository for remote run analysis (default: current repo)",
     )
+    # Remote run filtering
+    triage.add_argument(
+        "--workflow",
+        metavar="NAME",
+        help="Filter remote runs by workflow name (e.g., 'hub-ci.yml')",
+    )
+    triage.add_argument(
+        "--branch",
+        metavar="NAME",
+        help="Filter remote runs by branch name (e.g., 'main')",
+    )
+    # Multi-report mode
+    triage.add_argument(
+        "--multi",
+        action="store_true",
+        help="Enable multi-report mode (aggregate multiple report.json files)",
+    )
+    triage.add_argument(
+        "--aggregate",
+        action="store_true",
+        help="Force aggregated output for multi-report mode (single combined bundle)",
+    )
+    triage.add_argument(
+        "--per-repo",
+        action="store_true",
+        dest="per_repo",
+        help="Force per-repo output for multi-report mode (separate bundles with index)",
+    )
+    triage.add_argument(
+        "--reports-dir",
+        metavar="PATH",
+        help="Directory containing multiple report.json files (for --multi mode)",
+    )
+    # Flaky detection
+    triage.add_argument(
+        "--detect-flaky",
+        action="store_true",
+        dest="detect_flaky",
+        help="Analyze triage history for flaky test patterns",
+    )
+    # Gate history tracking
+    triage.add_argument(
+        "--gate-history",
+        action="store_true",
+        dest="gate_history",
+        help="Analyze triage history for gate status changes over time",
+    )
     triage.set_defaults(func=handlers.cmd_triage)

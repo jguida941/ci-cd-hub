@@ -1,9 +1,16 @@
 # ADR-0006: Quality Gates and Thresholds
 
-**Status**: Accepted  
-**Date:** 2025-12-14  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2026-01-03  
+**Status**: Accepted
+**Date:** 2025-12-14
+**Developer:** Justin Guida
+**Last Reviewed:** 2026-01-05
+
+**Implementation Update (2026-01-05):**
+- ✅ CVSS enforcement fully implemented (parser + gate evaluation)
+- ✅ `require_run_or_fail` policy implemented (tools that must run can fail CI)
+- ✅ GateSpec registry created (single source of truth for gates.py + reporting.py)
+- ✅ Self-validation after `cihub ci` catches summary/report contradictions
+- ✅ Contract tests ensure gate evaluation matches summary rendering  
 
 ## Context
 
@@ -90,20 +97,42 @@ is not set, it falls back to `thresholds.owasp_cvss_fail` for backward compatibi
 - OWASP enforcement: `failBuildOnCVSS` parameter
 - Mutation score: reported in step summary, not blocking
 
-**Current Limitations:**
+**Resolved Limitations (2026-01-05):**
 
-1. **No quality gate summary job:**
-   - Individual tools enforce their thresholds
-   - No unified "quality gate" job that checks all thresholds
-   - Consider adding for clearer pass/fail signal
+1. ~~**No quality gate summary job:**~~ → **RESOLVED**
+   - Self-validation runs after `cihub ci` and fails on contradictions
+   - Contract tests (`tests/test_contract_consistency.py`) verify gates.py matches reporting.py
 
-2. **CVSS parsing is format-dependent:**
-   - OWASP, pip-audit, Trivy have different JSON structures
-   - jq queries must handle format variations
+2. ~~**CVSS parsing is format-dependent:**~~ → **RESOLVED**
+   - `_parse_dependency_check()` extracts `owasp_max_cvss` from OWASP JSON
+   - `run_trivy()` extracts `trivy_max_cvss` from Trivy JSON
+   - Gates enforce CVSS thresholds (`owasp_cvss_fail`, `trivy_cvss_fail`)
+
+**New Capabilities (2026-01-05):**
+
+1. **GateSpec Registry** (`cihub/core/gate_specs.py`):
+   - Single source of truth for gate definitions
+   - `ThresholdSpec` and `ToolSpec` dataclasses
+   - Used by both `gates.py` and `reporting.py`
+   - See ADR-0038 for details
+
+2. **require_run_or_fail Policy**:
+   - Tools that must run will fail CI if they don't
+   - Defaults: pytest, bandit, pip_audit, owasp, trivy, codeql, jacoco = `true`
+   - Summary shows "X NOT RUN" for hard failures
+   - See ADR-0039 for details
+
+3. **Virtual Tools Pattern**:
+   - Hypothesis (Python) and jqwik (Java) gates for property-based testing
+   - Run via pytest/Maven, not standalone runners
+   - Use `fail_on_error` toggle for optional enforcement
+   - See ADR-0040 for details
+
+4. **Flaky Test Detection** (implemented):
+   - `cihub triage --detect-flaky` analyzes history.jsonl for state changes
+   - Flakiness score based on pass/fail alternation frequency
 
 ## Future Work
 
-- Implement vulnerability count aggregation and enforcement
-- Add Semgrep/Trivy findings to vuln counts
-- Consider unified "quality gate" summary job
 - Add threshold trend tracking (is coverage improving?)
+- Add Semgrep/Trivy findings to unified vuln counts

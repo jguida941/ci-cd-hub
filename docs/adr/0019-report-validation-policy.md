@@ -1,9 +1,17 @@
 # ADR-0019: Report Validation Policy
 
-**Status**: Accepted  
-**Date:** 2025-12-18  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-18
+**Developer:** Justin Guida
+**Last Reviewed:** 2026-01-05
+
+**Implementation Update (2026-01-05):**
+- ✅ `cihub report validate --schema` validates against JSON schema
+- ✅ `cihub report validate --strict` enforces clean-build invariants
+- ✅ Wired into `cihub check --audit` and `cihub smoke --full`
+- ✅ **Self-validation** added to `cihub ci` (runs after report generation)
+- ✅ `ValidationRules.consistency_only` mode for structural checks without clean-build assumptions
+- ✅ Schema/consistency errors fail CI in GITHUB_ACTIONS, warn locally  
 
 ## Context
 
@@ -247,8 +255,42 @@ Future scripts can follow the same pattern with simple boolean flags.
 4. Remove inline validation blocks
 5. Document in migration plan
 
+## Self-Validation in cihub ci (Added 2026-01-05)
+
+After `cihub ci` writes `report.json` and `summary.md`, it runs self-validation:
+
+```python
+# In cihub/services/ci_engine/__init__.py
+validation = validate_report(
+    report,
+    ValidationRules(consistency_only=True, strict=False, validate_schema=False),
+    summary_text=summary_text,
+    reports_dir=output_dir,
+)
+```
+
+**Validation Modes:**
+
+| Mode | Purpose | When Used |
+|------|---------|-----------|
+| `consistency_only=True` | Check summary matches report (no clean-build assumptions) | Self-validation after `cihub ci` |
+| `strict=True` | Enforce clean-build invariants (0 lint errors, etc.) | `cihub check --audit` |
+| `validate_schema=True` | Validate against JSON schema | `cihub report validate --schema` |
+
+**Error Handling:**
+
+- **In CI (GITHUB_ACTIONS):** Schema failures are errors (fail the job)
+- **Locally:** Schema failures are warnings (allow scaffold/dev runs with incomplete data)
+- **Always:** Consistency failures (summary contradicts report) fail CI
+
+**Test Coverage:**
+
+- `tests/test_ci_self_validate.py` verifies that summary/report contradictions fail `cihub ci`
+
 ## Related ADRs
 
 - ADR-0017: Scanner Tool Defaults (defines metrics)
 - ADR-0018: Fixtures Testing Strategy (defines fixture types)
 - ADR-0014: Reusable Workflow Migration (overall plan)
+- ADR-0022: Summary Verification Against Reports (validation strategy)
+- ADR-0006: Quality Gates and Thresholds (gate enforcement)

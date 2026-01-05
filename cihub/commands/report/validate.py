@@ -53,6 +53,7 @@ def _validate_report(args: argparse.Namespace, json_mode: bool) -> int | Command
         expect_clean=expect_mode == "clean",
         coverage_min=coverage_min,
         strict=bool(getattr(args, "strict", False)),
+        validate_schema=bool(getattr(args, "schema", False)),
     )
     result = validate_report(
         report,

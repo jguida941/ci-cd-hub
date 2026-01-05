@@ -1,7 +1,26 @@
 # Documentation Automation Audit & Design
 
 **Date:** 2026-01-04
+**Last Updated:** 2026-01-05 (Implementation status audit)
 **Problem:** Manual documentation updates take 4+ hours/day. With 50+ docs and 28,000 lines, keeping them in sync with code changes is unsustainable.
+
+---
+
+## Implementation Status (2026-01-05)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| `cihub docs generate` | ✅ **IMPLEMENTED** | Generates CLI.md, CONFIG.md |
+| `cihub docs check` | ✅ **IMPLEMENTED** | Drift detection for generated docs |
+| `cihub docs links` | ✅ **IMPLEMENTED** | Internal link validation |
+| `cihub docs stale` | ❌ **NOT IMPLEMENTED** | Core feature — see Part 9 for design |
+| `cihub docs audit` | ❌ **NOT IMPLEMENTED** | Lifecycle enforcement — see Part 12 |
+| `.cihub/tool-outputs/` for docs | ❌ **NOT IMPLEMENTED** | No docs artifacts generated yet |
+| AI prompt pack output | ❌ **NOT IMPLEMENTED** | Design ready in Part 12.D |
+
+**Overall:** ~30% implemented. Core `docs stale` MVP estimated at 2-3 days; full spec is larger.
+
+**Priority Recommendation:** Start with `docs stale` MVP (Python AST + backtick extraction + git range), then expand.
 
 ---
 
@@ -56,14 +75,14 @@ When using `docs stale --ai` output (or a future `cihub docs update --llm-runner
 
 ### By Category
 
-| Category | Files | Lines | Can Auto-Generate? |
-|----------|-------|-------|-------------------|
-| ADRs | 37 | ~3,700 | ❌ No (architectural decisions require human) |
-| Reference (CLI, Config) | 3 | ~2,600 | ✅ Yes (your `cihub docs generate` does this) |
-| Guides | 8 | ~2,300 | ⚠️ Partially (examples can be validated) |
-| Development/Status | 10+ | ~3,500 | ⚠️ Partially (status can track code) |
-| Archive | 15+ | ~5,000 | ❌ No (historical, shouldn't change) |
-| Research | 1 | ~1,600 | ❌ No (notes, not synced to code) |
+| Category                | Files | Lines  | Can Auto-Generate?                           |
+|-------------------------|-------|--------|----------------------------------------------|
+| ADRs                    | 37    | ~3,700 | ❌ No (architectural decisions require human) |
+| Reference (CLI, Config) | 3     | ~2,600 | ✅ Yes (your `cihub docs generate` does this) |
+| Guides                  | 8     | ~2,300 | ⚠️ Partially (examples can be validated)     |
+| Development/Status      | 10+   | ~3,500 | ⚠️ Partially (status can track code)         |
+| Archive                 | 15+   | ~5,000 | ❌ No (historical, shouldn't change)          |
+| Research                | 1     | ~1,600 | ❌ No (notes, not synced to code)             |
 
 ### Total: ~28,000 lines across 70+ files
 
@@ -135,12 +154,12 @@ When code changes:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                        DOC FRESHNESS PIPELINE                     │
+│                        DOC FRESHNESS PIPELINE                    │
 ├──────────────────────────────────────────────────────────────────┤
-│                                                                   │
+│                                                                  │
 │  1. EXTRACT         2. INDEX           3. DIFF        4. ALERT   │
 │  ─────────────────────────────────────────────────────────────   │
-│                                                                   │
+│                                                                  │
 │  ┌─────────┐       ┌─────────────┐    ┌─────────┐   ┌─────────┐  │
 │  │ Code    │──────▶│ References  │───▶│ Compare │──▶│ Stale   │  │
 │  │ Symbols │       │ Index       │    │ to Git  │   │ Report  │  │
@@ -151,7 +170,7 @@ When code changes:
 │  │ Docs    │──────▶│ Doc         │              │ AI Update   │  │
 │  │ (.md)   │       │ References  │              │ (Optional)  │  │
 │  └─────────┘       └─────────────┘              └─────────────┘  │
-│                                                                   │
+│                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 

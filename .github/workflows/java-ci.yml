@@ -41,6 +41,7 @@ name: Java CI Pipeline
 
 permissions:
   contents: read
+  security-events: write  # Required for CodeQL SARIF uploads
 
 on:
   workflow_call:

@@ -5,7 +5,8 @@ from __future__ import annotations
 import argparse
 import sys
 
-from cihub.exit_codes import EXIT_USAGE
+from cihub.exit_codes import EXIT_SUCCESS, EXIT_USAGE
+from cihub.types import CommandResult
 
 from .badges import cmd_badges, cmd_badges_commit, cmd_outputs
 from .java_tools import (
@@ -61,7 +62,8 @@ from .validation import (
 )
 
 
-def cmd_hub_ci(args: argparse.Namespace) -> int:
+def cmd_hub_ci(args: argparse.Namespace) -> int | CommandResult:
+    """Dispatch hub-ci subcommands, returning CommandResult for --json support."""
     handlers = {
         "actionlint-install": cmd_actionlint_install,
         "actionlint": cmd_actionlint,
@@ -114,4 +116,21 @@ def cmd_hub_ci(args: argparse.Namespace) -> int:
     if handler is None:
         print(f"Unknown hub-ci subcommand: {args.subcommand}", file=sys.stderr)
         return EXIT_USAGE
-    return handler(args)
+
+    # Execute handler - may return int (legacy) or CommandResult (migrated)
+    result = handler(args)
+    json_mode = getattr(args, "json", False)
+
+    # If handler already returns CommandResult, use it directly
+    if isinstance(result, CommandResult):
+        return result
+
+    # Legacy int return - wrap in CommandResult for --json mode
+    if json_mode:
+        status = "success" if result == EXIT_SUCCESS else "failed"
+        return CommandResult(
+            exit_code=result,
+            summary=f"hub-ci {args.subcommand}: {status}",
+            data={"subcommand": args.subcommand, "exit_code": result, "status": status},
+        )
+    return result
