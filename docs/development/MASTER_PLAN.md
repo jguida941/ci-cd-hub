@@ -33,6 +33,7 @@ Single source of truth for what we are doing now. Other docs can provide depth, 
 - [ ] Plain-text reference scan for stale `docs/...` strings
 - [ ] Universal header enforcement for manual docs
 - [ ] `.cihub/tool-outputs/` artifacts for doc automation
+- [ ] Tooling integration checklist: toggle -> CLI runner (no inline workflow logic) -> tool-outputs -> report summaries/dashboards -> templates/profiles -> docs refs -> template sync tests
 
 **Clean Code:**
 - [ ] `_tool_enabled()` consolidation (5 implementations → 1)
@@ -456,6 +457,20 @@ These are references, not competing plans.
 ### Optional Tooling
 - [ ] Evaluate `act` integration for local workflow simulation (document limitations)
 - [ ] Doc manifest (`docs_manifest.json`) for LLM context (path, category, generated flag, last-reviewed)
+
+### Tooling Expansion (Security + Quality)
+- [ ] DAST (ZAP) CLI-first toggle + runner:
+  - Add `python.tools.zap` config + schema/defaults
+  - Add CLI runner (`cihub ci`/`cihub run zap`) and tool-outputs capture
+  - Replace workflow inline action usage with CLI invocation
+  - Add report summaries + dashboard metrics for ZAP findings
+  - Update templates/profiles + `tests/test_templates.py`
+- [ ] API schema testing via Schemathesis (`python.tools.schemathesis`), CLI runner + report metrics
+- [ ] Pre-commit integration (`cihub init --pre-commit`) + config template support
+- [ ] API docs generation (`cihub docs generate --api` via pdoc or equivalent)
+- [ ] Deep linting (`python.tools.pylint`) as optional complement to Ruff
+- [ ] Quality dashboards (SonarQube integration; optional, infra-dependent)
+- [ ] Premium DAST option (StackHawk; optional)
 
 ### PyQt6 GUI (Phase 2)
 - [ ] See `active/PYQT_PLAN.md` for full scope — deferred until CLI stabilizes

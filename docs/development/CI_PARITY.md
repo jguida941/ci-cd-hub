@@ -39,14 +39,14 @@ These checks use the same underlying tool but differ in flags, scope, or output 
 | ruff lint | `ruff check .` | `cihub hub-ci ruff --path . --force-exclude --github-output` | CI adds force-exclude + GitHub output |
 | ruff format | `ruff format --check .` | `ruff format --check . --force-exclude` | CI adds force-exclude |
 | mypy | `mypy cihub/ scripts/` | `mypy cihub/ --ignore-missing-imports --show-error-codes` | Scope/flags differ |
-| pytest | `pytest tests/` | `pytest --cov --cov-fail-under=70` | Coverage gate only in CI |
-| actionlint | All workflows | Only `hub-production-ci.yml` + reviewdog | Scope/annotations differ |
-| yamllint | `config/ templates/` | Specific paths + custom rules | Paths/rules differ |
+| pytest | `python -m pytest tests/ --cov=cihub --cov=scripts --cov-fail-under=70` | `python -m pytest tests/ -v --cov=cihub --cov=scripts --cov-report=xml --cov-report=term-missing --cov-fail-under=<config>` | CI adds reports/verbosity + config-driven gate |
+| actionlint | `actionlint` (all workflows, optional) | `cihub hub-ci actionlint --workflow .github/workflows/hub-production-ci.yml --reviewdog` | Scope/annotations differ |
+| yamllint | `yamllint config/ templates/` | `yamllint -d "{extends: relaxed, rules: {line-length: disable}}" config/defaults.yaml config/repos/ templates/profiles/` | Paths/rules differ |
 | bandit | `bandit -r cihub scripts -f json -q --severity-level high --confidence-level high` | `cihub hub-ci bandit --paths cihub scripts --output ... --github-summary` | CI adds --github-summary |
-| pip-audit | `pip-audit -r ...` | `cihub hub-ci pip-audit --requirements ... --output ... --github-summary` | CI adds --github-summary |
-| gitleaks | `gitleaks detect --no-git` (skip if missing) | GitHub Action with full history | No history locally |
-| trivy | `trivy fs .` | FS scan + config scan + SARIF upload | CI has more scans |
-| zizmor | `zizmor .github/workflows/ --min-severity high` | SARIF output + `cihub hub-ci zizmor-check --github-summary` | CI uses SARIF + summary |
+| pip-audit | `pip-audit -r requirements/requirements.txt -r requirements/requirements-dev.txt` | `cihub hub-ci pip-audit --requirements ... --output ... --github-summary` | CI adds --github-summary |
+| gitleaks | `gitleaks detect --source . --no-git` (skip if missing) | GitHub Action with full history | No history locally |
+| trivy | `trivy fs . --severity CRITICAL,HIGH --exit-code 1` (skip if missing) | FS scan + config scan + SARIF upload | CI has more scans |
+| zizmor | `zizmor .github/workflows/ --min-severity high` | SARIF output via `cihub hub-ci zizmor-run` + `cihub hub-ci zizmor-check --github-summary` | CI uses SARIF + summary |
 | mutmut | `cihub hub-ci mutmut --min-score 70` | `cihub hub-ci mutmut --min-score 70 --output-dir . --github-output --github-summary` | CI adds output/summary |
 | license-check | `cihub hub-ci license-check` | `cihub hub-ci license-check --github-summary` | CI adds --github-summary |
 
@@ -79,6 +79,8 @@ These steps only run locally via `cihub check` and are not in the CI workflow.
 | docs-links | Broken link checking | `cihub docs links` (uses lychee) |
 | adr-check | ADR metadata validation | `cihub adr check` |
 | preflight | Environment setup checks | `cihub preflight` |
+| verify-contracts | Template/workflow contract verification | `cihub verify` |
+| sync-templates-check | Remote template drift check (token required) | `cihub sync-templates --check` |
 | smoke | Scaffold + validate test | `cihub smoke` |
 
 ---
@@ -89,30 +91,35 @@ Shows which checks run at each `cihub check` tier:
 
 ```
 cihub check              # Fast (~30s)
+├── preflight
 ├── lint (ruff)
 ├── format (ruff)
 ├── type (mypy)
-├── test (pytest)
-├── actionlint
+├── yamllint (optional)
+├── test (pytest + coverage gate)
+├── actionlint (optional)
 ├── docs-check
 └── smoke
 
 cihub check --audit      # + ~15s
 ├── docs-links
 ├── adr-check
-└── validate-configs
+├── validate-configs
+└── validate-profiles
 
 cihub check --security   # + ~2min
 ├── bandit
 ├── pip-audit
-├── trivy
-└── gitleaks
+├── gitleaks (optional)
+└── trivy (optional)
 
 cihub check --full       # + ~1min
+├── zizmor (optional)
 ├── validate-templates
+├── verify-contracts
 ├── verify-matrix-keys
 ├── license-check
-└── zizmor
+└── sync-templates-check (requires GH_TOKEN)
 
 cihub check --mutation   # + ~15min
 └── mutmut
