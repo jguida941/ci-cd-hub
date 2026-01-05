@@ -9,7 +9,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from cihub.services.ci_engine import (
+    JAVA_RUNNERS,
     JAVA_TOOLS,
+    PYTHON_RUNNERS,
     PYTHON_TOOLS,
     _apply_force_all_tools,
     _build_context,
@@ -48,7 +50,7 @@ class TestGetRepoName:
     def test_from_config_repo_section(self, tmp_path: Path) -> None:
         config = {"repo": {"owner": "myowner", "name": "myrepo"}}
         with patch.dict(os.environ, {}, clear=True):
-            with patch("cihub.services.ci_engine.get_git_remote", return_value=None):
+            with patch("cihub.services.ci_engine.helpers.get_git_remote", return_value=None):
                 result = _get_repo_name(config, tmp_path)
         assert result == "myowner/myrepo"
 
@@ -56,11 +58,11 @@ class TestGetRepoName:
         config: dict = {}
         with patch.dict(os.environ, {}, clear=True):
             with patch(
-                "cihub.services.ci_engine.get_git_remote",
+                "cihub.services.ci_engine.helpers.get_git_remote",
                 return_value="git@github.com:gitowner/gitrepo.git",
             ):
                 with patch(
-                    "cihub.services.ci_engine.parse_repo_from_remote",
+                    "cihub.services.ci_engine.helpers.parse_repo_from_remote",
                     return_value=("gitowner", "gitrepo"),
                 ):
                     result = _get_repo_name(config, tmp_path)
@@ -69,7 +71,7 @@ class TestGetRepoName:
     def test_returns_empty_when_no_source(self, tmp_path: Path) -> None:
         config: dict = {}
         with patch.dict(os.environ, {}, clear=True):
-            with patch("cihub.services.ci_engine.get_git_remote", return_value=None):
+            with patch("cihub.services.ci_engine.helpers.get_git_remote", return_value=None):
                 result = _get_repo_name(config, tmp_path)
         assert result == ""
 
@@ -79,13 +81,13 @@ class TestResolveWorkdir:
 
     def test_override_takes_precedence(self, tmp_path: Path) -> None:
         config = {"repo": {"subdir": "src"}}
-        with patch("cihub.services.ci_engine.validate_subdir"):
+        with patch("cihub.services.ci_engine.helpers.validate_subdir"):
             result = _resolve_workdir(tmp_path, config, "override")
         assert result == "override"
 
     def test_uses_config_subdir(self, tmp_path: Path) -> None:
         config = {"repo": {"subdir": "mysubdir"}}
-        with patch("cihub.services.ci_engine.validate_subdir"):
+        with patch("cihub.services.ci_engine.helpers.validate_subdir"):
             result = _resolve_workdir(tmp_path, config, None)
         assert result == "mysubdir"
 
@@ -458,7 +460,7 @@ class TestNotify:
         config = {"notifications": {"slack": {"enabled": False}}}
         report = {"repository": "owner/repo", "branch": "main"}
         problems: list = []
-        with patch("cihub.services.ci_engine._send_slack") as mock_slack:
+        with patch("cihub.services.ci_engine.notifications._send_slack") as mock_slack:
             _notify(True, config, report, problems, {})
         mock_slack.assert_not_called()
 
@@ -467,7 +469,7 @@ class TestNotify:
         report = {"repository": "owner/repo", "branch": "main"}
         env = {"CIHUB_SLACK_WEBHOOK_URL": "https://hooks.slack.com/test"}
         problems: list = []
-        with patch("cihub.services.ci_engine._send_slack") as mock_slack:
+        with patch("cihub.services.ci_engine.notifications._send_slack") as mock_slack:
             _notify(False, config, report, problems, env)
         mock_slack.assert_called_once()
 
@@ -573,9 +575,10 @@ class TestRunPythonTools:
         problems: list = []
 
         mock_result = ToolResult(tool="ruff", ran=True, success=True, metrics={"ruff_errors": 0})
-        # Patch PYTHON_RUNNERS dict directly since it stores function references at import time
-        with patch.dict("cihub.services.ci_engine.PYTHON_RUNNERS", {"ruff": lambda *args, **kwargs: mock_result}):
-            outputs, ran, success = _run_python_tools(config, tmp_path, "repo", output_dir, problems)
+        # Create a custom runners dict with mock ruff
+        mock_runners = dict(PYTHON_RUNNERS)
+        mock_runners["ruff"] = lambda *args, **kwargs: mock_result
+        outputs, ran, success = _run_python_tools(config, tmp_path, "repo", output_dir, problems, mock_runners)
 
         assert ran.get("ruff") is True
         assert success.get("ruff") is True
@@ -593,7 +596,7 @@ class TestRunPythonTools:
         }
         problems: list = []
 
-        _run_python_tools(config, tmp_path, "repo", output_dir, problems)
+        _run_python_tools(config, tmp_path, "repo", output_dir, problems, PYTHON_RUNNERS)
 
         # Should have warned about unsupported tool
         unsupported_warnings = [p for p in problems if "not supported" in p["message"]]
@@ -606,7 +609,7 @@ class TestRunPythonTools:
         problems: list = []
 
         with pytest.raises(FileNotFoundError):
-            _run_python_tools(config, tmp_path, "nonexistent", output_dir, problems)
+            _run_python_tools(config, tmp_path, "nonexistent", output_dir, problems, PYTHON_RUNNERS)
 
 
 class TestRunJavaTools:
@@ -625,8 +628,16 @@ class TestRunJavaTools:
         problems: list = []
 
         mock_build = ToolResult(tool="build", ran=True, success=True, metrics={})
-        with patch("cihub.services.ci_engine.run_java_build", return_value=mock_build):
-            outputs, ran, success = _run_java_tools(config, tmp_path, "repo", output_dir, "maven", problems)
+        with patch("cihub.services.ci_engine.java_tools.run_java_build", return_value=mock_build):
+            outputs, ran, success = _run_java_tools(
+                config,
+                tmp_path,
+                "repo",
+                output_dir,
+                "maven",
+                problems,
+                JAVA_RUNNERS,
+            )
 
         assert "build" in outputs
 
@@ -637,7 +648,7 @@ class TestRunJavaTools:
         problems: list = []
 
         with pytest.raises(FileNotFoundError):
-            _run_java_tools(config, tmp_path, "nonexistent", output_dir, "maven", problems)
+            _run_java_tools(config, tmp_path, "nonexistent", output_dir, "maven", problems, JAVA_RUNNERS)
 
 
 class TestBuildContext:
@@ -647,7 +658,7 @@ class TestBuildContext:
         # default_branch from config is used when GITHUB_REF_NAME is not set
         config = {"repo": {"owner": "myorg", "name": "myrepo", "default_branch": "main"}}
         with patch.dict(os.environ, {}, clear=True):
-            with patch("cihub.services.ci_engine.get_git_branch", return_value="develop"):
+            with patch("cihub.services.ci_engine.gates.get_git_branch", return_value="develop"):
                 ctx = _build_context(tmp_path, config, ".", None)
 
         # Config default_branch takes precedence over git_branch when no env var

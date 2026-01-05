@@ -9,8 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from cihub.ci_config import load_ci_config
-from cihub.cli import CommandResult
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.types import CommandResult
 
 
 def _get_value(data: dict[str, Any], path: list[str], default: Any) -> Any:

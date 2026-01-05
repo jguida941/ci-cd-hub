@@ -7,106 +7,20 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from cihub.services.types import ServiceResult
+from cihub.tools.registry import (
+    JAVA_ARTIFACTS,
+    JAVA_LINT_METRICS,
+    JAVA_SECURITY_METRICS,
+    JAVA_SUMMARY_MAP,
+    JAVA_TOOL_METRICS,
+    PYTHON_ARTIFACTS,
+    PYTHON_LINT_METRICS,
+    PYTHON_SECURITY_METRICS,
+    PYTHON_SUMMARY_MAP,
+    PYTHON_TOOL_METRICS,
+)
 
-# Metrics expected for each tool (by language)
-PYTHON_TOOL_METRICS: dict[str, list[str]] = {
-    "pytest": ["results.tests_passed", "results.coverage"],
-    "mutmut": ["results.mutation_score"],
-    "ruff": ["tool_metrics.ruff_errors"],
-    "black": ["tool_metrics.black_issues"],
-    "isort": ["tool_metrics.isort_issues"],
-    "mypy": ["tool_metrics.mypy_errors"],
-    "bandit": ["tool_metrics.bandit_high", "tool_metrics.bandit_medium"],
-    "pip_audit": ["tool_metrics.pip_audit_vulns"],
-    "sbom": [],
-    "semgrep": ["tool_metrics.semgrep_findings"],
-    "trivy": ["tool_metrics.trivy_critical", "tool_metrics.trivy_high"],
-    "hypothesis": ["results.tests_passed"],
-    "codeql": [],
-    "docker": [],
-}
-
-JAVA_TOOL_METRICS: dict[str, list[str]] = {
-    "jacoco": ["results.coverage"],
-    "pitest": ["results.mutation_score"],
-    "checkstyle": ["tool_metrics.checkstyle_issues"],
-    "spotbugs": ["tool_metrics.spotbugs_issues"],
-    "pmd": ["tool_metrics.pmd_violations"],
-    "owasp": ["tool_metrics.owasp_critical", "tool_metrics.owasp_high"],
-    "semgrep": ["tool_metrics.semgrep_findings"],
-    "trivy": ["tool_metrics.trivy_critical", "tool_metrics.trivy_high"],
-    "sbom": [],
-    "jqwik": ["results.tests_passed"],
-    "codeql": [],
-    "docker": [],
-}
-
-# Metrics that must be 0 for clean builds
-PYTHON_LINT_METRICS = ["ruff_errors", "black_issues", "isort_issues"]
-PYTHON_SECURITY_METRICS = ["bandit_high", "pip_audit_vulns"]
-JAVA_LINT_METRICS = ["checkstyle_issues", "spotbugs_issues", "pmd_violations"]
-JAVA_SECURITY_METRICS = ["owasp_critical", "owasp_high"]
-
-# Summary table labels -> tool keys
-JAVA_SUMMARY_MAP = {
-    "JaCoCo Coverage": "jacoco",
-    "PITest": "pitest",
-    "Checkstyle": "checkstyle",
-    "PMD": "pmd",
-    "SpotBugs": "spotbugs",
-    "OWASP Dependency-Check": "owasp",
-    "Semgrep": "semgrep",
-    "Trivy": "trivy",
-    "SBOM": "sbom",
-    "jqwik": "jqwik",
-    "CodeQL": "codeql",
-    "Docker": "docker",
-}
-
-PYTHON_SUMMARY_MAP = {
-    "pytest": "pytest",
-    "mutmut": "mutmut",
-    "Ruff": "ruff",
-    "Black": "black",
-    "isort": "isort",
-    "mypy": "mypy",
-    "Bandit": "bandit",
-    "pip-audit": "pip_audit",
-    "Semgrep": "semgrep",
-    "Trivy": "trivy",
-    "Hypothesis": "hypothesis",
-    "CodeQL": "codeql",
-    "SBOM": "sbom",
-    "Docker": "docker",
-}
-
-# Artifact patterns used for backup validation when metrics are missing
-JAVA_ARTIFACTS = {
-    "jacoco": ["**/target/site/jacoco/jacoco.xml"],
-    "checkstyle": ["**/checkstyle-result.xml"],
-    "spotbugs": ["**/spotbugsXml.xml"],
-    "pmd": ["**/pmd.xml"],
-    "owasp": ["**/dependency-check-report.json"],
-    "pitest": ["**/target/pit-reports/mutations.xml"],
-    "semgrep": ["**/semgrep-report.json"],
-    "sbom": ["**/sbom*.json"],
-    "trivy": ["**/trivy-report.json"],
-}
-
-PYTHON_ARTIFACTS = {
-    "pytest": ["**/coverage.xml", "**/test-results.xml", "**/pytest-junit.xml"],
-    "ruff": ["**/ruff-report.json"],
-    "bandit": ["**/bandit-report.json"],
-    "pip_audit": ["**/pip-audit-report.json"],
-    "black": ["**/black-output.txt"],
-    "isort": ["**/isort-output.txt"],
-    "mypy": ["**/mypy-output.txt"],
-    "mutmut": ["**/mutmut-run.log"],
-    "hypothesis": ["**/hypothesis-output.txt"],
-    "semgrep": ["**/semgrep-report.json"],
-    "sbom": ["**/sbom*.json"],
-    "trivy": ["**/trivy-report.json"],
-}
+# All tool definitions imported from cihub.tools.registry
 
 
 @dataclass

@@ -10,54 +10,14 @@ from pathlib import Path
 from typing import Any
 
 from cihub.services.types import RepoEntry, ServiceResult
+from cihub.tools.registry import THRESHOLD_KEYS, TOOL_KEYS
 
 # Safe character pattern for repo metadata (prevents shell injection)
 _SAFE_RE = re.compile(r"^[A-Za-z0-9._/-]+$")
 
-# Keys to extract from generate_workflow_inputs()
-_TOOL_KEYS = (
-    # Java tool flags
-    "run_jacoco",
-    "run_checkstyle",
-    "run_spotbugs",
-    "run_owasp",
-    "use_nvd_api_key",
-    "run_pitest",
-    "run_jqwik",
-    "run_pmd",
-    # Python tool flags
-    "run_pytest",
-    "run_ruff",
-    "run_bandit",
-    "run_pip_audit",
-    "run_mypy",
-    "run_black",
-    "run_isort",
-    "run_mutmut",
-    "run_hypothesis",
-    "run_sbom",
-    # Shared
-    "run_semgrep",
-    "run_trivy",
-    "run_codeql",
-    "run_docker",
-)
-
-_THRESHOLD_KEYS = (
-    "coverage_min",
-    "mutation_score_min",
-    "owasp_cvss_fail",
-    "trivy_cvss_fail",
-    "max_critical_vulns",
-    "max_high_vulns",
-    "max_semgrep_findings",
-    "max_pmd_violations",
-    "max_checkstyle_errors",
-    "max_spotbugs_bugs",
-    "max_ruff_errors",
-    "max_black_issues",
-    "max_isort_issues",
-)
+# Re-export with underscore names for backward compatibility
+_TOOL_KEYS = TOOL_KEYS
+_THRESHOLD_KEYS = THRESHOLD_KEYS
 
 
 @dataclass(frozen=True)

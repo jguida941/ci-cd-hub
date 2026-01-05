@@ -21,7 +21,7 @@ cd ci-cd-hub
 ### 2. Set Up Python Environment
 
 ```bash
-# Create virtual environment (Python 3.11+ required)
+# Create virtual environment (Python 3.10+ required; 3.12 used in CI)
 python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
@@ -34,7 +34,7 @@ pip install -e ".[wizard]"   # Optional: interactive wizard
 ### 3. Verify Installation
 
 ```bash
-# Check Python version (must be 3.11+)
+# Check Python version (must be 3.10+; 3.12 used in CI)
 python --version
 
 # Check CLI is available
@@ -47,7 +47,7 @@ gh auth status
 
 Expected output:
 ```
-Python 3.11.x or higher
+Python 3.10+ (3.12 used in CI)
 cihub 0.x.x
 gh version 2.x.x
 Logged in to github.com as <your-username>
@@ -277,18 +277,24 @@ Run `make verify` (or `cihub check --all` + `cihub verify --remote`) before push
 
 ### Make Shortcuts (Alternative)
 
+> **Note:** Make targets are convenience wrappers around the CLI. The CLI is the source of truth.
+
 ```bash
-make preflight    # Environment checks
+# Pre-push workflow (run these before pushing)
+make preflight    # Environment checks (cihub doctor)
 make lint         # Ruff lint
+make format       # Ruff + black + isort formatting
 make typecheck    # mypy
 make test         # pytest
 make actionlint   # workflow syntax
-make docs-check   # docs drift
-make links        # broken link check
+make docs-check   # docs drift (cihub docs check)
+make links        # broken link check (cihub docs links)
 make smoke        # full smoke test on scaffold
-make check        # Runs cihub check
+make check        # Runs cihub check (fast local validation)
 make verify       # Full pre-push gate (remote drift check)
 make verify-integration  # Clone repos and run cihub ci (slow)
+
+# Run 'make help' for all available targets
 ```
 
 ### CLI Command Matrix (Guide Runner)
@@ -310,6 +316,7 @@ python scripts/cli_command_matrix.py --run --include-remote --include-mutating -
 ### Notes
 - `cihub validate --repo .` validates **repo-local** `.ci-hub.yml`.
 - `make validate-config REPO=<name>` validates **hub configs** in `config/repos/`.
+- Set `CIHUB_DEBUG=True` for tracebacks, `CIHUB_VERBOSE=True` for tool logs, and `CIHUB_EMIT_TRIAGE=True` to emit triage files after `cihub ci`.
 
 ---
 
@@ -438,6 +445,7 @@ thresholds:
 |---------|---------|
 | `cihub report build --repo .` | Build report.json from tool outputs |
 | `cihub report summary --report .cihub/report.json` | Display summary from report |
+| `cihub triage --output-dir .cihub` | Generate triage bundle outputs |
 
 **Secrets & Templates**
 | Command | Purpose |

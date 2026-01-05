@@ -4,29 +4,25 @@ This folder contains acceptance criteria checklists for hub-release.
 
 ## Documents
 
-**P0** = must-haves before any release; **P1** = should-haves for v1.0; **nonfunctional** = perf/timing/validation targets.
+**REQUIREMENTS** = consolidated requirements for v1.0 (replaces P0/P1/nonfunctional).
 
 | File | Purpose |
 |------|---------|
-| [P0.md](P0.md) | Must-have requirements (MVP) |
-| [P1.md](P1.md) | Should-have requirements |
-| [nonfunctional.md](nonfunctional.md) | Performance, timing, validation targets |
+| [REQUIREMENTS.md](REQUIREMENTS.md) | Consolidated requirements (P0/P1 + nonfunctional) |
 
 ## Related Documents
 
 | Document | Purpose |
 |----------|---------|
 | [ARCH_OVERVIEW.md](../architecture/ARCH_OVERVIEW.md) | Architecture overview |
-| [RESEARCH_LOG.md](../research/RESEARCH_LOG.md) | Research and best practices |
+| [RESEARCH_LOG.md](../research/RESEARCH_LOG.md) | Research and best practices (historical reference) |
 | [STATUS.md](../status/STATUS.md) | Execution checklist |
 
 ## How to Use
 
-1. Check P0.md for must-have items before any release
-2. Check P1.md for should-have items for full release
-3. Reference nonfunctional.md for quality targets
-4. Update checkboxes as items are completed
-5. Link PRs to specific requirements when closing them
+1. Check REQUIREMENTS.md for release gates and targets
+2. Update checkboxes as items are completed
+3. Link PRs to specific requirements when closing them
 
 ## Status Legend
 
@@ -34,3 +30,10 @@ This folder contains acceptance criteria checklists for hub-release.
 - `[~]` - In progress
 - `[x]` - Complete
 - `[!]` - Blocked
+
+## Archived Specs
+
+Historical specs live under `docs/development/archive/`:
+- [P0.md](../archive/P0.md)
+- [P1.md](../archive/P1.md)
+- [nonfunctional.md](../archive/nonfunctional.md)

@@ -41,6 +41,26 @@ on:
         required: false
         type: boolean
         default: true
+      cihub_debug:
+        description: 'Enable CIHUB_DEBUG'
+        required: false
+        type: boolean
+        default: false
+      cihub_verbose:
+        description: 'Enable CIHUB_VERBOSE'
+        required: false
+        type: boolean
+        default: false
+      cihub_debug_context:
+        description: 'Enable CIHUB_DEBUG_CONTEXT'
+        required: false
+        type: boolean
+        default: false
+      cihub_emit_triage:
+        description: 'Enable CIHUB_EMIT_TRIAGE'
+        required: false
+        type: boolean
+        default: false
 
   schedule:
     # Run nightly at 2 AM UTC
@@ -67,6 +87,11 @@ jobs:
     outputs:
       matrix: ${{ steps.discover.outputs.matrix }}
       count: ${{ steps.discover.outputs.count }}
+    env:
+      CIHUB_DEBUG: ${{ inputs.cihub_debug && 'True' || 'False' }}
+      CIHUB_VERBOSE: ${{ inputs.cihub_verbose && 'True' || 'False' }}
+      CIHUB_DEBUG_CONTEXT: ${{ inputs.cihub_debug_context && 'True' || 'False' }}
+      CIHUB_EMIT_TRIAGE: ${{ inputs.cihub_emit_triage && 'True' || 'False' }}
 
     steps:
       - name: Checkout Hub
@@ -100,6 +125,11 @@ jobs:
     permissions:
       contents: read
       security-events: write  # For CodeQL SARIF upload
+    env:
+      CIHUB_DEBUG: ${{ inputs.cihub_debug && 'True' || 'False' }}
+      CIHUB_VERBOSE: ${{ inputs.cihub_verbose && 'True' || 'False' }}
+      CIHUB_DEBUG_CONTEXT: ${{ inputs.cihub_debug_context && 'True' || 'False' }}
+      CIHUB_EMIT_TRIAGE: ${{ inputs.cihub_emit_triage && 'True' || 'False' }}
     strategy:
       fail-fast: false
       max-parallel: 3
@@ -206,6 +236,11 @@ jobs:
             repo/.cihub/report.json
             repo/.cihub/summary.md
             repo/.cihub/tool-outputs/*.json
+            repo/.cihub/tool-outputs/*.log
+            repo/.cihub/triage.json
+            repo/.cihub/priority.json
+            repo/.cihub/triage.md
+            repo/.cihub/history.jsonl
           retention-days: ${{ matrix.retention_days || 30 }}
           if-no-files-found: warn
 
@@ -219,6 +254,11 @@ jobs:
     if: always()
     permissions:
       contents: read
+    env:
+      CIHUB_DEBUG: ${{ inputs.cihub_debug && 'True' || 'False' }}
+      CIHUB_VERBOSE: ${{ inputs.cihub_verbose && 'True' || 'False' }}
+      CIHUB_DEBUG_CONTEXT: ${{ inputs.cihub_debug_context && 'True' || 'False' }}
+      CIHUB_EMIT_TRIAGE: ${{ inputs.cihub_emit_triage && 'True' || 'False' }}
 
     steps:
       - name: Checkout Hub

@@ -21,6 +21,7 @@ repo:
   name: example
   default_branch: main
   language: {language}
+language: {language}
 {language}:
   version: '21'
   build_tool: {build_tool}

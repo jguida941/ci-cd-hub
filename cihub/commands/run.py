@@ -20,8 +20,9 @@ from cihub.ci_runner import (
     run_semgrep,
     run_trivy,
 )
-from cihub.cli import CommandResult, validate_subdir
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
+from cihub.types import CommandResult
+from cihub.utils.paths import validate_subdir
 
 RUNNERS: dict[str, Callable[..., ToolResult]] = {
     "pytest": run_pytest,

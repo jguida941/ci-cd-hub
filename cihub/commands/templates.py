@@ -8,16 +8,12 @@ import subprocess
 import sys
 from typing import Any
 
-from cihub.cli import (
-    CommandResult,
-    delete_remote_file,
-    fetch_remote_file,
-    get_repo_entries,
-    render_dispatch_workflow,
-    resolve_executable,
-    update_remote_file,
-)
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
+from cihub.services.repo_config import get_repo_entries
+from cihub.services.templates import render_dispatch_workflow
+from cihub.types import CommandResult
+from cihub.utils import resolve_executable
+from cihub.utils.github_api import delete_remote_file, fetch_remote_file, update_remote_file
 
 
 def cmd_sync_templates(args: argparse.Namespace) -> int | CommandResult:

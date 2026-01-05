@@ -1,0 +1,261 @@
+"""Python tool runners."""
+
+from __future__ import annotations
+
+import re
+import subprocess
+from pathlib import Path
+from typing import Any
+
+from . import shared
+from .base import ToolResult
+from .parsers import _parse_coverage, _parse_junit
+
+
+def run_pytest(workdir: Path, output_dir: Path, fail_fast: bool = False) -> ToolResult:
+    junit_path = output_dir / "pytest-junit.xml"
+    coverage_path = output_dir / "coverage.xml"
+    cmd = [
+        "pytest",
+        "--cov=.",
+        f"--cov-report=xml:{coverage_path}",
+        f"--junitxml={junit_path}",
+        "-v",
+    ]
+    if fail_fast:
+        cmd.append("-x")
+    proc = shared._run_tool_command("pytest", cmd, workdir, output_dir)
+    metrics = {}
+    metrics.update(_parse_junit(junit_path))
+    metrics.update(_parse_coverage(coverage_path))
+    return ToolResult(
+        tool="pytest",
+        ran=True,
+        success=proc.returncode == 0,
+        metrics=metrics,
+        artifacts={
+            "junit": str(junit_path),
+            "coverage": str(coverage_path),
+        },
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+    )
+
+
+def run_ruff(workdir: Path, output_dir: Path) -> ToolResult:
+    report_path = output_dir / "ruff-report.json"
+    cmd = ["ruff", "check", ".", "--output-format", "json"]
+    proc = shared._run_tool_command("ruff", cmd, workdir, output_dir)
+    report_path.write_text(proc.stdout or "[]", encoding="utf-8")
+    data = shared._parse_json(report_path)
+    parse_ok = data is not None
+    errors = len(data) if isinstance(data, list) else 0
+    security = 0
+    if isinstance(data, list):
+        security = sum(1 for item in data if str(item.get("code", "")).startswith("S"))
+    return ToolResult(
+        tool="ruff",
+        ran=True,
+        success=proc.returncode == 0 and parse_ok,
+        metrics={
+            "ruff_errors": errors,
+            "ruff_security": security,
+            "parse_error": not parse_ok,
+        },
+        artifacts={"report": str(report_path)},
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+    )
+
+
+def run_black(workdir: Path, output_dir: Path) -> ToolResult:
+    log_path = output_dir / "black-output.txt"
+    cmd = ["black", "--check", "."]
+    proc = shared._run_tool_command("black", cmd, workdir, output_dir)
+    log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
+    issues = len(re.findall(r"would reformat", proc.stdout + proc.stderr))
+    return ToolResult(
+        tool="black",
+        ran=True,
+        success=proc.returncode == 0,
+        metrics={"black_issues": issues},
+        artifacts={"log": str(log_path)},
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+    )
+
+
+def run_isort(workdir: Path, output_dir: Path) -> ToolResult:
+    log_path = output_dir / "isort-output.txt"
+    cmd = ["isort", "--check-only", "--diff", "."]
+    proc = shared._run_tool_command("isort", cmd, workdir, output_dir)
+    log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
+    issues = len(re.findall(r"^ERROR:", proc.stdout, flags=re.MULTILINE))
+    return ToolResult(
+        tool="isort",
+        ran=True,
+        success=proc.returncode == 0,
+        metrics={"isort_issues": issues},
+        artifacts={"log": str(log_path)},
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+    )
+
+
+def run_mypy(workdir: Path, output_dir: Path) -> ToolResult:
+    log_path = output_dir / "mypy-output.txt"
+    cmd = ["mypy", ".", "--ignore-missing-imports"]
+    proc = shared._run_tool_command("mypy", cmd, workdir, output_dir)
+    log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
+    errors = len(re.findall(r"\berror:", proc.stdout))
+    return ToolResult(
+        tool="mypy",
+        ran=True,
+        success=proc.returncode == 0,
+        metrics={"mypy_errors": errors},
+        artifacts={"log": str(log_path)},
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+    )
+
+
+def run_bandit(workdir: Path, output_dir: Path) -> ToolResult:
+    report_path = output_dir / "bandit-report.json"
+    cmd = ["bandit", "-r", ".", "-f", "json", "-o", str(report_path)]
+    proc = shared._run_tool_command("bandit", cmd, workdir, output_dir)
+    data = shared._parse_json(report_path)
+    parse_ok = data is not None
+    results = data.get("results", []) if isinstance(data, dict) else []
+    high = sum(1 for item in results if item.get("issue_severity") == "HIGH")
+    medium = sum(1 for item in results if item.get("issue_severity") == "MEDIUM")
+    low = sum(1 for item in results if item.get("issue_severity") == "LOW")
+    return ToolResult(
+        tool="bandit",
+        ran=True,
+        success=proc.returncode == 0 and parse_ok,
+        metrics={
+            "bandit_high": high,
+            "bandit_medium": medium,
+            "bandit_low": low,
+            "parse_error": not parse_ok,
+        },
+        artifacts={"report": str(report_path)},
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+    )
+
+
+def _count_pip_audit_vulns(data: Any) -> int:
+    if isinstance(data, list):
+        total = 0
+        for item in data:
+            vulns = item.get("vulns") or item.get("vulnerabilities") or []
+            total += len(vulns)
+        return total
+    return 0
+
+
+def run_pip_audit(workdir: Path, output_dir: Path) -> ToolResult:
+    report_path = output_dir / "pip-audit-report.json"
+    cmd = ["pip-audit", "--format=json", "--output", str(report_path)]
+    proc = shared._run_tool_command("pip_audit", cmd, workdir, output_dir)
+    data = shared._parse_json(report_path)
+    parse_ok = data is not None
+    vulns = _count_pip_audit_vulns(data)
+    return ToolResult(
+        tool="pip_audit",
+        ran=True,
+        success=proc.returncode == 0 and parse_ok,
+        metrics={"pip_audit_vulns": vulns, "parse_error": not parse_ok},
+        artifacts={"report": str(report_path)},
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+    )
+
+
+def _detect_mutmut_paths(workdir: Path) -> str:
+    src_dir = workdir / "src"
+    if src_dir.exists():
+        return "src/"
+    for entry in workdir.iterdir():
+        if not entry.is_dir():
+            continue
+        if entry.name in {"tests", "test", "venv", ".venv", "build", "dist"}:
+            continue
+        if (entry / "__init__.py").exists():
+            return f"{entry.name}/"
+    return "."
+
+
+def _ensure_mutmut_config(workdir: Path) -> tuple[Path | None, str | None]:
+    pyproject = workdir / "pyproject.toml"
+    if pyproject.exists() and "[tool.mutmut]" in pyproject.read_text(encoding="utf-8"):
+        return None, None
+    setup_cfg = workdir / "setup.cfg"
+    if setup_cfg.exists() and "[mutmut]" in setup_cfg.read_text(encoding="utf-8"):
+        return None, None
+
+    mutate_path = _detect_mutmut_paths(workdir)
+    snippet = f"\n[mutmut]\npaths_to_mutate={mutate_path}\n"
+    if setup_cfg.exists():
+        original_text = setup_cfg.read_text(encoding="utf-8")
+        setup_cfg.write_text(original_text + snippet, encoding="utf-8")
+    else:
+        original_text = None
+        setup_cfg.write_text(snippet.lstrip(), encoding="utf-8")
+    return setup_cfg, original_text
+
+
+def run_mutmut(workdir: Path, output_dir: Path, timeout_seconds: int) -> ToolResult:
+    log_path = output_dir / "mutmut-run.log"
+    config_path, original = _ensure_mutmut_config(workdir)
+    proc = None
+    try:
+        proc = shared._run_tool_command(
+            "mutmut",
+            ["mutmut", "run"],
+            workdir,
+            output_dir,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as exc:
+        stdout = exc.stdout
+        if isinstance(stdout, bytes):
+            stdout_text = stdout.decode("utf-8", errors="replace")
+        else:
+            stdout_text = stdout or ""
+        log_path.write_text(stdout_text, encoding="utf-8")
+        return ToolResult(
+            tool="mutmut",
+            ran=True,
+            success=False,
+            metrics={"mutation_score": 0, "mutation_killed": 0, "mutation_survived": 0},
+            artifacts={"log": str(log_path)},
+        )
+    finally:
+        if config_path:
+            if original is None:
+                config_path.unlink(missing_ok=True)
+            else:
+                config_path.write_text(original, encoding="utf-8")
+
+    log_path.write_text((proc.stdout or "") + (proc.stderr or ""), encoding="utf-8")
+    results_proc = shared._run_command(["mutmut", "results"], workdir)
+    results_text = (results_proc.stdout or "") + (results_proc.stderr or "")
+    killed = len(re.findall(r"\bkilled\b", results_text, flags=re.IGNORECASE))
+    survived = len(re.findall(r"\bsurvived\b", results_text, flags=re.IGNORECASE))
+    total = killed + survived
+    score = int(round((killed / total) * 100)) if total > 0 else 0
+    return ToolResult(
+        tool="mutmut",
+        ran=True,
+        success=proc.returncode == 0,
+        metrics={
+            "mutation_score": score,
+            "mutation_killed": killed,
+            "mutation_survived": survived,
+        },
+        artifacts={"log": str(log_path)},
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+    )

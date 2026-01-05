@@ -127,7 +127,12 @@ def test_cli_fix_pom_adds_dependencies(tmp_path: Path) -> None:
 
     config = {
         "language": "java",
-        "repo": {"subdir": "java-passing"},
+        "repo": {
+            "owner": "acme",
+            "name": "fixtures",
+            "language": "java",
+            "subdir": "java-passing",
+        },
         "java": {"tools": {"jqwik": {"enabled": True}}},
     }
     (repo_root / ".ci-hub.yml").write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")

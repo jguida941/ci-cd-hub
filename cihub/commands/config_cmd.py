@@ -9,7 +9,6 @@ from typing import Any
 
 import yaml
 
-from cihub.cli import CommandResult, hub_root
 from cihub.config.io import (
     ensure_dirs,
     load_defaults,
@@ -25,6 +24,8 @@ from cihub.exit_codes import (
     EXIT_SUCCESS,
     EXIT_USAGE,
 )
+from cihub.types import CommandResult
+from cihub.utils.paths import hub_root
 from cihub.wizard import HAS_WIZARD, WizardCancelled
 
 

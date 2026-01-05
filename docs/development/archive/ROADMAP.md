@@ -2,7 +2,7 @@
 
 > ⚠️ **Historical Reference** - Phases 0-3 context only.
 >
-> **Active Execution Plan:** See `docs/development/architecture/ARCHITECTURE_PLAN.md` for current work.
+> **Active Execution Plan:** See `docs/development/MASTER_PLAN.md` for current work.
 >
 > This document discovered that dispatch templates drift, leading to the migration plan.
 > Phases 4-8 have been superseded by the migration plan's Parts 1-6.
@@ -10,8 +10,8 @@
 **Version:** 1.0.0
 **Date:** 2025-12-15
 **Status:** Phases 0-3 Complete; Phases 4-8 superseded by migration plan
-**References:** See `docs/development/specs/` (P0/P1/nonfunctional) for current checklists.
-**Active Plan:** `docs/development/architecture/ARCHITECTURE_PLAN.md`
+**References:** See `docs/development/specs/REQUIREMENTS.md` for current checklists.
+**Active Plan:** `docs/development/MASTER_PLAN.md`
 
 ---
 

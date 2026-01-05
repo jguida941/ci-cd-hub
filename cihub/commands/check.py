@@ -22,12 +22,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from cihub.cli import CommandResult, hub_root
 from cihub.commands.adr import cmd_adr
 from cihub.commands.docs import cmd_docs, cmd_docs_links
 from cihub.commands.preflight import cmd_preflight
 from cihub.commands.smoke import cmd_smoke
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.types import CommandResult
+from cihub.utils.paths import hub_root
 
 # Optional tools that can be auto-installed when requested.
 OPTIONAL_TOOL_HINTS: dict[str, str] = {

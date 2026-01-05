@@ -108,7 +108,7 @@ class TestApplySmokeOverrides:
 
     def test_sets_subdir_in_repo_block(self, tmp_path: Path) -> None:
         config_path = tmp_path / ".ci-hub.yml"
-        config_path.write_text("language: python\n")
+        config_path.write_text("language: python\nrepo:\n  owner: test\n  name: repo\n")
 
         _apply_smoke_overrides(tmp_path, "python", "backend", None, relax=False)
 
@@ -117,7 +117,7 @@ class TestApplySmokeOverrides:
 
     def test_relaxes_thresholds(self, tmp_path: Path) -> None:
         config_path = tmp_path / ".ci-hub.yml"
-        config_path.write_text("language: python\n")
+        config_path.write_text("language: python\nrepo:\n  owner: test\n  name: repo\n")
 
         _apply_smoke_overrides(tmp_path, "python", "", None, relax=True)
 
@@ -128,7 +128,7 @@ class TestApplySmokeOverrides:
 
     def test_relaxes_python_tools(self, tmp_path: Path) -> None:
         config_path = tmp_path / ".ci-hub.yml"
-        config_path.write_text("language: python\n")
+        config_path.write_text("language: python\nrepo:\n  owner: test\n  name: repo\n")
 
         _apply_smoke_overrides(tmp_path, "python", "", None, relax=True)
 
@@ -139,7 +139,7 @@ class TestApplySmokeOverrides:
 
     def test_sets_java_build_tool(self, tmp_path: Path) -> None:
         config_path = tmp_path / ".ci-hub.yml"
-        config_path.write_text("language: java\n")
+        config_path.write_text("language: java\nrepo:\n  owner: test\n  name: repo\n")
 
         _apply_smoke_overrides(tmp_path, "java", "", "gradle", relax=False)
 
@@ -148,7 +148,7 @@ class TestApplySmokeOverrides:
 
     def test_relaxes_java_tools(self, tmp_path: Path) -> None:
         config_path = tmp_path / ".ci-hub.yml"
-        config_path.write_text("language: java\n")
+        config_path.write_text("language: java\nrepo:\n  owner: test\n  name: repo\n")
 
         _apply_smoke_overrides(tmp_path, "java", "", "maven", relax=True)
 

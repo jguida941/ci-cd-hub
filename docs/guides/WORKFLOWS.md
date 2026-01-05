@@ -28,6 +28,10 @@ Clones each configured repository and runs build, tests, and quality tools in th
 | `skip_mutation` | boolean | If true, skip mutation testing steps for faster execution. |
 | `write_github_summary` | boolean | Write summary to `GITHUB_STEP_SUMMARY`. |
 | `include_details` | boolean | Include per-repo details in the summary (can be large). Default: true. |
+| `cihub_debug` | boolean | Sets `CIHUB_DEBUG=True` inside CLI steps for extra stack traces. |
+| `cihub_verbose` | boolean | Sets `CIHUB_VERBOSE=True` to stream tool output. |
+| `cihub_debug_context` | boolean | Enables CLI debug context emission. |
+| `cihub_emit_triage` | boolean | Enables `cihub ci` triage bundle generation (`.cihub/triage.*`). |
 
 ### Outputs and Artifacts
 - Per-repo artifacts such as test reports and coverage reports
@@ -59,6 +63,7 @@ Runs security scanning across repos. Intended for periodic checks and higher cos
 |-------|------|---------|
 | `repos` | string | Comma-separated repo names to scan. Empty means all repos. |
 | `run_zap` | boolean | If true, run OWASP ZAP DAST scan (requires a running app or reachable endpoint). |
+| `write_github_summary` | boolean | Write summary to `GITHUB_STEP_SUMMARY`. |
 
 ### Outputs and Artifacts
 - `security-events` uploaded via CodeQL (SARIF)
@@ -78,18 +83,25 @@ Dispatches workflows inside target repos. This mode requires target repos to hav
 
 ### Triggers
 - `workflow_dispatch` (manual)
+- `schedule` (nightly 02:00 UTC)
+- `push` to `config/**` or the workflow itself (`.github/workflows/hub-orchestrator.yml`)
 
 ### Inputs
 
 | Input | Type | Meaning |
 |-------|------|---------|
 | `repos` | string | Comma-separated repo names to dispatch. Empty means all repos. |
+| `write_github_summary` | boolean | Write orchestrator summaries to `GITHUB_STEP_SUMMARY`. |
 | `include_details` | boolean | Include per-repo details in the orchestrator summary (can be large). Default: true. |
+| `cihub_debug` | boolean | Sets `CIHUB_DEBUG=True` inside CLI steps for extra stack traces. |
+| `cihub_verbose` | boolean | Sets `CIHUB_VERBOSE=True` to stream CLI/tool output. |
+| `cihub_debug_context` | boolean | Enables CLI debug-context emission. |
+| `cihub_emit_triage` | boolean | Enables CLI triage bundle generation when dispatch summaries run. |
 
 ### Outputs and Artifacts
 - Dispatch events triggered in target repos, if permissions and `workflow_dispatch` are correctly configured
 - A hub-side summary showing dispatch status per repo
-- Dispatch metadata artifacts (`dispatch-<repo>.json`) containing repo, branch, workflow, run_id, and status
+- Dispatch metadata artifacts: files land under `dispatch-results/<config_basename>.json` and are uploaded as `dispatch-<config_basename>-<run_id>`
 - Aggregated hub-report.json with per-repo status, conclusions, and rolled coverage/mutation (when artifacts exist)
 - Optional per-repo details artifact (`hub-report-details.md`) with full `Configuration Summary` output
 
@@ -113,12 +125,12 @@ Dispatches workflows inside target repos. This mode requires target repos to hav
 Validates all hub repo configs against the JSON schema on config/schema changes or manual dispatch.
 
 ### Triggers
-- `push` to config/**, schema/**, or the workflow itself
+- `push` to `config/**`, `schema/**`, `cihub/config/**`, or the workflow itself
 - `pull_request` touching those paths
 - `workflow_dispatch`
 
 ### Steps (summary)
-- Install dependencies from `requirements-dev.txt` or `requirements.txt` (fallback to `pyyaml` + `jsonschema`)
+- Install the CLI in editable mode (`pip install -e ".[ci]"`)
 - Run `python -m cihub hub-ci validate-configs` for hub configs
 - Run `python -m cihub hub-ci validate-profiles` for profiles
 
@@ -157,7 +169,7 @@ Comprehensive CI pipeline for the hub repository itself with full security scann
 
 **File:** `.github/workflows/smoke-test.yml`
 
-Docs: see `docs/development/execution/SMOKE_TEST.md` and `docs/development/execution/SMOKE_TEST_REPOS.md`
+Docs (maintainers): see `docs/guides/INTEGRATION_SMOKE_TEST.md`
 
 Quick validation test using minimal Java and Python repos to verify hub functionality before release. Runs core tools only (heavy tools like mutation testing and OWASP disabled for speed).
 
@@ -182,7 +194,7 @@ Quick validation test using minimal Java and Python repos to verify hub function
 - Requires at least 2 smoke test repos (Java + Python)
 - Uses relaxed thresholds (50% coverage vs 70% default)
 - Validates repository discovery, tool execution, artifact generation, and summary creation
-- See [docs/development/execution/SMOKE_TEST.md](../development/execution/SMOKE_TEST.md) for detailed guide
+- See [guides/INTEGRATION_SMOKE_TEST.md](INTEGRATION_SMOKE_TEST.md) for the detailed guide
 
 ---
 

@@ -440,7 +440,7 @@ class TestRunRuff:
         mock_proc.stdout = '[{"code": "E501", "message": "Line too long"}]'
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_ruff(tmp_path, output_dir)
 
         assert result.tool == "ruff"
@@ -457,7 +457,7 @@ class TestRunRuff:
         mock_proc.stdout = '[{"code": "S101"}, {"code": "S105"}, {"code": "E501"}]'
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_ruff(tmp_path, output_dir)
 
         assert result.metrics["ruff_security"] == 2
@@ -476,7 +476,7 @@ class TestRunBlack:
         mock_proc.stdout = "would reformat file1.py\nwould reformat file2.py\n"
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_black(tmp_path, output_dir)
 
         assert result.tool == "black"
@@ -496,7 +496,7 @@ class TestRunIsort:
         mock_proc.stdout = "ERROR: file1.py\nERROR: file2.py\nSkipping"
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_isort(tmp_path, output_dir)
 
         assert result.tool == "isort"
@@ -515,7 +515,7 @@ class TestRunMypy:
         mock_proc.stdout = "file.py:1: error: Missing return\nfile.py:5: error: Type mismatch"
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_mypy(tmp_path, output_dir)
 
         assert result.tool == "mypy"
@@ -544,7 +544,7 @@ class TestRunPytest:
         mock_proc.stdout = ""
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_pytest(tmp_path, output_dir)
 
         assert result.tool == "pytest"
@@ -570,7 +570,7 @@ class TestRunPytest:
         mock_proc.stdout = ""
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_pytest(tmp_path, output_dir)
 
         assert result.tool == "pytest"
@@ -605,7 +605,7 @@ class TestRunBandit:
         mock_proc.stdout = ""
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_bandit(tmp_path, output_dir)
 
         assert result.tool == "bandit"
@@ -639,7 +639,7 @@ class TestRunPipAudit:
         mock_proc.stdout = ""
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_pip_audit(tmp_path, output_dir)
 
         assert result.tool == "pip_audit"
@@ -665,7 +665,7 @@ class TestRunSbom:
         mock_proc.stdout = '{"bomFormat": "CycloneDX", "components": []}'
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_sbom(tmp_path, output_dir)
 
         assert result.tool == "sbom"
@@ -691,7 +691,7 @@ class TestRunJavaBuild:
         mock_proc.stdout = "BUILD SUCCESS"
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_java_build(tmp_path, output_dir, "maven", jacoco_enabled=False)
 
         assert result.tool == "build"  # run_java_build uses "build" as tool name
@@ -711,7 +711,7 @@ class TestRunJavaBuild:
         mock_proc.stdout = "BUILD SUCCESSFUL"
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_java_build(tmp_path, output_dir, "gradle", jacoco_enabled=False)
 
         assert result.tool == "build"  # run_java_build uses "build" as tool name
@@ -741,7 +741,7 @@ class TestRunJavaBuild:
         mock_proc.stdout = "BUILD SUCCESS"
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_java_build(tmp_path, output_dir, "maven", jacoco_enabled=True)
 
         assert result.tool == "build"
@@ -802,7 +802,7 @@ class TestRunCheckstyle:
         mock_proc.stdout = ""
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_checkstyle(tmp_path, output_dir, "maven")
 
         assert result.tool == "checkstyle"
@@ -835,7 +835,7 @@ class TestRunSpotbugs:
         mock_proc.stdout = ""
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_spotbugs(tmp_path, output_dir, "maven")
 
         assert result.tool == "spotbugs"
@@ -870,7 +870,7 @@ class TestRunPmd:
         mock_proc.stdout = ""
         mock_proc.stderr = ""
 
-        with patch("cihub.ci_runner._run_command", return_value=mock_proc):
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
             result = run_pmd(tmp_path, output_dir, "maven")
 
         assert result.tool == "pmd"
@@ -905,8 +905,8 @@ class TestRunDocker:
         mock_logs = MagicMock(returncode=0, stdout="logs", stderr="")
         mock_down = MagicMock(returncode=0, stdout="down", stderr="")
 
-        with patch("cihub.ci_runner.resolve_executable", return_value="docker"):
-            with patch("cihub.ci_runner._run_command", side_effect=[mock_up, mock_logs, mock_down]):
+        with patch("cihub.core.ci_runner.shared.resolve_executable", return_value="docker"):
+            with patch("cihub.core.ci_runner.shared._run_command", side_effect=[mock_up, mock_logs, mock_down]):
                 result = run_docker(tmp_path, output_dir, compose_file="docker-compose.yml")
 
         assert result.tool == "docker"

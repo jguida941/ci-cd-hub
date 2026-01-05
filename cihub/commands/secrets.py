@@ -9,13 +9,11 @@ import sys
 import urllib.error
 import urllib.request
 
-from cihub.cli import (
-    CommandResult,
-    get_connected_repos,
-    resolve_executable,
-    safe_urlopen,
-)
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
+from cihub.services.repo_config import get_connected_repos
+from cihub.types import CommandResult
+from cihub.utils import resolve_executable
+from cihub.utils.net import safe_urlopen
 
 
 def cmd_setup_secrets(args: argparse.Namespace) -> int | CommandResult:

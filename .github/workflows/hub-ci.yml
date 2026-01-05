@@ -39,6 +39,22 @@ on:
         description: 'Override hub ref (tag/sha/branch) for installing cihub'
         type: string
         default: ''
+      cihub_debug:
+        description: 'Enable CIHUB_DEBUG'
+        type: boolean
+        default: false
+      cihub_verbose:
+        description: 'Enable CIHUB_VERBOSE'
+        type: boolean
+        default: false
+      cihub_debug_context:
+        description: 'Enable CIHUB_DEBUG_CONTEXT'
+        type: boolean
+        default: false
+      cihub_emit_triage:
+        description: 'Enable CIHUB_EMIT_TRIAGE'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -50,6 +66,11 @@ jobs:
   config:
     name: Parse Config
     runs-on: ubuntu-latest
+    env:
+      CIHUB_DEBUG: ${{ inputs.cihub_debug && 'True' || 'False' }}
+      CIHUB_VERBOSE: ${{ inputs.cihub_verbose && 'True' || 'False' }}
+      CIHUB_DEBUG_CONTEXT: ${{ inputs.cihub_debug_context && 'True' || 'False' }}
+      CIHUB_EMIT_TRIAGE: ${{ inputs.cihub_emit_triage && 'True' || 'False' }}
     outputs:
       # Language
       language: ${{ steps.parse.outputs.language }}
@@ -136,6 +157,10 @@ jobs:
       hub_correlation_id: ${{ inputs.hub_correlation_id }}
       hub_repo: ${{ inputs.hub_repo || vars.HUB_REPO }}
       hub_ref: ${{ inputs.hub_ref || vars.HUB_REF }}
+      cihub_debug: ${{ inputs.cihub_debug }}
+      cihub_verbose: ${{ inputs.cihub_verbose }}
+      cihub_debug_context: ${{ inputs.cihub_debug_context }}
+      cihub_emit_triage: ${{ inputs.cihub_emit_triage }}
 
       # Tool toggles - use fromJson() for proper boolean conversion
       run_pytest: ${{ fromJson(needs.config.outputs.run_pytest) }}
@@ -183,6 +208,10 @@ jobs:
       hub_correlation_id: ${{ inputs.hub_correlation_id }}
       hub_repo: ${{ inputs.hub_repo || vars.HUB_REPO }}
       hub_ref: ${{ inputs.hub_ref || vars.HUB_REF }}
+      cihub_debug: ${{ inputs.cihub_debug }}
+      cihub_verbose: ${{ inputs.cihub_verbose }}
+      cihub_debug_context: ${{ inputs.cihub_debug_context }}
+      cihub_emit_triage: ${{ inputs.cihub_emit_triage }}
 
       # Tool toggles - use fromJson() for proper boolean conversion
       run_jacoco: ${{ fromJson(needs.config.outputs.run_jacoco) }}

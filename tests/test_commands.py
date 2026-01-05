@@ -130,6 +130,7 @@ repo:
   name: example
   language: java
   default_branch: main
+language: java
 java:
   version: '21'
   build_tool: maven
@@ -161,6 +162,7 @@ repo:
   name: example
   language: java
   default_branch: main
+language: java
 java:
   version: '21'
   build_tool: maven

@@ -215,7 +215,7 @@ java:
     owasp:
       enabled: true
       fail_on_cvss: 7  # Fail if any vuln has CVSS >= this
-      nvd_api_key_required: true
+      use_nvd_api_key: true
 ```
 
 **Workflow inputs (java-ci.yml):**

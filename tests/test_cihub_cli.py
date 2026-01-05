@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 import urllib.request
 from pathlib import Path
@@ -255,53 +256,58 @@ class TestGetGitRemote:
 
     def test_returns_remote_url(self, tmp_path: Path) -> None:
         """Returns git remote URL on success."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        # Patch where the function is imported, not where it's defined
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
-            with mock.patch("subprocess.run") as mock_run:
-                mock_run.return_value = mock.Mock(
-                    stdout="https://github.com/owner/repo.git\n",
-                    returncode=0,
-                )
+            with mock.patch("subprocess.check_output") as mock_check:
+                # check_output returns the output directly as a string
+                mock_check.return_value = "https://github.com/owner/repo.git\n"
                 result = get_git_remote(tmp_path)
                 assert result == "https://github.com/owner/repo.git"
+                assert mock_validate.called
+                assert mock_check.called
 
     def test_returns_none_on_subprocess_error(self, tmp_path: Path) -> None:
         """Returns None when subprocess fails."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
-            with mock.patch("subprocess.run") as mock_run:
-                mock_run.side_effect = FileNotFoundError()
+            with mock.patch("subprocess.check_output") as mock_check:
+                mock_check.side_effect = FileNotFoundError()
+                result = get_git_remote(tmp_path)
+                assert result is None
+
+    def test_returns_none_on_called_process_error(self, tmp_path: Path) -> None:
+        """Returns None when git command returns non-zero."""
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
+            mock_validate.return_value = tmp_path
+            with mock.patch("subprocess.check_output") as mock_check:
+                mock_check.side_effect = subprocess.CalledProcessError(1, "git")
                 result = get_git_remote(tmp_path)
                 assert result is None
 
     def test_returns_none_on_value_error(self, tmp_path: Path) -> None:
         """Returns None when validation fails."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.side_effect = ValueError("invalid path")
             result = get_git_remote(tmp_path)
             assert result is None
+            assert mock_validate.called
 
     def test_strips_whitespace(self, tmp_path: Path) -> None:
         """Strips trailing whitespace from output."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
-            with mock.patch("subprocess.run") as mock_run:
-                mock_run.return_value = mock.Mock(
-                    stdout="  https://github.com/owner/repo.git  \n",
-                    returncode=0,
-                )
+            with mock.patch("subprocess.check_output") as mock_check:
+                mock_check.return_value = "  https://github.com/owner/repo.git  \n"
                 result = get_git_remote(tmp_path)
                 assert result == "https://github.com/owner/repo.git"
 
     def test_returns_none_for_empty_output(self, tmp_path: Path) -> None:
         """Returns None when git returns empty output."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
-            with mock.patch("subprocess.run") as mock_run:
-                mock_run.return_value = mock.Mock(
-                    stdout="   \n",
-                    returncode=0,
-                )
+            with mock.patch("subprocess.check_output") as mock_check:
+                mock_check.return_value = "   \n"
                 result = get_git_remote(tmp_path)
                 assert result is None
 
@@ -311,34 +317,39 @@ class TestGetGitBranch:
 
     def test_returns_branch_name(self, tmp_path: Path) -> None:
         """Returns current branch name on success."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
-            with mock.patch("subprocess.run") as mock_run:
-                mock_run.return_value = mock.Mock(
-                    stdout="main\n",
-                    returncode=0,
-                )
+            with mock.patch("subprocess.check_output") as mock_check:
+                mock_check.return_value = "main\n"
                 result = get_git_branch(tmp_path)
                 assert result == "main"
+                assert mock_validate.called
+                assert mock_check.called
 
     def test_returns_none_on_error(self, tmp_path: Path) -> None:
         """Returns None when subprocess fails."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
-            with mock.patch("subprocess.run") as mock_run:
-                mock_run.side_effect = FileNotFoundError()
+            with mock.patch("subprocess.check_output") as mock_check:
+                mock_check.side_effect = FileNotFoundError()
+                result = get_git_branch(tmp_path)
+                assert result is None
+
+    def test_returns_none_on_called_process_error(self, tmp_path: Path) -> None:
+        """Returns None when git command returns non-zero."""
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
+            mock_validate.return_value = tmp_path
+            with mock.patch("subprocess.check_output") as mock_check:
+                mock_check.side_effect = subprocess.CalledProcessError(1, "git")
                 result = get_git_branch(tmp_path)
                 assert result is None
 
     def test_feature_branch_name(self, tmp_path: Path) -> None:
         """Returns feature branch names correctly."""
-        with mock.patch("cihub.cli.validate_repo_path") as mock_validate:
+        with mock.patch("cihub.utils.git.validate_repo_path") as mock_validate:
             mock_validate.return_value = tmp_path
-            with mock.patch("subprocess.run") as mock_run:
-                mock_run.return_value = mock.Mock(
-                    stdout="feature/add-new-feature\n",
-                    returncode=0,
-                )
+            with mock.patch("subprocess.check_output") as mock_check:
+                mock_check.return_value = "feature/add-new-feature\n"
                 result = get_git_branch(tmp_path)
                 assert result == "feature/add-new-feature"
 

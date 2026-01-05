@@ -190,6 +190,22 @@ on:
         description: 'Write summary to GITHUB_STEP_SUMMARY'
         type: boolean
         default: true
+      cihub_debug:
+        description: 'Enable CIHUB_DEBUG'
+        type: boolean
+        default: false
+      cihub_verbose:
+        description: 'Enable CIHUB_VERBOSE'
+        type: boolean
+        default: false
+      cihub_debug_context:
+        description: 'Enable CIHUB_DEBUG_CONTEXT'
+        type: boolean
+        default: false
+      cihub_emit_triage:
+        description: 'Enable CIHUB_EMIT_TRIAGE'
+        type: boolean
+        default: false
 
     secrets:
       NVD_API_KEY:
@@ -212,6 +228,11 @@ jobs:
   ci:
     name: Java CI (cihub)
     runs-on: ubuntu-latest
+    env:
+      CIHUB_DEBUG: ${{ inputs.cihub_debug && 'True' || 'False' }}
+      CIHUB_VERBOSE: ${{ inputs.cihub_verbose && 'True' || 'False' }}
+      CIHUB_DEBUG_CONTEXT: ${{ inputs.cihub_debug_context && 'True' || 'False' }}
+      CIHUB_EMIT_TRIAGE: ${{ inputs.cihub_emit_triage && 'True' || 'False' }}
     outputs:
       build_status: ${{ steps.report.outputs.build_status }}
       coverage: ${{ steps.report.outputs.coverage }}
@@ -311,5 +332,10 @@ jobs:
             .cihub/summary.md
             .cihub/sbom*.json
             .cihub/tool-outputs/*.json
+            .cihub/tool-outputs/*.log
+            .cihub/triage.json
+            .cihub/priority.json
+            .cihub/triage.md
+            .cihub/history.jsonl
           retention-days: ${{ inputs.retention_days }}
           if-no-files-found: warn

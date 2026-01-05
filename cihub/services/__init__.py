@@ -16,6 +16,7 @@ from cihub.services.configuration import (
     set_nested_value,
     set_tool_enabled,
 )
+from cihub.services.detection import detect_language, resolve_language
 from cihub.services.discovery import (
     DiscoveryFilters,
     DiscoveryResult,
@@ -32,6 +33,11 @@ from cihub.services.report_validator import (
     validate_report,
     validate_report_file,
 )
+from cihub.services.triage_service import (
+    TriageBundle,
+    generate_triage_bundle,
+    write_triage_bundle,
+)
 from cihub.services.types import RepoEntry, ServiceResult
 
 __all__ = [
@@ -47,6 +53,9 @@ __all__ = [
     "resolve_tool_path",
     "set_nested_value",
     "set_tool_enabled",
+    # Detection
+    "detect_language",
+    "resolve_language",
     # Discovery
     "DiscoveryFilters",
     "DiscoveryResult",
@@ -64,4 +73,8 @@ __all__ = [
     "AggregationResult",
     "aggregate_from_dispatch",
     "aggregate_from_reports_dir",
+    # Triage
+    "TriageBundle",
+    "generate_triage_bundle",
+    "write_triage_bundle",
 ]

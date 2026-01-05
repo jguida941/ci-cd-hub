@@ -33,9 +33,9 @@ User-facing how-tos and setup guides:
 - [INTEGRATION_SMOKE_TEST.md](guides/INTEGRATION_SMOKE_TEST.md) - CLI validation
 
 **Archived (superseded by GETTING_STARTED.md):**
-- [ONBOARDING.md](guides/ONBOARDING.md) - ⚠️ Merged
-- [MODES.md](guides/MODES.md) - ⚠️ Merged
-- [DISPATCH_SETUP.md](guides/DISPATCH_SETUP.md) - ⚠️ Merged
+- [ONBOARDING.md](development/archive/ONBOARDING.md) - archived
+- [MODES.md](development/archive/MODES.md) - archived
+- [DISPATCH_SETUP.md](development/archive/DISPATCH_SETUP.md) - archived
 
 ---
 
@@ -52,23 +52,40 @@ User-facing how-tos and setup guides:
 
 Internal planning and governance docs:
 
-- [PLAN.md](development/PLAN.md) - Canonical execution plan
+**Governance (top-level):**
+- [MASTER_PLAN.md](development/MASTER_PLAN.md) - Canonical execution plan (all action items)
 - [CHANGELOG.md](development/CHANGELOG.md)
 - [BACKLOG.md](development/BACKLOG.md)
 - [DEVELOPMENT.md](development/DEVELOPMENT.md)
-- [status/STATUS.md](development/status/STATUS.md)
+- [status/STATUS.md](development/status/STATUS.md) - Project dashboard, lists active design docs
+
+**Specs:**
+- [specs/REQUIREMENTS.md](development/specs/REQUIREMENTS.md) - Consolidated requirements (P0/P1 + nonfunctional)
+
+**Research (historical reference):**
+- [research/RESEARCH_LOG.md](development/research/RESEARCH_LOG.md) - Best practices research notes (reference-only)
+
+**Active Design Docs** (`development/active/`):
+- [CLEAN_CODE.md](development/active/CLEAN_CODE.md) - Architecture improvements
+- [DOC_AUTOMATION_AUDIT.md](development/active/DOC_AUTOMATION_AUDIT.md) - `cihub docs stale` design
+- [PYQT_PLAN.md](development/active/PYQT_PLAN.md) - PyQt6 GUI wrapper design
+
+**Architecture:**
 - [architecture/ARCH_OVERVIEW.md](development/architecture/ARCH_OVERVIEW.md)
 - [adr/](adr/) - Architecture Decision Records
+
+**Archive:**
 - [archive/](development/archive/) - Superseded docs (kept for history)
-- [archive/ARCHITECTURE_PLAN.md](development/archive/ARCHITECTURE_PLAN.md) - Archived deep-dive architecture plan
 
 ---
 
 ## Contributing Docs
 
 When adding documentation:
-1. Use **generated** reference docs for CLI/config (`cihub docs generate`).
-2. Keep user docs in `guides/`.
-3. Keep internal docs in `development/`.
-4. Archive superseded docs in `development/archive/` (do not delete).
-5. Update this index.
+1. Use **generated** reference docs for CLI/config/tools/workflows (`cihub docs generate`).
+2. Keep user docs in `guides/` (narrative only, no option tables).
+3. Keep governance docs in `development/` (MASTER_PLAN, BACKLOG, CHANGELOG, DEVELOPMENT).
+4. Keep requirements in `development/specs/REQUIREMENTS.md` (archive older specs, do not fork).
+5. **Active design docs** go in `development/active/`; list them in `status/STATUS.md`.
+6. When implemented, move from `active/` → `archive/` with a superseded header.
+7. Update this index, `status/STATUS.md`, and `CHANGELOG.md` when moving/renaming docs.

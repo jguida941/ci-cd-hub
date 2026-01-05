@@ -74,7 +74,7 @@ class TestCmdRun:
 
     def test_returns_usage_error_for_unsupported_tool(self, tmp_path: Path) -> None:
         """Test unsupported tool returns EXIT_USAGE."""
-        (tmp_path / ".ci-hub.yml").write_text("language: python\n")
+        (tmp_path / ".ci-hub.yml").write_text("language: python\nrepo:\n  owner: test\n  name: repo\n")
         args = argparse.Namespace(
             repo=str(tmp_path),
             tool="unsupported",

@@ -7,8 +7,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-from cihub.cli import CommandResult, resolve_language
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.services.detection import resolve_language
+from cihub.types import CommandResult
 
 
 def cmd_detect(args: argparse.Namespace) -> int | CommandResult:

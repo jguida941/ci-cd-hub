@@ -10,21 +10,16 @@ from pathlib import Path
 
 import yaml
 
-from cihub.cli import (
-    CommandResult,
-    apply_dependency_fixes,
-    apply_pom_fixes,
-    build_repo_config,
-    collect_java_dependency_warnings,
-    collect_java_pom_warnings,
-    load_effective_config,
-    render_caller_workflow,
-    resolve_language,
-    write_text,
-)
+from cihub.ci_config import load_ci_config
+from cihub.commands.pom import apply_dependency_fixes, apply_pom_fixes
 from cihub.config.io import load_yaml_file, save_yaml_file
 from cihub.config.merge import deep_merge
 from cihub.exit_codes import EXIT_SUCCESS, EXIT_USAGE
+from cihub.services.detection import resolve_language
+from cihub.services.templates import build_repo_config, render_caller_workflow
+from cihub.types import CommandResult
+from cihub.utils import collect_java_dependency_warnings, collect_java_pom_warnings
+from cihub.utils.fs import write_text
 
 
 def cmd_update(args: argparse.Namespace) -> int | CommandResult:
@@ -111,7 +106,7 @@ def cmd_update(args: argparse.Namespace) -> int | CommandResult:
 
     pom_warning_problems: list[dict[str, str]] = []
     if language == "java" and not dry_run:
-        effective = load_effective_config(repo_path)
+        effective = load_ci_config(repo_path)
         pom_warnings, _ = collect_java_pom_warnings(repo_path, effective)
         dep_warnings, _ = collect_java_dependency_warnings(repo_path, effective)
         warnings = pom_warnings + dep_warnings

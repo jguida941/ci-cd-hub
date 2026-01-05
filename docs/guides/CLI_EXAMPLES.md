@@ -1,5 +1,8 @@
 # CLI Examples
 
+> **Quick Reference** — This is a companion to [GETTING_STARTED.md](GETTING_STARTED.md).
+> Use this for copy-paste commands. For full context, see the Getting Started guide.
+
 Practical, copy-paste command examples. For full flags and options, see `docs/reference/CLI.md` or run `python -m cihub <command> --help`.
 
 ---
@@ -41,6 +44,13 @@ python -m cihub ci --repo /path/to/repo --install-deps
 python -m cihub run ruff --repo /path/to/repo
 ```
 
+Debug and verbose modes:
+
+```bash
+CIHUB_DEBUG=True CIHUB_VERBOSE=True python -m cihub ci --repo /path/to/repo
+CIHUB_EMIT_TRIAGE=True python -m cihub ci --repo /path/to/repo
+```
+
 Outputs:
 
 ```bash
@@ -56,6 +66,7 @@ cat /path/to/repo/.cihub/summary.md
 ```bash
 python -m cihub report build --repo /path/to/repo
 python -m cihub report summary --report /path/to/repo/.cihub/report.json
+python -m cihub triage --output-dir /path/to/repo/.cihub
 python -m cihub report outputs --report /path/to/repo/.cihub/report.json
 python -m cihub report aggregate --dispatch-dir dispatch-artifacts --output hub-report.json
 python -m cihub report aggregate --reports-dir reports --output hub-report.json
@@ -75,7 +86,7 @@ Inspect and edit:
 
 ```bash
 python -m cihub config --repo my-repo show
-python -m cihub config --repo my-repo set python.tools.pytest.threshold 80
+python -m cihub config --repo my-repo set python.tools.pytest.min_coverage 80
 python -m cihub config --repo my-repo enable bandit
 python -m cihub config --repo my-repo disable mutmut
 python -m cihub config --repo my-repo edit

@@ -178,7 +178,7 @@ class TestCmdConfigOutputs:
     def test_loads_config_and_returns_outputs_json_mode(self, tmp_path: Path) -> None:
         """Test JSON mode returns outputs dict."""
         config_file = tmp_path / ".ci-hub.yml"
-        config_file.write_text("language: python\n")
+        config_file.write_text("language: python\nrepo:\n  owner: test\n  name: repo\n")
 
         args = argparse.Namespace(repo=str(tmp_path), json=True, workdir=None, github_output=False)
 

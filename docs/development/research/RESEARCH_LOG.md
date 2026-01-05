@@ -1,5 +1,8 @@
 # Best Practices Research Log
 
+> **Status:** Historical reference only (not current guidance).
+> For current decisions, see `docs/adr/` and `docs/development/specs/REQUIREMENTS.md`.
+
 **Date:** 2025-12-14
 **Purpose:** Research best practices for docs templates, CI/CD, ADR with boolean toggles
 
