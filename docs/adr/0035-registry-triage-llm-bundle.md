@@ -28,6 +28,12 @@
 - ✅ **Flaky test detection**: `cihub triage --detect-flaky` identifies flaky patterns from history
 - ✅ **Gate history in bundles**: `history.jsonl` now tracks `gate_failures`, `gate_passed_count`, `gate_failed_count`
 
+**Implementation Update (2026-01-06):**
+- ✅ **Auto-latest triage**: `cihub triage --latest` auto-finds and triages most recent failed run (no run ID needed)
+- ✅ **Watch daemon**: `cihub triage --watch` polls for new failures and auto-triages them
+- ✅ **Configurable interval**: `cihub triage --watch --interval 60` (default: 30 seconds)
+- ✅ **Filter support in watch/latest**: Combine with `--workflow` and `--branch` filters
+
 ## Context
 
 The hub manages multiple repositories with varying quality standards (coverage thresholds, mutation testing, vulnerability tolerance). Currently:

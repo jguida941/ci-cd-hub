@@ -555,6 +555,205 @@ def _format_flaky_output(flaky_result: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _get_latest_failed_run(
+    repo: str | None,
+    workflow: str | None = None,
+    branch: str | None = None,
+) -> str | None:
+    """Get the most recent failed workflow run ID.
+
+    Args:
+        repo: Repository in OWNER/REPO format (None for current repo)
+        workflow: Optional workflow name filter
+        branch: Optional branch name filter
+
+    Returns:
+        Run ID as string, or None if no failed runs found
+    """
+    gh_bin = resolve_executable("gh")
+    cmd = [
+        gh_bin, "run", "list",
+        "--status", "failure",
+        "--limit", "1",
+        "--json", "databaseId,name,headBranch,createdAt",
+    ]
+    if repo:
+        cmd.extend(["--repo", repo])
+    if workflow:
+        cmd.extend(["--workflow", workflow])
+    if branch:
+        cmd.extend(["--branch", branch])
+
+    try:
+        result = safe_run(cmd, timeout=TIMEOUT_NETWORK)
+        if result.returncode != 0:
+            return None
+        runs = json.loads(result.stdout)
+        if runs and isinstance(runs, list) and len(runs) > 0:
+            return str(runs[0]["databaseId"])
+    except (CommandNotFoundError, CommandTimeoutError, json.JSONDecodeError, KeyError):
+        pass
+    return None
+
+
+def _watch_for_failures(
+    args: argparse.Namespace,
+    interval: int,
+    repo: str | None,
+    workflow: str | None,
+    branch: str | None,
+) -> CommandResult:
+    """Watch for new failed runs and auto-triage them.
+
+    This is a blocking loop that polls for new failures at the specified interval.
+    Press Ctrl+C to stop.
+
+    Args:
+        args: Original command arguments (for triage config)
+        interval: Polling interval in seconds
+        repo: Repository to watch
+        workflow: Optional workflow filter
+        branch: Optional branch filter
+
+    Returns:
+        CommandResult when stopped (via Ctrl+C or error)
+    """
+    import sys
+    import time
+
+    triaged_runs: set[str] = set()
+    triage_count = 0
+    output_dir = Path(args.output_dir or ".cihub")
+
+    print(f"👀 Watching for failed runs (interval: {interval}s, Ctrl+C to stop)")
+    if workflow:
+        print(f"   Filtering: workflow={workflow}")
+    if branch:
+        print(f"   Filtering: branch={branch}")
+    print()
+
+    try:
+        while True:
+            # Get recent failed runs
+            gh_bin = resolve_executable("gh")
+            cmd = [
+                gh_bin, "run", "list",
+                "--status", "failure",
+                "--limit", "5",
+                "--json", "databaseId,name,headBranch,createdAt,conclusion",
+            ]
+            if repo:
+                cmd.extend(["--repo", repo])
+            if workflow:
+                cmd.extend(["--workflow", workflow])
+            if branch:
+                cmd.extend(["--branch", branch])
+
+            try:
+                result = safe_run(cmd, timeout=TIMEOUT_NETWORK)
+                if result.returncode == 0:
+                    runs = json.loads(result.stdout)
+                    for run in runs:
+                        run_id = str(run.get("databaseId", ""))
+                        if run_id and run_id not in triaged_runs:
+                            # New failure found - triage it
+                            name = run.get("name", "Unknown")
+                            branch_name = run.get("headBranch", "")
+                            print(f"🔴 New failure: {name} (branch: {branch_name}, run: {run_id})")
+
+                            # Run triage
+                            try:
+                                triage_result = _triage_single_run(
+                                    run_id=run_id,
+                                    repo=repo,
+                                    output_dir=output_dir,
+                                )
+                                triaged_runs.add(run_id)
+                                triage_count += 1
+
+                                if triage_result:
+                                    print(f"   ✅ Triaged: {triage_result}")
+                                else:
+                                    print("   ⚠️  Triage completed (no artifacts)")
+                            except Exception as e:
+                                print(f"   ❌ Triage failed: {e}")
+                                triaged_runs.add(run_id)  # Don't retry
+
+                            print()
+            except (CommandNotFoundError, CommandTimeoutError, json.JSONDecodeError) as e:
+                print(f"⚠️  Poll error: {e}", file=sys.stderr)
+
+            time.sleep(interval)
+
+    except KeyboardInterrupt:
+        print(f"\n🛑 Stopped. Triaged {triage_count} run(s).")
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=f"Watch stopped. Triaged {triage_count} run(s).",
+            data={"triaged_count": triage_count, "triaged_runs": list(triaged_runs)},
+        )
+
+
+def _triage_single_run(run_id: str, repo: str | None, output_dir: Path) -> str | None:
+    """Triage a single run and return the output path.
+
+    Args:
+        run_id: GitHub workflow run ID
+        repo: Repository in OWNER/REPO format
+        output_dir: Base output directory
+
+    Returns:
+        Path to triage.json, or None if no triage was generated
+    """
+    run_dir = output_dir / "runs" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    # Download artifacts
+    artifacts_dir = run_dir / "artifacts"
+    artifacts_dir.mkdir(exist_ok=True)
+    _download_artifacts(run_id, repo, artifacts_dir)
+
+    # Fetch run info for metadata
+    run_info = _fetch_run_info(run_id, repo)
+
+    # Find report.json in artifacts
+    report_path = _find_report_in_artifacts(artifacts_dir)
+
+    # Build metadata
+    meta = {
+        "command": f"cihub triage --run {run_id}",
+        "args": [],
+        "correlation_id": run_id,
+        "repo": repo or _get_current_repo() or "",
+        "branch": run_info.get("headBranch", ""),
+        "commit_sha": run_info.get("headSha", ""),
+        "workflow_ref": run_info.get("url", ""),
+    }
+
+    # Generate triage bundle
+    bundle = generate_triage_bundle(
+        output_dir=artifacts_dir if report_path else run_dir,
+        report_path=report_path,
+        meta=meta,
+    )
+
+    # Write outputs
+    triage_path = run_dir / "triage.json"
+    priority_path = run_dir / "priority.json"
+    md_path = run_dir / "triage.md"
+    history_path = run_dir / "history.jsonl"
+
+    triage_path.write_text(json.dumps(bundle.triage, indent=2), encoding="utf-8")
+    priority_path.write_text(json.dumps(bundle.priority, indent=2), encoding="utf-8")
+    md_path.write_text(bundle.markdown, encoding="utf-8")
+
+    # Append to history
+    with history_path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(bundle.history_entry) + "\n")
+
+    return str(triage_path)
+
+
 def cmd_triage(args: argparse.Namespace) -> CommandResult:
     output_dir = Path(args.output_dir or ".cihub")
     run_id = getattr(args, "run", None)
@@ -568,6 +767,44 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
     branch_filter = getattr(args, "branch", None)
     aggregate_mode = getattr(args, "aggregate", False)
     per_repo_mode = getattr(args, "per_repo", False)
+    latest_mode = getattr(args, "latest", False)
+    watch_mode = getattr(args, "watch", False)
+    watch_interval = getattr(args, "interval", 30)
+
+    # Handle --watch mode (background daemon)
+    if watch_mode:
+        return _watch_for_failures(
+            args=args,
+            interval=watch_interval,
+            repo=repo,
+            workflow=workflow_filter,
+            branch=branch_filter,
+        )
+
+    # Handle --latest mode (auto-find most recent failed run)
+    if latest_mode and not run_id:
+        run_id = _get_latest_failed_run(
+            repo=repo,
+            workflow=workflow_filter,
+            branch=branch_filter,
+        )
+        if not run_id:
+            filter_parts = []
+            if workflow_filter:
+                filter_parts.append(f"workflow={workflow_filter}")
+            if branch_filter:
+                filter_parts.append(f"branch={branch_filter}")
+            filter_desc = f" ({', '.join(filter_parts)})" if filter_parts else ""
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=f"No failed runs found{filter_desc}",
+                problems=[{
+                    "severity": "info",
+                    "message": "No recent failed workflow runs to triage",
+                    "code": "CIHUB-TRIAGE-NO-FAILURES",
+                }],
+            )
+        print(f"📋 Auto-selected latest failed run: {run_id}")
 
     # Handle --gate-history mode (standalone analysis)
     if gate_history:

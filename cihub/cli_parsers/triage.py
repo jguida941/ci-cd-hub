@@ -34,6 +34,23 @@ def add_triage_command(
         help="GitHub workflow run ID to analyze (fetches artifacts/logs via gh CLI)",
     )
     triage.add_argument(
+        "--latest",
+        action="store_true",
+        help="Auto-triage the most recent failed workflow run (no run ID needed)",
+    )
+    triage.add_argument(
+        "--watch",
+        action="store_true",
+        help="Watch for new failed runs and auto-triage them (background daemon)",
+    )
+    triage.add_argument(
+        "--interval",
+        type=int,
+        default=30,
+        metavar="SECONDS",
+        help="Polling interval for --watch mode (default: 30 seconds)",
+    )
+    triage.add_argument(
         "--artifacts-dir",
         metavar="PATH",
         help="Path to pre-downloaded artifacts directory (offline mode)",

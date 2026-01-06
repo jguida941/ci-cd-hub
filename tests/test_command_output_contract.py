@@ -25,6 +25,8 @@ from hypothesis import given, settings, strategies as st
 # Files pending migration - remove from list as each is migrated
 # Goal: empty list = all commands follow the contract
 PRINT_ALLOWLIST: set[str] = {
+    # Interactive daemon mode - needs real-time output for --watch (cannot use CommandResult)
+    "triage.py",      # --watch daemon + --latest auto-select print real-time progress
     # Worst offenders (migrate first)
     # "triage.py",    # MIGRATED - 34 prints → CommandResult
     # "secrets.py",   # MIGRATED - 32 prints → CommandResult
