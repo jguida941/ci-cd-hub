@@ -5,8 +5,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from cihub.cli import (  # noqa: E402
-    build_parser,
+from cihub.cli import build_parser  # noqa: E402
+from cihub.utils import (  # noqa: E402
     collect_java_dependency_warnings,
     collect_java_pom_warnings,
     get_java_tool_flags,

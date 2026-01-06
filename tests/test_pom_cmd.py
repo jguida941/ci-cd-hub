@@ -548,7 +548,7 @@ class TestPomCommandsJsonMode:
 
     def test_fix_pom_missing_config_json_mode(self, tmp_path: Path) -> None:
         """fix-pom returns CommandResult for missing config in JSON mode."""
-        from cihub.cli import CommandResult
+        from cihub.types import CommandResult
 
         args = argparse.Namespace(repo=str(tmp_path), apply=False, json=True)
         result = cmd_fix_pom(args)
@@ -558,7 +558,7 @@ class TestPomCommandsJsonMode:
 
     def test_fix_pom_non_java_json_mode(self, tmp_path: Path) -> None:
         """fix-pom returns CommandResult for non-Java repo in JSON mode."""
-        from cihub.cli import CommandResult
+        from cihub.types import CommandResult
 
         config = """
 repo:
@@ -581,7 +581,7 @@ python:
 
     def test_fix_pom_gradle_json_mode(self, tmp_path: Path) -> None:
         """fix-pom returns CommandResult for Gradle repo in JSON mode."""
-        from cihub.cli import CommandResult
+        from cihub.types import CommandResult
 
         config = """
 repo:
@@ -605,7 +605,7 @@ java:
 
     def test_fix_pom_apply_json_mode(self, tmp_path: Path) -> None:
         """fix-pom with apply in JSON mode returns CommandResult."""
-        from cihub.cli import CommandResult
+        from cihub.types import CommandResult
 
         write_ci_hub_config(tmp_path)
         pom_path = tmp_path / "pom.xml"
@@ -629,7 +629,7 @@ java:
 
     def test_fix_deps_missing_config_json_mode(self, tmp_path: Path) -> None:
         """fix-deps returns CommandResult for missing config in JSON mode."""
-        from cihub.cli import CommandResult
+        from cihub.types import CommandResult
 
         args = argparse.Namespace(repo=str(tmp_path), apply=False, json=True)
         result = cmd_fix_deps(args)
@@ -639,7 +639,7 @@ java:
 
     def test_fix_deps_non_java_json_mode(self, tmp_path: Path) -> None:
         """fix-deps returns CommandResult for non-Java repo in JSON mode."""
-        from cihub.cli import CommandResult
+        from cihub.types import CommandResult
 
         config = """
 repo:
@@ -662,7 +662,7 @@ python:
 
     def test_fix_deps_gradle_json_mode(self, tmp_path: Path) -> None:
         """fix-deps returns CommandResult for Gradle repo in JSON mode."""
-        from cihub.cli import CommandResult
+        from cihub.types import CommandResult
 
         config = """
 repo:
@@ -686,7 +686,7 @@ java:
 
     def test_fix_deps_apply_json_mode(self, tmp_path: Path) -> None:
         """fix-deps with apply in JSON mode returns CommandResult."""
-        from cihub.cli import CommandResult
+        from cihub.types import CommandResult
 
         write_ci_hub_config(tmp_path)
         pom_path = tmp_path / "pom.xml"

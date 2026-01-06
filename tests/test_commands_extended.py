@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from cihub.cli import CommandResult  # noqa: E402
+from cihub.types import CommandResult  # noqa: E402
 from cihub.commands.init import cmd_init  # noqa: E402
 from cihub.commands.update import cmd_update  # noqa: E402
 from cihub.commands.validate import cmd_validate  # noqa: E402

@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from cihub.cli import CommandResult
+from cihub.types import CommandResult
 from cihub.commands import check as check_module
 
 FAST_STEPS = [

@@ -11,18 +11,20 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from cihub.cli import (  # noqa: E402
+from cihub.services.detection import detect_language  # noqa: E402
+from cihub.services.templates import (  # noqa: E402
     build_repo_config,
-    detect_language,
+    render_caller_workflow,
+    render_dispatch_workflow,
+)
+from cihub.utils import (  # noqa: E402
     get_git_branch,
     get_git_remote,
     parse_repo_from_remote,
-    render_caller_workflow,
-    render_dispatch_workflow,
-    safe_urlopen,
     validate_repo_path,
     validate_subdir,
 )
+from cihub.utils.net import safe_urlopen  # noqa: E402
 
 
 def test_parse_repo_from_remote_https():
@@ -438,7 +440,8 @@ class TestGetGitBranch:
 # Main Function Tests (cli.py lines 1335-1389)
 # =============================================================================
 
-from cihub.cli import CommandResult, main  # noqa: E402
+from cihub.cli import main  # noqa: E402
+from cihub.types import CommandResult  # noqa: E402
 
 
 class TestCommandResult:

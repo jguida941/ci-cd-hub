@@ -1,7 +1,7 @@
 import argparse
 import subprocess
 
-from cihub.cli import CommandResult
+from cihub.types import CommandResult
 from cihub.commands import preflight as preflight_module
 from cihub.commands.preflight import cmd_preflight
 

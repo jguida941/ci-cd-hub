@@ -2,7 +2,7 @@ import argparse
 import json
 from pathlib import Path
 
-from cihub.cli import CommandResult
+from cihub.types import CommandResult
 from cihub.commands.docs import _check_internal_links, _run_lychee, cmd_docs
 
 

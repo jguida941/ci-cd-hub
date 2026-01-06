@@ -6,7 +6,7 @@ import argparse
 from pathlib import Path
 from unittest.mock import patch
 
-from cihub.cli import CommandResult
+from cihub.types import CommandResult
 from cihub.commands.adr import (
     ADR_PATTERN,
     _check_adr_links,

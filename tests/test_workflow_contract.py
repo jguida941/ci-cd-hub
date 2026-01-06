@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
-from cihub.cli import CommandResult, hub_root
+from cihub.types import CommandResult
+from cihub.utils import hub_root
 from cihub.commands import verify as verify_module
 from cihub.commands.verify import cmd_verify, validate_reusable_contracts, validate_template_contracts
 

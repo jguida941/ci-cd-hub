@@ -3,7 +3,7 @@
 import argparse
 from pathlib import Path
 
-from cihub.cli import CommandResult
+from cihub.types import CommandResult
 from cihub.commands.scaffold import scaffold_fixture
 from cihub.commands.smoke import (
     ALL_TYPES,

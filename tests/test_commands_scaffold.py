@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from cihub.cli import CommandResult
+from cihub.types import CommandResult
 from cihub.commands.scaffold import cmd_scaffold
 
 
