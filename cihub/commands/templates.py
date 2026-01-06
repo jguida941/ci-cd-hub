@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import os
 import subprocess
-import sys
 from typing import Any
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
@@ -13,54 +12,63 @@ from cihub.services.repo_config import get_repo_entries
 from cihub.services.templates import render_dispatch_workflow
 from cihub.types import CommandResult
 from cihub.utils import resolve_executable
+from cihub.utils.env import get_github_token
 from cihub.utils.github_api import delete_remote_file, fetch_remote_file, update_remote_file
 
 
-def cmd_sync_templates(args: argparse.Namespace) -> int | CommandResult:
+def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
     """Sync caller workflow templates to target repos."""
-    json_mode = getattr(args, "json", False)
-    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or os.environ.get("HUB_DISPATCH_TOKEN")
+    token, token_source = get_github_token()
+    messages: list[str] = []
+    problems: list[dict[str, Any]] = []
+
     if not token:
+        token_msg = "Missing GitHub token (set GH_TOKEN, GITHUB_TOKEN, or HUB_DISPATCH_TOKEN)"
         # For --check or --dry-run, skip gracefully with warning (matches check.py pattern)
         if args.check or args.dry_run:
-            message = (
-                "Skipping: No GitHub token available (set GH_TOKEN, GITHUB_TOKEN, or HUB_DISPATCH_TOKEN). "
-                "Cannot verify remote template state without token."
+            return CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=f"Skipping: {token_msg}. Cannot verify remote template state without token.",
+                data={"skipped": True, "reason": "no_token"},
             )
-            if json_mode:
-                return CommandResult(
-                    exit_code=EXIT_SUCCESS,
-                    summary=message,
-                    data={"skipped": True, "reason": "no_token"},
-                )
-            print(f"[SKIP] {message}", file=sys.stderr)
-            return EXIT_SUCCESS
         # For actual sync operations, token is required
-        message = "Missing GitHub token (set GH_TOKEN, GITHUB_TOKEN, or HUB_DISPATCH_TOKEN)"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_USAGE, summary=message)
-        print(message, file=sys.stderr)
-        return EXIT_USAGE
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=token_msg,
+            problems=[{
+                "severity": "error",
+                "message": token_msg,
+                "code": "CIHUB-TEMPLATES-NO-TOKEN",
+            }],
+        )
+
     if "GH_TOKEN" not in os.environ:
         os.environ["GH_TOKEN"] = token
+
     results: list[dict[str, Any]] = []
     entries = get_repo_entries(only_dispatch_enabled=not args.include_disabled)
+
     if args.repo:
         repo_map = {entry["full"]: entry for entry in entries}
         missing = [repo for repo in args.repo if repo not in repo_map]
         if missing:
-            message = "Error: repos not found in config/repos/*.yaml: " + ", ".join(missing)
-            if json_mode:
-                return CommandResult(exit_code=EXIT_USAGE, summary=message)
-            print(message, file=sys.stderr)
-            return EXIT_USAGE
+            return CommandResult(
+                exit_code=EXIT_USAGE,
+                summary=f"Repos not found in config/repos/*.yaml: {', '.join(missing)}",
+                problems=[{
+                    "severity": "error",
+                    "message": f"Repos not found in config/repos/*.yaml: {', '.join(missing)}",
+                    "code": "CIHUB-TEMPLATES-REPO-NOT-FOUND",
+                }],
+            )
         entries = [repo_map[repo] for repo in args.repo]
 
     if not entries:
-        if json_mode:
-            return CommandResult(exit_code=EXIT_SUCCESS, summary="No repos found to sync.")
-        print("No repos found to sync.")
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="No repos found to sync.",
+            data={"repos": [], "failures": 0},
+        )
 
     failures = 0
     for entry in entries:
@@ -79,8 +87,12 @@ def cmd_sync_templates(args: argparse.Namespace) -> int | CommandResult:
         try:
             desired = render_dispatch_workflow(language, dispatch_workflow)
         except ValueError as exc:
-            if not json_mode:
-                print(f"Error: {repo} {path}: {exc}", file=sys.stderr)
+            messages.append(f"[ERROR] {repo} {path}: {exc}")
+            problems.append({
+                "severity": "error",
+                "message": f"{repo} {path}: {exc}",
+                "code": "CIHUB-TEMPLATES-RENDER-ERROR",
+            })
             repo_result["status"] = "error"
             repo_result["message"] = str(exc)
             failures += 1
@@ -91,18 +103,15 @@ def cmd_sync_templates(args: argparse.Namespace) -> int | CommandResult:
         workflow_synced = False
 
         if remote and remote.get("content") == desired:
-            if not json_mode:
-                print(f"[OK] {repo} {path} up to date")
+            messages.append(f"[OK] {repo} {path} up to date")
             workflow_synced = True
             repo_result["status"] = "up_to_date"
         elif args.check:
-            if not json_mode:
-                print(f"[FAIL] {repo} {path} out of date")
+            messages.append(f"[FAIL] {repo} {path} out of date")
             failures += 1
             repo_result["status"] = "out_of_date"
         elif args.dry_run:
-            if not json_mode:
-                print(f"# Would update {repo} {path}")
+            messages.append(f"# Would update {repo} {path}")
             repo_result["status"] = "would_update"
         else:
             try:
@@ -114,16 +123,16 @@ def cmd_sync_templates(args: argparse.Namespace) -> int | CommandResult:
                     args.commit_message,
                     remote.get("sha") if remote else None,
                 )
-                if not json_mode:
-                    print(f"[OK] {repo} {path} updated")
+                messages.append(f"[OK] {repo} {path} updated")
                 workflow_synced = True
                 repo_result["status"] = "updated"
             except RuntimeError as exc:
-                if not json_mode:
-                    print(
-                        f"[FAIL] {repo} {path} update failed: {exc}",
-                        file=sys.stderr,
-                    )
+                messages.append(f"[FAIL] {repo} {path} update failed: {exc}")
+                problems.append({
+                    "severity": "error",
+                    "message": f"{repo} {path} update failed: {exc}",
+                    "code": "CIHUB-TEMPLATES-UPDATE-FAILED",
+                })
                 failures += 1
                 repo_result["status"] = "failed"
                 repo_result["message"] = str(exc)
@@ -135,13 +144,11 @@ def cmd_sync_templates(args: argparse.Namespace) -> int | CommandResult:
                 stale_file = fetch_remote_file(repo, stale_path, branch)
                 if stale_file and stale_file.get("sha"):
                     if args.check:
-                        if not json_mode:
-                            print(f"[FAIL] {repo} {stale_path} stale (should be deleted)")
+                        messages.append(f"[FAIL] {repo} {stale_path} stale (should be deleted)")
                         failures += 1
                         repo_result["stale"].append({"path": stale_path, "status": "stale"})
                     elif args.dry_run:
-                        if not json_mode:
-                            print(f"# Would delete {repo} {stale_path} (stale)")
+                        messages.append(f"# Would delete {repo} {stale_path} (stale)")
                         repo_result["stale"].append({"path": stale_path, "status": "would_delete"})
                     elif workflow_synced:
                         try:
@@ -152,15 +159,15 @@ def cmd_sync_templates(args: argparse.Namespace) -> int | CommandResult:
                                 stale_file["sha"],
                                 "Remove stale workflow (migrated to hub-ci.yml)",
                             )
-                            if not json_mode:
-                                print(f"[OK] {repo} {stale_path} deleted (stale)")
+                            messages.append(f"[OK] {repo} {stale_path} deleted (stale)")
                             repo_result["stale"].append({"path": stale_path, "status": "deleted"})
                         except RuntimeError as exc:
-                            if not json_mode:
-                                print(
-                                    f"[WARN] {repo} {stale_path} delete failed: {exc}",
-                                    file=sys.stderr,
-                                )
+                            messages.append(f"[WARN] {repo} {stale_path} delete failed: {exc}")
+                            problems.append({
+                                "severity": "warning",
+                                "message": f"{repo} {stale_path} delete failed: {exc}",
+                                "code": "CIHUB-TEMPLATES-DELETE-FAILED",
+                            })
                             repo_result["stale"].append(
                                 {
                                     "path": stale_path,
@@ -172,8 +179,7 @@ def cmd_sync_templates(args: argparse.Namespace) -> int | CommandResult:
 
     exit_code = EXIT_SUCCESS
     if args.check and failures:
-        if not json_mode:
-            print(f"Template drift detected in {failures} repo(s).", file=sys.stderr)
+        messages.append(f"Template drift detected in {failures} repo(s).")
         exit_code = EXIT_FAILURE
     elif failures:
         exit_code = EXIT_FAILURE
@@ -187,6 +193,7 @@ def cmd_sync_templates(args: argparse.Namespace) -> int | CommandResult:
                 capture_output=True,
                 text=True,
                 check=True,
+                timeout=30,
             )
             head_sha = result.stdout.strip()
 
@@ -194,59 +201,68 @@ def cmd_sync_templates(args: argparse.Namespace) -> int | CommandResult:
                 [git_bin, "rev-parse", "v1"],
                 capture_output=True,
                 text=True,
+                timeout=30,
             )
             current_v1 = result.stdout.strip() if result.returncode == 0 else None
 
             if current_v1 == head_sha:
-                if not json_mode:
-                    print("[OK] v1 tag already at HEAD")
+                messages.append("[OK] v1 tag already at HEAD")
                 tag_status = "up_to_date"
             else:
                 # Security: Require confirmation for force-push operations
                 if not getattr(args, "yes", False):
-                    if json_mode:
-                        return CommandResult(
-                            exit_code=EXIT_USAGE,
-                            summary="Confirmation required; re-run with --yes",
-                        )
-                    print(
-                        f"Warning: This will force-push v1 tag from "
-                        f"{current_v1[:7] if current_v1 else 'none'} to {head_sha[:7]}"
+                    return CommandResult(
+                        exit_code=EXIT_USAGE,
+                        summary="Confirmation required for v1 tag force-push; re-run with --yes",
+                        data={
+                            "repos": results,
+                            "failures": failures,
+                            "tag": "requires_confirmation",
+                            "items": messages,
+                            "current_v1": current_v1[:7] if current_v1 else None,
+                            "head_sha": head_sha[:7],
+                        },
+                        problems=[{
+                            "severity": "warning",
+                            "message": (
+                                f"Will force-push v1 tag from "
+                                f"{current_v1[:7] if current_v1 else 'none'} to {head_sha[:7]}. "
+                                f"This affects all repositories referencing "
+                                f"jguida941/hub-release/.github/workflows/*@v1"
+                            ),
+                            "code": "CIHUB-TEMPLATES-TAG-CONFIRM",
+                        }],
                     )
-                    print("This affects all repositories referencing jguida941/hub-release/.github/workflows/*@v1")
-                    confirm = input("Continue? [y/N] ").strip().lower()
-                    if confirm not in ("y", "yes"):
-                        if json_mode:
-                            return CommandResult(exit_code=EXIT_SUCCESS, summary="Aborted")
-                        print("Aborted.")
-                        return EXIT_SUCCESS
 
                 subprocess.run(  # noqa: S603
                     [git_bin, "tag", "-f", "v1", "HEAD"],
                     check=True,
                     capture_output=True,
+                    timeout=30,
                 )
                 subprocess.run(  # noqa: S603
                     [git_bin, "push", "origin", "v1", "--force"],
                     check=True,
                     capture_output=True,
+                    timeout=60,
                 )
-                if not json_mode:
-                    print(f"[OK] v1 tag updated: {current_v1[:7] if current_v1 else 'none'} -> {head_sha[:7]}")
+                messages.append(f"[OK] v1 tag updated: {current_v1[:7] if current_v1 else 'none'} -> {head_sha[:7]}")
                 tag_status = "updated"
         except subprocess.CalledProcessError as exc:
-            if not json_mode:
-                print(f"[WARN] Failed to update v1 tag: {exc}", file=sys.stderr)
+            messages.append(f"[WARN] Failed to update v1 tag: {exc}")
+            problems.append({
+                "severity": "warning",
+                "message": f"Failed to update v1 tag: {exc}",
+                "code": "CIHUB-TEMPLATES-TAG-FAILED",
+            })
             tag_status = "failed"
     elif args.dry_run and args.update_tag:
-        if not json_mode:
-            print("# Would update v1 tag to HEAD")
+        messages.append("# Would update v1 tag to HEAD")
         tag_status = "would_update"
 
-    if json_mode:
-        summary = "Template sync complete" if exit_code == EXIT_SUCCESS else "Template sync failed"
-        data: dict[str, object] = {"repos": results, "failures": failures}
-        if tag_status:
-            data["tag"] = tag_status
-        return CommandResult(exit_code=exit_code, summary=summary, data=data)
-    return exit_code
+    summary = "Template sync complete" if exit_code == EXIT_SUCCESS else f"Template sync: {failures} failure(s)"
+    data: dict[str, object] = {"repos": results, "failures": failures, "items": messages}
+    if tag_status:
+        data["tag"] = tag_status
+
+    return CommandResult(exit_code=exit_code, summary=summary, problems=problems, data=data)

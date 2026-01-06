@@ -357,7 +357,8 @@ class TestCmdAdrNew:
         content = readme.read_text()
         assert "- [ADR-0001: Test Entry](0001-test-entry.md)" in content
 
-    def test_non_json_mode_prints_output(self, tmp_path: Path, capsys) -> None:
+    def test_non_json_mode_returns_command_result(self, tmp_path: Path) -> None:
+        """Non-JSON mode now returns CommandResult; CLI handles rendering."""
         with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
             args = argparse.Namespace(
                 title="Print Test",
@@ -366,9 +367,11 @@ class TestCmdAdrNew:
             )
             result = cmd_adr_new(args)
 
-        assert result == EXIT_SUCCESS
-        captured = capsys.readouterr()
-        assert "Created ADR:" in captured.out
+        # Now always returns CommandResult (CLI renders it)
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
+        assert "Created ADR:" in result.summary
+        assert len(result.files_generated) == 1
 
 
 class TestCmdAdrList:
@@ -422,7 +425,8 @@ class TestCmdAdrList:
 
         assert len(result.data["adrs"]) == 1
 
-    def test_non_json_mode_prints_table(self, tmp_path: Path, capsys) -> None:
+    def test_non_json_mode_returns_table_data(self, tmp_path: Path) -> None:
+        """Non-JSON mode now returns CommandResult with table data; CLI renders it."""
         adr_dir = tmp_path / "docs" / "adr"
         adr_dir.mkdir(parents=True)
         (adr_dir / "0001-test.md").write_text("# ADR-0001: Test\n\n**Status:** Accepted\n**Date:** 2024-01-01\n")
@@ -431,10 +435,12 @@ class TestCmdAdrList:
             args = argparse.Namespace(status=None, json=False)
             result = cmd_adr_list(args)
 
-        assert result == EXIT_SUCCESS
-        captured = capsys.readouterr()
-        assert "Accepted" in captured.out
-        assert "Total: 1 ADRs" in captured.out
+        # Now always returns CommandResult (CLI renders table via HumanRenderer)
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
+        assert "Found 1 ADRs" in result.summary
+        assert "table" in result.data
+        assert result.data["table"]["rows"][0]["Status"] == "Accepted"
 
 
 class TestCmdAdrCheck:
@@ -517,17 +523,20 @@ class TestCmdAdrCheck:
         assert result.exit_code == EXIT_SUCCESS
         assert "No ADRs to check" in result.summary
 
-    def test_non_json_mode_prints_problems(self, tmp_path: Path, capsys) -> None:
+    def test_non_json_mode_returns_problems(self, tmp_path: Path) -> None:
+        """Non-JSON mode now returns CommandResult with problems; CLI renders it."""
         adr_dir = tmp_path / "docs" / "adr"
         adr_dir.mkdir(parents=True)
         (adr_dir / "0001-test.md").write_text("# ADR-0001: Test\n\n")  # Missing fields
 
         with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
             args = argparse.Namespace(json=False)
-            cmd_adr_check(args)
+            result = cmd_adr_check(args)
 
-        captured = capsys.readouterr()
-        assert "[WARNING]" in captured.out
+        # Now always returns CommandResult (CLI renders problems via HumanRenderer)
+        assert isinstance(result, CommandResult)
+        assert len(result.problems) > 0
+        assert any(p["severity"] == "warning" for p in result.problems)
 
 
 class TestCmdAdr:

@@ -26,6 +26,19 @@ from urllib.error import HTTPError
 from urllib.parse import urlparse
 
 
+def _safe_extractall(zip_path: Path, target_dir: Path) -> None:
+    """Extract ZIP with path traversal protection."""
+    target_dir = target_dir.resolve()
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        for member in zf.namelist():
+            member_path = (target_dir / member).resolve()
+            try:
+                member_path.relative_to(target_dir)
+            except ValueError:
+                raise ValueError(f"Path traversal detected in ZIP: {member}") from None
+        zf.extractall(target_dir)
+
+
 def gh_get(url: str, token: str) -> dict[str, Any]:
     """Make authenticated GET request to GitHub API."""
     parsed = urlparse(url)
@@ -70,8 +83,7 @@ def download_artifact(archive_url: str, token: str, target_dir: Path) -> Path | 
         target_dir.mkdir(parents=True, exist_ok=True)
         zip_path = target_dir / "artifact.zip"
         zip_path.write_bytes(data)
-        with zipfile.ZipFile(zip_path, "r") as zf:
-            zf.extractall(target_dir)
+        _safe_extractall(zip_path, target_dir)
         return target_dir
     except HTTPError as e:
         print(f"  ❌ Failed to download artifact: HTTP {e.code}")

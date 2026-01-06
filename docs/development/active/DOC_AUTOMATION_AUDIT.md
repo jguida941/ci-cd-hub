@@ -1,12 +1,16 @@
 # Documentation Automation Audit & Design
 
 **Date:** 2026-01-04
-**Last Updated:** 2026-01-05 (Implementation status audit)
+**Last Updated:** 2026-01-06 (Part 13: Cross-doc consistency + metrics validation from 8-agent audit)
+**Priority:** 🟢 **#3** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
+**Status:** ~30% implemented
+**Depends On:** Stable CLI surface (CLEAN_CODE.md)
+**Can Parallel:** TEST_REORGANIZATION.md (both need stable CLI)
 **Problem:** Manual documentation updates take 4+ hours/day. With 50+ docs and 28,000 lines, keeping them in sync with code changes is unsustainable.
 
 ---
 
-## Implementation Status (2026-01-05)
+## Implementation Status (2026-01-06)
 
 | Component | Status | Notes |
 |-----------|--------|-------|
@@ -17,10 +21,16 @@
 | `cihub docs audit` | ❌ **NOT IMPLEMENTED** | Lifecycle enforcement — see Part 12 |
 | `.cihub/tool-outputs/` for docs | ❌ **NOT IMPLEMENTED** | No docs artifacts generated yet |
 | AI prompt pack output | ❌ **NOT IMPLEMENTED** | Design ready in Part 12.D |
+| Metrics drift detection | ❌ **NOT IMPLEMENTED** | Part 13.R — detect stale counts (tests, commands, ADRs) |
+| Duplicate task detection | ❌ **NOT IMPLEMENTED** | Part 13.S — find duplicate checklist items |
+| Timestamp freshness | ❌ **NOT IMPLEMENTED** | Part 13.T — validate "Last Updated" headers |
+| Checklist-reality sync | ❌ **NOT IMPLEMENTED** | Part 13.U — verify [ ] items against code |
+| Cross-doc consistency | ❌ **NOT IMPLEMENTED** | Part 13.W — ensure same facts across docs |
+| CHANGELOG validation | ❌ **NOT IMPLEMENTED** | Part 13.X — format and ordering checks |
 
-**Overall:** ~30% implemented. Core `docs stale` MVP estimated at 2-3 days; full spec is larger.
+**Overall:** ~30% implemented. Core `docs stale` MVP estimated at 2-3 days; full spec (with Part 13) is ~5-7 days.
 
-**Priority Recommendation:** Start with `docs stale` MVP (Python AST + backtick extraction + git range), then expand.
+**Priority Recommendation:** Start with `docs stale` MVP (Python AST + backtick extraction + git range), then add Part 13 features (metrics drift, cross-doc consistency) for maximum impact.
 
 ---
 
@@ -35,42 +45,9 @@
 - [Part 9: Finalized Implementation (`cihub docs stale`)](#part-9-finalized-implementation-cihub-docs-stale)
 - [Part 11: Plan Review Findings & Gaps](#part-11-plan-review-findings--gaps)
 - [Part 12: Audit Addendum (Production-Grade Revisions)](#part-12-audit-addendum-production-grade-revisions)
+- [Part 13: Cross-Document Consistency & Metrics Validation](#part-13-cross-document-consistency--metrics-validation-audit-addendum-2026-01-06)
 
 ---
-
-## Working Checklists (For Humans + AI)
-
-### Checklist A: Implementation Milestones (CIHub)
-
-- [ ] Implement `cihub docs stale` baseline comparisons (base vs head) for:
-  - [ ] Python AST symbols
-  - [ ] Schema key paths
-  - [ ] CLI surface drift (help snapshot)
-  - [ ] File move/delete detection (`--name-status --find-renames`)
-- [ ] Emit CIHub-style artifacts (optional but recommended):
-  - [ ] `.cihub/tool-outputs/docs_stale.json`
-  - [ ] `.cihub/tool-outputs/docs_stale.prompt.md`
-  - [ ] `.cihub/tool-outputs/docs_stale.stdout.log` / `.stderr.log` (if applicable)
-- [ ] Add `cihub check --audit` integration (after trust is established)
-- [ ] Add snapshots/regression coverage:
-  - [ ] JSON snapshot (syrupy)
-  - [ ] AI prompt pack snapshot (syrupy)
-  - [ ] Git-range matrix tests (merge-base, rename/move/delete)
-  - [ ] Hypothesis markdown fuzz/property tests
-  - [ ] Perf benchmark budget on ~28k doc lines
-
-### Checklist B: AI Prompt Pack “Do Not Break These” Rules
-
-When using `docs stale --ai` output (or a future `cihub docs update --llm-runner ...`):
-- [ ] Do not edit generated docs under `docs/reference/**` (use `cihub docs generate/check` instead)
-- [ ] Do not modify ADR content (ADRs require human authorship)
-- [ ] Prefer minimal edits: change only stale tokens/commands/flags/paths
-- [ ] Preserve code fences and formatting (especially CLI examples)
-- [ ] Use “CLI” terminology (never internal nicknames)
-- [ ] Produce a patch/diff output for review; do not auto-apply by default
-
----
-
 ## Part 1: Current Documentation Inventory
 
 ### By Category
@@ -1156,6 +1133,449 @@ Optional integration improvement (Phase 2+):
   ```
 - `cihub docs audit` enforces presence/format; headers provide structured metadata for humans, tooling, and LLMs.
 
+## Part 13: Cross-Document Consistency & Metrics Validation (Audit Addendum 2026-01-06)
+
+This section captures additional gaps discovered during an 8-agent documentation audit on 2026-01-06. These issues extend beyond code-to-doc symbol drift into **cross-document consistency** and **metrics validation**.
+
+### R. Metrics/Counts Drift Detection
+
+**Problem:** Docs embed numeric claims like "11 commands, 80 tests" that become stale.
+
+**Examples found:**
+- DEVELOPMENT.md line 337: "11 commands" → Reality: 28 commands
+- DEVELOPMENT.md line 169, 338: "80+ tests" → Reality: 2120 tests
+- MASTER_PLAN.md line 4: "2104 tests" → Reality: 2120 tests
+
+**Implementation for `cihub docs stale`:**
+
+```python
+METRICS_PATTERNS = [
+    (r'(\d+)\s*(?:CLI\s+)?commands?', 'command_count'),
+    (r'(\d+)\s*tests?', 'test_count'),
+    (r'(\d+)\s*ADRs?', 'adr_count'),
+    (r'(\d+)\s*(?:doc(?:ument)?s?|files?)', 'doc_count'),
+]
+
+def get_actual_metrics() -> dict[str, int]:
+    """Get current metrics from authoritative sources."""
+    return {
+        'command_count': _count_cli_commands(),  # from cihub --help
+        'test_count': _count_pytest_tests(),      # from pytest --collect-only
+        'adr_count': len(list(Path('docs/adr').glob('0*.md'))),
+        'doc_count': len(list(Path('docs').rglob('*.md'))),
+    }
+
+def find_stale_metrics(doc_file: Path) -> list[MetricsDrift]:
+    """Find numeric claims that don't match reality."""
+    actual = get_actual_metrics()
+    stale = []
+    for line_num, line in enumerate(doc_file.read_text().splitlines(), 1):
+        for pattern, metric_key in METRICS_PATTERNS:
+            match = re.search(pattern, line, re.IGNORECASE)
+            if match:
+                claimed = int(match.group(1))
+                actual_val = actual.get(metric_key)
+                if actual_val and abs(claimed - actual_val) / actual_val > 0.1:  # >10% drift
+                    stale.append(MetricsDrift(
+                        file=doc_file, line=line_num,
+                        claimed=claimed, actual=actual_val,
+                        metric=metric_key
+                    ))
+    return stale
+```
+
+**Thresholds:**
+- Warn if drift > 10%
+- Error if drift > 50%
+- Always flag if claimed count is 0 but actual is non-zero
+
+---
+
+### S. Duplicate Task Detection in Planning Docs
+
+**Problem:** Same task appears multiple times in MASTER_PLAN.md, creating confusion.
+
+**Examples found:**
+- `cihub docs stale` appears at lines 63, 123, 395, 418 in MASTER_PLAN.md
+- `cihub docs audit` appears at lines 124, 126, 397, 424
+- TOOLS.md generation appears at lines 130, 355, 396
+
+**Implementation for `cihub docs audit`:**
+
+```python
+def find_duplicate_tasks(planning_docs: list[Path]) -> list[DuplicateTask]:
+    """Detect duplicate checklist items across planning docs."""
+    all_tasks = []
+    for doc in planning_docs:
+        for line_num, line in enumerate(doc.read_text().splitlines(), 1):
+            # Match checklist items: - [ ] Task or - [x] Task
+            match = re.match(r'^[-*]\s*\[([ x])\]\s*(.+)$', line.strip())
+            if match:
+                status, task_text = match.groups()
+                # Normalize: lowercase, strip backticks, collapse whitespace
+                normalized = re.sub(r'`[^`]+`', '', task_text.lower())
+                normalized = ' '.join(normalized.split())
+                all_tasks.append(TaskEntry(
+                    file=doc, line=line_num,
+                    text=task_text, normalized=normalized,
+                    completed=(status == 'x')
+                ))
+
+    # Group by normalized text (fuzzy match with 80% similarity)
+    duplicates = []
+    seen = {}
+    for task in all_tasks:
+        for existing_norm, existing_entries in seen.items():
+            if _similarity(task.normalized, existing_norm) > 0.8:
+                duplicates.append(DuplicateTask(
+                    task=task.text,
+                    locations=existing_entries + [task]
+                ))
+                break
+        else:
+            seen.setdefault(task.normalized, []).append(task)
+
+    return duplicates
+```
+
+**Consolidation suggestions:**
+- Keep canonical entry in §Quick Wins (for CLI features)
+- Remove duplicates from detailed sections
+- Add cross-reference: "See §Quick Wins line X"
+
+---
+
+### T. Timestamp Freshness Validation
+
+**Problem:** "Last Updated: YYYY-MM-DD" headers become stale.
+
+**Examples found:**
+- MASTER_PLAN.md: "Last Updated: 2026-01-05" but file modified after
+- CI_PARITY.md: "Last Verified: 2026-01-05" stale by 1+ day
+
+**Implementation for `cihub docs audit`:**
+
+```python
+HEADER_PATTERNS = [
+    r'\*\*Last Updated:\*\*\s*(\d{4}-\d{2}-\d{2})',
+    r'\*\*Last Verified:\*\*\s*(\d{4}-\d{2}-\d{2})',
+    r'\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})',
+    r'Last-reviewed:\s*(\d{4}-\d{2}-\d{2})',
+]
+
+def check_timestamp_freshness(
+    doc_file: Path,
+    warn_days: int = 7,
+    error_days: int = 30,
+) -> list[TimestampIssue]:
+    """Validate timestamp headers are fresh."""
+    issues = []
+    content = doc_file.read_text()
+    today = date.today()
+
+    for pattern in HEADER_PATTERNS:
+        match = re.search(pattern, content)
+        if match:
+            header_date = date.fromisoformat(match.group(1))
+            days_old = (today - header_date).days
+
+            if header_date > today:
+                issues.append(TimestampIssue(
+                    file=doc_file, severity='error',
+                    message=f"Future date in header: {header_date}"
+                ))
+            elif days_old > error_days:
+                issues.append(TimestampIssue(
+                    file=doc_file, severity='error',
+                    message=f"Header date {days_old} days old (> {error_days})"
+                ))
+            elif days_old > warn_days:
+                issues.append(TimestampIssue(
+                    file=doc_file, severity='warn',
+                    message=f"Header date {days_old} days old (> {warn_days})"
+                ))
+
+    return issues
+```
+
+**Configuration:**
+- `--warn-stale-days N` (default: 7)
+- `--error-stale-days N` (default: 30)
+- Skip check for archive/ docs (historical)
+
+---
+
+### U. Checklist vs Reality Consistency
+
+**Problem:** Checklist items marked `[ ]` when work is already done.
+
+**Examples found:**
+- CLEAN_CODE.md Part 2.1: "Extract Language Strategies" marked `[ ]` but `cihub/core/languages/` exists
+- MASTER_PLAN.md line 335: "Commit CLI helpers" marked `[ ]` but already committed
+- MASTER_PLAN.md line 352: "Move legacy docs to archive" marked `[ ]` but done
+
+**Implementation:**
+
+```python
+# Map checklist items to verification checks
+CHECKLIST_VERIFICATIONS = {
+    'extract language strategies': lambda: Path('cihub/core/languages/').exists(),
+    'implement cihub docs stale': lambda: 'stale' in _get_cli_subcommands('docs'),
+    'implement gatespec registry': lambda: Path('cihub/core/gate_specs.py').exists(),
+    'move legacy docs to archive': lambda: _archive_has_superseded_headers(),
+    'commit cli helpers': lambda: all(
+        Path(f'cihub/commands/{cmd}.py').exists()
+        for cmd in ['preflight', 'scaffold', 'smoke']
+    ),
+}
+
+def verify_checklists(design_docs: list[Path]) -> list[ChecklistMismatch]:
+    """Cross-reference checklist items against code reality."""
+    mismatches = []
+    for doc in design_docs:
+        for line_num, line in enumerate(doc.read_text().splitlines(), 1):
+            match = re.match(r'^[-*]\s*\[([ ])\]\s*(.+)$', line.strip())
+            if match:  # Unchecked item
+                task_text = match.group(2).lower()
+                for pattern, verifier in CHECKLIST_VERIFICATIONS.items():
+                    if pattern in task_text:
+                        if verifier():
+                            mismatches.append(ChecklistMismatch(
+                                file=doc, line=line_num,
+                                task=match.group(2),
+                                issue="Marked incomplete but implementation exists"
+                            ))
+    return mismatches
+```
+
+**Report format:**
+```
+CLEAN_CODE.md:35 - Task "Extract Language Strategies" marked [ ] but:
+  ✓ cihub/core/languages/ directory exists
+  ✓ Contains: base.py, python.py, java.py, registry.py
+  Suggestion: Mark as [x] or clarify remaining work
+```
+
+---
+
+### V. Hardcoded Placeholder Detection
+
+**Problem:** Docs contain hardcoded usernames, paths, or placeholder values.
+
+**Examples found:**
+- GETTING_STARTED.md: `jguida941/ci-cd-hub` (personal fork URL)
+- INTEGRATION_SMOKE_TEST.md: `jguida941/ci-cd-hub` as hub repo default
+
+**Implementation:**
+
+```python
+PLACEHOLDER_PATTERNS = [
+    # GitHub usernames in URLs (not matching CODEOWNERS)
+    (r'github\.com/([a-zA-Z0-9_-]+)/', 'github_username'),
+    # Common placeholder markers
+    (r'\b(YOUR_[A-Z_]+|CHANGE_ME|TODO:|FIXME:|XXX:)\b', 'placeholder_marker'),
+    # Hardcoded local paths
+    (r'(/Users/[^/\s]+|/home/[^/\s]+|C:\\Users\\[^\\]+)', 'local_path'),
+    # Hardcoded IPs (except localhost)
+    (r'\b(?!127\.0\.0\.1)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b', 'ip_address'),
+]
+
+def find_placeholders(
+    doc_file: Path,
+    expected_usernames: set[str] | None = None,
+) -> list[PlaceholderIssue]:
+    """Detect hardcoded placeholders that may need updating."""
+    if expected_usernames is None:
+        expected_usernames = _get_codeowners_usernames()
+
+    issues = []
+    for line_num, line in enumerate(doc_file.read_text().splitlines(), 1):
+        for pattern, issue_type in PLACEHOLDER_PATTERNS:
+            for match in re.finditer(pattern, line):
+                value = match.group(1)
+                # Skip if it's an expected value
+                if issue_type == 'github_username' and value in expected_usernames:
+                    continue
+                issues.append(PlaceholderIssue(
+                    file=doc_file, line=line_num,
+                    value=value, issue_type=issue_type,
+                    severity='warn',  # May be intentional examples
+                    message=f"Possible placeholder: {value}"
+                ))
+    return issues
+```
+
+**Severity:**
+- `warn` for usernames (may be intentional examples)
+- `error` for TODO:/FIXME: in non-dev docs
+- `warn` for local paths
+
+---
+
+### W. Cross-Document Consistency Validation
+
+**Problem:** Same facts appear differently across multiple docs.
+
+**Examples found:**
+- Test count: STATUS.md says "2120", MASTER_PLAN says "2104", DEVELOPMENT.md says "80+"
+- ADR count: STATUS.md says "37", adr/README.md lists 44 files
+- Command count: DEVELOPMENT.md says "11", reality is "28"
+
+**Implementation for `cihub docs audit`:**
+
+```python
+# Define canonical sources for each metric
+CANONICAL_SOURCES = {
+    'test_count': ('pytest --collect-only', r'(\d+) items?'),
+    'command_count': ('cihub --help', lambda output: len(_parse_commands(output))),
+    'adr_count': ('glob', lambda: len(list(Path('docs/adr').glob('0*.md')))),
+}
+
+# Define docs that claim these metrics
+DOCS_WITH_METRICS = {
+    'test_count': [
+        'docs/development/status/STATUS.md',
+        'docs/development/MASTER_PLAN.md',
+        'docs/development/DEVELOPMENT.md',
+    ],
+    'command_count': [
+        'docs/development/DEVELOPMENT.md',
+        'AGENTS.md',
+    ],
+    'adr_count': [
+        'docs/development/status/STATUS.md',
+        'docs/adr/README.md',
+    ],
+}
+
+def validate_cross_doc_consistency() -> list[ConsistencyIssue]:
+    """Validate same facts appear identically across docs."""
+    issues = []
+
+    for metric, doc_paths in DOCS_WITH_METRICS.items():
+        canonical = _get_canonical_value(metric)
+
+        for doc_path in doc_paths:
+            doc = Path(doc_path)
+            if not doc.exists():
+                continue
+
+            claimed = _extract_metric_from_doc(doc, metric)
+            if claimed and claimed != canonical:
+                issues.append(ConsistencyIssue(
+                    metric=metric,
+                    file=doc,
+                    claimed=claimed,
+                    canonical=canonical,
+                    message=f"{doc.name} claims {metric}={claimed} but canonical is {canonical}"
+                ))
+
+    return issues
+```
+
+**Output format:**
+```
+Cross-Document Consistency Report
+=================================
+test_count (canonical: 2120 from pytest):
+  ✓ STATUS.md: 2120 (matches)
+  ✗ MASTER_PLAN.md: 2104 (drift: -16)
+  ✗ DEVELOPMENT.md: 80 (drift: -2040)
+
+Suggestion: Update MASTER_PLAN.md line 4 and DEVELOPMENT.md lines 169, 337, 338
+```
+
+---
+
+### X. CHANGELOG Format Validation
+
+**Problem:** CHANGELOG has formatting issues.
+
+**Examples found:**
+- Two 2026-01-05 entries out of chronological order
+- Missing section separators between some entries
+- Inconsistent capitalization in headers
+
+**Implementation:**
+
+```python
+def validate_changelog(changelog_path: Path) -> list[ChangelogIssue]:
+    """Validate CHANGELOG format and ordering."""
+    issues = []
+    content = changelog_path.read_text()
+
+    # Extract date headers
+    date_pattern = r'^## (\d{4}-\d{2}-\d{2})'
+    dates_found = []
+    for line_num, line in enumerate(content.splitlines(), 1):
+        match = re.match(date_pattern, line)
+        if match:
+            dates_found.append((line_num, match.group(1)))
+
+    # Check chronological order (most recent first)
+    for i in range(len(dates_found) - 1):
+        curr_line, curr_date = dates_found[i]
+        next_line, next_date = dates_found[i + 1]
+        if curr_date < next_date:
+            issues.append(ChangelogIssue(
+                line=curr_line,
+                severity='error',
+                message=f"Out of order: {curr_date} appears before {next_date}"
+            ))
+
+    # Check for duplicate dates (may be intentional but flag)
+    date_counts = Counter(d for _, d in dates_found)
+    for date, count in date_counts.items():
+        if count > 1:
+            issues.append(ChangelogIssue(
+                severity='warn',
+                message=f"Date {date} appears {count} times - consider merging"
+            ))
+
+    # Check separator consistency
+    # ... additional format checks
+
+    return issues
+```
+
+**Checks performed:**
+- Chronological ordering (most recent first)
+- Duplicate date detection
+- Section separator presence
+- Keep a Changelog format compliance (optional)
+- Version number format (if using semantic versioning)
+
+---
+
+### Y. Checklist Reference
+
+> **Note:** All Part 13 items are now consolidated in the **Working Checklists** at the top of this document (Checklist C: Metrics & Consistency). Update items there, not here.
+
+---
+
+### Z. Priority Matrix for Part 13 Features
+
+| Feature | Priority | Effort | Value | Dependency |
+|---------|----------|--------|-------|------------|
+| Cross-doc consistency (W) | 🔴 High | Medium | High | None |
+| Metrics drift (R) | 🔴 High | Low | High | CLI introspection |
+| Checklist-reality (U) | 🟡 Medium | Medium | Medium | File system checks |
+| Timestamp freshness (T) | 🟡 Medium | Low | Medium | None |
+| Duplicate detection (S) | 🟡 Medium | Medium | Medium | None |
+| CHANGELOG validation (X) | 🟢 Low | Low | Low | None |
+| Placeholder detection (V) | 🟢 Low | Low | Low | CODEOWNERS parsing |
+
+**Recommended implementation order:**
+1. Metrics drift (R) — Quick win, high value
+2. Cross-doc consistency (W) — Catches most audit findings
+3. Timestamp freshness (T) — Simple, prevents stale headers
+4. Checklist-reality (U) — Useful for design doc hygiene
+5. Duplicate detection (S) — Helps consolidate MASTER_PLAN
+6. CHANGELOG validation (X) — Polish
+7. Placeholder detection (V) — Nice-to-have
+
+---
+
 ## Sources
 
 - [Git documentation on diff](https://git-scm.com/docs/git-diff)
@@ -1163,3 +1583,5 @@ Optional integration improvement (Phase 2+):
 - [Sphinx AutoAPI for docstring extraction](https://github.com/readthedocs/sphinx-autoapi)
 - [Python ast module](https://docs.python.org/3/library/ast.html)
 - [docstr-coverage for docstring analysis](https://pypi.org/project/docstr-coverage/)
+- [Keep a Changelog](https://keepachangelog.com/) - CHANGELOG format standard
+- [8-agent documentation audit](2026-01-06) - Source of Part 13 findings

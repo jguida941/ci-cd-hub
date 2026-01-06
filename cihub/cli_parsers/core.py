@@ -243,18 +243,20 @@ def add_core_commands(
         action="store_true",
         help="Skip writing summary.md file",
     )
-    ci.add_argument(
+    github_summary_group = ci.add_mutually_exclusive_group()
+    github_summary_group.add_argument(
         "--write-github-summary",
         action="store_true",
-        default=None,
+        dest="write_github_summary",
         help="Write summary to GITHUB_STEP_SUMMARY if set (overrides config)",
     )
-    ci.add_argument(
+    github_summary_group.add_argument(
         "--no-write-github-summary",
         dest="write_github_summary",
         action="store_false",
         help="Do not write summary to GITHUB_STEP_SUMMARY (overrides config)",
     )
+    ci.set_defaults(write_github_summary=None)
     ci.set_defaults(func=handlers.cmd_ci)
 
     run = subparsers.add_parser("run", help="Run one tool and emit JSON output")

@@ -234,8 +234,7 @@ class JavaStrategy(LanguageStrategy):
         workdir_path: Path,
     ) -> dict[str, Any]:
         """Java adds build_tool and project_type to context."""
-        # Import here to avoid circular dependencies
-        from cihub.services.ci_engine.helpers import _detect_java_project_type
+        from cihub.utils import detect_java_project_type
 
         # Get build_tool from config, default to maven
         build_tool = config.get("java", {}).get("build_tool", "maven").strip().lower() or "maven"
@@ -244,5 +243,5 @@ class JavaStrategy(LanguageStrategy):
 
         return {
             "build_tool": build_tool,
-            "project_type": _detect_java_project_type(workdir_path),
+            "project_type": detect_java_project_type(workdir_path),
         }

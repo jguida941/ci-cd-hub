@@ -61,11 +61,11 @@ class TestGetRepoName:
         assert result == "myorg/myrepo"
 
     def test_parses_from_git_remote(self, tmp_path: Path) -> None:
-        # Patch at helpers module where functions are looked up
+        # Patch at utils.project module where get_repo_name is defined
         with (
             patch.dict(os.environ, {}, clear=True),
-            patch("cihub.commands.report.helpers.get_git_remote") as mock_remote,
-            patch("cihub.commands.report.helpers.parse_repo_from_remote") as mock_parse,
+            patch("cihub.utils.project.get_git_remote") as mock_remote,
+            patch("cihub.utils.project.parse_repo_from_remote") as mock_parse,
         ):
             os.environ.pop("GITHUB_REPOSITORY", None)
             mock_remote.return_value = "git@github.com:parsed/repo.git"
@@ -74,10 +74,10 @@ class TestGetRepoName:
         assert result == "parsed/repo"
 
     def test_returns_empty_when_no_info(self, tmp_path: Path) -> None:
-        # Patch at helpers module where function is looked up
+        # Patch at utils.project module where get_repo_name is defined
         with (
             patch.dict(os.environ, {}, clear=True),
-            patch("cihub.commands.report.helpers.get_git_remote") as mock_remote,
+            patch("cihub.utils.project.get_git_remote") as mock_remote,
         ):
             os.environ.pop("GITHUB_REPOSITORY", None)
             mock_remote.return_value = None
@@ -316,7 +316,8 @@ class TestCmdReportOutputs:
         assert result.exit_code == EXIT_FAILURE
         assert "Failed to read report" in result.summary
 
-    def test_text_mode_prints_output(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_outputs_returns_files_generated(self, tmp_path: Path) -> None:
+        """Test outputs subcommand returns files_generated in CommandResult."""
         report_path = tmp_path / "report.json"
         report_path.write_text(json.dumps({"results": {"build": "success"}}))
         output_path = tmp_path / "outputs.txt"
@@ -329,9 +330,9 @@ class TestCmdReportOutputs:
         )
         result = cmd_report(args)
 
-        captured = capsys.readouterr()
-        assert "Wrote outputs" in captured.out
-        assert result == EXIT_SUCCESS
+        assert result.exit_code == EXIT_SUCCESS
+        assert result.files_generated is not None
+        assert str(output_path) in result.files_generated
 
 
 class TestCmdReportSummary:
@@ -358,7 +359,8 @@ class TestCmdReportSummary:
         assert result.exit_code == EXIT_SUCCESS
         assert output_path.read_text() == "# Summary\nAll passed!"
 
-    def test_prints_summary_when_no_output(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_returns_summary_in_result_when_no_output(self, tmp_path: Path) -> None:
+        """When no output file, summary text is returned in CommandResult.data for rendering."""
         report_path = tmp_path / "report.json"
         report_path.write_text(json.dumps({}))
 
@@ -374,9 +376,9 @@ class TestCmdReportSummary:
             mock_render.return_value = "Summary text"
             result = cmd_report(args)
 
-        captured = capsys.readouterr()
-        assert "Summary text" in captured.out
-        assert result == EXIT_SUCCESS
+        assert result.exit_code == EXIT_SUCCESS
+        assert result.data is not None
+        assert result.data.get("raw_output") == "Summary text"
 
     def test_writes_to_github_step_summary(self, tmp_path: Path) -> None:
         report_path = tmp_path / "report.json"
@@ -525,7 +527,7 @@ class TestCmdReportBuild:
         assert result.exit_code == EXIT_USAGE
         assert "Unknown report subcommand" in result.summary
 
-    def test_text_mode_prints_paths(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_build_returns_files_generated(self, tmp_path: Path) -> None:
         tool_dir = tmp_path / "tool-outputs"
         tool_dir.mkdir()
 
@@ -552,7 +554,7 @@ class TestCmdReportBuild:
             mock_render.return_value = ""
             result = cmd_report(args)
 
-        captured = capsys.readouterr()
-        assert "Wrote report" in captured.out
-        assert "Wrote summary" in captured.out
-        assert result == EXIT_SUCCESS
+        assert result.exit_code == EXIT_SUCCESS
+        assert result.files_generated is not None
+        assert any("report.json" in f for f in result.files_generated)
+        assert any("summary.md" in f for f in result.files_generated)

@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
+
+import yaml
 
 from cihub.ci_config import load_ci_config
 from cihub.config.io import load_yaml_file
@@ -16,85 +17,125 @@ from cihub.utils import collect_java_dependency_warnings, collect_java_pom_warni
 from cihub.utils.paths import hub_root
 
 
-def cmd_validate(args: argparse.Namespace) -> int | CommandResult:
+def cmd_validate(args: argparse.Namespace) -> CommandResult:
+    """Validate CI-Hub configuration.
+
+    Always returns CommandResult for consistent output handling.
+    """
     repo_path = Path(args.repo).resolve()
     config_path = repo_path / ".ci-hub.yml"
-    json_mode = getattr(args, "json", False)
+    items: list[str] = []  # Human-readable output
+    problems: list[dict[str, str]] = []
+
     if not config_path.exists():
         message = f"Config not found: {config_path}"
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_USAGE,
-                summary=message,
-                problems=[
-                    {
-                        "severity": "error",
-                        "message": message,
-                        "code": "CIHUB-VALIDATE-001",
-                        "file": str(config_path),
-                    }
-                ],
-            )
-        print(message, file=sys.stderr)
-        return EXIT_USAGE
-    config = load_yaml_file(config_path)
-    paths = PathConfig(str(hub_root()))
-    errors = validate_config_schema(config, paths)
-    if errors:
-        if json_mode:
-            problems = [
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[
                 {
                     "severity": "error",
-                    "message": err,
-                    "code": "CIHUB-VALIDATE-002",
+                    "message": message,
+                    "code": "CIHUB-VALIDATE-001",
                     "file": str(config_path),
                 }
-                for err in errors
-            ]
-            return CommandResult(
-                exit_code=EXIT_FAILURE,
-                summary="Validation failed",
-                problems=problems,
-            )
-        print("Validation failed:")
+            ],
+        )
+
+    # Try to load and parse the YAML file
+    try:
+        config = load_yaml_file(config_path)
+    except yaml.YAMLError as exc:
+        message = f"YAML parse error: {exc}"
+        items.append(message)
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="Invalid YAML syntax",
+            problems=[
+                {
+                    "severity": "error",
+                    "message": message,
+                    "code": "CIHUB-VALIDATE-003",
+                    "file": str(config_path),
+                }
+            ],
+            data={"items": items},
+        )
+    except ValueError as exc:
+        # load_yaml_file raises ValueError if root is not a dict
+        message = str(exc)
+        items.append(message)
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="Invalid config structure",
+            problems=[
+                {
+                    "severity": "error",
+                    "message": message,
+                    "code": "CIHUB-VALIDATE-004",
+                    "file": str(config_path),
+                }
+            ],
+            data={"items": items},
+        )
+    paths = PathConfig(str(hub_root()))
+    errors = validate_config_schema(config, paths)
+
+    if errors:
+        validation_problems = [
+            {
+                "severity": "error",
+                "message": err,
+                "code": "CIHUB-VALIDATE-002",
+                "file": str(config_path),
+            }
+            for err in errors
+        ]
+        items.append("Validation failed:")
         for err in errors:
-            print(f"  - {err}")
-        return EXIT_FAILURE
-    if not json_mode:
-        print("Config OK")
+            items.append(f"  - {err}")
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="Validation failed",
+            problems=validation_problems,
+            data={"items": items},
+        )
+
+    items.append("Config OK")
     effective = load_ci_config(repo_path)
+
     if effective.get("language") == "java":
         pom_warnings, _ = collect_java_pom_warnings(repo_path, effective)
         dep_warnings, _ = collect_java_dependency_warnings(repo_path, effective)
         warnings = pom_warnings + dep_warnings
         if warnings:
-            if json_mode:
-                problems = [
-                    {
-                        "severity": "warning",
-                        "message": warning,
-                        "code": "CIHUB-POM-001",
-                        "file": str(repo_path / "pom.xml"),
-                    }
-                    for warning in warnings
-                ]
-                return CommandResult(
-                    exit_code=EXIT_FAILURE if args.strict else EXIT_SUCCESS,
-                    summary="POM warnings found",
-                    problems=problems,
-                )
-            print("POM warnings:")
+            pom_problems = [
+                {
+                    "severity": "warning",
+                    "message": warning,
+                    "code": "CIHUB-POM-001",
+                    "file": str(repo_path / "pom.xml"),
+                }
+                for warning in warnings
+            ]
+            problems.extend(pom_problems)
+            items.append("POM warnings:")
             for warning in warnings:
-                print(f"  - {warning}")
-            if args.strict:
-                return EXIT_FAILURE
+                items.append(f"  - {warning}")
+            exit_code = EXIT_FAILURE if args.strict else EXIT_SUCCESS
+            summary = "POM warnings found"
+            return CommandResult(
+                exit_code=exit_code,
+                summary=summary,
+                problems=problems,
+                data={"language": effective.get("language"), "items": items},
+            )
         else:
-            if not json_mode:
-                print("POM OK")
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary="Config OK",
-            data={"language": effective.get("language")},
-        )
-    return EXIT_SUCCESS
+            items.append("POM OK")
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="Config OK",
+        problems=problems,
+        data={"language": effective.get("language"), "items": items},
+    )

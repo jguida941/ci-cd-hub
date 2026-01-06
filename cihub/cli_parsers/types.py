@@ -11,7 +11,7 @@ from cihub.types import CommandResult
 CommandHandler = Callable[[argparse.Namespace], int | CommandResult]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class CommandHandlers:
     cmd_detect: CommandHandler
     cmd_preflight: CommandHandler

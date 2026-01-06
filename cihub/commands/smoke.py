@@ -284,7 +284,7 @@ def _run_case(
                 debug=False,
                 json=True,
             )
-            validate_report_result = _as_command_result(_validate_report(validate_report_args, json_mode=True))
+            validate_report_result = _validate_report(validate_report_args)
             steps.append(
                 SmokeStep(
                     name="report-validate",
@@ -306,36 +306,33 @@ def _resolve_types(args: argparse.Namespace) -> list[str]:
     return DEFAULT_TYPES
 
 
-def cmd_smoke(args: argparse.Namespace) -> int | CommandResult:
-    json_mode = getattr(args, "json", False)
+def cmd_smoke(args: argparse.Namespace) -> CommandResult:
+    """Run smoke tests on repositories.
 
+    Always returns CommandResult for consistent output handling.
+    """
     if args.repo and (args.all or args.type):
         message = "--type/--all cannot be used with a repo path"
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_USAGE,
-                summary=message,
-                problems=[{"severity": "error", "message": message}],
-            )
-        print(message)
-        return EXIT_USAGE
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message}],
+        )
 
     cases: list[SmokeCase] = []
     temp_dir: Path | None = None
+    temp_dir_ctx: tempfile.TemporaryDirectory[str] | None = None  # Managed resource
 
     if args.repo:
         try:
             repo_path = validate_repo_path(Path(args.repo))
         except ValueError as exc:
             message = str(exc)
-            if json_mode:
-                return CommandResult(
-                    exit_code=EXIT_USAGE,
-                    summary=message,
-                    problems=[{"severity": "error", "message": message}],
-                )
-            print(message)
-            return EXIT_USAGE
+            return CommandResult(
+                exit_code=EXIT_USAGE,
+                summary=message,
+                problems=[{"severity": "error", "message": message}],
+            )
         cases.append(
             SmokeCase(
                 name=repo_path.name,
@@ -348,17 +345,15 @@ def cmd_smoke(args: argparse.Namespace) -> int | CommandResult:
         unknown = [name for name in types if name not in SCAFFOLD_TYPES]
         if unknown:
             message = f"Unknown fixture type(s): {', '.join(unknown)}"
-            if json_mode:
-                return CommandResult(
-                    exit_code=EXIT_USAGE,
-                    summary=message,
-                    problems=[{"severity": "error", "message": message}],
-                )
-            print(message)
-            return EXIT_USAGE
+            return CommandResult(
+                exit_code=EXIT_USAGE,
+                summary=message,
+                problems=[{"severity": "error", "message": message}],
+            )
         if args.keep:
             temp_dir = Path(tempfile.mkdtemp(prefix="cihub-smoke-"))
         else:
+            # Keep reference to context manager for cleanup
             temp_dir_ctx = tempfile.TemporaryDirectory(prefix="cihub-smoke-")
             temp_dir = Path(temp_dir_ctx.name)
         for fixture_type in types:
@@ -388,6 +383,7 @@ def cmd_smoke(args: argparse.Namespace) -> int | CommandResult:
                 )
 
     results: list[dict[str, Any]] = []
+    items: list[str] = []  # Human-readable output
     failures = 0
 
     for case in cases:
@@ -418,35 +414,40 @@ def cmd_smoke(args: argparse.Namespace) -> int | CommandResult:
                 ],
             }
         )
-        if not json_mode:
-            status = "OK" if success else "FAIL"
-            print(f"[{status}] {case.name}")
-            for step in steps:
-                step_status = "OK" if step.exit_code == 0 else "FAIL"
-                print(f"  - {step_status} {step.name}: {step.summary}")
+        # Collect human-readable output
+        status = "OK" if success else "FAIL"
+        items.append(f"[{status}] {case.name}")
+        for step in steps:
+            step_status = "OK" if step.exit_code == 0 else "FAIL"
+            items.append(f"  - {step_status} {step.name}: {step.summary}")
 
-    if not json_mode and temp_dir and args.keep:
-        print(f"Fixtures preserved at: {temp_dir}")
+    if temp_dir and args.keep:
+        items.append(f"Fixtures preserved at: {temp_dir}")
 
     exit_code = EXIT_FAILURE if failures else EXIT_SUCCESS
     summary = "Smoke test failed" if failures else "Smoke test OK"
 
-    if json_mode:
-        return CommandResult(
-            exit_code=exit_code,
-            summary=summary,
-            data={
-                "cases": results,
-                "fixtures_root": str(temp_dir) if temp_dir else None,
-                "full": bool(args.full),
-            },
-        )
+    # Clean up temporary directory if not keeping
+    if temp_dir_ctx is not None:
+        temp_dir_ctx.cleanup()
 
-    return exit_code
+    return CommandResult(
+        exit_code=exit_code,
+        summary=summary,
+        data={
+            "cases": results,
+            "fixtures_root": str(temp_dir) if temp_dir else None,
+            "full": bool(args.full),
+            "items": items,
+        },
+    )
 
 
-def cmd_smoke_validate(args: argparse.Namespace) -> int | CommandResult:
-    json_mode = getattr(args, "json", False)
+def cmd_smoke_validate(args: argparse.Namespace) -> CommandResult:
+    """Validate smoke test results.
+
+    Always returns CommandResult for consistent output handling.
+    """
     failures: list[str] = []
 
     if args.count is not None and args.count < args.min_count:
@@ -456,17 +457,17 @@ def cmd_smoke_validate(args: argparse.Namespace) -> int | CommandResult:
         failures.append("Smoke test failed - check job results")
 
     if failures:
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_FAILURE,
-                summary=failures[0],
-                problems=[{"severity": "error", "message": msg} for msg in failures],
-            )
-        for msg in failures:
-            print(f"::error::{msg}")
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=failures[0],
+            problems=[{"severity": "error", "message": msg} for msg in failures],
+            data={
+                "items": [f"::error::{msg}" for msg in failures],  # GitHub Actions format
+            },
+        )
 
-    if json_mode:
-        return CommandResult(exit_code=EXIT_SUCCESS, summary="Smoke validation passed")
-    print("Smoke validation passed.")
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="Smoke validation passed",
+        data={"items": ["Smoke validation passed."]},
+    )

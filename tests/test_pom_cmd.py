@@ -11,6 +11,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from cihub.commands.pom import cmd_fix_deps, cmd_fix_pom  # noqa: E402
+from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE  # noqa: E402
+from cihub.types import CommandResult  # noqa: E402
 
 
 def write_ci_hub_config(path: Path, language: str = "java", build_tool: str = "maven") -> None:
@@ -49,15 +51,15 @@ def write_pom(path: Path, body: str) -> None:
 class TestCmdFixPom:
     """Tests for the fix-pom command."""
 
-    def test_fix_pom_missing_config(self, tmp_path: Path, capsys) -> None:
+    def test_fix_pom_missing_config(self, tmp_path: Path) -> None:
         """fix-pom returns error when .ci-hub.yml is missing."""
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_pom(args)
-        assert result == 2
-        captured = capsys.readouterr()
-        assert "Config not found" in captured.err
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_USAGE
+        assert "Config not found" in result.summary
 
-    def test_fix_pom_non_java_repo(self, tmp_path: Path, capsys) -> None:
+    def test_fix_pom_non_java_repo(self, tmp_path: Path) -> None:
         """fix-pom exits gracefully for non-Java repos."""
         config = """
 repo:
@@ -74,11 +76,11 @@ python:
         (tmp_path / ".ci-hub.yml").write_text(config, encoding="utf-8")
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_pom(args)
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "fix-pom is only supported for Java repos" in captured.out
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
+        assert "fix-pom is only supported for Java repos" in result.summary
 
-    def test_fix_pom_gradle_repo(self, tmp_path: Path, capsys) -> None:
+    def test_fix_pom_gradle_repo(self, tmp_path: Path) -> None:
         """fix-pom exits gracefully for Gradle repos."""
         config = """
 repo:
@@ -96,11 +98,11 @@ java:
         (tmp_path / ".ci-hub.yml").write_text(config, encoding="utf-8")
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_pom(args)
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "fix-pom only supports Maven repos" in captured.out
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
+        assert "fix-pom only supports Maven repos" in result.summary
 
-    def test_fix_pom_dry_run_shows_diff(self, tmp_path: Path, capsys) -> None:
+    def test_fix_pom_dry_run_shows_diff(self, tmp_path: Path) -> None:
         """fix-pom in dry-run mode shows diff without modifying file."""
         write_ci_hub_config(tmp_path)
         pom_path = tmp_path / "pom.xml"
@@ -119,16 +121,17 @@ java:
 
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_pom(args)
-        assert result == 0
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
 
         # File should NOT be modified in dry-run
         assert pom_path.read_text(encoding="utf-8") == original_content
 
-        captured = capsys.readouterr()
-        # Should show diff output
-        assert "---" in captured.out or "+++" in captured.out or "jacoco" in captured.out.lower()
+        # Should show diff output in raw_output
+        raw_output = result.data.get("raw_output", "")
+        assert "---" in raw_output or "+++" in raw_output or "jacoco" in raw_output.lower()
 
-    def test_fix_pom_apply_modifies_file(self, tmp_path: Path, capsys) -> None:
+    def test_fix_pom_apply_modifies_file(self, tmp_path: Path) -> None:
         """fix-pom with --apply modifies pom.xml."""
         write_ci_hub_config(tmp_path)
         pom_path = tmp_path / "pom.xml"
@@ -146,16 +149,17 @@ java:
 
         args = argparse.Namespace(repo=str(tmp_path), apply=True)
         result = cmd_fix_pom(args)
-        assert result == 0
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
 
         # File SHOULD be modified
         updated_content = pom_path.read_text(encoding="utf-8")
         assert "<artifactId>jacoco-maven-plugin</artifactId>" in updated_content
 
-        captured = capsys.readouterr()
-        assert "pom.xml updated" in captured.out
+        items = result.data.get("items", [])
+        assert any("pom.xml updated" in item for item in items)
 
-    def test_fix_pom_no_changes_needed(self, tmp_path: Path, capsys) -> None:
+    def test_fix_pom_no_changes_needed(self, tmp_path: Path) -> None:
         """fix-pom reports no changes when plugins already present."""
         config = """
 repo:
@@ -196,20 +200,21 @@ java:
 
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_pom(args)
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "No pom.xml changes needed" in captured.out
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
+        items = result.data.get("items", [])
+        assert any("No pom.xml changes needed" in item for item in items)
 
-    def test_fix_pom_missing_pom_file(self, tmp_path: Path, capsys) -> None:
+    def test_fix_pom_missing_pom_file(self, tmp_path: Path) -> None:
         """fix-pom returns error when pom.xml is missing."""
         write_ci_hub_config(tmp_path)
         # No pom.xml created
 
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_pom(args)
-        assert result == 1
-        captured = capsys.readouterr()
-        assert "pom.xml not found" in captured.err
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_FAILURE
+        assert any("pom.xml not found" in p.get("message", "") for p in result.problems)
 
 
 # ==============================================================================
@@ -220,15 +225,15 @@ java:
 class TestCmdFixDeps:
     """Tests for the fix-deps command."""
 
-    def test_fix_deps_missing_config(self, tmp_path: Path, capsys) -> None:
+    def test_fix_deps_missing_config(self, tmp_path: Path) -> None:
         """fix-deps returns error when .ci-hub.yml is missing."""
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_deps(args)
-        assert result == 2
-        captured = capsys.readouterr()
-        assert "Config not found" in captured.err
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_USAGE
+        assert "Config not found" in result.summary
 
-    def test_fix_deps_non_java_repo(self, tmp_path: Path, capsys) -> None:
+    def test_fix_deps_non_java_repo(self, tmp_path: Path) -> None:
         """fix-deps exits gracefully for non-Java repos."""
         config = """
 repo:
@@ -245,11 +250,11 @@ python:
         (tmp_path / ".ci-hub.yml").write_text(config, encoding="utf-8")
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_deps(args)
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "fix-deps is only supported for Java repos" in captured.out
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
+        assert "fix-deps is only supported for Java repos" in result.summary
 
-    def test_fix_deps_gradle_repo(self, tmp_path: Path, capsys) -> None:
+    def test_fix_deps_gradle_repo(self, tmp_path: Path) -> None:
         """fix-deps exits gracefully for Gradle repos."""
         config = """
 repo:
@@ -267,11 +272,11 @@ java:
         (tmp_path / ".ci-hub.yml").write_text(config, encoding="utf-8")
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_deps(args)
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "fix-deps only supports Maven repos" in captured.out
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
+        assert "fix-deps only supports Maven repos" in result.summary
 
-    def test_fix_deps_dry_run_shows_diff(self, tmp_path: Path, capsys) -> None:
+    def test_fix_deps_dry_run_shows_diff(self, tmp_path: Path) -> None:
         """fix-deps in dry-run mode shows diff without modifying file."""
         write_ci_hub_config(tmp_path)
         pom_path = tmp_path / "pom.xml"
@@ -298,16 +303,19 @@ java:
 
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_deps(args)
-        assert result == 0
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
 
         # File should NOT be modified in dry-run
         assert pom_path.read_text(encoding="utf-8") == original_content
 
-        captured = capsys.readouterr()
-        # Should show diff output or warning about jqwik
-        assert "---" in captured.out or "jqwik" in captured.out.lower()
+        # Should show diff output or warning about jqwik in raw_output or items
+        raw_output = result.data.get("raw_output", "")
+        items = result.data.get("items", [])
+        combined = raw_output + " ".join(items)
+        assert "---" in combined or "jqwik" in combined.lower()
 
-    def test_fix_deps_apply_modifies_file(self, tmp_path: Path, capsys) -> None:
+    def test_fix_deps_apply_modifies_file(self, tmp_path: Path) -> None:
         """fix-deps with --apply modifies pom.xml."""
         write_ci_hub_config(tmp_path)
         pom_path = tmp_path / "pom.xml"
@@ -333,16 +341,17 @@ java:
 
         args = argparse.Namespace(repo=str(tmp_path), apply=True)
         result = cmd_fix_deps(args)
-        assert result == 0
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
 
         # File SHOULD be modified
         updated_content = pom_path.read_text(encoding="utf-8")
         assert "<artifactId>jqwik</artifactId>" in updated_content
 
-        captured = capsys.readouterr()
-        assert "updated" in captured.out
+        items = result.data.get("items", [])
+        assert any("updated" in item for item in items)
 
-    def test_fix_deps_no_changes_needed(self, tmp_path: Path, capsys) -> None:
+    def test_fix_deps_no_changes_needed(self, tmp_path: Path) -> None:
         """fix-deps reports no changes when dependencies already present."""
         config = """
 repo:
@@ -373,9 +382,10 @@ java:
 
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_deps(args)
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "No dependency changes needed" in captured.out
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
+        items = result.data.get("items", [])
+        assert any("No dependency changes needed" in item for item in items)
 
 
 # ==============================================================================
@@ -386,7 +396,7 @@ java:
 class TestPomCommandsEdgeCases:
     """Edge case tests for pom commands."""
 
-    def test_fix_pom_with_subdir(self, tmp_path: Path, capsys) -> None:
+    def test_fix_pom_with_subdir(self, tmp_path: Path) -> None:
         """fix-pom handles subdir config correctly."""
         subdir = "services/backend"
         (tmp_path / subdir).mkdir(parents=True)
@@ -422,12 +432,13 @@ java:
 
         args = argparse.Namespace(repo=str(tmp_path), apply=True)
         result = cmd_fix_pom(args)
-        assert result == 0
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
 
         updated_content = pom_path.read_text(encoding="utf-8")
         assert "<artifactId>jacoco-maven-plugin</artifactId>" in updated_content
 
-    def test_fix_pom_invalid_xml(self, tmp_path: Path, capsys) -> None:
+    def test_fix_pom_invalid_xml(self, tmp_path: Path) -> None:
         """fix-pom handles invalid XML gracefully."""
         write_ci_hub_config(tmp_path)
         pom_path = tmp_path / "pom.xml"
@@ -435,12 +446,13 @@ java:
 
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_pom(args)
-        # Should return error or show warning
-        captured = capsys.readouterr()
-        # Invalid XML should trigger a warning
-        assert result != 0 or "Invalid pom.xml" in captured.out or "warning" in captured.out.lower()
+        assert isinstance(result, CommandResult)
+        # Invalid XML should trigger a warning or non-zero exit
+        items = result.data.get("items", [])
+        combined = " ".join(items)
+        assert result.exit_code != EXIT_SUCCESS or "Invalid pom.xml" in combined or "warning" in combined.lower()
 
-    def test_fix_deps_multi_module_project(self, tmp_path: Path, capsys) -> None:
+    def test_fix_deps_multi_module_project(self, tmp_path: Path) -> None:
         """fix-deps handles multi-module Maven projects."""
         write_ci_hub_config(tmp_path)
 
@@ -483,7 +495,8 @@ java:
 
         args = argparse.Namespace(repo=str(tmp_path), apply=True)
         result = cmd_fix_deps(args)
-        assert result == 0
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
 
         # Module pom should be updated with jqwik dependency
         updated_content = module_pom.read_text(encoding="utf-8")
@@ -508,19 +521,21 @@ java:
         # Use the actual path (not relative)
         args = argparse.Namespace(repo=str(tmp_path), apply=True)
         result = cmd_fix_pom(args)
-        assert result == 0
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
 
-    def test_fix_deps_missing_pom_no_error_for_missing_file(self, tmp_path: Path, capsys) -> None:
+    def test_fix_deps_missing_pom_no_error_for_missing_file(self, tmp_path: Path) -> None:
         """fix-deps returns no error when pom.xml is missing (unlike fix-pom)."""
         write_ci_hub_config(tmp_path)
         # No pom.xml created
 
         args = argparse.Namespace(repo=str(tmp_path), apply=False)
         result = cmd_fix_deps(args)
+        assert isinstance(result, CommandResult)
         # fix-deps just reports no changes needed when pom missing
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "No dependency changes needed" in captured.out
+        assert result.exit_code == EXIT_SUCCESS
+        items = result.data.get("items", [])
+        assert any("No dependency changes needed" in item for item in items)
 
 
 # ==============================================================================

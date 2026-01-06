@@ -59,6 +59,7 @@ def _run_codecov_upload(
         text=True,
         capture_output=True,
         check=False,
+        timeout=120,
     )
     if proc.returncode != 0:
         problems.append(

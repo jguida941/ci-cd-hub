@@ -29,6 +29,7 @@ def _run_dep_command(
         text=True,
         capture_output=True,
         check=False,
+        timeout=300,  # 5 min for dependency installation
     )
     if proc.returncode == 0:
         return True

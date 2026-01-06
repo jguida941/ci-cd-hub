@@ -4,36 +4,21 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from pathlib import Path
 from typing import Any
 
 from cihub.ci_report import RunContext
 from cihub.config import tool_enabled as _tool_enabled_canonical
-from cihub.utils import get_git_branch, get_git_remote, parse_repo_from_remote
+from cihub.utils import (
+    _get_repo_name,
+    get_git_branch,
+)
 from cihub.utils.env import _parse_env_bool, env_bool
 
 
 def _tool_enabled(config: dict[str, Any], tool: str, language: str) -> bool:
     """Check if a tool is enabled. Delegates to canonical cihub.config.tool_enabled."""
     return _tool_enabled_canonical(config, tool, language)
-
-
-def _get_repo_name(config: dict[str, Any], repo_path: Path) -> str:
-    repo_env = os.environ.get("GITHUB_REPOSITORY")
-    if repo_env:
-        return repo_env
-    repo_info = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
-    owner = repo_info.get("owner")
-    name = repo_info.get("name")
-    if owner and name:
-        return f"{owner}/{name}"
-    remote = get_git_remote(repo_path)
-    if remote:
-        parsed = parse_repo_from_remote(remote)
-        if parsed[0] and parsed[1]:
-            return f"{parsed[0]}/{parsed[1]}"
-    return ""
 
 
 def _build_context(
@@ -64,27 +49,6 @@ def _build_context(
         docker_compose_file=docker_compose_file,
         docker_health_endpoint=docker_health_endpoint,
     )
-
-
-def _detect_java_project_type(workdir: Path) -> str:
-    pom = workdir / "pom.xml"
-    if pom.exists():
-        try:
-            content = pom.read_text(encoding="utf-8")
-        except OSError:
-            content = ""
-        if "<modules>" in content:
-            modules = len(re.findall(r"<module>.*?</module>", content))
-            return f"Multi-module ({modules} modules)" if modules else "Multi-module"
-        return "Single module"
-
-    settings_gradle = workdir / "settings.gradle"
-    settings_kts = workdir / "settings.gradle.kts"
-    if settings_gradle.exists() or settings_kts.exists():
-        return "Multi-module"
-    if (workdir / "build.gradle").exists() or (workdir / "build.gradle.kts").exists():
-        return "Single module"
-    return "Unknown"
 
 
 def _load_tool_outputs(tool_dir: Path) -> dict[str, dict[str, Any]]:

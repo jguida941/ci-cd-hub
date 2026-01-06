@@ -229,11 +229,10 @@ class TestCmdInitJsonMode:
             json=False,
         )
         result = cmd_init(args)
-        assert result == 2
-        captured = capsys.readouterr()
-        assert "--force requires --apply" in captured.err
+        assert result.exit_code == 2
+        assert "--force requires --apply" in result.summary
 
-    def test_init_repo_side_execution_blocked(self, tmp_path: Path, capsys) -> None:
+    def test_init_repo_side_execution_blocked(self, tmp_path: Path) -> None:
         """Apply blocked when repo_side_execution is false and not bootstrap."""
         config_content = """
 repo:
@@ -273,9 +272,8 @@ java:
             json=False,
         )
         result = cmd_init(args)
-        assert result == 2
-        captured = capsys.readouterr()
-        assert "repo_side_execution is false" in captured.err
+        assert result.exit_code == 2
+        assert "repo_side_execution is false" in result.summary
 
     def test_init_repo_side_execution_blocked_json(self, tmp_path: Path) -> None:
         """Apply blocked in JSON mode when repo_side_execution is false."""
@@ -400,8 +398,8 @@ class TestCmdUpdateJsonMode:
         assert result.exit_code == 2
         assert "--force requires --apply" in result.summary
 
-    def test_update_force_without_apply_non_json(self, tmp_path: Path, capsys) -> None:
-        """Force without apply in non-JSON mode prints error."""
+    def test_update_force_without_apply_non_json(self, tmp_path: Path) -> None:
+        """Force without apply returns error CommandResult."""
         (tmp_path / "pyproject.toml").write_text("[project]\nname='example'\n", encoding="utf-8")
         args = argparse.Namespace(
             repo=str(tmp_path),
@@ -417,11 +415,11 @@ class TestCmdUpdateJsonMode:
             json=False,
         )
         result = cmd_update(args)
-        assert result == 2
-        captured = capsys.readouterr()
-        assert "--force requires --apply" in captured.err
+        assert result.exit_code == 2
+        # Error is now in result.summary instead of stderr
+        assert "--force requires --apply" in result.summary
 
-    def test_update_repo_side_execution_blocked(self, tmp_path: Path, capsys) -> None:
+    def test_update_repo_side_execution_blocked(self, tmp_path: Path) -> None:
         """Apply blocked when repo_side_execution is false."""
         config_content = """
 repo:
@@ -460,9 +458,9 @@ java:
             json=False,
         )
         result = cmd_update(args)
-        assert result == 2
-        captured = capsys.readouterr()
-        assert "repo_side_execution is false" in captured.err
+        assert result.exit_code == 2
+        # Error is now in result.summary instead of stderr
+        assert "repo_side_execution is false" in result.summary
 
     def test_update_repo_side_execution_blocked_json(self, tmp_path: Path) -> None:
         """Apply blocked in JSON mode when repo_side_execution is false."""
@@ -757,7 +755,7 @@ class TestInitEdgeCases:
                     json=False,
                 )
                 result = cmd_init(args)
-                assert result == 0
+                assert result.exit_code == 0
 
                 config_text = (tmp_path / ".ci-hub.yml").read_text()
                 assert "detected-owner" in config_text
@@ -785,7 +783,7 @@ class TestInitEdgeCases:
                 json=False,
             )
             result = cmd_init(args)
-            assert result == 0
+            assert result.exit_code == 0
 
             config_text = (tmp_path / ".ci-hub.yml").read_text()
             assert "develop" in config_text
@@ -832,7 +830,7 @@ java:
             json=False,
         )
         result = cmd_update(args)
-        assert result == 0
+        assert result.exit_code == 0
 
         config_text = (tmp_path / ".ci-hub.yml").read_text()
         # Existing values should be preserved through merge

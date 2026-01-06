@@ -4,10 +4,10 @@ Single queue for known issues and near-term work.
 
 ## High Priority
 
-| Item                        | Category       | Notes                                                                                                            |
-|-----------------------------|----------------|------------------------------------------------------------------------------------------------------------------|
-| NVD key setup issue         | Secrets        | Possible whitespace/validation or missing secret propagation; `setup-nvd` may not work end-to-end (docs/development/CHANGELOG.md) |
-| Phase 6: Diagnostics module | CLI            | `cihub/diagnostics/` scaffolded but not implemented (models.py, renderer.py, collectors/)                        |
+| Item                        | Category | Notes                                                                                                                             |
+|-----------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------|
+| NVD key setup issue         | Secrets  | Possible whitespace/validation or missing secret propagation; `setup-nvd` may not work end-to-end (docs/development/CHANGELOG.md) |
+| Phase 6: Diagnostics module | CLI      | `cihub/diagnostics/` scaffolded but not implemented (models.py, renderer.py, collectors/)                                         |
 
 ## Medium Priority
 

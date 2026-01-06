@@ -9,7 +9,7 @@ from typing import Any
 from cihub import __version__
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class RunContext:
     repository: str | None
     branch: str | None
@@ -49,8 +49,7 @@ def resolve_thresholds(config: dict[str, Any], language: str) -> dict[str, Any]:
         trivy_cfg = tools.get("trivy", {}) or {}
 
         bandit_cfg = tools.get("bandit", {}) or {}
-        pip_audit_cfg = tools.get("pip_audit", {}) or {}
-        mypy_cfg = tools.get("mypy", {}) or {}
+        # pip_audit and mypy thresholds not yet implemented
 
         _set_threshold(thresholds, "coverage_min", pytest_cfg.get("min_coverage"))
         _set_threshold(thresholds, "mutation_score_min", mutmut_cfg.get("min_mutation_score"))

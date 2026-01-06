@@ -11,6 +11,10 @@ import yaml
 from . import shared
 from .base import ToolResult
 
+# Health check polling configuration
+HEALTH_CHECK_INTERVAL_SECONDS = 5
+HEALTH_CHECK_HTTP_TIMEOUT_SECONDS = 5
+
 
 def _resolve_docker_compose_command() -> list[str]:
     try:
@@ -63,17 +67,16 @@ def _wait_for_health(ports: list[int], endpoint: str, timeout_seconds: int) -> b
     if not ports:
         return False
     deadline = time.monotonic() + max(timeout_seconds, 0)
-    interval = 5
     while time.monotonic() < deadline:
         for port in ports:
             url = f"http://localhost:{port}{endpoint}"
             try:
-                with urllib.request.urlopen(url, timeout=5) as resp:  # noqa: S310 - local health check
+                with urllib.request.urlopen(url, timeout=HEALTH_CHECK_HTTP_TIMEOUT_SECONDS) as resp:  # noqa: S310
                     if 200 <= resp.status < 400:
                         return True
             except Exception:  # noqa: S112 - expected failures during health poll
                 continue
-        time.sleep(interval)
+        time.sleep(HEALTH_CHECK_INTERVAL_SECONDS)
     return False
 
 

@@ -43,18 +43,20 @@ def add_templates_commands(
         default="chore: sync hub templates",
         help="Commit message for synced templates",
     )
-    sync_templates.add_argument(
+    update_tag_group = sync_templates.add_mutually_exclusive_group()
+    update_tag_group.add_argument(
         "--update-tag",
         action="store_true",
-        default=True,
+        dest="update_tag",
         help="Update v1 tag to current HEAD (default: true)",
     )
-    sync_templates.add_argument(
+    update_tag_group.add_argument(
         "--no-update-tag",
         action="store_false",
         dest="update_tag",
         help="Skip updating v1 tag",
     )
+    sync_templates.set_defaults(update_tag=True)
     sync_templates.add_argument(
         "--yes",
         "-y",

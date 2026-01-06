@@ -357,12 +357,12 @@ class TestCmdRun:
         path_arg = mock_result.write_json.call_args[0][0]
         assert str(path_arg) == str(output_file)
 
-    def test_text_mode_prints_output(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-        """Test text mode prints output path."""
+    def test_success_returns_command_result_with_output_info(self, tmp_path: Path) -> None:
+        """Test successful run returns CommandResult with output path in data."""
         args = argparse.Namespace(
             repo=str(tmp_path),
             tool="ruff",
-            json=False,  # Text mode
+            json=False,  # Doesn't matter now - always returns CommandResult
             workdir=None,
             output=None,
             output_dir=str(tmp_path / ".cihub"),
@@ -371,6 +371,7 @@ class TestCmdRun:
 
         mock_result = MagicMock(spec=ToolResult)
         mock_result.success = True
+        mock_result.to_payload.return_value = {"tool": "ruff", "ran": True, "success": True}
 
         with (
             patch("cihub.commands.run.load_ci_config") as mock_load,
@@ -379,12 +380,13 @@ class TestCmdRun:
             mock_load.return_value = {"language": "python"}
             result = cmd_run(args)
 
-        captured = capsys.readouterr()
-        assert "Wrote output" in captured.out
-        assert result == EXIT_SUCCESS
+        # Now returns CommandResult instead of int
+        assert result.exit_code == EXIT_SUCCESS
+        assert "items" in result.data
+        assert any("Wrote output" in item for item in result.data["items"])
 
-    def test_text_mode_config_error(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-        """Test text mode prints config error."""
+    def test_config_error_returns_command_result(self, tmp_path: Path) -> None:
+        """Test config error returns CommandResult with problem details."""
         args = argparse.Namespace(
             repo=str(tmp_path),
             tool="ruff",
@@ -399,12 +401,13 @@ class TestCmdRun:
             mock_load.side_effect = Exception("Config missing")
             result = cmd_run(args)
 
-        captured = capsys.readouterr()
-        assert "Failed to load config" in captured.out
-        assert result == EXIT_FAILURE
+        # Returns CommandResult with error info
+        assert result.exit_code == EXIT_FAILURE
+        assert "Failed to load config" in result.summary
+        assert any(p["code"] == "CIHUB-RUN-001" for p in result.problems)
 
-    def test_text_mode_unsupported_tool(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-        """Test text mode prints unsupported tool error."""
+    def test_unsupported_tool_returns_command_result(self, tmp_path: Path) -> None:
+        """Test unsupported tool returns CommandResult with problem details."""
         args = argparse.Namespace(
             repo=str(tmp_path),
             tool="unknown_tool",
@@ -419,12 +422,13 @@ class TestCmdRun:
             mock_load.return_value = {"language": "python"}
             result = cmd_run(args)
 
-        captured = capsys.readouterr()
-        assert "Unsupported tool" in captured.out
-        assert result == EXIT_USAGE
+        # Returns CommandResult with error info
+        assert result.exit_code == EXIT_USAGE
+        assert "Unsupported tool" in result.summary
+        assert any(p["code"] == "CIHUB-RUN-003" for p in result.problems)
 
-    def test_text_mode_disabled_tool(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-        """Test text mode prints skipped message for disabled tool."""
+    def test_disabled_tool_returns_command_result(self, tmp_path: Path) -> None:
+        """Test disabled tool returns CommandResult with skipped status."""
         args = argparse.Namespace(
             repo=str(tmp_path),
             tool="bandit",
@@ -442,9 +446,10 @@ class TestCmdRun:
             }
             result = cmd_run(args)
 
-        captured = capsys.readouterr()
-        assert "skipped" in captured.out
-        assert result == EXIT_SUCCESS
+        # Returns CommandResult indicating tool was skipped
+        assert result.exit_code == EXIT_SUCCESS
+        assert "skipped" in result.summary
+        assert "items" in result.data
 
     def test_pip_audit_normalizes_to_pip_audit(self, tmp_path: Path) -> None:
         """Test pip-audit tool name is normalized to pip_audit internally."""

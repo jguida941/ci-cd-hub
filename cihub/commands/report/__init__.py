@@ -18,7 +18,13 @@ from cihub.ci_report import (
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.reporting import render_summary_from_path
 from cihub.types import CommandResult
-from cihub.utils import get_git_branch, get_git_remote, parse_repo_from_remote
+from cihub.utils import (
+    _detect_java_project_type,
+    _get_repo_name,
+    get_git_branch,
+    get_git_remote,
+    parse_repo_from_remote,
+)
 from cihub.utils.env import _parse_env_bool
 from cihub.utils.progress import _bar
 
@@ -36,8 +42,6 @@ from .helpers import (
     _append_summary,
     _build_context,
     _coerce_bool,
-    _detect_java_project_type,
-    _get_repo_name,
     _load_tool_outputs,
     _resolve_include_details,
     _resolve_summary_path,
@@ -58,15 +62,13 @@ from .summary import (
 from .validate import _validate_report
 
 
-def cmd_report(args: argparse.Namespace) -> int | CommandResult:
+def cmd_report(args: argparse.Namespace) -> CommandResult:
     """Main router for report subcommands."""
-    json_mode = getattr(args, "json", False)
-
     if args.subcommand == "aggregate":
-        return _aggregate_report(args, json_mode)
+        return _aggregate_report(args)
 
     if args.subcommand == "outputs":
-        return _report_outputs(args, json_mode)
+        return _report_outputs(args)
 
     if args.subcommand == "summary":
         report_path = Path(args.report)
@@ -75,18 +77,16 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
         output_path = Path(args.output) if args.output else None
         if output_path:
             output_path.write_text(summary_text, encoding="utf-8")
-        elif write_summary and not json_mode:
-            print(summary_text)
         github_summary = _resolve_summary_path(None, write_summary)
         if github_summary:
             github_summary.write_text(summary_text, encoding="utf-8")
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_SUCCESS,
-                summary="Summary rendered",
-                artifacts={"summary": str(output_path) if output_path else ""},
-            )
-        return EXIT_SUCCESS
+        # Return CommandResult with summary text for display
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="Summary rendered",
+            artifacts={"summary": str(output_path) if output_path else ""},
+            data={"raw_output": summary_text} if write_summary and not output_path else None,
+        )
 
     if args.subcommand == "security-summary":
         mode = args.mode
@@ -99,7 +99,11 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
         write_summary = _resolve_write_summary(args.write_github_summary)
         summary_path = _resolve_summary_path(args.summary, write_summary)
         _append_summary(summary_text, summary_path, print_stdout=write_summary)
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=f"Security summary generated ({mode} mode)",
+            data={"raw_output": summary_text} if not write_summary else None,
+        )
 
     if args.subcommand == "smoke-summary":
         mode = args.mode
@@ -110,14 +114,22 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
         write_summary = _resolve_write_summary(args.write_github_summary)
         summary_path = _resolve_summary_path(args.summary, write_summary)
         _append_summary(summary_text, summary_path, print_stdout=write_summary)
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=f"Smoke summary generated ({mode} mode)",
+            data={"raw_output": summary_text} if not write_summary else None,
+        )
 
     if args.subcommand == "kyverno-summary":
         summary_text = _kyverno_summary(args)
         write_summary = _resolve_write_summary(args.write_github_summary)
         summary_path = _resolve_summary_path(args.summary, write_summary)
         _append_summary(summary_text, summary_path, print_stdout=write_summary)
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="Kyverno summary generated",
+            data={"raw_output": summary_text} if not write_summary else None,
+        )
 
     if args.subcommand == "orchestrator-summary":
         if args.mode == "load-config":
@@ -127,10 +139,14 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
         write_summary = _resolve_write_summary(args.write_github_summary)
         summary_path = _resolve_summary_path(args.summary, write_summary)
         _append_summary(summary_text, summary_path, print_stdout=write_summary)
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=f"Orchestrator summary generated ({args.mode} mode)",
+            data={"raw_output": summary_text} if not write_summary else None,
+        )
 
     if args.subcommand == "validate":
-        return _validate_report(args, json_mode)
+        return _validate_report(args)
 
     if args.subcommand == "dashboard":
         reports_dir = Path(args.reports_dir)
@@ -140,13 +156,6 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
 
         # Load reports
         reports, skipped, warnings = _load_dashboard_reports(reports_dir, schema_mode)
-
-        if not json_mode:
-            print(f"Loaded {len(reports)} reports")
-            if skipped > 0:
-                print(f"Skipped {skipped} reports with non-2.0 schema")
-            for warn in warnings:
-                print(f"Warning: {warn}")
 
         # Generate summary
         dashboard_summary = _generate_dashboard_summary(reports)
@@ -159,29 +168,30 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
             html_content = _generate_html_dashboard(dashboard_summary)
             output_path.write_text(html_content, encoding="utf-8")
 
-        if not json_mode:
-            print(f"Generated {output_format} dashboard: {output_path}")
-
         # Exit with error if strict mode and reports were skipped
         exit_code = EXIT_FAILURE if (schema_mode == "strict" and skipped > 0) else EXIT_SUCCESS
 
-        if json_mode:
-            return CommandResult(
-                exit_code=exit_code,
-                summary=f"Dashboard generated with {len(reports)} reports",
-                artifacts={"dashboard": str(output_path)},
-                problems=[{"severity": "warning", "message": w} for w in warnings],
-            )
-        return exit_code
+        # Build summary message
+        summary_parts = [f"Generated {output_format} dashboard: {output_path}"]
+        summary_parts.append(f"Loaded {len(reports)} reports")
+        if skipped > 0:
+            summary_parts.append(f"Skipped {skipped} reports with non-2.0 schema")
+
+        return CommandResult(
+            exit_code=exit_code,
+            summary="\n".join(summary_parts),
+            artifacts={"dashboard": str(output_path)},
+            problems=[{"severity": "warning", "message": w} for w in warnings],
+            data={"reports_loaded": len(reports), "reports_skipped": skipped},
+        )
 
     if args.subcommand == "build":
-        return _build_report(args, json_mode)
+        return _build_report(args)
 
-    message = f"Unknown report subcommand: {args.subcommand}"
-    if json_mode:
-        return CommandResult(exit_code=EXIT_USAGE, summary=message)
-    print(message)
-    return EXIT_USAGE
+    return CommandResult(
+        exit_code=EXIT_USAGE,
+        summary=f"Unknown report subcommand: {args.subcommand}",
+    )
 
 
 # ============================================================================

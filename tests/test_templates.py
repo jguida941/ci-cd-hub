@@ -411,9 +411,10 @@ class TestSyncTemplatesCommand:
         with mock.patch("cihub.commands.templates.delete_remote_file") as m:
             yield m
 
-    def test_sync_no_repos(self, capsys) -> None:
+    def test_sync_no_repos(self) -> None:
         """Handle case when no repos found."""
         from cihub.commands.templates import cmd_sync_templates
+        from cihub.types import CommandResult
 
         with mock.patch("cihub.commands.templates.get_repo_entries") as m:
             m.return_value = []
@@ -426,19 +427,19 @@ class TestSyncTemplatesCommand:
                 update_tag=False,
             )
             result = cmd_sync_templates(args)
-            assert result == 0
-            captured = capsys.readouterr()
-            assert "No repos found" in captured.out
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 0
+            assert "No repos found" in result.summary
 
     def test_sync_remote_up_to_date(
         self,
         mock_get_repo_entries,
         mock_render_dispatch_workflow,
         mock_fetch_remote_file,
-        capsys,
     ) -> None:
         """Report OK when remote matches desired content."""
         from cihub.commands.templates import cmd_sync_templates
+        from cihub.types import CommandResult
 
         mock_fetch_remote_file.return_value = {"content": "# Generated workflow content"}
 
@@ -451,20 +452,20 @@ class TestSyncTemplatesCommand:
             update_tag=False,
         )
         result = cmd_sync_templates(args)
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "[OK]" in captured.out
-        assert "up to date" in captured.out
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == 0
+        items = result.data.get("items", [])
+        assert any("[OK]" in item and "up to date" in item for item in items)
 
     def test_sync_check_mode_detects_drift(
         self,
         mock_get_repo_entries,
         mock_render_dispatch_workflow,
         mock_fetch_remote_file,
-        capsys,
     ) -> None:
         """Check mode reports drift without updating."""
         from cihub.commands.templates import cmd_sync_templates
+        from cihub.types import CommandResult
 
         mock_fetch_remote_file.return_value = {"content": "# Old content"}
 
@@ -477,11 +478,11 @@ class TestSyncTemplatesCommand:
             update_tag=False,
         )
         result = cmd_sync_templates(args)
-        assert result == 1
-        captured = capsys.readouterr()
-        assert "[FAIL]" in captured.out
-        assert "out of date" in captured.out
-        assert "drift detected" in captured.err
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == 1
+        items = result.data.get("items", [])
+        assert any("[FAIL]" in item and "out of date" in item for item in items)
+        assert any("drift detected" in item for item in items)
 
     def test_sync_dry_run_mode(
         self,
@@ -489,10 +490,10 @@ class TestSyncTemplatesCommand:
         mock_render_dispatch_workflow,
         mock_fetch_remote_file,
         mock_update_remote_file,
-        capsys,
     ) -> None:
         """Dry run shows what would be updated without doing it."""
         from cihub.commands.templates import cmd_sync_templates
+        from cihub.types import CommandResult
 
         mock_fetch_remote_file.return_value = {"content": "# Old content"}
 
@@ -505,9 +506,10 @@ class TestSyncTemplatesCommand:
             update_tag=False,
         )
         result = cmd_sync_templates(args)
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "Would update" in captured.out
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == 0
+        items = result.data.get("items", [])
+        assert any("Would update" in item for item in items)
         mock_update_remote_file.assert_not_called()
 
     def test_sync_updates_remote(
@@ -516,10 +518,10 @@ class TestSyncTemplatesCommand:
         mock_render_dispatch_workflow,
         mock_fetch_remote_file,
         mock_update_remote_file,
-        capsys,
     ) -> None:
         """Sync updates remote file when content differs."""
         from cihub.commands.templates import cmd_sync_templates
+        from cihub.types import CommandResult
 
         mock_fetch_remote_file.return_value = {
             "content": "# Old content",
@@ -535,19 +537,20 @@ class TestSyncTemplatesCommand:
             update_tag=False,
         )
         result = cmd_sync_templates(args)
-        assert result == 0
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == 0
         mock_update_remote_file.assert_called()
-        captured = capsys.readouterr()
-        assert "updated" in captured.out
+        items = result.data.get("items", [])
+        assert any("updated" in item for item in items)
 
     def test_sync_specific_repo(
         self,
         mock_render_dispatch_workflow,
         mock_fetch_remote_file,
-        capsys,
     ) -> None:
         """Sync only specific repo when --repo provided."""
         from cihub.commands.templates import cmd_sync_templates
+        from cihub.types import CommandResult
 
         with mock.patch("cihub.commands.templates.get_repo_entries") as m:
             m.return_value = [
@@ -575,15 +578,18 @@ class TestSyncTemplatesCommand:
                 update_tag=False,
             )
             result = cmd_sync_templates(args)
-            assert result == 0
-            captured = capsys.readouterr()
-            assert "python-repo" in captured.out
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 0
+            items = result.data.get("items", [])
+            assert any("python-repo" in item for item in items)
             # Only python-repo should appear, not java-repo
-            assert captured.out.count("[OK]") == 1
+            ok_count = sum(1 for item in items if "[OK]" in item)
+            assert ok_count == 1
 
-    def test_sync_repo_not_found(self, capsys) -> None:
+    def test_sync_repo_not_found(self) -> None:
         """Error when specified repo not found in configs."""
         from cihub.commands.templates import cmd_sync_templates
+        from cihub.types import CommandResult
 
         with mock.patch("cihub.commands.templates.get_repo_entries") as m:
             m.return_value = [
@@ -603,17 +609,17 @@ class TestSyncTemplatesCommand:
                 update_tag=False,
             )
             result = cmd_sync_templates(args)
-            assert result == 2
-            captured = capsys.readouterr()
-            assert "not found" in captured.err
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 2
+            assert "not found" in result.summary.lower()
 
     def test_sync_render_error(
         self,
         mock_get_repo_entries,
-        capsys,
     ) -> None:
         """Handle render error gracefully."""
         from cihub.commands.templates import cmd_sync_templates
+        from cihub.types import CommandResult
 
         with mock.patch("cihub.commands.templates.render_dispatch_workflow") as m:
             m.side_effect = ValueError("Unsupported language")
@@ -626,9 +632,10 @@ class TestSyncTemplatesCommand:
                 update_tag=False,
             )
             result = cmd_sync_templates(args)
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "Error" in captured.err
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 1
+            items = result.data.get("items", [])
+            assert any("ERROR" in item for item in items)
 
     def test_sync_deletes_stale_workflows(
         self,
@@ -636,10 +643,10 @@ class TestSyncTemplatesCommand:
         mock_fetch_remote_file,
         mock_update_remote_file,
         mock_delete_remote_file,
-        capsys,
     ) -> None:
         """Delete stale workflows after successful sync to hub-ci.yml."""
         from cihub.commands.templates import cmd_sync_templates
+        from cihub.types import CommandResult
 
         with mock.patch("cihub.commands.templates.get_repo_entries") as m:
             m.return_value = [
@@ -667,7 +674,8 @@ class TestSyncTemplatesCommand:
                 update_tag=False,
             )
             result = cmd_sync_templates(args)
-            assert result == 0
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 0
             mock_delete_remote_file.assert_called_once()
-            captured = capsys.readouterr()
-            assert "deleted" in captured.out
+            items = result.data.get("items", [])
+            assert any("deleted" in item for item in items)

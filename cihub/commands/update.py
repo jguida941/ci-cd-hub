@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import io
-import sys
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
@@ -22,10 +21,13 @@ from cihub.utils import collect_java_dependency_warnings, collect_java_pom_warni
 from cihub.utils.fs import write_text
 
 
-def cmd_update(args: argparse.Namespace) -> int | CommandResult:
+def cmd_update(args: argparse.Namespace) -> CommandResult:
+    """Update CI-Hub configuration in a repository.
+
+    Always returns CommandResult for consistent output handling.
+    """
     repo_path = Path(args.repo).resolve()
     config_path = repo_path / ".ci-hub.yml"
-    json_mode = getattr(args, "json", False)
     apply = getattr(args, "apply", False)
     force = getattr(args, "force", False)
     dry_run = args.dry_run or not apply
@@ -33,14 +35,11 @@ def cmd_update(args: argparse.Namespace) -> int | CommandResult:
 
     if force and not apply:
         message = "--force requires --apply"
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_USAGE,
-                summary=message,
-                problems=[{"severity": "error", "message": message}],
-            )
-        print(message, file=sys.stderr)
-        return EXIT_USAGE
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-UPDATE-FORCE"}],
+        )
 
     workflow_path = repo_path / ".github" / "workflows" / "hub-ci.yml"
     existing_config = config_path.exists()
@@ -54,21 +53,18 @@ def cmd_update(args: argparse.Namespace) -> int | CommandResult:
 
     if apply and not repo_side_execution and not bootstrap and not force:
         message = "repo_side_execution is false; re-run with --force or enable repo.repo_side_execution in .ci-hub.yml"
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_USAGE,
-                summary=message,
-                problems=[
-                    {
-                        "severity": "error",
-                        "message": message,
-                        "code": "CIHUB-UPDATE-001",
-                        "file": str(config_path),
-                    }
-                ],
-            )
-        print(message, file=sys.stderr)
-        return EXIT_USAGE
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[
+                {
+                    "severity": "error",
+                    "message": message,
+                    "code": "CIHUB-UPDATE-001",
+                    "file": str(config_path),
+                }
+            ],
+        )
 
     existing = load_yaml_file(config_path) if config_path.exists() else {}
 
@@ -84,25 +80,40 @@ def cmd_update(args: argparse.Namespace) -> int | CommandResult:
 
     if not name:
         name = repo_path.name
-    owner_warnings: list[str] = []
+
+    # Collect problems and suggestions
+    problems: list[dict[str, str]] = []
+    suggestions: list[dict[str, str]] = []
+    items: list[str] = []
+
     if not owner:
         owner = "unknown"
-        owner_warnings.append("Warning: could not detect repo owner; set repo.owner manually.")
-        if not json_mode:
-            print(owner_warnings[-1], file=sys.stderr)
+        problems.append({
+            "severity": "warning",
+            "message": "Could not detect repo owner; set repo.owner manually.",
+            "code": "CIHUB-UPDATE-WARN",
+            "file": str(config_path),
+        })
 
     base = build_repo_config(language, owner, name, branch, subdir=subdir)
     merged = deep_merge(base, existing)
+
+    # Prepare output for dry run mode
+    raw_output = ""
     if dry_run:
-        if not json_mode:
-            payload = yaml.safe_dump(merged, sort_keys=False, default_flow_style=False, allow_unicode=True)
-            print(f"# Would write: {config_path}")
-            print(payload)
+        payload = yaml.safe_dump(merged, sort_keys=False, default_flow_style=False, allow_unicode=True)
+        raw_output = f"# Would write: {config_path}\n{payload}"
+        items.append(f"Would write: {config_path}")
     else:
         save_yaml_file(config_path, merged, dry_run=False)
+        items.append(f"Wrote: {config_path}")
 
     workflow_content = render_caller_workflow(language)
-    write_text(workflow_path, workflow_content, dry_run, emit=not json_mode)
+    write_text(workflow_path, workflow_content, dry_run, emit=False)
+    if dry_run:
+        items.append(f"Would write: {workflow_path}")
+    else:
+        items.append(f"Wrote: {workflow_path}")
 
     pom_warning_problems: list[dict[str, str]] = []
     if language == "java" and not dry_run:
@@ -111,84 +122,73 @@ def cmd_update(args: argparse.Namespace) -> int | CommandResult:
         dep_warnings, _ = collect_java_dependency_warnings(repo_path, effective)
         warnings = pom_warnings + dep_warnings
         if warnings:
-            if not json_mode:
-                print("POM warnings:")
-                for warning in warnings:
-                    print(f"  - {warning}")
-            else:
-                pom_warning_problems = [
-                    {
-                        "severity": "warning",
-                        "message": warning,
-                        "code": "CIHUB-POM-001",
-                        "file": str(repo_path / "pom.xml"),
-                    }
-                    for warning in warnings
-                ]
+            pom_warning_problems = [
+                {
+                    "severity": "warning",
+                    "message": warning,
+                    "code": "CIHUB-POM-001",
+                    "file": str(repo_path / "pom.xml"),
+                }
+                for warning in warnings
+            ]
+            items.append("POM warnings:")
+            for warning in warnings:
+                items.append(f"  - {warning}")
+
             if args.fix_pom:
-                if json_mode:
-                    with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-                        status = apply_pom_fixes(repo_path, effective, apply=True)
-                        status = max(
-                            status,
-                            apply_dependency_fixes(repo_path, effective, apply=True),
-                        )
-                    pom_fix_status = status
-                else:
-                    apply_pom_fixes(repo_path, effective, apply=True)
-                    apply_dependency_fixes(repo_path, effective, apply=True)
+                with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                    pom_result = apply_pom_fixes(repo_path, effective, apply=True)
+                    dep_result = apply_dependency_fixes(repo_path, effective, apply=True)
+                    status = max(pom_result.exit_code, dep_result.exit_code)
+                pom_fix_status = status
             else:
-                if not json_mode:
-                    print("Run: cihub fix-pom --repo . --apply")
-    if json_mode:
-        summary = "Dry run complete" if dry_run else "Update complete"
-        problems = [
-            {
-                "severity": "warning",
-                "message": warning,
-                "code": "CIHUB-UPDATE-WARN",
-                "file": str(config_path),
-            }
-            for warning in owner_warnings
-        ]
-        problems.extend(pom_warning_problems)
-        exit_code = 0
-        files_modified = [str(config_path), str(workflow_path)]
-        data = {
-            "language": language,
-            "owner": owner,
-            "name": name,
-            "branch": branch,
-            "subdir": subdir or "",
-            "dry_run": dry_run,
-            "bootstrap": bootstrap,
-        }
-        if pom_fix_status is not None:
-            exit_code = max(exit_code, pom_fix_status)
-            data["pom_fix_applied"] = True
-            data["pom_fix_status"] = pom_fix_status
-            if not dry_run:
-                summary = (
-                    "Update complete; POM fixes applied" if pom_fix_status == 0 else "Update complete; POM fixes failed"
-                )
-            root_path = repo_path / subdir if subdir else repo_path
-            pom_path = root_path / "pom.xml"
-            if pom_path.exists():
-                files_modified.append(str(pom_path))
-            if pom_fix_status != 0:
-                problems.append(
-                    {
-                        "severity": "error",
-                        "message": "POM fixes failed",
-                        "code": "CIHUB-POM-APPLY-001",
-                        "file": str(pom_path),
-                    }
-                )
-        return CommandResult(
-            exit_code=exit_code,
-            summary=summary,
-            problems=problems,
-            files_modified=files_modified,
-            data=data,
-        )
-    return EXIT_SUCCESS
+                suggestions.append({"message": "Run: cihub fix-pom --repo . --apply"})
+
+    # Build final result
+    summary = "Dry run complete" if dry_run else "Update complete"
+    problems.extend(pom_warning_problems)
+    exit_code = EXIT_SUCCESS
+    files_modified = [str(config_path), str(workflow_path)] if not dry_run else []
+    data: dict[str, object] = {
+        "language": language,
+        "owner": owner,
+        "name": name,
+        "branch": branch,
+        "subdir": subdir or "",
+        "dry_run": dry_run,
+        "bootstrap": bootstrap,
+        "items": items,
+    }
+    if raw_output:
+        data["raw_output"] = raw_output
+
+    if pom_fix_status is not None:
+        exit_code = max(exit_code, pom_fix_status)
+        data["pom_fix_applied"] = True
+        data["pom_fix_status"] = pom_fix_status
+        if not dry_run:
+            summary = (
+                "Update complete; POM fixes applied" if pom_fix_status == 0 else "Update complete; POM fixes failed"
+            )
+        root_path = repo_path / subdir if subdir else repo_path
+        pom_path = root_path / "pom.xml"
+        if pom_path.exists():
+            files_modified.append(str(pom_path))
+        if pom_fix_status != 0:
+            problems.append(
+                {
+                    "severity": "error",
+                    "message": "POM fixes failed",
+                    "code": "CIHUB-POM-APPLY-001",
+                    "file": str(pom_path),
+                }
+            )
+
+    return CommandResult(
+        exit_code=exit_code,
+        summary=summary,
+        problems=problems,
+        suggestions=suggestions,
+        files_modified=files_modified,
+        data=data,
+    )

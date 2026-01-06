@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import io
-import sys
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
@@ -31,18 +30,21 @@ from cihub.utils import (
     parse_repo_from_remote,
 )
 from cihub.utils.fs import write_text
-from cihub.utils.paths import hub_root
+from cihub.utils.paths import hub_root, validate_subdir
 from cihub.wizard import HAS_WIZARD, WizardCancelled
 
 
-def cmd_init(args: argparse.Namespace) -> int | CommandResult:
+def cmd_init(args: argparse.Namespace) -> CommandResult:
+    """Initialize CI-Hub config in a repository.
+
+    Always returns CommandResult for consistent output handling.
+    """
     repo_path = Path(args.repo).resolve()
-    json_mode = getattr(args, "json", False)
     apply = getattr(args, "apply", False)
     force = getattr(args, "force", False)
     dry_run = args.dry_run or not apply
 
-    if json_mode and args.wizard:
+    if getattr(args, "json", False) and args.wizard:
         message = "--wizard is not supported with --json"
         return CommandResult(
             exit_code=EXIT_USAGE,
@@ -52,14 +54,11 @@ def cmd_init(args: argparse.Namespace) -> int | CommandResult:
 
     if force and not apply:
         message = "--force requires --apply"
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_USAGE,
-                summary=message,
-                problems=[{"severity": "error", "message": message}],
-            )
-        print(message, file=sys.stderr)
-        return EXIT_USAGE
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-INIT-FORCE"}],
+        )
 
     config_path = repo_path / ".ci-hub.yml"
     workflow_path = repo_path / ".github" / "workflows" / "hub-ci.yml"
@@ -75,21 +74,18 @@ def cmd_init(args: argparse.Namespace) -> int | CommandResult:
 
     if apply and not repo_side_execution and not bootstrap and not force:
         message = "repo_side_execution is false; re-run with --force or enable repo.repo_side_execution in .ci-hub.yml"
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_USAGE,
-                summary=message,
-                problems=[
-                    {
-                        "severity": "error",
-                        "message": message,
-                        "code": "CIHUB-INIT-001",
-                        "file": str(config_path),
-                    }
-                ],
-            )
-        print(message, file=sys.stderr)
-        return EXIT_USAGE
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[
+                {
+                    "severity": "error",
+                    "message": message,
+                    "code": "CIHUB-INIT-001",
+                    "file": str(config_path),
+                }
+            ],
+        )
 
     language, _ = resolve_language(repo_path, args.language)
 
@@ -108,18 +104,21 @@ def cmd_init(args: argparse.Namespace) -> int | CommandResult:
     if not owner:
         owner = "unknown"
         owner_warnings.append("Warning: could not detect repo owner; set repo.owner manually.")
-        if not json_mode:
-            print(owner_warnings[-1], file=sys.stderr)
 
     branch = args.branch or get_git_branch(repo_path) or "main"
 
-    subdir = args.subdir or ""
+    # Validate subdir to prevent path traversal
+    subdir = validate_subdir(args.subdir or "")
     detected_config = build_repo_config(language, owner, name, branch, subdir=subdir)
 
     if args.wizard:
         if not HAS_WIZARD:
-            print("Install wizard deps: pip install cihub[wizard]", file=sys.stderr)
-            return EXIT_FAILURE
+            message = "Install wizard deps: pip install cihub[wizard]"
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=message,
+                problems=[{"severity": "error", "message": message, "code": "CIHUB-INIT-NO-WIZARD"}],
+            )
         from rich.console import Console
 
         from cihub.wizard.core import WizardRunner
@@ -128,124 +127,129 @@ def cmd_init(args: argparse.Namespace) -> int | CommandResult:
         try:
             config = runner.run_init_wizard(detected_config)
         except WizardCancelled:
-            print("Cancelled.", file=sys.stderr)
-            return EXIT_INTERRUPTED
+            return CommandResult(
+                exit_code=EXIT_INTERRUPTED,
+                summary="Cancelled",
+            )
         language = config.get("language", language)
     else:
         config = detected_config
     config_path = repo_path / ".ci-hub.yml"
+
+    payload = yaml.safe_dump(config, sort_keys=False, default_flow_style=False, allow_unicode=True)
+
     if dry_run:
-        if not json_mode:
-            payload = yaml.safe_dump(config, sort_keys=False, default_flow_style=False, allow_unicode=True)
-            print(f"# Would write: {config_path}")
-            print(payload)
+        # Don't write files, just report what would happen
+        pass
     else:
         save_yaml_file(config_path, config, dry_run=False)
 
     workflow_content = render_caller_workflow(language)
-    write_text(workflow_path, workflow_content, dry_run, emit=not json_mode)
+    write_text(workflow_path, workflow_content, dry_run, emit=False)
 
     pom_warning_problems: list[dict[str, str]] = []
+    suggestions: list[dict[str, str]] = []
+    pom_fix_data: dict = {}
+
     if language == "java" and not dry_run:
         effective = load_ci_config(repo_path)
         pom_warnings, _ = collect_java_pom_warnings(repo_path, effective)
         dep_warnings, _ = collect_java_dependency_warnings(repo_path, effective)
         pom_warning_list = pom_warnings + dep_warnings
         if pom_warning_list:
-            if not json_mode:
-                print("POM warnings:")
-                for warning in pom_warning_list:
-                    print(f"  - {warning}")
-            else:
-                pom_warning_problems = [
+            pom_warning_problems = [
+                {
+                    "severity": "warning",
+                    "message": warning,
+                    "code": "CIHUB-POM-001",
+                    "file": str(repo_path / "pom.xml"),
+                }
+                for warning in pom_warning_list
+            ]
+            if args.fix_pom:
+                with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                    pom_result = apply_pom_fixes(repo_path, effective, apply=True)
+                    dep_result = apply_dependency_fixes(repo_path, effective, apply=True)
+                    status = max(pom_result.exit_code, dep_result.exit_code)
+                root_path = repo_path / subdir if subdir else repo_path
+                pom_path = root_path / "pom.xml"
+                files_modified = [str(pom_path)] if pom_path.exists() else []
+                summary = (
+                    "Initialization complete; POM fixes applied"
+                    if status == 0
+                    else "Initialization complete; POM fixes failed"
+                )
+                problems = [
                     {
                         "severity": "warning",
                         "message": warning,
-                        "code": "CIHUB-POM-001",
-                        "file": str(repo_path / "pom.xml"),
+                        "code": "CIHUB-INIT-WARN",
+                        "file": str(config_path),
                     }
-                    for warning in pom_warning_list
+                    for warning in owner_warnings
                 ]
-            if args.fix_pom:
-                if json_mode:
-                    with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-                        status = apply_pom_fixes(repo_path, effective, apply=True)
-                        status = max(
-                            status,
-                            apply_dependency_fixes(repo_path, effective, apply=True),
-                        )
-                    problems = [
+                problems.extend(pom_warning_problems)
+                if status != 0:
+                    problems.append(
                         {
-                            "severity": "warning",
-                            "message": warning,
-                            "code": "CIHUB-INIT-WARN",
-                            "file": str(config_path),
+                            "severity": "error",
+                            "message": "POM fixes failed",
+                            "code": "CIHUB-POM-APPLY-001",
+                            "file": str(pom_path),
                         }
-                        for warning in owner_warnings
-                    ]
-                    problems.extend(pom_warning_problems)
-                    root_path = repo_path / subdir if subdir else repo_path
-                    pom_path = root_path / "pom.xml"
-                    files_modified = [str(pom_path)] if pom_path.exists() else []
-                    summary = "POM fixes applied" if status == 0 else "POM fixes failed"
-                    if status != 0:
-                        problems.append(
-                            {
-                                "severity": "error",
-                                "message": "POM fixes failed",
-                                "code": "CIHUB-POM-APPLY-001",
-                                "file": str(pom_path),
-                            }
-                        )
-                    return CommandResult(
-                        exit_code=status,
-                        summary=summary,
-                        problems=problems,
-                        files_generated=[str(config_path), str(workflow_path)],
-                        files_modified=files_modified,
-                        data={
-                            "language": language,
-                            "owner": owner,
-                            "name": name,
-                            "branch": branch,
-                            "subdir": subdir,
-                            "dry_run": dry_run,
-                            "bootstrap": bootstrap,
-                            "pom_fix_applied": True,
-                            "pom_fix_status": status,
-                        },
                     )
-                status = apply_pom_fixes(repo_path, effective, apply=True)
-                status = max(status, apply_dependency_fixes(repo_path, effective, apply=True))
-                return status
-            if not json_mode:
-                print("Run: cihub fix-pom --repo . --apply")
+                return CommandResult(
+                    exit_code=status,
+                    summary=summary,
+                    problems=problems,
+                    files_generated=[str(config_path), str(workflow_path)],
+                    files_modified=files_modified,
+                    data={
+                        "language": language,
+                        "owner": owner,
+                        "name": name,
+                        "branch": branch,
+                        "subdir": subdir,
+                        "dry_run": dry_run,
+                        "bootstrap": bootstrap,
+                        "pom_fix_applied": True,
+                        "pom_fix_status": status,
+                    },
+                )
+            else:
+                suggestions.append({"message": "Run: cihub fix-pom --repo . --apply"})
 
-    if json_mode:
-        summary = "Dry run complete" if dry_run else "Initialization complete"
-        problems = [
-            {
-                "severity": "warning",
-                "message": warning,
-                "code": "CIHUB-INIT-WARN",
-                "file": str(config_path),
-            }
-            for warning in owner_warnings
-        ]
-        problems.extend(pom_warning_problems)
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=summary,
-            problems=problems,
-            files_generated=[str(config_path), str(workflow_path)],
-            data={
-                "language": language,
-                "owner": owner,
-                "name": name,
-                "branch": branch,
-                "subdir": subdir,
-                "dry_run": dry_run,
-                "bootstrap": bootstrap,
-            },
-        )
-    return EXIT_SUCCESS
+    # Build result
+    summary = "Dry run complete" if dry_run else "Initialization complete"
+    problems = [
+        {
+            "severity": "warning",
+            "message": warning,
+            "code": "CIHUB-INIT-WARN",
+            "file": str(config_path),
+        }
+        for warning in owner_warnings
+    ]
+    problems.extend(pom_warning_problems)
+
+    data = {
+        "language": language,
+        "owner": owner,
+        "name": name,
+        "branch": branch,
+        "subdir": subdir,
+        "dry_run": dry_run,
+        "bootstrap": bootstrap,
+    }
+    if dry_run:
+        data["raw_output"] = payload
+    data.update(pom_fix_data)
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=summary,
+        problems=problems,
+        suggestions=suggestions,
+        files_generated=[str(config_path), str(workflow_path)],
+        data=data,
+    )

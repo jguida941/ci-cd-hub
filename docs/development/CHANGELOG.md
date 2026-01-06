@@ -2,6 +2,110 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-06 - Security Audit + Consistency Fixes
+
+### Security Fixes (CRITICAL)
+
+**ZIP Path Traversal (CVE-2007-4559 variant):**
+- Added `_safe_extractall()` helper with `Path.relative_to()` validation
+- Fixed in: `cihub/core/correlation.py`, `cihub/core/aggregation/github_api.py`, `scripts/debug_orchestrator.py`
+- Pattern: Validate each ZIP member path stays within target directory before extraction
+
+**Tarball Symlink Attack:**
+- Added `issym()` and `islnk()` rejection before tarball extraction
+- Fixed in: `cihub/commands/hub_ci/__init__.py`
+- Pattern: Reject symbolic links and hard links in tarballs
+
+### Consistency Fixes (23 Low Severity Issues)
+
+**Token Environment Variable Priority:**
+- Added `get_github_token()` helper to `cihub/utils/env.py`
+- Standardized priority: `GH_TOKEN` → `GITHUB_TOKEN` → `HUB_DISPATCH_TOKEN`
+- Updated: `templates.py`, `dispatch.py`, `aggregate.py`
+
+**Safe Integer Parsing:**
+- Added `env_int()` helper to `cihub/utils/env.py`
+- Updated: `release.py` (Trivy env var parsing)
+
+**Exit Code Consistency:**
+- `smoke.py` now returns `EXIT_FAILURE` when tests fail (was always SUCCESS)
+- Added problem entry with error code `CIHUB-SMOKE-TEST-FAILURE`
+
+**Path Traversal Prevention:**
+- Added `validate_subdir()` calls to `init.py`, `new.py`
+
+**Magic Number Constants:**
+- Added `MAX_LOG_PREVIEW_CHARS = 2000` to `python_tools.py`
+- Added `MAX_ERRORS_IN_TRIAGE = 20` to `triage.py`
+- Added `HEALTH_CHECK_INTERVAL_SECONDS = 5` and `HEALTH_CHECK_HTTP_TIMEOUT_SECONDS = 5` to `docker_tools.py`
+
+**Code Consolidation:**
+- `get_tool_enabled()` in `config/loader/core.py` now delegates to canonical `tool_enabled()` from `normalize.py`
+
+**API Cleanup:**
+- Removed private functions from `__all__` in `utils/__init__.py`: `_parse_env_bool`, `_bar`, `_get_repo_name`, `_detect_java_project_type`
+- Updated imports in `gates.py`, `java.py`, `build.py` to use public function names
+
+### Test Updates
+- Updated test assertions to match new behavior (2 tests)
+- All 2120 tests passing
+
+---
+
+## 2026-01-05 - CommandResult Migration + Test Reorganization Plan
+
+### Code Review Fixes (CLEAN_CODE.md Phase 3)
+
+**Migration Quality Improvements:**
+- **detect.py** — Pure CommandResult return (no conditional JSON mode)
+- **validate.py** — Added YAML parse error handling (yaml.YAMLError, ValueError)
+- **smoke.py** — Fixed TemporaryDirectory resource leak with explicit cleanup
+- **discover.py** — Reordered empty check before GITHUB_OUTPUT write
+- **cli.py** — Error output now routes to stderr (CLI best practice)
+
+**Test Updates:**
+- Updated test patterns: `result.exit_code` instead of comparing `result == int`
+- Added `--json` flag to E2E detect tests for proper JSON output
+- All 2101+ tests passing
+
+### TEST_REORGANIZATION.md Plan Created
+
+**New Design Doc:** `docs/development/active/TEST_REORGANIZATION.md`
+
+Comprehensive plan for restructuring 2100+ tests from flat `tests/` into organized hierarchy:
+- `tests/unit/` — Fast, isolated, no I/O
+- `tests/integration/` — Cross-module, may use filesystem
+- `tests/e2e/` — Full workflows, slow
+- `tests/contracts/` — Schema/API contract tests
+- `tests/property/` — Hypothesis property-based tests
+- `tests/regression/` — Bug reproduction tests
+
+**Living Metadata System:**
+- Uses existing `config/defaults.yaml` `hub_ci.thresholds` as single source of truth
+- Auto-generated test file headers with metrics
+- Auto-generated `tests/README.md` with coverage table
+
+### 5-Agent Parallel Audit
+
+Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critical gaps:
+
+| Aspect | Finding |
+|--------|---------|
+| Test Structure | 45% of files (35/78) don't fit proposed categories |
+| Config Integration | `cihub hub-ci thresholds` CLI command not implemented |
+| Schema | Per-module overrides blocked by `additionalProperties: false` |
+| Automation | 3 scripts must be written (update_test_metrics, generate_test_readme, check_test_drift) |
+| Drift Detection | Only ~20% of scenarios covered |
+
+**Estimated effort:** ~10-12 days before Phase 1 can start
+
+### Documentation Updates
+- Updated STATUS.md with current progress and active design docs
+- Updated MASTER_PLAN.md with code review fixes and TEST_REORGANIZATION references
+- Added TEST_REORGANIZATION.md to Active Design Docs table
+
+---
+
 ## 2026-01-05 - v1.0 Cutline + Plan Alignment
 
 ### MASTER_PLAN.md Updates

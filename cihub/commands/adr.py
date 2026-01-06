@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import re
-import sys
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -146,27 +145,23 @@ def _check_adr_links(adr_path: Path) -> list[dict[str, Any]]:
     return problems
 
 
-def cmd_adr_new(args: argparse.Namespace) -> int | CommandResult:
+def cmd_adr_new(args: argparse.Namespace) -> CommandResult:
     """Create a new ADR from template with auto-numbering."""
-    json_mode = getattr(args, "json", False)
     title = getattr(args, "title", "")
     dry_run = getattr(args, "dry_run", False)
 
     if not title:
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_FAILURE,
-                summary="Title is required",
-                problems=[
-                    {
-                        "severity": "error",
-                        "message": "Title is required",
-                        "code": "CIHUB-ADR-NO-TITLE",
-                    }
-                ],
-            )
-        print("Error: title is required", file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="Title is required",
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Title is required",
+                    "code": "CIHUB-ADR-NO-TITLE",
+                }
+            ],
+        )
 
     adr_dir = _get_adr_dir()
     adr_dir.mkdir(parents=True, exist_ok=True)
@@ -207,21 +202,22 @@ Negative:
 """
 
     if dry_run:
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_SUCCESS,
-                summary=f"Would create: {filepath}",
-                data={"file": str(filepath), "number": number, "title": title},
-            )
-        print(f"Would create: {filepath}")
-        print("---")
-        print(content)
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=f"Would create: {filepath}",
+            data={
+                "file": str(filepath),
+                "number": number,
+                "title": title,
+                "raw_output": f"---\n{content}",
+            },
+        )
 
     filepath.write_text(content, encoding="utf-8")
 
     # Update README.md index
     readme_path = adr_dir / "README.md"
+    files_modified = []
     if readme_path.exists():
         readme_content = readme_path.read_text(encoding="utf-8")
         # Find the template starter line and insert before it
@@ -234,36 +230,28 @@ Negative:
                 f"{new_entry}\n\n{template_marker}",
             )
             readme_path.write_text(readme_content, encoding="utf-8")
+            files_modified.append(str(readme_path))
 
-    summary = f"Created ADR: {filename}"
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=summary,
-            files_generated=[str(filepath)],
-            data={"file": str(filepath), "number": number, "title": title},
-        )
-
-    print(summary)
-    print(f"  Path: {filepath}")
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Created ADR: {filename}",
+        files_generated=[str(filepath)],
+        files_modified=files_modified,
+        data={"file": str(filepath), "number": number, "title": title},
+    )
 
 
-def cmd_adr_list(args: argparse.Namespace) -> int | CommandResult:
+def cmd_adr_list(args: argparse.Namespace) -> CommandResult:
     """List all ADRs with their status."""
-    json_mode = getattr(args, "json", False)
     status_filter = getattr(args, "status", None)
 
     adr_dir = _get_adr_dir()
     if not adr_dir.exists():
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_SUCCESS,
-                summary="No ADRs found",
-                data={"adrs": []},
-            )
-        print("No ADRs found")
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="No ADRs found",
+            data={"adrs": []},
+        )
 
     adrs: list[dict[str, Any]] = []
     for f in sorted(adr_dir.glob("*.md")):
@@ -277,42 +265,44 @@ def cmd_adr_list(args: argparse.Namespace) -> int | CommandResult:
             continue
         adrs.append(adr)
 
-    summary = f"Found {len(adrs)} ADRs"
-    if json_mode:
+    if not adrs:
         return CommandResult(
             exit_code=EXIT_SUCCESS,
-            summary=summary,
-            data={"adrs": adrs},
+            summary="No ADRs found",
+            data={"adrs": []},
         )
 
-    if not adrs:
-        print("No ADRs found")
-        return EXIT_SUCCESS
+    # Build table for human-readable output
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Found {len(adrs)} ADRs",
+        data={
+            "adrs": adrs,
+            "table": {
+                "headers": ["#", "Status", "Date", "Title"],
+                "rows": [
+                    {
+                        "#": str(adr["number"]),
+                        "Status": adr["status"],
+                        "Date": adr["date"],
+                        "Title": adr["title"],
+                    }
+                    for adr in adrs
+                ],
+            },
+        },
+    )
 
-    # Print table header
-    print(f"{'#':>4}  {'Status':<12}  {'Date':<12}  Title")
-    print("-" * 70)
 
-    for adr in adrs:
-        print(f"{adr['number']:>4}  {adr['status']:<12}  {adr['date']:<12}  {adr['title']}")
-
-    print(f"\nTotal: {len(adrs)} ADRs")
-    return EXIT_SUCCESS
-
-
-def cmd_adr_check(args: argparse.Namespace) -> int | CommandResult:
+def cmd_adr_check(args: argparse.Namespace) -> CommandResult:
     """Validate ADRs: check for broken links and required fields."""
-    json_mode = getattr(args, "json", False)
-
     adr_dir = _get_adr_dir()
     if not adr_dir.exists():
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_SUCCESS,
-                summary="No ADRs to check",
-            )
-        print("No ADRs to check")
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="No ADRs to check",
+            data={"checked": 0, "errors": 0, "warnings": 0},
+        )
 
     problems: list[dict[str, Any]] = []
     checked = 0
@@ -370,26 +360,15 @@ def cmd_adr_check(args: argparse.Namespace) -> int | CommandResult:
     else:
         summary = f"ADR check: OK ({checked} checked)"
 
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_FAILURE if errors else EXIT_SUCCESS,
-            summary=summary,
-            problems=problems,
-            data={"checked": checked, "errors": len(errors), "warnings": len(warnings)},
-        )
-
-    if problems:
-        print(summary)
-        for problem in problems:
-            severity = problem["severity"].upper()
-            print(f"  [{severity}] {problem['message']}")
-        return EXIT_FAILURE if errors else EXIT_SUCCESS
-
-    print(summary)
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_FAILURE if errors else EXIT_SUCCESS,
+        summary=summary,
+        problems=problems,
+        data={"checked": checked, "errors": len(errors), "warnings": len(warnings)},
+    )
 
 
-def cmd_adr(args: argparse.Namespace) -> int | CommandResult:
+def cmd_adr(args: argparse.Namespace) -> CommandResult:
     """Router for ADR subcommands."""
     subcommand = getattr(args, "subcommand", None)
 

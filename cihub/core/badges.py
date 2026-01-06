@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Mapping, Optional
+from typing import Mapping
 
 # Adjusted for new location: cihub/core/badges.py -> parents[2] = project root
 ROOT = Path(__file__).resolve().parents[2]
@@ -64,7 +64,7 @@ def percent_badge(label: str, percent: float) -> dict:
     }
 
 
-def count_badge(label: str, count: Optional[int], unit: str = "issues") -> dict:
+def count_badge(label: str, count: int | None, unit: str = "issues") -> dict:
     """Generate badge JSON for count metric."""
     if count is None:
         return {
@@ -108,7 +108,7 @@ def disabled_badge(label: str) -> dict:
     }
 
 
-def load_zizmor(env: Mapping[str, str] | None = None, root: Path | None = None) -> Optional[int]:
+def load_zizmor(env: Mapping[str, str] | None = None, root: Path | None = None) -> int | None:
     """Parse zizmor SARIF for high/warning findings."""
     env = env or os.environ
     base = root or ROOT
@@ -128,7 +128,7 @@ def load_zizmor(env: Mapping[str, str] | None = None, root: Path | None = None) 
         return None
 
 
-def load_bandit(root: Path | None = None) -> Optional[int]:
+def load_bandit(root: Path | None = None) -> int | None:
     """Parse bandit.json for total issue count (all severities).
 
     Badge shows total count for visibility. CI fail thresholds are
@@ -146,7 +146,7 @@ def load_bandit(root: Path | None = None) -> Optional[int]:
         return None
 
 
-def load_pip_audit(root: Path | None = None) -> Optional[int]:
+def load_pip_audit(root: Path | None = None) -> int | None:
     """Parse pip-audit.json for vulnerability count."""
     base = root or ROOT
     report = base / "pip-audit.json"
@@ -165,7 +165,7 @@ def load_pip_audit(root: Path | None = None) -> Optional[int]:
         return None
 
 
-def get_env_int(name: str, env: Mapping[str, str] | None = None) -> Optional[int]:
+def get_env_int(name: str, env: Mapping[str, str] | None = None) -> int | None:
     """Get integer from environment variable."""
     env = env or os.environ
     val = env.get(name)
@@ -177,7 +177,7 @@ def get_env_int(name: str, env: Mapping[str, str] | None = None) -> Optional[int
     return None
 
 
-def get_env_float(name: str, env: Mapping[str, str] | None = None) -> Optional[float]:
+def get_env_float(name: str, env: Mapping[str, str] | None = None) -> float | None:
     """Get float from environment variable."""
     env = env or os.environ
     val = env.get(name)

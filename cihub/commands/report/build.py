@@ -15,12 +15,11 @@ from cihub.ci_report import (
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.reporting import render_summary_from_path
 from cihub.types import CommandResult
-from cihub.utils import hub_root
+from cihub.utils import detect_java_project_type, hub_root
 from cihub.utils.debug import emit_debug_context
 
 from .helpers import (
     _build_context,
-    _detect_java_project_type,
     _load_tool_outputs,
     _tool_enabled,
 )
@@ -95,7 +94,7 @@ def _emit_build_debug_context(
     emit_debug_context("report build", entries)
 
 
-def _build_report(args: argparse.Namespace, json_mode: bool) -> int | CommandResult:
+def _build_report(args: argparse.Namespace) -> CommandResult:
     """Build a report from tool outputs."""
     repo_path = Path(args.repo or ".").resolve()
     output_dir = Path(args.output_dir or ".cihub")
@@ -119,10 +118,7 @@ def _build_report(args: argparse.Namespace, json_mode: bool) -> int | CommandRes
             report=None,
             error=message,
         )
-        if json_mode:
-            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-        print(message)
-        return EXIT_FAILURE
+        return CommandResult(exit_code=EXIT_FAILURE, summary=message)
 
     language = config.get("language") or ""
     tool_outputs = _load_tool_outputs(tool_dir)
@@ -199,7 +195,7 @@ def _build_report(args: argparse.Namespace, json_mode: bool) -> int | CommandRes
 
         thresholds = resolve_thresholds(config, "java")
         build_tool = config.get("java", {}).get("build_tool", "maven").strip().lower() or "maven"
-        project_type = _detect_java_project_type(repo_path / (args.workdir or "."))
+        project_type = detect_java_project_type(repo_path / (args.workdir or "."))
         docker_cfg = config.get("java", {}).get("tools", {}).get("docker", {}) or {}
         context = _build_context(
             repo_path,
@@ -222,10 +218,7 @@ def _build_report(args: argparse.Namespace, json_mode: bool) -> int | CommandRes
         )
     else:
         message = f"report build supports python or java (got '{language}')"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-        print(message)
-        return EXIT_FAILURE
+        return CommandResult(exit_code=EXIT_FAILURE, summary=message)
 
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
@@ -245,12 +238,9 @@ def _build_report(args: argparse.Namespace, json_mode: bool) -> int | CommandRes
         error=None,
     )
 
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary="Report built",
-            artifacts={"report": str(report_path), "summary": str(summary_path)},
-        )
-    print(f"Wrote report: {report_path}")
-    print(f"Wrote summary: {summary_path}")
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="Report built",
+        artifacts={"report": str(report_path), "summary": str(summary_path)},
+        files_generated=[str(report_path), str(summary_path)],
+    )

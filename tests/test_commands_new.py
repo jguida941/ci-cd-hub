@@ -1,4 +1,8 @@
-"""Tests for commands/new.py."""
+"""Tests for commands/new.py.
+
+NOTE: All command functions now return CommandResult (never int).
+Tests check result.exit_code instead of comparing result to int.
+"""
 
 from __future__ import annotations
 
@@ -21,6 +25,7 @@ from cihub.commands.new import (  # isort: skip # noqa: E402
     cmd_new,
 )
 from cihub.config.paths import PathConfig  # noqa: E402
+from cihub.types import CommandResult  # noqa: E402
 
 
 # =============================================================================
@@ -169,7 +174,8 @@ class TestCmdNew:
 
             result = cmd_new(base_args)
 
-            assert result == 0
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 0
             repo_file = Path(hub_paths.repo_file("owner/repo"))
             assert repo_file.exists()
             content = repo_file.read_text()
@@ -187,7 +193,8 @@ class TestCmdNew:
 
             result = cmd_new(base_args)
 
-            assert result == 2
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 2
 
     def test_dry_run_does_not_create_file(self, hub_paths: PathConfig, base_args: argparse.Namespace) -> None:
         """Dry run does not create the config file."""
@@ -198,7 +205,8 @@ class TestCmdNew:
 
             result = cmd_new(base_args)
 
-            assert result == 0
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 0
             repo_file = Path(hub_paths.repo_file("owner/repo"))
             assert not repo_file.exists()
 
@@ -211,7 +219,8 @@ class TestCmdNew:
 
             result = cmd_new(base_args)
 
-            assert result == 2
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 2
 
     def test_missing_language_fails(self, hub_paths: PathConfig, base_args: argparse.Namespace) -> None:
         """Fails when language is missing in non-interactive mode."""
@@ -222,7 +231,8 @@ class TestCmdNew:
 
             result = cmd_new(base_args)
 
-            assert result == 2
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 2
 
     def test_json_mode_with_interactive_fails(self, hub_paths: PathConfig, base_args: argparse.Namespace) -> None:
         """JSON mode with interactive flag fails."""
@@ -263,7 +273,8 @@ class TestCmdNew:
 
             result = cmd_new(base_args)
 
-            assert result == 0
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 0
             repo_file = Path(hub_paths.repo_file("owner/repo"))
             content = repo_file.read_text()
             assert "subdir: services/api" in content
@@ -280,7 +291,8 @@ class TestCmdNew:
 
             result = cmd_new(base_args)
 
-            assert result == 0
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 0
             repo_file = Path(hub_paths.repo_file("owner/repo"))
             content = repo_file.read_text()
             assert "ruff" in content
@@ -294,7 +306,8 @@ class TestCmdNew:
 
             result = cmd_new(base_args)
 
-            assert result == 2
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 2
 
     def test_profile_language_mismatch_fails(self, hub_paths: PathConfig, base_args: argparse.Namespace) -> None:
         """Fails when profile language doesn't match specified language."""
@@ -332,15 +345,14 @@ class TestCmdNew:
 
             result = cmd_new(base_args)
 
-            assert result == 0
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 0
             repo_file = Path(hub_paths.repo_file("owner/repo"))
             content = repo_file.read_text()
             assert "language: java" in content
 
     def test_existing_config_json_mode_fails(self, hub_paths: PathConfig, base_args: argparse.Namespace) -> None:
         """JSON mode fails when config already exists."""
-        from cihub.cli import CommandResult
-
         # Create existing config
         repo_file = Path(hub_paths.repo_file("owner/repo"))
         repo_file.parent.mkdir(parents=True, exist_ok=True)
@@ -359,8 +371,6 @@ class TestCmdNew:
 
     def test_json_mode_success_after_write(self, hub_paths: PathConfig, base_args: argparse.Namespace) -> None:
         """JSON mode returns CommandResult after successful write."""
-        from cihub.cli import CommandResult
-
         base_args.json = True
         base_args.yes = True
         base_args.dry_run = False
@@ -386,4 +396,5 @@ class TestCmdNew:
             with mock.patch("cihub.commands.new.HAS_WIZARD", False):
                 result = cmd_new(base_args)
 
-                assert result == 1
+                assert isinstance(result, CommandResult)
+                assert result.exit_code == 1

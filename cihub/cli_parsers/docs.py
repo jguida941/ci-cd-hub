@@ -48,3 +48,68 @@ def add_docs_commands(
         help="Also check external (http/https) links (requires lychee)",
     )
     docs_links.set_defaults(func=handlers.cmd_docs_links)
+
+    # docs stale - detect stale documentation references (DOC_AUTOMATION_AUDIT.md Part 9)
+    docs_stale = docs_sub.add_parser(
+        "stale",
+        help="Detect stale documentation references to removed/renamed code",
+    )
+    add_json_flag(docs_stale)
+    docs_stale.add_argument(
+        "--since",
+        default="HEAD~10",
+        help="Git revision range (default: HEAD~10)",
+    )
+    docs_stale.add_argument(
+        "--all",
+        action="store_true",
+        help="Include archived docs (docs/development/archive/)",
+    )
+    docs_stale.add_argument(
+        "--include-generated",
+        action="store_true",
+        help="Include generated docs (docs/reference/) - rarely needed",
+    )
+    docs_stale.add_argument(
+        "--ai",
+        action="store_true",
+        help="AI-consumable markdown output (no network calls)",
+    )
+    docs_stale.add_argument(
+        "--fail-on-stale",
+        action="store_true",
+        help="Exit non-zero if stale refs found (for CI)",
+    )
+    docs_stale.add_argument(
+        "--code",
+        default="cihub",
+        help="Code directory (default: cihub/)",
+    )
+    docs_stale.add_argument(
+        "--docs",
+        default="docs",
+        help="Docs directory (default: docs/)",
+    )
+    docs_stale.add_argument(
+        "--skip-fences",
+        action="store_true",
+        help="Skip bash/shell code fences (default: parse them)",
+    )
+    docs_stale.add_argument(
+        "--output-dir",
+        help="Output dir for CIHub-style artifacts (e.g., .cihub/tool-outputs)",
+    )
+    docs_stale.add_argument(
+        "--tool-output",
+        help="Path to write tool-style JSON (for triage/tool-outputs)",
+    )
+    docs_stale.add_argument(
+        "--ai-output",
+        help="Path to write the AI prompt pack (markdown)",
+    )
+    docs_stale.add_argument(
+        "--github-summary",
+        action="store_true",
+        help="Write summary to GITHUB_STEP_SUMMARY",
+    )
+    docs_stale.set_defaults(func=handlers.cmd_docs_stale)

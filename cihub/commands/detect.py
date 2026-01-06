@@ -12,13 +12,18 @@ from cihub.services.detection import resolve_language
 from cihub.types import CommandResult
 
 
-def cmd_detect(args: argparse.Namespace) -> int | CommandResult:
+def cmd_detect(args: argparse.Namespace) -> CommandResult:
+    """Detect project language from markers.
+
+    Always returns CommandResult for consistent output handling.
+    """
     repo_path = Path(args.repo).resolve()
-    json_mode = getattr(args, "json", False)
+    items: list[str] = []  # Human-readable output
+
     try:
         language, reasons = resolve_language(repo_path, args.language)
     except ValueError as exc:
-        error_result = CommandResult(
+        return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=str(exc),
             problems=[
@@ -28,22 +33,18 @@ def cmd_detect(args: argparse.Namespace) -> int | CommandResult:
                     "code": "CIHUB-DETECT-001",
                 }
             ],
+            data={"items": [f"Error: {exc}"]},
         )
-        if json_mode:
-            return error_result
-        # Print user-friendly error to stderr and return exit code
-        import sys
 
-        print(f"Error: {exc}", file=sys.stderr)
-        return EXIT_FAILURE
     payload: dict[str, Any] = {"language": language}
     if args.explain:
         payload["reasons"] = reasons
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=f"Detected language: {language}",
-            data=payload,
-        )
-    print(json.dumps(payload, indent=2))
-    return EXIT_SUCCESS
+
+    # Human-readable output (JSON format for backwards compatibility)
+    items.append(json.dumps(payload, indent=2))
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Detected language: {language}",
+        data={**payload, "items": items, "raw_output": json.dumps(payload, indent=2)},
+    )

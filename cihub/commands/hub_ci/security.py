@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import stat
 import subprocess
 from pathlib import Path
 
@@ -17,15 +16,54 @@ from cihub.utils.github_context import OutputContext
 from . import (
     _count_pip_audit_vulns,
     _run_command,
+    ensure_executable,
 )
 
 
-def cmd_bandit(args: argparse.Namespace) -> int | CommandResult:
+def _validate_scan_paths(paths: list[str]) -> tuple[list[str], list[str]]:
+    """Validate paths for security scanning tools.
+
+    Returns:
+        Tuple of (valid_paths, problems)
+    """
+    valid_paths: list[str] = []
+    problems: list[str] = []
+    cwd = Path.cwd().resolve()
+
+    for path in paths:
+        # Block path traversal attempts
+        if ".." in path or path.startswith("/") or "\\" in path:
+            problems.append(f"Invalid path (traversal blocked): {path}")
+            continue
+        # Verify path exists and is within cwd
+        try:
+            resolved = (cwd / path).resolve()
+            resolved.relative_to(cwd)
+            if resolved.exists():
+                valid_paths.append(path)
+            else:
+                problems.append(f"Path does not exist: {path}")
+        except ValueError:
+            problems.append(f"Path escapes working directory: {path}")
+
+    return valid_paths, problems
+
+
+def cmd_bandit(args: argparse.Namespace) -> CommandResult:
+    # Validate scan paths to prevent path traversal
+    valid_paths, path_problems = _validate_scan_paths(args.paths)
+    if not valid_paths:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="No valid paths to scan",
+            problems=[{"severity": "error", "message": p, "code": "CIHUB-BANDIT-PATH"} for p in path_problems],
+        )
+
     output_path = Path(args.output)
     cmd = [
         "bandit",
         "-r",
-        *args.paths,
+        *valid_paths,
         "-f",
         "json",
         "-o",
@@ -99,10 +137,11 @@ def cmd_bandit(args: argparse.Namespace) -> int | CommandResult:
     }
 
     if fail_reasons:
-        # Show details for failing severities
+        # Show details for failing severities (use validated paths)
         subprocess.run(  # noqa: S603
-            ["bandit", "-r", *args.paths, "--severity-level", "low"],  # noqa: S607
+            ["bandit", "-r", *valid_paths, "--severity-level", "low"],  # noqa: S607
             text=True,
+            timeout=120,
         )
         return CommandResult(
             exit_code=EXIT_FAILURE,
@@ -118,7 +157,7 @@ def cmd_bandit(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_pip_audit(args: argparse.Namespace) -> int | CommandResult:
+def cmd_pip_audit(args: argparse.Namespace) -> CommandResult:
     output_path = Path(args.output)
     cmd = [
         "pip-audit",
@@ -148,6 +187,7 @@ def cmd_pip_audit(args: argparse.Namespace) -> int | CommandResult:
             ["pip-audit", "--format", "markdown"],  # noqa: S607
             text=True,
             capture_output=True,
+            timeout=60,
         )
         if markdown.stdout:
             ctx.write_summary(markdown.stdout)
@@ -165,7 +205,7 @@ def cmd_pip_audit(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_security_pip_audit(args: argparse.Namespace) -> int | CommandResult:
+def cmd_security_pip_audit(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     report_path = (repo_path / args.report).resolve()
     requirements = args.requirements or []
@@ -217,7 +257,7 @@ def cmd_security_pip_audit(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_security_bandit(args: argparse.Namespace) -> int | CommandResult:
+def cmd_security_bandit(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     report_path = (repo_path / args.report).resolve()
 
@@ -263,7 +303,7 @@ def cmd_security_bandit(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_security_ruff(args: argparse.Namespace) -> int | CommandResult:
+def cmd_security_ruff(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     report_path = (repo_path / args.report).resolve()
 
@@ -299,14 +339,13 @@ def cmd_security_ruff(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_security_owasp(args: argparse.Namespace) -> int | CommandResult:
+def cmd_security_owasp(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     mvnw = repo_path / "mvnw"
     tool_status = "success"
     problems: list[dict[str, str]] = []
     proc = None
-    if mvnw.exists():
-        mvnw.chmod(mvnw.stat().st_mode | stat.S_IEXEC)
+    if ensure_executable(mvnw):
         proc = _run_command(
             ["./mvnw", "-B", "-ntp", "org.owasp:dependency-check-maven:check", "-DfailBuildOnCVSS=11"],
             repo_path,

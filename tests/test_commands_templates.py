@@ -1,4 +1,9 @@
-"""Tests for cihub.commands.templates module."""
+"""Tests for cihub.commands.templates module.
+
+All command functions now return CommandResult (never int).
+Tests check result.exit_code and result.data["items"] instead of
+comparing result to int or checking capsys output.
+"""
 
 from __future__ import annotations
 
@@ -15,7 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from cihub.cli import CommandResult  # isort: skip # noqa: E402
+from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE  # noqa: E402
+from cihub.types import CommandResult  # noqa: E402
 from cihub.commands.templates import cmd_sync_templates  # noqa: E402
 
 
@@ -71,12 +77,14 @@ class TestSyncTemplatesNoRepos:
     """Tests for cmd_sync_templates when no repos found."""
 
     def test_no_repos_returns_success(self, base_args: argparse.Namespace) -> None:
-        """Returns 0 when no repos to sync."""
+        """Returns CommandResult with exit_code 0 when no repos to sync."""
         with mock.patch("cihub.commands.templates.get_repo_entries") as mock_get_entries:
             mock_get_entries.return_value = []
 
             result = cmd_sync_templates(base_args)
-            assert result == 0
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_SUCCESS
+            assert "No repos" in result.summary
 
     def test_no_repos_json_mode(self, base_args: argparse.Namespace) -> None:
         """Returns CommandResult when no repos in JSON mode."""
@@ -87,7 +95,7 @@ class TestSyncTemplatesNoRepos:
 
             result = cmd_sync_templates(base_args)
             assert isinstance(result, CommandResult)
-            assert result.exit_code == 0
+            assert result.exit_code == EXIT_SUCCESS
             assert "No repos" in result.summary
 
 
@@ -100,9 +108,9 @@ class TestSyncTemplatesNoToken:
     """Tests for cmd_sync_templates when no token is available."""
 
     def test_check_mode_skips_without_token(
-        self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch, capsys
+        self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Returns 0 (skip) when --check and no token available."""
+        """Returns CommandResult with exit_code 0 (skip) when --check and no token."""
         monkeypatch.delenv("GH_TOKEN", raising=False)
         monkeypatch.delenv("GITHUB_TOKEN", raising=False)
         monkeypatch.delenv("HUB_DISPATCH_TOKEN", raising=False)
@@ -110,15 +118,15 @@ class TestSyncTemplatesNoToken:
 
         result = cmd_sync_templates(base_args)
 
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "[SKIP]" in captured.err
-        assert "No GitHub token" in captured.err
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
+        assert result.data.get("skipped") is True
+        assert "Missing GitHub token" in result.summary
 
     def test_dry_run_skips_without_token(
-        self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch, capsys
+        self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Returns 0 (skip) when --dry-run and no token available."""
+        """Returns CommandResult with exit_code 0 (skip) when --dry-run and no token."""
         monkeypatch.delenv("GH_TOKEN", raising=False)
         monkeypatch.delenv("GITHUB_TOKEN", raising=False)
         monkeypatch.delenv("HUB_DISPATCH_TOKEN", raising=False)
@@ -126,9 +134,9 @@ class TestSyncTemplatesNoToken:
 
         result = cmd_sync_templates(base_args)
 
-        assert result == 0
-        captured = capsys.readouterr()
-        assert "[SKIP]" in captured.err
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
+        assert result.data.get("skipped") is True
 
     def test_check_mode_json_skips_without_token(
         self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch
@@ -143,14 +151,14 @@ class TestSyncTemplatesNoToken:
         result = cmd_sync_templates(base_args)
 
         assert isinstance(result, CommandResult)
-        assert result.exit_code == 0
+        assert result.exit_code == EXIT_SUCCESS
         assert result.data.get("skipped") is True
         assert result.data.get("reason") == "no_token"
 
     def test_actual_sync_fails_without_token(
-        self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch, capsys
+        self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Returns error when actual sync (not check/dry-run) and no token."""
+        """Returns EXIT_USAGE when actual sync (not check/dry-run) and no token."""
         monkeypatch.delenv("GH_TOKEN", raising=False)
         monkeypatch.delenv("GITHUB_TOKEN", raising=False)
         monkeypatch.delenv("HUB_DISPATCH_TOKEN", raising=False)
@@ -158,9 +166,9 @@ class TestSyncTemplatesNoToken:
 
         result = cmd_sync_templates(base_args)
 
-        assert result == 2  # EXIT_USAGE
-        captured = capsys.readouterr()
-        assert "Missing GitHub token" in captured.err
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_USAGE
+        assert "Missing GitHub token" in result.summary
 
 
 # =============================================================================
@@ -171,17 +179,17 @@ class TestSyncTemplatesNoToken:
 class TestSyncTemplatesRepoNotFound:
     """Tests for cmd_sync_templates when specified repo not found."""
 
-    def test_repo_not_found_returns_error(self, base_args: argparse.Namespace, capsys) -> None:
-        """Returns error when specified repo not in config."""
+    def test_repo_not_found_returns_error(self, base_args: argparse.Namespace) -> None:
+        """Returns EXIT_USAGE when specified repo not in config."""
         base_args.repo = ["owner/nonexistent"]
 
         with mock.patch("cihub.commands.templates.get_repo_entries") as mock_get_entries:
             mock_get_entries.return_value = [{"full": "owner/existing", "language": "python"}]
 
             result = cmd_sync_templates(base_args)
-            assert result == 2
-            captured = capsys.readouterr()
-            assert "not found" in captured.err
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_USAGE
+            assert "not found" in result.summary.lower()
 
     def test_repo_not_found_json_mode(self, base_args: argparse.Namespace) -> None:
         """Returns CommandResult when repo not found in JSON mode."""
@@ -193,7 +201,7 @@ class TestSyncTemplatesRepoNotFound:
 
             result = cmd_sync_templates(base_args)
             assert isinstance(result, CommandResult)
-            assert result.exit_code == 2
+            assert result.exit_code == EXIT_USAGE
 
 
 # =============================================================================
@@ -204,7 +212,7 @@ class TestSyncTemplatesRepoNotFound:
 class TestSyncTemplatesRenderError:
     """Tests for cmd_sync_templates when workflow rendering fails."""
 
-    def test_render_error_continues(self, base_args: argparse.Namespace, capsys) -> None:
+    def test_render_error_continues(self, base_args: argparse.Namespace) -> None:
         """Continues processing other repos when one fails to render."""
         with mock.patch("cihub.commands.templates.get_repo_entries") as mock_get_entries:
             mock_get_entries.return_value = [
@@ -215,9 +223,11 @@ class TestSyncTemplatesRenderError:
                 mock_render.side_effect = ValueError("Unsupported language")
 
                 result = cmd_sync_templates(base_args)
-                assert result == 1  # Failure exit code
-                captured = capsys.readouterr()
-                assert "Error" in captured.err
+                assert isinstance(result, CommandResult)
+                assert result.exit_code == EXIT_FAILURE
+                # Check that error message is in items
+                items = result.data.get("items", [])
+                assert any("ERROR" in item for item in items)
 
 
 # =============================================================================
@@ -228,7 +238,7 @@ class TestSyncTemplatesRenderError:
 class TestSyncTemplatesUpToDate:
     """Tests for cmd_sync_templates when workflows are up to date."""
 
-    def test_up_to_date_returns_success(self, base_args: argparse.Namespace, capsys) -> None:
+    def test_up_to_date_returns_success(self, base_args: argparse.Namespace) -> None:
         """Returns success when workflow is up to date."""
         with mock.patch("cihub.commands.templates.get_repo_entries") as mock_get_entries:
             mock_get_entries.return_value = [
@@ -245,10 +255,11 @@ class TestSyncTemplatesUpToDate:
                     }
 
                     result = cmd_sync_templates(base_args)
-                    assert result == 0
-                    captured = capsys.readouterr()
-                    assert "[OK]" in captured.out
-                    assert "up to date" in captured.out
+                    assert isinstance(result, CommandResult)
+                    assert result.exit_code == EXIT_SUCCESS
+                    # Check that success message is in items
+                    items = result.data.get("items", [])
+                    assert any("[OK]" in item and "up to date" in item for item in items)
 
 
 # =============================================================================
@@ -259,7 +270,7 @@ class TestSyncTemplatesUpToDate:
 class TestSyncTemplatesCheckMode:
     """Tests for cmd_sync_templates in check mode."""
 
-    def test_check_mode_out_of_date_fails(self, base_args: argparse.Namespace, capsys) -> None:
+    def test_check_mode_out_of_date_fails(self, base_args: argparse.Namespace) -> None:
         """Check mode returns failure when workflow is out of date."""
         base_args.check = True
 
@@ -278,12 +289,13 @@ class TestSyncTemplatesCheckMode:
                     }
 
                     result = cmd_sync_templates(base_args)
-                    assert result == 1
-                    captured = capsys.readouterr()
-                    assert "[FAIL]" in captured.out
-                    assert "out of date" in captured.out
+                    assert isinstance(result, CommandResult)
+                    assert result.exit_code == EXIT_FAILURE
+                    # Check that failure message is in items
+                    items = result.data.get("items", [])
+                    assert any("[FAIL]" in item and "out of date" in item for item in items)
 
-    def test_check_mode_stale_workflow_fails(self, base_args: argparse.Namespace, capsys) -> None:
+    def test_check_mode_stale_workflow_fails(self, base_args: argparse.Namespace) -> None:
         """Check mode returns failure when stale workflow exists."""
         base_args.check = True
 
@@ -308,9 +320,11 @@ class TestSyncTemplatesCheckMode:
                     mock_fetch.side_effect = fetch_side_effect
 
                     result = cmd_sync_templates(base_args)
-                    assert result == 1
-                    captured = capsys.readouterr()
-                    assert "stale" in captured.out.lower()
+                    assert isinstance(result, CommandResult)
+                    assert result.exit_code == EXIT_FAILURE
+                    # Check that stale message is in items
+                    items = result.data.get("items", [])
+                    assert any("stale" in item.lower() for item in items)
 
 
 # =============================================================================
@@ -321,7 +335,7 @@ class TestSyncTemplatesCheckMode:
 class TestSyncTemplatesDryRun:
     """Tests for cmd_sync_templates in dry run mode."""
 
-    def test_dry_run_does_not_update(self, base_args: argparse.Namespace, capsys) -> None:
+    def test_dry_run_does_not_update(self, base_args: argparse.Namespace) -> None:
         """Dry run shows what would be updated without actually updating."""
         base_args.dry_run = True
 
@@ -341,9 +355,11 @@ class TestSyncTemplatesDryRun:
 
                     with mock.patch("cihub.commands.templates.update_remote_file") as mock_update:
                         result = cmd_sync_templates(base_args)
-                        assert result == 0
-                        captured = capsys.readouterr()
-                        assert "Would update" in captured.out
+                        assert isinstance(result, CommandResult)
+                        assert result.exit_code == EXIT_SUCCESS
+                        # Check that "Would update" message is in items
+                        items = result.data.get("items", [])
+                        assert any("Would update" in item for item in items)
                         # Should NOT actually call update
                         mock_update.assert_not_called()
 
@@ -356,7 +372,7 @@ class TestSyncTemplatesDryRun:
 class TestSyncTemplatesUpdate:
     """Tests for cmd_sync_templates update functionality."""
 
-    def test_update_success(self, base_args: argparse.Namespace, capsys) -> None:
+    def test_update_success(self, base_args: argparse.Namespace) -> None:
         """Successfully updates out-of-date workflow."""
         with mock.patch("cihub.commands.templates.get_repo_entries") as mock_get_entries:
             mock_get_entries.return_value = [
@@ -374,13 +390,14 @@ class TestSyncTemplatesUpdate:
 
                     with mock.patch("cihub.commands.templates.update_remote_file") as mock_update:
                         result = cmd_sync_templates(base_args)
-                        assert result == 0
-                        captured = capsys.readouterr()
-                        assert "[OK]" in captured.out
-                        assert "updated" in captured.out
+                        assert isinstance(result, CommandResult)
+                        assert result.exit_code == EXIT_SUCCESS
+                        # Check that success message is in items
+                        items = result.data.get("items", [])
+                        assert any("[OK]" in item and "updated" in item for item in items)
                         mock_update.assert_called_once()
 
-    def test_update_failure(self, base_args: argparse.Namespace, capsys) -> None:
+    def test_update_failure(self, base_args: argparse.Namespace) -> None:
         """Handles update failure gracefully."""
         with mock.patch("cihub.commands.templates.get_repo_entries") as mock_get_entries:
             mock_get_entries.return_value = [
@@ -400,10 +417,11 @@ class TestSyncTemplatesUpdate:
                         mock_update.side_effect = RuntimeError("API error")
 
                         result = cmd_sync_templates(base_args)
-                        assert result == 1
-                        captured = capsys.readouterr()
-                        assert "[FAIL]" in captured.err
-                        assert "failed" in captured.err
+                        assert isinstance(result, CommandResult)
+                        assert result.exit_code == EXIT_FAILURE
+                        # Check that failure message is in items
+                        items = result.data.get("items", [])
+                        assert any("[FAIL]" in item and "failed" in item for item in items)
 
 
 # =============================================================================
@@ -414,7 +432,7 @@ class TestSyncTemplatesUpdate:
 class TestSyncTemplatesStaleCleanup:
     """Tests for stale workflow cleanup."""
 
-    def test_deletes_stale_workflows(self, base_args: argparse.Namespace, capsys) -> None:
+    def test_deletes_stale_workflows(self, base_args: argparse.Namespace) -> None:
         """Deletes stale workflows after successful sync."""
         with mock.patch("cihub.commands.templates.get_repo_entries") as mock_get_entries:
             mock_get_entries.return_value = [
@@ -437,12 +455,14 @@ class TestSyncTemplatesStaleCleanup:
 
                     with mock.patch("cihub.commands.templates.delete_remote_file") as mock_delete:
                         result = cmd_sync_templates(base_args)
-                        assert result == 0
-                        captured = capsys.readouterr()
-                        assert "deleted" in captured.out.lower() or "[OK]" in captured.out
+                        assert isinstance(result, CommandResult)
+                        assert result.exit_code == EXIT_SUCCESS
+                        # Check that delete message is in items
+                        items = result.data.get("items", [])
+                        assert any("deleted" in item.lower() for item in items) or any("[OK]" in item for item in items)
                         mock_delete.assert_called()
 
-    def test_stale_delete_failure(self, base_args: argparse.Namespace, capsys) -> None:
+    def test_stale_delete_failure(self, base_args: argparse.Namespace) -> None:
         """Handles stale workflow deletion failure gracefully."""
         with mock.patch("cihub.commands.templates.get_repo_entries") as mock_get_entries:
             mock_get_entries.return_value = [
@@ -466,10 +486,12 @@ class TestSyncTemplatesStaleCleanup:
                     with mock.patch("cihub.commands.templates.delete_remote_file") as mock_delete:
                         mock_delete.side_effect = RuntimeError("Delete failed")
 
-                        cmd_sync_templates(base_args)
+                        result = cmd_sync_templates(base_args)
                         # Should still succeed (deletion failure is a warning)
-                        captured = capsys.readouterr()
-                        assert "delete failed" in captured.err.lower() or "[WARN]" in captured.err
+                        assert isinstance(result, CommandResult)
+                        # Check that warning is in items
+                        items = result.data.get("items", [])
+                        assert any("delete failed" in item.lower() or "[WARN]" in item for item in items)
 
 
 # =============================================================================
@@ -500,7 +522,7 @@ class TestSyncTemplatesJsonMode:
 
                     result = cmd_sync_templates(base_args)
                     assert isinstance(result, CommandResult)
-                    assert result.exit_code == 0
+                    assert result.exit_code == EXIT_SUCCESS
                     assert "complete" in result.summary.lower()
                     assert "repos" in result.data
                     assert result.data["failures"] == 0
@@ -527,8 +549,7 @@ class TestSyncTemplatesJsonMode:
 
                     result = cmd_sync_templates(base_args)
                     assert isinstance(result, CommandResult)
-                    assert result.exit_code == 1
-                    assert "failed" in result.summary.lower()
+                    assert result.exit_code == EXIT_FAILURE
                     assert result.data["failures"] == 1
 
 
@@ -540,7 +561,7 @@ class TestSyncTemplatesJsonMode:
 class TestSyncTemplatesTagUpdate:
     """Tests for v1 tag update functionality."""
 
-    def test_tag_update_dry_run(self, base_args: argparse.Namespace, capsys) -> None:
+    def test_tag_update_dry_run(self, base_args: argparse.Namespace) -> None:
         """Dry run shows tag update would happen."""
         base_args.update_tag = True
         base_args.dry_run = True
@@ -562,9 +583,11 @@ class TestSyncTemplatesTagUpdate:
                     }
 
                     result = cmd_sync_templates(base_args)
-                    assert result == 0
-                    captured = capsys.readouterr()
-                    assert "Would update v1 tag" in captured.out
+                    assert isinstance(result, CommandResult)
+                    assert result.exit_code == EXIT_SUCCESS
+                    # Check that "Would update v1 tag" message is in items
+                    items = result.data.get("items", [])
+                    assert any("Would update v1 tag" in item for item in items)
 
     def test_tag_update_requires_confirmation(self, base_args: argparse.Namespace) -> None:
         """Tag update without --yes in JSON mode returns error."""
@@ -599,10 +622,10 @@ class TestSyncTemplatesTagUpdate:
 
                             result = cmd_sync_templates(base_args)
                             assert isinstance(result, CommandResult)
-                            assert result.exit_code == 2
+                            assert result.exit_code == EXIT_USAGE
                             assert "confirmation" in result.summary.lower() or "--yes" in result.summary
 
-    def test_tag_already_at_head(self, base_args: argparse.Namespace, capsys) -> None:
+    def test_tag_already_at_head(self, base_args: argparse.Namespace) -> None:
         """Tag update skipped when already at HEAD."""
         base_args.update_tag = True
         base_args.yes = True
@@ -630,9 +653,11 @@ class TestSyncTemplatesTagUpdate:
                             mock_run.return_value = mock.Mock(stdout="abc123\n", returncode=0)
 
                             result = cmd_sync_templates(base_args)
-                            assert result == 0
-                            captured = capsys.readouterr()
-                            assert "already at HEAD" in captured.out
+                            assert isinstance(result, CommandResult)
+                            assert result.exit_code == EXIT_SUCCESS
+                            # Check that "already at HEAD" message is in items
+                            items = result.data.get("items", [])
+                            assert any("already at HEAD" in item for item in items)
 
 
 # =============================================================================

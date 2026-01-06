@@ -20,7 +20,7 @@ import yaml
 from cihub.config.fallbacks import FALLBACK_DEFAULTS
 from cihub.config.io import load_yaml_file
 from cihub.config.merge import deep_merge
-from cihub.config.normalize import normalize_config
+from cihub.config.normalize import normalize_config, tool_enabled as _tool_enabled_canonical
 
 
 class ConfigValidationError(Exception):
@@ -63,7 +63,7 @@ def load_config(
     schema_path = hub_root / "schema" / "ci-hub-config.schema.json"
     schema: dict[str, Any] = {}
     if schema_path.exists():
-        schema = json.loads(schema_path.read_text())
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
     else:
         print(f"Warning: schema not found at {schema_path}", file=sys.stderr)
 
@@ -89,12 +89,21 @@ def load_config(
     if not config:
         print(f"Warning: No defaults found at {defaults_path}", file=sys.stderr)
         config = FALLBACK_DEFAULTS
+    # Note: We DON'T validate defaults.yaml pre-normalize because:
+    # 1. It's part of this repo and tested
+    # 2. It intentionally lacks required repo fields (owner, name, language)
+    # 3. The final merged config is always validated
     config = normalize_config(config)
 
     # 2. Merge hub's repo-specific config
     repo_override_path = hub_root / "config" / "repos" / f"{repo_name}.yaml"
     repo_override_exists = repo_override_path.exists()
-    repo_override = normalize_config(_load_yaml(repo_override_path, "hub override"))
+    repo_override_raw = _load_yaml(repo_override_path, "hub override")
+    # Note: We DON'T validate hub overrides pre-normalize because:
+    # 1. They are partial configs that don't include all required fields
+    # 2. The schema requires fields like 'language' that are only in defaults
+    # 3. The final merged config is always validated
+    repo_override = normalize_config(repo_override_raw)
 
     if repo_override:
         config = deep_merge(config, repo_override)
@@ -103,6 +112,10 @@ def load_config(
     if repo_config_path:
         repo_local_config = _load_yaml(repo_config_path, "repo local config")
         if repo_local_config:
+            # Note: We DON'T validate repo local configs pre-normalize because:
+            # 1. They are partial configs that only override specific settings
+            # 2. The schema requires fields that come from defaults/hub override
+            # 3. The final merged config is always validated
             # Block repo-local from overriding protected keys when hub override exists.
             if repo_override_exists:
                 repo_block = repo_local_config.get("repo", {})
@@ -143,19 +156,13 @@ def load_config(
 
 
 def get_tool_enabled(config: dict[str, Any], language: str, tool: str) -> bool:
-    """Check if a specific tool is enabled for the given language."""
-    lang_config = config.get(language, {})
-    if not isinstance(lang_config, dict):
-        return False
-    tools = lang_config.get("tools", {})
-    if not isinstance(tools, dict):
-        return False
-    tool_config = tools.get(tool, {})
-    if isinstance(tool_config, dict):
-        return bool(tool_config.get("enabled", False))
-    if isinstance(tool_config, bool):
-        return tool_config
-    return False
+    """Check if a specific tool is enabled for the given language.
+
+    This is a wrapper around the canonical tool_enabled() from normalize.py.
+    The parameter order (language, tool) is maintained for backwards compatibility,
+    but internally delegates to the canonical implementation.
+    """
+    return _tool_enabled_canonical(config, tool, language, default=False)
 
 
 def get_tool_config(config: dict[str, Any], language: str, tool: str) -> dict[str, Any]:

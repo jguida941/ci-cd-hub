@@ -203,17 +203,16 @@ class TestCmdConfigOutputs:
 
         assert result.data["outputs"]["write_github_summary"] == "false"
 
-    def test_outputs_to_stdout_when_no_github_output(self, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-        """Test outputs go to stdout."""
+    def test_outputs_to_stdout_when_no_github_output(self, tmp_path: Path) -> None:
+        """Test outputs returned in CommandResult for human rendering."""
         args = argparse.Namespace(repo=str(tmp_path), json=False, workdir=None, github_output=False)
 
         with patch("cihub.commands.config_outputs.load_ci_config") as mock_load:
             mock_load.return_value = {"language": "python"}
             result = cmd_config_outputs(args)
 
-        assert result == EXIT_SUCCESS
-        captured = capsys.readouterr()
-        assert "language=python" in captured.out
+        assert result.exit_code == EXIT_SUCCESS
+        assert "language=python" in result.data["raw_output"]
 
     def test_writes_to_github_output_file(self, tmp_path: Path) -> None:
         """Test writes to GITHUB_OUTPUT when flag set."""
@@ -227,7 +226,7 @@ class TestCmdConfigOutputs:
             mock_load.return_value = {"language": "java"}
             result = cmd_config_outputs(args)
 
-        assert result == EXIT_SUCCESS
+        assert result.exit_code == EXIT_SUCCESS
         content = output_file.read_text()
         assert "language=java" in content
 
@@ -388,9 +387,7 @@ class TestCmdConfigOutputs:
         assert "Failed to load config" in result.summary
         assert len(result.problems) == 1
 
-    def test_returns_failure_on_config_load_error_text_mode(
-        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
-    ) -> None:
+    def test_returns_failure_on_config_load_error_text_mode(self, tmp_path: Path) -> None:
         """Test returns failure when config fails to load (text mode)."""
         args = argparse.Namespace(repo=str(tmp_path), json=False, workdir=None, github_output=False)
 
@@ -398,9 +395,8 @@ class TestCmdConfigOutputs:
             mock_load.side_effect = Exception("Config not found")
             result = cmd_config_outputs(args)
 
-        assert result == EXIT_FAILURE
-        captured = capsys.readouterr()
-        assert "Failed to load config" in captured.err
+        assert result.exit_code == EXIT_FAILURE
+        assert "Failed to load config" in result.summary
 
     def test_uses_language_from_repo_section(self, tmp_path: Path) -> None:
         """Test language falls back to repo.language."""

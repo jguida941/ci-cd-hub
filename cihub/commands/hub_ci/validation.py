@@ -18,7 +18,7 @@ from cihub.utils.paths import hub_root
 from . import _bool_str
 
 
-def cmd_syntax_check(args: argparse.Namespace) -> int | CommandResult:
+def cmd_syntax_check(args: argparse.Namespace) -> CommandResult:
     base = Path(args.root).resolve()
     error_list: list[dict[str, str]] = []
     for path in args.paths:
@@ -53,7 +53,7 @@ def cmd_syntax_check(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_repo_check(args: argparse.Namespace) -> int | CommandResult:
+def cmd_repo_check(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     present = (repo_path / ".git").exists()
     ctx = OutputContext.from_args(args)
@@ -74,7 +74,7 @@ def cmd_repo_check(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_source_check(args: argparse.Namespace) -> int | CommandResult:
+def cmd_source_check(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     language = args.language.lower()
     patterns: tuple[str, ...]
@@ -101,7 +101,7 @@ def cmd_source_check(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_docker_compose_check(args: argparse.Namespace) -> int | CommandResult:
+def cmd_docker_compose_check(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     has_docker = (repo_path / "docker-compose.yml").exists() or (repo_path / "docker-compose.yaml").exists()
     ctx = OutputContext.from_args(args)
@@ -114,7 +114,7 @@ def cmd_docker_compose_check(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_validate_configs(args: argparse.Namespace) -> int | CommandResult:
+def cmd_validate_configs(args: argparse.Namespace) -> CommandResult:
     """Validate all repo configs in config/repos/.
 
     Uses cihub.config.loader (no scripts dependency).
@@ -138,10 +138,26 @@ def cmd_validate_configs(args: argparse.Namespace) -> int | CommandResult:
         repos = [path.stem for path in sorted(configs_dir.glob("*.yaml"))]
 
     validated: list[str] = []
+    problems: list[dict[str, str]] = []
+
     for repo in repos:
-        config = load_config(repo_name=repo, hub_root=root)
-        generate_workflow_inputs(config)
-        validated.append(repo)
+        try:
+            config = load_config(repo_name=repo, hub_root=root)
+            generate_workflow_inputs(config)
+            validated.append(repo)
+        except Exception as e:  # noqa: BLE001 - catch all config errors
+            problems.append({
+                "severity": "error",
+                "message": f"Config validation failed for {repo}: {e}",
+            })
+
+    if problems:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Config validation failed ({len(problems)} errors, {len(validated)} valid)",
+            problems=problems,
+            data={"validated_repos": validated, "failed_count": len(problems)},
+        )
 
     return CommandResult(
         exit_code=EXIT_SUCCESS,
@@ -150,7 +166,7 @@ def cmd_validate_configs(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_validate_profiles(args: argparse.Namespace) -> int | CommandResult:
+def cmd_validate_profiles(args: argparse.Namespace) -> CommandResult:
     root = hub_root()
     profiles_dir = Path(args.profiles_dir) if args.profiles_dir else root / "templates" / "profiles"
     try:
@@ -206,14 +222,14 @@ def _expected_matrix_keys() -> set[str]:
     return set(entry.to_matrix_entry().keys())
 
 
-def cmd_verify_matrix_keys(args: argparse.Namespace) -> int | CommandResult:
+def cmd_verify_matrix_keys(args: argparse.Namespace) -> CommandResult:
     """Verify that all matrix.<key> references in hub-run-all.yml are emitted by cihub discover."""
     hub = hub_root()
     wf_path = hub / ".github" / "workflows" / "hub-run-all.yml"
 
     if not wf_path.exists():
         return CommandResult(
-            exit_code=2,
+            exit_code=EXIT_FAILURE,
             summary=f"Workflow not found: {wf_path}",
             problems=[{"severity": "error", "message": f"{wf_path} not found"}],
         )
@@ -248,7 +264,135 @@ def cmd_verify_matrix_keys(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_quarantine_check(args: argparse.Namespace) -> int | CommandResult:
+def cmd_enforce_command_result(args: argparse.Namespace) -> CommandResult:
+    """Enforce CommandResult pattern - commands must not use print() directly.
+
+    ADR-0042: All commands should return CommandResult instead of printing directly.
+    This check enforces a maximum allowance for print() calls in cihub/commands/.
+
+    Allowed exceptions (documented in CLEAN_CODE.md Part 2.2):
+      - check.py: 3 progress indicators
+      - hub_ci/__init__.py: 3 helpers
+      - report/helpers.py: 1 fallback
+
+    Total allowed: 7 prints
+    """
+    root = Path(getattr(args, "path", None) or hub_root())
+    commands_dir = root / "cihub" / "commands"
+    max_allowed = getattr(args, "max_allowed", 7)
+
+    if not commands_dir.exists():
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Commands directory not found: {commands_dir}",
+            problems=[{"severity": "error", "message": f"{commands_dir} not found"}],
+        )
+
+    # Find all print() calls not marked as allowed and not to stderr
+    # Use regex to detect actual print function calls, not mentions in strings/comments
+    import re
+    violations: list[dict[str, str | int]] = []
+    allowed_patterns = ["# ALLOWED:", "file=sys.stderr", "file = sys.stderr"]
+
+    # Pattern to match actual print( function calls at start of statement
+    # This avoids matching "print(" inside strings, comments, or as part of other identifiers
+    print_call_pattern = re.compile(r'^\s*print\s*\(')
+
+    for path in commands_dir.rglob("*.py"):
+        if not path.is_file():
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except (UnicodeDecodeError, PermissionError):
+            continue
+
+        in_docstring = False
+        docstring_delimiter = None
+
+        for line_num, line in enumerate(content.splitlines(), start=1):
+            stripped = line.strip()
+
+            # Track docstrings (triple quotes)
+            for delim in ['"""', "'''"]:
+                count = stripped.count(delim)
+                if count > 0:
+                    if in_docstring and delim == docstring_delimiter:
+                        in_docstring = False
+                        docstring_delimiter = None
+                    elif not in_docstring and count == 1:
+                        in_docstring = True
+                        docstring_delimiter = delim
+                    # If count >= 2, it's a single-line docstring, no state change
+
+            # Skip lines inside docstrings
+            if in_docstring:
+                continue
+
+            # Skip commented lines
+            if stripped.startswith("#"):
+                continue
+
+            # Check for actual print( function calls at start of statement
+            if not print_call_pattern.match(line):
+                continue
+
+            # Skip allowed patterns
+            if any(pattern in line for pattern in allowed_patterns):
+                continue
+
+            try:
+                rel_path = str(path.relative_to(root))
+            except ValueError:
+                rel_path = str(path)
+            violations.append({
+                "file": rel_path,
+                "line": line_num,
+                "content": stripped[:80],  # Truncate for readability
+            })
+
+    count = len(violations)
+
+    # Write GitHub summary if requested
+    ctx = OutputContext.from_args(args)
+    if ctx.summary_path:
+        lines = [
+            "## CommandResult Pattern Enforcement",
+            "",
+            f"Found **{count}** print() calls in `cihub/commands/` (max allowed: {max_allowed})",
+            "",
+        ]
+        if count <= max_allowed:
+            lines.append(f"✅ **PASSED** - {count}/{max_allowed} allowed prints")
+        else:
+            lines.append(f"❌ **FAILED** - {count} prints exceeds limit of {max_allowed}")
+            lines.append("")
+            lines.append("### Violations")
+            lines.append("")
+            for v in violations[:20]:  # Show first 20
+                lines.append(f"- `{v['file']}:{v['line']}`: `{v['content']}`")
+            if len(violations) > 20:
+                lines.append(f"- ... and {len(violations) - 20} more")
+        ctx.write_summary("\n".join(lines))
+
+    if count > max_allowed:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"CommandResult pattern violation: {count} prints, expected ≤{max_allowed}",
+            problems=[
+                {"severity": "error", "message": f"{v['file']}:{v['line']}: {v['content']}"}
+                for v in violations
+            ],
+            data={"print_count": count, "max_allowed": max_allowed, "violations": violations},
+        )
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"✓ CommandResult pattern enforced ({count}/{max_allowed} allowed prints)",
+        data={"print_count": count, "max_allowed": max_allowed, "violations": violations},
+    )
+
+
+def cmd_quarantine_check(args: argparse.Namespace) -> CommandResult:
     """Fail if any file imports from _quarantine."""
     root = Path(getattr(args, "path", None) or hub_root())
 

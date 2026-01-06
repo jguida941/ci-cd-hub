@@ -9,7 +9,7 @@ from pathlib import Path
 
 import defusedxml.ElementTree as ET  # Secure XML parsing
 
-from cihub.exit_codes import EXIT_SUCCESS
+from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
 from cihub.utils.github_context import OutputContext
 
@@ -26,7 +26,7 @@ def _last_regex_int(pattern: str, text: str) -> int:
         return 0
 
 
-def cmd_smoke_python_install(args: argparse.Namespace) -> int | CommandResult:
+def cmd_smoke_python_install(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     problems: list[dict[str, str]] = []
 
@@ -74,7 +74,7 @@ def cmd_smoke_python_install(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_smoke_python_tests(args: argparse.Namespace) -> int | CommandResult:
+def cmd_smoke_python_tests(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     output_file = repo_path / args.output_file
 
@@ -109,9 +109,20 @@ def cmd_smoke_python_tests(args: argparse.Namespace) -> int | CommandResult:
         "coverage": str(coverage),
     })
 
+    # Return FAILURE if any tests failed, SUCCESS otherwise
+    exit_code = EXIT_FAILURE if failed > 0 else EXIT_SUCCESS
+    problems = []
+    if failed > 0:
+        problems.append({
+            "severity": "error",
+            "message": f"{failed} test(s) failed",
+            "code": "CIHUB-SMOKE-TEST-FAILURE",
+        })
+
     return CommandResult(
-        exit_code=EXIT_SUCCESS,
+        exit_code=exit_code,
         summary=f"Tests: {passed} passed, {failed} failed, {skipped} skipped. Coverage: {coverage}%",
+        problems=problems,
         data={
             "total": total,
             "passed": passed,
@@ -123,7 +134,7 @@ def cmd_smoke_python_tests(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_smoke_python_ruff(args: argparse.Namespace) -> int | CommandResult:
+def cmd_smoke_python_ruff(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     report_path = repo_path / args.report
 
@@ -151,7 +162,7 @@ def cmd_smoke_python_ruff(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_smoke_python_black(args: argparse.Namespace) -> int | CommandResult:
+def cmd_smoke_python_black(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     output_file = repo_path / args.output_file
 

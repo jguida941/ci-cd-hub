@@ -27,8 +27,8 @@ def test_get_repo_name_from_config(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
 
 def test_get_repo_name_from_remote(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
-    with mock.patch("cihub.services.ci_engine.helpers.get_git_remote", return_value="git@github.com:org/project.git"):
-        with mock.patch("cihub.services.ci_engine.helpers.parse_repo_from_remote", return_value=("org", "project")):
+    with mock.patch("cihub.utils.project.get_git_remote", return_value="git@github.com:org/project.git"):
+        with mock.patch("cihub.utils.project.parse_repo_from_remote", return_value=("org", "project")):
             assert ci_engine._get_repo_name({}, tmp_path) == "org/project"
 
 
@@ -41,13 +41,14 @@ def test_get_env_value_with_fallback() -> None:
 
 def test_get_git_commit_success(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     with mock.patch.object(ci_engine, "resolve_executable", return_value="git"):
-        with mock.patch.object(subprocess, "check_output", return_value="abc123\n"):
+        mock_result = mock.Mock(stdout="abc123\n")
+        with mock.patch.object(subprocess, "run", return_value=mock_result):
             assert ci_engine._get_git_commit(tmp_path) == "abc123"
 
 
 def test_get_git_commit_failure(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     with mock.patch.object(ci_engine, "resolve_executable", return_value="git"):
-        with mock.patch.object(subprocess, "check_output", side_effect=subprocess.CalledProcessError(1, ["git"])):
+        with mock.patch.object(subprocess, "run", side_effect=subprocess.CalledProcessError(1, ["git"])):
             assert ci_engine._get_git_commit(tmp_path) == ""
 
 
@@ -303,7 +304,7 @@ def test_cmd_ci_java_non_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     with mock.patch.object(ci_cmd, "run_ci", return_value=service_result):
         result = ci_cmd.cmd_ci(args)
 
-    assert result == EXIT_SUCCESS
+    assert result.exit_code == EXIT_SUCCESS
 
 
 def test_cmd_ci_unknown_language(tmp_path: Path) -> None:
@@ -330,27 +331,28 @@ def test_cmd_ci_unknown_language(tmp_path: Path) -> None:
     assert result.exit_code == EXIT_FAILURE
 
 
-def test_print_result_with_paths(tmp_path: Path, capsys) -> None:
-    """Test _print_result outputs report and summary paths."""
+def test_result_to_command_result_with_paths(tmp_path: Path) -> None:
+    """Test _result_to_command_result includes file paths in files_generated."""
     report = tmp_path / "report.json"
     summary = tmp_path / "summary.md"
-    result = ci_engine.CiRunResult(
+    ci_result = ci_engine.CiRunResult(
         success=True,
         exit_code=EXIT_SUCCESS,
         report_path=report,
         summary_path=summary,
     )
 
-    ci_cmd._print_result(result)
+    result = ci_cmd._result_to_command_result(ci_result)
 
-    out = capsys.readouterr().out
-    assert f"Wrote report: {report}" in out
-    assert f"Wrote summary: {summary}" in out
+    assert result.exit_code == EXIT_SUCCESS
+    assert result.files_generated is not None
+    assert str(report) in result.files_generated
+    assert str(summary) in result.files_generated
 
 
-def test_print_result_with_problems(capsys) -> None:
-    """Test _print_result outputs problems list."""
-    result = ci_engine.CiRunResult(
+def test_result_to_command_result_with_problems() -> None:
+    """Test _result_to_command_result includes problems in result."""
+    ci_result = ci_engine.CiRunResult(
         success=False,
         exit_code=EXIT_FAILURE,
         problems=[
@@ -359,12 +361,12 @@ def test_print_result_with_problems(capsys) -> None:
         ],
     )
 
-    ci_cmd._print_result(result)
+    result = ci_cmd._result_to_command_result(ci_result)
 
-    out = capsys.readouterr().out
-    assert "CI findings:" in out
-    assert "[error] Test failed" in out
-    assert "[warning] Coverage low" in out
+    assert result.exit_code == EXIT_FAILURE
+    assert len(result.problems) == 2
+    assert result.problems[0]["message"] == "Test failed"
+    assert result.problems[1]["message"] == "Coverage low"
 
 
 def test_summary_for_result_with_errors_no_report() -> None:

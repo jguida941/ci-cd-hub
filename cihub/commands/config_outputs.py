@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -76,22 +75,19 @@ def _tool_int(
         return default
 
 
-def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
+def cmd_config_outputs(args: argparse.Namespace) -> CommandResult:
+    """Generate config outputs for CI workflow consumption."""
     repo_path = Path(args.repo)
-    json_mode = getattr(args, "json", False)
 
     try:
         config = load_ci_config(repo_path)
     except Exception as exc:
         message = f"Failed to load config: {exc}"
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_FAILURE,
-                summary=message,
-                problems=[{"severity": "error", "message": message}],
-            )
-        print(message, file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=message,
+            problems=[{"severity": "error", "message": message}],
+        )
 
     language = config.get("language") or _get_str(config, ["repo", "language"], "python") or "python"
 
@@ -194,20 +190,18 @@ def cmd_config_outputs(args: argparse.Namespace) -> int | CommandResult:
         outputs["trivy_cvss_fail"] = str(java_thresholds["trivy_cvss_fail"])
         outputs["max_semgrep_findings"] = str(java_thresholds["max_semgrep_findings"])
 
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary="Config outputs generated",
-            data={"outputs": outputs},
-        )
-
+    # Write to GITHUB_OUTPUT if requested
     output_path = os.environ.get("GITHUB_OUTPUT") if args.github_output else None
     if output_path:
         with open(output_path, "a", encoding="utf-8") as handle:
             for key, value in outputs.items():
                 handle.write(f"{key}={value}\n")
-        return EXIT_SUCCESS
 
-    for key, value in outputs.items():
-        print(f"{key}={value}")
-    return EXIT_SUCCESS
+    # Build raw output for human mode (key=value lines)
+    raw_output = "\n".join(f"{key}={value}" for key, value in outputs.items())
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="Config outputs generated",
+        data={"outputs": outputs, "raw_output": raw_output},
+    )

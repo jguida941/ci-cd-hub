@@ -16,7 +16,6 @@ import sys
 import tarfile
 import threading
 import urllib.request
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -28,7 +27,7 @@ from cihub.config.normalize import normalize_config
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE  # noqa: F401 - re-export
 from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS  # noqa: F401 - re-export
 from cihub.services.types import RepoEntry  # noqa: F401 - re-export
-from cihub.types import CommandResult
+from cihub.types import CommandResult, ToolResult
 from cihub.utils.env import _parse_env_bool, env_bool
 from cihub.utils.github_context import OutputContext  # noqa: F401 - re-export
 from cihub.utils.paths import hub_root  # noqa: F401 - re-export
@@ -152,27 +151,8 @@ def write_github_summary(
 # ============================================================================
 
 
-@dataclass
-class ToolResult:
-    """Result from running a tool with optional JSON output.
-
-    Attributes:
-        success: Whether the tool ran successfully (returncode == 0).
-        returncode: The process return code.
-        stdout: Captured stdout text.
-        stderr: Captured stderr text.
-        json_data: Parsed JSON output (None if parsing failed or no JSON).
-        json_error: Error message if JSON parsing failed.
-        report_path: Path where JSON report was written (if applicable).
-    """
-
-    success: bool
-    returncode: int
-    stdout: str
-    stderr: str
-    json_data: Any = None
-    json_error: str | None = None
-    report_path: Path | None = None
+# ToolResult is now imported from cihub.types (canonical location)
+# Re-exported via __all__ for backward compatibility
 
 
 def ensure_executable(path: Path) -> bool:
@@ -199,11 +179,16 @@ def ensure_executable(path: Path) -> bool:
         mvnw = repo_path / "mvnw"
         if ensure_executable(mvnw):
             _run_command(["./mvnw", ...], repo_path)
+
+    Note:
+        Uses try/except to handle race condition where file is deleted
+        between exists() check and chmod() call.
     """
-    if not path.exists():
+    try:
+        path.chmod(path.stat().st_mode | stat.S_IEXEC)
+        return True
+    except (FileNotFoundError, OSError):
         return False
-    path.chmod(path.stat().st_mode | stat.S_IEXEC)
-    return True
 
 
 def load_json_report(
@@ -258,6 +243,8 @@ def run_tool_with_json_report(
     report_path: Path,
     default_on_missing: str | None = None,
     env: dict[str, str] | None = None,
+    *,
+    tool_name: str = "",
 ) -> ToolResult:
     """Run a tool that produces JSON output and parse the result.
 
@@ -305,12 +292,16 @@ def run_tool_with_json_report(
     """
     proc = _run_command(cmd, cwd, env=env)
 
+    # Derive tool name from command if not provided
+    resolved_tool = tool_name or (cmd[0] if cmd else "unknown")
+
     # Handle missing report file
     if not report_path.exists():
         if default_on_missing is not None:
             report_path.write_text(default_on_missing, encoding="utf-8")
         else:
             return ToolResult(
+                tool=resolved_tool,
                 success=False,
                 returncode=proc.returncode,
                 stdout=proc.stdout or "",
@@ -324,6 +315,7 @@ def run_tool_with_json_report(
     json_data, json_error = load_json_report(report_path)
 
     return ToolResult(
+        tool=resolved_tool,
         success=proc.returncode == 0 and json_error is None,
         returncode=proc.returncode,
         stdout=proc.stdout or "",
@@ -357,6 +349,7 @@ def _run_command(
             text=True,
             capture_output=True,
             env=env,
+            timeout=300,
         )
 
     proc = subprocess.Popen(  # noqa: S603
@@ -384,7 +377,12 @@ def _run_command(
     stderr_thread = threading.Thread(target=_reader, args=(proc.stderr, stderr_chunks))
     stdout_thread.start()
     stderr_thread.start()
-    proc.wait()
+    try:
+        proc.wait(timeout=300)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+        raise
     stdout_thread.join()
     stderr_thread.join()
     return subprocess.CompletedProcess(
@@ -497,11 +495,30 @@ def run_and_capture(
 # ============================================================================
 
 
-def _download_file(url: str, dest: Path) -> None:
+def _download_file(url: str, dest: Path, *, timeout: int = 60) -> None:
+    """Download a file from URL with security validations.
+
+    Args:
+        url: URL to download from (must be https://)
+        dest: Destination path for the downloaded file
+        timeout: Request timeout in seconds (default: 60)
+
+    Raises:
+        ValueError: If URL scheme is not https
+        urllib.error.URLError: If download fails
+    """
+    # Validate URL scheme (prevent file:// and other unsafe schemes)
+    if not url.startswith("https://"):
+        raise ValueError(f"Only https:// URLs allowed, got: {url}")
+
     dest.parent.mkdir(parents=True, exist_ok=True)
     request = urllib.request.Request(url, headers={"User-Agent": "cihub"})  # noqa: S310
-    with urllib.request.urlopen(request) as response:  # noqa: S310
-        dest.write_bytes(response.read())
+
+    # Stream to file to avoid OOM on large files
+    with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
+        with dest.open("wb") as f:
+            while chunk := response.read(8192):
+                f.write(chunk)
 
 
 def _sha256(path: Path) -> str:
@@ -513,11 +530,30 @@ def _sha256(path: Path) -> str:
 
 
 def _extract_tarball_member(tar_path: Path, member_name: str, dest_dir: Path) -> Path:
+    """Extract a single member from a tarball with path traversal protection.
+
+    Validates that the extracted file stays within dest_dir to prevent
+    CVE-2007-4559 path traversal attacks.
+    """
     dest_dir.mkdir(parents=True, exist_ok=True)
+
+    # Validate extracted path is within dest_dir (CVE-2007-4559 protection)
+    # Use is_relative_to() which is immune to the str().startswith() bypass
+    # where "/tmp/safe" matches "/tmp/safevil/malicious"
+    resolved_dest = dest_dir.resolve()
+    extracted = (dest_dir / member_name).resolve()
+    try:
+        extracted.relative_to(resolved_dest)
+    except ValueError:
+        raise ValueError(f"Path traversal detected in tarball: {member_name}") from None
+
     with tarfile.open(tar_path, "r:gz") as tar:
         member = tar.getmember(member_name)
+        # Reject symlinks and hardlinks (CVE-2007-4559 symlink variant)
+        if member.issym() or member.islnk():
+            raise ValueError(f"Symlinks/hardlinks not allowed in tarball: {member_name}")
         tar.extract(member, path=dest_dir)
-    extracted = dest_dir / member_name
+
     extracted.chmod(extracted.stat().st_mode | stat.S_IEXEC)
     return extracted
 
@@ -670,6 +706,8 @@ from cihub.commands.hub_ci.validation import (  # noqa: E402
 # ============================================================================
 
 __all__ = [
+    # Canonical types (from cihub.types, re-exported for backward compatibility)
+    "ToolResult",
     # OutputContext (new pattern - replaces 2-step output/summary helpers)
     "OutputContext",
     # CommandResult helpers (reduce boilerplate)

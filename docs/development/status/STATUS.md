@@ -5,7 +5,7 @@
 > **Action Items:** See [MASTER_PLAN.md](../MASTER_PLAN.md) for all tasks.
 > **Architecture:** See [ARCH_OVERVIEW.md](../architecture/ARCH_OVERVIEW.md)
 >
-> **Last Updated:** 2026-01-05
+> **Last Updated:** 2026-01-06 (Security audit + consistency fixes)
 > **Version Target:** v1.0.0
 
 ---
@@ -17,7 +17,8 @@
 
 | Design Doc | Purpose | Status |
 |------------|---------|--------|
-| [CLEAN_CODE.md](../active/CLEAN_CODE.md) | Architecture improvements (polymorphism, encapsulation) | 📋 Designed |
+| [CLEAN_CODE.md](../active/CLEAN_CODE.md) | Architecture improvements (polymorphism, encapsulation) | 🔄 In Progress (Phase 3) |
+| [TEST_REORGANIZATION.md](../active/TEST_REORGANIZATION.md) | Test suite restructuring plan | 📋 Planned (Audit Complete) |
 | [DOC_AUTOMATION_AUDIT.md](../active/DOC_AUTOMATION_AUDIT.md) | `cihub docs stale` command design | 📋 Designed |
 | [PYQT_PLAN.md](../active/PYQT_PLAN.md) | PyQt6 GUI wrapper design | 📋 Reference |
 
@@ -25,9 +26,11 @@
 
 ## Current Focus
 
-1. **Documentation automation** — Implement `cihub docs stale` to detect stale references
-2. **Architecture improvements** — LanguageStrategy pattern to eliminate 38+ `if language ==` branches
-3. **CLI modularization** — Complete Phase 6-7 (parser extraction, config loader)
+1. **CommandResult migration (CLEAN_CODE.md Phase 3)** — Migrate print() calls to CommandResult pattern
+   - ✅ 13 files migrated (~198 prints → CommandResult)
+   - 🔄 ~65 prints remaining in ~9 allowlisted files + report/ subpackage
+2. **Test suite reorganization** — Plan complete, 5-agent audit identified ~10-12 days blockers
+3. **Documentation automation** — Implement `cihub docs stale` to detect stale references
 
 ---
 
@@ -44,14 +47,23 @@
 
 ### Recent Fixes (2026-01-05)
 
+**CommandResult Migration (CLEAN_CODE.md Phase 3):**
+- ✅ detect.py — Pure CommandResult return (no conditional JSON mode)
+- ✅ validate.py — Added YAML parse error handling
+- ✅ smoke.py — Fixed TemporaryDirectory resource leak
+- ✅ discover.py — Reordered empty check before GITHUB_OUTPUT write
+- ✅ cli.py — Error output now routes to stderr (CLI best practice)
+
+**Test Suite:**
+- ✅ Updated test patterns: `result.exit_code` instead of `result == int`
+- ✅ All 2120 tests passing
+
+**Documentation:**
+- ✅ Created TEST_REORGANIZATION.md plan
+- ✅ Completed 5-agent parallel audit identifying ~10-12 days blockers
 - ✅ Fixed `pytest.threshold` → `min_coverage` in CLI_EXAMPLES.md
 - ✅ Fixed `nvd_api_key_required` → `use_nvd_api_key` in TOOLS.md
 - ✅ Fixed broken smoke test link in ARCH_OVERVIEW.md
-- ✅ Added quick reference header to CLI_EXAMPLES.md
-- ✅ Created `development/active/` folder for design docs (CLEAN_CODE, DOC_AUTOMATION_AUDIT, PYQT_PLAN)
-- ✅ Archived Jan3.md (CLI modularization plan, executed)
-- ✅ Consolidated P0/P1/nonfunctional into `development/specs/REQUIREMENTS.md`
-- ✅ Marked `development/research/RESEARCH_LOG.md` as historical reference
 
 ### Pending (See MASTER_PLAN.md)
 
@@ -63,9 +75,9 @@
 
 ## ADR Status
 
-- **Total:** 37 ADRs (0001-0037)
+- **Total:** 43 ADRs (0001-0029, 0031-0044)
 - **Health Score:** 9.3/10
-- **Accepted:** 35 (including ADR-0035 accepted 2026-01-04)
+- **Accepted:** 41 (including ADR-0044 accepted 2026-01-06)
 - **Proposed:** 2 (ADR-0005, ADR-0026)
 - **Superseded:** 1 (ADR-0013 → ADR-0014)
 
@@ -81,11 +93,11 @@
 
 | Check | Last Run | Result |
 |-------|----------|--------|
-| `pytest` | 2026-01-04 | ✅ 1660 passed, 1 skipped |
-| `ruff check` | 2026-01-04 | ✅ Clean |
+| `pytest` | 2026-01-06 | ✅ 2120 passed |
+| `ruff check` | 2026-01-05 | ✅ Clean |
 | `cihub smoke --full` | 2025-12-30 | ✅ Passed |
-| `cihub docs check` | 2026-01-04 | ✅ Up to date |
-| `cihub docs links` | 2026-01-04 | ✅ No broken links |
+| `cihub docs check` | 2026-01-05 | ✅ Up to date |
+| `cihub docs links` | 2026-01-05 | ✅ No broken links |
 
 ---
 
@@ -105,6 +117,7 @@ docs/
     ├── CI_PARITY.md             # Local vs CI check parity map
     ├── active/                  # In-flight design docs (listed below)
     │   ├── CLEAN_CODE.md
+    │   ├── TEST_REORGANIZATION.md
     │   ├── DOC_AUTOMATION_AUDIT.md
     │   └── PYQT_PLAN.md
     ├── specs/                   # Consolidated requirements (REQUIREMENTS.md)
@@ -125,4 +138,4 @@ docs/
 
 ---
 
-*Last updated: 2026-01-05*
+*Last updated: 2026-01-06*

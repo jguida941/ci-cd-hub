@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import stat
 from pathlib import Path
 
 import defusedxml.ElementTree as ET  # Secure XML parsing
@@ -16,6 +15,7 @@ from . import (
     _parse_float,
     _parse_int,
     _run_command,
+    ensure_executable,
 )
 
 
@@ -58,50 +58,59 @@ def _parse_junit_report(path: Path) -> tuple[int, int, int, int, float]:
     return total
 
 
-def cmd_codeql_build(args: argparse.Namespace) -> int | CommandResult:
-    repo_path = Path(args.path).resolve()
-    mvnw = repo_path / "mvnw"
-    build_type = "none"
-    if mvnw.exists():
-        mvnw.chmod(mvnw.stat().st_mode | stat.S_IEXEC)
-        _run_command(
-            ["./mvnw", "-B", "-ntp", "compile", "-DskipTests"],
-            repo_path,
-        )
-        build_type = "mvnw"
-    elif (repo_path / "pom.xml").exists():
-        _run_command(
-            ["mvn", "-B", "-ntp", "compile", "-DskipTests"],
-            repo_path,
-        )
-        build_type = "mvn"
-
-    return CommandResult(
-        exit_code=EXIT_SUCCESS,
-        summary=f"CodeQL build completed ({build_type})",
-        data={"build_type": build_type},
-    )
-
-
-def cmd_smoke_java_build(args: argparse.Namespace) -> int | CommandResult:
+def cmd_codeql_build(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     mvnw = repo_path / "mvnw"
     build_type = "none"
     problems: list[dict[str, str]] = []
 
-    if mvnw.exists():
-        mvnw.chmod(mvnw.stat().st_mode | stat.S_IEXEC)
-        _run_command(
+    if ensure_executable(mvnw):
+        result = _run_command(
+            ["./mvnw", "-B", "-ntp", "compile", "-DskipTests"],
+            repo_path,
+        )
+        build_type = "mvnw"
+        if result.returncode != 0:
+            problems.append({"severity": "warning", "message": f"mvnw compile failed (exit {result.returncode})"})
+    elif (repo_path / "pom.xml").exists():
+        result = _run_command(
+            ["mvn", "-B", "-ntp", "compile", "-DskipTests"],
+            repo_path,
+        )
+        build_type = "mvn"
+        if result.returncode != 0:
+            problems.append({"severity": "warning", "message": f"mvn compile failed (exit {result.returncode})"})
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"CodeQL build completed ({build_type})",
+        problems=problems,
+        data={"build_type": build_type},
+    )
+
+
+def cmd_smoke_java_build(args: argparse.Namespace) -> CommandResult:
+    repo_path = Path(args.path).resolve()
+    mvnw = repo_path / "mvnw"
+    build_type = "none"
+    problems: list[dict[str, str]] = []
+
+    if ensure_executable(mvnw):
+        result = _run_command(
             ["./mvnw", "-B", "-ntp", "verify", "-Dmaven.test.failure.ignore=true"],
             repo_path,
         )
         build_type = "mvnw"
+        if result.returncode != 0:
+            problems.append({"severity": "warning", "message": f"mvnw verify failed (exit {result.returncode})"})
     elif (repo_path / "pom.xml").exists():
-        _run_command(
+        result = _run_command(
             ["mvn", "-B", "-ntp", "verify", "-Dmaven.test.failure.ignore=true"],
             repo_path,
         )
         build_type = "mvn"
+        if result.returncode != 0:
+            problems.append({"severity": "warning", "message": f"mvn verify failed (exit {result.returncode})"})
     else:
         problems.append({"severity": "warning", "message": "No Maven project found"})
 
@@ -113,7 +122,7 @@ def cmd_smoke_java_build(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_smoke_java_tests(args: argparse.Namespace) -> int | CommandResult:
+def cmd_smoke_java_tests(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     totals = {"tests": 0, "failures": 0, "errors": 0, "skipped": 0, "time": 0.0}
 
@@ -151,7 +160,7 @@ def cmd_smoke_java_tests(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_smoke_java_coverage(args: argparse.Namespace) -> int | CommandResult:
+def cmd_smoke_java_coverage(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     jacoco_files = list(repo_path.rglob("jacoco.xml"))
     covered = 0
@@ -183,15 +192,17 @@ def cmd_smoke_java_coverage(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_smoke_java_checkstyle(args: argparse.Namespace) -> int | CommandResult:
+def cmd_smoke_java_checkstyle(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     mvnw = repo_path / "mvnw"
-    if mvnw.exists():
-        mvnw.chmod(mvnw.stat().st_mode | stat.S_IEXEC)
-        _run_command(
+    problems: list[dict[str, str]] = []
+    if ensure_executable(mvnw):
+        result = _run_command(
             ["./mvnw", "-B", "-ntp", "-DskipTests", "checkstyle:checkstyle"],
             repo_path,
         )
+        if result.returncode != 0:
+            problems.append({"severity": "warning", "message": f"checkstyle failed (exit {result.returncode})"})
 
     violations = 0
     for report in repo_path.rglob("checkstyle-result.xml"):
@@ -207,19 +218,22 @@ def cmd_smoke_java_checkstyle(args: argparse.Namespace) -> int | CommandResult:
     return CommandResult(
         exit_code=EXIT_SUCCESS,
         summary=f"Checkstyle: {violations} issues found",
+        problems=problems,
         data={"violations": violations},
     )
 
 
-def cmd_smoke_java_spotbugs(args: argparse.Namespace) -> int | CommandResult:
+def cmd_smoke_java_spotbugs(args: argparse.Namespace) -> CommandResult:
     repo_path = Path(args.path).resolve()
     mvnw = repo_path / "mvnw"
-    if mvnw.exists():
-        mvnw.chmod(mvnw.stat().st_mode | stat.S_IEXEC)
-        _run_command(
+    problems: list[dict[str, str]] = []
+    if ensure_executable(mvnw):
+        result = _run_command(
             ["./mvnw", "-B", "-ntp", "com.github.spotbugs:spotbugs-maven-plugin:check"],
             repo_path,
         )
+        if result.returncode != 0:
+            problems.append({"severity": "warning", "message": f"spotbugs failed (exit {result.returncode})"})
 
     count = 0
     for report in repo_path.rglob("spotbugsXml.xml"):
@@ -235,5 +249,6 @@ def cmd_smoke_java_spotbugs(args: argparse.Namespace) -> int | CommandResult:
     return CommandResult(
         exit_code=EXIT_SUCCESS,
         summary=f"SpotBugs: {count} potential bugs",
+        problems=problems,
         data={"count": count},
     )

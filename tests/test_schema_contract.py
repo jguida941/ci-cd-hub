@@ -442,7 +442,14 @@ class TestSchemaCompleteness:
         report_schema: dict[str, Any],
     ) -> None:
         """All tool keys must be in tools_ran schema."""
-        schema_tools = set(report_schema["properties"]["tools_ran"]["properties"].keys())
+        # tools_ran now uses $ref to definitions/toolStatusMap
+        tools_ran = report_schema["properties"]["tools_ran"]
+        if "allOf" in tools_ran:
+            # Follow the $ref: "#/definitions/toolStatusMap"
+            schema_tools = set(report_schema["definitions"]["toolStatusMap"]["properties"].keys())
+        else:
+            # Legacy: direct properties
+            schema_tools = set(tools_ran["properties"].keys())
 
         # Union of tool keys across languages, plus special-case build.
         expected_tools = set(PYTHON_TOOLS) | set(JAVA_TOOLS) | {"build"}

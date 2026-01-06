@@ -69,6 +69,7 @@ pip install -r requirements/requirements-dev.txt
 ## Documentation
 
 - [Full Docs Index](docs/README.md)
+- [Design Journey](docs/development/architecture/DESIGN_JOURNEY.md) - How this project evolved and what I learned
 - [Architecture Overview](docs/development/architecture/ARCH_OVERVIEW.md)
 - [Current Status](docs/development/status/STATUS.md)
 - [Troubleshooting](docs/guides/TROUBLESHOOTING.md)

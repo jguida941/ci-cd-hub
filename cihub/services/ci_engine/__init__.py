@@ -40,6 +40,8 @@ from cihub.reporting import render_summary
 from cihub.services.types import ServiceResult
 from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
 from cihub.utils import (
+    _detect_java_project_type,
+    _get_repo_name,
     get_git_branch,
     get_git_remote,
     parse_repo_from_remote,
@@ -58,11 +60,9 @@ from .gates import (
 from .helpers import (
     _apply_env_overrides,
     _apply_force_all_tools,
-    _detect_java_project_type,
     _get_env_name,
     _get_env_value,
     _get_git_commit,
-    _get_repo_name,
     _parse_env_bool,
     _resolve_workdir,
     _set_tool_enabled,

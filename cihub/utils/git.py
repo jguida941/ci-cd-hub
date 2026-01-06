@@ -44,7 +44,7 @@ def get_git_remote(repo_path: Path) -> str | None:
         if not (validated_path / ".git").exists():
             return None
         git_bin = resolve_executable("git")
-        output = subprocess.check_output(  # noqa: S603
+        result = subprocess.run(  # noqa: S603
             [
                 git_bin,
                 "-C",
@@ -54,10 +54,13 @@ def get_git_remote(repo_path: Path) -> str | None:
                 "remote.origin.url",
             ],
             stderr=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
             text=True,
-        )  # noqa: S603
-        return output.strip() or None
-    except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
+            timeout=30,
+            check=True,
+        )
+        return result.stdout.strip() or None
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, ValueError):
         return None
 
 
@@ -78,11 +81,14 @@ def get_git_branch(repo_path: Path) -> str | None:
         if not (validated_path / ".git").exists():
             return None
         git_bin = resolve_executable("git")
-        output = subprocess.check_output(  # noqa: S603
+        result = subprocess.run(  # noqa: S603
             [git_bin, "-C", str(validated_path), "symbolic-ref", "--short", "HEAD"],
             stderr=subprocess.DEVNULL,
+            stdout=subprocess.PIPE,
             text=True,
-        )  # noqa: S603
-        return output.strip() or None
-    except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
+            timeout=30,
+            check=True,
+        )
+        return result.stdout.strip() or None
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, ValueError):
         return None

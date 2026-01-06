@@ -26,7 +26,7 @@ if str(ROOT) not in sys.path:
 
 from cihub.commands.config_cmd import (  # noqa: E402
     ConfigError,
-    _dump_config,
+    _format_config,
     _load_repo,
     _resolve_tool_path,
     _set_nested,
@@ -260,19 +260,18 @@ class TestResolveToolPath:
 
 
 # ==============================================================================
-# Tests for _dump_config helper
+# Tests for _format_config helper
 # ==============================================================================
 
 
-class TestDumpConfig:
-    """Tests for the _dump_config helper function."""
+class TestFormatConfig:
+    """Tests for the _format_config helper function."""
 
-    def test_dump_config_outputs_yaml(self, capsys) -> None:
-        """Dump config as YAML to stdout."""
+    def test_format_config_returns_yaml_string(self) -> None:
+        """Format config as YAML string."""
         config = {"key": "value", "nested": {"inner": 123}}
-        _dump_config(config)
-        captured = capsys.readouterr()
-        parsed = yaml.safe_load(captured.out)
+        result = _format_config(config)
+        parsed = yaml.safe_load(result)
         assert parsed["key"] == "value"
         assert parsed["nested"]["inner"] == 123
 
@@ -289,7 +288,6 @@ class TestCmdConfigShow:
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Show raw config without merging defaults."""
@@ -302,9 +300,9 @@ class TestCmdConfigShow:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
-        captured = capsys.readouterr()
-        parsed = yaml.safe_load(captured.out)
+        assert result.exit_code == 0
+        # Config is now in result.data instead of printed to stdout
+        parsed = result.data.get("config")
         assert parsed["repo"]["owner"] == "testowner"
         assert parsed["language"] == "python"
 
@@ -312,7 +310,6 @@ class TestCmdConfigShow:
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Show effective config merged with defaults."""
@@ -325,14 +322,14 @@ class TestCmdConfigShow:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
-        captured = capsys.readouterr()
-        parsed = yaml.safe_load(captured.out)
+        assert result.exit_code == 0
+        # Config is now in result.data instead of printed to stdout
+        parsed = result.data.get("config")
         # Should have both defaults and repo config merged
         assert "java" in parsed  # From defaults
         assert parsed["repo"]["owner"] == "testowner"  # From repo config
 
-    def test_show_repo_not_found(self, hub_paths: PathConfig, capsys, monkeypatch) -> None:
+    def test_show_repo_not_found(self, hub_paths: PathConfig, monkeypatch) -> None:
         """Return error when repo config not found."""
         monkeypatch.setattr("cihub.commands.config_cmd.hub_root", lambda: Path(hub_paths.root))
         args = argparse.Namespace(
@@ -342,9 +339,9 @@ class TestCmdConfigShow:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 1
-        captured = capsys.readouterr()
-        assert "Repo config not found" in captured.err
+        assert result.exit_code == 1
+        # Error is now in result.summary instead of stderr
+        assert "Repo config not found" in result.summary
 
 
 # ==============================================================================
@@ -359,7 +356,6 @@ class TestCmdConfigSet:
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Set a simple string value."""
@@ -373,12 +369,12 @@ class TestCmdConfigSet:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         # Verify the file was updated
         updated = yaml.safe_load(Path(hub_paths.repo_file("testrepo")).read_text(encoding="utf-8"))
         assert updated["repo"]["owner"] == "newowner"
-        captured = capsys.readouterr()
-        assert "[OK] Updated" in captured.err
+        # Status message is now in result.summary
+        assert "Updated" in result.summary
 
     def test_set_nested_value(
         self,
@@ -397,7 +393,7 @@ class TestCmdConfigSet:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         updated = yaml.safe_load(Path(hub_paths.repo_file("testrepo")).read_text(encoding="utf-8"))
         assert updated["python"]["tools"]["pytest"]["threshold"] == 80
 
@@ -418,7 +414,7 @@ class TestCmdConfigSet:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         updated = yaml.safe_load(Path(hub_paths.repo_file("testrepo")).read_text(encoding="utf-8"))
         assert updated["python"]["tools"]["pytest"]["enabled"] is False
 
@@ -426,7 +422,6 @@ class TestCmdConfigSet:
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Dry run shows config without writing."""
@@ -441,12 +436,11 @@ class TestCmdConfigSet:
             dry_run=True,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         # File should NOT be changed
         assert Path(hub_paths.repo_file("testrepo")).read_text(encoding="utf-8") == original_content
-        captured = capsys.readouterr()
-        # Should print the would-be config
-        parsed = yaml.safe_load(captured.out)
+        # Config is now in result.data instead of printed
+        parsed = result.data.get("config")
         assert parsed["repo"]["owner"] == "newowner"
 
 
@@ -462,7 +456,6 @@ class TestCmdConfigEnableDisable:
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Enable a Python tool."""
@@ -477,17 +470,16 @@ class TestCmdConfigEnableDisable:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         updated = yaml.safe_load(Path(hub_paths.repo_file("testrepo")).read_text(encoding="utf-8"))
         assert updated["python"]["tools"]["ruff"]["enabled"] is True
-        captured = capsys.readouterr()
-        assert "[OK] Updated" in captured.err
+        # Status message is now in result.summary
+        assert "Updated" in result.summary
 
     def test_disable_tool_python(
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Disable a Python tool."""
@@ -500,7 +492,7 @@ class TestCmdConfigEnableDisable:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         updated = yaml.safe_load(Path(hub_paths.repo_file("testrepo")).read_text(encoding="utf-8"))
         assert updated["python"]["tools"]["pytest"]["enabled"] is False
 
@@ -521,7 +513,7 @@ class TestCmdConfigEnableDisable:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         updated = yaml.safe_load(Path(hub_paths.repo_file("javarepo")).read_text(encoding="utf-8"))
         assert updated["java"]["tools"]["jacoco"]["enabled"] is True
 
@@ -541,7 +533,7 @@ class TestCmdConfigEnableDisable:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         updated = yaml.safe_load(Path(hub_paths.repo_file("javarepo")).read_text(encoding="utf-8"))
         assert updated["java"]["tools"]["checkstyle"]["enabled"] is False
 
@@ -549,7 +541,6 @@ class TestCmdConfigEnableDisable:
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Dry run for enable shows config without writing."""
@@ -564,18 +555,17 @@ class TestCmdConfigEnableDisable:
             dry_run=True,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         # File should NOT be changed
         assert Path(hub_paths.repo_file("testrepo")).read_text(encoding="utf-8") == original_content
-        captured = capsys.readouterr()
-        parsed = yaml.safe_load(captured.out)
+        # Config is now in result.data instead of printed
+        parsed = result.data.get("config")
         assert parsed["python"]["tools"]["ruff"]["enabled"] is True
 
     def test_enable_unknown_tool(
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Return error for unknown tool."""
@@ -588,9 +578,9 @@ class TestCmdConfigEnableDisable:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 1
-        captured = capsys.readouterr()
-        assert "Unknown tool" in captured.err
+        assert result.exit_code == 1
+        # Error is now in result.summary instead of stderr
+        assert "Unknown tool" in result.summary
 
 
 # ==============================================================================
@@ -605,7 +595,6 @@ class TestCmdConfigEdit:
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Return error when wizard dependencies not installed."""
@@ -618,15 +607,14 @@ class TestCmdConfigEdit:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 1
-        captured = capsys.readouterr()
-        assert "Install wizard deps" in captured.err
+        assert result.exit_code == 1
+        # Error is now in result.summary instead of stderr
+        assert "Install wizard deps" in result.summary
 
     def test_edit_wizard_cancelled(
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Return 130 when wizard is cancelled."""
@@ -646,15 +634,14 @@ class TestCmdConfigEdit:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 130
-        captured = capsys.readouterr()
-        assert "Cancelled" in captured.err
+        assert result.exit_code == 130
+        # Status message is now in result.summary
+        assert "Cancelled" in result.summary
 
     def test_edit_wizard_success(
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Successfully update config via wizard."""
@@ -675,17 +662,16 @@ class TestCmdConfigEdit:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         saved = yaml.safe_load(Path(hub_paths.repo_file("testrepo")).read_text(encoding="utf-8"))
         assert saved["repo"]["owner"] == "wizardowner"
-        captured = capsys.readouterr()
-        assert "[OK] Updated" in captured.err
+        # Status message is now in result.summary
+        assert "Updated" in result.summary
 
     def test_edit_wizard_dry_run(
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Dry run for wizard shows config without writing."""
@@ -707,11 +693,11 @@ class TestCmdConfigEdit:
             dry_run=True,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         # File should NOT be changed
         assert Path(hub_paths.repo_file("testrepo")).read_text(encoding="utf-8") == original_content
-        captured = capsys.readouterr()
-        parsed = yaml.safe_load(captured.out)
+        # Config is now in result.data instead of printed
+        parsed = result.data.get("config")
         assert parsed["repo"]["owner"] == "wizardowner"
 
 
@@ -723,7 +709,7 @@ class TestCmdConfigEdit:
 class TestCmdConfigErrors:
     """Tests for error handling in cmd_config."""
 
-    def test_missing_repo_arg(self, capsys, monkeypatch, tmp_path: Path) -> None:
+    def test_missing_repo_arg(self, monkeypatch, tmp_path: Path) -> None:
         """Return error when --repo not provided."""
         monkeypatch.setattr("cihub.commands.config_cmd.hub_root", lambda: tmp_path)
         # Ensure dirs exist
@@ -736,15 +722,14 @@ class TestCmdConfigErrors:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 2
-        captured = capsys.readouterr()
-        assert "--repo is required" in captured.err
+        assert result.exit_code == 2
+        # Error is now in result.summary instead of stderr
+        assert "--repo is required" in result.summary
 
     def test_unsupported_subcommand(
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Return error for unsupported subcommand."""
@@ -756,9 +741,9 @@ class TestCmdConfigErrors:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 1
-        captured = capsys.readouterr()
-        assert "Unsupported config command" in captured.err
+        assert result.exit_code == 1
+        # Error is now in result.summary instead of stderr
+        assert "Unsupported config command" in result.summary
 
 
 # ==============================================================================
@@ -773,7 +758,6 @@ class TestCmdConfigDefaultSubcommand:
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """None subcommand triggers edit/wizard mode."""
@@ -787,9 +771,9 @@ class TestCmdConfigDefaultSubcommand:
         )
         result = cmd_config(args)
         # Should fail because wizard not installed
-        assert result == 1
-        captured = capsys.readouterr()
-        assert "Install wizard deps" in captured.err
+        assert result.exit_code == 1
+        # Error is now in result.summary instead of stderr
+        assert "Install wizard deps" in result.summary
 
 
 # ==============================================================================
@@ -804,7 +788,6 @@ class TestCmdConfigIntegration:
         self,
         hub_paths: PathConfig,
         sample_repo_config: dict[str, Any],
-        capsys,
         monkeypatch,
     ) -> None:
         """Test workflow: show -> set -> show."""
@@ -819,9 +802,9 @@ class TestCmdConfigIntegration:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
-        captured = capsys.readouterr()
-        original = yaml.safe_load(captured.out)
+        assert result.exit_code == 0
+        # Config is now in result.data instead of printed
+        original = result.data.get("config")
         assert original["repo"]["owner"] == "testowner"
 
         # 2. Set new value
@@ -833,7 +816,7 @@ class TestCmdConfigIntegration:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
 
         # 3. Show updated
         args = argparse.Namespace(
@@ -843,9 +826,9 @@ class TestCmdConfigIntegration:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
-        captured = capsys.readouterr()
-        updated = yaml.safe_load(captured.out)
+        assert result.exit_code == 0
+        # Config is now in result.data instead of printed
+        updated = result.data.get("config")
         assert updated["repo"]["owner"] == "modifiedowner"
 
     def test_workflow_disable_enable(
@@ -866,7 +849,7 @@ class TestCmdConfigIntegration:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         config = yaml.safe_load(Path(hub_paths.repo_file("testrepo")).read_text(encoding="utf-8"))
         assert config["python"]["tools"]["pytest"]["enabled"] is False
 
@@ -878,6 +861,6 @@ class TestCmdConfigIntegration:
             dry_run=False,
         )
         result = cmd_config(args)
-        assert result == 0
+        assert result.exit_code == 0
         config = yaml.safe_load(Path(hub_paths.repo_file("testrepo")).read_text(encoding="utf-8"))
         assert config["python"]["tools"]["pytest"]["enabled"] is True

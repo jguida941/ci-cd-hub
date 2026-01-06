@@ -68,54 +68,49 @@ def scaffold_fixture(fixture_type: str, dest: Path, force: bool = False) -> list
     return _list_files(dest)
 
 
-def cmd_scaffold(args: argparse.Namespace) -> int | CommandResult:
-    json_mode = getattr(args, "json", False)
+def cmd_scaffold(args: argparse.Namespace) -> CommandResult:
+    """Scaffold a minimal fixture repository.
 
+    Always returns CommandResult for consistent output handling.
+    """
     if args.list:
         data = {"fixtures": list_scaffold_types()}
-        if json_mode:
-            return CommandResult(summary="Available fixtures", data=data)
-        for entry in data["fixtures"]:
-            print(f"{entry['type']}: {entry['description']}")
-        return EXIT_SUCCESS
+        items = [f"{entry['type']}: {entry['description']}" for entry in data["fixtures"]]
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="Available fixtures",
+            data={"items": items, "fixtures": data["fixtures"]},
+        )
 
     fixture_type = args.type
     dest = Path(args.path or "").resolve()
 
     if not fixture_type or not args.path:
         message = "type and path are required unless --list is used"
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_USAGE,
-                summary=message,
-                problems=[{"severity": "error", "message": message}],
-            )
-        print(message)
-        return EXIT_USAGE
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-SCAFFOLD-001"}],
+        )
 
     try:
         files = scaffold_fixture(fixture_type, dest, force=bool(args.force))
     except ValueError as exc:
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_FAILURE,
-                summary=str(exc),
-                problems=[{"severity": "error", "message": str(exc)}],
-            )
-        print(str(exc))
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=str(exc),
+            problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-SCAFFOLD-002"}],
+        )
 
     summary = f"Scaffolded {fixture_type} at {dest}"
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=summary,
-            files_generated=files,
-            data={
-                "type": fixture_type,
-                "path": str(dest),
-                "files": files,
-            },
-        )
-    print(summary)
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=summary,
+        files_generated=files,
+        data={
+            "items": [summary],
+            "type": fixture_type,
+            "path": str(dest),
+            "files": files,
+        },
+    )

@@ -38,7 +38,8 @@ def gh_api_json(path: str, method: str = "GET", payload: dict[str, Any] | None =
         input=input_data,
         capture_output=True,
         text=True,
-    )  # noqa: S603
+        timeout=60,
+    )
     if result.returncode != 0:
         msg = result.stderr.strip() or result.stdout.strip()
         raise RuntimeError(msg or "gh api failed")

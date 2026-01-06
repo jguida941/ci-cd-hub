@@ -371,9 +371,10 @@ class TestConfigSubcommands:
         """config show requires --repo argument."""
         result = main(["config", "show"])
 
-        # Should fail with message about --repo required
-        err = capsys.readouterr().err
-        assert result == EXIT_FAILURE or "--repo" in err
+        # Should fail with usage error (EXIT_USAGE=2) for missing required arg
+        # Note: With CommandResult migration, error is in summary not stderr
+        capsys.readouterr()  # Consume output
+        assert result in (EXIT_FAILURE, 2)  # EXIT_FAILURE=1 or EXIT_USAGE=2
 
     def test_config_show_with_repo(self, capsys) -> None:
         """config show --repo displays repo configuration."""
@@ -412,8 +413,9 @@ class TestRunCommand:
         from cihub.exit_codes import EXIT_USAGE
 
         assert result == EXIT_USAGE
-        out = capsys.readouterr().out
-        assert "Unsupported tool" in out
+        # Error output goes to stderr (CLI best practice)
+        captured = capsys.readouterr()
+        assert "Unsupported tool" in captured.err
 
 
 class TestAdrSubcommands:

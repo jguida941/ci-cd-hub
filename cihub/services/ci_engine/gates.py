@@ -12,9 +12,9 @@ from cihub.core.gate_specs import (
     get_threshold_spec_by_key,
     get_tool_keys,
 )
-from cihub.utils import get_git_branch
+from cihub.utils import get_git_branch, get_repo_name
 
-from .helpers import _get_git_commit, _get_repo_name, _tool_gate_enabled
+from .helpers import _get_git_commit, _tool_gate_enabled
 
 
 def _check_threshold(
@@ -98,7 +98,7 @@ def _build_context(
     branch = os.environ.get("GITHUB_REF_NAME") or repo_info.get("default_branch")
     branch = branch or get_git_branch(repo_path) or ""
     return RunContext(
-        repository=_get_repo_name(config, repo_path),
+        repository=get_repo_name(config, repo_path),
         branch=branch,
         run_id=os.environ.get("GITHUB_RUN_ID"),
         run_number=os.environ.get("GITHUB_RUN_NUMBER"),
@@ -139,15 +139,17 @@ def _evaluate_python_gates(
             failures.append("pytest failures detected")
 
     # Coverage gate - uses gate_specs for consistent evaluation
+    # Use float() to avoid truncation (79.9% should not become 79%)
     if tools_configured.get("pytest"):
-        coverage_min = int(thresholds.get("coverage_min", 0) or 0)
-        coverage = int(results.get("coverage", 0))
+        coverage_min = float(thresholds.get("coverage_min", 0) or 0)
+        coverage = float(results.get("coverage", 0))
         _check_threshold("coverage_min", "python", coverage_min, coverage, failures)
 
     # Mutation score gate - uses gate_specs for consistent evaluation
+    # Use float() to avoid truncation
     if tools_configured.get("mutmut"):
-        mut_min = int(thresholds.get("mutation_score_min", 0) or 0)
-        mut_score = int(results.get("mutation_score", 0))
+        mut_min = float(thresholds.get("mutation_score_min", 0) or 0)
+        mut_score = float(results.get("mutation_score", 0))
         _check_threshold("mutation_score_min", "python", mut_min, mut_score, failures)
 
     # Ruff errors gate - uses gate_specs for consistent evaluation
@@ -285,15 +287,17 @@ def _evaluate_java_gates(
         failures.append("test failures detected")
 
     # Coverage gate - uses gate_specs for consistent evaluation
+    # Use float() to avoid truncation (79.9% should not become 79%)
     if tools_configured.get("jacoco"):
-        coverage_min = int(thresholds.get("coverage_min", 0) or 0)
-        coverage = int(results.get("coverage", 0))
+        coverage_min = float(thresholds.get("coverage_min", 0) or 0)
+        coverage = float(results.get("coverage", 0))
         _check_threshold("coverage_min", "java", coverage_min, coverage, failures)
 
     # Mutation score gate - uses gate_specs for consistent evaluation
+    # Use float() to avoid truncation
     if tools_configured.get("pitest"):
-        mut_min = int(thresholds.get("mutation_score_min", 0) or 0)
-        mut_score = int(results.get("mutation_score", 0))
+        mut_min = float(thresholds.get("mutation_score_min", 0) or 0)
+        mut_score = float(results.get("mutation_score", 0))
         _check_threshold("mutation_score_min", "java", mut_min, mut_score, failures)
 
     # Checkstyle gate - uses gate_specs for consistent evaluation

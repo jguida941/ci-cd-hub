@@ -10,6 +10,23 @@ from typing import Any
 from urllib import request
 
 
+def _safe_extractall(zip_path: Path, target_dir: Path) -> None:
+    """Extract ZIP with path traversal protection.
+
+    Validates all members are within target_dir before extraction
+    to prevent CVE-style path traversal attacks via malicious ZIPs.
+    """
+    target_dir = target_dir.resolve()
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        for member in zf.namelist():
+            member_path = (target_dir / member).resolve()
+            try:
+                member_path.relative_to(target_dir)
+            except ValueError:
+                raise ValueError(f"Path traversal detected in ZIP: {member}") from None
+        zf.extractall(target_dir)
+
+
 class GitHubAPI:
     """GitHub API client with retry logic."""
 
@@ -100,8 +117,7 @@ class GitHubAPI:
             target_dir.mkdir(parents=True, exist_ok=True)
             zip_path = target_dir / "artifact.zip"
             zip_path.write_bytes(data)
-            with zipfile.ZipFile(zip_path, "r") as zf:
-                zf.extractall(target_dir)
+            _safe_extractall(zip_path, target_dir)
             print(f"   Artifact extracted to {target_dir}")
             return target_dir
         except Exception as exc:

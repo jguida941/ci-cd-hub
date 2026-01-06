@@ -11,14 +11,18 @@ from .shared import _parse_json
 
 
 def _parse_junit(path: Path) -> dict[str, Any]:
+    default_result = {
+        "tests_passed": 0,
+        "tests_failed": 0,
+        "tests_skipped": 0,
+        "tests_runtime_seconds": 0.0,
+    }
     if not path.exists():
-        return {
-            "tests_passed": 0,
-            "tests_failed": 0,
-            "tests_skipped": 0,
-            "tests_runtime_seconds": 0.0,
-        }
-    root = ET.parse(path).getroot()
+        return default_result
+    try:
+        root = ET.parse(path).getroot()
+    except ET.ParseError:
+        return default_result
     if root.tag.endswith("testsuites"):
         totals = {"tests": 0, "failures": 0, "errors": 0, "skipped": 0, "time": 0.0}
         for suite in root:
@@ -46,13 +50,17 @@ def _parse_junit(path: Path) -> dict[str, Any]:
 
 
 def _parse_coverage(path: Path) -> dict[str, Any]:
+    default_result = {
+        "coverage": 0,
+        "coverage_lines_covered": 0,
+        "coverage_lines_total": 0,
+    }
     if not path.exists():
-        return {
-            "coverage": 0,
-            "coverage_lines_covered": 0,
-            "coverage_lines_total": 0,
-        }
-    root = ET.parse(path).getroot()
+        return default_result
+    try:
+        root = ET.parse(path).getroot()
+    except ET.ParseError:
+        return default_result
     line_rate = float(root.attrib.get("line-rate", 0))
     lines_covered = int(root.attrib.get("lines-covered", 0))
     lines_total = int(root.attrib.get("lines-valid", root.attrib.get("lines-total", 0)))

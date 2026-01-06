@@ -70,6 +70,45 @@ class TestPathConfig:
         with pytest.raises(AttributeError):
             paths.root = "/other"
 
+    @pytest.mark.parametrize(
+        "bad_name",
+        [
+            "../etc/passwd",
+            "foo/../bar",
+            "/absolute/path",
+            "name\\with\\backslash",
+        ],
+        ids=["parent_dir", "embedded_parent", "absolute_path", "backslash"],
+    )
+    def test_repo_file_rejects_path_traversal(self, bad_name: str):
+        """repo_file() blocks path traversal attempts."""
+        paths = PathConfig(root="/hub")
+        with pytest.raises(ValueError, match="path traversal not allowed"):
+            paths.repo_file(bad_name)
+
+    def test_repo_file_allows_owner_repo_format(self):
+        """repo_file() allows owner/repo format as subdirectory."""
+        paths = PathConfig(root="/hub")
+        result = paths.repo_file("owner/repo")
+        assert result == "/hub/config/repos/owner/repo.yaml"
+
+    @pytest.mark.parametrize(
+        "bad_name",
+        [
+            "../etc/passwd",
+            "foo/../bar",
+            "/absolute/path",
+            "name/with/slashes",
+            "name\\with\\backslash",
+        ],
+        ids=["parent_dir", "embedded_parent", "absolute_path", "forward_slash", "backslash"],
+    )
+    def test_profile_file_rejects_path_traversal(self, bad_name: str):
+        """profile_file() blocks path traversal attempts."""
+        paths = PathConfig(root="/hub")
+        with pytest.raises(ValueError, match="path traversal not allowed"):
+            paths.profile_file(bad_name)
+
 
 # =============================================================================
 # load_yaml_file Tests

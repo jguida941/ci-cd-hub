@@ -33,6 +33,37 @@
     }
   ],
   "definitions": {
+    "sharedSbomTool": {
+      "description": "SBOM generation tool (shared between Java and Python)",
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "default": false, "type": "boolean" },
+            "format": { "default": "cyclonedx", "type": "string" },
+            "require_run_or_fail": { "default": false, "type": "boolean" }
+          },
+          "type": "object"
+        }
+      ]
+    },
+    "sharedSemgrepTool": {
+      "description": "Semgrep SAST tool (shared between Java and Python)",
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "enabled": { "default": false, "type": "boolean" },
+            "fail_on_findings": { "default": false, "type": "boolean" },
+            "max_findings": { "default": 0, "minimum": 0, "type": "integer" },
+            "require_run_or_fail": { "default": false, "type": "boolean" }
+          },
+          "type": "object"
+        }
+      ]
+    },
     "hubCi": {
       "oneOf": [
         { "type": "boolean" },
@@ -285,35 +316,8 @@
             }
           ]
         },
-        "semgrep": {
-          "oneOf": [
-            { "type": "boolean" },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "enabled": { "default": false, "type": "boolean" },
-                "fail_on_findings": { "default": false, "type": "boolean" },
-                "max_findings": { "default": 0, "minimum": 0, "type": "integer" },
-                "require_run_or_fail": { "default": false, "type": "boolean" }
-              },
-              "type": "object"
-            }
-          ]
-        },
-        "sbom": {
-          "oneOf": [
-            { "type": "boolean" },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "enabled": { "default": false, "type": "boolean" },
-                "format": { "default": "cyclonedx", "type": "string" },
-                "require_run_or_fail": { "default": false, "type": "boolean" }
-              },
-              "type": "object"
-            }
-          ]
-        },
+        "semgrep": { "$ref": "#/definitions/sharedSemgrepTool" },
+        "sbom": { "$ref": "#/definitions/sharedSbomTool" },
         "spotbugs": {
           "oneOf": [
             { "type": "boolean" },
@@ -559,35 +563,8 @@
             }
           ]
         },
-        "sbom": {
-          "oneOf": [
-            { "type": "boolean" },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "enabled": { "default": false, "type": "boolean" },
-                "format": { "default": "cyclonedx", "type": "string" },
-                "require_run_or_fail": { "default": false, "type": "boolean" }
-              },
-              "type": "object"
-            }
-          ]
-        },
-        "semgrep": {
-          "oneOf": [
-            { "type": "boolean" },
-            {
-              "additionalProperties": false,
-              "properties": {
-                "enabled": { "default": false, "type": "boolean" },
-                "fail_on_findings": { "default": false, "type": "boolean" },
-                "max_findings": { "default": 0, "minimum": 0, "type": "integer" },
-                "require_run_or_fail": { "default": false, "type": "boolean" }
-              },
-              "type": "object"
-            }
-          ]
-        },
+        "sbom": { "$ref": "#/definitions/sharedSbomTool" },
+        "semgrep": { "$ref": "#/definitions/sharedSemgrepTool" },
         "trivy": {
           "oneOf": [
             { "type": "boolean" },

@@ -17,8 +17,11 @@ from . import (
     _run_command,
 )
 
+# Maximum characters to include in data fields for logs (prevents huge payloads)
+MAX_LOG_PREVIEW_CHARS = 2000
 
-def cmd_ruff(args: argparse.Namespace) -> int | CommandResult:
+
+def cmd_ruff(args: argparse.Namespace) -> CommandResult:
     cmd = ["ruff", "check", args.path]
     if args.force_exclude:
         cmd.append("--force-exclude")
@@ -37,6 +40,7 @@ def cmd_ruff(args: argparse.Namespace) -> int | CommandResult:
     github_proc = subprocess.run(  # noqa: S603
         cmd + ["--output-format=github"],
         text=True,
+        timeout=60,
     )
     passed = github_proc.returncode == 0
     return CommandResult(
@@ -47,7 +51,7 @@ def cmd_ruff(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_black(args: argparse.Namespace) -> int | CommandResult:
+def cmd_black(args: argparse.Namespace) -> CommandResult:
     proc = _run_command(["black", "--check", args.path], Path("."))
     output = (proc.stdout or "") + (proc.stderr or "")
     issues = len(re.findall(r"would reformat", output))
@@ -63,7 +67,7 @@ def cmd_black(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_mutmut(args: argparse.Namespace) -> int | CommandResult:
+def cmd_mutmut(args: argparse.Namespace) -> CommandResult:
     workdir = Path(args.workdir).resolve()
     output_dir = Path(args.output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -77,14 +81,14 @@ def cmd_mutmut(args: argparse.Namespace) -> int | CommandResult:
             exit_code=EXIT_FAILURE,
             summary="mutmut run failed - check for import errors or test failures",
             problems=[{"severity": "error", "message": "mutmut run failed"}],
-            data={"log": log_text[:2000]},  # Truncate log for data field
+            data={"log": log_text[:MAX_LOG_PREVIEW_CHARS]},
         )
     if "mutations/second" not in log_text:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="mutmut did not complete successfully",
             problems=[{"severity": "error", "message": "mutmut did not complete"}],
-            data={"log": log_text[:2000]},
+            data={"log": log_text[:MAX_LOG_PREVIEW_CHARS]},
         )
 
     final_line = ""

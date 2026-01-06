@@ -45,9 +45,12 @@ def _tool_enabled(config: dict[str, Any], tool: str) -> bool:
     return _tool_enabled_canonical(config, tool, "python")
 
 
-def cmd_run(args: argparse.Namespace) -> int | CommandResult:
+def cmd_run(args: argparse.Namespace) -> CommandResult:
+    """Run a single CI tool and emit JSON output.
+
+    Always returns CommandResult for consistent output handling.
+    """
     repo_path = Path(args.repo or ".").resolve()
-    json_mode = getattr(args, "json", False)
     tool = args.tool
     tool_key = "pip_audit" if tool == "pip-audit" else tool
     output_dir = Path(args.output_dir or ".cihub")
@@ -60,40 +63,41 @@ def cmd_run(args: argparse.Namespace) -> int | CommandResult:
         config = load_ci_config(repo_path)
     except Exception as exc:
         message = f"Failed to load config: {exc}"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-        print(message)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-RUN-001"}],
+        )
 
     workdir = args.workdir or config.get("repo", {}).get("subdir") or "."
     validate_subdir(workdir)
     workdir_path = repo_path / workdir
     if not workdir_path.exists():
         message = f"Workdir not found: {workdir_path}"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-        print(message)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-RUN-002"}],
+        )
 
     runner = RUNNERS.get(tool)
     if runner is None:
         message = f"Unsupported tool: {tool}"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_USAGE, summary=message)
-        print(message)
-        return EXIT_USAGE
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-RUN-003"}],
+        )
 
     if not args.force and not _tool_enabled(config, tool_key):
         result = ToolResult(tool=tool_key, ran=False, success=False)
         result.write_json(output_path)
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_SUCCESS,
-                summary=f"{tool_key} skipped (disabled)",
-                artifacts={"output": str(output_path)},
-            )
-        print(f"{tool_key} skipped (disabled)")
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=f"{tool_key} skipped (disabled)",
+            artifacts={"output": str(output_path)},
+            data={"items": [f"{tool_key} skipped (disabled)"]},
+        )
 
     try:
         if tool == "pytest":
@@ -107,18 +111,20 @@ def cmd_run(args: argparse.Namespace) -> int | CommandResult:
             result = runner(workdir_path, output_dir)
     except FileNotFoundError as exc:
         message = f"Tool '{tool}' not found: {exc}"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-        print(message)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-RUN-004"}],
+        )
 
     result.write_json(output_path)
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_SUCCESS if result.success else EXIT_FAILURE,
-            summary=f"{tool} {'passed' if result.success else 'failed'}",
-            artifacts={"output": str(output_path)},
-            data=result.to_payload(),
-        )
-    print(f"Wrote output: {output_path}")
-    return EXIT_SUCCESS if result.success else EXIT_FAILURE
+    status = "passed" if result.success else "failed"
+    return CommandResult(
+        exit_code=EXIT_SUCCESS if result.success else EXIT_FAILURE,
+        summary=f"{tool} {status}",
+        artifacts={"output": str(output_path)},
+        data={
+            "items": [f"Wrote output: {output_path}"],
+            "tool_result": result.to_payload(),
+        },
+    )

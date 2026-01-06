@@ -77,6 +77,7 @@ def _run_process(name: str, cmd: list[str], cwd: Path) -> CommandResult:
             cwd=str(cwd),
             text=True,
             capture_output=True,
+            timeout=300,  # 5 min for general tools
         )
     except FileNotFoundError:
         return CommandResult(
@@ -126,6 +127,7 @@ def _run_zizmor(cwd: Path) -> CommandResult:
             cwd=str(cwd),
             text=True,
             capture_output=True,
+            timeout=60,
         )
     except FileNotFoundError:
         return CommandResult(
@@ -182,6 +184,7 @@ def _install_tool(tool: str) -> tuple[bool, str]:
         cmd,
         text=True,
         capture_output=True,
+        timeout=120,
     )
     ok = proc.returncode == 0
     detail = _tail_output((proc.stdout or "") + (proc.stderr or ""))
@@ -247,7 +250,7 @@ def _format_line(step: CheckStep) -> str:
     return f"[{status}] {step.name}{summary}"
 
 
-def cmd_check(args: argparse.Namespace) -> int | CommandResult:
+def cmd_check(args: argparse.Namespace) -> CommandResult:
     """Run tiered local validation suite.
 
     Flags:
@@ -577,29 +580,26 @@ def cmd_check(args: argparse.Namespace) -> int | CommandResult:
 
     summary = f"{len(failed)} checks failed{mode_str}" if failed else f"All {len(steps)} checks passed{mode_str}"
 
-    if json_mode:
-        return CommandResult(
-            exit_code=exit_code,
-            summary=summary,
-            problems=problems,
-            data={
-                "steps": [
-                    {
-                        "name": step.name,
-                        "exit_code": step.exit_code,
-                        "summary": step.summary,
-                        "problems": step.problems,
-                    }
-                    for step in steps
-                ],
-                "modes": {
-                    "audit": run_audit,
-                    "security": run_security,
-                    "full": run_full,
-                    "mutation": run_mutation,
-                },
+    # Always return CommandResult (progress prints above are for real-time UX)
+    return CommandResult(
+        exit_code=exit_code,
+        summary=summary,
+        problems=problems,
+        data={
+            "steps": [
+                {
+                    "name": step.name,
+                    "exit_code": step.exit_code,
+                    "summary": step.summary,
+                    "problems": step.problems,
+                }
+                for step in steps
+            ],
+            "modes": {
+                "audit": run_audit,
+                "security": run_security,
+                "full": run_full,
+                "mutation": run_mutation,
             },
-        )
-
-    print(summary)
-    return exit_code
+        },
+    )

@@ -7,7 +7,6 @@ import json
 import re
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -169,6 +168,7 @@ def _run_lychee(docs_dir: Path, external: bool) -> tuple[int, list[dict[str, Any
             cwd=str(repo_root),
             capture_output=True,
             text=True,
+            timeout=300,  # Link checking can be slow
         )
     except FileNotFoundError:
         return -1, []  # lychee not found
@@ -228,14 +228,17 @@ def _run_lychee(docs_dir: Path, external: bool) -> tuple[int, list[dict[str, Any
     return result.returncode, problems
 
 
-def cmd_docs_links(args: argparse.Namespace) -> int | CommandResult:
-    """Check documentation for broken links."""
-    json_mode = getattr(args, "json", False)
+def cmd_docs_links(args: argparse.Namespace) -> CommandResult:
+    """Check documentation for broken links.
+
+    Always returns CommandResult for consistent output handling.
+    """
     external = getattr(args, "external", False)
     docs_dir = hub_root() / "docs"
 
     # Try lychee first
     has_lychee = shutil.which("lychee") is not None
+    warnings: list[dict[str, Any]] = []
 
     if has_lychee:
         exit_code, problems = _run_lychee(docs_dir, external)
@@ -247,11 +250,11 @@ def cmd_docs_links(args: argparse.Namespace) -> int | CommandResult:
     if not has_lychee:
         # Fallback to internal checker (always offline)
         if external:
-            if not json_mode:
-                print(
-                    "Warning: --external requires lychee. Install with: brew install lychee",
-                    file=sys.stderr,
-                )
+            warnings.append({
+                "severity": "warning",
+                "message": "--external requires lychee. Install with: brew install lychee",
+                "code": "CIHUB-DOCS-NO-LYCHEE",
+            })
         problems = _check_internal_links(docs_dir)
         exit_code = EXIT_FAILURE if problems else EXIT_SUCCESS
         tool_used = "internal"
@@ -259,22 +262,20 @@ def cmd_docs_links(args: argparse.Namespace) -> int | CommandResult:
     failed = exit_code != EXIT_SUCCESS
     summary = f"Link check ({tool_used}): {len(problems)} issues" if failed else f"Link check ({tool_used}): OK"
 
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_FAILURE if failed else EXIT_SUCCESS,
-            summary=summary,
-            problems=problems,
-            data={"tool": tool_used, "external": external},
-        )
+    # Combine warnings and problems
+    all_problems = warnings + problems
 
-    if failed:
-        print(f"{summary}")
-        for problem in problems:
-            print(f"  {problem['message']}")
-        return EXIT_FAILURE
+    # Format problem messages for human-readable output
+    items = [summary]
+    for problem in problems:
+        items.append(f"  {problem['message']}")
 
-    print(summary)
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_FAILURE if failed else EXIT_SUCCESS,
+        summary=summary,
+        problems=all_problems,
+        data={"tool": tool_used, "external": external, "items": items},
+    )
 
 
 def _subparsers(parser: argparse.ArgumentParser) -> dict[str, argparse.ArgumentParser]:
@@ -448,8 +449,11 @@ def _write(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def cmd_docs(args: argparse.Namespace) -> int | CommandResult:
-    json_mode = getattr(args, "json", False)
+def cmd_docs(args: argparse.Namespace) -> CommandResult:
+    """Generate or check reference documentation.
+
+    Always returns CommandResult for consistent output handling.
+    """
     output_dir = Path(getattr(args, "output", "docs/reference"))
     check = args.subcommand == "check" or bool(getattr(args, "check", False))
 
@@ -507,35 +511,26 @@ def cmd_docs(args: argparse.Namespace) -> int | CommandResult:
                     "code": "CIHUB-DOCS-GENERATE",
                 }
             ]
-            if json_mode:
-                return CommandResult(
-                    exit_code=EXIT_FAILURE,
-                    summary=summary,
-                    problems=problems,
-                    suggestions=suggestions,
-                )
-            for problem in problems:
-                print(problem["message"], file=sys.stderr)
-            print("Run: cihub docs generate", file=sys.stderr)
-            return EXIT_FAILURE
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=summary,
+                problems=problems,
+                suggestions=suggestions,
+            )
 
-        summary = "Docs are up to date"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_SUCCESS, summary=summary)
-        print(summary)
-        return EXIT_SUCCESS
+        return CommandResult(exit_code=EXIT_SUCCESS, summary="Docs are up to date")
 
-    summary = "Docs generated"
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=summary,
-            files_generated=files_generated,
-            files_modified=files_modified,
-        )
-    print(summary)
+    # Generate mode - format output for display
+    items = ["Docs generated"]
     for p in files_generated:
-        print(f"Generated: {p}")
+        items.append(f"Generated: {p}")
     for p in files_modified:
-        print(f"Updated: {p}")
-    return EXIT_SUCCESS
+        items.append(f"Updated: {p}")
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="Docs generated",
+        files_generated=files_generated,
+        files_modified=files_modified,
+        data={"items": items},
+    )

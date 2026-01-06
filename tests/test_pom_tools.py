@@ -66,7 +66,7 @@ def test_apply_pom_fixes_inserts_plugin(tmp_path: Path) -> None:
     )
 
     result = apply_pom_fixes(tmp_path, base_plugin_config("jacoco"), apply=True)
-    assert result == 0
+    assert result.exit_code == 0
     updated = pom_path.read_text(encoding="utf-8")
     assert "<artifactId>jacoco-maven-plugin</artifactId>" in updated
 
@@ -109,7 +109,7 @@ def test_apply_dependency_fixes_inserts_dependency(tmp_path: Path) -> None:
     )
 
     result = apply_dependency_fixes(tmp_path, base_config(jqwik_enabled=True), apply=True)
-    assert result == 0
+    assert result.exit_code == 0
     updated = pom_path.read_text(encoding="utf-8")
     assert "<artifactId>jqwik</artifactId>" in updated
 
@@ -140,7 +140,7 @@ def test_apply_dependency_fixes_multi_module(tmp_path: Path) -> None:
     )
 
     result = apply_dependency_fixes(tmp_path, base_config(jqwik_enabled=True), apply=True)
-    assert result == 0
+    assert result.exit_code == 0
     updated = module_pom.read_text(encoding="utf-8")
     assert "<artifactId>jqwik</artifactId>" in updated
 

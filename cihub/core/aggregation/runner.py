@@ -74,7 +74,7 @@ def load_thresholds(defaults_file: Path) -> tuple[int, int]:
 
     if defaults_file.exists():
         try:
-            defaults = yaml.safe_load(defaults_file.read_text())
+            defaults = yaml.safe_load(defaults_file.read_text(encoding="utf-8"))
             thresholds = defaults.get("thresholds", {})
             max_critical = thresholds.get("max_critical_vulns", 0)
             max_high = thresholds.get("max_high_vulns", 0)

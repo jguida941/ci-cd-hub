@@ -72,6 +72,7 @@ def _check_gh_auth(checks: list[dict[str, Any]]) -> None:
         ["gh", "auth", "status", "--hostname", "github.com"],  # noqa: S607
         capture_output=True,
         text=True,
+        timeout=30,
     )
     ok = proc.returncode == 0
     detail = "authenticated" if ok else "not authenticated"
@@ -79,8 +80,8 @@ def _check_gh_auth(checks: list[dict[str, Any]]) -> None:
     _add_check(checks, "gh auth", ok, False, detail, hint)
 
 
-def cmd_preflight(args: argparse.Namespace) -> int | CommandResult:
-    json_mode = getattr(args, "json", False)
+def cmd_preflight(args: argparse.Namespace) -> CommandResult:
+    """Run preflight checks for the CI environment."""
     full = bool(getattr(args, "full", False))
 
     checks: list[dict[str, Any]] = []
@@ -106,21 +107,19 @@ def cmd_preflight(args: argparse.Namespace) -> int | CommandResult:
 
     summary = f"{len(required_failures)} required checks failed" if required_failures else "Preflight OK"
 
-    if json_mode:
-        return CommandResult(
-            exit_code=exit_code,
-            summary=summary,
-            data={"checks": checks},
-        )
-
+    # Build human-readable output for non-JSON mode
+    lines = []
     for check in checks:
         status = check["status"].upper()
         name = check["name"]
         detail = check["detail"]
-        line = f"[{status}] {name}: {detail}"
-        print(line)
+        lines.append(f"[{status}] {name}: {detail}")
         hint = check.get("hint")
         if hint:
-            print(f"  -> {hint}")
+            lines.append(f"  -> {hint}")
 
-    return exit_code
+    return CommandResult(
+        exit_code=exit_code,
+        summary=summary,
+        data={"checks": checks, "raw_output": "\n".join(lines)},
+    )

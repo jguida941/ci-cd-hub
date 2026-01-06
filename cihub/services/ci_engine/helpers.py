@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-import re
 import subprocess
 from pathlib import Path
 from typing import Any, Mapping
@@ -12,41 +10,26 @@ from cihub.config import tool_enabled as _tool_enabled_canonical
 from cihub.core.languages import get_strategy
 from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
 from cihub.utils import (
-    get_git_remote,
-    parse_repo_from_remote,
     resolve_executable,
     validate_subdir,
 )
 from cihub.utils.env import _parse_env_bool as _parse_env_bool_base
 
 
-def _get_repo_name(config: dict[str, Any], repo_path: Path) -> str:
-    repo_env = os.environ.get("GITHUB_REPOSITORY")
-    if repo_env:
-        return repo_env
-    repo_info = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
-    owner = repo_info.get("owner")
-    name = repo_info.get("name")
-    if owner and name:
-        return f"{owner}/{name}"
-    remote = get_git_remote(repo_path)
-    if remote:
-        parsed = parse_repo_from_remote(remote)
-        if parsed[0] and parsed[1]:
-            return f"{parsed[0]}/{parsed[1]}"
-    return ""
-
-
 def _get_git_commit(repo_path: Path) -> str:
     try:
         git_bin = resolve_executable("git")
-        output = subprocess.check_output(  # noqa: S603
+        result = subprocess.run(  # noqa: S603
             [git_bin, "-C", str(repo_path), "rev-parse", "HEAD"],
             stderr=subprocess.DEVNULL,
             text=True,
+            capture_output=False,
+            stdout=subprocess.PIPE,
+            timeout=30,
+            check=True,
         )
-        return output.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
+        return result.stdout.strip()
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
         return ""
 
 
@@ -64,27 +47,6 @@ def _resolve_workdir(
         validate_subdir(subdir)
         return subdir
     return "."
-
-
-def _detect_java_project_type(workdir: Path) -> str:
-    pom = workdir / "pom.xml"
-    if pom.exists():
-        try:
-            content = pom.read_text(encoding="utf-8")
-        except OSError:
-            content = ""
-        if "<modules>" in content:
-            modules = len(re.findall(r"<module>.*?</module>", content))
-            return f"Multi-module ({modules} modules)" if modules else "Multi-module"
-        return "Single module"
-
-    settings_gradle = workdir / "settings.gradle"
-    settings_kts = workdir / "settings.gradle.kts"
-    if settings_gradle.exists() or settings_kts.exists():
-        return "Multi-module"
-    if (workdir / "build.gradle").exists() or (workdir / "build.gradle.kts").exists():
-        return "Single module"
-    return "Unknown"
 
 
 def _tool_enabled(config: dict[str, Any], tool: str, language: str) -> bool:

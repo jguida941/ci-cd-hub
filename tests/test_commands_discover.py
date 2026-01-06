@@ -28,7 +28,8 @@ def test_discover_conflicting_filters() -> None:
 
     result = discover_cmd.cmd_discover(args)
 
-    assert result == EXIT_FAILURE
+    assert result.exit_code == EXIT_FAILURE
+    assert "Choose only one" in result.summary
 
 
 def test_discover_json_with_github_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

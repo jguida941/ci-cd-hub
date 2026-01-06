@@ -21,7 +21,6 @@ Why factory functions instead of inheritance/mixins?
 from __future__ import annotations
 
 from argparse import ArgumentParser
-from typing import Optional
 
 
 def add_output_args(
@@ -78,7 +77,7 @@ def add_repo_args(
     parser: ArgumentParser,
     *,
     required: bool = False,
-    default: Optional[str] = ".",
+    default: str | None = ".",
     help_text: str = "Path to repo",
 ) -> None:
     """Add standard --repo argument.
@@ -107,7 +106,7 @@ def add_report_args(
     parser: ArgumentParser,
     *,
     required: bool = False,
-    default: Optional[str] = None,
+    default: str | None = None,
     help_text: str = "Path to report.json",
 ) -> None:
     """Add standard --report argument.

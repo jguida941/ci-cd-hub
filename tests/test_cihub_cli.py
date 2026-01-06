@@ -266,14 +266,14 @@ class TestGetGitRemote:
                     return True
                 return original_exists(self)
 
-            with mock.patch("subprocess.check_output") as mock_check:
-                # check_output returns the output directly as a string
-                mock_check.return_value = "https://github.com/owner/repo.git\n"
+            with mock.patch("subprocess.run") as mock_run:
+                # subprocess.run returns a CompletedProcess with stdout attribute
+                mock_run.return_value = mock.Mock(stdout="https://github.com/owner/repo.git\n")
                 with mock.patch.object(Path, "exists", fake_exists):
                     result = get_git_remote(tmp_path)
                 assert result == "https://github.com/owner/repo.git"
                 assert mock_validate.called
-                assert mock_check.called
+                assert mock_run.called
 
     def test_returns_none_on_subprocess_error(self, tmp_path: Path) -> None:
         """Returns None when subprocess fails."""
@@ -287,8 +287,8 @@ class TestGetGitRemote:
                     return True
                 return original_exists(self)
 
-            with mock.patch("subprocess.check_output") as mock_check:
-                mock_check.side_effect = FileNotFoundError()
+            with mock.patch("subprocess.run") as mock_run:
+                mock_run.side_effect = FileNotFoundError()
                 with mock.patch.object(Path, "exists", fake_exists):
                     result = get_git_remote(tmp_path)
                 assert result is None
@@ -305,8 +305,8 @@ class TestGetGitRemote:
                     return True
                 return original_exists(self)
 
-            with mock.patch("subprocess.check_output") as mock_check:
-                mock_check.side_effect = subprocess.CalledProcessError(1, "git")
+            with mock.patch("subprocess.run") as mock_run:
+                mock_run.side_effect = subprocess.CalledProcessError(1, "git")
                 with mock.patch.object(Path, "exists", fake_exists):
                     result = get_git_remote(tmp_path)
                 assert result is None
@@ -331,8 +331,8 @@ class TestGetGitRemote:
                     return True
                 return original_exists(self)
 
-            with mock.patch("subprocess.check_output") as mock_check:
-                mock_check.return_value = "  https://github.com/owner/repo.git  \n"
+            with mock.patch("subprocess.run") as mock_run:
+                mock_run.return_value = mock.Mock(stdout="  https://github.com/owner/repo.git  \n")
                 with mock.patch.object(Path, "exists", fake_exists):
                     result = get_git_remote(tmp_path)
                 assert result == "https://github.com/owner/repo.git"
@@ -349,8 +349,8 @@ class TestGetGitRemote:
                     return True
                 return original_exists(self)
 
-            with mock.patch("subprocess.check_output") as mock_check:
-                mock_check.return_value = "   \n"
+            with mock.patch("subprocess.run") as mock_run:
+                mock_run.return_value = mock.Mock(stdout="   \n")
                 with mock.patch.object(Path, "exists", fake_exists):
                     result = get_git_remote(tmp_path)
                 assert result is None
@@ -371,13 +371,13 @@ class TestGetGitBranch:
                     return True
                 return original_exists(self)
 
-            with mock.patch("subprocess.check_output") as mock_check:
-                mock_check.return_value = "main\n"
+            with mock.patch("subprocess.run") as mock_run:
+                mock_run.return_value = mock.Mock(stdout="main\n")
                 with mock.patch.object(Path, "exists", fake_exists):
                     result = get_git_branch(tmp_path)
                 assert result == "main"
                 assert mock_validate.called
-                assert mock_check.called
+                assert mock_run.called
 
     def test_returns_none_on_error(self, tmp_path: Path) -> None:
         """Returns None when subprocess fails."""
@@ -391,8 +391,8 @@ class TestGetGitBranch:
                     return True
                 return original_exists(self)
 
-            with mock.patch("subprocess.check_output") as mock_check:
-                mock_check.side_effect = FileNotFoundError()
+            with mock.patch("subprocess.run") as mock_run:
+                mock_run.side_effect = FileNotFoundError()
                 with mock.patch.object(Path, "exists", fake_exists):
                     result = get_git_branch(tmp_path)
                 assert result is None
@@ -409,8 +409,8 @@ class TestGetGitBranch:
                     return True
                 return original_exists(self)
 
-            with mock.patch("subprocess.check_output") as mock_check:
-                mock_check.side_effect = subprocess.CalledProcessError(1, "git")
+            with mock.patch("subprocess.run") as mock_run:
+                mock_run.side_effect = subprocess.CalledProcessError(1, "git")
                 with mock.patch.object(Path, "exists", fake_exists):
                     result = get_git_branch(tmp_path)
                 assert result is None
@@ -427,8 +427,8 @@ class TestGetGitBranch:
                     return True
                 return original_exists(self)
 
-            with mock.patch("subprocess.check_output") as mock_check:
-                mock_check.return_value = "feature/add-new-feature\n"
+            with mock.patch("subprocess.run") as mock_run:
+                mock_run.return_value = mock.Mock(stdout="feature/add-new-feature\n")
                 with mock.patch.object(Path, "exists", fake_exists):
                     result = get_git_branch(tmp_path)
                 assert result == "feature/add-new-feature"

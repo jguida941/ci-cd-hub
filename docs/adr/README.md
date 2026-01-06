@@ -45,6 +45,10 @@ Existing:
 - [ADR-0041: Language Strategy Pattern](0041-language-strategy-pattern.md)
 - [ADR-0042: CommandResult Pattern for CLI Output](0042-command-result-pattern.md)
 - [ADR-0043: Triage Service Modularization](0043-triage-service-modularization.md)
+- [ADR-0044: Archive Extraction Security Hardening](0044-archive-extraction-security.md)
+- [ADR-0045: Subprocess Timeout Policy](0045-subprocess-timeout-policy.md)
+- [ADR-0046: OutputRenderer Pattern](0046-output-renderer-pattern.md)
+- [ADR-0047: Config Validation Order](0047-config-validation-order.md)
 
 Template starter:
 ```markdown

@@ -41,20 +41,31 @@ from cihub.utils.java_pom import (
 )
 from cihub.utils.paths import hub_root, validate_repo_path, validate_subdir
 from cihub.utils.progress import _bar
+from cihub.utils.project import (
+    _detect_java_project_type,
+    _get_repo_name,
+    detect_java_project_type,
+    get_repo_name,
+)
 
 __all__ = [
-    "_parse_env_bool",
+    # Environment utilities (public API)
     "env_bool",
     "env_str",
-    "_bar",
     "resolve_executable",
+    # Project detection utilities
+    "get_repo_name",
+    "detect_java_project_type",
+    # Git utilities
     "GIT_REMOTE_RE",
     "get_git_branch",
     "get_git_remote",
     "parse_repo_from_remote",
+    # GitHub API utilities
     "gh_api_json",
     "fetch_remote_file",
     "update_remote_file",
+    # Path utilities
     "hub_root",
     "validate_repo_path",
     "validate_subdir",
@@ -82,3 +93,6 @@ __all__ = [
     "insert_plugins_into_pom",
     "insert_dependencies_into_pom",
 ]
+
+# Note: Private functions (_parse_env_bool, _bar, _get_repo_name, _detect_java_project_type)
+# are still imported for internal use but not exported in __all__

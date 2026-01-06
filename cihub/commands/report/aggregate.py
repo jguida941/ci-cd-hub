@@ -10,6 +10,7 @@ from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services import aggregate_from_dispatch, aggregate_from_reports_dir
 from cihub.types import CommandResult
 from cihub.utils.debug import emit_debug_context
+from cihub.utils.env import get_github_token
 
 from .helpers import _resolve_include_details, _resolve_write_summary
 
@@ -78,7 +79,7 @@ def _emit_aggregate_debug_context(
     emit_debug_context("report aggregate", entries)
 
 
-def _aggregate_report(args: argparse.Namespace, json_mode: bool) -> int | CommandResult:
+def _aggregate_report(args: argparse.Namespace) -> CommandResult:
     """Aggregate reports from dispatch metadata or reports directory."""
     write_summary = _resolve_write_summary(getattr(args, "write_github_summary", None))
     include_details = _resolve_include_details(getattr(args, "include_details", None))
@@ -120,33 +121,32 @@ def _aggregate_report(args: argparse.Namespace, json_mode: bool) -> int | Comman
             reports_dir=Path(reports_dir),
         )
         exit_code = EXIT_SUCCESS if result.success else EXIT_FAILURE
-        if json_mode:
-            summary = "Aggregation complete" if result.success else "Aggregation failed"
-            return CommandResult(
-                exit_code=exit_code,
-                summary=summary,
-                artifacts={
-                    "report": str(result.report_path) if result.report_path else "",
-                    "summary": str(result.summary_path) if result.summary_path else "",
-                    "details": str(result.details_path) if result.details_path else "",
-                },
-            )
-        return exit_code
+        summary = "Aggregation complete" if result.success else "Aggregation failed"
+        files_generated = []
+        if result.report_path:
+            files_generated.append(str(result.report_path))
+        if result.summary_path:
+            files_generated.append(str(result.summary_path))
+        if result.details_path:
+            files_generated.append(str(result.details_path))
+        return CommandResult(
+            exit_code=exit_code,
+            summary=summary,
+            artifacts={
+                "report": str(result.report_path) if result.report_path else "",
+                "summary": str(result.summary_path) if result.summary_path else "",
+                "details": str(result.details_path) if result.details_path else "",
+            },
+            files_generated=files_generated if files_generated else None,
+        )
 
-    token = args.token
-    token_env = args.token_env or "HUB_DISPATCH_TOKEN"  # noqa: S105
-    token_source = "arg" if token else None
+    # Get token using standardized priority: GH_TOKEN -> GITHUB_TOKEN -> HUB_DISPATCH_TOKEN
+    token, token_source = get_github_token(
+        explicit_token=args.token,
+        token_env=args.token_env,
+    )
     if not token:
-        token = os.environ.get(token_env)
-        if token:
-            token_source = token_env
-    if not token and token_env != "GITHUB_TOKEN":  # noqa: S105
-        token = os.environ.get("GITHUB_TOKEN")
-        if token:
-            token_source = "GITHUB_TOKEN"  # noqa: S105
-    if not token:
-        token_source = "missing"  # noqa: S105
-        message = f"Missing token (expected {token_env} or GITHUB_TOKEN)"
+        message = "Missing token (set GH_TOKEN, GITHUB_TOKEN, or HUB_DISPATCH_TOKEN)"
         _emit_aggregate_debug_context(
             args=args,
             result=None,
@@ -158,13 +158,10 @@ def _aggregate_report(args: argparse.Namespace, json_mode: bool) -> int | Comman
             hub_event=hub_event,
             total_repos=total_repos,
             reports_dir=None,
-            token_env=token_env,
+            token_env=args.token_env,
             token_source=token_source,
         )
-        if json_mode:
-            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-        print(message)
-        return EXIT_FAILURE
+        return CommandResult(exit_code=EXIT_FAILURE, summary=message)
 
     result = aggregate_from_dispatch(
         dispatch_dir=Path(args.dispatch_dir),
@@ -195,16 +192,23 @@ def _aggregate_report(args: argparse.Namespace, json_mode: bool) -> int | Comman
         token_source=token_source,
     )
     exit_code = EXIT_SUCCESS if result.success else EXIT_FAILURE
+    summary = "Aggregation complete" if result.success else "Aggregation failed"
 
-    if json_mode:
-        summary = "Aggregation complete" if result.success else "Aggregation failed"
-        return CommandResult(
-            exit_code=exit_code,
-            summary=summary,
-            artifacts={
-                "report": str(result.report_path) if result.report_path else "",
-                "summary": str(result.summary_path) if result.summary_path else "",
-                "details": str(result.details_path) if result.details_path else "",
-            },
-        )
-    return exit_code
+    files_generated = []
+    if result.report_path:
+        files_generated.append(str(result.report_path))
+    if result.summary_path:
+        files_generated.append(str(result.summary_path))
+    if result.details_path:
+        files_generated.append(str(result.details_path))
+
+    return CommandResult(
+        exit_code=exit_code,
+        summary=summary,
+        artifacts={
+            "report": str(result.report_path) if result.report_path else "",
+            "summary": str(result.summary_path) if result.summary_path else "",
+            "details": str(result.details_path) if result.details_path else "",
+        },
+        files_generated=files_generated if files_generated else None,
+    )

@@ -10,6 +10,26 @@ from typing import Any, Callable
 from urllib import request
 
 
+def _safe_extractall(zip_path: Path, target_dir: Path) -> None:
+    """Extract ZIP with path traversal protection.
+
+    Validates all members are within target_dir before extraction
+    to prevent CVE-style path traversal attacks via malicious ZIPs.
+    """
+    target_dir = target_dir.resolve()
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        for member in zf.namelist():
+            # Resolve the target path
+            member_path = (target_dir / member).resolve()
+            # Verify it's within target_dir (defense in depth)
+            try:
+                member_path.relative_to(target_dir)
+            except ValueError:
+                raise ValueError(f"Path traversal detected in ZIP: {member}") from None
+        # All paths validated - safe to extract
+        zf.extractall(target_dir)
+
+
 def download_artifact(archive_url: str, target_dir: Path, token: str) -> Path | None:
     """Download and extract a GitHub artifact ZIP."""
     req = request.Request(  # noqa: S310
@@ -26,8 +46,7 @@ def download_artifact(archive_url: str, target_dir: Path, token: str) -> Path | 
         target_dir.mkdir(parents=True, exist_ok=True)
         zip_path = target_dir / "artifact.zip"
         zip_path.write_bytes(data)
-        with zipfile.ZipFile(zip_path, "r") as zf:
-            zf.extractall(target_dir)
+        _safe_extractall(zip_path, target_dir)
         return target_dir
     except Exception as exc:
         print(f"Warning: failed to download artifact {archive_url}: {exc}")
@@ -43,7 +62,7 @@ def extract_correlation_id_from_artifact(artifact_url: str, token: str) -> str |
         report_file = next(iter(Path(extracted).rglob("report.json")), None)
         if report_file and report_file.exists():
             try:
-                report_data = json.loads(report_file.read_text())
+                report_data = json.loads(report_file.read_text(encoding="utf-8"))
                 if not isinstance(report_data, dict):
                     return None
                 corr = report_data.get("hub_correlation_id")

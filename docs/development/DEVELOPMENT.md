@@ -166,7 +166,7 @@ hub-release/
 │   ├── profiles/          # Pre-built configs (fast, quality, security)
 │   ├── repo/              # Templates for target repos
 │   └── hub/               # Hub-side templates
-├── tests/                 # pytest test suite (80+ tests)
+├── tests/                 # pytest test suite (2120 tests)
 ├── policies/kyverno/      # Kubernetes admission policies
 └── fixtures/              # Test fixtures (empty placeholders)
 ```
@@ -334,8 +334,8 @@ cihub setup-secrets --all --verify         # Setup dispatch token
 |-------------------------------------------|---------------|
 | Central mode (`hub-run-all.yml`)          | ✅ Working     |
 | Reusable workflows (java-ci, python-ci)   | ✅ Working     |
-| CLI tool (`cihub`)                        | ✅ 11 commands |
-| Unit tests                                | ✅ 80+ tests   |
+| CLI tool (`cihub`)                        | ✅ 28 commands |
+| Unit tests                                | ✅ 2120 tests  |
 | Distributed mode (`hub-orchestrator.yml`) | ❌ Failing     |
 | Security workflow (`hub-security.yml`)    | ❌ Failing     |
 

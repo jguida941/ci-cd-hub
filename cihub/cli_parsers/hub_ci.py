@@ -362,18 +362,20 @@ def add_hub_ci_commands(subparsers, add_json_flag, handlers: CommandHandlers) ->
     hub_ci_bandit.add_argument("--output", default="bandit.json", help="Bandit JSON output path")
     hub_ci_bandit.add_argument("--severity", default="medium", help="Bandit severity level")
     hub_ci_bandit.add_argument("--confidence", default="medium", help="Bandit confidence level")
-    hub_ci_bandit.add_argument(
+    fail_on_high_group = hub_ci_bandit.add_mutually_exclusive_group()
+    fail_on_high_group.add_argument(
         "--fail-on-high",
         action="store_true",
-        default=True,
+        dest="fail_on_high",
         help="Fail if HIGH severity issues found (default: true)",
     )
-    hub_ci_bandit.add_argument(
+    fail_on_high_group.add_argument(
         "--no-fail-on-high",
         dest="fail_on_high",
         action="store_false",
         help="Do not fail on HIGH severity issues",
     )
+    hub_ci_bandit.set_defaults(fail_on_high=True)
     hub_ci_bandit.add_argument(
         "--fail-on-medium",
         action="store_true",
@@ -532,4 +534,25 @@ def add_hub_ci_commands(subparsers, add_json_flag, handlers: CommandHandlers) ->
     hub_ci_quarantine.add_argument(
         "--path",
         help="Root directory to scan (default: hub root)",
+    )
+
+    hub_ci_enforce_cmd_result = hub_ci_sub.add_parser(
+        "enforce-command-result",
+        help="Enforce CommandResult pattern - fail if too many print() calls in commands/ (ADR-0042)",
+    )
+    hub_ci_enforce_cmd_result.add_argument(
+        "--path",
+        help="Root directory to scan (default: hub root)",
+    )
+    hub_ci_enforce_cmd_result.add_argument(
+        "--max-allowed",
+        type=int,
+        default=7,
+        help="Maximum allowed print() calls in cihub/commands/ (default: 7)",
+    )
+    add_summary_args(hub_ci_enforce_cmd_result)
+    hub_ci_enforce_cmd_result.add_argument(
+        "--github-summary",
+        action="store_true",
+        help="Append summary to GITHUB_STEP_SUMMARY",
     )

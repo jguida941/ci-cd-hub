@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 from typing import Any
 
@@ -43,8 +42,9 @@ def _load_repo(paths: PathConfig, repo: str) -> dict[str, Any]:
     return config
 
 
-def _dump_config(data: dict[str, Any]) -> None:
-    print(yaml.safe_dump(data, sort_keys=False, default_flow_style=False))
+def _format_config(data: dict[str, Any]) -> str:
+    """Format config as YAML for display."""
+    return yaml.safe_dump(data, sort_keys=False, default_flow_style=False).rstrip()
 
 
 def _set_nested(config: dict[str, Any], path: str, value: Any) -> None:
@@ -104,44 +104,52 @@ def _apply_wizard(paths: PathConfig, existing: dict[str, Any]) -> dict[str, Any]
     return runner.run_config_wizard(existing)
 
 
-def cmd_config(args: argparse.Namespace) -> int | CommandResult:
+def cmd_config(args: argparse.Namespace) -> CommandResult:
+    """Manage CI-Hub configuration.
+
+    Always returns CommandResult for consistent output handling.
+    """
     paths = PathConfig(str(hub_root()))
     ensure_dirs(paths)
-    json_mode = getattr(args, "json", False)
 
     repo = args.repo
     if not repo and args.subcommand != "apply-profile":
         message = "--repo is required"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_USAGE, summary=message)
-        print(message, file=sys.stderr)
-        return EXIT_USAGE
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-CONFIG-NO-REPO"}],
+        )
 
     defaults = load_defaults(paths)
 
     try:
         if args.subcommand in (None, "edit"):
+            json_mode = getattr(args, "json", False)
             if json_mode:
                 message = "config edit is not supported with --json"
                 return CommandResult(
                     exit_code=EXIT_USAGE,
                     summary=message,
-                    problems=[{"severity": "error", "message": message}],
+                    problems=[{"severity": "error", "message": message, "code": "CIHUB-CONFIG-EDIT-JSON"}],
                 )
             existing = _load_repo(paths, repo)
             try:
                 updated = _apply_wizard(paths, existing)
             except WizardCancelled:
-                if json_mode:
-                    return CommandResult(exit_code=EXIT_INTERRUPTED, summary="Cancelled")
-                print("Cancelled.", file=sys.stderr)
-                return EXIT_INTERRUPTED
+                return CommandResult(exit_code=EXIT_INTERRUPTED, summary="Cancelled")
             if args.dry_run:
-                _dump_config(updated)
-                return EXIT_SUCCESS
+                return CommandResult(
+                    exit_code=EXIT_SUCCESS,
+                    summary="Dry run complete",
+                    data={"raw_output": _format_config(updated), "config": updated},
+                )
             save_repo_config(paths, repo, updated, dry_run=False)
-            print(f"[OK] Updated {paths.repo_file(repo)}", file=sys.stderr)
-            return EXIT_SUCCESS
+            return CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=f"Updated {paths.repo_file(repo)}",
+                files_modified=[str(paths.repo_file(repo))],
+            )
 
         if args.subcommand == "show":
             config = _load_repo(paths, repo)
@@ -150,62 +158,47 @@ def cmd_config(args: argparse.Namespace) -> int | CommandResult:
                 data = effective
             else:
                 data = config
-            if json_mode:
-                return CommandResult(
-                    exit_code=EXIT_SUCCESS,
-                    summary="Config loaded",
-                    data={"config": data},
-                )
-            _dump_config(data)
-            return EXIT_SUCCESS
+            return CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary="Config loaded",
+                data={"raw_output": _format_config(data), "config": data},
+            )
 
         if args.subcommand == "set":
             config = _load_repo(paths, repo)
             value = yaml.safe_load(args.value)
             _set_nested(config, args.path, value)
             if args.dry_run:
-                if json_mode:
-                    return CommandResult(
-                        exit_code=EXIT_SUCCESS,
-                        summary="Dry run complete",
-                        data={"config": config},
-                    )
-                _dump_config(config)
-                return EXIT_SUCCESS
-            save_repo_config(paths, repo, config, dry_run=False)
-            if json_mode:
                 return CommandResult(
                     exit_code=EXIT_SUCCESS,
-                    summary="Config updated",
-                    data={"config": config},
-                    files_modified=[str(paths.repo_file(repo))],
+                    summary="Dry run complete",
+                    data={"raw_output": _format_config(config), "config": config},
                 )
-            print(f"[OK] Updated {paths.repo_file(repo)}", file=sys.stderr)
-            return EXIT_SUCCESS
+            save_repo_config(paths, repo, config, dry_run=False)
+            return CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=f"Updated {paths.repo_file(repo)}",
+                data={"config": config},
+                files_modified=[str(paths.repo_file(repo))],
+            )
 
         if args.subcommand in {"enable", "disable"}:
             config = _load_repo(paths, repo)
             tool_path = _resolve_tool_path(config, defaults, args.tool)
             _set_nested(config, tool_path, args.subcommand == "enable")
             if args.dry_run:
-                if json_mode:
-                    return CommandResult(
-                        exit_code=EXIT_SUCCESS,
-                        summary="Dry run complete",
-                        data={"config": config},
-                    )
-                _dump_config(config)
-                return EXIT_SUCCESS
-            save_repo_config(paths, repo, config, dry_run=False)
-            if json_mode:
                 return CommandResult(
                     exit_code=EXIT_SUCCESS,
-                    summary="Config updated",
-                    data={"config": config},
-                    files_modified=[str(paths.repo_file(repo))],
+                    summary="Dry run complete",
+                    data={"raw_output": _format_config(config), "config": config},
                 )
-            print(f"[OK] Updated {paths.repo_file(repo)}", file=sys.stderr)
-            return EXIT_SUCCESS
+            save_repo_config(paths, repo, config, dry_run=False)
+            return CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=f"Updated {paths.repo_file(repo)}",
+                data={"config": config},
+                files_modified=[str(paths.repo_file(repo))],
+            )
 
         if args.subcommand == "apply-profile":
             from cihub.config.merge import deep_merge
@@ -223,27 +216,21 @@ def cmd_config(args: argparse.Namespace) -> int | CommandResult:
                 output_path = Path(args.output) if args.output else target_path
 
                 if args.dry_run:
-                    if json_mode:
-                        return CommandResult(
-                            exit_code=EXIT_SUCCESS,
-                            summary="Dry run complete",
-                            data={"config": merged},
-                        )
-                    _dump_config(merged)
-                    return EXIT_SUCCESS
+                    return CommandResult(
+                        exit_code=EXIT_SUCCESS,
+                        summary="Dry run complete",
+                        data={"raw_output": _format_config(merged), "config": merged},
+                    )
 
                 output_path.parent.mkdir(parents=True, exist_ok=True)
                 with output_path.open("w", encoding="utf-8") as handle:
                     yaml.safe_dump(merged, handle, sort_keys=False, default_flow_style=False)
-                if json_mode:
-                    return CommandResult(
-                        exit_code=EXIT_SUCCESS,
-                        summary=f"Profile applied: {profile_path}",
-                        data={"config": merged},
-                        files_modified=[str(output_path)],
-                    )
-                print(f"[OK] Applied {profile_path} -> {output_path}", file=sys.stderr)
-                return EXIT_SUCCESS
+                return CommandResult(
+                    exit_code=EXIT_SUCCESS,
+                    summary=f"Applied {profile_path} -> {output_path}",
+                    data={"config": merged},
+                    files_modified=[str(output_path)],
+                )
 
             if not repo:
                 raise ConfigError("--repo or --target is required for apply-profile")
@@ -252,39 +239,30 @@ def cmd_config(args: argparse.Namespace) -> int | CommandResult:
             merged = deep_merge(profile_data, config)
 
             if args.dry_run:
-                if json_mode:
-                    return CommandResult(
-                        exit_code=EXIT_SUCCESS,
-                        summary="Dry run complete",
-                        data={"config": merged},
-                    )
-                _dump_config(merged)
-                return EXIT_SUCCESS
-
-            save_repo_config(paths, repo, merged, dry_run=False)
-            if json_mode:
                 return CommandResult(
                     exit_code=EXIT_SUCCESS,
-                    summary=f"Profile applied: {profile_path}",
-                    data={"config": merged},
-                    files_modified=[str(paths.repo_file(repo))],
+                    summary="Dry run complete",
+                    data={"raw_output": _format_config(merged), "config": merged},
                 )
-            print(f"[OK] Applied {profile_path} -> {paths.repo_file(repo)}", file=sys.stderr)
-            return EXIT_SUCCESS
+
+            save_repo_config(paths, repo, merged, dry_run=False)
+            return CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=f"Applied {profile_path} -> {paths.repo_file(repo)}",
+                data={"config": merged},
+                files_modified=[str(paths.repo_file(repo))],
+            )
 
         raise ConfigError(f"Unsupported config command: {args.subcommand}")
     except ConfigError as exc:
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_FAILURE,
-                summary=str(exc),
-                problems=[
-                    {
-                        "severity": "error",
-                        "message": str(exc),
-                        "code": "CIHUB-CONFIG-001",
-                    }
-                ],
-            )
-        print(str(exc), file=sys.stderr)
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=str(exc),
+            problems=[
+                {
+                    "severity": "error",
+                    "message": str(exc),
+                    "code": "CIHUB-CONFIG-001",
+                }
+            ],
+        )

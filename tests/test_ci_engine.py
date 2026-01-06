@@ -52,7 +52,7 @@ class TestGetRepoName:
     def test_from_config_repo_section(self, tmp_path: Path) -> None:
         config = {"repo": {"owner": "myowner", "name": "myrepo"}}
         with patch.dict(os.environ, {}, clear=True):
-            with patch("cihub.services.ci_engine.helpers.get_git_remote", return_value=None):
+            with patch("cihub.utils.project.get_git_remote", return_value=None):
                 result = _get_repo_name(config, tmp_path)
         assert result == "myowner/myrepo"
 
@@ -60,11 +60,11 @@ class TestGetRepoName:
         config: dict = {}
         with patch.dict(os.environ, {}, clear=True):
             with patch(
-                "cihub.services.ci_engine.helpers.get_git_remote",
+                "cihub.utils.project.get_git_remote",
                 return_value="git@github.com:gitowner/gitrepo.git",
             ):
                 with patch(
-                    "cihub.services.ci_engine.helpers.parse_repo_from_remote",
+                    "cihub.utils.project.parse_repo_from_remote",
                     return_value=("gitowner", "gitrepo"),
                 ):
                     result = _get_repo_name(config, tmp_path)
@@ -73,7 +73,7 @@ class TestGetRepoName:
     def test_returns_empty_when_no_source(self, tmp_path: Path) -> None:
         config: dict = {}
         with patch.dict(os.environ, {}, clear=True):
-            with patch("cihub.services.ci_engine.helpers.get_git_remote", return_value=None):
+            with patch("cihub.utils.project.get_git_remote", return_value=None):
                 result = _get_repo_name(config, tmp_path)
         assert result == ""
 
@@ -709,7 +709,8 @@ class TestEvaluatePythonGates:
 
         failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
 
-        assert any("coverage 60%" in f for f in failures)
+        # float() conversion means 60 becomes 60.0
+        assert any("coverage 60" in f and "< 80" in f for f in failures)
 
     def test_detects_mutation_score_below_threshold(self) -> None:
         report = {"results": {"mutation_score": 50}}
@@ -719,7 +720,8 @@ class TestEvaluatePythonGates:
 
         failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
 
-        assert any("mutation score 50%" in f for f in failures)
+        # float() conversion means 50 becomes 50.0
+        assert any("mutation score 50" in f and "< 70" in f for f in failures)
 
     def test_detects_ruff_errors(self) -> None:
         report = {"tool_metrics": {"ruff_errors": 10}}
@@ -947,7 +949,8 @@ class TestEvaluateJavaGates:
 
         failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
 
-        assert any("coverage 50%" in f for f in failures)
+        # float() conversion means 50 becomes 50.0
+        assert any("coverage 50" in f and "< 70" in f for f in failures)
 
     def test_detects_checkstyle_issues(self) -> None:
         report = {"tool_metrics": {"checkstyle_issues": 15}}

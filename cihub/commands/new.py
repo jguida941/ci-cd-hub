@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 from pathlib import Path
 
 import yaml
@@ -17,7 +16,6 @@ from cihub.config.io import (
 from cihub.config.merge import deep_merge
 from cihub.config.paths import PathConfig
 from cihub.exit_codes import (
-    EXIT_DECLINED,
     EXIT_FAILURE,
     EXIT_INTERRUPTED,
     EXIT_SUCCESS,
@@ -25,7 +23,7 @@ from cihub.exit_codes import (
 )
 from cihub.services.templates import build_repo_config
 from cihub.types import CommandResult
-from cihub.utils.paths import hub_root
+from cihub.utils.paths import hub_root, validate_subdir
 from cihub.wizard import HAS_WIZARD, WizardCancelled
 
 
@@ -50,12 +48,15 @@ def _validate_profile_language(profile_cfg: dict, language: str) -> None:
         raise ValueError("Profile is Python-only; use --language python")
 
 
-def cmd_new(args: argparse.Namespace) -> int | CommandResult:
+def cmd_new(args: argparse.Namespace) -> CommandResult:
+    """Create a new repo config file on the hub side.
+
+    Always returns CommandResult for consistent output handling.
+    """
     paths = PathConfig(str(hub_root()))
     ensure_dirs(paths)
-    json_mode = getattr(args, "json", False)
 
-    if json_mode and args.interactive:
+    if getattr(args, "json", False) and args.interactive:
         message = "--interactive is not supported with --json"
         return CommandResult(
             exit_code=EXIT_USAGE,
@@ -67,17 +68,22 @@ def cmd_new(args: argparse.Namespace) -> int | CommandResult:
     repo_file = Path(paths.repo_file(name))
     if repo_file.exists():
         message = f"Config already exists: {repo_file}"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_USAGE, summary=message)
-        print(message, file=sys.stderr)
-        return EXIT_USAGE
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-NEW-EXISTS"}],
+        )
 
     defaults = load_defaults(paths)
 
     if args.interactive:
         if not HAS_WIZARD:
-            print("Install wizard deps: pip install cihub[wizard]", file=sys.stderr)
-            return EXIT_FAILURE
+            message = "Install wizard deps: pip install cihub[wizard]"
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=message,
+                problems=[{"severity": "error", "message": message, "code": "CIHUB-NEW-NO-WIZARD"}],
+            )
         from rich.console import Console  # noqa: I001
         from cihub.wizard.core import WizardRunner  # noqa: I001
 
@@ -85,66 +91,67 @@ def cmd_new(args: argparse.Namespace) -> int | CommandResult:
         try:
             config = runner.run_new_wizard(name, profile=args.profile)
         except WizardCancelled:
-            print("Cancelled.", file=sys.stderr)
-            return EXIT_INTERRUPTED
+            return CommandResult(
+                exit_code=EXIT_INTERRUPTED,
+                summary="Cancelled",
+            )
         except FileNotFoundError as exc:
-            print(str(exc), file=sys.stderr)
-            return EXIT_USAGE
+            return CommandResult(
+                exit_code=EXIT_USAGE,
+                summary=str(exc),
+                problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-NEW-NOT-FOUND"}],
+            )
     else:
         if not args.owner or not args.language:
-            print(
-                "--owner and --language are required unless --interactive is set",
-                file=sys.stderr,
+            message = "--owner and --language are required unless --interactive is set"
+            return CommandResult(
+                exit_code=EXIT_USAGE,
+                summary=message,
+                problems=[{"severity": "error", "message": message, "code": "CIHUB-NEW-MISSING-ARGS"}],
             )
-            return EXIT_USAGE
+        # Validate subdir to prevent path traversal
+        subdir = validate_subdir(args.subdir or "")
         config = build_repo_config(
             args.language,
             args.owner,
             name,
             args.branch or "main",
-            subdir=args.subdir,
+            subdir=subdir,
         )
         config = _apply_repo_defaults(config, defaults)
         if args.profile:
             try:
                 profile_cfg = load_profile_strict(paths, args.profile)
             except FileNotFoundError as exc:
-                print(str(exc), file=sys.stderr)
-                return EXIT_USAGE
+                return CommandResult(
+                    exit_code=EXIT_USAGE,
+                    summary=str(exc),
+                    problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-NEW-PROFILE-NOT-FOUND"}],
+                )
             _validate_profile_language(profile_cfg, args.language)
             config = deep_merge(config, profile_cfg)
 
     payload = yaml.safe_dump(config, sort_keys=False, default_flow_style=False)
     if args.dry_run:
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_SUCCESS,
-                summary="Dry run complete",
-                data={"config": config},
-                files_generated=[str(repo_file)],
-            )
-        print(f"# Would write: {repo_file}")
-        print(payload)
-        return EXIT_SUCCESS
-
-    if not args.yes:
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_USAGE,
-                summary="Confirmation required; re-run with --yes",
-            )
-        confirm = input(f"Write {repo_file}? [y/N] ").strip().lower()
-        if confirm not in {"y", "yes"}:
-            print("Cancelled.")
-            return EXIT_DECLINED
-
-    save_yaml_file(repo_file, config, dry_run=False)
-    if json_mode:
         return CommandResult(
             exit_code=EXIT_SUCCESS,
-            summary="Config created",
-            data={"config": config},
+            summary=f"Dry run complete: would create {repo_file}",
+            data={"config": config, "raw_output": payload},
             files_generated=[str(repo_file)],
         )
-    print(f"[OK] Created {repo_file}")
-    return EXIT_SUCCESS
+
+    if not args.yes:
+        # In non-JSON mode, require --yes flag for non-interactive confirmation
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary="Confirmation required; re-run with --yes",
+            data={"config": config, "file": str(repo_file)},
+        )
+
+    save_yaml_file(repo_file, config, dry_run=False)
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Created {repo_file}",
+        data={"config": config},
+        files_generated=[str(repo_file)],
+    )

@@ -20,7 +20,7 @@ _TOOL_KEYS = TOOL_KEYS
 _THRESHOLD_KEYS = THRESHOLD_KEYS
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class DiscoveryFilters:
     """Filters for repository discovery."""
 

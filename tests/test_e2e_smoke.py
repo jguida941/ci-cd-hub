@@ -25,12 +25,12 @@ class TestPythonProjectWorkflow:
         # Step 1: Create a Python project marker
         (repo / "pyproject.toml").write_text("[project]\nname = 'my-project'\nversion = '1.0.0'\n")
 
-        # Step 2: Detect language
-        result = main(["detect", "--repo", str(repo)])
+        # Step 2: Detect language (use --json for structured output)
+        result = main(["detect", "--repo", str(repo), "--json"])
         assert result == EXIT_SUCCESS
         out = capsys.readouterr().out
         data = json.loads(out)
-        assert data["language"] == "python"
+        assert data["data"]["language"] == "python"
 
         # Step 3: Initialize CI config
         result = main(
@@ -79,12 +79,12 @@ class TestJavaProjectWorkflow:
 """
         (repo / "pom.xml").write_text(pom)
 
-        # Step 2: Detect language
-        result = main(["detect", "--repo", str(repo)])
+        # Step 2: Detect language (use --json for structured output)
+        result = main(["detect", "--repo", str(repo), "--json"])
         assert result == EXIT_SUCCESS
         out = capsys.readouterr().out
         data = json.loads(out)
-        assert data["language"] == "java"
+        assert data["data"]["language"] == "java"
 
         # Step 3: Initialize CI config
         result = main(

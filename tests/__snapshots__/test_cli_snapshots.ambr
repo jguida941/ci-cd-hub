@@ -1,13 +1,13 @@
 # serializer version: 1
 # name: TestConfigOutputSnapshots.test_discover_matrix_structure
   dict({
-    'raw_output_lines': 1013,
+    'raw_output_lines': 1015,
   })
 # ---
 # name: TestErrorOutputSnapshots.test_detect_error_message
   dict({
     'mentions_language': True,
-    'starts_with_error': True,
+    'starts_with_error': False,
   })
 # ---
 # name: TestErrorOutputSnapshots.test_validate_json_error_structure
@@ -127,7 +127,9 @@
 # name: TestJsonOutputSnapshots.test_detect_json_structure
   dict({
     'data_keys': list([
+      'items',
       'language',
+      'raw_output',
     ]),
     'top_keys': list([
       'artifacts',
@@ -185,10 +187,11 @@
 # ---
 # name: TestScaffoldOutputSnapshots.test_scaffold_list_output
   list([
-    'python-pyproject: Minimal Python project with pyproject.toml',
-    'python-setup: Minimal Python project with setup.py',
-    'java-maven: Minimal Java project using Maven',
-    'java-gradle: Minimal Java project using Gradle',
-    'monorepo: Monorepo with java/ and python/ subdirs',
+    'Available fixtures',
+    '- python-pyproject: Minimal Python project with pyproject.toml',
+    '- python-setup: Minimal Python project with setup.py',
+    '- java-maven: Minimal Java project using Maven',
+    '- java-gradle: Minimal Java project using Gradle',
+    '- monorepo: Monorepo with java/ and python/ subdirs',
   ])
 # ---

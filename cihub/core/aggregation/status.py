@@ -13,7 +13,7 @@ def load_dispatch_metadata(dispatch_dir: Path) -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
     for path in dispatch_dir.rglob("*.json"):
         try:
-            data = json.loads(path.read_text())
+            data = json.loads(path.read_text(encoding="utf-8"))
             if not isinstance(data, dict):
                 print(f"Warning: skipping non-object JSON in {path}")
                 continue

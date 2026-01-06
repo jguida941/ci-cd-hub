@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import sys
 
 from cihub.exit_codes import EXIT_SUCCESS, EXIT_USAGE
 from cihub.types import CommandResult
@@ -52,6 +51,7 @@ from .smoke import (
 )
 from .validation import (
     cmd_docker_compose_check,
+    cmd_enforce_command_result,
     cmd_quarantine_check,
     cmd_repo_check,
     cmd_source_check,
@@ -62,7 +62,7 @@ from .validation import (
 )
 
 
-def cmd_hub_ci(args: argparse.Namespace) -> int | CommandResult:
+def cmd_hub_ci(args: argparse.Namespace) -> CommandResult:
     """Dispatch hub-ci subcommands, returning CommandResult for --json support."""
     handlers = {
         "actionlint-install": cmd_actionlint_install,
@@ -111,26 +111,31 @@ def cmd_hub_ci(args: argparse.Namespace) -> int | CommandResult:
         "enforce": cmd_enforce,
         "verify-matrix-keys": cmd_verify_matrix_keys,
         "quarantine-check": cmd_quarantine_check,
+        "enforce-command-result": cmd_enforce_command_result,
     }
     handler = handlers.get(args.subcommand)
     if handler is None:
-        print(f"Unknown hub-ci subcommand: {args.subcommand}", file=sys.stderr)
-        return EXIT_USAGE
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=f"Unknown hub-ci subcommand: {args.subcommand}",
+            problems=[{
+                "severity": "error",
+                "message": f"Unknown subcommand '{args.subcommand}'",
+                "code": "CIHUB-UNKNOWN-SUBCOMMAND",
+            }],
+        )
 
     # Execute handler - may return int (legacy) or CommandResult (migrated)
     result = handler(args)
-    json_mode = getattr(args, "json", False)
 
     # If handler already returns CommandResult, use it directly
     if isinstance(result, CommandResult):
         return result
 
-    # Legacy int return - wrap in CommandResult for --json mode
-    if json_mode:
-        status = "success" if result == EXIT_SUCCESS else "failed"
-        return CommandResult(
-            exit_code=result,
-            summary=f"hub-ci {args.subcommand}: {status}",
-            data={"subcommand": args.subcommand, "exit_code": result, "status": status},
-        )
-    return result
+    # Legacy int return - always wrap in CommandResult for type safety
+    status = "success" if result == EXIT_SUCCESS else "failed"
+    return CommandResult(
+        exit_code=result,
+        summary=f"hub-ci {args.subcommand}: {status}",
+        data={"subcommand": args.subcommand, "exit_code": result, "status": status},
+    )

@@ -340,7 +340,17 @@ def collect_java_dependency_warnings(
     targets: list[Path] = []
     if modules:
         for module in modules:
+            # Validate module path doesn't escape root (path traversal protection)
+            if ".." in module or module.startswith("/") or "\\" in module:
+                warnings.append(f"Invalid module path (traversal blocked): {module}")
+                continue
             module_pom = root_path / module / "pom.xml"
+            # Double-check resolved path is within root_path
+            try:
+                module_pom.resolve().relative_to(root_path.resolve())
+            except ValueError:
+                warnings.append(f"Module path escapes root directory: {module}")
+                continue
             if module_pom.exists():
                 targets.append(module_pom)
             else:

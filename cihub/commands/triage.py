@@ -27,6 +27,9 @@ from cihub.services.triage_service import (
 from cihub.types import CommandResult
 from cihub.utils.exec_utils import resolve_executable
 
+# Maximum errors to include in triage bundle (prevents huge payloads)
+MAX_ERRORS_IN_TRIAGE = 20
+
 
 def _build_meta(args: argparse.Namespace) -> dict[str, object]:
     return {
@@ -43,6 +46,7 @@ def _get_current_repo() -> str | None:
             capture_output=True,
             text=True,
             check=False,
+            timeout=30,
         )
         if result.returncode != 0:
             return None
@@ -62,7 +66,7 @@ def _fetch_run_info(run_id: str, repo: str | None) -> dict[str, Any]:
     cmd = [gh_bin, "run", "view", run_id, "--json", "name,status,conclusion,headBranch,headSha,url,jobs"]
     if repo:
         cmd.extend(["--repo", repo])
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)  # noqa: S603
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=60)  # noqa: S603
     if result.returncode != 0:
         raise RuntimeError(f"Failed to fetch run info: {result.stderr.strip()}")
     data = json.loads(result.stdout)
@@ -88,7 +92,7 @@ def _list_runs(
     if branch:
         cmd.extend(["--branch", branch])
 
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)  # noqa: S603
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=60)  # noqa: S603
     if result.returncode != 0:
         raise RuntimeError(f"Failed to list runs: {result.stderr.strip()}")
     data = json.loads(result.stdout)
@@ -103,7 +107,7 @@ def _download_artifacts(run_id: str, repo: str | None, dest_dir: Path) -> bool:
     cmd = [gh_bin, "run", "download", run_id, "--dir", str(dest_dir)]
     if repo:
         cmd.extend(["--repo", repo])
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)  # noqa: S603
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=300)  # noqa: S603
     # gh run download returns 0 even if no artifacts, check if anything was downloaded
     if result.returncode != 0:
         return False
@@ -137,7 +141,7 @@ def _fetch_failed_logs(run_id: str, repo: str | None) -> str:
     cmd = [gh_bin, "run", "view", run_id, "--log-failed"]
     if repo:
         cmd.extend(["--repo", repo])
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False)  # noqa: S603
+    result = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=60)  # noqa: S603
     if result.returncode != 0:
         # May fail if no failures or other issue
         return ""
@@ -226,7 +230,7 @@ def _create_log_failure(
         "message": f"{job} / {step}: {len(errors)} error(s)",
         "job": job,
         "step": step,
-        "errors": errors[:20],  # Limit to first 20 errors
+        "errors": errors[:MAX_ERRORS_IN_TRIAGE],
         "artifacts": [],
         "reproduce": {"command": reproduce_cmd, "cwd": ".", "env": {}},
         "hints": [
@@ -495,8 +499,59 @@ def _generate_multi_report_triage(
     return artifacts, result.to_dict()
 
 
-def cmd_triage(args: argparse.Namespace) -> int | CommandResult:
-    json_mode = getattr(args, "json", False)
+def _format_gate_history_output(gate_result: dict[str, Any]) -> list[str]:
+    """Format gate history analysis for human-readable output."""
+    lines = [
+        "Gate History Analysis",
+        "=" * 50,
+        f"Runs analyzed: {gate_result['runs_analyzed']}",
+    ]
+
+    if gate_result.get("new_failures"):
+        lines.append(f"New failures: {', '.join(gate_result['new_failures'])}")
+
+    if gate_result.get("fixed_gates"):
+        lines.append(f"Fixed gates: {', '.join(gate_result['fixed_gates'])}")
+
+    if gate_result.get("recurring_failures"):
+        lines.append("Recurring issues:")
+        for item in gate_result["recurring_failures"]:
+            lines.append(f"  - {item['gate']} (fails {item['fail_rate']}%): {''.join(item['history'])}")
+
+    if gate_result.get("gate_history"):
+        lines.append("Gate timeline (last 10 runs):")
+        for gate, timeline in gate_result["gate_history"].items():
+            lines.append(f"  - {gate}: {''.join(timeline)}")
+
+    lines.append(f"Summary: {gate_result['summary']}")
+    return lines
+
+
+def _format_flaky_output(flaky_result: dict[str, Any]) -> list[str]:
+    """Format flaky analysis for human-readable output."""
+    suspected = "YES" if flaky_result["suspected_flaky"] else "No"
+    lines = [
+        "Flaky Test Analysis",
+        "=" * 50,
+        f"Runs analyzed: {flaky_result['runs_analyzed']}",
+        f"State changes: {flaky_result['state_changes']}",
+        f"Flakiness score: {flaky_result['flakiness_score']}%",
+        f"Suspected flaky: {suspected}",
+    ]
+
+    if flaky_result.get("recent_history"):
+        lines.append(f"Recent runs (newest last): {flaky_result['recent_history']}")
+
+    if flaky_result.get("details"):
+        lines.append("Details:")
+        for detail in flaky_result["details"]:
+            lines.append(f"  - {detail}")
+
+    lines.append(f"Recommendation: {flaky_result['recommendation']}")
+    return lines
+
+
+def cmd_triage(args: argparse.Namespace) -> CommandResult:
     output_dir = Path(args.output_dir or ".cihub")
     run_id = getattr(args, "run", None)
     artifacts_dir = getattr(args, "artifacts_dir", None)
@@ -515,70 +570,31 @@ def cmd_triage(args: argparse.Namespace) -> int | CommandResult:
         history_path = output_dir / "history.jsonl"
         gate_result = detect_gate_changes(history_path)
 
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_SUCCESS,
-                summary=gate_result["summary"],
-                data=gate_result,
-            )
-
-        # Pretty print gate history analysis
-        print("\nGate History Analysis")
-        print("=" * 50)
-        print(f"Runs analyzed: {gate_result['runs_analyzed']}")
-
-        if gate_result.get("new_failures"):
-            print(f"\nNew failures: {', '.join(gate_result['new_failures'])}")
-
-        if gate_result.get("fixed_gates"):
-            print(f"\n✅ Fixed gates: {', '.join(gate_result['fixed_gates'])}")
-
-        if gate_result.get("recurring_failures"):
-            print("\nRecurring issues:")
-            for item in gate_result["recurring_failures"]:
-                print(f"  • {item['gate']} (fails {item['fail_rate']}%): {''.join(item['history'])}")
-
-        if gate_result.get("gate_history"):
-            print("\nGate timeline (last 10 runs):")
-            for gate, timeline in gate_result["gate_history"].items():
-                print(f"  • {gate}: {''.join(timeline)}")
-
-        print(f"\nSummary: {gate_result['summary']}")
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=gate_result["summary"],
+            data={
+                **gate_result,
+                "raw_output": "\n".join(_format_gate_history_output(gate_result)),
+            },
+        )
 
     # Handle --detect-flaky mode (standalone analysis)
     if detect_flaky:
-        history_path = output_dir / "history.jsonl"  # Same as write_triage_bundle uses
+        history_path = output_dir / "history.jsonl"
         flaky_result = detect_flaky_patterns(history_path)
 
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_SUCCESS,
-                summary=(
-                    f"Flaky analysis: score={flaky_result['flakiness_score']}%, "
-                    f"suspected={flaky_result['suspected_flaky']}"
-                ),
-                data=flaky_result,
-            )
-
-        # Pretty print flaky analysis
-        print("\nFlaky Test Analysis")
-        print("=" * 50)
-        print(f"Runs analyzed: {flaky_result['runs_analyzed']}")
-        print(f"State changes: {flaky_result['state_changes']}")
-        print(f"Flakiness score: {flaky_result['flakiness_score']}%")
-        print(f"Suspected flaky: {'⚠️ YES' if flaky_result['suspected_flaky'] else '✅ No'}")
-
-        if flaky_result.get("recent_history"):
-            print(f"\nRecent runs (newest last): {flaky_result['recent_history']}")
-
-        if flaky_result.get("details"):
-            print("\nDetails:")
-            for detail in flaky_result["details"]:
-                print(f"  • {detail}")
-
-        print(f"\nRecommendation:\n{flaky_result['recommendation']}")
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=(
+                f"Flaky analysis: score={flaky_result['flakiness_score']}%, "
+                f"suspected={flaky_result['suspected_flaky']}"
+            ),
+            data={
+                **flaky_result,
+                "raw_output": "\n".join(_format_flaky_output(flaky_result)),
+            },
+        )
 
     try:
         # Multi-report mode
@@ -590,23 +606,19 @@ def cmd_triage(args: argparse.Namespace) -> int | CommandResult:
                 raise ValueError(f"Reports directory not found: {reports_path}")
 
             artifacts, result_data = _generate_multi_report_triage(reports_path, output_dir)
-
-            if json_mode:
-                return CommandResult(
-                    exit_code=EXIT_SUCCESS,
-                    summary=f"Multi-triage generated for {result_data['repo_count']} repos",
-                    artifacts={key: str(path) for key, path in artifacts.items()},
-                    data=result_data,
-                )
-
             passed = result_data["passed_count"]
             failed = result_data["failed_count"]
-            print(f"Aggregated {result_data['repo_count']} repos: {passed} passed, {failed} failed")
-            print(f"Wrote multi-triage: {artifacts['multi_triage']}")
-            print(f"Wrote multi-markdown: {artifacts['multi_markdown']}")
-            return EXIT_SUCCESS
+
+            return CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=f"Aggregated {result_data['repo_count']} repos: {passed} passed, {failed} failed",
+                artifacts={key: str(path) for key, path in artifacts.items()},
+                files_generated=[str(artifacts["multi_triage"]), str(artifacts["multi_markdown"])],
+                data=result_data,
+            )
 
         # Handle --workflow/--branch filters without explicit --run
+        run_note = None
         if (workflow_filter or branch_filter) and not run_id:
             runs = _list_runs(repo, workflow=workflow_filter, branch=branch_filter, limit=10)
             if not runs:
@@ -619,10 +631,9 @@ def cmd_triage(args: argparse.Namespace) -> int | CommandResult:
 
             # Use the most recent run
             run_id = str(runs[0]["databaseId"])
-            if not json_mode:
-                print(f"Using most recent run: {run_id} ({runs[0].get('name', 'unknown')})")
-                if len(runs) > 1:
-                    print(f"  (Found {len(runs)} matching runs, use --run to specify)")
+            run_note = f"Using most recent run: {run_id} ({runs[0].get('name', 'unknown')})"
+            if len(runs) > 1:
+                run_note += f" (Found {len(runs)} matching runs, use --run to specify)"
 
         if run_id:
             # Remote run analysis mode (with persistent artifacts)
@@ -635,23 +646,22 @@ def cmd_triage(args: argparse.Namespace) -> int | CommandResult:
             # Check if multi-report mode was triggered (returns tuple)
             if isinstance(result, tuple):
                 artifacts_out, result_data = result
-                run_dir = output_dir / "runs" / run_id
-
-                if json_mode:
-                    return CommandResult(
-                        exit_code=EXIT_SUCCESS,
-                        summary=f"Multi-triage for run {run_id}: {result_data['repo_count']} repos",
-                        artifacts={k: str(v) for k, v in artifacts_out.items()},
-                        data=result_data,
-                    )
-
                 passed = result_data["passed_count"]
                 failed = result_data["failed_count"]
-                print(f"Run {run_id}: {result_data['repo_count']} repos, {passed} passed, {failed} failed")
-                print(f"Artifacts: {artifacts_out['artifacts_dir']}")
-                print(f"Multi-triage: {artifacts_out['multi_triage']}")
-                print(f"Multi-markdown: {artifacts_out['multi_markdown']}")
-                return EXIT_SUCCESS
+
+                return CommandResult(
+                    exit_code=EXIT_SUCCESS,
+                    summary=f"Run {run_id}: {result_data['repo_count']} repos, {passed} passed, {failed} failed",
+                    artifacts={k: str(v) for k, v in artifacts_out.items()},
+                    files_generated=[
+                        str(artifacts_out.get("multi_triage", "")),
+                        str(artifacts_out.get("multi_markdown", "")),
+                    ],
+                    data={
+                        **result_data,
+                        "run_note": run_note,
+                    } if run_note else result_data,
+                )
 
             # Single report or log-fallback mode (returns TriageBundle)
             bundle = result
@@ -677,25 +687,33 @@ def cmd_triage(args: argparse.Namespace) -> int | CommandResult:
             )
             artifacts = write_triage_bundle(bundle, output_dir)
     except Exception as exc:  # noqa: BLE001 - surface error in CLI
-        message = f"Failed to generate triage bundle: {exc}"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-        print(message)
-        return EXIT_FAILURE
-
-    if json_mode:
         return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary="Triage bundle generated",
-            artifacts={key: str(path) for key, path in artifacts.items()},
-            data={
-                "schema_version": bundle.triage.get("schema_version", ""),
-                "failure_count": bundle.triage.get("summary", {}).get("failure_count", 0),
-            },
+            exit_code=EXIT_FAILURE,
+            summary=f"Failed to generate triage bundle: {exc}",
+            problems=[{
+                "severity": "error",
+                "message": str(exc),
+                "code": "CIHUB-TRIAGE-ERROR",
+            }],
         )
 
-    print(f"Wrote triage: {artifacts['triage']}")
-    print(f"Wrote priority: {artifacts['priority']}")
-    print(f"Wrote prompt pack: {artifacts['markdown']}")
-    print(f"Updated history: {artifacts['history']}")
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="Triage bundle generated",
+        artifacts={key: str(path) for key, path in artifacts.items()},
+        files_generated=[
+            str(artifacts["triage"]),
+            str(artifacts["priority"]),
+            str(artifacts["markdown"]),
+        ],
+        data={
+            "schema_version": bundle.triage.get("schema_version", ""),
+            "failure_count": bundle.triage.get("summary", {}).get("failure_count", 0),
+            "key_values": {
+                "triage": str(artifacts["triage"]),
+                "priority": str(artifacts["priority"]),
+                "prompt_pack": str(artifacts["markdown"]),
+                "history": str(artifacts["history"]),
+            },
+        },
+    )

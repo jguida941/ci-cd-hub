@@ -16,7 +16,7 @@ from typing import Any
 # Re-export types from the new triage package (backward compatibility)
 from cihub.services.triage.detection import (
     detect_flaky_patterns,
-    detect_gate_changes,
+    detect_gate_changes,  # noqa: F401 - re-export for backward compatibility
     detect_test_count_regression,
 )
 from cihub.services.triage.evidence import (

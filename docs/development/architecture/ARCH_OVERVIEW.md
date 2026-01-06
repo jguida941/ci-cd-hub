@@ -1,6 +1,6 @@
 # CI/CD Hub: Architectural Overview
-> **Status:** Audited  
-> **Last Updated:** 2025-12-25  
+> **Status:** Audited
+> **Last Updated:** 2026-01-06
 > **Author:** Justin Guida  
 >
 This document provides a comprehensive overview of the CI/CD Hub platform,
@@ -17,8 +17,8 @@ reporting mechanisms, and current status.
 │  │   LAYER      │   │   LAYER      │   │    LAYER     │   │    TOOL      │ │
 │  │              │   │              │   │              │   │   (cihub)    │ │
 │  │ defaults.yaml│   │ ci-hub-*.json│   │ hub-run-all  │   │              │ │
-│  │ repos/*.yaml │   │ ci-report.v2 │   │ java-ci.yml  │   │ 11 commands  │ │
-│  │ templates/   │   │              │   │ python-ci.yml│   │ 132 funcs    │ │
+│  │ repos/*.yaml │   │ ci-report.v2 │   │ java-ci.yml  │   │ 28 commands  │ │
+│  │ templates/   │   │              │   │ python-ci.yml│   │ 2120 tests   │ │
 │  │ profiles/    │   │              │   │              │   │              │ │
 │  └──────────────┘   └──────────────┘   └──────────────┘   └──────────────┘ │
 │          │                  │                  │                  │        │
@@ -194,21 +194,21 @@ Per-Repository Run                      Hub Aggregation
 
 ---
 
-### 5. CLI Tool (`cihub`) - v0.2.0
+### 5. CLI Tool (`cihub`) - v1.0.0
 
-| Command          | Purpose                                     |
-|------------------|---------------------------------------------|
-| `detect`         | Auto-detect Java/Python from project files  |
-| `new`            | Create hub-side repo config                 |
-| `init`           | Generate `.ci-hub.yml` + caller workflow    |
-| `update`         | Refresh existing config and caller workflow |
-| `validate`       | Validate config + check POM plugins         |
-| `setup-secrets`  | Configure `HUB_DISPATCH_TOKEN`              |
-| `setup-nvd`      | Configure `NVD_API_KEY` for OWASP           |
-| `fix-pom`        | Auto-add missing Maven plugins              |
-| `fix-deps`       | Auto-add missing Maven dependencies         |
-| `sync-templates` | Push caller workflows to target repos       |
-| `config`         | Edit/show/set/enable/disable config values  |
+> **28 commands total.** See `cihub --help` or `docs/reference/CLI.md` for complete list.
+
+| Category           | Commands                                                    |
+|--------------------|-------------------------------------------------------------|
+| **Setup**          | `detect`, `new`, `init`, `update`, `scaffold`               |
+| **Validation**     | `validate`, `preflight`, `doctor`, `check`, `verify`        |
+| **Config**         | `config show/set/enable/disable`, `config-outputs`          |
+| **Secrets**        | `setup-secrets`, `setup-nvd`                                |
+| **Java**           | `fix-pom`, `fix-deps`, `pom`                                |
+| **Templates**      | `sync-templates`, `templates`                               |
+| **CI/Reports**     | `ci`, `run`, `report`, `triage`, `dispatch`                 |
+| **Docs**           | `docs generate/check/links`, `adr new/list/check`           |
+| **Hub-CI**         | `hub-ci` (47 subcommands for workflow automation)           |
 
 ---
 
@@ -246,31 +246,32 @@ Per-Repository Run                      Hub Aggregation
 
 ## Key Stats
 
-| Metric             | Count                        |
-|--------------------|------------------------------|
-| Workflow YAML      | ~8,740 lines across 13 files |
-| CLI Tool           | 3,326 lines, 132 functions   |
-| Configured Repos   | 22                           |
-| Pre-built Profiles | 12                           |
-| ADRs               | 28                           |
-| Unit Tests         | 80                           |
-| User Guides        | 9                            |
+| Metric             | Count                            |
+|--------------------|----------------------------------|
+| CLI Commands       | 28 main + 47 hub-ci subcommands  |
+| Unit Tests         | 2120                             |
+| ADRs               | 44                               |
+| Configured Repos   | 24                               |
+| Pre-built Profiles | 12                               |
+| User Guides        | 8                                |
+| Workflow Files     | 13                               |
 
 ---
 
 ## Current Status
 
-See `docs/development/CURRENT_STATUS.md` for the authoritative status log.
+See `docs/development/status/STATUS.md` for the authoritative status log.
 
-| Component                        | Status    |
-|----------------------------------|-----------|
-| Central Mode (`hub-run-all.yml`) | Passing   |
-| Reusable Workflows               | Working   |
-| CLI Tool                         | v0.2.0    |
-| Report Schema                    | v2.0      |
-| Smoke Tests                      | Passing   |
-| Orchestrator (Distributed)       | Needs fix |
-| Hub Security Workflow            | Needs fix |
+| Component                        | Status      |
+|----------------------------------|-------------|
+| Central Mode (`hub-run-all.yml`) | ✅ Working   |
+| Reusable Workflows               | ✅ Working   |
+| CLI Tool                         | v1.0.0      |
+| Report Schema                    | v2.0        |
+| Unit Tests                       | ✅ 2120 pass |
+| Smoke Tests                      | ✅ Passing   |
+| Orchestrator (Distributed)       | ❌ Needs fix |
+| Hub Security Workflow            | ❌ Needs fix |
 
 ---
 

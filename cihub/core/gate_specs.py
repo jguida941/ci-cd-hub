@@ -33,7 +33,7 @@ class Category(Enum):
     CONTAINER = "Container"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ThresholdSpec:
     """Defines a threshold for display and evaluation."""
 
@@ -45,7 +45,7 @@ class ThresholdSpec:
     failure_template: str  # Message template for gate failures
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ToolSpec:
     """Defines a tool for display in reports."""
 

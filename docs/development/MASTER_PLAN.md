@@ -1,7 +1,7 @@
 # CI/CD Hub - Master Plan
 
 **Status:** Canonical plan for all active work
-**Last Updated:** 2026-01-05 (OutputContext migration + CLI consolidation + 1939 tests)
+**Last Updated:** 2026-01-06 (ADR-0045/0046/0047 + CommandResult CI enforcement + config validation fix)
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
 
@@ -10,6 +10,105 @@
 ## Purpose
 
 Single source of truth for what we are doing now. Other docs can provide depth, but this file owns priorities, scope, and sequencing.
+
+---
+
+## Active Design Docs - Priority Order
+
+> **Work on these IN ORDER. Each doc blocks the next.** Updated 2026-01-05.
+
+### 🔴 Priority 1: CLEAN_CODE.md (CURRENT - Foundation)
+
+**Status:** ~85% complete | **Blocks:** Everything else
+
+```
+docs/development/active/CLEAN_CODE.md
+```
+
+Must complete **before** starting other docs:
+- [x] Part 2.2: Centralize Command Output ✅ **DONE** (45→7 prints, 84% reduction)
+- [x] Part 2.7: Consolidate ToolResult ✅ **DONE** (unified in `cihub/types.py`)
+- [x] Part 5.2: Mixed Return Types ✅ **DONE** (all 47 commands → pure CommandResult)
+- [x] Part 9.3: Schema Consolidation ✅ **DONE** (sbom/semgrep → sharedTools, toolStatusMap extracted)
+- [x] Part 7.1: CLI Layer Consolidation ✅ **DONE** (factory in common.py, findings done in Part 2.2/5.2)
+- [x] Part 7.2: Hub-CI Subcommand Helpers ✅ **DONE** (helpers exist, ensure_executable now used)
+- [ ] Part 7.3: Utilities Consolidation ← **CURRENT**
+
+**Why first:** Python CLI JSON output must be clean before TypeScript CLI can parse it.
+
+### 🟡 Priority 2: TEST_REORGANIZATION.md (After CLEAN_CODE Part 2.2)
+
+**Status:** PLANNED (10-12 day blockers identified) | **Depends on:** CommandResult migration
+
+```
+docs/development/active/TEST_REORGANIZATION.md
+```
+
+Blockers to resolve first:
+- [ ] `cihub hub-ci thresholds` CLI command not implemented
+- [ ] Schema blocks per-module overrides (`additionalProperties: false`)
+- [ ] 3 automation scripts must be created
+
+**Why second:** Tests need consistent command outputs to validate against.
+
+### 🟢 Priority 3: DOC_AUTOMATION_AUDIT.md (Can parallel with TEST_REORGANIZATION)
+
+**Status:** ~30% implemented | **Depends on:** Stable CLI surface
+
+```
+docs/development/active/DOC_AUTOMATION_AUDIT.md
+```
+
+Core MVP (2-3 days):
+- [ ] `cihub docs stale` - Python AST + backtick extraction + git range
+
+**Why third:** Documentation automation needs stable command signatures.
+
+### 🔵 Priority 4: TYPESCRIPT_CLI_DESIGN.md (After CLEAN_CODE complete)
+
+**Status:** Planning | **Depends on:** CLEAN_CODE.md (explicit prerequisite)
+
+```
+docs/development/active/TYPESCRIPT_CLI_DESIGN.md
+```
+
+Explicit prerequisite in doc:
+> "DO NOT START THIS UNTIL CLEAN_CODE.md IS COMPLETE."
+
+**Why fourth:** TypeScript CLI consumes Python CLI JSON; needs clean output.
+
+### ⚪ Priority 5: PYQT_PLAN.md (Deferred)
+
+**Status:** Reference only | **Depends on:** Everything above
+
+```
+docs/development/active/PYQT_PLAN.md
+```
+
+**Why last:** GUI wrapper needs all CLI commands stable and tested.
+
+### Dependency Graph
+
+```
+┌─────────────────────┐
+│   CLEAN_CODE.md     │ ◄─── START HERE
+│   (Foundation)      │
+└─────────┬───────────┘
+          │
+    ┌─────┴─────┬─────────────────┐
+    ▼           ▼                 ▼
+┌───────────┐ ┌──────────────┐ ┌──────────────────────┐
+│ TEST_     │ │ DOC_AUTO_    │ │ TYPESCRIPT_CLI_      │
+│ REORG.md  │ │ AUDIT.md     │ │ DESIGN.md            │
+└─────┬─────┘ └──────────────┘ └──────────┬───────────┘
+      │                                   │
+      └───────────────┬───────────────────┘
+                      ▼
+              ┌───────────────┐
+              │ PYQT_PLAN.md  │
+              │  (Deferred)   │
+              └───────────────┘
+```
 
 ---
 
@@ -64,8 +163,28 @@ Single source of truth for what we are doing now. Other docs can provide depth, 
   - [x] Phase T1: conftest.py, pytest-xdist, hypothesis
   - [x] Phase T2: Parameterized tests (5 files refactored)
   - [x] Phase T3: Property-based testing (12 Hypothesis tests)
-  - **Total: 1978 tests passing** *(updated 2026-01-05)*
-- [ ] Output normalization (forbid `print()` in commands — 485+ calls across 48 files)
+  - **Total: 2120 tests passing** *(updated 2026-01-06)*
+- [x] Output normalization — OutputRenderer infrastructure ✅ (see **Architecture Consolidation** below)
+  - [x] Contract enforcement test added (`test_command_output_contract.py`) - prevents regression
+  - [x] **Migrated 13 major files** (~198 prints → CommandResult):
+    - adr.py (16), triage.py (34), secrets.py (32), templates.py (22), pom.py (21)
+    - dispatch.py (10), config_cmd.py (9), update.py (8), smoke.py (8), discover.py (8)
+    - docs.py (10), new.py (10), init.py (10)
+  - [x] **Code review fixes** (2026-01-05):
+    - detect.py: Pure CommandResult return (no conditional JSON mode)
+    - validate.py: Added YAML parse error handling (yaml.YAMLError, ValueError)
+    - smoke.py: Fixed TemporaryDirectory resource leak
+    - discover.py: Reordered empty check before GITHUB_OUTPUT write
+    - cli.py: Error output routes to stderr (CLI best practice)
+  - [x] ~~TODO: Migrate remaining 45 print() calls in 12 files~~ ✅ **DONE** (45→7, 84% reduction)
+
+**Test Reorganization:** *(See `active/TEST_REORGANIZATION.md` for design)*
+- [ ] 2100+ tests currently in flat `tests/` directory need restructuring
+- [ ] 5-agent audit identified ~10-12 days blockers before Phase 1 can start:
+  - `cihub hub-ci thresholds` CLI command not implemented
+  - Schema blocks per-module overrides (`additionalProperties: false`)
+  - 3 automation scripts must be created
+  - 35/78 (45%) test files need new categories beyond proposed structure
 
 **Quality Gate Consistency:**
 - [ ] Summary vs report validator: compare `summary.md` gate rows to `report.json` + `tools_ran/tools_success`
@@ -92,6 +211,17 @@ Single source of truth for what we are doing now. Other docs can provide depth, 
 - [ ] Standardize all action version pins
 - [ ] Workflow input contract tests: ensure `.github/workflows/*-ci.yml` cover all `TOOL_KEYS` + `THRESHOLD_KEYS`
 - [ ] Template artifact guard: templates must upload `report.json` + `.cihub/tool-outputs/*`
+- [x] CommandResult CI enforcement: `cihub hub-ci enforce-command-result` ✅ (ADR-0042)
+  - Added CLI command to detect print() calls in commands/
+  - Added workflow job `enforce-command-result` to hub-production-ci.yml
+  - Enforces max 7 allowed prints (intentional exceptions documented)
+- [x] Config validation order fix ✅ (ADR-0047)
+  - Validate BEFORE normalize at each config layer
+  - Catches invalid input that normalization would mask
+  - Clear error messages with layer names
+- [ ] Subprocess timeout policy implementation (ADR-0045)
+  - 33+ subprocess calls missing timeouts identified in INCONSISTENCY.md
+  - Tiered timeouts: Quick (30s), Network (120s), Build (600s), Extended (900s)
 
 ### Heavy Lifts (After Quick Wins)
 
@@ -148,7 +278,9 @@ Single source of truth for what we are doing now. Other docs can provide depth, 
 
 **Active Design Docs** (in-progress designs, listed in `status/STATUS.md`):
 - `docs/development/active/CLEAN_CODE.md` (architecture improvements: polymorphism, encapsulation)
+- `docs/development/active/TEST_REORGANIZATION.md` (test suite restructuring: 2100+ tests → unit/integration/e2e)
 - `docs/development/active/DOC_AUTOMATION_AUDIT.md` (doc automation design: `cihub docs stale`, `cihub docs audit`)
+- `docs/development/active/TYPESCRIPT_CLI_DESIGN.md` (TypeScript interactive CLI - consumes Python CLI as backend)
 - `docs/development/active/PYQT_PLAN.md` (PyQt concept scope)
 
 **Architecture:**
@@ -164,6 +296,37 @@ These are references, not competing plans.
 - **CLI is the execution engine**; workflows are thin wrappers.
 - **Single entrypoint workflow is `hub-ci.yml`**; it routes to `python-ci.yml`/`java-ci.yml` internally.
 - **Local verification uses CLI scaffolding + smoke**; fixtures repo is for CI/regression, not required for local tests.
+
+### CLI as Headless API (Architecture Principle)
+
+> **Added 2026-01-05:** This principle is critical for understanding why CLI commands shouldn't be restructured.
+
+The Python CLI is designed as a **headless API backend** for future frontends:
+
+1. **TypeScript CLI** (`docs/development/active/TYPESCRIPT_CLI_DESIGN.md`) maps slash commands to Python commands:
+   - `/fix-pom` → `cihub fix-pom --json`
+   - `/setup-secrets` → `cihub setup-secrets --json`
+   - `/config outputs` → `cihub config-outputs --json`
+
+2. **PyQt6 GUI** (`docs/development/active/PYQT_PLAN.md`) calls Python CLI programmatically:
+   - `cihub fix-pom`, `cihub fix-deps`, `cihub setup-secrets`, `cihub setup-nvd`
+
+3. **GitHub Workflows** call CLI commands directly:
+   - `hub-ci.yml`: `cihub config-outputs --repo . --github-output`
+   - `hub-production-ci.yml`: 15+ `cihub hub-ci *` subcommands
+
+**Implication:** CLI command names are **stable API contracts**. Restructuring (e.g., `setup-secrets` → `setup secrets`) would break:
+- TypeScript CLI command mapping
+- PyQt GUI subprocess calls
+- GitHub workflow steps
+- 40+ documentation files
+
+**Safe changes only:**
+- Help text wording
+- `--help` output groupings
+- Swapping `doctor`/`preflight` prominence (neither used in workflows/UIs)
+
+See `CLEAN_CODE.md` Part 5.4 for full audit details.
 
 ---
 
@@ -403,7 +566,7 @@ These are references, not competing plans.
 - [ ] Expand `test_services_ci.py` — 2 tests → 20+ tests
   - Missing: Python/Java branching, tool execution, gate evaluation, notifications, env overrides
 - [x] Add dedicated unit tests for `services/ci_engine/gates.py` ✅ — 161 tests in test_ci_engine.py + test_gate_specs.py
-- [ ] Add dedicated unit tests for `services/ci_engine/helpers.py` (272 lines, limited coverage)
+- [ ] Add dedicated unit tests for `services/ci_engine/helpers.py` (233 lines after consolidation, limited coverage)
 
 **CLI Consistency:**
 - [ ] Enable `--json` flag for `hub-ci` subcommands (47 commands currently blocked)
@@ -426,6 +589,16 @@ These are references, not competing plans.
   - 32 call sites migrated across 7 hub-ci files
   - 38 tests (parameterized + Hypothesis property-based)
   - See `active/CLEAN_CODE.md` Phase 2
+- [x] Tool execution helpers — `cihub/commands/hub_ci/__init__.py` ✅ *(2026-01-05)*
+  - `ToolResult` dataclass for structured tool execution results
+  - `ensure_executable()` consolidates 6 chmod patterns
+  - `load_json_report()` consolidates 15+ JSON parsing patterns
+  - `run_tool_with_json_report()` full tool execution + JSON parsing
+  - 39 tests (parameterized + Hypothesis property-based)
+- [x] Project utilities consolidation — `cihub/utils/project.py` ✅ *(2026-01-05)*
+  - `get_repo_name()` moved from 2 duplicates (ci_engine/helpers.py, report/helpers.py)
+  - `detect_java_project_type()` moved from 2 duplicates
+  - 37 tests (parameterized + Hypothesis property-based)
 
 **Workflow Security (Quick Fix):**
 - [ ] Pin `step-security/harden-runner` versions (21 unpinned uses across workflows)
@@ -443,10 +616,15 @@ These are references, not competing plans.
 - [ ] Runner/adapter boundaries — All subprocess execution in `cihub/core/ci_runner/shared.py`
   - Adapters build specs; strategies orchestrate; no ad-hoc `subprocess.run` in commands
   - Add lint/test to forbid subprocess imports outside `ci_runner/`
-- [ ] Output normalization — Forbid `print()` in command modules
+- [x] Output normalization — OutputRenderer abstraction ✅ (2026-01-05)
   - Commands return `CommandResult` with summary/details/problems
-  - Human formatting only in `cli.py` layer
-  - Add lint/test that walks commands/ and flags print statements
+  - `cihub/output/renderers.py` — OutputRenderer ABC, HumanRenderer, JsonRenderer
+  - `cli.py` uses `get_renderer(json_mode)` at lines 394-400
+  - 35 tests in `tests/test_output_renderers.py` (parameterized + Hypothesis)
+  - [x] Contract enforcement via `tests/test_command_output_contract.py` (17 tests)
+    - AST-based detection of print() calls in commands/
+    - Allowlist pattern for incremental migration (strangler fig)
+    - Prevents regression on migrated files
 
 **Performance & Enforcement (From Audit):**
 - [ ] Performance guardrails for `cihub docs stale` / `cihub docs audit`

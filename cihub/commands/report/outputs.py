@@ -11,17 +11,13 @@ from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.types import CommandResult
 
 
-def _report_outputs(args: argparse.Namespace, json_mode: bool) -> int | CommandResult:
+def _report_outputs(args: argparse.Namespace) -> CommandResult:
     """Extract outputs from a report.json file."""
     report_path = Path(args.report)
     try:
         report = json.loads(report_path.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError) as exc:
-        message = f"Failed to read report: {exc}"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-        print(message)
-        return EXIT_FAILURE
+        return CommandResult(exit_code=EXIT_FAILURE, summary=f"Failed to read report: {exc}")
 
     results = report.get("results", {}) or {}
     status = results.get("build") or results.get("test")
@@ -35,11 +31,10 @@ def _report_outputs(args: argparse.Namespace, json_mode: bool) -> int | CommandR
         if output_path_env:
             output_path = Path(output_path_env)
     if output_path is None:
-        message = "No output target specified for report outputs"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_USAGE, summary=message)
-        print(message)
-        return EXIT_USAGE
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary="No output target specified for report outputs",
+        )
 
     output_text = (
         f"build_status={status}\n"
@@ -48,11 +43,9 @@ def _report_outputs(args: argparse.Namespace, json_mode: bool) -> int | CommandR
     )
     output_path.write_text(output_text, encoding="utf-8")
 
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary="Report outputs written",
-            artifacts={"outputs": str(output_path)},
-        )
-    print(f"Wrote outputs: {output_path}")
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary="Report outputs written",
+        artifacts={"outputs": str(output_path)},
+        files_generated=[str(output_path)],
+    )

@@ -36,6 +36,7 @@ class TestToolResult:
     def test_success_result(self) -> None:
         """ToolResult correctly represents a successful tool run."""
         result = ToolResult(
+            tool="test-tool",
             success=True,
             returncode=0,
             stdout="output",
@@ -48,10 +49,12 @@ class TestToolResult:
         assert result.returncode == 0
         assert result.json_data == {"key": "value"}
         assert result.json_error is None
+        assert result.tool == "test-tool"
 
     def test_failure_result(self) -> None:
         """ToolResult correctly represents a failed tool run."""
         result = ToolResult(
+            tool="failing-tool",
             success=False,
             returncode=1,
             stdout="",
@@ -63,13 +66,15 @@ class TestToolResult:
         assert result.success is False
         assert result.returncode == 1
         assert result.json_error == "Invalid JSON"
+        assert result.tool == "failing-tool"
 
     def test_defaults(self) -> None:
         """ToolResult has correct defaults for optional fields."""
-        result = ToolResult(success=True, returncode=0, stdout="", stderr="")
+        result = ToolResult(tool="minimal", success=True, returncode=0, stdout="", stderr="")
         assert result.json_data is None
         assert result.json_error is None
         assert result.report_path is None
+        assert result.tool == "minimal"
 
 
 # ============================================================================

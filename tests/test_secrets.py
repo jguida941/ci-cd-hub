@@ -7,6 +7,9 @@ These tests target high-complexity functions with external dependencies:
 - verify_cross_repo_access(): Artifact access check
 
 All external calls are mocked.
+
+NOTE: All command functions now return CommandResult (never int).
+Tests check result.exit_code instead of comparing result to int.
 """
 
 from __future__ import annotations
@@ -27,6 +30,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from cihub.commands.secrets import cmd_setup_nvd, cmd_setup_secrets  # noqa: E402
+from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS  # noqa: E402
+from cihub.types import CommandResult  # noqa: E402
 
 # ==============================================================================
 # Fixtures
@@ -93,7 +98,7 @@ def make_urlopen_response(data: dict[str, Any], status: int = 200, scopes: str =
 class TestTokenValidation:
     """Tests for token input validation."""
 
-    def test_empty_token_rejected(self, capsys) -> None:
+    def test_empty_token_rejected(self) -> None:
         """Reject empty token."""
         with mock.patch("getpass.getpass", return_value=""):
             args = argparse.Namespace(
@@ -103,11 +108,11 @@ class TestTokenValidation:
                 verify=False,
             )
             result = cmd_setup_secrets(args)
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "No token provided" in captured.err
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_FAILURE
+            assert "No token provided" in result.summary
 
-    def test_token_with_embedded_whitespace_rejected(self, capsys) -> None:
+    def test_token_with_embedded_whitespace_rejected(self) -> None:
         """Reject token containing whitespace."""
         with mock.patch("getpass.getpass", return_value="ghp_token with space"):
             args = argparse.Namespace(
@@ -117,12 +122,12 @@ class TestTokenValidation:
                 verify=False,
             )
             result = cmd_setup_secrets(args)
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "whitespace" in captured.err
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_FAILURE
+            assert "whitespace" in result.summary
 
     def test_token_with_leading_whitespace_stripped(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos, capsys
+        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
     ) -> None:
         """Strip leading/trailing whitespace from token."""
         with mock.patch("getpass.getpass", return_value="  ghp_valid_token  "):
@@ -134,14 +139,15 @@ class TestTokenValidation:
             )
             result = cmd_setup_secrets(args)
             # Should succeed (whitespace stripped)
-            assert result == 0
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_SUCCESS
             # Verify subprocess was called with stripped token
             mock_subprocess.assert_called()
             call_kwargs = mock_subprocess.call_args
             assert call_kwargs.kwargs.get("input") == "ghp_valid_token"
 
     def test_token_from_argument(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos, capsys
+        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
     ) -> None:
         """Use token from --token argument."""
         args = argparse.Namespace(
@@ -151,7 +157,8 @@ class TestTokenValidation:
             verify=False,
         )
         result = cmd_setup_secrets(args)
-        assert result == 0
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
         call_kwargs = mock_subprocess.call_args
         assert call_kwargs.kwargs.get("input") == "ghp_from_arg"
 
@@ -165,7 +172,7 @@ class TestTokenVerification:
     """Tests for GitHub API token verification."""
 
     def test_verify_token_success(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos, capsys
+        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
     ) -> None:
         """Verify valid token against GitHub API."""
         with mock.patch("cihub.commands.secrets.safe_urlopen") as mock_urlopen:
@@ -177,12 +184,14 @@ class TestTokenVerification:
                 verify=True,
             )
             result = cmd_setup_secrets(args)
-            assert result == 0
-            captured = capsys.readouterr()
-            assert "Token verified" in captured.out
-            assert "testuser" in captured.out
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_SUCCESS
+            # Check that verification info is in data items
+            items = result.data.get("items", [])
+            assert any("Token verified" in item for item in items)
+            assert any("testuser" in item for item in items)
 
-    def test_verify_token_401_unauthorized(self, capsys) -> None:
+    def test_verify_token_401_unauthorized(self) -> None:
         """Fail verification for 401 response."""
         with mock.patch("cihub.commands.secrets.safe_urlopen") as mock_urlopen:
             mock_urlopen.side_effect = urllib.error.HTTPError(
@@ -199,12 +208,12 @@ class TestTokenVerification:
                 verify=True,
             )
             result = cmd_setup_secrets(args)
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "verification failed" in captured.err
-            assert "unauthorized" in captured.err
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_FAILURE
+            assert "verification failed" in result.summary.lower()
+            assert "unauthorized" in result.summary.lower()
 
-    def test_verify_token_other_http_error(self, capsys) -> None:
+    def test_verify_token_other_http_error(self) -> None:
         """Handle non-401 HTTP errors."""
         with mock.patch("cihub.commands.secrets.safe_urlopen") as mock_urlopen:
             mock_urlopen.side_effect = urllib.error.HTTPError(
@@ -221,10 +230,10 @@ class TestTokenVerification:
                 verify=True,
             )
             result = cmd_setup_secrets(args)
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "verification failed" in captured.err
-            assert "500" in captured.err
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_FAILURE
+            assert "verification failed" in result.summary.lower()
+            assert "500" in result.summary
 
 
 # ==============================================================================
@@ -236,7 +245,7 @@ class TestCrossRepoAccessVerification:
     """Tests for cross-repo artifact access verification."""
 
     def test_cross_repo_access_success(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos, capsys
+        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
     ) -> None:
         """Verify cross-repo access works."""
         with mock.patch("cihub.commands.secrets.safe_urlopen") as mock_urlopen:
@@ -253,12 +262,14 @@ class TestCrossRepoAccessVerification:
                 verify=True,
             )
             result = cmd_setup_secrets(args)
-            assert result == 0
-            captured = capsys.readouterr()
-            assert "Cross-repo access verified" in captured.out
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_SUCCESS
+            # Check that cross-repo verification info is in data items
+            items = result.data.get("items", [])
+            assert any("Cross-repo access verified" in item for item in items)
 
     def test_cross_repo_access_404(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos, capsys
+        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
     ) -> None:
         """Fail when repo not found (404)."""
         with mock.patch("cihub.commands.secrets.safe_urlopen") as mock_urlopen:
@@ -279,13 +290,13 @@ class TestCrossRepoAccessVerification:
                 verify=True,
             )
             result = cmd_setup_secrets(args)
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "Cross-repo access failed" in captured.err
-            assert "not found" in captured.err
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_FAILURE
+            assert "Cross-repo access failed" in result.summary
+            assert "not found" in result.summary.lower()
 
     def test_cross_repo_access_401(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos, capsys
+        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
     ) -> None:
         """Fail when token lacks repo scope (401)."""
         with mock.patch("cihub.commands.secrets.safe_urlopen") as mock_urlopen:
@@ -306,9 +317,11 @@ class TestCrossRepoAccessVerification:
                 verify=True,
             )
             result = cmd_setup_secrets(args)
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "repo" in captured.err  # Mentions 'repo' scope
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_FAILURE
+            # Check that 'repo' scope is mentioned in problems
+            problem_messages = [p["message"] for p in result.problems]
+            assert any("repo" in msg.lower() for msg in problem_messages)
 
 
 # ==============================================================================
@@ -320,7 +333,7 @@ class TestSecretSetting:
     """Tests for gh secret set subprocess calls."""
 
     def test_set_secret_success(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos, capsys
+        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
     ) -> None:
         """Successfully set secret on hub repo."""
         args = argparse.Namespace(
@@ -330,7 +343,8 @@ class TestSecretSetting:
             verify=False,
         )
         result = cmd_setup_secrets(args)
-        assert result == 0
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
         mock_subprocess.assert_called_once()
         call_args = mock_subprocess.call_args[0][0]
         assert call_args == [
@@ -341,10 +355,11 @@ class TestSecretSetting:
             "-R",
             "owner/hub",
         ]
-        captured = capsys.readouterr()
-        assert "[OK] owner/hub" in captured.out
+        # Check that success message is in data items
+        items = result.data.get("items", [])
+        assert any("[OK] owner/hub" in item for item in items)
 
-    def test_set_secret_failure(self, mock_resolve_executable, mock_get_connected_repos, capsys) -> None:
+    def test_set_secret_failure(self, mock_resolve_executable, mock_get_connected_repos) -> None:
         """Handle gh secret set failure."""
         with mock.patch("subprocess.run") as mock_run:
             mock_run.return_value = mock.Mock(returncode=1, stderr="permission denied")
@@ -355,12 +370,12 @@ class TestSecretSetting:
                 verify=False,
             )
             result = cmd_setup_secrets(args)
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "Failed" in captured.err
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_FAILURE
+            assert "Failed" in result.summary
 
     def test_set_secret_all_repos(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos, capsys
+        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
     ) -> None:
         """Set secret on hub and all connected repos."""
         args = argparse.Namespace(
@@ -370,11 +385,13 @@ class TestSecretSetting:
             verify=False,
         )
         result = cmd_setup_secrets(args)
-        assert result == 0
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
         # Should be called for hub + 2 connected repos (minus hub if in list)
         assert mock_subprocess.call_count >= 2
-        captured = capsys.readouterr()
-        assert "[OK] owner/hub" in captured.out
+        # Check that hub success message is in data items
+        items = result.data.get("items", [])
+        assert any("[OK] owner/hub" in item for item in items)
 
 
 # ==============================================================================
@@ -385,25 +402,25 @@ class TestSecretSetting:
 class TestNvdKeySetup:
     """Tests for NVD API key setup command."""
 
-    def test_empty_nvd_key_rejected(self, capsys) -> None:
+    def test_empty_nvd_key_rejected(self) -> None:
         """Reject empty NVD key."""
         with mock.patch("getpass.getpass", return_value=""):
             args = argparse.Namespace(nvd_key=None, verify=False)
             result = cmd_setup_nvd(args)
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "No NVD API key provided" in captured.err
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_FAILURE
+            assert "No NVD API key provided" in result.summary
 
-    def test_nvd_key_with_whitespace_rejected(self, capsys) -> None:
+    def test_nvd_key_with_whitespace_rejected(self) -> None:
         """Reject NVD key containing whitespace."""
         with mock.patch("getpass.getpass", return_value="key with space"):
             args = argparse.Namespace(nvd_key=None, verify=False)
             result = cmd_setup_nvd(args)
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "whitespace" in captured.err
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_FAILURE
+            assert "whitespace" in result.summary
 
-    def test_nvd_verify_success(self, mock_subprocess, mock_resolve_executable, capsys) -> None:
+    def test_nvd_verify_success(self, mock_subprocess, mock_resolve_executable) -> None:
         """Verify valid NVD key."""
         with mock.patch("cihub.commands.secrets.get_connected_repos") as mock_repos:
             mock_repos.return_value = ["owner/java-repo"]
@@ -411,11 +428,13 @@ class TestNvdKeySetup:
                 mock_urlopen.return_value = make_urlopen_response({"resultsPerPage": 1}, status=200)
                 args = argparse.Namespace(nvd_key="valid-nvd-key-12345", verify=True)
                 result = cmd_setup_nvd(args)
-                assert result == 0
-                captured = capsys.readouterr()
-                assert "NVD API key verified" in captured.out
+                assert isinstance(result, CommandResult)
+                assert result.exit_code == EXIT_SUCCESS
+                # Check that verification info is in data items
+                items = result.data.get("items", [])
+                assert any("NVD API key verified" in item for item in items)
 
-    def test_nvd_verify_403_invalid_key(self, capsys) -> None:
+    def test_nvd_verify_403_invalid_key(self) -> None:
         """Fail verification for invalid NVD key (403)."""
         with mock.patch("cihub.commands.secrets.safe_urlopen") as mock_urlopen:
             mock_urlopen.side_effect = urllib.error.HTTPError(
@@ -427,32 +446,34 @@ class TestNvdKeySetup:
             )
             args = argparse.Namespace(nvd_key="invalid-key", verify=True)
             result = cmd_setup_nvd(args)
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "verification failed" in captured.err
-            assert "invalid or expired" in captured.err
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_FAILURE
+            assert "verification failed" in result.summary.lower()
+            assert "invalid or expired" in result.summary.lower()
 
-    def test_nvd_no_java_repos(self, mock_resolve_executable, capsys) -> None:
+    def test_nvd_no_java_repos(self, mock_resolve_executable) -> None:
         """Handle case when no Java repos found."""
         with mock.patch("cihub.commands.secrets.get_connected_repos") as mock_repos:
             mock_repos.return_value = []
             args = argparse.Namespace(nvd_key="valid-nvd-key", verify=False)
             result = cmd_setup_nvd(args)
-            assert result == 0
-            captured = capsys.readouterr()
-            assert "No Java repos found" in captured.out
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_SUCCESS
+            assert "No Java repos found" in result.summary
 
-    def test_nvd_set_on_java_repos(self, mock_subprocess, mock_resolve_executable, capsys) -> None:
+    def test_nvd_set_on_java_repos(self, mock_subprocess, mock_resolve_executable) -> None:
         """Set NVD key on Java repos."""
         with mock.patch("cihub.commands.secrets.get_connected_repos") as mock_repos:
             mock_repos.return_value = ["owner/java-repo1", "owner/java-repo2"]
             args = argparse.Namespace(nvd_key="valid-nvd-key", verify=False)
             result = cmd_setup_nvd(args)
-            assert result == 0
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == EXIT_SUCCESS
             assert mock_subprocess.call_count == 2
-            captured = capsys.readouterr()
-            assert "[OK] owner/java-repo1" in captured.out
-            assert "[OK] owner/java-repo2" in captured.out
+            # Check that success messages are in data items
+            items = result.data.get("items", [])
+            assert any("[OK] owner/java-repo1" in item for item in items)
+            assert any("[OK] owner/java-repo2" in item for item in items)
 
 
 # ==============================================================================
@@ -461,12 +482,14 @@ class TestNvdKeySetup:
 
 
 class TestSecretsJsonMode:
-    """JSON mode tests for secrets commands."""
+    """JSON mode tests for secrets commands.
+
+    In JSON/non-interactive mode, commands require --token/--nvd-key
+    arguments instead of prompting interactively.
+    """
 
     def test_setup_secrets_no_token_json_mode(self) -> None:
-        """JSON mode returns CommandResult when no token provided."""
-        from cihub.cli import CommandResult
-
+        """JSON mode requires --token argument."""
         args = argparse.Namespace(
             hub_repo="owner/hub",
             token=None,
@@ -476,14 +499,11 @@ class TestSecretsJsonMode:
         )
         result = cmd_setup_secrets(args)
         assert isinstance(result, CommandResult)
-        assert result.exit_code == 2
+        assert result.exit_code == 2  # EXIT_USAGE
         assert "--token" in result.summary
 
     def test_setup_secrets_empty_token_json_mode(self) -> None:
-        """JSON mode returns CommandResult for empty token."""
-        from cihub.cli import CommandResult
-
-        # Empty string is falsy, so it triggers the "no token" path
+        """JSON mode requires --token (empty string triggers same path)."""
         args = argparse.Namespace(
             hub_repo="owner/hub",
             token="",
@@ -493,13 +513,11 @@ class TestSecretsJsonMode:
         )
         result = cmd_setup_secrets(args)
         assert isinstance(result, CommandResult)
-        assert result.exit_code == 2
+        assert result.exit_code == 2  # EXIT_USAGE
         assert "--token" in result.summary
 
     def test_setup_secrets_whitespace_token_json_mode(self) -> None:
         """JSON mode returns CommandResult for whitespace token."""
-        from cihub.cli import CommandResult
-
         args = argparse.Namespace(
             hub_repo="owner/hub",
             token="ghp token with space",  # noqa: S106
@@ -509,13 +527,11 @@ class TestSecretsJsonMode:
         )
         result = cmd_setup_secrets(args)
         assert isinstance(result, CommandResult)
-        assert result.exit_code == 1
+        assert result.exit_code == EXIT_FAILURE
         assert "whitespace" in result.summary
 
     def test_setup_secrets_verify_failure_json_mode(self, mock_resolve_executable, mock_get_connected_repos) -> None:
         """JSON mode returns CommandResult on verify failure."""
-        from cihub.cli import CommandResult
-
         with mock.patch("cihub.commands.secrets.safe_urlopen") as mock_urlopen:
             mock_urlopen.side_effect = urllib.error.HTTPError(
                 url="https://api.github.com/user",
@@ -533,14 +549,12 @@ class TestSecretsJsonMode:
             )
             result = cmd_setup_secrets(args)
             assert isinstance(result, CommandResult)
-            assert result.exit_code == 1
+            assert result.exit_code == EXIT_FAILURE
 
     def test_setup_secrets_cross_repo_failure_json_mode(
         self, mock_resolve_executable, mock_get_connected_repos
     ) -> None:
         """JSON mode returns CommandResult on cross-repo access failure."""
-        from cihub.cli import CommandResult
-
         with mock.patch("cihub.commands.secrets.safe_urlopen") as mock_urlopen:
             mock_urlopen.side_effect = [
                 make_urlopen_response({"login": "testuser"}),
@@ -561,12 +575,10 @@ class TestSecretsJsonMode:
             )
             result = cmd_setup_secrets(args)
             assert isinstance(result, CommandResult)
-            assert result.exit_code == 1
+            assert result.exit_code == EXIT_FAILURE
 
     def test_setup_secrets_set_failure_json_mode(self, mock_resolve_executable, mock_get_connected_repos) -> None:
         """JSON mode returns CommandResult on secret set failure."""
-        from cihub.cli import CommandResult
-
         with mock.patch("subprocess.run") as mock_run:
             mock_run.return_value = mock.Mock(returncode=1, stderr="permission denied")
             args = argparse.Namespace(
@@ -578,14 +590,12 @@ class TestSecretsJsonMode:
             )
             result = cmd_setup_secrets(args)
             assert isinstance(result, CommandResult)
-            assert result.exit_code == 1
+            assert result.exit_code == EXIT_FAILURE
 
     def test_setup_secrets_success_json_mode(
         self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
     ) -> None:
         """JSON mode returns CommandResult on success."""
-        from cihub.cli import CommandResult
-
         args = argparse.Namespace(
             hub_repo="owner/hub",
             token="ghp_valid_token",  # noqa: S106
@@ -595,15 +605,13 @@ class TestSecretsJsonMode:
         )
         result = cmd_setup_secrets(args)
         assert isinstance(result, CommandResult)
-        assert result.exit_code == 0
+        assert result.exit_code == EXIT_SUCCESS
         assert "hub_repo" in result.data
 
     def test_setup_secrets_all_repos_json_mode(
         self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
     ) -> None:
         """JSON mode includes repo results when --all is used."""
-        from cihub.cli import CommandResult
-
         args = argparse.Namespace(
             hub_repo="owner/hub",
             token="ghp_valid_token",  # noqa: S106
@@ -613,36 +621,29 @@ class TestSecretsJsonMode:
         )
         result = cmd_setup_secrets(args)
         assert isinstance(result, CommandResult)
-        assert result.exit_code == 0
+        assert result.exit_code == EXIT_SUCCESS
         assert "repos" in result.data
 
     def test_setup_nvd_no_key_json_mode(self) -> None:
-        """JSON mode returns CommandResult when no NVD key provided."""
-        from cihub.cli import CommandResult
-
+        """JSON mode requires --nvd-key argument."""
         args = argparse.Namespace(nvd_key=None, verify=False, json=True)
         result = cmd_setup_nvd(args)
         assert isinstance(result, CommandResult)
-        assert result.exit_code == 2
+        assert result.exit_code == 2  # EXIT_USAGE
         assert "--nvd-key" in result.summary
 
     def test_setup_nvd_empty_key_json_mode(self) -> None:
-        """JSON mode returns CommandResult for empty NVD key."""
-        from cihub.cli import CommandResult
-
-        # Empty string is falsy, so it triggers the "no key" path
+        """JSON mode requires --nvd-key (empty string triggers same path)."""
         args = argparse.Namespace(nvd_key="", verify=False, json=True)
         result = cmd_setup_nvd(args)
         assert isinstance(result, CommandResult)
-        assert result.exit_code == 2
+        assert result.exit_code == 2  # EXIT_USAGE
         assert "--nvd-key" in result.summary
 
     def test_setup_nvd_whitespace_key_json_mode(self) -> None:
         """JSON mode returns CommandResult for whitespace NVD key."""
-        from cihub.cli import CommandResult
-
         args = argparse.Namespace(nvd_key="key with space", verify=False, json=True)
         result = cmd_setup_nvd(args)
         assert isinstance(result, CommandResult)
-        assert result.exit_code == 1
+        assert result.exit_code == EXIT_FAILURE
         assert "whitespace" in result.summary

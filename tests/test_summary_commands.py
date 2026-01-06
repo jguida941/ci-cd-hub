@@ -480,7 +480,7 @@ class TestSummaryCliWiring:
 
         result = cmd_report(args)
 
-        assert result == EXIT_SUCCESS
+        assert result.exit_code == EXIT_SUCCESS
         assert summary_path.exists()
         assert "# Security & Supply Chain Summary" in summary_path.read_text(encoding="utf-8")
 

@@ -204,6 +204,7 @@ def _check_gh_auth() -> tuple[bool, str]:
         [gh_bin, "auth", "status", "--hostname", "github.com"],
         capture_output=True,
         text=True,
+        timeout=30,
     )
     output = (proc.stdout or "") + (proc.stderr or "")
     return proc.returncode == 0, output.strip()
@@ -260,6 +261,7 @@ def _run_integration(
             clone_cmd,
             capture_output=True,
             text=True,
+            timeout=120,
         )
         if clone.returncode != 0:
             detail = (clone.stderr or clone.stdout or "").strip()
@@ -291,6 +293,7 @@ def _run_integration(
                 [git_bin, "-C", str(repo_dir), "checkout", branch],
                 capture_output=True,
                 text=True,
+                timeout=30,
             )
             if checkout.returncode != 0:
                 detail = (checkout.stderr or checkout.stdout or "").strip()
@@ -314,6 +317,7 @@ def _run_integration(
             cmd,
             capture_output=True,
             text=True,
+            timeout=600,  # 10 min for CI runs
         )
         detail = (run.stdout or "") + (run.stderr or "")
         result_entry["status"] = "ok" if run.returncode == 0 else "failed"
@@ -331,8 +335,8 @@ def _run_integration(
     return problems, results
 
 
-def cmd_verify(args: argparse.Namespace) -> int | CommandResult:
-    json_mode = getattr(args, "json", False)
+def cmd_verify(args: argparse.Namespace) -> CommandResult:
+    """Verify templates and workflows."""
     root = hub_root()
     run_remote = bool(getattr(args, "remote", False))
     run_integration = bool(getattr(args, "integration", False))
@@ -404,25 +408,14 @@ def cmd_verify(args: argparse.Namespace) -> int | CommandResult:
     summary = "Verify OK" if not problems else f"Verify failed ({len(problems)} issues)"
     exit_code = EXIT_SUCCESS if not problems else EXIT_FAILURE
 
-    if json_mode:
-        return CommandResult(
-            exit_code=exit_code,
-            summary=summary,
-            problems=problems,
-            data={
-                "templates": template_data,
-                "workflows": workflow_data,
-                "remote": remote_data,
-                "integration": integration_data,
-            },
-        )
-
-    print(summary)
-    for problem in problems:
-        message = problem.get("message")
-        file_path = problem.get("file")
-        if file_path:
-            print(f"- {message} ({file_path})")
-        else:
-            print(f"- {message}")
-    return exit_code
+    return CommandResult(
+        exit_code=exit_code,
+        summary=summary,
+        problems=problems,
+        data={
+            "templates": template_data,
+            "workflows": workflow_data,
+            "remote": remote_data,
+            "integration": integration_data,
+        },
+    )

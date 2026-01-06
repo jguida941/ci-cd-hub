@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import time
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -14,7 +15,21 @@ from urllib import request
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
-from cihub.utils.env import env_bool
+from cihub.utils.env import env_bool, get_github_token
+
+
+@dataclass
+class GitHubRequestResult:
+    """Result of a GitHub API request."""
+
+    data: dict[str, Any] | None = None
+    error: str | None = None
+    status_code: int | None = None
+
+    @property
+    def ok(self) -> bool:
+        """Return True if request succeeded."""
+        return self.data is not None and self.error is None
 
 
 def _github_request(
@@ -22,7 +37,7 @@ def _github_request(
     token: str,
     method: str = "GET",
     data: dict[str, Any] | None = None,
-) -> dict[str, Any] | None:
+) -> GitHubRequestResult:
     """Make a GitHub API request."""
     headers = {
         "Authorization": f"Bearer {token}",
@@ -38,16 +53,14 @@ def _github_request(
     try:
         with request.urlopen(req, timeout=30) as resp:  # noqa: S310
             if resp.status == 204:  # No content (e.g., workflow dispatch)
-                return {}
+                return GitHubRequestResult(data={})
             response_data = resp.read().decode()
-            return json.loads(response_data) if response_data else {}
+            return GitHubRequestResult(data=json.loads(response_data) if response_data else {})
     except urllib_error.HTTPError as exc:
         error_body = exc.read().decode() if exc.fp else ""
-        print(f"GitHub API error {exc.code}: {error_body}")
-        return None
+        return GitHubRequestResult(error=f"GitHub API error {exc.code}: {error_body}", status_code=exc.code)
     except Exception as exc:
-        print(f"Request failed: {exc}")
-        return None
+        return GitHubRequestResult(error=f"Request failed: {exc}")
 
 
 def _dispatch_workflow(
@@ -57,12 +70,11 @@ def _dispatch_workflow(
     ref: str,
     inputs: dict[str, str],
     token: str,
-) -> bool:
+) -> GitHubRequestResult:
     """Dispatch a workflow via GitHub API."""
     url = f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches"
     data = {"ref": ref, "inputs": inputs}
-    result = _github_request(url, token, method="POST", data=data)
-    return result is not None
+    return _github_request(url, token, method="POST", data=data)
 
 
 def _poll_for_run_id(
@@ -87,11 +99,11 @@ def _poll_for_run_id(
     while time.time() < deadline:
         time.sleep(delay)
         result = _github_request(url, token)
-        if result is None:
+        if not result.ok:
             delay = min(delay * 2, 30.0)
             continue
 
-        for run in result.get("workflow_runs", []):
+        for run in (result.data or {}).get("workflow_runs", []):
             created_at = run.get("created_at", "")
             if not created_at:
                 continue
@@ -111,23 +123,25 @@ def _poll_for_run_id(
     return None
 
 
-def cmd_dispatch(args: argparse.Namespace) -> int | CommandResult:
-    """Handle dispatch subcommands."""
-    json_mode = getattr(args, "json", False)
+def cmd_dispatch(args: argparse.Namespace) -> CommandResult:
+    """Handle dispatch subcommands.
 
+    Always returns CommandResult for consistent output handling.
+    """
     if args.subcommand == "trigger":
-        return _cmd_dispatch_trigger(args, json_mode)
+        return _cmd_dispatch_trigger(args)
     if args.subcommand == "metadata":
-        return _cmd_dispatch_metadata(args, json_mode)
+        return _cmd_dispatch_metadata(args)
 
     message = f"Unknown dispatch subcommand: {args.subcommand}"
-    if json_mode:
-        return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-    print(message)
-    return EXIT_FAILURE
+    return CommandResult(
+        exit_code=EXIT_FAILURE,
+        summary=message,
+        problems=[{"severity": "error", "message": message, "code": "CIHUB-DISPATCH-UNKNOWN"}],
+    )
 
 
-def _cmd_dispatch_trigger(args: argparse.Namespace, json_mode: bool) -> int | CommandResult:
+def _cmd_dispatch_trigger(args: argparse.Namespace) -> CommandResult:
     """Dispatch a workflow and poll for the run ID."""
     owner = args.owner
     repo = args.repo
@@ -135,31 +149,27 @@ def _cmd_dispatch_trigger(args: argparse.Namespace, json_mode: bool) -> int | Co
     ref = args.ref
     correlation_id = args.correlation_id
 
-    # Get token
-    token = args.token
-    token_env = args.token_env or "HUB_DISPATCH_TOKEN"  # noqa: S105
+    # Get token using standardized priority: GH_TOKEN -> GITHUB_TOKEN -> HUB_DISPATCH_TOKEN
+    token, token_source = get_github_token(
+        explicit_token=args.token,
+        token_env=args.token_env,
+    )
     if not token:
-        token = os.environ.get(token_env)
-    if not token and token_env != "GITHUB_TOKEN":  # noqa: S105
-        token = os.environ.get("GITHUB_TOKEN")
-    if not token:
-        message = f"Missing token (expected {token_env} or GITHUB_TOKEN)"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-        print(f"::error::{message}")
-        return EXIT_FAILURE
+        message = "Missing token (set GH_TOKEN, GITHUB_TOKEN, or HUB_DISPATCH_TOKEN)"
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-DISPATCH-NO-TOKEN"}],
+        )
 
     # Check if dispatch is enabled
     if args.dispatch_enabled is False:
         message = f"Dispatch disabled for {owner}/{repo}; skipping."
-        if json_mode:
-            return CommandResult(
-                exit_code=EXIT_SUCCESS,
-                summary=message,
-                artifacts={"skipped": "true"},
-            )
-        print(message)
-        return EXIT_SUCCESS
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=message,
+            artifacts={"skipped": "true"},
+        )
 
     # Build inputs
     inputs: dict[str, str] = {}
@@ -180,13 +190,19 @@ def _cmd_dispatch_trigger(args: argparse.Namespace, json_mode: bool) -> int | Co
     started_at = time.time()
 
     # Dispatch
-    print(f"Dispatching {workflow_id} on {owner}/{repo}@{ref}")
-    if not _dispatch_workflow(owner, repo, workflow_id, ref, inputs, token):
+    dispatch_result = _dispatch_workflow(owner, repo, workflow_id, ref, inputs, token)
+    if not dispatch_result.ok:
         message = f"Dispatch failed for {owner}/{repo}"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-        print(f"::error::{message}")
-        return EXIT_FAILURE
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=message,
+            problems=[{
+                "severity": "error",
+                "message": message,
+                "detail": dispatch_result.error or "",
+                "code": "CIHUB-DISPATCH-FAILED",
+            }],
+        )
 
     # Poll for run ID
     timeout = int(args.timeout) if args.timeout else 1800
@@ -194,12 +210,11 @@ def _cmd_dispatch_trigger(args: argparse.Namespace, json_mode: bool) -> int | Co
 
     if not run_id:
         message = f"Dispatched {workflow_id} for {repo}, but could not determine run ID"
-        if json_mode:
-            return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-        print(f"::error::{message}")
-        return EXIT_FAILURE
-
-    print(f"Captured run ID {run_id} for {repo}")
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-DISPATCH-NO-RUN-ID"}],
+        )
 
     # Write outputs to GITHUB_OUTPUT if available
     github_output = os.environ.get("GITHUB_OUTPUT")
@@ -211,21 +226,25 @@ def _cmd_dispatch_trigger(args: argparse.Namespace, json_mode: bool) -> int | Co
             if correlation_id:
                 f.write(f"correlation_id={correlation_id}\n")
 
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=f"Dispatched {workflow_id} on {owner}/{repo}, run ID {run_id}",
-            artifacts={
-                "run_id": run_id,
-                "branch": ref,
-                "workflow_id": workflow_id,
-                "correlation_id": correlation_id or "",
-            },
-        )
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Dispatched {workflow_id} on {owner}/{repo}, run ID {run_id}",
+        artifacts={
+            "run_id": run_id,
+            "branch": ref,
+            "workflow_id": workflow_id,
+            "correlation_id": correlation_id or "",
+        },
+        data={
+            "items": [
+                f"Dispatching {workflow_id} on {owner}/{repo}@{ref}",
+                f"Captured run ID {run_id} for {repo}",
+            ]
+        },
+    )
 
 
-def _cmd_dispatch_metadata(args: argparse.Namespace, json_mode: bool) -> int | CommandResult:
+def _cmd_dispatch_metadata(args: argparse.Namespace) -> CommandResult:
     """Generate dispatch metadata JSON file."""
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -247,12 +266,11 @@ def _cmd_dispatch_metadata(args: argparse.Namespace, json_mode: bool) -> int | C
     }
 
     output_file.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
-    print(f"Wrote dispatch metadata: {output_file}")
 
-    if json_mode:
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=f"Generated dispatch metadata for {config_basename}",
-            artifacts={"metadata": str(output_file)},
-        )
-    return EXIT_SUCCESS
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Generated dispatch metadata for {config_basename}",
+        artifacts={"metadata": str(output_file)},
+        files_generated=[str(output_file)],
+        data={"items": [f"Wrote dispatch metadata: {output_file}"]},
+    )

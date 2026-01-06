@@ -20,26 +20,21 @@ def _summary_for_result(result: CiRunResult) -> str:
 
 
 def _result_to_command_result(result: CiRunResult) -> CommandResult:
+    """Convert CiRunResult to CommandResult with proper field mapping."""
+    files_generated = []
+    if result.report_path:
+        files_generated.append(str(result.report_path))
+    if result.summary_path:
+        files_generated.append(str(result.summary_path))
+
     return CommandResult(
         exit_code=result.exit_code,
         summary=_summary_for_result(result),
         problems=list(result.problems),
         artifacts=dict(result.artifacts),
         data=dict(result.data),
+        files_generated=files_generated if files_generated else None,
     )
-
-
-def _print_result(result: CiRunResult) -> None:
-    if result.report_path:
-        print(f"Wrote report: {result.report_path}")
-    if result.summary_path:
-        print(f"Wrote summary: {result.summary_path}")
-    if result.problems:
-        print("CI findings:")
-        for problem in result.problems:
-            severity = problem.get("severity", "error")
-            message = problem.get("message", "")
-            print(f"  - [{severity}] {message}")
 
 
 def _describe_path(path: Path) -> str:
@@ -144,10 +139,11 @@ def _emit_triage_bundle(args, result: CiRunResult | None, error: str | None = No
         )
         write_triage_bundle(bundle, output_dir)
     except Exception as exc:  # noqa: BLE001 - best effort only
-        print(f"[triage] Failed to emit triage bundle: {exc}", file=sys.stderr)
+        sys.stderr.write(f"[triage] Failed to emit triage bundle: {exc}\n")
 
 
-def cmd_ci(args) -> int | CommandResult:
+def cmd_ci(args) -> CommandResult:
+    """Execute CI run and return structured result."""
     try:
         result = run_ci(
             repo_path=Path(args.repo or "."),
@@ -168,8 +164,4 @@ def cmd_ci(args) -> int | CommandResult:
     _emit_ci_debug_context(args, result)
     _emit_triage_bundle(args, result)
 
-    if getattr(args, "json", False):
-        return _result_to_command_result(result)
-
-    _print_result(result)
-    return result.exit_code
+    return _result_to_command_result(result)

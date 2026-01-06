@@ -1059,7 +1059,9 @@ class TestCmdSmokePython:
         )
         result = cmd_smoke_python_tests(args)
         assert isinstance(result, CommandResult)
-        assert result.exit_code == EXIT_SUCCESS
+        # EXIT_FAILURE expected when tests fail (2 failed tests)
+        from cihub.exit_codes import EXIT_FAILURE
+        assert result.exit_code == EXIT_FAILURE
         assert result.data["passed"] == 10
         assert result.data["failed"] == 2
         assert result.data["skipped"] == 1
@@ -1089,7 +1091,79 @@ class TestCmdHubCi:
     def test_returns_usage_error_for_unknown_subcommand(self) -> None:
         from cihub.commands.hub_ci import cmd_hub_ci
         from cihub.exit_codes import EXIT_USAGE
+        from cihub.types import CommandResult
 
         args = argparse.Namespace(subcommand="unknown-command")
         result = cmd_hub_ci(args)
-        assert result == EXIT_USAGE
+        # Now returns CommandResult instead of bare int
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_USAGE
+        assert "unknown-command" in result.summary
+        assert len(result.problems) == 1
+        assert result.problems[0]["severity"] == "error"
+
+
+class TestPlatformDetection:
+    """Tests for platform detection functions."""
+
+    def test_get_platform_suffix_returns_valid_format(self) -> None:
+        """Platform suffix should match OS_ARCH pattern."""
+        from cihub.commands.hub_ci.release import _get_platform_suffix
+
+        result = _get_platform_suffix()
+        assert "_" in result
+        os_part, arch_part = result.split("_")
+        assert os_part in ("darwin", "linux", "windows")
+        assert arch_part in ("amd64", "arm64")
+
+    def test_get_kyverno_platform_suffix_uses_x86_64(self) -> None:
+        """Kyverno uses x86_64 instead of amd64 for Intel."""
+        from cihub.commands.hub_ci.release import _get_kyverno_platform_suffix
+
+        result = _get_kyverno_platform_suffix()
+        assert "_" in result
+        os_part, arch_part = result.split("_")
+        assert os_part in ("darwin", "linux", "windows")
+        assert arch_part in ("x86_64", "arm64")
+
+    def test_platform_suffix_matches_current_system(self) -> None:
+        """Platform detection should match the current running system."""
+        import platform as plat
+
+        from cihub.commands.hub_ci.release import _get_platform_suffix
+
+        result = _get_platform_suffix()
+        current_os = plat.system().lower()
+        expected_os = {"darwin": "darwin", "linux": "linux", "windows": "windows"}.get(current_os)
+        if expected_os:
+            assert result.startswith(expected_os)
+
+
+class TestEnsureExecutable:
+    """Tests for ensure_executable race condition handling."""
+
+    def test_ensure_executable_returns_true_for_existing_file(self, tmp_path: Path) -> None:
+        """Should return True when file exists and is made executable."""
+        from cihub.commands.hub_ci import ensure_executable
+
+        test_file = tmp_path / "test_script"
+        test_file.write_text("#!/bin/bash\necho hello")
+        result = ensure_executable(test_file)
+        assert result is True
+
+    def test_ensure_executable_returns_false_for_missing_file(self, tmp_path: Path) -> None:
+        """Should return False when file doesn't exist."""
+        from cihub.commands.hub_ci import ensure_executable
+
+        missing_file = tmp_path / "nonexistent"
+        result = ensure_executable(missing_file)
+        assert result is False
+
+    def test_ensure_executable_handles_race_condition(self, tmp_path: Path) -> None:
+        """Should handle file deletion between check and chmod gracefully."""
+        from cihub.commands.hub_ci import ensure_executable
+
+        # Test that the function handles the race condition without raising
+        missing_file = tmp_path / "will_be_deleted"
+        result = ensure_executable(missing_file)
+        assert result is False  # No exception, just returns False

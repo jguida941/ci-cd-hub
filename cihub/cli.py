@@ -10,6 +10,7 @@ from typing import Mapping
 from cihub.cli_parsers.builder import build_parser as _build_parser
 from cihub.cli_parsers.types import CommandHandlers
 from cihub.exit_codes import EXIT_FAILURE, EXIT_INTERNAL_ERROR, EXIT_SUCCESS
+from cihub.output import get_renderer
 from cihub.services.configuration import load_effective_config  # noqa: F401 - re-export
 from cihub.services.detection import detect_language, resolve_language  # noqa: F401 - re-export
 from cihub.services.repo_config import (  # noqa: F401 - re-export
@@ -64,43 +65,8 @@ from cihub.utils.net import safe_urlopen  # noqa: F401 - re-export
 # They are not re-exported here to avoid circular imports
 
 
-# CommandResult imported from cihub.types (re-exported for backward compatibility)
-# hub_root imported from cihub.utils (re-exported for backward compatibility)
-
-
-# get_java_tool_flags imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# get_xml_namespace imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# ns_tag imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# elem_text imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# resolve_executable imported from cihub.utils (re-exported for backward compatibility)
-# validate_repo_path imported from cihub.utils (re-exported for backward compatibility)
-# validate_subdir imported from cihub.utils (re-exported for backward compatibility)
-# parse_xml_text imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# parse_xml_file imported from cihub.utils.java_pom (re-exported for backward compatibility)
-
-
 def is_debug_enabled(env: Mapping[str, str] | None = None) -> bool:
     return env_bool("CIHUB_DEBUG", default=False, env=env)
-
-
-# parse_pom_plugins imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# parse_pom_modules imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# parse_pom_dependencies imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# plugin_matches imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# dependency_matches imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# collect_java_pom_warnings imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# collect_java_dependency_warnings imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# load_plugin_snippets imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# load_dependency_snippets imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# line_indent imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# indent_block imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# insert_plugins_into_pom imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# find_tag_spans imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# insert_dependencies_into_pom imported from cihub.utils.java_pom (re-exported for backward compatibility)
-
-# parse_repo_from_remote imported from cihub.utils (re-exported for backward compatibility)
-# get_git_remote imported from cihub.utils (re-exported for backward compatibility)
-# get_git_branch imported from cihub.utils (re-exported for backward compatibility)
 
 
 def cmd_detect(args: argparse.Namespace) -> int | CommandResult:
@@ -205,10 +171,6 @@ def cmd_validate(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
-# apply_pom_fixes imported from cihub.utils.java_pom (re-exported for backward compatibility)
-# apply_dependency_fixes imported from cihub.utils.java_pom (re-exported for backward compatibility)
-
-
 def cmd_fix_pom(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.pom import cmd_fix_pom as handler
 
@@ -219,11 +181,6 @@ def cmd_fix_deps(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.pom import cmd_fix_deps as handler
 
     return handler(args)
-
-
-# gh_api_json imported from cihub.utils (re-exported for backward compatibility)
-# fetch_remote_file imported from cihub.utils (re-exported for backward compatibility)
-# update_remote_file imported from cihub.utils (re-exported for backward compatibility)
 
 
 def cmd_setup_secrets(args: argparse.Namespace) -> int | CommandResult:
@@ -390,14 +347,18 @@ def main(argv: list[str] | None = None) -> int:
     if not command_result.summary:
         command_result.summary = "OK" if exit_code == EXIT_SUCCESS else "Command failed"
 
-    if json_mode:
-        status = "success" if exit_code == EXIT_SUCCESS else "failure"
-        payload = command_result.to_payload(
-            command,
-            status,
-            int((time.perf_counter() - start) * 1000),
-        )
-        print(json.dumps(payload, indent=2))
+    # Use renderer pattern for all output
+    duration_ms = int((time.perf_counter() - start) * 1000)
+    renderer = get_renderer(json_mode=json_mode)
+    output = renderer.render(command_result, command, duration_ms)
+    # Only print if JSON mode OR if there's meaningful content beyond default summary
+    if json_mode or (output and output not in ("OK", "Command failed")):
+        # CLI best practice: error output to stderr, success output to stdout
+        if exit_code != EXIT_SUCCESS and not json_mode:
+            print(output, file=sys.stderr)
+        else:
+            print(output)
+
     return exit_code
 
 

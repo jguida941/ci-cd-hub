@@ -16,6 +16,7 @@ import defusedxml.ElementTree as ET  # Secure XML parsing
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
+from cihub.utils.env import env_int
 from cihub.utils.github_context import OutputContext
 from cihub.utils.progress import _bar
 
@@ -27,6 +28,41 @@ from . import (
     _run_command,
     _sha256,
 )
+
+
+def _get_platform_suffix() -> str:
+    """Get platform suffix for release downloads (actionlint/kyverno).
+
+    Returns:
+        Platform suffix like 'linux_amd64', 'darwin_arm64', etc.
+        Falls back to 'linux_amd64' for CI compatibility.
+    """
+    sys_name = platform.system().lower()
+    machine = platform.machine().lower()
+
+    # Map OS names
+    os_name = {"darwin": "darwin", "linux": "linux", "windows": "windows"}.get(sys_name, "linux")
+
+    # Map architectures (actionlint uses amd64, kyverno uses x86_64)
+    arch = {"x86_64": "amd64", "amd64": "amd64", "arm64": "arm64", "aarch64": "arm64"}.get(machine, "amd64")
+
+    return f"{os_name}_{arch}"
+
+
+def _get_kyverno_platform_suffix() -> str:
+    """Get platform suffix for kyverno downloads.
+
+    Kyverno uses x86_64 instead of amd64 for architecture naming.
+    """
+    sys_name = platform.system().lower()
+    machine = platform.machine().lower()
+
+    os_name = {"darwin": "darwin", "linux": "linux", "windows": "windows"}.get(sys_name, "linux")
+
+    # Kyverno uses x86_64 instead of amd64
+    arch = {"x86_64": "x86_64", "amd64": "x86_64", "arm64": "arm64", "aarch64": "arm64"}.get(machine, "x86_64")
+
+    return f"{os_name}_{arch}"
 
 
 def _resolve_actionlint_version(version: str) -> str:
@@ -47,7 +83,7 @@ def _resolve_actionlint_version(version: str) -> str:
     return tag.lstrip("v")
 
 
-def cmd_actionlint_install(args: argparse.Namespace) -> int | CommandResult:
+def cmd_actionlint_install(args: argparse.Namespace) -> CommandResult:
     try:
         version = _resolve_actionlint_version(args.version)
     except RuntimeError as exc:
@@ -56,7 +92,8 @@ def cmd_actionlint_install(args: argparse.Namespace) -> int | CommandResult:
             summary=f"actionlint-install: {exc}",
             problems=[{"severity": "error", "message": str(exc)}],
         )
-    tar_name = f"actionlint_{version}_linux_amd64.tar.gz"
+    platform_suffix = _get_platform_suffix()
+    tar_name = f"actionlint_{version}_{platform_suffix}.tar.gz"
     url = f"https://github.com/rhysd/actionlint/releases/download/v{version}/{tar_name}"
     dest_dir = Path(args.dest).resolve()
     tar_path = dest_dir / tar_name
@@ -103,7 +140,7 @@ def cmd_actionlint_install(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_actionlint(args: argparse.Namespace) -> int | CommandResult:
+def cmd_actionlint(args: argparse.Namespace) -> CommandResult:
     bin_path = args.bin or shutil.which("actionlint") or ""
     if not bin_path:
         local = Path("actionlint")
@@ -120,6 +157,7 @@ def cmd_actionlint(args: argparse.Namespace) -> int | CommandResult:
         [bin_path, "-oneline", args.workflow],
         capture_output=True,
         text=True,
+        timeout=60,
     )
     output_lines = [line for line in (proc.stdout or "").splitlines() if line.strip()]
 
@@ -145,6 +183,7 @@ def cmd_actionlint(args: argparse.Namespace) -> int | CommandResult:
             reviewdog_cmd,
             input=input_text,
             text=True,
+            timeout=60,
         )
         if proc.returncode != 0 and not output_lines:
             return CommandResult(
@@ -167,11 +206,12 @@ def cmd_actionlint(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_kyverno_install(args: argparse.Namespace) -> int | CommandResult:
+def cmd_kyverno_install(args: argparse.Namespace) -> CommandResult:
     version = args.version
     if not version.startswith("v"):
         version = f"v{version}"
-    tar_name = f"kyverno-cli_{version}_linux_x86_64.tar.gz"
+    platform_suffix = _get_kyverno_platform_suffix()
+    tar_name = f"kyverno-cli_{version}_{platform_suffix}.tar.gz"
     url = f"https://github.com/kyverno/kyverno/releases/download/{version}/{tar_name}"
     dest_dir = Path(args.dest).resolve()
     tar_path = dest_dir / tar_name
@@ -230,7 +270,7 @@ def _trivy_asset_name(version: str) -> str:
     return f"trivy_{version}_{suffix}.tar.gz"
 
 
-def cmd_trivy_install(args: argparse.Namespace) -> int | CommandResult:
+def cmd_trivy_install(args: argparse.Namespace) -> CommandResult:
     version = args.version.lstrip("v")
     try:
         tar_name = _trivy_asset_name(version)
@@ -280,7 +320,7 @@ def cmd_trivy_install(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_trivy_summary(args: argparse.Namespace) -> int | CommandResult:
+def cmd_trivy_summary(args: argparse.Namespace) -> CommandResult:
     """Parse Trivy JSON output and generate summary with counts.
 
     Reads both filesystem scan (vulnerabilities) and config scan (misconfigurations)
@@ -376,7 +416,7 @@ def _kyverno_apply(policy: Path, resource: Path, bin_path: str | None = None) ->
     return (proc.stdout or "") + (proc.stderr or "")
 
 
-def cmd_kyverno_validate(args: argparse.Namespace) -> int | CommandResult:
+def cmd_kyverno_validate(args: argparse.Namespace) -> CommandResult:
     policies_dir = Path(args.policies_dir)
     templates_dir = Path(args.templates_dir) if args.templates_dir else None
 
@@ -396,7 +436,7 @@ def cmd_kyverno_validate(args: argparse.Namespace) -> int | CommandResult:
         )
 
     for policy in _iter_yaml_files(policies_dir):
-        output = _kyverno_apply(policy, Path("/dev/null"), args.bin)
+        output = _kyverno_apply(policy, Path(os.devnull), args.bin)
         lowered = output.lower()
         if "error" in lowered or "invalid" in lowered or "failed" in lowered:
             failed += 1
@@ -406,7 +446,7 @@ def cmd_kyverno_validate(args: argparse.Namespace) -> int | CommandResult:
 
     if templates_dir and templates_dir.exists():
         for template in _iter_yaml_files(templates_dir):
-            output = _kyverno_apply(template, Path("/dev/null"), args.bin)
+            output = _kyverno_apply(template, Path(os.devnull), args.bin)
             lowered = output.lower()
             if "error" in lowered or "invalid" in lowered or "failed" in lowered:
                 failed += 1
@@ -426,7 +466,7 @@ def cmd_kyverno_validate(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_kyverno_test(args: argparse.Namespace) -> int | CommandResult:
+def cmd_kyverno_test(args: argparse.Namespace) -> CommandResult:
     policies_dir = Path(args.policies_dir)
     fixtures_dir = Path(args.fixtures_dir)
     fail_on_warn = str(args.fail_on_warn).strip().lower() in {"true", "1", "yes", "y", "on"}
@@ -470,7 +510,7 @@ def cmd_kyverno_test(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_release_parse_tag(args: argparse.Namespace) -> int | CommandResult:
+def cmd_release_parse_tag(args: argparse.Namespace) -> CommandResult:
     ref = args.ref or os.environ.get("GITHUB_REF", "")
     if not ref.startswith("refs/tags/"):
         return CommandResult(
@@ -489,7 +529,7 @@ def cmd_release_parse_tag(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_release_update_tag(args: argparse.Namespace) -> int | CommandResult:
+def cmd_release_update_tag(args: argparse.Namespace) -> CommandResult:
     root = Path(args.repo).resolve()
     major = args.major
     remote = args.remote
@@ -524,7 +564,7 @@ def cmd_release_update_tag(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_zizmor_run(args: argparse.Namespace) -> int | CommandResult:
+def cmd_zizmor_run(args: argparse.Namespace) -> CommandResult:
     """Run zizmor and produce SARIF output, with fallback on failure.
 
     This replaces the inline heredoc in hub-production-ci.yml to satisfy
@@ -541,6 +581,7 @@ def cmd_zizmor_run(args: argparse.Namespace) -> int | CommandResult:
             cmd,
             capture_output=True,
             text=True,
+            timeout=120,
         )
         if result.returncode == 0:
             # Success - write the SARIF output
@@ -580,7 +621,7 @@ def cmd_zizmor_run(args: argparse.Namespace) -> int | CommandResult:
         )
 
 
-def cmd_zizmor_check(args: argparse.Namespace) -> int | CommandResult:
+def cmd_zizmor_check(args: argparse.Namespace) -> CommandResult:
     sarif_path = Path(args.sarif)
     if not sarif_path.exists():
         return CommandResult(
@@ -616,7 +657,7 @@ def cmd_zizmor_check(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_license_check(args: argparse.Namespace) -> int | CommandResult:
+def cmd_license_check(args: argparse.Namespace) -> CommandResult:
     problems: list[dict[str, str]] = []
     try:
         proc = _run_command(["pip-licenses", "--format=csv"], Path("."))
@@ -660,7 +701,7 @@ def cmd_license_check(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_gitleaks_summary(args: argparse.Namespace) -> int | CommandResult:
+def cmd_gitleaks_summary(args: argparse.Namespace) -> CommandResult:
     repo_root = Path(".")
     commits = _run_command(["git", "rev-list", "--count", "HEAD"], repo_root).stdout
     files = _run_command(["git", "ls-files"], repo_root).stdout
@@ -697,7 +738,7 @@ def _env_result(name: str) -> str:
     return os.environ.get(name, "skipped")
 
 
-def cmd_pytest_summary(args: argparse.Namespace) -> int | CommandResult:
+def cmd_pytest_summary(args: argparse.Namespace) -> CommandResult:
     """Generate a summary for pytest results matching smoke test format."""
     ctx = OutputContext.from_args(args)
     problems: list[dict[str, str]] = []
@@ -791,7 +832,7 @@ def cmd_pytest_summary(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_summary(args: argparse.Namespace) -> int | CommandResult:
+def cmd_summary(args: argparse.Namespace) -> CommandResult:
     ctx = OutputContext.from_args(args)
     repo = os.environ.get("GH_REPOSITORY", "")
     branch = os.environ.get("GH_REF_NAME", "")
@@ -882,13 +923,13 @@ def cmd_summary(args: argparse.Namespace) -> int | CommandResult:
     if not has_issues:
         lines.append("| None | success |")
     lines.append("")
-    # Parse Trivy findings from environment
-    trivy_critical = int(os.environ.get("TRIVY_CRITICAL", "0") or "0")
-    trivy_high = int(os.environ.get("TRIVY_HIGH", "0") or "0")
-    trivy_fs_critical = int(os.environ.get("TRIVY_FS_CRITICAL", "0") or "0")
-    trivy_fs_high = int(os.environ.get("TRIVY_FS_HIGH", "0") or "0")
-    trivy_config_critical = int(os.environ.get("TRIVY_CONFIG_CRITICAL", "0") or "0")
-    trivy_config_high = int(os.environ.get("TRIVY_CONFIG_HIGH", "0") or "0")
+    # Parse Trivy findings from environment (using env_int for safe parsing)
+    trivy_critical = env_int("TRIVY_CRITICAL", 0)
+    trivy_high = env_int("TRIVY_HIGH", 0)
+    trivy_fs_critical = env_int("TRIVY_FS_CRITICAL", 0)
+    trivy_fs_high = env_int("TRIVY_FS_HIGH", 0)
+    trivy_config_critical = env_int("TRIVY_CONFIG_CRITICAL", 0)
+    trivy_config_high = env_int("TRIVY_CONFIG_HIGH", 0)
 
     # Trivy passes if no critical vulnerabilities (high may be warnings)
     trivy_status = "Passed" if trivy_critical == 0 else "Failed"
@@ -935,7 +976,7 @@ def cmd_summary(args: argparse.Namespace) -> int | CommandResult:
     )
 
 
-def cmd_enforce(args: argparse.Namespace) -> int | CommandResult:
+def cmd_enforce(args: argparse.Namespace) -> CommandResult:
     checks = [
         ("actionlint", _env_result("RESULT_ACTIONLINT"), "fix workflow syntax"),
         ("zizmor", _env_result("RESULT_ZIZMOR"), "address workflow security findings"),
