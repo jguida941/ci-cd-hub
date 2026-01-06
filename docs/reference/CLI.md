@@ -200,8 +200,8 @@ options:
 usage: cihub ci [-h] [--json] [--repo REPO] [--workdir WORKDIR]
                 [--correlation-id CORRELATION_ID] [--config-from-hub BASENAME]
                 [--output-dir OUTPUT_DIR] [--install-deps] [--report REPORT]
-                [--summary SUMMARY] [--no-summary] [--write-github-summary]
-                [--no-write-github-summary]
+                [--summary SUMMARY] [--no-summary]
+                [--write-github-summary | --no-write-github-summary]
 
 options:
   -h, --help            show this help message and exit
@@ -592,9 +592,11 @@ options:
 
 ```
 usage: cihub triage [-h] [--json] [--output-dir OUTPUT_DIR] [--report REPORT]
-                    [--summary SUMMARY] [--run RUN_ID] [--artifacts-dir PATH]
-                    [--repo OWNER/REPO] [--multi] [--reports-dir PATH]
-                    [--detect-flaky]
+                    [--summary SUMMARY] [--run RUN_ID] [--latest] [--watch]
+                    [--interval SECONDS] [--artifacts-dir PATH]
+                    [--repo OWNER/REPO] [--workflow NAME] [--branch NAME]
+                    [--multi] [--aggregate] [--per-repo] [--reports-dir PATH]
+                    [--detect-flaky] [--gate-history]
 
 options:
   -h, --help            show this help message and exit
@@ -606,27 +608,44 @@ options:
   --summary SUMMARY     Path to summary.md (default: <output-dir>/summary.md)
   --run RUN_ID          GitHub workflow run ID to analyze (fetches
                         artifacts/logs via gh CLI)
+  --latest              Auto-triage the most recent failed workflow run (no
+                        run ID needed)
+  --watch               Watch for new failed runs and auto-triage them
+                        (background daemon)
+  --interval SECONDS    Polling interval for --watch mode (default: 30
+                        seconds)
   --artifacts-dir PATH  Path to pre-downloaded artifacts directory (offline
                         mode)
   --repo OWNER/REPO     Target repository for remote run analysis (default:
                         current repo)
+  --workflow NAME       Filter remote runs by workflow name (e.g., 'hub-
+                        ci.yml')
+  --branch NAME         Filter remote runs by branch name (e.g., 'main')
   --multi               Enable multi-report mode (aggregate multiple
                         report.json files)
+  --aggregate           Force aggregated output for multi-report mode (single
+                        combined bundle)
+  --per-repo            Force per-repo output for multi-report mode (separate
+                        bundles with index)
   --reports-dir PATH    Directory containing multiple report.json files (for
                         --multi mode)
   --detect-flaky        Analyze triage history for flaky test patterns
+  --gate-history        Analyze triage history for gate status changes over
+                        time
 ```
 
 ## cihub docs
 
 ```
-usage: cihub docs [-h] {generate,check,links} ...
+usage: cihub docs [-h] {generate,check,links,stale} ...
 
 positional arguments:
-  {generate,check,links}
+  {generate,check,links,stale}
     generate            Generate CLI and config reference docs
     check               Check reference docs are up to date
     links               Check documentation for broken links
+    stale               Detect stale documentation references to
+                        removed/renamed code
 
 options:
   -h, --help            show this help message and exit
@@ -664,6 +683,38 @@ options:
   -h, --help  show this help message and exit
   --json      Output machine-readable JSON
   --external  Also check external (http/https) links (requires lychee)
+```
+
+## cihub docs stale
+
+```
+usage: cihub docs stale [-h] [--json] [--since SINCE] [--all]
+                        [--include-generated] [--ai] [--fail-on-stale]
+                        [--code CODE] [--docs DOCS] [--skip-fences]
+                        [--output-dir OUTPUT_DIR] [--tool-output TOOL_OUTPUT]
+                        [--ai-output AI_OUTPUT] [--github-summary]
+
+options:
+  -h, --help            show this help message and exit
+  --json                Output machine-readable JSON
+  --since SINCE         Git revision range (default: HEAD~10)
+  --all                 Include archived docs (docs/development/archive/)
+  --include-generated   Include generated docs (docs/reference/) - rarely
+                        needed
+  --ai                  AI-consumable markdown output (no network calls)
+  --fail-on-stale       Exit non-zero if stale refs found (for CI)
+  --code CODE           Code directory (default: cihub/)
+  --docs DOCS           Docs directory (default: docs/)
+  --skip-fences         Skip bash/shell code fences (default: parse them)
+  --output-dir OUTPUT_DIR
+                        Output dir for CIHub-style artifacts (e.g.,
+                        .cihub/tool-outputs)
+  --tool-output TOOL_OUTPUT
+                        Path to write tool-style JSON (for triage/tool-
+                        outputs)
+  --ai-output AI_OUTPUT
+                        Path to write the AI prompt pack (markdown)
+  --github-summary      Write summary to GITHUB_STEP_SUMMARY
 ```
 
 ## cihub adr
@@ -825,11 +876,11 @@ options:
 
 ```
 usage: cihub hub-ci [-h] [--json]
-                    {actionlint-install,actionlint,syntax-check,repo-check,source-check,security-pip-audit,security-bandit,security-ruff,security-owasp,docker-compose-check,codeql-build,kyverno-install,trivy-install,trivy-summary,kyverno-validate,kyverno-test,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,release-parse-tag,release-update-tag,ruff,black,mutmut,bandit,pip-audit,zizmor-run,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,badges-commit,pytest-summary,summary,outputs,enforce,verify-matrix-keys,quarantine-check}
+                    {actionlint-install,actionlint,syntax-check,repo-check,source-check,security-pip-audit,security-bandit,security-ruff,security-owasp,docker-compose-check,codeql-build,kyverno-install,trivy-install,trivy-summary,kyverno-validate,kyverno-test,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,release-parse-tag,release-update-tag,ruff,black,mutmut,bandit,pip-audit,zizmor-run,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,badges-commit,pytest-summary,summary,outputs,enforce,verify-matrix-keys,quarantine-check,enforce-command-result}
                     ...
 
 positional arguments:
-  {actionlint-install,actionlint,syntax-check,repo-check,source-check,security-pip-audit,security-bandit,security-ruff,security-owasp,docker-compose-check,codeql-build,kyverno-install,trivy-install,trivy-summary,kyverno-validate,kyverno-test,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,release-parse-tag,release-update-tag,ruff,black,mutmut,bandit,pip-audit,zizmor-run,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,badges-commit,pytest-summary,summary,outputs,enforce,verify-matrix-keys,quarantine-check}
+  {actionlint-install,actionlint,syntax-check,repo-check,source-check,security-pip-audit,security-bandit,security-ruff,security-owasp,docker-compose-check,codeql-build,kyverno-install,trivy-install,trivy-summary,kyverno-validate,kyverno-test,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,release-parse-tag,release-update-tag,ruff,black,mutmut,bandit,pip-audit,zizmor-run,zizmor-check,validate-configs,validate-profiles,license-check,gitleaks-summary,badges,badges-commit,pytest-summary,summary,outputs,enforce,verify-matrix-keys,quarantine-check,enforce-command-result}
     actionlint-install  Download the actionlint binary
     actionlint          Run actionlint (optionally with reviewdog)
     syntax-check        Compile Python files to catch syntax errors
@@ -883,6 +934,9 @@ positional arguments:
     verify-matrix-keys  Verify hub-run-all.yml matrix keys match discover.py
                         output
     quarantine-check    Fail if any file imports from _quarantine
+    enforce-command-result
+                        Enforce CommandResult pattern - fail if too many
+                        print() calls in commands/ (ADR-0042)
 
 options:
   -h, --help            show this help message and exit
@@ -1264,7 +1318,7 @@ usage: cihub hub-ci release-update-tag [-h] [--repo REPO] --major MAJOR
 
 options:
   -h, --help         show this help message and exit
-  --repo REPO        Repo path
+  --repo REPO        Path to repo (default: .)
   --major MAJOR      Major tag name (e.g., v1)
   --version VERSION  Release version
   --remote REMOTE    Git remote name
@@ -1323,7 +1377,7 @@ options:
 ```
 usage: cihub hub-ci bandit [-h] [--paths PATHS [PATHS ...]] [--output OUTPUT]
                            [--severity SEVERITY] [--confidence CONFIDENCE]
-                           [--fail-on-high] [--no-fail-on-high]
+                           [--fail-on-high | --no-fail-on-high]
                            [--fail-on-medium] [--fail-on-low]
                            [--summary SUMMARY] [--github-summary]
 
@@ -1553,6 +1607,24 @@ options:
   --path PATH  Root directory to scan (default: hub root)
 ```
 
+## cihub hub-ci enforce-command-result
+
+```
+usage: cihub hub-ci enforce-command-result [-h] [--path PATH]
+                                           [--max-allowed MAX_ALLOWED]
+                                           [--summary SUMMARY]
+                                           [--github-summary]
+
+options:
+  -h, --help            show this help message and exit
+  --path PATH           Root directory to scan (default: hub root)
+  --max-allowed MAX_ALLOWED
+                        Maximum allowed print() calls in cihub/commands/
+                        (default: 7)
+  --summary SUMMARY     Write summary to file
+  --github-summary      Append summary to GITHUB_STEP_SUMMARY
+```
+
 ## cihub new
 
 ```
@@ -1699,8 +1771,8 @@ options:
 ```
 usage: cihub sync-templates [-h] [--json] [--repo REPO] [--include-disabled]
                             [--check] [--dry-run]
-                            [--commit-message COMMIT_MESSAGE] [--update-tag]
-                            [--no-update-tag] [--yes]
+                            [--commit-message COMMIT_MESSAGE]
+                            [--update-tag | --no-update-tag] [--yes]
 
 options:
   -h, --help            show this help message and exit

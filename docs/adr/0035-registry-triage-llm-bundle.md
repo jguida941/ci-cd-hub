@@ -207,7 +207,7 @@ isort .
 ### 6. CLI Commands
 
 ```bash
-# Registry management
+# Registry management (TODO)
 cihub registry list                    # Show all repos
 cihub registry show <repo>             # Show repo config
 cihub registry set <repo> --tier X     # Update tier
@@ -216,18 +216,43 @@ cihub registry diff                    # Show pending changes
 cihub registry sync --dry-run          # Preview sync
 cihub registry sync --yes              # Push to repos
 
-# Triage (runs checks, outputs bundle)
-cihub triage                           # Run all checks, output bundle
+# Triage - Local mode (from existing report.json) ✅ IMPLEMENTED
+cihub triage                           # Generate triage from local .cihub/report.json
+cihub triage --output-dir ./out        # Custom output directory
+cihub triage --report path/to/report.json  # Custom report path
+cihub triage --json                    # JSON output only
+
+# Triage - Filtering (TODO)
 cihub triage --min-severity 6          # Only failures >= severity 6
 cihub triage --category security       # Only security checks
-cihub triage --json                    # JSON output only
 cihub triage --llm-pack                # Generate markdown prompt
 
-# Fix (apply safe fixes)
+# Triage - Remote mode (from GitHub workflow runs) ✅ IMPLEMENTED
+cihub triage --run <RUN_ID>            # Analyze specific workflow run
+cihub triage --latest                  # Auto-find and triage most recent failed run
+cihub triage --watch                   # Watch for new failures (background daemon)
+cihub triage --watch --interval 60     # Custom polling interval (default: 30s)
+cihub triage --repo owner/repo         # Target different repository
+
+# Triage - Workflow/branch filtering (works with --run, --latest, --watch) ✅ IMPLEMENTED
+cihub triage --latest --workflow hub-ci.yml   # Filter by workflow
+cihub triage --latest --branch main           # Filter by branch
+cihub triage --watch --workflow hub-ci.yml --branch main  # Combined filters
+
+# Triage - Multi-report mode (for orchestrator runs) ✅ IMPLEMENTED
+cihub triage --run <ID> --aggregate    # Combine multiple reports into one bundle
+cihub triage --run <ID> --per-repo     # Separate bundles with index file
+cihub triage --multi --reports-dir ./  # Process local directory of reports
+
+# Triage - Historical analysis ✅ IMPLEMENTED
+cihub triage --gate-history            # Analyze gate status changes over time
+cihub triage --detect-flaky            # Identify flaky test patterns from history
+
+# Fix (apply safe fixes) - TODO
 cihub fix --safe                       # Auto-fix: ruff, black, isort, badges
 cihub fix --safe --dry-run             # Preview fixes
 
-# Assist (generate LLM prompt)
+# Assist (generate LLM prompt) - TODO
 cihub assist --prompt                  # Generate prompt pack from triage
 ```
 

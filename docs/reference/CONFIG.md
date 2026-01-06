@@ -51,8 +51,8 @@ Source: `schema/ci-hub-config.schema.json`
 | `java.tools.owasp` | boolean|object | no |  |  |
 | `java.tools.pitest` | boolean|object | no |  |  |
 | `java.tools.pmd` | boolean|object | no |  |  |
-| `java.tools.semgrep` | boolean|object | no |  |  |
-| `java.tools.sbom` | boolean|object | no |  |  |
+| `java.tools.semgrep` | boolean|object | no |  | Semgrep SAST tool (shared between Java and Python) |
+| `java.tools.sbom` | boolean|object | no |  | SBOM generation tool (shared between Java and Python) |
 | `java.tools.spotbugs` | boolean|object | no |  |  |
 | `java.tools.trivy` | boolean|object | no |  |  |
 | `java.version` | string | no | 21 |  |
@@ -74,8 +74,8 @@ Source: `schema/ci-hub-config.schema.json`
 | `python.tools.pip_audit` | boolean|object | no |  |  |
 | `python.tools.pytest` | boolean|object | no |  |  |
 | `python.tools.ruff` | boolean|object | no |  |  |
-| `python.tools.sbom` | boolean|object | no |  |  |
-| `python.tools.semgrep` | boolean|object | no |  |  |
+| `python.tools.sbom` | boolean|object | no |  | SBOM generation tool (shared between Java and Python) |
+| `python.tools.semgrep` | boolean|object | no |  | Semgrep SAST tool (shared between Java and Python) |
 | `python.tools.trivy` | boolean|object | no |  |  |
 | `python.version` | string | no | 3.12 |  |
 | `repo` | object | yes |  |  |
