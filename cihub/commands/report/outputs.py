@@ -15,7 +15,8 @@ def _report_outputs(args: argparse.Namespace) -> CommandResult:
     """Extract outputs from a report.json file."""
     report_path = Path(args.report)
     try:
-        report = json.loads(report_path.read_text(encoding="utf-8"))
+        with report_path.open(encoding="utf-8") as f:
+            report = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as exc:
         return CommandResult(exit_code=EXIT_FAILURE, summary=f"Failed to read report: {exc}")
 

@@ -14,22 +14,24 @@ from cihub.utils import (
     validate_subdir,
 )
 from cihub.utils.env import _parse_env_bool as _parse_env_bool_base
+from cihub.utils.exec_utils import (
+    TIMEOUT_QUICK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 
 
 def _get_git_commit(repo_path: Path) -> str:
     try:
         git_bin = resolve_executable("git")
-        result = subprocess.run(  # noqa: S603
+        result = safe_run(
             [git_bin, "-C", str(repo_path), "rev-parse", "HEAD"],
-            stderr=subprocess.DEVNULL,
-            text=True,
-            capture_output=False,
-            stdout=subprocess.PIPE,
-            timeout=30,
+            timeout=TIMEOUT_QUICK,
             check=True,
         )
         return result.stdout.strip()
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+    except (subprocess.CalledProcessError, CommandNotFoundError, CommandTimeoutError):
         return ""
 
 

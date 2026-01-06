@@ -9,7 +9,7 @@ from typing import Any
 from cihub import __version__
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class RunContext:
     repository: str | None
     branch: str | None

@@ -54,7 +54,8 @@ def fetch_and_validate_artifact(
                 print("   WARNING: No report.json found in artifact")
                 return None
 
-            report_data = json.loads(report_file.read_text(encoding="utf-8"))
+            with report_file.open(encoding="utf-8") as f:
+                report_data = json.load(f)
             if not isinstance(report_data, dict):
                 print("   WARNING: report.json is not a JSON object")
                 return None

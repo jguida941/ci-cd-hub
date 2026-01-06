@@ -1,8 +1,12 @@
-"""Tests for OutputContext dataclass.
+"""Tests for GitHubContext (and OutputContext alias) dataclass.
 
-This module tests the OutputContext pattern used for GitHub Actions output
-and summary handling. It validates the from_args factory, path resolution,
-and file writing behaviors.
+This module tests the GitHubContext pattern used for GitHub Actions environment
+variables, output files, and summary handling. It validates:
+1. from_env() - reading GitHub environment variables
+2. from_args() - reading CLI arguments for output config
+3. with_output_config() - combining env context with output config
+4. Helper properties (is_ci, owner_repo, short_sha, etc.)
+5. Output/summary file writing behaviors
 """
 
 from __future__ import annotations
@@ -16,7 +20,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from cihub.utils.github_context import OutputContext
+from cihub.utils.github_context import GitHubContext, OutputContext
 
 
 class TestOutputContextFromArgs:
@@ -441,3 +445,178 @@ class TestOutputContextIntegration:
         summary_content = summary_file.read_text()
         assert "## Step 1" in summary_content
         assert "## Step 2" in summary_content
+
+
+class TestGitHubContextFromEnv:
+    """Tests for GitHubContext.from_env() factory method."""
+
+    def test_reads_all_github_env_vars(self) -> None:
+        """from_env reads all GITHUB_* environment variables."""
+        env = {
+            "GITHUB_REPOSITORY": "owner/repo",
+            "GITHUB_REF": "refs/heads/main",
+            "GITHUB_REF_NAME": "main",
+            "GITHUB_SHA": "abc123def456",
+            "GITHUB_RUN_ID": "12345",
+            "GITHUB_RUN_NUMBER": "42",
+            "GITHUB_ACTOR": "testuser",
+            "GITHUB_EVENT_NAME": "push",
+            "GITHUB_WORKSPACE": "/home/runner/work/repo",
+            "GITHUB_WORKFLOW_REF": "owner/repo/.github/workflows/ci.yml@refs/heads/main",
+            "GITHUB_TOKEN": "ghs_token123",
+        }
+        ctx = GitHubContext.from_env(env)
+        assert ctx.repository == "owner/repo"
+        assert ctx.ref == "refs/heads/main"
+        assert ctx.ref_name == "main"
+        assert ctx.sha == "abc123def456"
+        assert ctx.run_id == "12345"
+        assert ctx.run_number == "42"
+        assert ctx.actor == "testuser"
+        assert ctx.event_name == "push"
+        assert ctx.workspace == Path("/home/runner/work/repo")
+        assert ctx.workflow_ref == "owner/repo/.github/workflows/ci.yml@refs/heads/main"
+        assert ctx.token == "ghs_token123"
+
+    def test_handles_missing_env_vars(self) -> None:
+        """from_env handles missing environment variables gracefully."""
+        ctx = GitHubContext.from_env({})
+        assert ctx.repository is None
+        assert ctx.sha is None
+        assert ctx.run_id is None
+        assert ctx.workspace is None
+        assert ctx.token is None
+
+    def test_prefers_github_token_over_gh_token(self) -> None:
+        """from_env prefers GITHUB_TOKEN over GH_TOKEN when both are set."""
+        env = {"GITHUB_TOKEN": "github_token", "GH_TOKEN": "gh_token"}
+        ctx = GitHubContext.from_env(env)
+        assert ctx.token == "github_token"
+
+    def test_falls_back_to_gh_token(self) -> None:
+        """from_env falls back to GH_TOKEN when GITHUB_TOKEN is not set."""
+        env = {"GH_TOKEN": "gh_token"}
+        ctx = GitHubContext.from_env(env)
+        assert ctx.token == "gh_token"
+
+    def test_uses_os_environ_by_default(self) -> None:
+        """from_env uses os.environ when no env mapping is provided."""
+        with mock.patch.dict(os.environ, {"GITHUB_REPOSITORY": "test/repo"}, clear=True):
+            ctx = GitHubContext.from_env()
+            assert ctx.repository == "test/repo"
+
+
+class TestGitHubContextProperties:
+    """Tests for GitHubContext helper properties."""
+
+    def test_is_ci_true_when_run_id_set(self) -> None:
+        """is_ci returns True when run_id is set."""
+        ctx = GitHubContext(run_id="12345")
+        assert ctx.is_ci is True
+
+    def test_is_ci_false_when_run_id_none(self) -> None:
+        """is_ci returns False when run_id is None."""
+        ctx = GitHubContext()
+        assert ctx.is_ci is False
+
+    def test_owner_repo_splits_correctly(self) -> None:
+        """owner_repo returns (owner, repo) tuple."""
+        ctx = GitHubContext(repository="myorg/myrepo")
+        assert ctx.owner_repo == ("myorg", "myrepo")
+
+    def test_owner_repo_handles_nested_paths(self) -> None:
+        """owner_repo handles repositories with slashes in name."""
+        ctx = GitHubContext(repository="myorg/my/nested/repo")
+        assert ctx.owner_repo == ("myorg", "my/nested/repo")
+
+    def test_owner_repo_none_when_no_repository(self) -> None:
+        """owner_repo returns None when repository is not set."""
+        ctx = GitHubContext()
+        assert ctx.owner_repo is None
+
+    def test_owner_repo_none_when_no_slash(self) -> None:
+        """owner_repo returns None when repository has no slash."""
+        ctx = GitHubContext(repository="invalid")
+        assert ctx.owner_repo is None
+
+    def test_owner_property(self) -> None:
+        """owner property extracts repository owner."""
+        ctx = GitHubContext(repository="myorg/myrepo")
+        assert ctx.owner == "myorg"
+
+    def test_repo_property(self) -> None:
+        """repo property extracts repository name."""
+        ctx = GitHubContext(repository="myorg/myrepo")
+        assert ctx.repo == "myrepo"
+
+    def test_short_sha_truncates(self) -> None:
+        """short_sha returns first 7 characters of SHA."""
+        ctx = GitHubContext(sha="abc123def456789")
+        assert ctx.short_sha == "abc123d"
+
+    def test_short_sha_none_when_no_sha(self) -> None:
+        """short_sha returns None when sha is not set."""
+        ctx = GitHubContext()
+        assert ctx.short_sha is None
+
+
+class TestGitHubContextWithOutputConfig:
+    """Tests for GitHubContext.with_output_config() method."""
+
+    def test_adds_output_config_from_args(self) -> None:
+        """with_output_config adds output configuration from args."""
+        ctx = GitHubContext(repository="owner/repo", sha="abc123")
+        args = argparse.Namespace(
+            output="/path/to/output.txt",
+            github_output=True,
+            summary="/path/to/summary.md",
+            github_summary=True,
+        )
+        new_ctx = ctx.with_output_config(args)
+        # Original env vars preserved
+        assert new_ctx.repository == "owner/repo"
+        assert new_ctx.sha == "abc123"
+        # Output config added
+        assert new_ctx.output_path == "/path/to/output.txt"
+        assert new_ctx.github_output is True
+        assert new_ctx.summary_path == "/path/to/summary.md"
+        assert new_ctx.github_summary is True
+
+    def test_original_context_unchanged(self) -> None:
+        """with_output_config returns new context, original unchanged."""
+        ctx = GitHubContext(repository="owner/repo")
+        args = argparse.Namespace(output="/path/to/output.txt")
+        new_ctx = ctx.with_output_config(args)
+        assert ctx.output_path is None
+        assert new_ctx.output_path == "/path/to/output.txt"
+
+    def test_explicit_kwargs_override_args(self) -> None:
+        """with_output_config explicit kwargs override args values."""
+        ctx = GitHubContext()
+        args = argparse.Namespace(output="/from/args.txt", github_output=True)
+        new_ctx = ctx.with_output_config(args, output_path="/from/kwarg.txt", github_output=False)
+        assert new_ctx.output_path == "/from/kwarg.txt"
+        assert new_ctx.github_output is False
+
+    def test_kwargs_only_mode(self) -> None:
+        """with_output_config works with kwargs only (no args)."""
+        ctx = GitHubContext(repository="owner/repo")
+        new_ctx = ctx.with_output_config(github_output=True, github_summary=True)
+        assert new_ctx.repository == "owner/repo"
+        assert new_ctx.github_output is True
+        assert new_ctx.github_summary is True
+
+
+class TestGitHubContextBackwardCompatibility:
+    """Tests ensuring OutputContext alias works correctly."""
+
+    def test_output_context_is_github_context(self) -> None:
+        """OutputContext is an alias for GitHubContext."""
+        assert OutputContext is GitHubContext
+
+    def test_output_context_from_args_works(self) -> None:
+        """OutputContext.from_args() works as before."""
+        args = argparse.Namespace(output="/path.txt", github_output=True)
+        ctx = OutputContext.from_args(args)
+        assert isinstance(ctx, GitHubContext)
+        assert ctx.output_path == "/path.txt"

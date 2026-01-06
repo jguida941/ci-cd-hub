@@ -16,7 +16,8 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from cihub.output import HumanRenderer, JsonRenderer, get_renderer
+from cihub.output import AIRenderer, HumanRenderer, JsonRenderer, get_renderer
+from cihub.output.ai_formatters import get_ai_formatter, has_ai_formatter
 from cihub.types import CommandResult
 
 
@@ -29,24 +30,31 @@ class TestGetRenderer:
     """Tests for get_renderer factory function."""
 
     @pytest.mark.parametrize(
-        "json_mode,expected_type",
+        "json_mode,ai_mode,expected_type",
         [
-            (False, HumanRenderer),
-            (True, JsonRenderer),
+            (False, False, HumanRenderer),
+            (True, False, JsonRenderer),
+            (False, True, AIRenderer),
+            (True, True, AIRenderer),  # AI takes precedence over JSON
         ],
-        ids=["human", "json"],
+        ids=["human", "json", "ai", "ai_over_json"],
     )
     def test_returns_correct_renderer(
-        self, json_mode: bool, expected_type: type
+        self, json_mode: bool, ai_mode: bool, expected_type: type
     ) -> None:
-        """Factory returns correct renderer type."""
-        renderer = get_renderer(json_mode=json_mode)
+        """Factory returns correct renderer type based on mode flags."""
+        renderer = get_renderer(json_mode=json_mode, ai_mode=ai_mode)
         assert isinstance(renderer, expected_type)
 
     def test_default_is_human(self) -> None:
         """Default (no args) returns HumanRenderer."""
         renderer = get_renderer()
         assert isinstance(renderer, HumanRenderer)
+
+    def test_ai_mode_takes_precedence(self) -> None:
+        """AI mode takes precedence over JSON mode."""
+        renderer = get_renderer(json_mode=True, ai_mode=True)
+        assert isinstance(renderer, AIRenderer)
 
 
 # ============================================================================
@@ -285,6 +293,100 @@ class TestJsonRenderer:
 
 
 # ============================================================================
+# AIRenderer Tests
+# ============================================================================
+
+
+class TestAIRenderer:
+    """Tests for AIRenderer class."""
+
+    def test_renders_default_format_for_unregistered_command(self) -> None:
+        """Unregistered command gets default AI format."""
+        result = CommandResult(
+            exit_code=0,
+            summary="Operation complete",
+            data={"foo": "bar"},
+        )
+        renderer = AIRenderer()
+        output = renderer.render(result, "unknown-command", 100)
+        assert "# unknown-command Output" in output
+        assert "Operation complete" in output
+        assert "foo" in output
+
+    def test_default_format_includes_problems(self) -> None:
+        """Default AI format includes problems section."""
+        result = CommandResult(
+            exit_code=1,
+            summary="Failed",
+            problems=[
+                {"severity": "error", "message": "Test failed"},
+                {"severity": "warning", "message": "Coverage low"},
+            ],
+        )
+        renderer = AIRenderer()
+        output = renderer.render(result, "unknown-command", 100)
+        assert "## Problems" in output
+        assert "[error]" in output
+        assert "Test failed" in output
+
+    def test_finds_report_key_with_suffix(self) -> None:
+        """AIRenderer finds keys ending with '_report'."""
+        renderer = AIRenderer()
+        data = {"stale_report": "mock_report", "other": "value"}
+        key = renderer._find_report_key(data)
+        assert key == "stale_report"
+
+    def test_find_report_key_returns_none_when_missing(self) -> None:
+        """Returns None when no *_report key exists."""
+        renderer = AIRenderer()
+        data = {"foo": "bar", "baz": "qux"}
+        key = renderer._find_report_key(data)
+        assert key is None
+
+    def test_output_is_string(self) -> None:
+        """AIRenderer always returns a string."""
+        result = CommandResult(exit_code=0, summary="Test")
+        renderer = AIRenderer()
+        output = renderer.render(result, "test", 100)
+        assert isinstance(output, str)
+
+    def test_handles_empty_data(self) -> None:
+        """AIRenderer handles empty data dict."""
+        result = CommandResult(exit_code=0, summary="Success", data={})
+        renderer = AIRenderer()
+        output = renderer.render(result, "test", 100)
+        assert "Success" in output
+
+
+# ============================================================================
+# AI Formatter Registry Tests
+# ============================================================================
+
+
+class TestAIFormatterRegistry:
+    """Tests for AI formatter registry module."""
+
+    def test_has_ai_formatter_for_docs_stale(self) -> None:
+        """docs stale command has a registered formatter."""
+        assert has_ai_formatter("docs stale")
+
+    def test_has_ai_formatter_returns_false_for_unknown(self) -> None:
+        """Unknown commands return False."""
+        assert not has_ai_formatter("nonexistent-command")
+
+    def test_get_ai_formatter_returns_callable(self) -> None:
+        """get_ai_formatter returns a callable for registered command."""
+        formatter = get_ai_formatter("docs stale")
+        assert formatter is not None
+        assert callable(formatter)
+
+    def test_get_ai_formatter_returns_none_for_unknown(self) -> None:
+        """get_ai_formatter returns None for unknown command."""
+        formatter = get_ai_formatter("nonexistent-command")
+        assert formatter is None
+
+
+# ============================================================================
 # Hypothesis Property-Based Tests
 # ============================================================================
 
@@ -405,3 +507,31 @@ class TestRendererIntegration:
         output = renderer.render(result, "ci", 1000)
         assert "CI passed" in output
         assert "test1: pass" in output
+
+    def test_renderer_factory_ai_mode(self) -> None:
+        """Full flow with AI mode (default format for unknown command)."""
+        result = CommandResult(
+            exit_code=0,
+            summary="Analysis complete",
+            data={"findings": 5},
+        )
+        renderer = get_renderer(ai_mode=True)
+        output = renderer.render(result, "analyze", 500)
+        assert "# analyze Output" in output
+        assert "Analysis complete" in output
+        assert "findings" in output
+
+    def test_ai_mode_no_json_interference(self) -> None:
+        """AI mode output is not JSON."""
+        result = CommandResult(
+            exit_code=0,
+            summary="Test",
+            data={"key": "value"},
+        )
+        renderer = get_renderer(ai_mode=True)
+        output = renderer.render(result, "test", 100)
+        # AI output starts with markdown header, not JSON
+        assert output.startswith("#")
+        # Should not be valid JSON
+        with pytest.raises(json.JSONDecodeError):
+            json.loads(output)

@@ -29,6 +29,12 @@ from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS  # noqa: F401 -
 from cihub.services.types import RepoEntry  # noqa: F401 - re-export
 from cihub.types import CommandResult, ToolResult
 from cihub.utils.env import _parse_env_bool, env_bool
+from cihub.utils.exec_utils import (
+    TIMEOUT_BUILD,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 from cihub.utils.github_context import OutputContext  # noqa: F401 - re-export
 from cihub.utils.paths import hub_root  # noqa: F401 - re-export
 from cihub.utils.progress import _bar  # noqa: F401 - re-export
@@ -231,7 +237,8 @@ def load_json_report(
     if not path.exists():
         return default, f"File not found: {path}"
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        with path.open(encoding="utf-8") as f:
+            data = json.load(f)
         return data, None
     except json.JSONDecodeError as exc:
         return default, f"Invalid JSON in {path}: {exc}"
@@ -343,19 +350,34 @@ def _run_command(
 ) -> subprocess.CompletedProcess[str]:
     verbose = env_bool("CIHUB_VERBOSE", default=False)
     if not verbose:
-        return subprocess.run(  # noqa: S603
-            cmd,
-            cwd=str(cwd),
-            text=True,
-            capture_output=True,
-            env=env,
-            timeout=300,
-        )
+        # Use safe_run for non-streaming mode
+        try:
+            return safe_run(
+                cmd,
+                cwd=cwd,
+                env=env,
+                timeout=TIMEOUT_BUILD,  # 10 min default
+            )
+        except CommandNotFoundError as exc:
+            return subprocess.CompletedProcess(
+                args=cmd,
+                returncode=127,
+                stdout="",
+                stderr=str(exc),
+            )
+        except CommandTimeoutError as exc:
+            return subprocess.CompletedProcess(
+                args=cmd,
+                returncode=124,  # Standard timeout exit code
+                stdout="",
+                stderr=str(exc),
+            )
 
     proc = subprocess.Popen(  # noqa: S603
         cmd,
         cwd=str(cwd),
         text=True,
+        encoding="utf-8",  # Consistent with safe_run() per ADR-0045
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=env,
@@ -378,7 +400,7 @@ def _run_command(
     stdout_thread.start()
     stderr_thread.start()
     try:
-        proc.wait(timeout=300)
+        proc.wait(timeout=TIMEOUT_BUILD)  # Use constant instead of hardcoded 300
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.wait()
@@ -605,8 +627,10 @@ def _compare_badges(expected_dir: Path, actual_dir: Path) -> list[str]:
 
     for name in sorted(set(expected) & set(actual)):
         try:
-            expected_data = json.loads(expected[name].read_text(encoding="utf-8"))
-            actual_data = json.loads(actual[name].read_text(encoding="utf-8"))
+            with expected[name].open(encoding="utf-8") as f:
+                expected_data = json.load(f)
+            with actual[name].open(encoding="utf-8") as f:
+                actual_data = json.load(f)
         except (json.JSONDecodeError, OSError) as exc:
             issues.append(f"invalid json: {name} ({exc})")
             continue

@@ -8,6 +8,7 @@ Classes:
     OutputRenderer: Abstract base class for renderers
     HumanRenderer: Renders CommandResult for human consumption
     JsonRenderer: Renders CommandResult as JSON
+    AIRenderer: Renders CommandResult as AI-consumable markdown
 
 Functions:
     get_renderer: Factory function to get appropriate renderer
@@ -119,9 +120,18 @@ class HumanRenderer(OutputRenderer):
             parts.append(data["raw_output"])
 
         # For other data, show as formatted output if meaningful
-        other_keys = set(data.keys()) - {"items", "table", "key_values", "raw_output"}
+        # Skip internal keys not meant for human display:
+        # - *_report: For AIRenderer
+        # - Keys with complex nested structures (lists, dicts)
+        known_keys = {"items", "table", "key_values", "raw_output"}
+        other_keys = {
+            k for k in data.keys()
+            if k not in known_keys
+            and not k.endswith("_report")
+            and not isinstance(data[k], (list, dict))  # Skip complex nested data
+        }
         if other_keys and not parts:
-            # Show other data as key-value pairs
+            # Show simple data as key-value pairs
             other_data = {k: data[k] for k in other_keys}
             parts.append(self._render_key_values(other_data))
 
@@ -229,15 +239,92 @@ class JsonRenderer(OutputRenderer):
         return json.dumps(payload, indent=2, default=str)
 
 
-def get_renderer(json_mode: bool = False) -> OutputRenderer:
+class AIRenderer(OutputRenderer):
+    """Renders CommandResult as AI-consumable markdown.
+
+    Uses a registry to look up command-specific formatters. Each command
+    that supports --ai mode registers its formatter in ai_formatters.py.
+
+    Falls back to a structured JSON prompt if no formatter is registered
+    for the command.
+    """
+
+    def render(self, result: "CommandResult", command: str, duration_ms: int) -> str:
+        """Render CommandResult using command-specific AI formatter."""
+        from .ai_formatters import get_ai_formatter
+
+        formatter = get_ai_formatter(command)
+
+        if formatter:
+            # Find report data in result.data
+            # Convention: report objects under "*_report" keys
+            report_key = self._find_report_key(result.data)
+            if report_key:
+                return formatter(result.data[report_key])
+
+        # Fallback: format data as structured prompt
+        return self._default_format(result, command)
+
+    def _find_report_key(self, data: dict[str, Any]) -> str | None:
+        """Find the report key in data dict.
+
+        Looks for keys ending with '_report' (e.g., 'stale_report').
+        """
+        for key in data:
+            if key.endswith("_report"):
+                return key
+        return None
+
+    def _default_format(self, result: "CommandResult", command: str) -> str:
+        """Default AI format when no specific formatter exists.
+
+        Produces a structured prompt with summary and JSON data that
+        any AI can process.
+        """
+        lines = [
+            f"# {command} Output",
+            "",
+            f"**Summary:** {result.summary}",
+            "",
+        ]
+
+        if result.problems:
+            lines.extend([
+                "## Problems",
+                "",
+            ])
+            for p in result.problems:
+                severity = p.get("severity", "info")
+                message = p.get("message", "")
+                lines.append(f"- [{severity}] {message}")
+            lines.append("")
+
+        if result.data:
+            lines.extend([
+                "## Data",
+                "",
+                "```json",
+                json.dumps(result.data, indent=2, default=str),
+                "```",
+            ])
+
+        return "\n".join(lines)
+
+
+def get_renderer(json_mode: bool = False, ai_mode: bool = False) -> OutputRenderer:
     """Get the appropriate renderer based on output mode.
 
+    Priority: AI > JSON > Human (most specific mode wins).
+
     Args:
-        json_mode: If True, return JsonRenderer; otherwise HumanRenderer.
+        json_mode: If True and not ai_mode, return JsonRenderer.
+        ai_mode: If True, return AIRenderer (takes precedence over json_mode).
 
     Returns:
         The appropriate OutputRenderer instance.
     """
+    if ai_mode:
+        return AIRenderer()
     if json_mode:
         return JsonRenderer()
     return HumanRenderer()

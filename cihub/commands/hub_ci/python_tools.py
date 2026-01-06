@@ -5,11 +5,16 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 from pathlib import Path
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
+from cihub.utils.exec_utils import (
+    TIMEOUT_NETWORK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 from cihub.utils.github_context import OutputContext
 
 from . import (
@@ -37,12 +42,15 @@ def cmd_ruff(args: argparse.Namespace) -> CommandResult:
     ctx = OutputContext.from_args(args)
     ctx.write_outputs({"issues": str(issues)})
 
-    github_proc = subprocess.run(  # noqa: S603
-        cmd + ["--output-format=github"],
-        text=True,
-        timeout=60,
-    )
-    passed = github_proc.returncode == 0
+    try:
+        github_proc = safe_run(
+            cmd + ["--output-format=github"],
+            timeout=TIMEOUT_NETWORK,
+            capture_output=False,  # Let github-format output go to terminal
+        )
+        passed = github_proc.returncode == 0
+    except (CommandNotFoundError, CommandTimeoutError):
+        passed = False
     return CommandResult(
         exit_code=EXIT_SUCCESS if passed else EXIT_FAILURE,
         summary=f"Ruff: {issues} issues found" if issues else "Ruff: no issues",

@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import shutil
-import subprocess
 from pathlib import Path
 from typing import Any
+
+from cihub.utils.exec_utils import (
+    TIMEOUT_NETWORK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 
 
 def _collect_codecov_files(
@@ -54,13 +60,26 @@ def _run_codecov_upload(
     cmd = [codecov_bin]
     for path in files:
         cmd.extend(["-f", str(path)])
-    proc = subprocess.run(  # noqa: S603
-        cmd,
-        text=True,
-        capture_output=True,
-        check=False,
-        timeout=120,
-    )
+    try:
+        proc = safe_run(cmd, timeout=TIMEOUT_NETWORK)
+    except CommandNotFoundError:
+        problems.append(
+            {
+                "severity": "error" if fail_ci_on_error else "warning",
+                "message": "Codecov uploader not found",
+                "code": "CIHUB-CI-CODECOV-MISSING",
+            }
+        )
+        return
+    except CommandTimeoutError:
+        problems.append(
+            {
+                "severity": "error" if fail_ci_on_error else "warning",
+                "message": "Codecov upload timed out",
+                "code": "CIHUB-CI-CODECOV-TIMEOUT",
+            }
+        )
+        return
     if proc.returncode != 0:
         problems.append(
             {

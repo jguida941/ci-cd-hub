@@ -169,15 +169,13 @@ def test_run_lychee_parses_json_errors(tmp_path: Path, monkeypatch) -> None:
             )
             self.stderr = ""
 
-    def fake_run(cmd, cwd, capture_output, text, **kwargs):  # noqa: ANN001 - test stub
-        captured["cmd"] = cmd
+    def fake_safe_run(cmd, *, cwd=None, timeout=None, **kwargs):  # noqa: ANN001 - test stub
+        captured["cmd"] = list(cmd)
         captured["cwd"] = cwd
-        captured["capture_output"] = capture_output
-        captured["text"] = text
-        captured["timeout"] = kwargs.get("timeout")  # Capture timeout for verification
+        captured["timeout"] = timeout
         return _Proc()
 
-    monkeypatch.setattr("cihub.commands.docs.subprocess.run", fake_run)
+    monkeypatch.setattr("cihub.commands.docs.safe_run", fake_safe_run)
 
     exit_code, problems = _run_lychee(docs_dir, external=False)
 

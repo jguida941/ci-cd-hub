@@ -8,7 +8,6 @@ import os
 import platform
 import re
 import shutil
-import subprocess
 import tarfile
 from pathlib import Path
 
@@ -17,6 +16,12 @@ import defusedxml.ElementTree as ET  # Secure XML parsing
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
 from cihub.utils.env import env_int
+from cihub.utils.exec_utils import (
+    TIMEOUT_NETWORK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 from cihub.utils.github_context import OutputContext
 from cihub.utils.progress import _bar
 
@@ -153,12 +158,23 @@ def cmd_actionlint(args: argparse.Namespace) -> CommandResult:
             problems=[{"severity": "error", "message": "actionlint binary not found (install first)"}],
         )
 
-    proc = subprocess.run(  # noqa: S603
-        [bin_path, "-oneline", args.workflow],
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
+    try:
+        proc = safe_run(
+            [bin_path, "-oneline", args.workflow],
+            timeout=TIMEOUT_NETWORK,  # 2 min for actionlint
+        )
+    except CommandNotFoundError:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="actionlint: binary not found",
+            problems=[{"severity": "error", "message": "actionlint binary not found"}],
+        )
+    except CommandTimeoutError:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="actionlint: timed out",
+            problems=[{"severity": "error", "message": "actionlint timed out"}],
+        )
     output_lines = [line for line in (proc.stdout or "").splitlines() if line.strip()]
 
     if args.reviewdog:
@@ -179,12 +195,15 @@ def cmd_actionlint(args: argparse.Namespace) -> CommandResult:
             "-level=error",
             "-fail-level=error",
         ]
-        reviewdog_proc = subprocess.run(  # noqa: S603
-            reviewdog_cmd,
-            input=input_text,
-            text=True,
-            timeout=60,
-        )
+        try:
+            reviewdog_proc = safe_run(
+                reviewdog_cmd,
+                input=input_text,
+                timeout=TIMEOUT_NETWORK,
+                capture_output=False,  # Let reviewdog output go to terminal
+            )
+        except (CommandNotFoundError, CommandTimeoutError):
+            reviewdog_proc = type("", (), {"returncode": 1})()  # Create mock failed result
         if proc.returncode != 0 and not output_lines:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
@@ -335,7 +354,8 @@ def cmd_trivy_summary(args: argparse.Namespace) -> CommandResult:
     fs_high = 0
     if fs_json and fs_json.exists():
         try:
-            data = json.loads(fs_json.read_text(encoding="utf-8"))
+            with fs_json.open(encoding="utf-8") as f:
+                data = json.load(f)
             for result in data.get("Results", []):
                 for vuln in result.get("Vulnerabilities", []):
                     severity = vuln.get("Severity", "").upper()
@@ -351,7 +371,8 @@ def cmd_trivy_summary(args: argparse.Namespace) -> CommandResult:
     config_high = 0
     if config_json and config_json.exists():
         try:
-            data = json.loads(config_json.read_text(encoding="utf-8"))
+            with config_json.open(encoding="utf-8") as f:
+                data = json.load(f)
             for result in data.get("Results", []):
                 for misconfig in result.get("Misconfigurations", []):
                     severity = misconfig.get("Severity", "").upper()
@@ -577,12 +598,7 @@ def cmd_zizmor_run(args: argparse.Namespace) -> CommandResult:
     # Run zizmor
     cmd = ["zizmor", "--format", "sarif", workflows_path]
     try:
-        result = subprocess.run(  # noqa: S603, S607
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
+        result = safe_run(cmd, timeout=TIMEOUT_NETWORK)
         if result.returncode == 0:
             # Success - write the SARIF output
             output_path.write_text(result.stdout, encoding="utf-8")
@@ -609,13 +625,23 @@ def cmd_zizmor_run(args: argparse.Namespace) -> CommandResult:
                 problems=problems,
                 data={"sarif_path": str(output_path)},
             )
-    except FileNotFoundError:
+    except CommandNotFoundError:
         # zizmor not installed
         output_path.write_text(EMPTY_SARIF, encoding="utf-8")
         problems.append({"severity": "warning", "message": "zizmor not found, empty SARIF written"})
         return CommandResult(
             exit_code=EXIT_SUCCESS,
             summary="zizmor not found, empty SARIF written",
+            problems=problems,
+            data={"sarif_path": str(output_path)},
+        )
+    except CommandTimeoutError:
+        # zizmor timed out
+        output_path.write_text(EMPTY_SARIF, encoding="utf-8")
+        problems.append({"severity": "warning", "message": "zizmor timed out, empty SARIF written"})
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary="zizmor timed out, empty SARIF written",
             problems=problems,
             data={"sarif_path": str(output_path)},
         )
@@ -632,7 +658,8 @@ def cmd_zizmor_check(args: argparse.Namespace) -> CommandResult:
 
     high = 0
     try:
-        sarif = json.loads(sarif_path.read_text(encoding="utf-8"))
+        with sarif_path.open(encoding="utf-8") as f:
+            sarif = json.load(f)
         runs = sarif.get("runs", []) if isinstance(sarif, dict) else []
         if runs:
             results = runs[0].get("results", []) or []

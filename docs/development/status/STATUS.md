@@ -40,7 +40,7 @@
 |-------------|--------|-------------|----------------------|
 | Guides      | 8      | 2,304       | ✅ Good               |
 | References  | 3      | 2,590       | ✅ Generated          |
-| ADRs        | 37     | 4,337       | ✅ Excellent (9.3/10) |
+| ADRs        | 48     | 5,500+      | ✅ Excellent (9.3/10) |
 | Development | 39     | 17,699      | ✅ Organized          |
 | Archive     | 21     | 7,656       | ✅ Separated          |
 | **Total**   | **87** | **~30,430** | —                    |
@@ -75,9 +75,9 @@
 
 ## ADR Status
 
-- **Total:** 43 ADRs (0001-0029, 0031-0044)
+- **Total:** 48 ADRs (0001-0029, 0031-0048)
 - **Health Score:** 9.3/10
-- **Accepted:** 41 (including ADR-0044 accepted 2026-01-06)
+- **Accepted:** 46 (including ADR-0048 accepted 2026-01-06)
 - **Proposed:** 2 (ADR-0005, ADR-0026)
 - **Superseded:** 1 (ADR-0013 → ADR-0014)
 
@@ -108,7 +108,7 @@ docs/
 ├── README.md                    # Doc index
 ├── guides/                      # User-facing (narrative)
 ├── reference/                   # Generated: CLI.md, CONFIG.md; Manual: TOOLS.md; Planned: WORKFLOWS.md
-├── adr/                         # Architecture decisions (37 files)
+├── adr/                         # Architecture decisions (48 files)
 └── development/
     ├── MASTER_PLAN.md           # THE plan (all action items)
     ├── BACKLOG.md               # Work queue

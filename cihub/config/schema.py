@@ -21,7 +21,8 @@ def get_schema(paths: PathConfig) -> dict[str, Any]:
         Parsed JSON schema as a dict.
     """
     schema_path = Path(paths.schema_dir) / "ci-hub-config.schema.json"
-    data = json.loads(schema_path.read_text(encoding="utf-8"))
+    with schema_path.open(encoding="utf-8") as f:
+        data = json.load(f)
     if not isinstance(data, dict):
         raise ValueError(f"Schema at {schema_path} is not a JSON object")
     return data

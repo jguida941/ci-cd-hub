@@ -62,7 +62,8 @@ def extract_correlation_id_from_artifact(artifact_url: str, token: str) -> str |
         report_file = next(iter(Path(extracted).rglob("report.json")), None)
         if report_file and report_file.exists():
             try:
-                report_data = json.loads(report_file.read_text(encoding="utf-8"))
+                with report_file.open(encoding="utf-8") as f:
+                    report_data = json.load(f)
                 if not isinstance(report_data, dict):
                     return None
                 corr = report_data.get("hub_correlation_id")

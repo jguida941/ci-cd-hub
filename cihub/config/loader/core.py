@@ -63,7 +63,8 @@ def load_config(
     schema_path = hub_root / "schema" / "ci-hub-config.schema.json"
     schema: dict[str, Any] = {}
     if schema_path.exists():
-        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        with schema_path.open(encoding="utf-8") as f:
+            schema = json.load(f)
     else:
         print(f"Warning: schema not found at {schema_path}", file=sys.stderr)
 

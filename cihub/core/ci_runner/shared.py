@@ -11,7 +11,13 @@ from pathlib import Path
 from typing import Any
 
 from cihub.utils.env import env_bool
-from cihub.utils.exec_utils import resolve_executable
+from cihub.utils.exec_utils import (
+    TIMEOUT_BUILD,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    resolve_executable,
+    safe_run,
+)
 
 
 def _run_command(
@@ -35,21 +41,36 @@ def _run_command(
         if candidate.exists():
             resolved[0] = str(candidate)
     if not stream_output:
-        return subprocess.run(  # noqa: S603
-            resolved,
-            cwd=workdir,
-            env=env or os.environ.copy(),
-            text=True,
-            capture_output=True,
-            timeout=timeout,
-            check=False,
-        )
+        # Use safe_run for non-streaming mode
+        try:
+            return safe_run(
+                resolved,
+                cwd=workdir,
+                env=env or os.environ.copy(),
+                timeout=timeout or TIMEOUT_BUILD,
+            )
+        except CommandNotFoundError as exc:
+            # Return a failed CompletedProcess for consistency
+            return subprocess.CompletedProcess(
+                args=resolved,
+                returncode=127,
+                stdout="",
+                stderr=str(exc),
+            )
+        except CommandTimeoutError as exc:
+            return subprocess.CompletedProcess(
+                args=resolved,
+                returncode=124,  # Standard timeout exit code
+                stdout="",
+                stderr=str(exc),
+            )
 
     proc = subprocess.Popen(  # noqa: S603
         resolved,
         cwd=workdir,
         env=env or os.environ.copy(),
         text=True,
+        encoding="utf-8",  # Consistent with safe_run() per ADR-0045
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         bufsize=1,
@@ -131,7 +152,8 @@ def _parse_json(path: Path) -> dict[str, Any] | list[Any] | None:
     if not path.exists():
         return None
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        with path.open(encoding="utf-8") as f:
+            data = json.load(f)
     except json.JSONDecodeError:
         return None
     if isinstance(data, (dict, list)):

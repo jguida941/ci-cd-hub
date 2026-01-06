@@ -6,7 +6,13 @@ import re
 import subprocess
 from pathlib import Path
 
-from cihub.utils.exec_utils import resolve_executable
+from cihub.utils.exec_utils import (
+    TIMEOUT_QUICK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    resolve_executable,
+    safe_run,
+)
 from cihub.utils.paths import validate_repo_path
 
 GIT_REMOTE_RE = re.compile(r"(?:github\.com[:/])(?P<owner>[^/]+)/(?P<repo>[^/.]+)(?:\.git)?$")
@@ -44,23 +50,13 @@ def get_git_remote(repo_path: Path) -> str | None:
         if not (validated_path / ".git").exists():
             return None
         git_bin = resolve_executable("git")
-        result = subprocess.run(  # noqa: S603
-            [
-                git_bin,
-                "-C",
-                str(validated_path),
-                "config",
-                "--get",
-                "remote.origin.url",
-            ],
-            stderr=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            text=True,
-            timeout=30,
+        result = safe_run(
+            [git_bin, "-C", str(validated_path), "config", "--get", "remote.origin.url"],
+            timeout=TIMEOUT_QUICK,
             check=True,
         )
         return result.stdout.strip() or None
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, ValueError):
+    except (subprocess.CalledProcessError, CommandNotFoundError, CommandTimeoutError, ValueError):
         return None
 
 
@@ -81,14 +77,11 @@ def get_git_branch(repo_path: Path) -> str | None:
         if not (validated_path / ".git").exists():
             return None
         git_bin = resolve_executable("git")
-        result = subprocess.run(  # noqa: S603
+        result = safe_run(
             [git_bin, "-C", str(validated_path), "symbolic-ref", "--short", "HEAD"],
-            stderr=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            text=True,
-            timeout=30,
+            timeout=TIMEOUT_QUICK,
             check=True,
         )
         return result.stdout.strip() or None
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, ValueError):
+    except (subprocess.CalledProcessError, CommandNotFoundError, CommandTimeoutError, ValueError):
         return None

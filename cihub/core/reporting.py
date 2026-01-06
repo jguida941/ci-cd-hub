@@ -28,7 +28,8 @@ ENV_ROWS = [
 
 
 def load_report(path: Path) -> dict[str, Any]:
-    data = json.loads(path.read_text(encoding="utf-8"))
+    with path.open(encoding="utf-8") as f:
+        data = json.load(f)
     if not isinstance(data, dict):
         raise ValueError("report.json must be a JSON object")
     return data

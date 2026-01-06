@@ -28,6 +28,7 @@ EXPECTED_JSON_PATHS = {
     "docs check",
     "docs generate",
     "docs links",
+    "docs stale",
     "doctor",
     "fix-deps",
     "fix-pom",

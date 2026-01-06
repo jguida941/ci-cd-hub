@@ -1,59 +1,123 @@
-"""GitHub Actions output context helpers.
+"""GitHub Actions context helpers.
 
-This module provides the OutputContext dataclass for managing GitHub Actions
-output and summary file paths. It consolidates the scattered 2-step pattern
-(resolve path + write) into a single, clean API.
+This module provides the GitHubContext dataclass for managing GitHub Actions
+environment variables, output files, and summary files. It consolidates:
+1. All GITHUB_* environment variable access
+2. Output file writing (GITHUB_OUTPUT)
+3. Summary file writing (GITHUB_STEP_SUMMARY)
 
 Usage:
-    # From CLI args:
-    ctx = OutputContext.from_args(args)
+    # From environment (for reading GitHub context):
+    ctx = GitHubContext.from_env()
+    if ctx.is_ci:
+        print(f"Running in CI: {ctx.repository}@{ctx.sha[:7]}")
+
+    # From CLI args (for output writing):
+    ctx = GitHubContext.from_args(args)
     ctx.write_outputs({"key": "value"})
     ctx.write_summary("## Summary\\n...")
 
-    # Direct construction:
-    ctx = OutputContext(output_path="out.txt", github_output=True)
-    ctx.write_outputs({"status": "pass"})
+    # Combined (read env + configure outputs):
+    ctx = GitHubContext.from_env().with_output_config(args)
 """
 
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, Mapping
+
+if TYPE_CHECKING:
+    pass
 
 
 @dataclass
-class OutputContext:
-    """Context for GitHub Actions outputs and summaries.
+class GitHubContext:
+    """Unified GitHub Actions context - environment + outputs + summaries.
 
-    This dataclass encapsulates the output configuration for GitHub Actions
-    workflows, providing a clean API for writing outputs and summaries.
+    This dataclass encapsulates all GitHub Actions environment variables and
+    provides a clean API for writing outputs and summaries. It replaces the
+    scattered os.environ.get("GITHUB_*") calls throughout the codebase.
 
     Attributes:
+        # Environment variables (read from GITHUB_*)
+        repository: GITHUB_REPOSITORY (e.g., "owner/repo")
+        ref: GITHUB_REF (e.g., "refs/heads/main")
+        ref_name: GITHUB_REF_NAME (e.g., "main")
+        sha: GITHUB_SHA (commit hash)
+        run_id: GITHUB_RUN_ID (unique run identifier)
+        run_number: GITHUB_RUN_NUMBER (incrementing run number)
+        actor: GITHUB_ACTOR (user who triggered the workflow)
+        event_name: GITHUB_EVENT_NAME (e.g., "push", "pull_request")
+        workspace: GITHUB_WORKSPACE (checkout directory)
+        workflow_ref: GITHUB_WORKFLOW_REF (workflow file reference)
+        token: GITHUB_TOKEN or GH_TOKEN (for API authentication)
+
+        # Output configuration
         output_path: Explicit path to write outputs (takes precedence over env).
         github_output: If True, write to GITHUB_OUTPUT env var path.
         summary_path: Explicit path to write summary (takes precedence over env).
         github_summary: If True, write to GITHUB_STEP_SUMMARY env var path.
     """
 
+    # GitHub environment variables
+    repository: str | None = None
+    ref: str | None = None
+    ref_name: str | None = None
+    sha: str | None = None
+    run_id: str | None = None
+    run_number: str | None = None
+    actor: str | None = None
+    event_name: str | None = None
+    workspace: Path | None = None
+    workflow_ref: str | None = None
+    token: str | None = None
+
+    # Output configuration (from original OutputContext)
     output_path: str | None = None
     github_output: bool = False
     summary_path: str | None = None
     github_summary: bool = False
 
     @classmethod
-    def from_args(cls, args: Any) -> OutputContext:
-        """Create OutputContext from argparse namespace.
+    def from_env(cls, env: Mapping[str, str] | None = None) -> GitHubContext:
+        """Create context from environment variables.
 
-        Safely extracts output-related attributes from args, using None/False
-        as defaults for missing attributes.
+        Args:
+            env: Environment mapping to read from. Defaults to os.environ.
+
+        Returns:
+            GitHubContext populated from GITHUB_* environment variables.
+        """
+        env = env if env is not None else os.environ
+        workspace_str = env.get("GITHUB_WORKSPACE")
+        return cls(
+            repository=env.get("GITHUB_REPOSITORY"),
+            ref=env.get("GITHUB_REF"),
+            ref_name=env.get("GITHUB_REF_NAME"),
+            sha=env.get("GITHUB_SHA"),
+            run_id=env.get("GITHUB_RUN_ID"),
+            run_number=env.get("GITHUB_RUN_NUMBER"),
+            actor=env.get("GITHUB_ACTOR"),
+            event_name=env.get("GITHUB_EVENT_NAME"),
+            workspace=Path(workspace_str) if workspace_str else None,
+            workflow_ref=env.get("GITHUB_WORKFLOW_REF"),
+            token=env.get("GITHUB_TOKEN") or env.get("GH_TOKEN"),
+        )
+
+    @classmethod
+    def from_args(cls, args: Any) -> GitHubContext:
+        """Create context from argparse namespace.
+
+        This creates a context configured for output writing. For a full
+        context with environment variables, use from_env().with_output_config().
 
         Args:
             args: Argparse namespace with optional output/summary attributes.
 
         Returns:
-            OutputContext configured from the args.
+            GitHubContext configured from the args (output config only).
         """
         return cls(
             output_path=getattr(args, "output", None),
@@ -61,6 +125,81 @@ class OutputContext:
             summary_path=getattr(args, "summary", None),
             github_summary=getattr(args, "github_summary", False),
         )
+
+    def with_output_config(
+        self,
+        args: Any = None,
+        *,
+        output_path: str | None = None,
+        github_output: bool | None = None,
+        summary_path: str | None = None,
+        github_summary: bool | None = None,
+    ) -> GitHubContext:
+        """Return a new context with output configuration added.
+
+        This allows combining environment context with output config:
+            ctx = GitHubContext.from_env().with_output_config(args)
+
+        Args:
+            args: Optional argparse namespace to extract output config from.
+            output_path: Explicit output path override.
+            github_output: Whether to use GITHUB_OUTPUT.
+            summary_path: Explicit summary path override.
+            github_summary: Whether to use GITHUB_STEP_SUMMARY.
+
+        Returns:
+            New GitHubContext with output configuration merged.
+        """
+        updates: dict[str, Any] = {}
+        if args is not None:
+            updates["output_path"] = getattr(args, "output", None)
+            updates["github_output"] = getattr(args, "github_output", False)
+            updates["summary_path"] = getattr(args, "summary", None)
+            updates["github_summary"] = getattr(args, "github_summary", False)
+        if output_path is not None:
+            updates["output_path"] = output_path
+        if github_output is not None:
+            updates["github_output"] = github_output
+        if summary_path is not None:
+            updates["summary_path"] = summary_path
+        if github_summary is not None:
+            updates["github_summary"] = github_summary
+        return replace(self, **updates)
+
+    @property
+    def is_ci(self) -> bool:
+        """Check if running in GitHub Actions CI environment."""
+        return self.run_id is not None
+
+    @property
+    def owner_repo(self) -> tuple[str, str] | None:
+        """Split repository into (owner, repo) tuple.
+
+        Returns:
+            Tuple of (owner, repo) if repository is set and contains '/'.
+            None otherwise.
+        """
+        if self.repository and "/" in self.repository:
+            owner, repo = self.repository.split("/", 1)
+            return (owner, repo)
+        return None
+
+    @property
+    def owner(self) -> str | None:
+        """Get repository owner."""
+        parts = self.owner_repo
+        return parts[0] if parts else None
+
+    @property
+    def repo(self) -> str | None:
+        """Get repository name (without owner)."""
+        parts = self.owner_repo
+        return parts[1] if parts else None
+
+    @property
+    def short_sha(self) -> str | None:
+        """Get short (7-char) commit SHA."""
+        return self.sha[:7] if self.sha else None
 
     def _resolve_output_path(self) -> Path | None:
         """Resolve the effective output path."""
@@ -123,3 +262,7 @@ class OutputContext:
     def has_summary(self) -> bool:
         """Check if summary will be written to a file (not stdout)."""
         return self._resolve_summary_path() is not None
+
+
+# Backward compatibility alias
+OutputContext = GitHubContext

@@ -155,7 +155,8 @@ def _build_result(
     # Read the report data from the output file
     if output_file.exists():
         try:
-            report_data = json.loads(output_file.read_text(encoding="utf-8"))
+            with output_file.open(encoding="utf-8") as f:
+                report_data = json.load(f)
         except json.JSONDecodeError as exc:
             errors.append(f"Failed to read output file: {exc}")
 

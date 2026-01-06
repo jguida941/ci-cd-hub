@@ -5,12 +5,17 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import subprocess
 from pathlib import Path
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
 from cihub.utils.env import _parse_env_bool
+from cihub.utils.exec_utils import (
+    TIMEOUT_NETWORK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 from cihub.utils.github_context import OutputContext
 
 from . import (
@@ -81,7 +86,8 @@ def cmd_bandit(args: argparse.Namespace) -> CommandResult:
     low = 0
     if output_path.exists():
         try:
-            data = json.loads(output_path.read_text(encoding="utf-8"))
+            with output_path.open(encoding="utf-8") as f:
+                data = json.load(f)
             results = data.get("results", []) if isinstance(data, dict) else []
             high = sum(1 for item in results if item.get("issue_severity") == "HIGH")
             medium = sum(1 for item in results if item.get("issue_severity") == "MEDIUM")
@@ -138,11 +144,14 @@ def cmd_bandit(args: argparse.Namespace) -> CommandResult:
 
     if fail_reasons:
         # Show details for failing severities (use validated paths)
-        subprocess.run(  # noqa: S603
-            ["bandit", "-r", *valid_paths, "--severity-level", "low"],  # noqa: S607
-            text=True,
-            timeout=120,
-        )
+        try:
+            safe_run(
+                ["bandit", "-r", *valid_paths, "--severity-level", "low"],
+                timeout=TIMEOUT_NETWORK,
+                capture_output=False,  # Let output go to terminal
+            )
+        except (CommandNotFoundError, CommandTimeoutError):
+            pass  # Ignore errors in detail output
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Bandit found {', '.join(fail_reasons)} severity issues",
@@ -172,7 +181,8 @@ def cmd_pip_audit(args: argparse.Namespace) -> CommandResult:
     vulns = 0
     if output_path.exists():
         try:
-            data = json.loads(output_path.read_text(encoding="utf-8"))
+            with output_path.open(encoding="utf-8") as f:
+                data = json.load(f)
             vulns = _count_pip_audit_vulns(data)
         except json.JSONDecodeError:
             vulns = 0
@@ -183,14 +193,15 @@ def cmd_pip_audit(args: argparse.Namespace) -> CommandResult:
     result_data = {"vulnerabilities": vulns, "report_path": str(output_path)}
 
     if vulns > 0:
-        markdown = subprocess.run(  # noqa: S603
-            ["pip-audit", "--format", "markdown"],  # noqa: S607
-            text=True,
-            capture_output=True,
-            timeout=60,
-        )
-        if markdown.stdout:
-            ctx.write_summary(markdown.stdout)
+        try:
+            markdown = safe_run(
+                ["pip-audit", "--format", "markdown"],
+                timeout=TIMEOUT_NETWORK,
+            )
+            if markdown.stdout:
+                ctx.write_summary(markdown.stdout)
+        except (CommandNotFoundError, CommandTimeoutError):
+            pass  # Skip markdown summary on error
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Found {vulns} dependency vulnerabilities",
@@ -235,7 +246,8 @@ def cmd_security_pip_audit(args: argparse.Namespace) -> CommandResult:
 
     vulns = 0
     try:
-        data = json.loads(report_path.read_text(encoding="utf-8"))
+        with report_path.open(encoding="utf-8") as f:
+            data = json.load(f)
         vulns = _count_pip_audit_vulns(data)
     except json.JSONDecodeError:
         vulns = 0
@@ -280,7 +292,8 @@ def cmd_security_bandit(args: argparse.Namespace) -> CommandResult:
 
     high = 0
     try:
-        data = json.loads(report_path.read_text(encoding="utf-8"))
+        with report_path.open(encoding="utf-8") as f:
+            data = json.load(f)
         results = data.get("results", []) if isinstance(data, dict) else []
         high = sum(1 for item in results if item.get("issue_severity") == "HIGH")
     except json.JSONDecodeError:
@@ -317,7 +330,8 @@ def cmd_security_ruff(args: argparse.Namespace) -> CommandResult:
     problems: list[dict[str, str]] = []
     issues = 0
     try:
-        data = json.loads(report_path.read_text(encoding="utf-8"))
+        with report_path.open(encoding="utf-8") as f:
+            data = json.load(f)
         issues = len(data) if isinstance(data, list) else 0
     except json.JSONDecodeError:
         issues = 0
@@ -359,7 +373,8 @@ def cmd_security_owasp(args: argparse.Namespace) -> CommandResult:
     high = 0
     if report_path and report_path.exists():
         try:
-            data = json.loads(report_path.read_text(encoding="utf-8"))
+            with report_path.open(encoding="utf-8") as f:
+                data = json.load(f)
             dependencies = data.get("dependencies", []) if isinstance(data, dict) else []
             for dep in dependencies:
                 vulns = dep.get("vulnerabilities", []) if isinstance(dep, dict) else []

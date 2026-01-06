@@ -144,7 +144,8 @@ def cmd_smoke_python_ruff(args: argparse.Namespace) -> CommandResult:
     errors = 0
     security = 0
     try:
-        data = json.loads(report_path.read_text(encoding="utf-8"))
+        with report_path.open(encoding="utf-8") as f:
+            data = json.load(f)
         if isinstance(data, list):
             errors = len(data)
             security = sum(1 for item in data if str(item.get("code", "")).startswith("S"))

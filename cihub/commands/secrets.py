@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import subprocess
 import urllib.error
 import urllib.request
 from typing import Any
@@ -13,6 +12,12 @@ from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.services.repo_config import get_connected_repos
 from cihub.types import CommandResult
 from cihub.utils import resolve_executable
+from cihub.utils.exec_utils import (
+    TIMEOUT_NETWORK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 from cihub.utils.net import safe_urlopen
 
 
@@ -94,13 +99,16 @@ def _verify_nvd_key(key: str) -> tuple[bool, str]:
 
 def _set_secret(gh_bin: str, repo: str, secret_name: str, secret_value: str) -> tuple[bool, str]:
     """Set a GitHub Actions secret on a repo."""
-    result = subprocess.run(  # noqa: S603
-        [gh_bin, "secret", "set", secret_name, "-R", repo],
-        input=secret_value,
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
+    try:
+        result = safe_run(
+            [gh_bin, "secret", "set", secret_name, "-R", repo],
+            input=secret_value,
+            timeout=TIMEOUT_NETWORK,
+        )
+    except CommandNotFoundError:
+        return False, "gh not found"
+    except CommandTimeoutError:
+        return False, "timed out setting secret"
     if result.returncode != 0:
         return False, result.stderr.strip()
     return True, ""

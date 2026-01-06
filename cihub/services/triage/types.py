@@ -25,7 +25,7 @@ class ToolStatus(Enum):
     NOT_CONFIGURED = "not_configured"  # Tool not enabled in config
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ToolEvidence:
     """Evidence about a tool's status in a CI run.
 
@@ -58,7 +58,7 @@ class ToolEvidence:
         }
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class MultiTriageResult:
     """Result of multi-report triage aggregation."""
 

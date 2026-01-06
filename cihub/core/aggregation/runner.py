@@ -303,7 +303,8 @@ def run_reports_aggregation(
 
     for report_path in report_paths:
         try:
-            report_data = json.loads(report_path.read_text(encoding="utf-8"))
+            with report_path.open(encoding="utf-8") as f:
+                report_data = json.load(f)
             if not isinstance(report_data, dict):
                 raise ValueError("report.json is not a JSON object")
         except Exception as exc:

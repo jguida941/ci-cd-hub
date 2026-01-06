@@ -1,9 +1,9 @@
 # Documentation Automation Audit & Design
 
 **Date:** 2026-01-04
-**Last Updated:** 2026-01-06 (Part 13: Cross-doc consistency + metrics validation from 8-agent audit)
+**Last Updated:** 2026-01-06 (docs_stale package modularization complete)
 **Priority:** 🟢 **#3** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
-**Status:** ~30% implemented
+**Status:** ~60% implemented (core `docs stale` MVP complete)
 **Depends On:** Stable CLI surface (CLEAN_CODE.md)
 **Can Parallel:** TEST_REORGANIZATION.md (both need stable CLI)
 **Problem:** Manual documentation updates take 4+ hours/day. With 50+ docs and 28,000 lines, keeping them in sync with code changes is unsustainable.
@@ -17,7 +17,7 @@
 | `cihub docs generate` | ✅ **IMPLEMENTED** | Generates CLI.md, CONFIG.md |
 | `cihub docs check` | ✅ **IMPLEMENTED** | Drift detection for generated docs |
 | `cihub docs links` | ✅ **IMPLEMENTED** | Internal link validation |
-| `cihub docs stale` | ❌ **NOT IMPLEMENTED** | Core feature — see Part 9 for design |
+| `cihub docs stale` | ✅ **IMPLEMENTED** | Modularized package (957→1489 lines across 6 modules), 63 tests including 15 Hypothesis property-based tests |
 | `cihub docs audit` | ❌ **NOT IMPLEMENTED** | Lifecycle enforcement — see Part 12 |
 | `.cihub/tool-outputs/` for docs | ❌ **NOT IMPLEMENTED** | No docs artifacts generated yet |
 | AI prompt pack output | ❌ **NOT IMPLEMENTED** | Design ready in Part 12.D |
@@ -28,9 +28,11 @@
 | Cross-doc consistency | ❌ **NOT IMPLEMENTED** | Part 13.W — ensure same facts across docs |
 | CHANGELOG validation | ❌ **NOT IMPLEMENTED** | Part 13.X — format and ordering checks |
 
-**Overall:** ~30% implemented. Core `docs stale` MVP estimated at 2-3 days; full spec (with Part 13) is ~5-7 days.
+**Overall:** ~60% implemented. Core `docs stale` MVP complete (2026-01-06); remaining: `docs audit`, tool-outputs artifacts, Part 13 features (~3-4 days).
 
-**Priority Recommendation:** Start with `docs stale` MVP (Python AST + backtick extraction + git range), then add Part 13 features (metrics drift, cross-doc consistency) for maximum impact.
+**Completed 2026-01-06:** `cihub docs stale` modularized into package with 6 modules (types, extraction, git, comparison, output) + 63 tests including 15 Hypothesis property-based tests. Follows triage package pattern (Part 1.5 of CLEAN_CODE.md).
+
+**Next Priority:** Add Part 13 features (metrics drift, cross-doc consistency) and `docs audit` for lifecycle enforcement.
 
 ---
 

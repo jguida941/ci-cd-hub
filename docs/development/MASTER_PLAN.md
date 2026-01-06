@@ -1,7 +1,7 @@
 # CI/CD Hub - Master Plan
 
 **Status:** Canonical plan for all active work
-**Last Updated:** 2026-01-06 (ADR-0045/0046/0047 + CommandResult CI enforcement + config validation fix)
+**Last Updated:** 2026-01-06 (docs_stale modularization complete, 63 tests)
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
 
@@ -53,14 +53,14 @@ Blockers to resolve first:
 
 ### 🟢 Priority 3: DOC_AUTOMATION_AUDIT.md (Can parallel with TEST_REORGANIZATION)
 
-**Status:** ~30% implemented | **Depends on:** Stable CLI surface
+**Status:** ~60% implemented | **Depends on:** Stable CLI surface
 
 ```
 docs/development/active/DOC_AUTOMATION_AUDIT.md
 ```
 
-Core MVP (2-3 days):
-- [ ] `cihub docs stale` - Python AST + backtick extraction + git range
+Core MVP:
+- [x] `cihub docs stale` - ✅ **COMPLETE** (2026-01-06) - Modularized package (6 modules, 63 tests including 15 Hypothesis)
 
 **Why third:** Documentation automation needs stable command signatures.
 
@@ -120,7 +120,7 @@ docs/development/active/PYQT_PLAN.md
 ### Quick Wins (Do First)
 
 **CLI Commands:**
-- [ ] `cihub docs stale` — Detect stale code references in docs (design in `active/DOC_AUTOMATION_AUDIT.md`)
+- [x] `cihub docs stale` — ✅ **COMPLETE** (2026-01-06) Modularized package, 63 tests
 - [ ] `cihub docs audit` — Doc lifecycle consistency checks
 - [ ] `cihub config validate` — Validate hub configs
 - [ ] `cihub audit` — Umbrella command (docs check + links + adr check + config validate)
@@ -310,6 +310,7 @@ The Python CLI is designed as a **headless API backend** for future frontends:
 
 2. **PyQt6 GUI** (`docs/development/active/PYQT_PLAN.md`) calls Python CLI programmatically:
    - `cihub fix-pom`, `cihub fix-deps`, `cihub setup-secrets`, `cihub setup-nvd`
+   **PYQT6 Deferred for now**
 
 3. **GitHub Workflows** call CLI commands directly:
    - `hub-ci.yml`: `cihub config-outputs --repo . --github-output`
@@ -317,7 +318,7 @@ The Python CLI is designed as a **headless API backend** for future frontends:
 
 **Implication:** CLI command names are **stable API contracts**. Restructuring (e.g., `setup-secrets` → `setup secrets`) would break:
 - TypeScript CLI command mapping
-- PyQt GUI subprocess calls
+- PyQt GUI subprocess calls, **pyqt6 deferred for now**
 - GitHub workflow steps
 - 40+ documentation files
 

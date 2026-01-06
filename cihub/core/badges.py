@@ -117,7 +117,8 @@ def load_zizmor(env: Mapping[str, str] | None = None, root: Path | None = None) 
     if not report.exists():
         return None
     try:
-        sarif = json.loads(report.read_text(encoding="utf-8"))
+        with report.open(encoding="utf-8") as f:
+            sarif = json.load(f)
         runs = sarif.get("runs", [])
         if not runs:
             return 0
@@ -139,7 +140,8 @@ def load_bandit(root: Path | None = None) -> int | None:
     if not report.exists():
         return None
     try:
-        data = json.loads(report.read_text(encoding="utf-8"))
+        with report.open(encoding="utf-8") as f:
+            data = json.load(f)
         results = data.get("results", [])
         return len(results)  # Total count of all severities
     except (json.JSONDecodeError, KeyError):
@@ -153,7 +155,8 @@ def load_pip_audit(root: Path | None = None) -> int | None:
     if not report.exists():
         return None
     try:
-        data = json.loads(report.read_text(encoding="utf-8"))
+        with report.open(encoding="utf-8") as f:
+            data = json.load(f)
         if isinstance(data, list):
             return sum(len(pkg.get("vulns", [])) for pkg in data if isinstance(pkg, dict))
         if isinstance(data, dict):

@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import base64
 import json
-import subprocess
 from typing import Any
 
-from cihub.utils.exec_utils import resolve_executable
+from cihub.utils.exec_utils import TIMEOUT_NETWORK, resolve_executable, safe_run
 
 
 def gh_api_json(path: str, method: str = "GET", payload: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -33,13 +32,7 @@ def gh_api_json(path: str, method: str = "GET", payload: dict[str, Any] | None =
     if payload is not None:
         cmd += ["--input", "-"]
         input_data = json.dumps(payload)
-    result = subprocess.run(  # noqa: S603
-        cmd,
-        input=input_data,
-        capture_output=True,
-        text=True,
-        timeout=60,
-    )
+    result = safe_run(cmd, input=input_data, timeout=TIMEOUT_NETWORK)
     if result.returncode != 0:
         msg = result.stderr.strip() or result.stdout.strip()
         raise RuntimeError(msg or "gh api failed")

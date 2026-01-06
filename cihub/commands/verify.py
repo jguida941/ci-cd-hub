@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -15,6 +14,14 @@ from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services.repo_config import get_repo_entries
 from cihub.types import CommandResult
 from cihub.utils import resolve_executable
+from cihub.utils.exec_utils import (
+    TIMEOUT_BUILD,
+    TIMEOUT_NETWORK,
+    TIMEOUT_QUICK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 from cihub.utils.paths import hub_root
 
 REQUIRED_TEMPLATE_INPUTS = {"hub_repo", "hub_ref"}
@@ -196,18 +203,18 @@ def validate_reusable_contracts(root: Path) -> tuple[list[dict[str, Any]], dict[
 
 
 def _check_gh_auth() -> tuple[bool, str]:
+    gh_bin = resolve_executable("gh")
     try:
-        gh_bin = resolve_executable("gh")
-    except FileNotFoundError:
+        proc = safe_run(
+            [gh_bin, "auth", "status", "--hostname", "github.com"],
+            timeout=TIMEOUT_QUICK,
+        )
+        output = (proc.stdout or "") + (proc.stderr or "")
+        return proc.returncode == 0, output.strip()
+    except CommandNotFoundError:
         return False, "gh not found"
-    proc = subprocess.run(  # noqa: S603
-        [gh_bin, "auth", "status", "--hostname", "github.com"],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    output = (proc.stdout or "") + (proc.stderr or "")
-    return proc.returncode == 0, output.strip()
+    except CommandTimeoutError:
+        return False, "gh auth check timed out"
 
 
 def _run_sync_check(
@@ -257,12 +264,20 @@ def _run_integration(
             break
 
         clone_cmd = [gh_bin, "repo", "clone", repo, str(repo_dir), "--", "--depth", "1"]
-        clone = subprocess.run(  # noqa: S603
-            clone_cmd,
-            capture_output=True,
-            text=True,
-            timeout=120,
-        )
+        try:
+            clone = safe_run(clone_cmd, timeout=TIMEOUT_NETWORK)
+        except (CommandNotFoundError, CommandTimeoutError) as exc:
+            result_entry["status"] = "clone_failed"
+            result_entry["detail"] = str(exc)
+            problems.append(
+                {
+                    "severity": "error",
+                    "message": f"Clone failed for {repo}",
+                    "detail": str(exc),
+                }
+            )
+            results.append(result_entry)
+            continue
         if clone.returncode != 0:
             detail = (clone.stderr or clone.stdout or "").strip()
             result_entry["status"] = "clone_failed"
@@ -289,12 +304,23 @@ def _run_integration(
                     }
                 )
                 break
-            checkout = subprocess.run(  # noqa: S603
-                [git_bin, "-C", str(repo_dir), "checkout", branch],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
+            try:
+                checkout = safe_run(
+                    [git_bin, "-C", str(repo_dir), "checkout", branch],
+                    timeout=TIMEOUT_QUICK,
+                )
+            except (CommandNotFoundError, CommandTimeoutError) as exc:
+                problems.append(
+                    {
+                        "severity": "error",
+                        "message": f"Checkout failed for {repo} ({branch})",
+                        "detail": str(exc),
+                    }
+                )
+                result_entry["status"] = "checkout_failed"
+                result_entry["detail"] = str(exc)
+                results.append(result_entry)
+                continue
             if checkout.returncode != 0:
                 detail = (checkout.stderr or checkout.stdout or "").strip()
                 problems.append(
@@ -313,12 +339,31 @@ def _run_integration(
         if install_deps:
             cmd.append("--install-deps")
 
-        run = subprocess.run(  # noqa: S603
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=600,  # 10 min for CI runs
-        )
+        try:
+            run = safe_run(cmd, timeout=TIMEOUT_BUILD)
+        except CommandTimeoutError:
+            result_entry["status"] = "failed"
+            result_entry["detail"] = "CI run timed out"
+            problems.append(
+                {
+                    "severity": "error",
+                    "message": f"Integration run timed out for {repo}",
+                }
+            )
+            results.append(result_entry)
+            continue
+        except CommandNotFoundError as exc:
+            result_entry["status"] = "failed"
+            result_entry["detail"] = str(exc)
+            problems.append(
+                {
+                    "severity": "error",
+                    "message": f"Integration run failed for {repo}",
+                    "detail": str(exc),
+                }
+            )
+            results.append(result_entry)
+            continue
         detail = (run.stdout or "") + (run.stderr or "")
         result_entry["status"] = "ok" if run.returncode == 0 else "failed"
         result_entry["detail"] = detail.strip()

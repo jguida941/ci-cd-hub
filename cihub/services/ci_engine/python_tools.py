@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 import shlex
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -13,6 +12,12 @@ from typing import Any
 from cihub.ci_runner import ToolResult
 from cihub.tools.registry import PYTHON_TOOLS
 from cihub.utils import resolve_executable
+from cihub.utils.exec_utils import (
+    TIMEOUT_BUILD,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 
 from .helpers import _parse_env_bool, _tool_enabled
 
@@ -23,14 +28,21 @@ def _run_dep_command(
     label: str,
     problems: list[dict[str, Any]],
 ) -> bool:
-    proc = subprocess.run(  # noqa: S603
-        cmd,
-        cwd=workdir,
-        text=True,
-        capture_output=True,
-        check=False,
-        timeout=300,  # 5 min for dependency installation
-    )
+    try:
+        proc = safe_run(
+            cmd,
+            cwd=workdir,
+            timeout=TIMEOUT_BUILD,  # 10 min for dependency installation
+        )
+    except (CommandNotFoundError, CommandTimeoutError) as exc:
+        problems.append(
+            {
+                "severity": "error",
+                "message": f"{label} failed: {exc}",
+                "code": "CIHUB-CI-DEPS",
+            }
+        )
+        return False
     if proc.returncode == 0:
         return True
     message = proc.stderr.strip() or proc.stdout.strip() or "unknown error"

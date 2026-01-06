@@ -147,6 +147,12 @@ def cmd_docs_links(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_docs_stale(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.docs_stale import cmd_docs_stale as handler
+
+    return handler(args)
+
+
 def cmd_adr(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.adr import cmd_adr as handler
 
@@ -252,6 +258,7 @@ def build_parser() -> argparse.ArgumentParser:
         cmd_triage=cmd_triage,
         cmd_docs=cmd_docs,
         cmd_docs_links=cmd_docs_links,
+        cmd_docs_stale=cmd_docs_stale,
         cmd_adr=cmd_adr,
         cmd_config_outputs=cmd_config_outputs,
         cmd_discover=cmd_discover,
@@ -281,12 +288,13 @@ def main(argv: list[str] | None = None) -> int:
         command = f"{command} {subcommand}"
     debug = is_debug_enabled()
     json_mode = getattr(args, "json", False)
+    ai_mode = getattr(args, "ai", False)
 
     def emit_debug(message: str) -> None:
         if debug:
             print(f"[debug] {message}", file=sys.stderr)
 
-    emit_debug(f"command={command} json={json_mode}")
+    emit_debug(f"command={command} json={json_mode} ai={ai_mode}")
 
     try:
         result = args.func(args)
@@ -349,12 +357,13 @@ def main(argv: list[str] | None = None) -> int:
 
     # Use renderer pattern for all output
     duration_ms = int((time.perf_counter() - start) * 1000)
-    renderer = get_renderer(json_mode=json_mode)
+    renderer = get_renderer(json_mode=json_mode, ai_mode=ai_mode)
     output = renderer.render(command_result, command, duration_ms)
-    # Only print if JSON mode OR if there's meaningful content beyond default summary
-    if json_mode or (output and output not in ("OK", "Command failed")):
+    # Always print for JSON/AI modes, or if there's meaningful content beyond default summary
+    if json_mode or ai_mode or (output and output not in ("OK", "Command failed")):
         # CLI best practice: error output to stderr, success output to stdout
-        if exit_code != EXIT_SUCCESS and not json_mode:
+        # AI mode always goes to stdout for easy piping
+        if exit_code != EXIT_SUCCESS and not json_mode and not ai_mode:
             print(output, file=sys.stderr)
         else:
             print(output)

@@ -6,13 +6,18 @@ import argparse
 import json
 import re
 import shutil
-import subprocess
 from pathlib import Path
 from typing import Any, Iterable
 
 from cihub.cli_parsers.builder import build_parser
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
+from cihub.utils.exec_utils import (
+    TIMEOUT_BUILD,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 from cihub.utils.paths import hub_root
 
 # Regex to match markdown links: [text](path) or [text](path#anchor)
@@ -163,15 +168,15 @@ def _run_lychee(docs_dir: Path, external: bool) -> tuple[int, list[dict[str, Any
         cmd.append("--offline")
 
     try:
-        result = subprocess.run(  # noqa: S603
+        result = safe_run(
             cmd,
-            cwd=str(repo_root),
-            capture_output=True,
-            text=True,
-            timeout=300,  # Link checking can be slow
+            cwd=repo_root,
+            timeout=TIMEOUT_BUILD,  # Link checking can be slow
         )
-    except FileNotFoundError:
+    except CommandNotFoundError:
         return -1, []  # lychee not found
+    except CommandTimeoutError:
+        return -1, [{"severity": "error", "message": "lychee timed out", "code": "CIHUB-DOCS-TIMEOUT"}]
 
     problems: list[dict[str, Any]] = []
     if result.returncode != 0:

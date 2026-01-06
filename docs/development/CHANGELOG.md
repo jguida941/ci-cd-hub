@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-06 - Subprocess Consolidation (Part 7.3.3)
+
+### New: `safe_run()` Wrapper (CLEAN_CODE.md Part 7.3.3)
+
+**Implementation:**
+- Created `cihub/utils/exec_utils.py` with centralized subprocess handling
+- Added timeout constants per ADR-0045:
+  - `TIMEOUT_QUICK = 30` (simple commands)
+  - `TIMEOUT_NETWORK = 120` (network operations)
+  - `TIMEOUT_BUILD = 600` (build/test commands)
+  - `TIMEOUT_EXTENDED = 900` (long-running operations)
+- Custom exceptions: `CommandNotFoundError`, `CommandTimeoutError`
+- Consistent UTF-8 encoding and capture_output defaults
+
+**Migration Scope:**
+- 34 subprocess.run() calls migrated across 14 files
+- Files: triage.py, verify.py, check.py, docs.py, preflight.py, secrets.py, templates.py, release.py, python_tools.py, security.py, io.py, helpers.py, git.py (docs_stale), shared.py, hub_ci/__init__.py
+
+**Test Coverage:**
+- 22 new tests in `tests/test_exec_utils.py`
+- Hypothesis property-based tests for edge cases
+- Updated existing tests to use new monkeypatch targets
+
+### Status
+- CLEAN_CODE.md: ~85% → ~90% complete
+- All 2220 tests passing
+
+---
+
 ## 2026-01-06 - Security Audit + Consistency Fixes
 
 ### Security Fixes (CRITICAL)

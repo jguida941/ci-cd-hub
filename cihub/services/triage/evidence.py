@@ -14,7 +14,8 @@ def _load_json(path: Path) -> dict[str, Any] | None:
     if not path.exists():
         return None
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        with path.open(encoding="utf-8") as f:
+            data = json.load(f)
     except json.JSONDecodeError:
         return None
     return data if isinstance(data, dict) else None
@@ -27,7 +28,8 @@ def _load_tool_outputs(tool_dir: Path) -> dict[str, dict[str, Any]]:
         return outputs
     for path in tool_dir.glob("*.json"):
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
+            with path.open(encoding="utf-8") as f:
+                data = json.load(f)
         except json.JSONDecodeError:
             continue
         if not isinstance(data, dict):

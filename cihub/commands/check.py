@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
-import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,6 +27,13 @@ from cihub.commands.preflight import cmd_preflight
 from cihub.commands.smoke import cmd_smoke
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
+from cihub.utils.exec_utils import (
+    TIMEOUT_BUILD,
+    TIMEOUT_NETWORK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 from cihub.utils.paths import hub_root
 
 # Optional tools that can be auto-installed when requested.
@@ -72,14 +78,12 @@ def _tail_output(output: str, limit: int = 12) -> str:
 
 def _run_process(name: str, cmd: list[str], cwd: Path) -> CommandResult:
     try:
-        proc = subprocess.run(  # noqa: S603
+        proc = safe_run(
             cmd,
-            cwd=str(cwd),
-            text=True,
-            capture_output=True,
-            timeout=300,  # 5 min for general tools
+            cwd=cwd,
+            timeout=TIMEOUT_BUILD,  # 10 min for general tools
         )
-    except FileNotFoundError:
+    except CommandNotFoundError:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"{cmd[0]} not found",
@@ -93,6 +97,18 @@ def _run_process(name: str, cmd: list[str], cwd: Path) -> CommandResult:
             suggestions=[
                 {
                     "message": f"Install {cmd[0]} and re-run.",
+                }
+            ],
+        )
+    except CommandTimeoutError:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"{name} timed out",
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"{name} timed out",
+                    "command": " ".join(cmd),
                 }
             ],
         )
@@ -122,19 +138,23 @@ def _run_zizmor(cwd: Path) -> CommandResult:
     """Run zizmor with proper filtering and helpful suggestions."""
     cmd = ["zizmor", ".github/workflows/", "--min-severity", "high"]
     try:
-        proc = subprocess.run(  # noqa: S603
+        proc = safe_run(
             cmd,
-            cwd=str(cwd),
-            text=True,
-            capture_output=True,
-            timeout=60,
+            cwd=cwd,
+            timeout=TIMEOUT_NETWORK,  # 2 min for zizmor
         )
-    except FileNotFoundError:
+    except CommandNotFoundError:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="zizmor not found",
             problems=[{"severity": "error", "message": "zizmor not installed"}],
             suggestions=[{"message": "Install: pip install zizmor"}],
+        )
+    except CommandTimeoutError:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="zizmor timed out",
+            problems=[{"severity": "error", "message": "zizmor timed out"}],
         )
 
     if proc.returncode == 0:
@@ -180,12 +200,10 @@ def _install_tool(tool: str) -> tuple[bool, str]:
     else:
         return False, "no installer configured"
 
-    proc = subprocess.run(  # noqa: S603
-        cmd,
-        text=True,
-        capture_output=True,
-        timeout=120,
-    )
+    try:
+        proc = safe_run(cmd, timeout=TIMEOUT_NETWORK)
+    except (CommandNotFoundError, CommandTimeoutError) as exc:
+        return False, str(exc)
     ok = proc.returncode == 0
     detail = _tail_output((proc.stdout or "") + (proc.stderr or ""))
     return ok, detail

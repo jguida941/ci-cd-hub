@@ -49,6 +49,7 @@ Existing:
 - [ADR-0045: Subprocess Timeout Policy](0045-subprocess-timeout-policy.md)
 - [ADR-0046: OutputRenderer Pattern](0046-output-renderer-pattern.md)
 - [ADR-0047: Config Validation Order](0047-config-validation-order.md)
+- [ADR-0048: Documentation Automation Strategy](0048-documentation-automation-strategy.md)
 
 Template starter:
 ```markdown

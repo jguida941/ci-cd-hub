@@ -4,12 +4,14 @@
 **Date:** 2026-01-06
 **Developer:** Justin Guida
 **Last Reviewed:** 2026-01-06
+**Updated:** 2026-01-06 (Added AIRenderer with registry pattern)
 
 ## Context
 
 CLI commands need to produce output in multiple formats:
 - **Human-readable**: Formatted text with colors, tables, progress indicators
 - **JSON**: Machine-parseable structured data for automation and AI tools
+- **AI prompt pack**: Markdown formatted for LLM consumption with context and instructions
 
 Before this pattern, commands handled output inconsistently:
 
@@ -100,29 +102,74 @@ class JsonRenderer(OutputRenderer):
             "problems": result.problems or [],
         }
         print(json.dumps(output, indent=2))
+
+class AIRenderer(OutputRenderer):
+    """Renders CommandResult as AI-consumable markdown prompt pack."""
+
+    def render(self, result: CommandResult, command: str, duration_ms: int) -> str:
+        from .ai_formatters import get_ai_formatter
+        formatter = get_ai_formatter(command)
+        if formatter:
+            # Convention: report data under "*_report" keys
+            report_key = self._find_report_key(result.data)
+            if report_key:
+                return formatter(result.data[report_key])
+        return self._default_format(result, command)
 ```
 
-### 4. Factory Function
+### 4. AI Formatter Registry Pattern
+
+Commands that support `--ai` mode register their formatters in a central registry:
 
 ```python
-def get_renderer(json_mode: bool = False) -> OutputRenderer:
-    """Get appropriate renderer based on output mode."""
+# cihub/output/ai_formatters.py
+_AI_FORMATTERS: dict[str, tuple[str, str]] = {
+    # (module_path, function_name) - lazy imports to avoid circular deps
+    "docs stale": ("cihub.commands.docs_stale.output", "format_ai_output"),
+}
+
+def get_ai_formatter(command: str) -> AIFormatter | None:
+    """Get AI formatter for a command, with lazy import."""
+    if command not in _AI_FORMATTERS:
+        return None
+    module_path, func_name = _AI_FORMATTERS[command]
+    module = importlib.import_module(module_path)
+    return getattr(module, func_name)
+```
+
+**Convention:** Commands pass report data under keys ending with `_report` (e.g., `stale_report`).
+The AIRenderer looks for these keys and passes the data to the registered formatter.
+
+### 6. Factory Function
+
+```python
+def get_renderer(json_mode: bool = False, ai_mode: bool = False) -> OutputRenderer:
+    """Get appropriate renderer based on output mode.
+
+    Priority: AI > JSON > Human (most specific mode wins)
+    """
+    if ai_mode:
+        return AIRenderer()
     if json_mode:
         return JsonRenderer()
     return HumanRenderer()
 ```
 
-### 5. CLI Integration
+### 7. CLI Integration
 
 ```python
 # cihub/cli.py
 def main():
     args = parse_args()
+    json_mode = getattr(args, "json", False)
+    ai_mode = getattr(args, "ai", False)
+
     result = handler(args)
 
     if isinstance(result, CommandResult):
-        renderer = get_renderer(getattr(args, "json", False))
-        renderer.render(result)
+        renderer = get_renderer(json_mode=json_mode, ai_mode=ai_mode)
+        output = renderer.render(result, command, duration_ms)
+        print(output)
         sys.exit(result.exit_code)
     else:
         # Legacy int return

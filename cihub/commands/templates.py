@@ -13,6 +13,13 @@ from cihub.services.templates import render_dispatch_workflow
 from cihub.types import CommandResult
 from cihub.utils import resolve_executable
 from cihub.utils.env import get_github_token
+from cihub.utils.exec_utils import (
+    TIMEOUT_NETWORK,
+    TIMEOUT_QUICK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 from cihub.utils.github_api import delete_remote_file, fetch_remote_file, update_remote_file
 
 
@@ -188,20 +195,16 @@ def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
     if args.update_tag and not args.check and not args.dry_run:
         try:
             git_bin = resolve_executable("git")
-            result = subprocess.run(  # noqa: S603
+            result = safe_run(
                 [git_bin, "rev-parse", "HEAD"],
-                capture_output=True,
-                text=True,
+                timeout=TIMEOUT_QUICK,
                 check=True,
-                timeout=30,
             )
             head_sha = result.stdout.strip()
 
-            result = subprocess.run(  # noqa: S603
+            result = safe_run(
                 [git_bin, "rev-parse", "v1"],
-                capture_output=True,
-                text=True,
-                timeout=30,
+                timeout=TIMEOUT_QUICK,
             )
             current_v1 = result.stdout.strip() if result.returncode == 0 else None
 
@@ -234,21 +237,19 @@ def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
                         }],
                     )
 
-                subprocess.run(  # noqa: S603
+                safe_run(
                     [git_bin, "tag", "-f", "v1", "HEAD"],
                     check=True,
-                    capture_output=True,
-                    timeout=30,
+                    timeout=TIMEOUT_QUICK,
                 )
-                subprocess.run(  # noqa: S603
+                safe_run(
                     [git_bin, "push", "origin", "v1", "--force"],
                     check=True,
-                    capture_output=True,
-                    timeout=60,
+                    timeout=TIMEOUT_NETWORK,
                 )
                 messages.append(f"[OK] v1 tag updated: {current_v1[:7] if current_v1 else 'none'} -> {head_sha[:7]}")
                 tag_status = "updated"
-        except subprocess.CalledProcessError as exc:
+        except (subprocess.CalledProcessError, CommandNotFoundError, CommandTimeoutError) as exc:
             messages.append(f"[WARN] Failed to update v1 tag: {exc}")
             problems.append({
                 "severity": "warning",

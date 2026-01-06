@@ -55,7 +55,8 @@ def _load_tool_outputs(tool_dir: Path) -> dict[str, dict[str, Any]]:
     outputs: dict[str, dict[str, Any]] = {}
     for path in tool_dir.glob("*.json"):
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
+            with path.open(encoding="utf-8") as f:
+                data = json.load(f)
             tool = str(data.get("tool") or path.stem)
             outputs[tool] = data
         except json.JSONDecodeError:

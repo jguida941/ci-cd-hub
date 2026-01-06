@@ -28,7 +28,8 @@ def _validate_report(args: argparse.Namespace) -> CommandResult:
         )
 
     try:
-        report = json.loads(report_path.read_text(encoding="utf-8"))
+        with report_path.open(encoding="utf-8") as f:
+            report = json.load(f)
     except json.JSONDecodeError as exc:
         return CommandResult(
             exit_code=EXIT_FAILURE,

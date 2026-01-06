@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 
 from cihub.cli import CommandResult
 from cihub.commands import preflight as preflight_module
@@ -11,13 +12,16 @@ def test_preflight_json(monkeypatch) -> None:
             return f"/usr/bin/{command}"
         return None
 
-    class FakeProc:
-        returncode = 0
-        stdout = ""
-        stderr = ""
+    def fake_safe_run(cmd, **kwargs):  # noqa: ANN001 - test stub
+        return subprocess.CompletedProcess(
+            args=list(cmd),
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
 
     monkeypatch.setattr(preflight_module, "_command_exists", fake_which)
-    monkeypatch.setattr(preflight_module.subprocess, "run", lambda *a, **k: FakeProc())
+    monkeypatch.setattr(preflight_module, "safe_run", fake_safe_run)
 
     args = argparse.Namespace(json=True, full=True)
     result = cmd_preflight(args)

@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import argparse
 import shutil
-import subprocess
 import sys
 from typing import Any
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
+from cihub.utils.exec_utils import (
+    TIMEOUT_QUICK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 
 
 def _command_exists(command: str) -> str | None:
@@ -68,15 +73,18 @@ def _check_gh_auth(checks: list[dict[str, Any]]) -> None:
             "Install gh and run: gh auth login",
         )
         return
-    proc = subprocess.run(  # noqa: S603
-        ["gh", "auth", "status", "--hostname", "github.com"],  # noqa: S607
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    ok = proc.returncode == 0
-    detail = "authenticated" if ok else "not authenticated"
-    hint = "Run: gh auth login" if not ok else None
+    try:
+        proc = safe_run(
+            ["gh", "auth", "status", "--hostname", "github.com"],
+            timeout=TIMEOUT_QUICK,
+        )
+        ok = proc.returncode == 0
+        detail = "authenticated" if ok else "not authenticated"
+        hint = "Run: gh auth login" if not ok else None
+    except (CommandNotFoundError, CommandTimeoutError):
+        ok = False
+        detail = "gh auth check failed"
+        hint = "Run: gh auth login"
     _add_check(checks, "gh auth", ok, False, detail, hint)
 
 

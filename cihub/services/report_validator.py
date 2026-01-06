@@ -32,7 +32,8 @@ def _load_schema() -> dict[str, Any]:
     """Load and cache the JSON schema."""
     global _SCHEMA_CACHE
     if _SCHEMA_CACHE is None:
-        _SCHEMA_CACHE = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
+        with _SCHEMA_PATH.open(encoding="utf-8") as f:
+            _SCHEMA_CACHE = json.load(f)
     return _SCHEMA_CACHE
 
 
@@ -521,7 +522,8 @@ def validate_report_file(
         )
 
     try:
-        report = json.loads(report_path.read_text(encoding="utf-8"))
+        with report_path.open(encoding="utf-8") as f:
+            report = json.load(f)
     except json.JSONDecodeError as exc:
         return ValidationResult(
             success=False,

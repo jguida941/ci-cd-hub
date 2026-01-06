@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +24,15 @@ from cihub.services.triage_service import (
     write_triage_bundle,
 )
 from cihub.types import CommandResult
-from cihub.utils.exec_utils import resolve_executable
+from cihub.utils.exec_utils import (
+    TIMEOUT_BUILD,
+    TIMEOUT_NETWORK,
+    TIMEOUT_QUICK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    resolve_executable,
+    safe_run,
+)
 
 # Maximum errors to include in triage bundle (prevents huge payloads)
 MAX_ERRORS_IN_TRIAGE = 20
@@ -41,12 +48,9 @@ def _build_meta(args: argparse.Namespace) -> dict[str, object]:
 def _get_current_repo() -> str | None:
     """Get current repo from git remote."""
     try:
-        result = subprocess.run(
-            ["git", "remote", "get-url", "origin"],  # noqa: S603, S607
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=30,
+        result = safe_run(
+            ["git", "remote", "get-url", "origin"],
+            timeout=TIMEOUT_QUICK,
         )
         if result.returncode != 0:
             return None
@@ -55,7 +59,7 @@ def _get_current_repo() -> str | None:
         match = re.search(r"github\.com[:/]([^/]+/[^/.]+)", url)
         if match:
             return match.group(1).removesuffix(".git")
-    except Exception:  # noqa: BLE001, S110 - best effort, silent fail OK
+    except (CommandNotFoundError, CommandTimeoutError):
         pass
     return None
 
@@ -66,7 +70,7 @@ def _fetch_run_info(run_id: str, repo: str | None) -> dict[str, Any]:
     cmd = [gh_bin, "run", "view", run_id, "--json", "name,status,conclusion,headBranch,headSha,url,jobs"]
     if repo:
         cmd.extend(["--repo", repo])
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=60)  # noqa: S603
+    result = safe_run(cmd, timeout=TIMEOUT_NETWORK)
     if result.returncode != 0:
         raise RuntimeError(f"Failed to fetch run info: {result.stderr.strip()}")
     data = json.loads(result.stdout)
@@ -92,7 +96,7 @@ def _list_runs(
     if branch:
         cmd.extend(["--branch", branch])
 
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=60)  # noqa: S603
+    result = safe_run(cmd, timeout=TIMEOUT_NETWORK)
     if result.returncode != 0:
         raise RuntimeError(f"Failed to list runs: {result.stderr.strip()}")
     data = json.loads(result.stdout)
@@ -107,7 +111,7 @@ def _download_artifacts(run_id: str, repo: str | None, dest_dir: Path) -> bool:
     cmd = [gh_bin, "run", "download", run_id, "--dir", str(dest_dir)]
     if repo:
         cmd.extend(["--repo", repo])
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=300)  # noqa: S603
+    result = safe_run(cmd, timeout=TIMEOUT_BUILD)  # 600s for large artifacts
     # gh run download returns 0 even if no artifacts, check if anything was downloaded
     if result.returncode != 0:
         return False
@@ -141,7 +145,7 @@ def _fetch_failed_logs(run_id: str, repo: str | None) -> str:
     cmd = [gh_bin, "run", "view", run_id, "--log-failed"]
     if repo:
         cmd.extend(["--repo", repo])
-    result = subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=60)  # noqa: S603
+    result = safe_run(cmd, timeout=TIMEOUT_NETWORK)
     if result.returncode != 0:
         # May fail if no failures or other issue
         return ""
