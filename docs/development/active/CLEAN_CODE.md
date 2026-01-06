@@ -45,7 +45,7 @@ Use this checklist to track overall progress. Detailed implementation notes are 
 - [x] **Part 2.5:** Expand CI Engine Tests ✅ **DONE** (131+ tests: test_ci_engine.py 124 tests, test_ci_env_overrides.py 5 tests, test_services_ci.py 2 tests)
 - [x] **Part 2.6:** Gate Evaluation Refactor ✅ **DONE** (gate_specs.py with 26 thresholds wired to evaluate_threshold)
 - [x] **Part 3.1:** Centralize GitHub Environment Access ✅ **DONE** (unified GitHubContext: 11 env vars + output/summary writing, 59 tests)
-- [ ] **Part 3.2:** Consolidate RunCI Parameters
+- [x] **Part 3.2:** Consolidate RunCI Parameters ✅
 - [ ] **Part 5.1 Phases 2-4:** CLI compat module + deprecation warnings
 - [x] **Part 5.2:** Mixed Return Types ✅ **DONE** (all 47 commands → pure CommandResult)
 - [ ] **Part 5.3:** Special-Case Handling (move to tool adapters)
@@ -803,46 +803,58 @@ class ToolResult:
 
 **Note:** Scattered env reads can be migrated incrementally as code is touched. The unified `GitHubContext` provides the foundation.
 
-### 3.2 Consolidate RunCI Parameters
+### 3.2 Consolidate RunCI Parameters ✅
 
-**Problem:** `run_ci()` has 9 keyword parameters.
+**Status:** COMPLETE (2026-01-06)
 
-**Current:** `cihub/services/ci_engine/__init__.py:126-139`
+**Problem:** `run_ci()` had 10 keyword parameters - too many for clean function signatures.
+
+**Solution:** Created `RunCIOptions` dataclass in `cihub/services/types.py`:
+
 ```python
-def run_ci(
-    *,
-    output_dir: Path,
-    report_path: Path,
-    summary_path: Path,
-    workdir: Path,
-    install_deps: bool,
-    correlation_id: str,
-    no_summary: bool,
-    write_github_summary: bool,
-    config_from_hub: dict | None,
-    env: Mapping[str, str] | None,
-) -> int:
-```
-
-**Proposed:**
-```python
-@dataclass
-class RunOptions:
-    """Options for CI execution."""
-    output_dir: Path
-    report_path: Path
-    summary_path: Path
-    workdir: Path
-    install_deps: bool = True
-    correlation_id: str = ""
+@dataclass(frozen=True)
+class RunCIOptions:
+    """Configuration options for run_ci()."""
+    output_dir: Path | None = None
+    report_path: Path | None = None
+    summary_path: Path | None = None
+    workdir: str | None = None
+    install_deps: bool = False
     no_summary: bool = False
-    write_github_summary: bool = False
-    config_from_hub: dict | None = None
+    write_github_summary: bool | None = None
+    correlation_id: str | None = None
+    config_from_hub: str | None = None
     env: Mapping[str, str] | None = None
 
-def run_ci(options: RunOptions) -> int:
-    # ...
+    @classmethod
+    def from_args(cls, args: Any) -> "RunCIOptions":
+        """Create options from argparse namespace."""
+        ...
 ```
+
+**Updated `run_ci()` signature** (`cihub/services/ci_engine/__init__.py`):
+```python
+def run_ci(
+    repo_path: Path,
+    *,
+    options: RunCIOptions | None = None,  # New: pass options object
+    output_dir: Path | None = None,       # Still works: backward compat kwargs
+    # ... other kwargs still accepted for backward compatibility
+) -> CiRunResult:
+```
+
+**Benefits:**
+- Frozen dataclass ensures immutability
+- `from_args()` method for CLI integration
+- `dataclasses.replace()` for creating modified copies
+- Full backward compatibility with existing kwargs
+
+**Updated callers:**
+- `cihub/commands/ci.py` now uses `RunCIOptions.from_args(args)`
+
+**Tests:** 11 tests in `tests/test_services_ci.py` cover `RunCIOptions` and `run_ci()` options handling.
+
+**Backward compatibility:** All existing code that passes kwargs directly still works.
 
 ### 3.3 Tighten CommandResult Contract (DEFERRED)
 

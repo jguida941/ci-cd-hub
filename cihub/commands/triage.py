@@ -625,7 +625,7 @@ def _watch_for_failures(
     triage_count = 0
     output_dir = Path(args.output_dir or ".cihub")
 
-    print(f"👀 Watching for failed runs (interval: {interval}s, Ctrl+C to stop)")
+    print(f"Watching for failed runs (interval: {interval}s, Ctrl+C to stop)")
     if workflow:
         print(f"   Filtering: workflow={workflow}")
     if branch:
@@ -659,7 +659,7 @@ def _watch_for_failures(
                             # New failure found - triage it
                             name = run.get("name", "Unknown")
                             branch_name = run.get("headBranch", "")
-                            print(f"🔴 New failure: {name} (branch: {branch_name}, run: {run_id})")
+                            print(f"[FAILURE] {name} (branch: {branch_name}, run: {run_id})")
 
                             # Run triage
                             try:
@@ -672,21 +672,21 @@ def _watch_for_failures(
                                 triage_count += 1
 
                                 if triage_result:
-                                    print(f"   ✅ Triaged: {triage_result}")
+                                    print(f"   [OK] Triaged: {triage_result}")
                                 else:
-                                    print("   ⚠️  Triage completed (no artifacts)")
+                                    print("   [WARN] Triage completed (no artifacts)")
                             except Exception as e:
-                                print(f"   ❌ Triage failed: {e}")
+                                print(f"   [ERROR] Triage failed: {e}")
                                 triaged_runs.add(run_id)  # Don't retry
 
                             print()
             except (CommandNotFoundError, CommandTimeoutError, json.JSONDecodeError) as e:
-                print(f"⚠️  Poll error: {e}", file=sys.stderr)
+                print(f"[WARN] Poll error: {e}", file=sys.stderr)
 
             time.sleep(interval)
 
     except KeyboardInterrupt:
-        print(f"\n🛑 Stopped. Triaged {triage_count} run(s).")
+        print(f"\nStopped. Triaged {triage_count} run(s).")
         return CommandResult(
             exit_code=EXIT_SUCCESS,
             summary=f"Watch stopped. Triaged {triage_count} run(s).",
@@ -804,7 +804,7 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
                     "code": "CIHUB-TRIAGE-NO-FAILURES",
                 }],
             )
-        print(f"📋 Auto-selected latest failed run: {run_id}")
+        print(f"Auto-selected latest failed run: {run_id}")
 
     # Handle --gate-history mode (standalone analysis)
     if gate_history:

@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-06 - RunCIOptions Dataclass (Part 3.2)
+
+### New: `RunCIOptions` Dataclass (CLEAN_CODE.md Part 3.2)
+
+**Implementation:**
+- Created frozen dataclass `RunCIOptions` in `cihub/services/types.py`
+- Consolidates 10 keyword parameters into single immutable object
+- Fields: output_dir, report_path, summary_path, workdir, install_deps, no_summary, write_github_summary, correlation_id, config_from_hub, env
+- `from_args()` class method for CLI integration
+- Updated `run_ci()` to accept optional `options` parameter
+- Full backward compatibility: kwargs still work
+
+**Updated Callers:**
+- `cihub/commands/ci.py` now uses `RunCIOptions.from_args(args)`
+
+**Test Coverage:**
+- 11 tests in `tests/test_services_ci.py` (2 original + 9 new for RunCIOptions)
+
+**Also fixed:**
+- Pre-existing import issues with `_get_repo_name` and `_detect_java_project_type`
+- Added backward compatibility aliases across modules
+
+### Status
+- CLEAN_CODE.md: Part 3.2 ✅ COMPLETE
+- All 2233 tests passing
+
+---
+
 ## 2026-01-06 - Unified GitHubContext (Part 3.1)
 
 ### New: Unified `GitHubContext` Class (CLEAN_CODE.md Part 3.1)
