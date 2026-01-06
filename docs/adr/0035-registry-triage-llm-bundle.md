@@ -33,6 +33,9 @@
 - ✅ **Watch daemon**: `cihub triage --watch` polls for new failures and auto-triages them
 - ✅ **Configurable interval**: `cihub triage --watch --interval 60` (default: 30 seconds)
 - ✅ **Filter support in watch/latest**: Combine with `--workflow` and `--branch` filters
+- ✅ **LLM prompt pack**: `triage.md` auto-generated with every triage (no `--llm-pack` flag needed)
+- ✅ **AIRenderer pattern**: `docs stale --ai` uses polymorphic renderer for AI-consumable output
+- ✅ **AI formatter registry**: Extensible system for command-specific AI output formatting
 
 ## Context
 
@@ -225,7 +228,7 @@ cihub triage --json                    # JSON output only
 # Triage - Filtering (TODO)
 cihub triage --min-severity 6          # Only failures >= severity 6
 cihub triage --category security       # Only security checks
-cihub triage --llm-pack                # Generate markdown prompt
+# Note: --llm-pack not needed - triage.md is auto-generated as LLM prompt pack
 
 # Triage - Remote mode (from GitHub workflow runs) ✅ IMPLEMENTED
 cihub triage --run <RUN_ID>            # Analyze specific workflow run
@@ -247,6 +250,11 @@ cihub triage --multi --reports-dir ./  # Process local directory of reports
 # Triage - Historical analysis ✅ IMPLEMENTED
 cihub triage --gate-history            # Analyze gate status changes over time
 cihub triage --detect-flaky            # Identify flaky test patterns from history
+
+# AI/LLM output modes ✅ IMPLEMENTED
+cihub docs stale --ai                  # AI-consumable markdown for stale doc analysis
+cihub docs stale --ai-output FILE      # Write AI output to specific file
+# Note: triage.md is auto-generated as LLM prompt pack (no flag needed)
 
 # Fix (apply safe fixes) - TODO
 cihub fix --safe                       # Auto-fix: ruff, black, isort, badges
