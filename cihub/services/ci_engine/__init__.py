@@ -40,10 +40,10 @@ from cihub.reporting import render_summary
 from cihub.services.types import ServiceResult
 from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
 from cihub.utils import (
-    _detect_java_project_type,
-    _get_repo_name,
+    detect_java_project_type,
     get_git_branch,
     get_git_remote,
+    get_repo_name,
     parse_repo_from_remote,
     resolve_executable,
     validate_subdir,
@@ -430,10 +430,10 @@ __all__ = [
     "PYTHON_RUNNERS",
     "JAVA_RUNNERS",
     # Helpers from helpers.py
-    "_get_repo_name",
+    "get_repo_name",
     "_get_git_commit",
     "_resolve_workdir",
-    "_detect_java_project_type",
+    "detect_java_project_type",
     "_tool_enabled",
     "_tool_gate_enabled",
     "_parse_env_bool",

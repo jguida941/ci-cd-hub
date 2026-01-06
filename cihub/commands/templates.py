@@ -30,21 +30,21 @@ def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
     problems: list[dict[str, Any]] = []
 
     if not token:
-        token_msg = "Missing GitHub token (set GH_TOKEN, GITHUB_TOKEN, or HUB_DISPATCH_TOKEN)"
+        missing_token_err = "Missing GitHub token (set GH_TOKEN, GITHUB_TOKEN, or HUB_DISPATCH_TOKEN)"  # noqa: S105
         # For --check or --dry-run, skip gracefully with warning (matches check.py pattern)
         if args.check or args.dry_run:
             return CommandResult(
                 exit_code=EXIT_SUCCESS,
-                summary=f"Skipping: {token_msg}. Cannot verify remote template state without token.",
+                summary=f"Skipping: {missing_token_err}. Cannot verify remote template state without token.",
                 data={"skipped": True, "reason": "no_token"},
             )
         # For actual sync operations, token is required
         return CommandResult(
             exit_code=EXIT_USAGE,
-            summary=token_msg,
+            summary=missing_token_err,
             problems=[{
                 "severity": "error",
-                "message": token_msg,
+                "message": missing_token_err,
                 "code": "CIHUB-TEMPLATES-NO-TOKEN",
             }],
         )

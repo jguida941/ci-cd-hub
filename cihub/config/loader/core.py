@@ -20,7 +20,8 @@ import yaml
 from cihub.config.fallbacks import FALLBACK_DEFAULTS
 from cihub.config.io import load_yaml_file
 from cihub.config.merge import deep_merge
-from cihub.config.normalize import normalize_config, tool_enabled as _tool_enabled_canonical
+from cihub.config.normalize import normalize_config
+from cihub.config.normalize import tool_enabled as _tool_enabled_canonical
 
 
 class ConfigValidationError(Exception):

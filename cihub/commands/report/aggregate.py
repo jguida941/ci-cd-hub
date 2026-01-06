@@ -188,7 +188,7 @@ def _aggregate_report(args: argparse.Namespace) -> CommandResult:
         hub_event=hub_event,
         total_repos=total_repos,
         reports_dir=None,
-        token_env=token_env,
+        token_env=args.token_env,
         token_source=token_source,
     )
     exit_code = EXIT_SUCCESS if result.success else EXIT_FAILURE

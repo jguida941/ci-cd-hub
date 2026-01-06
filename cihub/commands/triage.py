@@ -315,8 +315,8 @@ def _generate_remote_triage_bundle(
                     repo_name = report_path.parent.name
                     triage_path = run_dir / f"triage-{repo_name}.json"
                     md_path = run_dir / f"triage-{repo_name}.md"
-                    triage_path.write_text(json.dumps(bundle.to_dict(), indent=2), encoding="utf-8")
-                    md_path.write_text(bundle.summary_markdown, encoding="utf-8")
+                    triage_path.write_text(json.dumps(bundle.triage, indent=2), encoding="utf-8")
+                    md_path.write_text(bundle.markdown, encoding="utf-8")
                     per_repo_paths[repo_name] = triage_path
 
             # Per-repo mode: return index of individual bundles
@@ -337,8 +337,8 @@ def _generate_remote_triage_bundle(
                 result_data = {
                     "mode": "per-repo",
                     "repo_count": len(bundles),
-                    "passed_count": sum(1 for b in bundles if b.overall_status == "passed"),
-                    "failed_count": sum(1 for b in bundles if b.overall_status == "failed"),
+                    "passed_count": sum(1 for b in bundles if b.triage.get("status") == "success"),
+                    "failed_count": sum(1 for b in bundles if b.triage.get("status") == "failure"),
                     "bundles": list(per_repo_paths.keys()),
                 }
                 return artifacts_out, result_data

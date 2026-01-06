@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-06 - Unified GitHubContext (Part 3.1)
+
+### New: Unified `GitHubContext` Class (CLEAN_CODE.md Part 3.1)
+
+**Implementation:**
+- Extended `OutputContext` into unified `GitHubContext` class in `cihub/utils/github_context.py`
+- Combined environment reading + output writing into single class (per user insight: "two separate things is stupid")
+- 11 GitHub env var fields: repository, ref, ref_name, sha, run_id, run_number, actor, event_name, workspace, workflow_ref, token
+- `from_env()` class method to read from GITHUB_* environment variables
+- `from_args()` class method for CLI output configuration (backward compatible)
+- `with_output_config()` to combine env context + output config in one call
+- Helper properties: `is_ci`, `owner_repo`, `owner`, `repo`, `short_sha`
+- Backward compatibility: `OutputContext = GitHubContext` alias
+
+**Test Coverage:**
+- 59 tests in `tests/test_output_context.py` (38 original + 21 new)
+- Tests cover from_env, properties, with_output_config, backward compatibility
+
+### Status
+- CLEAN_CODE.md: Part 3.1 ✅ COMPLETE
+- All 2241 tests passing
+
+---
+
 ## 2026-01-06 - Subprocess Consolidation (Part 7.3.3)
 
 ### New: `safe_run()` Wrapper (CLEAN_CODE.md Part 7.3.3)

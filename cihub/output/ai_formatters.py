@@ -15,7 +15,7 @@ Example usage:
 from __future__ import annotations
 
 import importlib
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 # Type for AI formatters: takes report data, returns markdown string
 AIFormatter = Callable[[Any], str]
@@ -43,7 +43,7 @@ def get_ai_formatter(command: str) -> AIFormatter | None:
 
     module_path, func_name = _AI_FORMATTERS[command]
     module = importlib.import_module(module_path)
-    return getattr(module, func_name)
+    return cast(AIFormatter, getattr(module, func_name))
 
 
 def has_ai_formatter(command: str) -> bool:

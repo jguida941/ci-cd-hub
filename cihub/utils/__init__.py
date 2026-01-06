@@ -6,7 +6,7 @@ All public items here should remain stable for backward compatibility.
 
 from __future__ import annotations
 
-from cihub.utils.env import _parse_env_bool, env_bool, env_str
+from cihub.utils.env import env_bool, env_str
 from cihub.utils.exec_utils import resolve_executable
 from cihub.utils.git import (
     GIT_REMOTE_RE,
@@ -40,10 +40,7 @@ from cihub.utils.java_pom import (
     plugin_matches,
 )
 from cihub.utils.paths import hub_root, validate_repo_path, validate_subdir
-from cihub.utils.progress import _bar
 from cihub.utils.project import (
-    _detect_java_project_type,
-    _get_repo_name,
     detect_java_project_type,
     get_repo_name,
 )
@@ -93,6 +90,3 @@ __all__ = [
     "insert_plugins_into_pom",
     "insert_dependencies_into_pom",
 ]
-
-# Note: Private functions (_parse_env_bool, _bar, _get_repo_name, _detect_java_project_type)
-# are still imported for internal use but not exported in __all__
