@@ -5,7 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from cihub.services.ci import CiRunResult, run_ci
+from cihub.services.ci import CiRunResult, RunCIOptions, run_ci
 from cihub.services.triage_service import generate_triage_bundle, write_triage_bundle
 from cihub.types import CommandResult
 from cihub.utils import hub_root
@@ -145,17 +145,10 @@ def _emit_triage_bundle(args, result: CiRunResult | None, error: str | None = No
 def cmd_ci(args) -> CommandResult:
     """Execute CI run and return structured result."""
     try:
+        options = RunCIOptions.from_args(args)
         result = run_ci(
             repo_path=Path(args.repo or "."),
-            output_dir=Path(args.output_dir) if args.output_dir else None,
-            report_path=Path(args.report) if args.report else None,
-            summary_path=Path(args.summary) if args.summary else None,
-            workdir=args.workdir,
-            install_deps=args.install_deps,
-            correlation_id=args.correlation_id,
-            no_summary=args.no_summary,
-            write_github_summary=args.write_github_summary,
-            config_from_hub=args.config_from_hub,
+            options=options,
         )
     except Exception as exc:  # noqa: BLE001 - re-raise after triage
         _emit_triage_bundle(args, None, error=str(exc))

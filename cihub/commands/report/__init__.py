@@ -19,13 +19,17 @@ from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.reporting import render_summary_from_path
 from cihub.types import CommandResult
 from cihub.utils import (
-    _detect_java_project_type,
-    _get_repo_name,
+    detect_java_project_type,
     get_git_branch,
     get_git_remote,
+    get_repo_name,
     parse_repo_from_remote,
 )
 from cihub.utils.env import _parse_env_bool
+
+# Backward compatibility aliases
+_detect_java_project_type = detect_java_project_type
+_get_repo_name = get_repo_name
 from cihub.utils.progress import _bar
 
 # Import submodule functions
@@ -205,6 +209,9 @@ __all__ = [
     "_append_summary",
     "_build_context",
     "_coerce_bool",
+    "detect_java_project_type",
+    "get_repo_name",
+    # Backward compatibility aliases (deprecated)
     "_detect_java_project_type",
     "_get_repo_name",
     "_load_tool_outputs",

@@ -17,12 +17,10 @@ from cihub.services.ci_engine import (
     _build_context,
     _check_require_run_or_fail,
     _collect_codecov_files,
-    _detect_java_project_type,
     _evaluate_java_gates,
     _evaluate_python_gates,
     _get_env_name,
     _get_env_value,
-    _get_repo_name,
     _install_python_dependencies,
     _notify,
     _resolve_workdir,
@@ -37,23 +35,25 @@ from cihub.services.ci_engine import (
     _tool_gate_enabled,
     _tool_requires_run_or_fail,
     _warn_reserved_features,
+    detect_java_project_type,
+    get_repo_name,
 )
 
 
 class TestGetRepoName:
-    """Tests for _get_repo_name function."""
+    """Tests for get_repo_name function."""
 
     def test_from_github_repository_env(self, tmp_path: Path) -> None:
         config: dict = {}
         with patch.dict(os.environ, {"GITHUB_REPOSITORY": "owner/repo"}):
-            result = _get_repo_name(config, tmp_path)
+            result = get_repo_name(config, tmp_path)
         assert result == "owner/repo"
 
     def test_from_config_repo_section(self, tmp_path: Path) -> None:
         config = {"repo": {"owner": "myowner", "name": "myrepo"}}
         with patch.dict(os.environ, {}, clear=True):
             with patch("cihub.utils.project.get_git_remote", return_value=None):
-                result = _get_repo_name(config, tmp_path)
+                result = get_repo_name(config, tmp_path)
         assert result == "myowner/myrepo"
 
     def test_from_git_remote(self, tmp_path: Path) -> None:
@@ -67,14 +67,14 @@ class TestGetRepoName:
                     "cihub.utils.project.parse_repo_from_remote",
                     return_value=("gitowner", "gitrepo"),
                 ):
-                    result = _get_repo_name(config, tmp_path)
+                    result = get_repo_name(config, tmp_path)
         assert result == "gitowner/gitrepo"
 
     def test_returns_empty_when_no_source(self, tmp_path: Path) -> None:
         config: dict = {}
         with patch.dict(os.environ, {}, clear=True):
             with patch("cihub.utils.project.get_git_remote", return_value=None):
-                result = _get_repo_name(config, tmp_path)
+                result = get_repo_name(config, tmp_path)
         assert result == ""
 
 
@@ -100,7 +100,7 @@ class TestResolveWorkdir:
 
 
 class TestDetectJavaProjectType:
-    """Tests for _detect_java_project_type function."""
+    """Tests for detect_java_project_type function."""
 
     @pytest.mark.parametrize(
         "filename,content,expected_contains",
@@ -129,13 +129,13 @@ class TestDetectJavaProjectType:
     ) -> None:
         """Detect various Java project types from build files."""
         (tmp_path / filename).write_text(content)
-        result = _detect_java_project_type(tmp_path)
+        result = detect_java_project_type(tmp_path)
         for expected in expected_contains:
             assert expected in result, f"Expected '{expected}' in result '{result}'"
 
     def test_unknown_project(self, tmp_path: Path) -> None:
         """Empty directory returns Unknown."""
-        result = _detect_java_project_type(tmp_path)
+        result = detect_java_project_type(tmp_path)
         assert result == "Unknown"
 
 

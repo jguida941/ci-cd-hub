@@ -3,7 +3,74 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from pathlib import Path
+from typing import Any, Mapping
+
+
+@dataclass(frozen=True)
+class RunCIOptions:
+    """Configuration options for run_ci().
+
+    Consolidates the 10 keyword parameters into a single immutable object.
+    Use dataclasses.replace() to create modified copies.
+
+    Example:
+        # Default options
+        opts = RunCIOptions()
+
+        # Customized options
+        opts = RunCIOptions(
+            output_dir=Path(".cihub"),
+            install_deps=True,
+            correlation_id="abc-123",
+        )
+
+        # From CLI args
+        opts = RunCIOptions.from_args(args)
+
+        # Modify existing options
+        new_opts = dataclasses.replace(opts, install_deps=False)
+    """
+
+    # Path options
+    output_dir: Path | None = None
+    report_path: Path | None = None
+    summary_path: Path | None = None
+    workdir: str | None = None
+
+    # Boolean options
+    install_deps: bool = False
+    no_summary: bool = False
+    write_github_summary: bool | None = None
+
+    # String options
+    correlation_id: str | None = None
+    config_from_hub: str | None = None
+
+    # Environment mapping (immutable via tuple conversion internally)
+    env: Mapping[str, str] | None = None
+
+    @classmethod
+    def from_args(cls, args: Any) -> "RunCIOptions":
+        """Create options from argparse namespace.
+
+        Args:
+            args: argparse.Namespace with CLI arguments
+
+        Returns:
+            RunCIOptions configured from CLI args
+        """
+        return cls(
+            output_dir=Path(args.output_dir) if getattr(args, "output_dir", None) else None,
+            report_path=Path(args.report) if getattr(args, "report", None) else None,
+            summary_path=Path(args.summary) if getattr(args, "summary", None) else None,
+            workdir=getattr(args, "workdir", None),
+            install_deps=getattr(args, "install_deps", False),
+            no_summary=getattr(args, "no_summary", False),
+            write_github_summary=getattr(args, "write_github_summary", None),
+            correlation_id=getattr(args, "correlation_id", None),
+            config_from_hub=getattr(args, "config_from_hub", None),
+        )
 
 
 @dataclass

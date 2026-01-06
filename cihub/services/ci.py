@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from cihub.services.ci_engine import CiRunResult, run_ci
+from cihub.services.ci_engine import CiRunResult, RunCIOptions, run_ci
 
-__all__ = ["CiRunResult", "run_ci"]
+__all__ = ["CiRunResult", "RunCIOptions", "run_ci"]

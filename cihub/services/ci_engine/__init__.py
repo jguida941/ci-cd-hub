@@ -37,7 +37,7 @@ from cihub.ci_runner import (
 from cihub.core.languages import get_strategy
 from cihub.exit_codes import EXIT_FAILURE, EXIT_INTERNAL_ERROR, EXIT_SUCCESS
 from cihub.reporting import render_summary
-from cihub.services.types import ServiceResult
+from cihub.services.types import RunCIOptions, ServiceResult
 from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
 from cihub.utils import (
     detect_java_project_type,
@@ -48,6 +48,10 @@ from cihub.utils import (
     resolve_executable,
     validate_subdir,
 )
+
+# Backward compatibility aliases (deprecated, use non-underscore versions)
+_detect_java_project_type = detect_java_project_type
+_get_repo_name = get_repo_name
 
 # Import from submodules
 from .gates import (
@@ -128,6 +132,7 @@ JAVA_RUNNERS = {
 def run_ci(
     repo_path: Path,
     *,
+    options: RunCIOptions | None = None,
     output_dir: Path | None = None,
     report_path: Path | None = None,
     summary_path: Path | None = None,
@@ -139,6 +144,46 @@ def run_ci(
     config_from_hub: str | None = None,
     env: Mapping[str, str] | None = None,
 ) -> CiRunResult:
+    """Run CI pipeline for a repository.
+
+    Args:
+        repo_path: Path to the repository root
+        options: RunCIOptions object (preferred). If provided, individual kwargs are ignored.
+        output_dir: Directory for output files (default: .cihub)
+        report_path: Path for report.json (default: output_dir/report.json)
+        summary_path: Path for summary.md (default: output_dir/summary.md)
+        workdir: Subdirectory to run CI in
+        install_deps: Whether to install Python dependencies
+        correlation_id: Correlation ID for tracing
+        no_summary: Skip writing summary file
+        write_github_summary: Write to GITHUB_STEP_SUMMARY
+        config_from_hub: Load config from hub config files
+        env: Environment variable mapping (default: os.environ)
+
+    Returns:
+        CiRunResult with exit code, report, and any problems
+
+    Example:
+        # Using options (preferred)
+        opts = RunCIOptions(install_deps=True)
+        result = run_ci(repo_path, options=opts)
+
+        # Using kwargs (backward compatible)
+        result = run_ci(repo_path, install_deps=True)
+    """
+    # If options provided, extract values from it; otherwise use kwargs
+    if options is not None:
+        output_dir = options.output_dir
+        report_path = options.report_path
+        summary_path = options.summary_path
+        workdir = options.workdir
+        install_deps = options.install_deps
+        correlation_id = options.correlation_id
+        no_summary = options.no_summary
+        write_github_summary = options.write_github_summary
+        config_from_hub = options.config_from_hub
+        env = options.env
+
     repo_path = repo_path.resolve()
     output_dir = Path(output_dir or ".cihub")
     if not output_dir.is_absolute():
@@ -426,6 +471,7 @@ __all__ = [
     # Main entry point
     "run_ci",
     "CiRunResult",
+    "RunCIOptions",
     # Runner dictionaries
     "PYTHON_RUNNERS",
     "JAVA_RUNNERS",
@@ -434,6 +480,9 @@ __all__ = [
     "_get_git_commit",
     "_resolve_workdir",
     "detect_java_project_type",
+    # Backward compatibility aliases (deprecated)
+    "_get_repo_name",
+    "_detect_java_project_type",
     "_tool_enabled",
     "_tool_gate_enabled",
     "_parse_env_bool",

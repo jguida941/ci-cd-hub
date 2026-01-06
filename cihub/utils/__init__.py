@@ -41,6 +41,8 @@ from cihub.utils.java_pom import (
 )
 from cihub.utils.paths import hub_root, validate_repo_path, validate_subdir
 from cihub.utils.project import (
+    _detect_java_project_type,
+    _get_repo_name,
     detect_java_project_type,
     get_repo_name,
 )
@@ -53,6 +55,9 @@ __all__ = [
     # Project detection utilities
     "get_repo_name",
     "detect_java_project_type",
+    # Backward compatibility aliases (deprecated, use non-underscore versions)
+    "_get_repo_name",
+    "_detect_java_project_type",
     # Git utilities
     "GIT_REMOTE_RE",
     "get_git_branch",
