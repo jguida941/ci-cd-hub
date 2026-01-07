@@ -12,9 +12,9 @@ from typing import Any
 
 import yaml
 
+from cihub.config.io import load_yaml_file, save_yaml_file
 from cihub.exit_codes import EXIT_SUCCESS, EXIT_USAGE
 from cihub.types import CommandResult
-from cihub.config.io import load_yaml_file, save_yaml_file
 from cihub.utils.paths import hub_root
 
 

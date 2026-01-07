@@ -789,14 +789,9 @@ def _triage_single_run(run_id: str, repo: str | None, output_dir: Path) -> str |
     # Find report.json in artifacts
     report_path = _find_report_in_artifacts(artifacts_dir)
 
-    # Explicit None check - return early if no report found
+    # Explicit None check - raise if no report found (caller handles CommandResult)
     if report_path is None:
-        return CommandResult(
-            exit_code=EXIT_FAILURE,
-            summary=f"No report.json found in artifacts for run {run_id}",
-            problems=[f"Could not locate report.json in {artifacts_dir}"],
-            data={"run_id": run_id, "repo": repo, "artifacts_dir": str(artifacts_dir)},
-        )
+        raise FileNotFoundError(f"No report.json found in artifacts for run {run_id} (searched: {artifacts_dir})")
 
     # Build metadata
     meta = {
@@ -846,7 +841,7 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"Invalid repo format: {repo}",
-                problems=[f"Repo must be in 'owner/repo' format (got: {repo})"],
+                problems=[{"severity": "error", "message": f"Repo must be in 'owner/repo' format (got: {repo})", "code": "CIHUB-TRIAGE-INVALID-REPO"}],
                 data={"repo": repo},
             )
 
@@ -956,12 +951,12 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
         if (workflow_filter or branch_filter) and not run_id:
             runs = _list_runs(repo, workflow=workflow_filter, branch=branch_filter, limit=10)
             if not runs:
-                filter_desc = []
+                run_filter_parts: list[str] = []
                 if workflow_filter:
-                    filter_desc.append(f"workflow={workflow_filter}")
+                    run_filter_parts.append(f"workflow={workflow_filter}")
                 if branch_filter:
-                    filter_desc.append(f"branch={branch_filter}")
-                raise ValueError(f"No runs found matching: {', '.join(filter_desc)}")
+                    run_filter_parts.append(f"branch={branch_filter}")
+                raise ValueError(f"No runs found matching: {', '.join(run_filter_parts)}")
 
             # Use the most recent run
             run_id = str(runs[0]["databaseId"])
@@ -1042,12 +1037,12 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
     filters_applied = bundle.triage.get("filters_applied")
     if filters_applied:
         original_count = filters_applied.get("original_failure_count", 0)
-        filter_desc = []
+        applied_filter_parts: list[str] = []
         if filters_applied.get("min_severity"):
-            filter_desc.append(f"severity>={filters_applied['min_severity']}")
+            applied_filter_parts.append(f"severity>={filters_applied['min_severity']}")
         if filters_applied.get("category"):
-            filter_desc.append(f"category={filters_applied['category']}")
-        filter_str = ", ".join(filter_desc)
+            applied_filter_parts.append(f"category={filters_applied['category']}")
+        filter_str = ", ".join(applied_filter_parts)
         summary = f"Triage bundle generated ({failure_count}/{original_count} failures, filtered by {filter_str})"
     else:
         summary = f"Triage bundle generated ({failure_count} failures)"
