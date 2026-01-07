@@ -178,21 +178,110 @@ def cmd_coverage_verify(args: argparse.Namespace) -> CommandResult:
         )
 
 
+def _clean_mutmut_log(log_text: str) -> str:
+    """Clean mutmut log output by removing spinner characters and finding actual errors.
+
+    mutmut uses rich/spinner output that pollutes logs with unicode spinner chars.
+    This function extracts actual error messages from the noise.
+    """
+    # Spinner characters used by mutmut
+    spinner_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+    lines = []
+    seen_lines: set[str] = set()
+
+    for line in log_text.split("\n"):
+        # Skip lines that are just spinner + "Generating mutants"
+        stripped = line.strip()
+        if stripped.startswith(tuple(spinner_chars)) and "Generating mutants" in stripped:
+            continue
+        # Skip lines that are just spinner + "Testing mutants"
+        if stripped.startswith(tuple(spinner_chars)) and "Testing mutants" in stripped:
+            continue
+        # Skip duplicate lines (spinners create many identical lines)
+        if stripped in seen_lines:
+            continue
+        seen_lines.add(stripped)
+        # Keep non-empty, non-spinner lines
+        if stripped and not all(c in spinner_chars for c in stripped):
+            lines.append(stripped)
+
+    return "\n".join(lines)
+
+
+def _extract_mutmut_error(log_text: str) -> str:
+    """Extract the actual error message from mutmut output."""
+    # First, clean the log to remove spinner noise
+    cleaned = _clean_mutmut_log(log_text)
+
+    # Look for Python traceback - capture the full traceback block
+    traceback_match = re.search(
+        r"(Traceback \(most recent call last\):.*?(?:\w+Error|\w+Exception):.*?)(?:\n\n|\Z)",
+        cleaned,
+        re.DOTALL,
+    )
+    if traceback_match:
+        return traceback_match.group(1).strip()
+
+    # Look for common error patterns with context
+    error_patterns = [
+        (r"((?:Import|Syntax|Module|File|Type|Value|Key|Attribute)Error:.+)", re.IGNORECASE),
+        (r"((?:Error|Exception):.+)", re.IGNORECASE),
+        (r"(Coverage.*error.+)", re.IGNORECASE),
+        (r"(No (?:lines|module|file|coverage) found.+)", re.IGNORECASE),
+        (r"(Failed to.+)", re.IGNORECASE),
+        (r"(FAILED.+)", 0),  # pytest failure lines
+    ]
+
+    for pattern, flags in error_patterns:
+        match = re.search(pattern, cleaned, flags | re.MULTILINE)
+        if match:
+            return match.group(1).strip()
+
+    # If no specific error found, return cleaned log preview
+    if cleaned:
+        # Return last few non-empty lines which often contain the error
+        last_lines = [ln for ln in cleaned.split("\n") if ln.strip()][-5:]
+        return "\n".join(last_lines) if last_lines else "No error details available"
+
+    return "No error details available"
+
+
 def cmd_mutmut(args: argparse.Namespace) -> CommandResult:
     workdir = Path(args.workdir).resolve()
     output_dir = Path(args.output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     log_path = output_dir / "mutmut-run.log"
 
+    ctx = OutputContext.from_args(args)
+
     proc = _run_command(["mutmut", "run"], workdir)
     log_text = (proc.stdout or "") + (proc.stderr or "")
     log_path.write_text(log_text, encoding="utf-8")
     if proc.returncode != 0:
+        # Extract actual error from the log
+        error_detail = _extract_mutmut_error(log_text)
+        cleaned_log = _clean_mutmut_log(log_text)
+
+        # Write error summary to GitHub
+        error_summary = (
+            "## Mutation Testing\n\n"
+            "**FAILED**: mutmut run failed\n\n"
+            "### Error Details\n\n"
+            f"```\n{error_detail[:1000]}\n```\n\n"
+        )
+        if cleaned_log:
+            error_summary += f"### Cleaned Log\n\n```\n{cleaned_log[:1000]}\n```\n"
+
+        ctx.write_summary(error_summary)
+
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="mutmut run failed - check for import errors or test failures",
-            problems=[{"severity": "error", "message": "mutmut run failed"}],
-            data={"log": log_text[:MAX_LOG_PREVIEW_CHARS]},
+            problems=[{"severity": "error", "message": f"mutmut run failed: {error_detail[:200]}"}],
+            data={
+                "log": cleaned_log[:MAX_LOG_PREVIEW_CHARS] if cleaned_log else log_text[:MAX_LOG_PREVIEW_CHARS],
+                "error": error_detail,
+            },
         )
     if "mutations/second" not in log_text:
         return CommandResult(
@@ -231,7 +320,6 @@ def cmd_mutmut(args: argparse.Namespace) -> CommandResult:
 
     score = (killed * 100) // tested
 
-    ctx = OutputContext.from_args(args)
     ctx.write_outputs(
         {
             "mutation_score": str(score),

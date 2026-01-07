@@ -6,11 +6,85 @@ to extract structured failure information when artifacts are unavailable.
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from cihub.services.triage_service import CATEGORY_BY_TOOL, SEVERITY_BY_CATEGORY
 
 from .types import MAX_ERRORS_IN_TRIAGE
+
+
+def extract_pytest_info(logs: str) -> dict[str, Any]:
+    """Extract pytest-specific information from logs.
+
+    Args:
+        logs: Raw log content
+
+    Returns:
+        Dict with pytest metrics: failed_tests, passed, failed, error messages
+    """
+    info: dict[str, Any] = {"failed_tests": [], "summary": ""}
+
+    # Find FAILED test lines: "FAILED tests/test_foo.py::TestClass::test_method"
+    failed_pattern = re.compile(r"FAILED\s+(tests/\S+::\S+)")
+    for match in failed_pattern.finditer(logs):
+        info["failed_tests"].append(match.group(1))
+
+    # Find summary line: "1 failed, 100 passed, 5 skipped"
+    summary_pattern = re.compile(r"(\d+\s+failed.*(?:passed|skipped).*)")
+    summary_match = summary_pattern.search(logs)
+    if summary_match:
+        info["summary"] = summary_match.group(1).strip()
+
+    # Find assertion errors
+    assertion_pattern = re.compile(r"AssertionError:\s*(.+?)(?:\n|$)")
+    assertions = assertion_pattern.findall(logs)
+    if assertions:
+        info["assertions"] = assertions[:5]  # Limit to 5
+
+    return info
+
+
+def extract_mutmut_info(logs: str) -> dict[str, Any]:
+    """Extract mutmut-specific information from logs.
+
+    Args:
+        logs: Raw log content
+
+    Returns:
+        Dict with mutmut metrics: mutation_score, killed, survived, etc.
+    """
+    info: dict[str, Any] = {}
+
+    # Look for mutation score output patterns
+    # Pattern: "Mutation score: 85%" or "mutation_score=85"
+    score_pattern = re.compile(r"(?:mutation[_\s]?score|score)[:\s=]+(\d+)%?", re.IGNORECASE)
+    score_match = score_pattern.search(logs)
+    if score_match:
+        info["mutation_score"] = int(score_match.group(1))
+
+    # Look for killed/survived counts from mutmut output
+    # mutmut uses emojis in output, but also has text summaries
+    killed_pattern = re.compile(r"(?:killed|Killed)[:\s=]+(\d+)")
+    survived_pattern = re.compile(r"(?:survived|Survived)[:\s=]+(\d+)")
+
+    killed_match = killed_pattern.search(logs)
+    survived_match = survived_pattern.search(logs)
+
+    if killed_match:
+        info["killed"] = int(killed_match.group(1))
+    if survived_match:
+        info["survived"] = int(survived_match.group(1))
+
+    # Check for common mutmut failure messages
+    if "mutmut run failed" in logs:
+        info["error"] = "mutmut run failed"
+    if "No mutants were tested" in logs:
+        info["error"] = "No mutants were tested - check test coverage"
+    if "check for import errors" in logs:
+        info["hint"] = "Check for import errors or test failures in mutation targets"
+
+    return info
 
 
 def infer_tool_from_step(step: str) -> str:
@@ -28,7 +102,9 @@ def infer_tool_from_step(step: str) -> str:
         return "mypy"
     if "ruff" in step_lower:
         return "ruff"
-    if "pytest" in step_lower or "test" in step_lower:
+    if "mutmut" in step_lower or "mutation" in step_lower:
+        return "mutmut"
+    if "pytest" in step_lower or "unit test" in step_lower:
         return "pytest"
     if "bandit" in step_lower:
         return "bandit"
@@ -50,6 +126,7 @@ def create_log_failure(
     errors: list[str],
     run_id: str = "",
     repo: str | None = None,
+    raw_logs: str = "",
 ) -> dict[str, Any]:
     """Create a failure entry from log parsing.
 
@@ -59,6 +136,7 @@ def create_log_failure(
         errors: List of error messages extracted from logs
         run_id: GitHub workflow run ID (for reproduce command)
         repo: Repository in owner/repo format
+        raw_logs: Full raw log content for tool-specific parsing
 
     Returns:
         Failure dict matching triage bundle schema
@@ -71,6 +149,33 @@ def create_log_failure(
     reproduce_cmd = f"gh run view {run_id} --log-failed" if run_id else "gh run view --log-failed"
     if repo:
         reproduce_cmd += f" --repo {repo}"
+
+    # Start with default hints
+    hints = [
+        f"Review the {step} step output for details",
+        "Check the error messages above for specific fixes",
+    ]
+
+    # Tool-specific parsing and hints
+    tool_info: dict[str, Any] = {}
+
+    if tool == "pytest" and raw_logs:
+        tool_info = extract_pytest_info(raw_logs)
+        if tool_info.get("failed_tests"):
+            hints.insert(0, f"Failed tests: {', '.join(tool_info['failed_tests'][:3])}")
+        if tool_info.get("summary"):
+            hints.insert(0, f"Test summary: {tool_info['summary']}")
+
+    elif tool == "mutmut" and raw_logs:
+        tool_info = extract_mutmut_info(raw_logs)
+        if tool_info.get("mutation_score") is not None:
+            hints.insert(0, f"Mutation score: {tool_info['mutation_score']}%")
+        if tool_info.get("killed") is not None and tool_info.get("survived") is not None:
+            hints.insert(0, f"Mutants: {tool_info['killed']} killed, {tool_info['survived']} survived")
+        if tool_info.get("error"):
+            hints.insert(0, tool_info["error"])
+        if tool_info.get("hint"):
+            hints.insert(0, tool_info["hint"])
 
     return {
         "id": f"{tool}:{job}:{step}",
@@ -85,10 +190,8 @@ def create_log_failure(
         "errors": errors[:MAX_ERRORS_IN_TRIAGE],
         "artifacts": [],
         "reproduce": {"command": reproduce_cmd, "cwd": ".", "env": {}},
-        "hints": [
-            f"Review the {step} step output for details",
-            "Check the error messages above for specific fixes",
-        ],
+        "hints": hints,
+        "tool_info": tool_info if tool_info else None,
     }
 
 
@@ -116,6 +219,7 @@ def parse_log_failures(
     current_job = ""
     current_step = ""
     error_lines: list[str] = []
+    step_logs: list[str] = []  # Collect all lines for current step
 
     for line in logs.split("\n"):
         # Detect job/step headers (format: "JobName\tStepName\tTimestamp Message")
@@ -127,11 +231,20 @@ def parse_log_failures(
                 if job and job != current_job:
                     current_job = job
                 if step and step != current_step:
-                    # Save previous errors
+                    # Save previous errors with raw logs for tool-specific parsing
                     if error_lines and current_step:
-                        failures.append(create_log_failure(current_job, current_step, error_lines, run_id, repo))
+                        raw_step_logs = "\n".join(step_logs)
+                        failures.append(
+                            create_log_failure(
+                                current_job, current_step, error_lines, run_id, repo, raw_step_logs
+                            )
+                        )
                     current_step = step
                     error_lines = []
+                    step_logs = []
+
+        # Collect all lines for current step (for tool-specific parsing)
+        step_logs.append(line)
 
         # Detect error annotations
         if "##[error]" in line:
@@ -139,16 +252,24 @@ def parse_log_failures(
             error_lines.append(error_msg)
         elif "error:" in line.lower() and current_step:
             error_lines.append(line.strip())
+        # Also capture FAILED test lines for pytest
+        elif "FAILED " in line and current_step:
+            error_lines.append(line.strip())
 
     # Save last batch
     if error_lines and current_step:
-        failures.append(create_log_failure(current_job, current_step, error_lines, run_id, repo))
+        raw_step_logs = "\n".join(step_logs)
+        failures.append(
+            create_log_failure(current_job, current_step, error_lines, run_id, repo, raw_step_logs)
+        )
 
     return failures
 
 
 __all__ = [
     "create_log_failure",
+    "extract_mutmut_info",
+    "extract_pytest_info",
     "infer_tool_from_step",
     "parse_log_failures",
 ]

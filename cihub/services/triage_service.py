@@ -179,6 +179,14 @@ def _build_markdown(bundle: dict[str, Any], max_failures: int = 10) -> str:
             if len(errors) > 5:
                 error_lines.append(f"  - ... and {len(errors) - 5} more error(s)")
 
+        # Use hints from failure entry if available, otherwise use defaults
+        hints = failure.get("hints") or [
+            f"Inspect artifacts and logs for {failure.get('tool')}",
+            "Re-run locally with the reproduce command",
+            "Apply deterministic fixes from tool output",
+        ]
+        hint_lines = [f"  - {hint}" for hint in hints]
+
         lines.extend(
             [
                 "",
@@ -192,10 +200,8 @@ def _build_markdown(bundle: dict[str, Any], max_failures: int = 10) -> str:
                 f"- Env: {env_str}",
                 "- Artifacts:",
                 *(artifact_lines if artifact_lines else ["  - -"]),
-                "- Fix checklist:",
-                f"  - Inspect artifacts and logs for {failure.get('tool')}",
-                "  - Re-run locally with the reproduce command",
-                "  - Apply deterministic fixes from tool output",
+                "- Hints:",
+                *hint_lines,
             ]
         )
 
