@@ -1170,9 +1170,9 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
         verify_result = _verify_tools_from_report(report_path, reports_dir_path)
 
         # Build problems from verification issues
-        problems: list[dict[str, Any]] = []
+        verify_problems: list[dict[str, Any]] = []
         for item in verify_result.get("drift", []):
-            problems.append({
+            verify_problems.append({
                 "severity": "warning",
                 "message": f"{item['tool']}: {item['message']}",
                 "code": "CIHUB-VERIFY-DRIFT",
@@ -1180,7 +1180,7 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
                 "tool": item["tool"],
             })
         for item in verify_result.get("no_proof", []):
-            problems.append({
+            verify_problems.append({
                 "severity": "warning",
                 "message": f"{item['tool']}: {item['message']}",
                 "code": "CIHUB-VERIFY-NO-PROOF",
@@ -1188,7 +1188,7 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
                 "tool": item["tool"],
             })
         for item in verify_result.get("failures", []):
-            problems.append({
+            verify_problems.append({
                 "severity": "error",
                 "message": f"{item['tool']}: {item['message']}",
                 "code": "CIHUB-VERIFY-FAILED",
@@ -1197,14 +1197,14 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             })
 
         # Build suggestions
-        suggestions: list[dict[str, Any]] = []
+        verify_suggestions: list[dict[str, Any]] = []
         if verify_result.get("drift"):
-            suggestions.append({
+            verify_suggestions.append({
                 "message": "Check workflow config - ensure tools are enabled in workflow steps",
                 "code": "CIHUB-VERIFY-CHECK-WORKFLOW",
             })
         if verify_result.get("no_proof"):
-            suggestions.append({
+            verify_suggestions.append({
                 "message": "Tools may have run but not produced expected output files",
                 "code": "CIHUB-VERIFY-CHECK-OUTPUTS",
             })
@@ -1214,8 +1214,8 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=exit_code,
             summary=verify_result["summary"],
-            problems=problems,
-            suggestions=suggestions,
+            problems=verify_problems,
+            suggestions=verify_suggestions,
             data={
                 **verify_result,
                 "raw_output": "\n".join(_format_verify_tools_output(verify_result)),
@@ -1237,9 +1237,9 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             failed = result_data["failed_count"]
 
             # Extract problems from failures_by_tool
-            problems: list[dict[str, Any]] = []
+            multi_problems: list[dict[str, Any]] = []
             for tool, repos in result_data.get("failures_by_tool", {}).items():
-                problems.append({
+                multi_problems.append({
                     "severity": "error",
                     "message": f"{tool}: {len(repos)} repo(s) failed",
                     "code": f"CIHUB-MULTI-{tool.upper()}",
@@ -1248,13 +1248,13 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
                     "repos": repos,
                 })
 
-            suggestions: list[dict[str, Any]] = []
-            if problems:
-                suggestions.append({
+            multi_suggestions: list[dict[str, Any]] = []
+            if multi_problems:
+                multi_suggestions.append({
                     "message": f"Run 'cat {artifacts['multi_markdown']}' for detailed breakdown",
                     "code": "CIHUB-MULTI-VIEW-MARKDOWN",
                 })
-                suggestions.append({
+                multi_suggestions.append({
                     "message": f"Run 'cat {artifacts['multi_triage']}' for JSON data",
                     "code": "CIHUB-MULTI-VIEW-JSON",
                 })
@@ -1262,8 +1262,8 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_SUCCESS,
                 summary=f"Aggregated {result_data['repo_count']} repos: {passed} passed, {failed} failed",
-                problems=problems,
-                suggestions=suggestions,
+                problems=multi_problems,
+                suggestions=multi_suggestions,
                 artifacts={key: str(path) for key, path in artifacts.items()},
                 files_generated=[str(artifacts["multi_triage"]), str(artifacts["multi_markdown"])],
                 data=result_data,
