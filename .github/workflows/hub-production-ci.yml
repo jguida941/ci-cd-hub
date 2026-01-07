@@ -545,24 +545,7 @@ jobs:
           name: coverage-db
 
       - name: Verify coverage database
-        run: |
-          echo "=== Coverage file check ==="
-          ls -la .coverage || echo "ERROR: .coverage file not found"
-          if [ -f .coverage ]; then
-            echo "=== Coverage database info ==="
-            python -c "
-          import coverage
-          c = coverage.Coverage()
-          c.load()
-          data = c.get_data()
-          files = list(data.measured_files())
-          print(f'Measured files: {len(files)}')
-          for f in sorted(files)[:10]:
-              print(f'  - {f}')
-          if len(files) > 10:
-              print(f'  ... and {len(files) - 10} more')
-          " || echo "ERROR: Failed to load coverage"
-          fi
+        run: python -m cihub hub-ci coverage-verify --github-summary
 
       - name: Run mutation tests
         id: mutmut

@@ -75,6 +75,117 @@ def cmd_black(args: argparse.Namespace) -> CommandResult:
     )
 
 
+def _get_mutation_targets() -> list[str]:
+    """Get mutation target paths from pyproject.toml."""
+    pyproject = Path("pyproject.toml")
+    if not pyproject.exists():
+        return []
+
+    try:
+        import tomllib
+    except ImportError:
+        try:
+            import tomli as tomllib  # type: ignore[import-not-found]
+        except ImportError:
+            return []
+
+    try:
+        config = tomllib.loads(pyproject.read_text())
+        return config.get("tool", {}).get("mutmut", {}).get("paths_to_mutate", [])
+    except Exception:
+        return []
+
+
+def cmd_coverage_verify(args: argparse.Namespace) -> CommandResult:
+    """Verify coverage database exists and is readable.
+
+    Used before mutation testing to ensure the .coverage file
+    was properly transferred from the unit tests job.
+    """
+    coverage_path = Path(args.coverage_file)
+    ctx = OutputContext.from_args(args)
+
+    if not coverage_path.exists():
+        ctx.write_summary("## Coverage Verification\n\n❌ **FAILED**: Coverage file not found\n")
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Coverage file not found: {coverage_path}",
+            problems=[{"severity": "error", "message": f"Coverage file not found: {coverage_path}"}],
+            data={"exists": False, "path": str(coverage_path)},
+        )
+
+    try:
+        import coverage
+
+        cov = coverage.Coverage()
+        cov.load()
+        data = cov.get_data()
+        measured_files = list(data.measured_files())
+        file_count = len(measured_files)
+
+        # Normalize file paths for comparison
+        measured_basenames = {Path(f).name for f in measured_files}
+
+        # Check mutation targets
+        mutation_targets = _get_mutation_targets()
+        mutation_coverage = []
+        for target in mutation_targets:
+            target_path = Path(target)
+            if target_path.is_dir():
+                # Check if any file in the directory is covered
+                covered = any(target in f for f in measured_files)
+            else:
+                covered = (
+                    target_path.name in measured_basenames
+                    or any(target in f for f in measured_files)
+                )
+            mutation_coverage.append((target, covered))
+
+        # Show first few files for debugging
+        sample_files = sorted(measured_files)[:10]
+
+        summary = (
+            "## Coverage Verification\n\n"
+            f"✅ **PASSED**: Coverage database loaded successfully\n\n"
+            f"- **Measured files**: {file_count}\n"
+        )
+
+        if mutation_targets:
+            summary += "\n### Mutation Target Coverage\n\n"
+            for target, covered in mutation_coverage:
+                status = "✅" if covered else "⚠️"
+                summary += f"- {status} `{target}`\n"
+
+        summary += "\n### Sample Files\n"
+        for f in sample_files:
+            summary += f"- `{f}`\n"
+        if file_count > 10:
+            summary += f"- ... and {file_count - 10} more\n"
+
+        ctx.write_summary(summary)
+        ctx.write_outputs({"measured_files": str(file_count), "valid": "true"})
+
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=f"Coverage database valid: {file_count} files measured",
+            data={
+                "exists": True,
+                "valid": True,
+                "measured_files": file_count,
+                "sample_files": sample_files,
+                "mutation_coverage": dict(mutation_coverage),
+            },
+        )
+    except Exception as exc:
+        ctx.write_summary(f"## Coverage Verification\n\n❌ **FAILED**: {exc}\n")
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Failed to load coverage database: {exc}",
+            problems=[{"severity": "error", "message": f"Failed to load coverage: {exc}"}],
+            data={"exists": True, "valid": False, "error": str(exc)},
+        )
+
+
 def cmd_mutmut(args: argparse.Namespace) -> CommandResult:
     workdir = Path(args.workdir).resolve()
     output_dir = Path(args.output_dir).resolve()

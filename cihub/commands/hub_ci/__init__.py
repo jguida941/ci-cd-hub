@@ -688,6 +688,7 @@ from cihub.commands.hub_ci.java_tools import (  # noqa: E402
 )
 from cihub.commands.hub_ci.python_tools import (  # noqa: E402
     cmd_black,
+    cmd_coverage_verify,
     cmd_mutmut,
     cmd_ruff,
 )
@@ -764,6 +765,7 @@ __all__ = [
     # Python tools
     "cmd_ruff",
     "cmd_black",
+    "cmd_coverage_verify",
     "cmd_mutmut",
     # Badges
     "cmd_badges",

@@ -16,7 +16,7 @@ from .java_tools import (
     cmd_smoke_java_spotbugs,
     cmd_smoke_java_tests,
 )
-from .python_tools import cmd_black, cmd_mutmut, cmd_ruff
+from .python_tools import cmd_black, cmd_coverage_verify, cmd_mutmut, cmd_ruff
 from .release import (
     cmd_actionlint,
     cmd_actionlint_install,
@@ -96,6 +96,7 @@ def cmd_hub_ci(args: argparse.Namespace) -> CommandResult:
         "ruff": cmd_ruff,
         "black": cmd_black,
         "mutmut": cmd_mutmut,
+        "coverage-verify": cmd_coverage_verify,
         "badges": cmd_badges,
         "badges-commit": cmd_badges_commit,
         "outputs": cmd_outputs,

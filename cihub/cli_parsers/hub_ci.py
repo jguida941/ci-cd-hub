@@ -352,6 +352,23 @@ def add_hub_ci_commands(subparsers, add_json_flag, handlers: CommandHandlers) ->
         help="Append summary to GITHUB_STEP_SUMMARY",
     )
 
+    hub_ci_coverage_verify = hub_ci_sub.add_parser(
+        "coverage-verify",
+        help="Verify coverage database exists and is readable for mutation testing",
+    )
+    hub_ci_coverage_verify.add_argument(
+        "--coverage-file",
+        default=".coverage",
+        help="Path to coverage database file",
+    )
+    add_output_args(hub_ci_coverage_verify)
+    add_summary_args(hub_ci_coverage_verify)
+    hub_ci_coverage_verify.add_argument(
+        "--github-summary",
+        action="store_true",
+        help="Append summary to GITHUB_STEP_SUMMARY",
+    )
+
     hub_ci_bandit = hub_ci_sub.add_parser("bandit", help="Run bandit and enforce severity gates")
     hub_ci_bandit.add_argument(
         "--paths",
