@@ -434,20 +434,20 @@ jobs:
           ## Quality Metrics
           | Metric | Value | Status |
           |--------|-------|--------|
-          | Coverage | ${{ steps.jacoco.outputs.percent || '-' }}% | ${{ steps.jacoco.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | Mutation Score | ${{ steps.pitest.outputs.score || '-' }}% | ${{ steps.pitest.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
+          | Coverage | ${{ steps.jacoco.outputs.percent || '-' }}% | ${{ steps.jacoco.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | Mutation Score | ${{ steps.pitest.outputs.score || '-' }}% | ${{ steps.pitest.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
 
           ## Code Quality
           | Tool | Issues | Status |
           |------|--------|--------|
-          | Checkstyle | ${{ steps.checkstyle.outputs.violations || '-' }} | ${{ steps.checkstyle.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | SpotBugs | ${{ steps.spotbugs.outputs.bugs || '-' }} | ${{ steps.spotbugs.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | PMD | ${{ steps.pmd.outputs.violations || '-' }} | ${{ steps.pmd.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
+          | Checkstyle | ${{ steps.checkstyle.outputs.violations || '-' }} | ${{ steps.checkstyle.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | SpotBugs | ${{ steps.spotbugs.outputs.bugs || '-' }} | ${{ steps.spotbugs.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | PMD | ${{ steps.pmd.outputs.violations || '-' }} | ${{ steps.pmd.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
 
           ## Security
           | Tool | Critical | High | Medium | Status |
           |------|----------|------|--------|--------|
-          | OWASP DC | ${{ steps.owasp.outputs.critical || '-' }} | ${{ steps.owasp.outputs.high || '-' }} | ${{ steps.owasp.outputs.medium || '-' }} | ${{ steps.owasp.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | Trivy | ${{ steps.trivy.outputs.critical || '-' }} | ${{ steps.trivy.outputs.high || '-' }} | - | ${{ steps.trivy.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | Semgrep | ${{ steps.semgrep.outputs.findings || '-' }} findings | - | - | ${{ steps.semgrep.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
+          | OWASP DC | ${{ steps.owasp.outputs.critical || '-' }} | ${{ steps.owasp.outputs.high || '-' }} | ${{ steps.owasp.outputs.medium || '-' }} | ${{ steps.owasp.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | Trivy | ${{ steps.trivy.outputs.critical || '-' }} | ${{ steps.trivy.outputs.high || '-' }} | - | ${{ steps.trivy.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | Semgrep | ${{ steps.semgrep.outputs.findings || '-' }} findings | - | - | ${{ steps.semgrep.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
           EOF

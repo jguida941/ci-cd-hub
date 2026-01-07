@@ -321,11 +321,11 @@ def aggregate_triage_bundles(
     )
 
     for repo in repos:
-        status_emoji = "✅" if repo["status"] == "passed" else "❌"
+        status_text = "passed" if repo["status"] == "passed" else "failed"
         failed_tools = ", ".join(repo["failed_tools"][:3]) or "-"
         if len(repo["failed_tools"]) > 3:
             failed_tools += "..."
-        md_lines.append(f"| {repo['repo']} | {status_emoji} {repo['status']} | {failed_tools} |")
+        md_lines.append(f"| {repo['repo']} | {status_text} | {failed_tools} |")
 
     return MultiTriageResult(
         schema_version=MULTI_TRIAGE_SCHEMA_VERSION,

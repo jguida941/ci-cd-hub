@@ -47,7 +47,7 @@ def format_human_output(report: StaleReport) -> str:
     lines.append("")
 
     if not report.stale_references:
-        lines.append("✅ No stale references found.")
+        lines.append("No stale references found.")
         return "\n".join(lines)
 
     # Group by file for readability
@@ -139,7 +139,7 @@ def format_ai_output(report: StaleReport) -> str:
         lines.append("")
 
     if not report.stale_references:
-        lines.append("✅ No stale references found.")
+        lines.append("No stale references found.")
         return "\n".join(lines)
 
     lines.append("## Files Requiring Updates")
@@ -204,6 +204,6 @@ def format_github_summary(report: StaleReport, since: str) -> str:
         if len(report.stale_references) > 10:
             lines.append(f"- ... and {len(report.stale_references) - 10} more")
     else:
-        lines.append("✅ No stale references found")
+        lines.append("No stale references found")
 
     return "\n".join(lines)

@@ -372,10 +372,10 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
     tools_require_run = report.get("tools_require_run", {}) or {}
 
     def gate_status(condition: bool, fail_label: str) -> str:
-        """Return gate status with color indicator."""
+        """Return gate status indicator."""
         if condition:
-            return "✅ Passed"
-        return f"❌ {fail_label}"
+            return "PASSED"
+        return fail_label.upper()
 
     def ran(tool: str) -> bool:
         return bool(tools_ran.get(tool, False))
@@ -383,8 +383,8 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
     def not_run_status(tool: str) -> str:
         """Return NOT RUN status with annotation for hard-fail vs soft-skip."""
         if tools_require_run.get(tool, False):
-            return "❌ NOT RUN"  # Hard-fail: will cause CI to fail
-        return "⚠️ NOT RUN"  # Soft-skip: warning only
+            return "NOT RUN (required)"  # Hard-fail: will cause CI to fail
+        return "NOT RUN"  # Soft-skip: warning only
 
     def skip_status() -> str:
         """Return SKIP status."""
@@ -401,7 +401,7 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
     tests_skipped = format_number(results.get("tests_skipped"))
     tests_total = tests_failed + tests_passed + tests_skipped
     if tests_total == 0:
-        lines.append("| Unit Tests | ⚠️ NOT RUN |")
+        lines.append("| Unit Tests | NOT RUN |")
     else:
         lines.append(f"| Unit Tests | {gate_status(tests_failed == 0, 'Failed')} |")
 

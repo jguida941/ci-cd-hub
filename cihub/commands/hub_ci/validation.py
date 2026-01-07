@@ -372,9 +372,9 @@ def cmd_enforce_command_result(args: argparse.Namespace) -> CommandResult:
             "",
         ]
         if count <= max_allowed:
-            lines.append(f"✅ **PASSED** - {count}/{max_allowed} allowed prints")
+            lines.append(f"**PASSED** - {count}/{max_allowed} allowed prints")
         else:
-            lines.append(f"❌ **FAILED** - {count} prints exceeds limit of {max_allowed}")
+            lines.append(f"**FAILED** - {count} prints exceeds limit of {max_allowed}")
             lines.append("")
             lines.append("### Violations")
             lines.append("")

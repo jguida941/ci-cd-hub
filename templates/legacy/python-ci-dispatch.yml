@@ -438,24 +438,24 @@ jobs:
           ## Quality Metrics
           | Metric | Value | Status |
           |--------|-------|--------|
-          | Coverage | ${{ steps.pytest.outputs.coverage || '-' }}% | ${{ steps.pytest.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | Tests Passed | ${{ steps.pytest.outputs.passed || '-' }} | ${{ steps.pytest.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | Tests Failed | ${{ steps.pytest.outputs.failed || '-' }} | ${{ steps.pytest.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | Mutation Score | ${{ steps.mutmut.outputs.score || '-' }}% | ${{ steps.mutmut.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
+          | Coverage | ${{ steps.pytest.outputs.coverage || '-' }}% | ${{ steps.pytest.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | Tests Passed | ${{ steps.pytest.outputs.passed || '-' }} | ${{ steps.pytest.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | Tests Failed | ${{ steps.pytest.outputs.failed || '-' }} | ${{ steps.pytest.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | Mutation Score | ${{ steps.mutmut.outputs.score || '-' }}% | ${{ steps.mutmut.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
 
           ## Code Quality
           | Tool | Issues | Status |
           |------|--------|--------|
-          | Ruff | ${{ steps.ruff.outputs.errors || '-' }} | ${{ steps.ruff.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | Black | ${{ steps.black.outputs.issues || '-' }} | ${{ steps.black.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | isort | ${{ steps.isort.outputs.issues || '-' }} | ${{ steps.isort.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | mypy | ${{ steps.mypy.outputs.errors || '-' }} | ${{ steps.mypy.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
+          | Ruff | ${{ steps.ruff.outputs.errors || '-' }} | ${{ steps.ruff.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | Black | ${{ steps.black.outputs.issues || '-' }} | ${{ steps.black.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | isort | ${{ steps.isort.outputs.issues || '-' }} | ${{ steps.isort.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | mypy | ${{ steps.mypy.outputs.errors || '-' }} | ${{ steps.mypy.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
 
           ## Security
           | Tool | High | Medium | Status |
           |------|------|--------|--------|
-          | Bandit | ${{ steps.bandit.outputs.high || '-' }} | ${{ steps.bandit.outputs.medium || '-' }} | ${{ steps.bandit.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | pip-audit | ${{ steps.pipaudit.outputs.vulns || '-' }} vulns | - | ${{ steps.pipaudit.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | Trivy | ${{ steps.trivy.outputs.critical || '-' }} crit / ${{ steps.trivy.outputs.high || '-' }} high | - | ${{ steps.trivy.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
-          | Semgrep | ${{ steps.semgrep.outputs.findings || '-' }} findings | - | ${{ steps.semgrep.outputs.ran == 'true' && '✅ Ran' || '⏭️ Skipped' }} |
+          | Bandit | ${{ steps.bandit.outputs.high || '-' }} | ${{ steps.bandit.outputs.medium || '-' }} | ${{ steps.bandit.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | pip-audit | ${{ steps.pipaudit.outputs.vulns || '-' }} vulns | - | ${{ steps.pipaudit.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | Trivy | ${{ steps.trivy.outputs.critical || '-' }} crit / ${{ steps.trivy.outputs.high || '-' }} high | - | ${{ steps.trivy.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
+          | Semgrep | ${{ steps.semgrep.outputs.findings || '-' }} findings | - | ${{ steps.semgrep.outputs.ran == 'true' && 'Ran' || 'Skipped' }} |
           EOF
