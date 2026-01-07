@@ -223,7 +223,7 @@ jobs:
         run: pip install -e .
 
       - name: Install zizmor
-        run: pip install zizmor==0.8.0
+        run: pip install zizmor>=1.0.0  # Need 1.x for proper SARIF level output
 
       - name: Run zizmor
         run: python -m cihub hub-ci zizmor-run --output zizmor.sarif
