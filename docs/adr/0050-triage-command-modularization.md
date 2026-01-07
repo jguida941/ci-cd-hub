@@ -1,10 +1,10 @@
 # ADR-0050: Triage Command Modularization
 
-**Status**: Implemented (Phases 1-3)
+**Status**: Implemented
 **Date:** 2026-01-07
 **Developer:** Justin Guida
 **Last Reviewed:** 2026-01-07
-**Implementation:** Commit `4156a06` (Phase 1), in-progress commit (Phases 2-3)
+**Implementation:** Commits `4156a06` (Phase 1), `3a37c45` (Phases 2-3), current (Phase 4)
 
 ## Context
 
@@ -226,26 +226,27 @@ class TestTriageCommandIntegration:
 
 ### 4. Migration Strategy
 
-**Phase 1** (Current ADR):
-- [ ] Create `cihub/commands/triage/` package
-- [ ] Extract `types.py` (constants, severity maps)
-- [ ] Extract `github.py` with `GitHubRunClient`
-- [ ] Update imports in `__init__.py`
+**Phase 1** ✅ Complete (commit `4156a06`):
+- [x] Create `cihub/commands/triage/` package
+- [x] Extract `types.py` (constants, severity maps)
+- [x] Extract `github.py` with `GitHubRunClient`
+- [x] Extract `artifacts.py` (artifact finding)
+- [x] Extract `log_parser.py` (failure parsing)
+- [x] Update imports in `__init__.py`
 
-**Phase 2**:
-- [ ] Extract `artifacts.py` (artifact finding)
-- [ ] Extract `log_parser.py` (failure parsing)
-- [ ] Extract `verification.py` with `ToolVerifier`
+**Phase 2** ✅ Complete (commit `3a37c45`):
+- [x] Extract `verification.py` with `ToolVerifier`
+- [x] Extract `output.py` (formatting)
 
-**Phase 3**:
-- [ ] Extract `remote.py` with strategy pattern
-- [ ] Extract `output.py` (formatting)
-- [ ] Extract `watch.py` (watch mode)
+**Phase 3** ✅ Complete (commit `3a37c45`):
+- [x] Extract `remote.py` with strategy pattern
+- [x] Extract `watch.py` (watch mode)
+- [x] Refactor `triage_cmd.py` to use imports (1502→558 lines)
 
-**Phase 4**:
-- [ ] Refactor `__init__.py` to <300 lines
-- [ ] Add hypothesis tests
-- [ ] Add integration tests
+**Phase 4** ✅ Complete:
+- [x] `__init__.py` at 133 lines (target was <300)
+- [x] Add hypothesis tests (10 property-based tests in `test_triage_properties.py`)
+- [x] Add integration tests (10 tests in `test_triage_integration.py`)
 
 ### 5. Backward Compatibility
 
