@@ -656,26 +656,75 @@ def cmd_zizmor_check(args: argparse.Namespace) -> CommandResult:
             problems=[{"severity": "error", "message": f"SARIF file not found: {sarif_path}"}],
         )
 
-    high = 0
+    findings: list[dict[str, Any]] = []
+    problems: list[dict[str, Any]] = []
     try:
         with sarif_path.open(encoding="utf-8") as f:
             sarif = json.load(f)
         runs = sarif.get("runs", []) if isinstance(sarif, dict) else []
         if runs:
             results = runs[0].get("results", []) or []
-            high = len([r for r in results if r.get("level") in ("error", "warning")])
+            for r in results:
+                # Include all findings - level may be unknown/error/warning/note
+                rule_id = r.get("ruleId", "unknown")
+                loc = r.get("locations", [{}])[0].get("physicalLocation", {})
+                artifact = loc.get("artifactLocation", {}).get("uri", "unknown")
+                line = loc.get("region", {}).get("startLine", 0)
+                message = r.get("message", {}).get("text", "")
+                level = r.get("level", "warning")
+                # Skip "note" level as they are informational
+                if level == "note":
+                    continue
+
+                findings.append({
+                    "rule": rule_id,
+                    "file": artifact,
+                    "line": line,
+                    "level": level,
+                    "message": message,
+                })
+                problems.append({
+                    "severity": "error" if level in ("error", "unknown") else "warning",
+                    "message": f"{rule_id}: {artifact}:{line}",
+                    "code": rule_id.replace("/", "-").upper(),
+                    "file": artifact,
+                    "line": line,
+                })
     except json.JSONDecodeError:
-        high = 0
+        pass
+
+    # Group findings by rule for summary
+    by_rule: dict[str, list[dict[str, Any]]] = {}
+    for f in findings:
+        rule = f["rule"]
+        if rule not in by_rule:
+            by_rule[rule] = []
+        by_rule[rule].append(f)
+
+    # Build summary
+    summary_lines = ["## Zizmor Workflow Security", f"Total findings: {len(findings)}", ""]
+    if by_rule:
+        summary_lines.append("### Findings by Rule")
+        for rule, items in sorted(by_rule.items()):
+            summary_lines.append(f"**{rule}** ({len(items)})")
+            # Show unique file:line combinations
+            seen: set[str] = set()
+            for item in items:
+                key = f"{item['file']}:{item['line']}"
+                if key not in seen:
+                    summary_lines.append(f"  - {key}")
+                    seen.add(key)
+            summary_lines.append("")
 
     ctx = OutputContext.from_args(args)
-    ctx.write_summary(f"## Zizmor Workflow Security\nHigh/Warning findings: {high}\n")
+    ctx.write_summary("\n".join(summary_lines))
 
-    if high > 0:
+    if findings:
         return CommandResult(
             exit_code=EXIT_FAILURE,
-            summary=f"zizmor-check: {high} workflow security findings",
-            problems=[{"severity": "error", "message": "Found workflow security findings - review in Security tab"}],
-            data={"findings": high},
+            summary=f"zizmor-check: {len(findings)} workflow security findings",
+            problems=problems,
+            data={"findings": len(findings), "by_rule": {k: len(v) for k, v in by_rule.items()}},
         )
     return CommandResult(
         exit_code=EXIT_SUCCESS,
