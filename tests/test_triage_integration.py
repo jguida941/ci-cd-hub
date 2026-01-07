@@ -9,9 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from cihub.commands.triage import cmd_triage
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
@@ -322,7 +320,8 @@ class TestTriageAnalysisModes:
         result = cmd_triage(args)
 
         assert result.exit_code == EXIT_SUCCESS
-        assert "gate" in result.summary.lower() or "history" in result.summary.lower() or "runs" in result.summary.lower()
+        summary = result.summary.lower()
+        assert "gate" in summary or "history" in summary or "runs" in summary
 
 
 class TestTriageRepoValidation:

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
-from typing import Any
 
 from cihub.services.triage_service import (
     CATEGORY_BY_TOOL,

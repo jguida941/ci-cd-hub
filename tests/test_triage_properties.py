@@ -9,8 +9,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from cihub.commands.triage.log_parser import (
     create_log_failure,

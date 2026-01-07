@@ -25,11 +25,13 @@ from cihub.commands.triage_cmd import cmd_triage as cmd_triage
 # Re-export types for external use
 from .artifacts import (
     find_all_reports_in_artifacts,
-    find_all_reports_in_artifacts as _find_all_reports_in_artifacts,  # backward compat
     find_artifact_by_pattern,
     find_report_in_artifacts,
     find_tool_outputs_in_artifacts,
     get_reports_dir_from_report,
+)
+from .artifacts import (
+    find_all_reports_in_artifacts as _find_all_reports_in_artifacts,  # backward compat
 )
 from .github import (
     GitHubRunClient,
