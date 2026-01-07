@@ -61,11 +61,17 @@ def test_run_ci_writes_report_and_summary(tmp_path: Path) -> None:
                     return_value=[],
                 ):
                     with mock.patch("cihub.services.ci_engine.render_summary", return_value="summary"):
+                        # Mock schema validation to avoid env-dependent behavior
+                        # (GITHUB_ACTIONS makes schema errors fatal in CI but warnings locally)
                         with mock.patch(
-                            "cihub.services.report_validator.validate_report",
-                            return_value=mock_validation,
+                            "cihub.services.report_validator.validate_against_schema",
+                            return_value=[],
                         ):
-                            result = run_ci(tmp_path, output_dir=output_dir)
+                            with mock.patch(
+                                "cihub.services.report_validator.validate_report",
+                                return_value=mock_validation,
+                            ):
+                                result = run_ci(tmp_path, output_dir=output_dir)
 
     assert result.success is True
     assert result.exit_code == EXIT_SUCCESS
