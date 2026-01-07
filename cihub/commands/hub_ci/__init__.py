@@ -343,7 +343,7 @@ def _load_config(path: Path | None) -> dict[str, Any]:
         config = normalize_config(raw)
 
         # Validate config against schema (fixes Part 7.5.1 schema validation bypass)
-        paths = PathConfig()
+        paths = PathConfig(str(hub_root()))
         errors = validate_config(config, paths)
         if errors:
             print(f"Config validation warnings: {', '.join(errors)}")

@@ -33,7 +33,7 @@ def _result_to_command_result(result: CiRunResult) -> CommandResult:
         problems=list(result.problems),
         artifacts=dict(result.artifacts),
         data=dict(result.data),
-        files_generated=files_generated if files_generated else None,
+        files_generated=files_generated or [],
     )
 
 

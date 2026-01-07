@@ -16,11 +16,11 @@ existing code is migrated incrementally.
 from __future__ import annotations
 
 import ast
-import re
 from pathlib import Path
 
 import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 # Files pending migration - remove from list as each is migrated
 # Goal: empty list = all commands follow the contract

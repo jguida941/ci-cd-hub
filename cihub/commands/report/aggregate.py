@@ -137,7 +137,7 @@ def _aggregate_report(args: argparse.Namespace) -> CommandResult:
                 "summary": str(result.summary_path) if result.summary_path else "",
                 "details": str(result.details_path) if result.details_path else "",
             },
-            files_generated=files_generated if files_generated else None,
+            files_generated=files_generated or [],
         )
 
     # Get token using standardized priority: GH_TOKEN -> GITHUB_TOKEN -> HUB_DISPATCH_TOKEN
@@ -210,5 +210,5 @@ def _aggregate_report(args: argparse.Namespace) -> CommandResult:
             "summary": str(result.summary_path) if result.summary_path else "",
             "details": str(result.details_path) if result.details_path else "",
         },
-        files_generated=files_generated if files_generated else None,
+        files_generated=files_generated or [],
     )

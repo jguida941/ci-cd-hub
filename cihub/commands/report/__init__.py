@@ -89,7 +89,7 @@ def cmd_report(args: argparse.Namespace) -> CommandResult:
             exit_code=EXIT_SUCCESS,
             summary="Summary rendered",
             artifacts={"summary": str(output_path) if output_path else ""},
-            data={"raw_output": summary_text} if write_summary and not output_path else None,
+            data={"raw_output": summary_text} if write_summary and not output_path else {},
         )
 
     if args.subcommand == "security-summary":
@@ -106,7 +106,7 @@ def cmd_report(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_SUCCESS,
             summary=f"Security summary generated ({mode} mode)",
-            data={"raw_output": summary_text} if not write_summary else None,
+            data={"raw_output": summary_text} if not write_summary else {},
         )
 
     if args.subcommand == "smoke-summary":
@@ -121,7 +121,7 @@ def cmd_report(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_SUCCESS,
             summary=f"Smoke summary generated ({mode} mode)",
-            data={"raw_output": summary_text} if not write_summary else None,
+            data={"raw_output": summary_text} if not write_summary else {},
         )
 
     if args.subcommand == "kyverno-summary":
@@ -132,7 +132,7 @@ def cmd_report(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_SUCCESS,
             summary="Kyverno summary generated",
-            data={"raw_output": summary_text} if not write_summary else None,
+            data={"raw_output": summary_text} if not write_summary else {},
         )
 
     if args.subcommand == "orchestrator-summary":
@@ -146,7 +146,7 @@ def cmd_report(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_SUCCESS,
             summary=f"Orchestrator summary generated ({args.mode} mode)",
-            data={"raw_output": summary_text} if not write_summary else None,
+            data={"raw_output": summary_text} if not write_summary else {},
         )
 
     if args.subcommand == "validate":

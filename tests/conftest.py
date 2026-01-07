@@ -6,13 +6,11 @@ Fixtures here are automatically available to all tests without explicit imports.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any, Callable
 from unittest.mock import MagicMock
 
 import pytest
-
 
 # =============================================================================
 # Repository Fixtures

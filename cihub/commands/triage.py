@@ -841,7 +841,11 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"Invalid repo format: {repo}",
-                problems=[{"severity": "error", "message": f"Repo must be in 'owner/repo' format (got: {repo})", "code": "CIHUB-TRIAGE-INVALID-REPO"}],
+                problems=[{
+                    "severity": "error",
+                    "message": f"Repo must be in 'owner/repo' format (got: {repo})",
+                    "code": "CIHUB-TRIAGE-INVALID-REPO",
+                }],
                 data={"repo": repo},
             )
 
