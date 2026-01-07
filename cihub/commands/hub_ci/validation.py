@@ -12,8 +12,8 @@ from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS
 from cihub.services.types import RepoEntry
 from cihub.types import CommandResult
-from cihub.utils.github_context import OutputContext
 from cihub.utils.env import resolve_flag
+from cihub.utils.github_context import OutputContext
 from cihub.utils.paths import hub_root
 
 from . import _bool_str
