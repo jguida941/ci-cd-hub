@@ -22,7 +22,7 @@ from cihub.utils.paths import hub_root
 
 def cmd_registry(args: argparse.Namespace) -> CommandResult:
     """Dispatch registry subcommands."""
-    subcommand = getattr(args, "subcommand", None)
+    subcommand: str | None = getattr(args, "subcommand", None)
 
     handlers = {
         "list": _cmd_list,
@@ -33,7 +33,7 @@ def cmd_registry(args: argparse.Namespace) -> CommandResult:
         "add": _cmd_add,
     }
 
-    handler = handlers.get(subcommand)
+    handler = handlers.get(subcommand or "")
     if handler is None:
         return CommandResult(
             exit_code=EXIT_USAGE,

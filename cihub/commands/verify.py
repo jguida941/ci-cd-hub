@@ -234,8 +234,7 @@ def _run_sync_check(
         yes=False,
         json=True,
     )
-    result = cmd_sync_templates(args)
-    return result if isinstance(result, CommandResult) else CommandResult(exit_code=int(result))
+    return cmd_sync_templates(args)
 
 
 def _run_integration(

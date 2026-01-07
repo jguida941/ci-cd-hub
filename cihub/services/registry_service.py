@@ -31,7 +31,8 @@ def load_registry(registry_path: Path | None = None) -> dict[str, Any]:
         return {"schema_version": "cihub-registry-v1", "tiers": {}, "repos": {}}
 
     with path.open(encoding="utf-8") as f:
-        return json.load(f)
+        data: dict[str, Any] = json.load(f)
+        return data
 
 
 def save_registry(registry: dict[str, Any], registry_path: Path | None = None) -> None:
@@ -147,7 +148,8 @@ def set_repo_tier(
         repos[repo_name] = {}
 
     repos[repo_name]["tier"] = tier
-    return repos[repo_name]
+    result: dict[str, Any] = repos[repo_name]
+    return result
 
 
 def set_repo_override(
@@ -177,7 +179,8 @@ def set_repo_override(
 
     overrides = repos[repo_name].setdefault("overrides", {})
     overrides[key] = value
-    return repos[repo_name]
+    result: dict[str, Any] = repos[repo_name]
+    return result
 
 
 def compute_diff(registry: dict[str, Any], configs_dir: Path) -> list[dict[str, Any]]:
