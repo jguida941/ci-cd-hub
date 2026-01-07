@@ -27,7 +27,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from hypothesis import given, settings, HealthCheck
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from cihub.types import CommandResult
@@ -304,8 +304,9 @@ class TestSecretsCommandContracts:
     )
     def test_token_validation(self, token: str, expected_valid: bool) -> None:
         """Token validation follows expected rules."""
-        from cihub.commands.secrets import cmd_setup_secrets
         from unittest import mock
+
+        from cihub.commands.secrets import cmd_setup_secrets
 
         with mock.patch("getpass.getpass", return_value=token):
             with mock.patch("subprocess.run") as mock_run:
@@ -340,10 +341,11 @@ class TestSecretsCommandContracts:
         self, verify_mode: bool, http_status: int | None, expected_exit: int
     ) -> None:
         """Verification mode handles different HTTP responses."""
-        from cihub.commands.secrets import cmd_setup_secrets
-        from unittest import mock
-        import urllib.error
         import io
+        import urllib.error
+        from unittest import mock
+
+        from cihub.commands.secrets import cmd_setup_secrets
 
         def make_response():
             class MockResponse:
@@ -401,8 +403,9 @@ class TestSecretsCommandContracts:
     @settings(max_examples=20)
     def test_valid_tokens_accepted(self, token: str) -> None:
         """Property: Tokens without whitespace are accepted."""
-        from cihub.commands.secrets import cmd_setup_secrets
         from unittest import mock
+
+        from cihub.commands.secrets import cmd_setup_secrets
 
         with mock.patch("getpass.getpass", return_value=token):
             with mock.patch("subprocess.run") as mock_run:
@@ -611,8 +614,9 @@ class TestRegressionEdgeCases:
 
     def test_secrets_subprocess_failure(self) -> None:
         """Regression: secrets command handles subprocess failure gracefully."""
-        from cihub.commands.secrets import cmd_setup_secrets
         from unittest import mock
+
+        from cihub.commands.secrets import cmd_setup_secrets
 
         # Mock subprocess.run to fail
         with mock.patch("subprocess.run") as mock_run:

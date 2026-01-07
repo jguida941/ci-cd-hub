@@ -20,7 +20,6 @@ from cihub.output import AIRenderer, HumanRenderer, JsonRenderer, get_renderer
 from cihub.output.ai_formatters import get_ai_formatter, has_ai_formatter
 from cihub.types import CommandResult
 
-
 # ============================================================================
 # get_renderer Tests
 # ============================================================================

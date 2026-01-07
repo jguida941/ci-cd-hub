@@ -1036,7 +1036,6 @@ class TestCmdSmokePython:
     @mock.patch("cihub.commands.hub_ci.smoke._run_command")
     def test_smoke_python_tests_parses_output(self, mock_run: mock.Mock, tmp_path: Path) -> None:
         from cihub.commands.hub_ci import cmd_smoke_python_tests
-        from cihub.exit_codes import EXIT_SUCCESS
         from cihub.types import CommandResult
 
         repo_path = tmp_path / "repo"

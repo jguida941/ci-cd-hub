@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 
 
-
 def test_fix_help():
     """Test that fix --help works."""
     result = subprocess.run(

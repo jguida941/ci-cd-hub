@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.services.report_validator import ValidationRules, validate_report
 from cihub.services.triage_service import (
     CATEGORY_BY_TOOL,
     SEVERITY_BY_CATEGORY,
@@ -625,6 +626,199 @@ def _format_flaky_output(flaky_result: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _verify_tools_from_report(
+    report_path: Path,
+    reports_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Verify that configured tools actually ran and have proof.
+
+    Uses report_validator to check:
+    - Tools configured but didn't run (DRIFT)
+    - Tools that ran but have no proof (metrics/artifacts)
+    - Tool failures vs success claims
+
+    Args:
+        report_path: Path to report.json
+        reports_dir: Optional directory containing tool artifacts
+
+    Returns:
+        Dict with verification results: drift, no_proof, failures, summary
+    """
+    result: dict[str, Any] = {
+        "verified": True,
+        "drift": [],  # Tools configured but didn't run
+        "no_proof": [],  # Tools ran but no metrics/artifacts
+        "failures": [],  # Tools that failed
+        "skipped": [],  # Tools not configured
+        "passed": [],  # Tools ran, have proof, and succeeded
+        "summary": "",
+        "tool_matrix": [],  # Full matrix for display
+    }
+
+    if not report_path.exists():
+        result["verified"] = False
+        result["summary"] = f"Report not found: {report_path}"
+        return result
+
+    try:
+        with report_path.open(encoding="utf-8") as f:
+            report = json.load(f)
+    except json.JSONDecodeError as e:
+        result["verified"] = False
+        result["summary"] = f"Invalid JSON in report: {e}"
+        return result
+
+    tools_configured = report.get("tools_configured", {}) or {}
+    tools_ran = report.get("tools_ran", {}) or {}
+    tools_success = report.get("tools_success", {}) or {}
+
+    # Run validation to get warnings about proof
+    rules = ValidationRules(consistency_only=True)
+    validation = validate_report(report, rules, reports_dir=reports_dir)
+
+    # Process each tool
+    all_tools = set(tools_configured.keys()) | set(tools_ran.keys())
+    for tool in sorted(all_tools):
+        configured = tools_configured.get(tool, False)
+        ran = tools_ran.get(tool, False)
+        success = tools_success.get(tool, False)
+
+        tool_entry = {
+            "tool": tool,
+            "configured": configured,
+            "ran": ran,
+            "success": success,
+            "status": "unknown",
+            "issue": None,
+        }
+
+        if not configured:
+            tool_entry["status"] = "skipped"
+            result["skipped"].append(tool)
+        elif configured and not ran:
+            tool_entry["status"] = "drift"
+            tool_entry["issue"] = "Configured but did not run"
+            result["drift"].append({"tool": tool, "message": "Configured but did not run"})
+            result["verified"] = False
+        elif ran and success:
+            tool_entry["status"] = "passed"
+            result["passed"].append(tool)
+        elif ran and not success:
+            tool_entry["status"] = "failed"
+            tool_entry["issue"] = "Ran but failed"
+            result["failures"].append({"tool": tool, "message": "Ran but failed"})
+            result["verified"] = False
+
+        result["tool_matrix"].append(tool_entry)
+
+    # Check validation warnings for "no proof" issues
+    for warning in validation.warnings:
+        if "no proof found" in warning.lower():
+            # Extract tool name from warning
+            for tool in all_tools:
+                if f"'{tool}'" in warning:
+                    result["no_proof"].append({"tool": tool, "message": warning})
+                    result["verified"] = False
+                    # Update matrix entry
+                    for entry in result["tool_matrix"]:
+                        if entry["tool"] == tool and entry["status"] == "passed":
+                            entry["status"] = "no_proof"
+                            entry["issue"] = "Ran but no metrics/artifacts found"
+                    break
+
+    # Also check for empty artifact warnings
+    for warning in validation.warnings:
+        if "empty output files" in warning.lower():
+            for tool in all_tools:
+                if f"'{tool}'" in warning:
+                    if not any(p["tool"] == tool for p in result["no_proof"]):
+                        result["no_proof"].append({"tool": tool, "message": warning})
+                        result["verified"] = False
+                    break
+
+    # Generate summary
+    total = len(result["tool_matrix"])
+    passed = len(result["passed"])
+    drift_count = len(result["drift"])
+    no_proof_count = len(result["no_proof"])
+    fail_count = len(result["failures"])
+    skip_count = len(result["skipped"])
+
+    if result["verified"]:
+        result["summary"] = f"All {passed} configured tools verified (ran with proof)"
+    else:
+        issues = []
+        if drift_count:
+            issues.append(f"{drift_count} configured but didn't run")
+        if no_proof_count:
+            issues.append(f"{no_proof_count} ran but no proof")
+        if fail_count:
+            issues.append(f"{fail_count} failed")
+        result["summary"] = f"Tool verification: {', '.join(issues)}"
+
+    result["counts"] = {
+        "total": total,
+        "passed": passed,
+        "drift": drift_count,
+        "no_proof": no_proof_count,
+        "failures": fail_count,
+        "skipped": skip_count,
+    }
+
+    return result
+
+
+def _format_verify_tools_output(verify_result: dict[str, Any]) -> list[str]:
+    """Format tool verification for human-readable output."""
+    lines = [
+        "Tool Verification Report",
+        "=" * 50,
+    ]
+
+    # Tool matrix table
+    lines.append("")
+    lines.append("| Tool | Configured | Ran | Success | Status |")
+    lines.append("|------|------------|-----|---------|--------|")
+    for entry in verify_result.get("tool_matrix", []):
+        configured = "yes" if entry["configured"] else "no"
+        ran = "yes" if entry["ran"] else "no"
+        success = "yes" if entry["success"] else "no"
+        status = entry["status"].upper()
+        lines.append(f"| {entry['tool']} | {configured} | {ran} | {success} | {status} |")
+
+    lines.append("")
+    counts = verify_result.get("counts", {})
+    lines.append(f"Total: {counts.get('total', 0)} tools")
+    lines.append(f"  Passed: {counts.get('passed', 0)}")
+    lines.append(f"  Drift (configured but didn't run): {counts.get('drift', 0)}")
+    lines.append(f"  No proof (ran but no metrics/artifacts): {counts.get('no_proof', 0)}")
+    lines.append(f"  Failed: {counts.get('failures', 0)}")
+    lines.append(f"  Skipped (not configured): {counts.get('skipped', 0)}")
+
+    if verify_result.get("drift"):
+        lines.append("")
+        lines.append("DRIFT - Tools configured but didn't run:")
+        for item in verify_result["drift"]:
+            lines.append(f"  - {item['tool']}: {item['message']}")
+
+    if verify_result.get("no_proof"):
+        lines.append("")
+        lines.append("NO PROOF - Tools ran but no metrics/artifacts:")
+        for item in verify_result["no_proof"]:
+            lines.append(f"  - {item['tool']}: {item['message']}")
+
+    if verify_result.get("failures"):
+        lines.append("")
+        lines.append("FAILED - Tools that failed:")
+        for item in verify_result["failures"]:
+            lines.append(f"  - {item['tool']}: {item['message']}")
+
+    lines.append("")
+    lines.append(f"Summary: {verify_result.get('summary', 'Unknown')}")
+
+    return lines
+
+
 def _get_latest_failed_run(
     repo: str | None,
     workflow: str | None = None,
@@ -929,6 +1123,106 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             },
         )
 
+    # Handle --verify-tools mode (standalone analysis)
+    verify_tools = getattr(args, "verify_tools", False)
+    if verify_tools:
+        # Find report.json (from args, latest run, or default location)
+        report_path: Path | None = None
+        reports_dir_path: Path | None = None
+
+        if args.report:
+            report_path = Path(args.report)
+            reports_dir_path = report_path.parent
+        elif run_id or latest_mode:
+            # Use remote run artifacts
+            effective_run_id = run_id
+            if latest_mode and not run_id:
+                effective_run_id = _get_latest_failed_run(
+                    repo=repo,
+                    workflow=workflow_filter,
+                    branch=branch_filter,
+                )
+            if effective_run_id:
+                run_dir = output_dir / "runs" / effective_run_id
+                artifacts_dir = run_dir / "artifacts"
+                # Download artifacts if not already present
+                if not artifacts_dir.exists() or not list(artifacts_dir.iterdir()):
+                    artifacts_dir.mkdir(parents=True, exist_ok=True)
+                    _download_artifacts(effective_run_id, repo, artifacts_dir)
+                report_path = _find_report_in_artifacts(artifacts_dir)
+                reports_dir_path = report_path.parent if report_path else None
+        else:
+            # Default: look in output_dir
+            report_path = output_dir / "report.json"
+            reports_dir_path = output_dir
+
+        if not report_path or not report_path.exists():
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary="No report.json found for tool verification",
+                problems=[{
+                    "severity": "error",
+                    "message": "Provide --report path or use --run/--latest to fetch artifacts",
+                    "code": "CIHUB-VERIFY-NO-REPORT",
+                }],
+            )
+
+        verify_result = _verify_tools_from_report(report_path, reports_dir_path)
+
+        # Build problems from verification issues
+        problems: list[dict[str, Any]] = []
+        for item in verify_result.get("drift", []):
+            problems.append({
+                "severity": "warning",
+                "message": f"{item['tool']}: {item['message']}",
+                "code": "CIHUB-VERIFY-DRIFT",
+                "category": "tool",
+                "tool": item["tool"],
+            })
+        for item in verify_result.get("no_proof", []):
+            problems.append({
+                "severity": "warning",
+                "message": f"{item['tool']}: {item['message']}",
+                "code": "CIHUB-VERIFY-NO-PROOF",
+                "category": "tool",
+                "tool": item["tool"],
+            })
+        for item in verify_result.get("failures", []):
+            problems.append({
+                "severity": "error",
+                "message": f"{item['tool']}: {item['message']}",
+                "code": "CIHUB-VERIFY-FAILED",
+                "category": "tool",
+                "tool": item["tool"],
+            })
+
+        # Build suggestions
+        suggestions: list[dict[str, Any]] = []
+        if verify_result.get("drift"):
+            suggestions.append({
+                "message": "Check workflow config - ensure tools are enabled in workflow steps",
+                "code": "CIHUB-VERIFY-CHECK-WORKFLOW",
+            })
+        if verify_result.get("no_proof"):
+            suggestions.append({
+                "message": "Tools may have run but not produced expected output files",
+                "code": "CIHUB-VERIFY-CHECK-OUTPUTS",
+            })
+
+        exit_code = EXIT_SUCCESS if verify_result["verified"] else EXIT_FAILURE
+
+        return CommandResult(
+            exit_code=exit_code,
+            summary=verify_result["summary"],
+            problems=problems,
+            suggestions=suggestions,
+            data={
+                **verify_result,
+                "raw_output": "\n".join(_format_verify_tools_output(verify_result)),
+                "report_path": str(report_path),
+            },
+        )
+
     try:
         # Multi-report mode
         if multi_mode:
@@ -1087,6 +1381,34 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             "tool": failure.get("tool", "unknown"),
         })
 
+    # Run tool verification and add to output
+    tool_verification: dict[str, Any] | None = None
+    triage_report_path = bundle.triage.get("paths", {}).get("report_path")
+    if triage_report_path:
+        triage_report_file = Path(triage_report_path)
+        if triage_report_file.exists():
+            tool_verification = _verify_tools_from_report(
+                triage_report_file,
+                triage_report_file.parent,
+            )
+            # Add tool verification issues to problems
+            for item in tool_verification.get("drift", []):
+                problems.append({
+                    "severity": "warning",
+                    "message": f"Tool '{item['tool']}': {item['message']}",
+                    "code": "CIHUB-VERIFY-DRIFT",
+                    "category": "tool",
+                    "tool": item["tool"],
+                })
+            for item in tool_verification.get("no_proof", []):
+                problems.append({
+                    "severity": "warning",
+                    "message": f"Tool '{item['tool']}': {item['message']}",
+                    "code": "CIHUB-VERIFY-NO-PROOF",
+                    "category": "tool",
+                    "tool": item["tool"],
+                })
+
     # Generate suggestions based on failures
     suggestions: list[dict[str, Any]] = []
     if problems:
@@ -1097,6 +1419,11 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
         suggestions.append({
             "message": f"Run 'cat {artifacts['markdown']}' for human-readable summary",
             "code": "CIHUB-TRIAGE-VIEW-MARKDOWN",
+        })
+    if tool_verification and (tool_verification.get("drift") or tool_verification.get("no_proof")):
+        suggestions.append({
+            "message": "Run 'cihub triage --verify-tools' for detailed tool verification",
+            "code": "CIHUB-TRIAGE-VERIFY-TOOLS",
         })
 
     return CommandResult(
@@ -1114,6 +1441,7 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             "schema_version": bundle.triage.get("schema_version", ""),
             "failure_count": failure_count,
             "filters_applied": filters_applied,
+            "tool_verification": tool_verification,
             "key_values": {
                 "triage": str(artifacts["triage"]),
                 "priority": str(artifacts["priority"]),

@@ -1,9 +1,9 @@
 from types import SimpleNamespace
 
-from cihub.types import CommandResult
-from cihub.utils import hub_root
 from cihub.commands import verify as verify_module
 from cihub.commands.verify import cmd_verify, validate_reusable_contracts, validate_template_contracts
+from cihub.types import CommandResult
+from cihub.utils import hub_root
 
 
 def test_template_contracts_clean() -> None:

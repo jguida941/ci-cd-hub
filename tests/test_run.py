@@ -7,8 +7,6 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from cihub.ci_runner import ToolResult
 from cihub.commands.run import RUNNERS, _tool_enabled, cmd_run
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE

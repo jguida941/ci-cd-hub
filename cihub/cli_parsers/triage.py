@@ -120,4 +120,11 @@ def add_triage_command(
         choices=["workflow", "security", "test", "lint", "docs", "build", "cihub"],
         help="Only show failures in this category",
     )
+    # Tool verification
+    triage.add_argument(
+        "--verify-tools",
+        action="store_true",
+        dest="verify_tools",
+        help="Verify that configured tools actually ran and have proof (metrics/artifacts)",
+    )
     triage.set_defaults(func=handlers.cmd_triage)

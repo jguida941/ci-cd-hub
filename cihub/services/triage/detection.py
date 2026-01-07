@@ -160,7 +160,10 @@ def detect_flaky_patterns(history_path: Path, min_runs: int = 5) -> dict[str, An
             result["recommendation"] = "CI appears stable. No obvious flaky patterns detected."
 
         # Add recent history summary
-        recent_statuses = ["pass" if e.get("overall_status") in ("success", "passed") else "fail" for e in entries[-10:]]
+        recent_statuses = [
+            "pass" if e.get("overall_status") in ("success", "passed") else "fail"
+            for e in entries[-10:]
+        ]
         result["recent_history"] = "".join(recent_statuses)
 
     except (json.JSONDecodeError, KeyError, TypeError) as exc:

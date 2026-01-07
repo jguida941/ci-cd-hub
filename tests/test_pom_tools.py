@@ -6,12 +6,12 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from cihub.cli import build_parser  # noqa: E402
+from cihub.commands.pom import apply_dependency_fixes, apply_pom_fixes  # noqa: E402
 from cihub.utils import (  # noqa: E402
     collect_java_dependency_warnings,
     collect_java_pom_warnings,
     get_java_tool_flags,
 )
-from cihub.commands.pom import apply_dependency_fixes, apply_pom_fixes  # noqa: E402
 
 
 def write_pom(path: Path, body: str) -> None:

@@ -8,8 +8,6 @@ import os
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
 from cihub.commands.report import (
     _build_context,
     _detect_java_project_type,

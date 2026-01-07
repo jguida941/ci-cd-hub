@@ -105,9 +105,9 @@ class TestStrategyCommonBehavior:
         thresholds = strategy.get_thresholds()
         assert len(thresholds) > 0, f"{language} should have threshold specs"
         for spec in thresholds:
-            assert hasattr(spec, "key"), f"ThresholdSpec missing 'key'"
-            assert hasattr(spec, "label"), f"ThresholdSpec missing 'label'"
-            assert hasattr(spec, "comparator"), f"ThresholdSpec missing 'comparator'"
+            assert hasattr(spec, "key"), "ThresholdSpec missing 'key'"
+            assert hasattr(spec, "label"), "ThresholdSpec missing 'label'"
+            assert hasattr(spec, "comparator"), "ThresholdSpec missing 'comparator'"
 
     @pytest.mark.parametrize("language", ["python", "java"], ids=["python", "java"])
     def test_strategy_tool_specs_have_required_attrs(self, language: str) -> None:
@@ -116,9 +116,9 @@ class TestStrategyCommonBehavior:
         tool_specs = strategy.get_tool_specs()
         assert len(tool_specs) > 0, f"{language} should have tool specs"
         for spec in tool_specs:
-            assert hasattr(spec, "key"), f"ToolSpec missing 'key'"
-            assert hasattr(spec, "label"), f"ToolSpec missing 'label'"
-            assert hasattr(spec, "category"), f"ToolSpec missing 'category'"
+            assert hasattr(spec, "key"), "ToolSpec missing 'key'"
+            assert hasattr(spec, "label"), "ToolSpec missing 'label'"
+            assert hasattr(spec, "category"), "ToolSpec missing 'category'"
 
 
 class TestStrategyDetection:

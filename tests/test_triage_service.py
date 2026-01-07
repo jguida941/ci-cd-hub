@@ -632,8 +632,8 @@ class TestFlakyDetection:
         assert result["suspected_flaky"] is True
         assert "Flaky behavior detected" in result["recommendation"]
 
-    def test_detect_flaky_recent_history_emojis(self, tmp_path: Path) -> None:
-        """Recent history is shown as emoji string."""
+    def test_detect_flaky_recent_history_text(self, tmp_path: Path) -> None:
+        """Recent history is shown as pass/fail text string."""
         history_path = tmp_path / "triage-history.ndjson"
         entries = [
             {"overall_status": "success", "failure_count": 0},
@@ -647,8 +647,8 @@ class TestFlakyDetection:
         result = detect_flaky_patterns(history_path)
 
         assert "recent_history" in result
-        assert "✅" in result["recent_history"]
-        assert "❌" in result["recent_history"]
+        assert "pass" in result["recent_history"]
+        assert "fail" in result["recent_history"]
 
     def test_detect_flaky_failure_count_variance(self, tmp_path: Path) -> None:
         """High variance in failure counts indicates instability."""
@@ -669,3 +669,124 @@ class TestFlakyDetection:
         assert result["state_changes"] == 0
         assert result["suspected_flaky"] is True  # Due to variance
         assert any("variance" in d.lower() for d in result["details"])
+
+
+# =============================================================================
+# Tool Verification Tests
+# =============================================================================
+
+
+class TestToolVerification:
+    """Tests for _verify_tools_from_report function."""
+
+    def test_verify_tools_all_passed(self, tmp_path: Path) -> None:
+        """All configured tools ran and succeeded with proof (metrics)."""
+        from cihub.commands.triage import _verify_tools_from_report
+
+        report_path = tmp_path / "report.json"
+        report = _make_report(
+            tools_configured={"ruff": True, "pytest": True},
+            tools_ran={"ruff": True, "pytest": True},
+            tools_success={"ruff": True, "pytest": True},
+            tool_metrics={"ruff_errors": 0},  # Provide proof for ruff
+        )
+        # Add pytest proof via results
+        report["results"] = {"tests_passed": 10, "coverage": 80}
+        _write_report(report_path, report)
+
+        result = _verify_tools_from_report(report_path, tmp_path)
+
+        assert result["verified"] is True
+        assert len(result["passed"]) == 2
+        assert len(result["drift"]) == 0
+        assert len(result["failures"]) == 0
+        assert "ruff" in result["passed"]
+        assert "pytest" in result["passed"]
+
+    def test_verify_tools_drift_detected(self, tmp_path: Path) -> None:
+        """Detect drift when configured tool didn't run."""
+        from cihub.commands.triage import _verify_tools_from_report
+
+        report_path = tmp_path / "report.json"
+        report = _make_report(
+            tools_configured={"ruff": True, "mypy": True},
+            tools_ran={"ruff": True, "mypy": False},
+            tools_success={"ruff": True},
+        )
+        _write_report(report_path, report)
+
+        result = _verify_tools_from_report(report_path, tmp_path)
+
+        assert result["verified"] is False
+        assert len(result["drift"]) == 1
+        assert result["drift"][0]["tool"] == "mypy"
+        assert "configured but didn't run" in result["summary"].lower()
+
+    def test_verify_tools_failure_detected(self, tmp_path: Path) -> None:
+        """Detect tool failures."""
+        from cihub.commands.triage import _verify_tools_from_report
+
+        report_path = tmp_path / "report.json"
+        report = _make_report(
+            tools_configured={"ruff": True, "pytest": True},
+            tools_ran={"ruff": True, "pytest": True},
+            tools_success={"ruff": True, "pytest": False},
+        )
+        _write_report(report_path, report)
+
+        result = _verify_tools_from_report(report_path, tmp_path)
+
+        assert result["verified"] is False
+        assert len(result["failures"]) == 1
+        assert result["failures"][0]["tool"] == "pytest"
+        assert "failed" in result["summary"].lower()
+
+    def test_verify_tools_skipped_not_counted_as_drift(self, tmp_path: Path) -> None:
+        """Tools not configured should be skipped, not counted as drift."""
+        from cihub.commands.triage import _verify_tools_from_report
+
+        report_path = tmp_path / "report.json"
+        report = _make_report(
+            tools_configured={"ruff": True, "mypy": False},
+            tools_ran={"ruff": True},
+            tools_success={"ruff": True},
+            tool_metrics={"ruff_errors": 0},  # Provide proof for ruff
+        )
+        _write_report(report_path, report)
+
+        result = _verify_tools_from_report(report_path, tmp_path)
+
+        assert result["verified"] is True
+        assert "mypy" in result["skipped"]
+        assert len(result["drift"]) == 0
+
+    def test_verify_tools_report_not_found(self, tmp_path: Path) -> None:
+        """Handle missing report gracefully."""
+        from cihub.commands.triage import _verify_tools_from_report
+
+        report_path = tmp_path / "nonexistent.json"
+
+        result = _verify_tools_from_report(report_path, tmp_path)
+
+        assert result["verified"] is False
+        assert "not found" in result["summary"].lower()
+
+    def test_verify_tools_counts_correct(self, tmp_path: Path) -> None:
+        """Verify counts are correct."""
+        from cihub.commands.triage import _verify_tools_from_report
+
+        report_path = tmp_path / "report.json"
+        report = _make_report(
+            tools_configured={"ruff": True, "pytest": True, "mypy": True, "bandit": False},
+            tools_ran={"ruff": True, "pytest": True, "mypy": False},
+            tools_success={"ruff": True, "pytest": False},
+        )
+        _write_report(report_path, report)
+
+        result = _verify_tools_from_report(report_path, tmp_path)
+
+        counts = result["counts"]
+        assert counts["passed"] == 1  # ruff
+        assert counts["failures"] == 1  # pytest
+        assert counts["drift"] == 1  # mypy
+        assert counts["skipped"] == 1  # bandit
