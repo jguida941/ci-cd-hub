@@ -10,6 +10,7 @@ import re
 import shutil
 import tarfile
 from pathlib import Path
+from typing import Any
 
 import defusedxml.ElementTree as ET  # Secure XML parsing
 
@@ -695,11 +696,11 @@ def cmd_zizmor_check(args: argparse.Namespace) -> CommandResult:
 
     # Group findings by rule for summary
     by_rule: dict[str, list[dict[str, Any]]] = {}
-    for f in findings:
-        rule = f["rule"]
+    for finding in findings:
+        rule = finding["rule"]
         if rule not in by_rule:
             by_rule[rule] = []
-        by_rule[rule].append(f)
+        by_rule[rule].append(finding)
 
     # Build summary
     summary_lines = ["## Zizmor Workflow Security", f"Total findings: {len(findings)}", ""]
