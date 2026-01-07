@@ -50,10 +50,14 @@ jobs:
         run: cihub hub-ci actionlint-install --version 1.7.4 --checksum fc0a6886bbb9a23a39eeec4b176193cadb54ddbe77cdbb19b637933919545395 --dest .cihub/tools --github-output
 
       - name: Validate python-ci.yml
-        run: cihub hub-ci actionlint --workflow .github/workflows/python-ci.yml --bin "${{ steps.actionlint-install.outputs.path }}"
+        env:
+          ACTIONLINT_BIN: ${{ steps.actionlint-install.outputs.path }}
+        run: cihub hub-ci actionlint --workflow .github/workflows/python-ci.yml --bin "$ACTIONLINT_BIN"
 
       - name: Validate java-ci.yml
-        run: cihub hub-ci actionlint --workflow .github/workflows/java-ci.yml --bin "${{ steps.actionlint-install.outputs.path }}"
+        env:
+          ACTIONLINT_BIN: ${{ steps.actionlint-install.outputs.path }}
+        run: cihub hub-ci actionlint --workflow .github/workflows/java-ci.yml --bin "$ACTIONLINT_BIN"
 
       - name: Install dependencies
         run: pip install pytest pyyaml jsonschema
@@ -113,4 +117,7 @@ jobs:
             ```
 
       - name: Update floating major tag
-        run: cihub hub-ci release-update-tag --major "${{ steps.version.outputs.major }}" --version "${{ steps.version.outputs.version }}" --remote origin
+        env:
+          VERSION_MAJOR: ${{ steps.version.outputs.major }}
+          VERSION_FULL: ${{ steps.version.outputs.version }}
+        run: cihub hub-ci release-update-tag --major "$VERSION_MAJOR" --version "$VERSION_FULL" --remote origin

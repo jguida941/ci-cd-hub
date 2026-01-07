@@ -187,7 +187,8 @@ jobs:
       - name: Run actionlint with reviewdog
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: cihub hub-ci actionlint --workflow .github/workflows/hub-production-ci.yml --bin "${{ steps.actionlint-install.outputs.path }}" --reviewdog
+          ACTIONLINT_BIN: ${{ steps.actionlint-install.outputs.path }}
+        run: cihub hub-ci actionlint --workflow .github/workflows/hub-production-ci.yml --bin "$ACTIONLINT_BIN" --reviewdog
 
   zizmor:
     name: Workflow Security (zizmor)
@@ -463,11 +464,15 @@ jobs:
         run: pip install pytest pytest-cov pytest-benchmark pyyaml jsonschema syrupy hypothesis
 
       - name: Run tests with coverage
-        run: python -m pytest tests/ -v --cov=cihub --cov=scripts --cov-report=xml --cov-report=term-missing --cov-fail-under=${{ needs.hub-ci-config.outputs.coverage_min }} --junitxml=test-results.xml
+        env:
+          COVERAGE_MIN: ${{ needs.hub-ci-config.outputs.coverage_min }}
+        run: python -m pytest tests/ -v --cov=cihub --cov=scripts --cov-report=xml --cov-report=term-missing --cov-fail-under="$COVERAGE_MIN" --junitxml=test-results.xml
 
       - name: Generate test summary
         if: always()
-        run: python -m cihub hub-ci pytest-summary --coverage-min ${{ needs.hub-ci-config.outputs.coverage_min }} --github-summary
+        env:
+          COVERAGE_MIN: ${{ needs.hub-ci-config.outputs.coverage_min }}
+        run: python -m cihub hub-ci pytest-summary --coverage-min "$COVERAGE_MIN" --github-summary
 
       - name: Upload coverage
         uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
@@ -526,7 +531,9 @@ jobs:
 
       - name: Run mutation tests
         id: mutmut
-        run: python -m cihub hub-ci mutmut --min-score ${{ needs.hub-ci-config.outputs.mutation_score_min }} --output-dir . --github-output --github-summary
+        env:
+          MUTATION_SCORE_MIN: ${{ needs.hub-ci-config.outputs.mutation_score_min }}
+        run: python -m cihub hub-ci mutmut --min-score "$MUTATION_SCORE_MIN" --output-dir . --github-output --github-summary
 
       - name: Upload mutation results
         if: always()

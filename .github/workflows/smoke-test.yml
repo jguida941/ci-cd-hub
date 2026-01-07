@@ -82,7 +82,9 @@ jobs:
         run: cihub discover --run-group smoke --github-output
 
       - name: Validate Smoke Test Setup
-        run: cihub smoke-validate --count "${{ steps.repos.outputs.count }}" --min-count 2
+        env:
+          REPO_COUNT: ${{ steps.repos.outputs.count }}
+        run: cihub smoke-validate --count "$REPO_COUNT" --min-count 2
 
   # ============================================================================
   # Run Smoke Tests
@@ -214,7 +216,36 @@ jobs:
         id: report
         env:
           CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
-        run: cihub report smoke-summary --mode repo --owner "${{ matrix.owner }}" --repo "${{ matrix.name }}" --branch "${{ matrix.branch }}" --language "${{ matrix.language }}" --config "${{ matrix.config_basename }}" --tests-total "${{ matrix.language == 'java' && steps.java-tests.outputs.total || steps.python-tests.outputs.total || '0' }}" --tests-failed "${{ matrix.language == 'java' && steps.java-tests.outputs.failed || steps.python-tests.outputs.failed || '0' }}" --coverage "${{ matrix.language == 'java' && steps.java-coverage.outputs.percent || steps.python-tests.outputs.coverage || '0' }}" --coverage-lines "${{ steps.java-coverage.outputs.lines || '0 / 0' }}" --checkstyle-violations "${{ steps.java-checkstyle.outputs.violations || '0' }}" --spotbugs-issues "${{ steps.java-spotbugs.outputs.count || '0' }}" --ruff-errors "${{ steps.python-ruff.outputs.errors || '0' }}" --ruff-security "${{ steps.python-ruff.outputs.security || '0' }}" --black-issues "${{ steps.python-black.outputs.issues || '0' }}"
+          MATRIX_OWNER: ${{ matrix.owner }}
+          MATRIX_NAME: ${{ matrix.name }}
+          MATRIX_BRANCH: ${{ matrix.branch }}
+          MATRIX_LANGUAGE: ${{ matrix.language }}
+          MATRIX_CONFIG: ${{ matrix.config_basename }}
+          TESTS_TOTAL: ${{ matrix.language == 'java' && steps.java-tests.outputs.total || steps.python-tests.outputs.total || '0' }}
+          TESTS_FAILED: ${{ matrix.language == 'java' && steps.java-tests.outputs.failed || steps.python-tests.outputs.failed || '0' }}
+          COVERAGE: ${{ matrix.language == 'java' && steps.java-coverage.outputs.percent || steps.python-tests.outputs.coverage || '0' }}
+          COVERAGE_LINES: ${{ steps.java-coverage.outputs.lines || '0 / 0' }}
+          CHECKSTYLE_VIOLATIONS: ${{ steps.java-checkstyle.outputs.violations || '0' }}
+          SPOTBUGS_ISSUES: ${{ steps.java-spotbugs.outputs.count || '0' }}
+          RUFF_ERRORS: ${{ steps.python-ruff.outputs.errors || '0' }}
+          RUFF_SECURITY: ${{ steps.python-ruff.outputs.security || '0' }}
+          BLACK_ISSUES: ${{ steps.python-black.outputs.issues || '0' }}
+        run: |
+          cihub report smoke-summary --mode repo \
+            --owner "$MATRIX_OWNER" \
+            --repo "$MATRIX_NAME" \
+            --branch "$MATRIX_BRANCH" \
+            --language "$MATRIX_LANGUAGE" \
+            --config "$MATRIX_CONFIG" \
+            --tests-total "$TESTS_TOTAL" \
+            --tests-failed "$TESTS_FAILED" \
+            --coverage "$COVERAGE" \
+            --coverage-lines "$COVERAGE_LINES" \
+            --checkstyle-violations "$CHECKSTYLE_VIOLATIONS" \
+            --spotbugs-issues "$SPOTBUGS_ISSUES" \
+            --ruff-errors "$RUFF_ERRORS" \
+            --ruff-security "$RUFF_SECURITY" \
+            --black-issues "$BLACK_ISSUES"
 
       # ========================================
       # UPLOAD ARTIFACTS
@@ -273,7 +304,13 @@ jobs:
       - name: Generate Summary
         env:
           CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
-        run: cihub report smoke-summary --mode overall --repo-count "${{ needs.discover.outputs.count }}" --run-number "${{ github.run_number }}" --event-name "${{ github.event_name }}" --test-result "${{ needs.test-repo.result }}"
+          REPO_COUNT: ${{ needs.discover.outputs.count }}
+          RUN_NUMBER: ${{ github.run_number }}
+          EVENT_NAME: ${{ github.event_name }}
+          TEST_RESULT: ${{ needs.test-repo.result }}
+        run: cihub report smoke-summary --mode overall --repo-count "$REPO_COUNT" --run-number "$RUN_NUMBER" --event-name "$EVENT_NAME" --test-result "$TEST_RESULT"
 
       - name: Check Smoke Test Result
-        run: cihub smoke-validate --status "${{ needs.test-repo.result }}"
+        env:
+          TEST_RESULT: ${{ needs.test-repo.result }}
+        run: cihub smoke-validate --status "$TEST_RESULT"

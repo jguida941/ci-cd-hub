@@ -267,7 +267,30 @@ jobs:
 
       - name: Save Dispatch Metadata
         if: always()
-        run: cihub dispatch metadata --config-basename "${{ matrix.config_basename }}" --owner "${{ matrix.owner }}" --repo "${{ matrix.name }}" --output-dir dispatch-results --subdir "${{ matrix.subdir }}" --language "${{ matrix.language }}" --branch "${{ matrix.default_branch }}" --workflow "${{ steps.dispatch.outputs.workflow_id }}" --run-id "${{ steps.dispatch.outputs.run_id }}" --correlation-id "${{ steps.dispatch.outputs.correlation_id }}" --status "${{ job.status }}"
+        env:
+          MATRIX_CONFIG_BASENAME: ${{ matrix.config_basename }}
+          MATRIX_OWNER: ${{ matrix.owner }}
+          MATRIX_NAME: ${{ matrix.name }}
+          MATRIX_SUBDIR: ${{ matrix.subdir }}
+          MATRIX_LANGUAGE: ${{ matrix.language }}
+          MATRIX_BRANCH: ${{ matrix.default_branch }}
+          STEP_WORKFLOW_ID: ${{ steps.dispatch.outputs.workflow_id }}
+          STEP_RUN_ID: ${{ steps.dispatch.outputs.run_id }}
+          STEP_CORRELATION_ID: ${{ steps.dispatch.outputs.correlation_id }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          cihub dispatch metadata \
+            --config-basename "$MATRIX_CONFIG_BASENAME" \
+            --owner "$MATRIX_OWNER" \
+            --repo "$MATRIX_NAME" \
+            --output-dir dispatch-results \
+            --subdir "$MATRIX_SUBDIR" \
+            --language "$MATRIX_LANGUAGE" \
+            --branch "$MATRIX_BRANCH" \
+            --workflow "$STEP_WORKFLOW_ID" \
+            --run-id "$STEP_RUN_ID" \
+            --correlation-id "$STEP_CORRELATION_ID" \
+            --status "$JOB_STATUS"
 
       - name: Upload Dispatch Metadata
         if: always()

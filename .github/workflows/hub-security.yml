@@ -133,7 +133,10 @@ jobs:
 
       - name: Verify checkout
         id: repo-check
-        run: cihub hub-ci repo-check --path repo --owner "${{ matrix.owner }}" --name "${{ matrix.name }}" --github-output
+        env:
+          MATRIX_OWNER: ${{ matrix.owner }}
+          MATRIX_NAME: ${{ matrix.name }}
+        run: cihub hub-ci repo-check --path repo --owner "$MATRIX_OWNER" --name "$MATRIX_NAME" --github-output
 
       # ========================================
       # CODEQL ANALYSIS
@@ -142,7 +145,9 @@ jobs:
         id: source-check
         if: steps.repo-check.outputs.present == 'true'
         working-directory: repo
-        run: cihub hub-ci source-check --path . --language "${{ matrix.language }}" --github-output
+        env:
+          MATRIX_LANGUAGE: ${{ matrix.language }}
+        run: cihub hub-ci source-check --path . --language "$MATRIX_LANGUAGE" --github-output
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@5d4e8d1aca955e8d8589aabd499c5cae939e33c7 # v4.31.9
@@ -244,7 +249,24 @@ jobs:
       - name: Generate Security Summary
         env:
           CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
-        run: cihub report security-summary --mode repo --repo "${{ matrix.name }}" --language "${{ matrix.language }}" --has-source "${{ steps.source-check.outputs.has_source || 'false' }}" --pip-audit-vulns "${{ steps.pip-audit.outputs.vulnerabilities || '0' }}" --bandit-high "${{ steps.bandit.outputs.high || '0' }}" --ruff-issues "${{ steps.ruff-security.outputs.issues || '0' }}" --owasp-critical "${{ steps.owasp.outputs.critical || '0' }}" --owasp-high "${{ steps.owasp.outputs.high || '0' }}"
+          MATRIX_NAME: ${{ matrix.name }}
+          MATRIX_LANGUAGE: ${{ matrix.language }}
+          HAS_SOURCE: ${{ steps.source-check.outputs.has_source || 'false' }}
+          PIP_AUDIT_VULNS: ${{ steps.pip-audit.outputs.vulnerabilities || '0' }}
+          BANDIT_HIGH: ${{ steps.bandit.outputs.high || '0' }}
+          RUFF_ISSUES: ${{ steps.ruff-security.outputs.issues || '0' }}
+          OWASP_CRITICAL: ${{ steps.owasp.outputs.critical || '0' }}
+          OWASP_HIGH: ${{ steps.owasp.outputs.high || '0' }}
+        run: |
+          cihub report security-summary --mode repo \
+            --repo "$MATRIX_NAME" \
+            --language "$MATRIX_LANGUAGE" \
+            --has-source "$HAS_SOURCE" \
+            --pip-audit-vulns "$PIP_AUDIT_VULNS" \
+            --bandit-high "$BANDIT_HIGH" \
+            --ruff-issues "$RUFF_ISSUES" \
+            --owasp-critical "$OWASP_CRITICAL" \
+            --owasp-high "$OWASP_HIGH"
 
       - name: Upload Security Reports
         if: always()
@@ -306,7 +328,10 @@ jobs:
 
       - name: Verify checkout
         id: repo-check
-        run: cihub hub-ci repo-check --path repo --owner "${{ matrix.owner }}" --name "${{ matrix.name }}" --github-output
+        env:
+          MATRIX_OWNER: ${{ matrix.owner }}
+          MATRIX_NAME: ${{ matrix.name }}
+        run: cihub hub-ci repo-check --path repo --owner "$MATRIX_OWNER" --name "$MATRIX_NAME" --github-output
 
       - name: Check for Docker Compose
         if: steps.repo-check.outputs.present == 'true' && inputs.run_zap == true
@@ -340,7 +365,11 @@ jobs:
       - name: Generate ZAP Summary
         env:
           CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
-        run: cihub report security-summary --mode zap --repo "${{ matrix.name }}" --repo-present "${{ steps.repo-check.outputs.present || 'false' }}" --run-zap "${{ inputs.run_zap || 'false' }}" --has-docker "${{ steps.check-docker.outputs.has_docker || 'false' }}"
+          MATRIX_NAME: ${{ matrix.name }}
+          REPO_PRESENT: ${{ steps.repo-check.outputs.present || 'false' }}
+          RUN_ZAP: ${{ inputs.run_zap || 'false' }}
+          HAS_DOCKER: ${{ steps.check-docker.outputs.has_docker || 'false' }}
+        run: cihub report security-summary --mode zap --repo "$MATRIX_NAME" --repo-present "$REPO_PRESENT" --run-zap "$RUN_ZAP" --has-docker "$HAS_DOCKER"
 
   # ============================================================================
   # Summary
@@ -377,4 +406,6 @@ jobs:
       - name: Generate Summary
         env:
           CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
-        run: cihub report security-summary --mode overall --repo-count "${{ needs.discover.outputs.count }}" --run-number "${{ github.run_number }}"
+          REPO_COUNT: ${{ needs.discover.outputs.count }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: cihub report security-summary --mode overall --repo-count "$REPO_COUNT" --run-number "$RUN_NUMBER"

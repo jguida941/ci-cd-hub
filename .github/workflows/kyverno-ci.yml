@@ -105,7 +105,8 @@ jobs:
         env:
           POLICIES_DIR: ${{ inputs.policies_dir }}
           TEMPLATES_DIR: ${{ inputs.templates_dir }}
-        run: cihub hub-ci kyverno-validate --policies-dir "${POLICIES_DIR}" --templates-dir "${TEMPLATES_DIR}" --bin "${{ steps.kyverno-install.outputs.path }}" --github-output
+          KYVERNO_BIN: ${{ steps.kyverno-install.outputs.path }}
+        run: cihub hub-ci kyverno-validate --policies-dir "${POLICIES_DIR}" --templates-dir "${TEMPLATES_DIR}" --bin "$KYVERNO_BIN" --github-output
 
       - name: Test policies against fixtures
         if: inputs.run_tests && inputs.fixtures_dir != ''
@@ -113,7 +114,8 @@ jobs:
           FIXTURES_DIR: ${{ inputs.fixtures_dir }}
           POLICIES_DIR: ${{ inputs.policies_dir }}
           FAIL_ON_WARN: ${{ inputs.fail_on_warn }}
-        run: cihub hub-ci kyverno-test --policies-dir "${POLICIES_DIR}" --fixtures-dir "${FIXTURES_DIR}" --bin "${{ steps.kyverno-install.outputs.path }}" --fail-on-warn "${FAIL_ON_WARN}"
+          KYVERNO_BIN: ${{ steps.kyverno-install.outputs.path }}
+        run: cihub hub-ci kyverno-test --policies-dir "${POLICIES_DIR}" --fixtures-dir "${FIXTURES_DIR}" --bin "$KYVERNO_BIN" --fail-on-warn "${FAIL_ON_WARN}"
 
       - name: Generate Summary
         if: always()

@@ -62,10 +62,14 @@ jobs:
 
       - name: Validate Policies
         id: validate
-        run: cihub hub-ci kyverno-validate --policies-dir "policies/kyverno" --templates-dir "templates/kyverno" --bin "${{ steps.kyverno-install.outputs.path }}" --github-output
+        env:
+          KYVERNO_BIN: ${{ steps.kyverno-install.outputs.path }}
+        run: cihub hub-ci kyverno-validate --policies-dir "policies/kyverno" --templates-dir "templates/kyverno" --bin "$KYVERNO_BIN" --github-output
 
       - name: Generate Summary
         if: always()
         env:
           CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
-        run: cihub report kyverno-summary --policies-dir "policies/kyverno" --validated "${{ steps.validate.outputs.validated || '0' }}" --failed "${{ steps.validate.outputs.failed || '0' }}" --run-tests "false" --title "# Kyverno Policy Validation (Hub)"
+          VALIDATED: ${{ steps.validate.outputs.validated || '0' }}
+          FAILED: ${{ steps.validate.outputs.failed || '0' }}
+        run: cihub report kyverno-summary --policies-dir "policies/kyverno" --validated "$VALIDATED" --failed "$FAILED" --run-tests "false" --title "# Kyverno Policy Validation (Hub)"
