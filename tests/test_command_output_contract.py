@@ -323,20 +323,25 @@ class TestPrintPatternDetection:
     @settings(max_examples=20)
     def test_line_numbers_accurate(self, num_lines: int) -> None:
         """Property: line numbers reported match actual positions."""
+        import os
         import tempfile
 
         # Generate file with print at specific line
         lines = ["x = 1\n"] * (num_lines - 1) + ['print("test")\n']
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.writelines(lines)
-            f.flush()
+        # Create temp file, close it, then read - ensures file is flushed
+        fd, temp_path = tempfile.mkstemp(suffix=".py")
+        try:
+            os.write(fd, "".join(lines).encode())
+            os.close(fd)
 
-            prints = find_print_calls(Path(f.name))
+            prints = find_print_calls(Path(temp_path))
 
             # Should find exactly one print at the last line
             assert len(prints) == 1
             assert prints[0][0] == num_lines
+        finally:
+            os.unlink(temp_path)
 
 
 class TestAllowlistManagement:
