@@ -59,10 +59,10 @@ class TestGateReportingContractPython:
         gate_failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
         assert len(gate_failures) == 0
 
-        # reporting.py should show Passed
+        # reporting.py should show PASSED status
         summary_lines = list(build_quality_gates(report, "python"))
         summary_text = "\n".join(summary_lines)
-        assert "Passed" in summary_text
+        assert "PASSED" in summary_text
 
     def test_test_failures_both_fail(self) -> None:
         """When tests fail, both gates.py and reporting.py should fail."""
@@ -82,11 +82,11 @@ class TestGateReportingContractPython:
         gate_failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
         assert "pytest failures detected" in gate_failures
 
-        # reporting.py should show failures
+        # reporting.py should show FAILED status
         summary_lines = list(build_quality_gates(report, "python"))
         summary_text = "\n".join(summary_lines)
-        # Should show failure count or "failures"
-        assert "3 failed" in summary_text or "Failed" in summary_text
+        # Should show FAILED status (uppercase)
+        assert "FAILED" in summary_text
 
     def test_tool_not_run_shows_not_run(self) -> None:
         """When tool configured but not run, reporting.py shows NOT RUN."""
@@ -149,10 +149,10 @@ class TestGateReportingContractJava:
         gate_failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
         assert len(gate_failures) == 0
 
-        # reporting.py should show Passed
+        # reporting.py should show PASSED status
         summary_lines = list(build_quality_gates(report, "java"))
         summary_text = "\n".join(summary_lines)
-        assert "Passed" in summary_text
+        assert "PASSED" in summary_text
 
     def test_owasp_vulns_both_fail(self) -> None:
         """When OWASP finds vulns above threshold, both should fail."""
@@ -172,12 +172,12 @@ class TestGateReportingContractJava:
         gate_failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
         assert any("owasp" in f for f in gate_failures)
 
-        # reporting.py should show vulnerabilities (both indicate failure)
+        # reporting.py should show VULNERABILITIES status (uppercase)
         summary_lines = list(build_quality_gates(report, "java"))
         summary_text = "\n".join(summary_lines)
-        # Should show "Vulnerabilities" label (not "Passed")
-        assert "Vulnerabilities" in summary_text
-        assert "Passed" not in summary_text.split("OWASP")[1].split("|")[0] if "OWASP" in summary_text else True
+        # Should show "VULNERABILITIES" label (not "PASSED")
+        assert "VULNERABILITIES" in summary_text
+        assert "PASSED" not in summary_text.split("OWASP")[1].split("|")[0] if "OWASP" in summary_text else True
 
     def test_tool_not_run_shows_not_run(self) -> None:
         """When tool configured but not run, reporting.py shows NOT RUN."""

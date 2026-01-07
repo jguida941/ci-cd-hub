@@ -395,8 +395,8 @@ class TestBuildQualityGates:
         }
         table_text = "".join(build_quality_gates(report, "java"))
 
-        # All NOT RUN statuses now have emoji indicators (⚠️ for soft-skip, ⛔ for hard-fail)
-        assert "| Unit Tests | ⚠️ NOT RUN |" in table_text
+        # All NOT RUN statuses show NOT RUN (no emoji in output)
+        assert "| Unit Tests | NOT RUN |" in table_text
         assert "JaCoCo Coverage |" in table_text and "NOT RUN" in table_text
         assert "PITest Mutation |" in table_text and "NOT RUN" in table_text
         assert "OWASP Check |" in table_text and "NOT RUN" in table_text
@@ -431,7 +431,7 @@ class TestBuildQualityGates:
         }
         table_text = "".join(build_quality_gates(report, "python"))
 
-        # NOT RUN now has emoji prefix (⚠️ for soft-skip)
+        # NOT RUN shows plain text (no emoji)
         assert "mutmut |" in table_text and "NOT RUN" in table_text
         # SKIP is plain text (no emoji)
         assert "| Trivy | SKIP |" in table_text
@@ -460,13 +460,13 @@ class TestBuildQualityGates:
         }
         table_text = "".join(build_quality_gates(report, "python"))
 
-        # Hard-fail tools should show X icon
-        assert "| pytest | ❌ NOT RUN |" in table_text
-        assert "| Bandit | ❌ NOT RUN |" in table_text
-        # Soft-skip tools should show warning NOT RUN
-        assert "| mutmut | ⚠️ NOT RUN |" in table_text
-        # Make sure we don't have the hard-fail icon on soft-skip
-        assert "mutmut | ❌ NOT RUN" not in table_text
+        # Hard-fail tools show NOT RUN (required)
+        assert "| pytest | NOT RUN (required) |" in table_text
+        assert "| Bandit | NOT RUN (required) |" in table_text
+        # Soft-skip tools show NOT RUN without annotation
+        assert "| mutmut | NOT RUN |" in table_text
+        # Make sure required tools have the (required) annotation
+        assert "mutmut | NOT RUN (required)" not in table_text
 
 
 class TestRenderSummaryFromPath:
