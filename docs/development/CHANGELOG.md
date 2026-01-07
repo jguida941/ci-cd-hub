@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-07 - Triage Command Modularization (ADR-0050)
+
+### Refactor: Triage Command Package (ADR-0050 Phases 1-3)
+
+**Problem:** `triage.py` had grown to 1502 lines handling 8 different responsibilities.
+
+**Solution:** Modularized into `cihub/commands/triage/` package:
+
+| Module | Lines | Responsibility |
+|--------|-------|----------------|
+| `triage_cmd.py` | 558 | Main command handler (63% reduction) |
+| `types.py` | 116 | Constants, severity maps, filter helpers |
+| `github.py` | 313 | GitHubRunClient encapsulating gh CLI |
+| `artifacts.py` | 93 | Artifact finding utilities |
+| `log_parser.py` | 154 | Log parsing for failures |
+| `remote.py` | 376 | Remote bundle generation |
+| `verification.py` | 227 | Tool verification |
+| `output.py` | 89 | Output formatting helpers |
+| `watch.py` | 136 | Watch mode |
+
+**Benefits:**
+- Each module has single responsibility
+- `GitHubRunClient` class encapsulates all `gh` CLI calls
+- Backward compatible via `__init__.py` re-exports
+- All 487 tests passing
+
+### Fix: Zizmor Template-Injection Warnings (45→0)
+
+**Files fixed:** All GitHub Actions workflows with template injection vulnerabilities.
+
+**Pattern:** Converted `${{ inputs.* }}` to environment variables:
+```yaml
+# Before (vulnerable to injection):
+run: echo "${{ inputs.value }}"
+
+# After (safe):
+env:
+  VALUE: ${{ inputs.value }}
+run: echo "$VALUE"
+```
+
+**Workflows updated:**
+- hub-security.yml, smoke-test.yml, hub-production-ci.yml
+- kyverno-ci.yml, kyverno-validate.yml, release.yml
+
+### New: `resolve_flag()` CLI Helper
+
+**Location:** `cihub/utils/env.py`
+
+**Purpose:** Unified pattern for CLI flags with environment variable fallback.
+
+**Priority chain:** CLI arg → env var → default
+
+**Usage:**
+```python
+from cihub.utils.env import resolve_flag
+
+# In command handler:
+bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
+```
+
+**Commands updated:** `repo-check`, `kyverno-validate`, `kyverno-test`, `actionlint`
+
+---
+
 ## 2026-01-06 - CLI Re-exports Cleanup (Part 5.1)
 
 ### Removed: CLI Re-exports (CLEAN_CODE.md Part 5.1)

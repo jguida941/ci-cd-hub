@@ -8,10 +8,10 @@ Architecture:
     - github.py: GitHub API client (GitHubRunClient)
     - artifacts.py: Artifact finding utilities
     - log_parser.py: Log parsing for failures
-    - (future) remote.py: Remote bundle generation strategies
-    - (future) verification.py: Tool verification
-    - (future) output.py: Output formatting
-    - (future) watch.py: Watch mode
+    - remote.py: Remote bundle generation strategies
+    - verification.py: Tool verification
+    - output.py: Output formatting
+    - watch.py: Watch mode
 
 Usage:
     from cihub.commands.triage import cmd_triage
@@ -20,22 +20,16 @@ Usage:
 from __future__ import annotations
 
 # Re-export the main command handler from the original module
-# This will be replaced with local implementation in later phases
 from cihub.commands.triage_cmd import cmd_triage as cmd_triage
-
-# Re-export private functions for backward compatibility (used by tests)
-# These will be moved to verification.py in Phase 2
-from cihub.commands.triage_cmd import (
-    _verify_tools_from_report,
-    _format_verify_tools_output,
-)
 
 # Re-export types for external use
 from .artifacts import (
     find_all_reports_in_artifacts,
     find_all_reports_in_artifacts as _find_all_reports_in_artifacts,  # backward compat
+    find_artifact_by_pattern,
     find_report_in_artifacts,
     find_tool_outputs_in_artifacts,
+    get_reports_dir_from_report,
 )
 from .github import (
     GitHubRunClient,
@@ -52,6 +46,15 @@ from .log_parser import (
     infer_tool_from_step,
     parse_log_failures,
 )
+from .output import (
+    format_flaky_output,
+    format_gate_history_output,
+)
+from .remote import (
+    generate_multi_report_triage,
+    generate_remote_triage_bundle,
+    triage_single_run,
+)
 from .types import (
     MAX_ERRORS_IN_TRIAGE,
     SEVERITY_ORDER,
@@ -59,6 +62,23 @@ from .types import (
     build_meta,
     filter_bundle,
 )
+from .verification import (
+    format_verify_tools_output,
+    verify_tools_from_report,
+)
+from .watch import (
+    watch_for_failures,
+)
+
+# Backward compatibility aliases (underscore-prefixed versions)
+_format_verify_tools_output = format_verify_tools_output
+_verify_tools_from_report = verify_tools_from_report
+_format_gate_history_output = format_gate_history_output
+_format_flaky_output = format_flaky_output
+_generate_remote_triage_bundle = generate_remote_triage_bundle
+_generate_multi_report_triage = generate_multi_report_triage
+_triage_single_run = triage_single_run
+_watch_for_failures = watch_for_failures
 
 __all__ = [
     # Main command
@@ -80,14 +100,34 @@ __all__ = [
     "list_runs",
     # Artifacts
     "find_all_reports_in_artifacts",
+    "find_artifact_by_pattern",
     "find_report_in_artifacts",
     "find_tool_outputs_in_artifacts",
+    "get_reports_dir_from_report",
     # Log parser
     "create_log_failure",
     "infer_tool_from_step",
     "parse_log_failures",
+    # Output formatting
+    "format_flaky_output",
+    "format_gate_history_output",
+    # Remote bundle generation
+    "generate_multi_report_triage",
+    "generate_remote_triage_bundle",
+    "triage_single_run",
+    # Verification
+    "format_verify_tools_output",
+    "verify_tools_from_report",
+    # Watch mode
+    "watch_for_failures",
     # Backward compatibility (private functions used by tests)
     "_find_all_reports_in_artifacts",
-    "_verify_tools_from_report",
+    "_format_flaky_output",
+    "_format_gate_history_output",
     "_format_verify_tools_output",
+    "_generate_multi_report_triage",
+    "_generate_remote_triage_bundle",
+    "_triage_single_run",
+    "_verify_tools_from_report",
+    "_watch_for_failures",
 ]

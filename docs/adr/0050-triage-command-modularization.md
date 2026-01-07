@@ -1,9 +1,10 @@
 # ADR-0050: Triage Command Modularization
 
-**Status**: Proposed
+**Status**: Implemented (Phases 1-3)
 **Date:** 2026-01-07
 **Developer:** Justin Guida
 **Last Reviewed:** 2026-01-07
+**Implementation:** Commit `4156a06` (Phase 1), in-progress commit (Phases 2-3)
 
 ## Context
 
