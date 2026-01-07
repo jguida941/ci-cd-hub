@@ -942,9 +942,34 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             passed = result_data["passed_count"]
             failed = result_data["failed_count"]
 
+            # Extract problems from failures_by_tool
+            problems: list[dict[str, Any]] = []
+            for tool, repos in result_data.get("failures_by_tool", {}).items():
+                problems.append({
+                    "severity": "error",
+                    "message": f"{tool}: {len(repos)} repo(s) failed",
+                    "code": f"CIHUB-MULTI-{tool.upper()}",
+                    "category": "tool",
+                    "tool": tool,
+                    "repos": repos,
+                })
+
+            suggestions: list[dict[str, Any]] = []
+            if problems:
+                suggestions.append({
+                    "message": f"Run 'cat {artifacts['multi_markdown']}' for detailed breakdown",
+                    "code": "CIHUB-MULTI-VIEW-MARKDOWN",
+                })
+                suggestions.append({
+                    "message": f"Run 'cat {artifacts['multi_triage']}' for JSON data",
+                    "code": "CIHUB-MULTI-VIEW-JSON",
+                })
+
             return CommandResult(
                 exit_code=EXIT_SUCCESS,
                 summary=f"Aggregated {result_data['repo_count']} repos: {passed} passed, {failed} failed",
+                problems=problems,
+                suggestions=suggestions,
                 artifacts={key: str(path) for key, path in artifacts.items()},
                 files_generated=[str(artifacts["multi_triage"]), str(artifacts["multi_markdown"])],
                 data=result_data,
