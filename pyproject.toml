@@ -82,6 +82,18 @@ exclude = ["_quarantine"]
 select = ["E", "F", "W", "S", "B", "I"]
 ignore = ["S101"]  # Allow assert in tests
 
+[tool.ruff.lint.per-file-ignores]
+# E402: Late imports are intentional to avoid circular dependencies
+"cihub/commands/report/__init__.py" = ["E402"]
+"cihub/services/ci_engine/__init__.py" = ["E402"]
+"scripts/validate_config.py" = ["E402"]
+# S603/S105/S106/S108: Security warnings are false positives in test code
+"tests/test_fix_command.py" = ["S603"]
+"tests/test_migrated_commands_contract.py" = ["S106"]
+"tests/test_output_context.py" = ["S105"]
+"tests/test_schema_contract.py" = ["S108"]
+"tests/test_services_ci.py" = ["B017"]
+
 [tool.ruff.format]
 # Black-compatible formatting
 quote-style = "double"
