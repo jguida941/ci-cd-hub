@@ -1,9 +1,9 @@
 import argparse
 import subprocess
 
-from cihub.types import CommandResult
 from cihub.commands import preflight as preflight_module
 from cihub.commands.preflight import cmd_preflight
+from cihub.types import CommandResult
 
 
 def test_preflight_json(monkeypatch) -> None:

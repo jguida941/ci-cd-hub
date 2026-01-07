@@ -8,8 +8,6 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
-import pytest
-
 from cihub.commands.config_outputs import (
     _bool_str,
     _get_int,

@@ -3,7 +3,6 @@
 import argparse
 from pathlib import Path
 
-from cihub.types import CommandResult
 from cihub.commands.scaffold import scaffold_fixture
 from cihub.commands.smoke import (
     ALL_TYPES,
@@ -16,6 +15,7 @@ from cihub.commands.smoke import (
     cmd_smoke,
 )
 from cihub.config.io import load_yaml_file
+from cihub.types import CommandResult
 
 
 class TestSmokeStep:

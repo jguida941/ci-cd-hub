@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from cihub.types import CommandResult
 from cihub.commands.scaffold import cmd_scaffold
+from cihub.types import CommandResult
 
 
 class TestScaffoldPython:
