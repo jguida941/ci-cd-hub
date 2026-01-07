@@ -25,8 +25,8 @@ from hypothesis import strategies as st
 # Files pending migration - remove from list as each is migrated
 # Goal: empty list = all commands follow the contract
 PRINT_ALLOWLIST: set[str] = {
-    # Interactive daemon mode - needs real-time output for --watch (cannot use CommandResult)
-    "triage.py",  # --watch daemon + --latest auto-select print real-time progress
+    # Interactive/streaming output - needs real-time prints (cannot use CommandResult)
+    "triage_cmd.py",  # --latest auto-select prints user feedback during triage flow
     # Hub settings display - intentionally prints YAML for user visibility
     "hub_config.py",  # hub config show/load prints YAML or key=value for GitHub Actions
     # Worst offenders (migrate first)
@@ -71,6 +71,8 @@ SUBPACKAGE_ALLOWLISTS: dict[str, set[str]] = {
     # hub_ci commands are migrated, but __init__.py has infrastructure helpers
     # (_write_outputs, _append_summary) that legitimately print for GitHub Actions
     "hub_ci": {"__init__.py"},  # Infrastructure only - commands are migrated
+    # triage subpackage - watch.py needs real-time streaming output for --watch daemon mode
+    "triage": {"watch.py"},
 }
 
 
