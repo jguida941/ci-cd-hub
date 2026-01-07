@@ -1051,9 +1051,28 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
     else:
         summary = f"Triage bundle generated ({failure_count} failures)"
 
+    # Extract failures as problems for visibility
+    problems: list[dict[str, Any]] = []
+    for failure in bundle.priority.get("failures", []):
+        problems.append({
+            "severity": failure.get("severity", "error"),
+            "message": failure.get("message", "Unknown failure"),
+            "code": failure.get("id", "CIHUB-TRIAGE-FAILURE"),
+            "category": failure.get("category", "unknown"),
+            "tool": failure.get("tool", "unknown"),
+        })
+
+    # Generate suggestions based on failures
+    suggestions: list[str] = []
+    if problems:
+        suggestions.append(f"Run 'cat {artifacts['priority']}' for detailed failure info")
+        suggestions.append(f"Run 'cat {artifacts['markdown']}' for human-readable summary")
+
     return CommandResult(
         exit_code=EXIT_SUCCESS,
         summary=summary,
+        problems=problems,
+        suggestions=suggestions,
         artifacts={key: str(path) for key, path in artifacts.items()},
         files_generated=[
             str(artifacts["triage"]),
