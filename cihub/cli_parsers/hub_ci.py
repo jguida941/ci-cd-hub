@@ -433,6 +433,16 @@ def add_hub_ci_commands(subparsers, add_json_flag, handlers: CommandHandlers) ->
     hub_ci_validate_profiles = hub_ci_sub.add_parser("validate-profiles", help="Validate profile YAML files")
     hub_ci_validate_profiles.add_argument("--profiles-dir", help="Directory containing profiles")
 
+    hub_ci_validate_triage = hub_ci_sub.add_parser(
+        "validate-triage",
+        help="Validate triage.json against the triage schema",
+    )
+    hub_ci_validate_triage.add_argument(
+        "--triage-file",
+        default=".cihub/triage.json",
+        help="Path to triage.json file (default: .cihub/triage.json)",
+    )
+
     hub_ci_license = hub_ci_sub.add_parser("license-check", help="Run license checks for dependencies")
     add_summary_args(hub_ci_license)
     hub_ci_license.add_argument(

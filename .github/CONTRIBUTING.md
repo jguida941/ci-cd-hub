@@ -38,9 +38,9 @@ Use these commands from anywhere in the repo (they auto-jump to root):
 | Lint | Any Python change | `cd "$(git rev-parse --show-toplevel)" && ruff check .` |
 | Format | Before PR | `cd "$(git rev-parse --show-toplevel)" && ruff format .` |
 | Type check | CLI/config/script changes | `cd "$(git rev-parse --show-toplevel)" && mypy cihub/ scripts/` |
-| Validate repo config | Editing `config/repos/*.yaml` | `cd "$(git rev-parse --show-toplevel)" && python scripts/validate_config.py config/repos/<repo>.yaml` |
-| Load merged config | Debug config merges | `cd "$(git rev-parse --show-toplevel)" && python scripts/load_config.py <repo-name>` |
-| Apply profile | Creating/merging repo config | `cd "$(git rev-parse --show-toplevel)" && python scripts/apply_profile.py templates/profiles/<profile>.yaml config/repos/<repo>.yaml` |
+| Validate repo config | Editing `config/repos/*.yaml` | `cd "$(git rev-parse --show-toplevel)" && python -m cihub hub-ci validate-configs --repo <repo-name>` |
+| Load merged config | Debug config merges | `cd "$(git rev-parse --show-toplevel)" && python -m cihub config show --repo <repo-name> --effective` |
+| Apply profile | Creating/merging repo config | `cd "$(git rev-parse --show-toplevel)" && python -m cihub config apply-profile --profile templates/profiles/<profile>.yaml --target config/repos/<repo>.yaml` |
 | Workflow lint | After workflow edits | `cd "$(git rev-parse --show-toplevel)" && actionlint .github/workflows/*.yml` |
 | Template drift check | After workflow/template edits | `cd "$(git rev-parse --show-toplevel)" && python -m cihub sync-templates --check` |
 | Template sync (scoped) | When drift found | `cd "$(git rev-parse --show-toplevel)" && python -m cihub sync-templates --repo owner/name` |

@@ -11,8 +11,11 @@ from cihub.cli_parsers.core import add_core_commands
 from cihub.cli_parsers.discover import add_discover_command
 from cihub.cli_parsers.dispatch import add_dispatch_commands
 from cihub.cli_parsers.docs import add_docs_commands
+from cihub.cli_parsers.fix import add_fix_commands
+from cihub.cli_parsers.hub import add_hub_commands
 from cihub.cli_parsers.hub_ci import add_hub_ci_commands
 from cihub.cli_parsers.pom import add_pom_commands
+from cihub.cli_parsers.registry_cmd import add_registry_commands
 from cihub.cli_parsers.repo_setup import add_repo_setup_commands
 from cihub.cli_parsers.report import add_report_commands
 from cihub.cli_parsers.secrets import add_secrets_commands
@@ -29,17 +32,20 @@ PARSER_GROUPS: list[ParserGroup] = [
     add_core_commands,
     add_report_commands,
     add_triage_command,
+    add_fix_commands,
     add_docs_commands,
     add_adr_commands,
     add_config_outputs_command,
     add_discover_command,
     add_dispatch_commands,
+    add_hub_commands,
     add_hub_ci_commands,
     add_repo_setup_commands,
     add_secrets_commands,
     add_pom_commands,
     add_templates_commands,
     add_config_commands,
+    add_registry_commands,
 ]
 
 

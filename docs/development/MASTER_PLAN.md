@@ -1,25 +1,57 @@
 # CI/CD Hub - Master Plan
 
 **Status:** Canonical plan for all active work
-**Last Updated:** 2026-01-06 (docs_stale modularization complete, 63 tests)
+**Last Updated:** 2026-01-06 (priority order revised, registry audit integrated)
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
 
 ---
 
+## ⚡ CURRENT PRIORITY AT A GLANCE
+
+| Priority | Document | Status | Next Action |
+|----------|----------|--------|-------------|
+| **#1 🔴** | CLEAN_CODE.md | ~90% | Part 5.3: Special-Case Handling |
+| **#2 🟠** | REGISTRY_AUDIT_AND_PLAN.md | Audited | Implement Parts 4-8 (schema + service) |
+| **#3 🟡** | TEST_REORGANIZATION.md | PLANNED | Resolve blockers first |
+| **#4 🟢** | DOC_AUTOMATION_AUDIT.md | ~60% | `docs audit`, Part 13 features |
+| **#5 🔵** | TYPESCRIPT_CLI_DESIGN.md | Planning | Wait for CLEAN_CODE.md 100% |
+| **#6 ⚪** | PYQT_PLAN.md | DEFERRED | Wait for all above |
+
+---
+
 ## Purpose
 
-Single source of truth for what we are doing now. Other docs can provide depth, but this file owns priorities, scope, and sequencing.
+Single source of truth for **priorities, scope, and sequencing**. Individual planning docs own the **detailed implementation plans**.
+
+### Document Hierarchy (Updated 2026-01-06)
+
+```
+MASTER_PLAN.md
+├── WHAT to do and IN WHAT ORDER
+├── High-level status tracking
+└── Cross-cutting architectural decisions
+
+Individual Planning Docs (Priority Order)
+├── #1 CLEAN_CODE.md         → HOW to implement architecture improvements
+├── #2 REGISTRY_AUDIT.md     → HOW to fix registry/wizard disconnect
+├── #3 TEST_REORGANIZATION.md → HOW to restructure 2100+ tests
+├── #4 DOC_AUTOMATION_AUDIT.md → HOW to implement doc automation
+├── #5 TYPESCRIPT_CLI_DESIGN.md → HOW to build TypeScript CLI
+└── #6 PYQT_PLAN.md          → HOW to build GUI (deferred)
+```
+
+**Rule:** When MASTER_PLAN.md and an individual doc conflict on implementation details, the **individual doc wins**. MASTER_PLAN.md may be stale on details but should be current on priorities.
 
 ---
 
 ## Active Design Docs - Priority Order
 
-> **Work on these IN ORDER. Each doc blocks the next.** Updated 2026-01-05.
+> **Work on these IN ORDER. Each doc blocks the next.** Updated 2026-01-06.
 
 ### 🔴 Priority 1: CLEAN_CODE.md (CURRENT - Foundation)
 
-**Status:** ~85% complete | **Blocks:** Everything else
+**Status:** ~90% complete | **Blocks:** Everything else
 
 ```
 docs/development/active/CLEAN_CODE.md
@@ -32,13 +64,39 @@ Must complete **before** starting other docs:
 - [x] Part 9.3: Schema Consolidation ✅ **DONE** (sbom/semgrep → sharedTools, toolStatusMap extracted)
 - [x] Part 7.1: CLI Layer Consolidation ✅ **DONE** (factory in common.py, findings done in Part 2.2/5.2)
 - [x] Part 7.2: Hub-CI Subcommand Helpers ✅ **DONE** (helpers exist, ensure_executable now used)
-- [ ] Part 7.3: Utilities Consolidation ← **CURRENT**
+- [x] Part 7.3: Utilities Consolidation ✅ **DONE** (project.py, github_context.py, safe_run() + 34 migrations)
+- [ ] Part 5.3: Special-Case Handling ← **CURRENT** (move to tool adapters)
+- [ ] Part 7.4: Core Module Refactoring
+- [ ] Part 7.5: Config/Schema Consistency
+- [ ] Part 7.6: Services Layer
+- [ ] Part 9.1: Scripts & Build System
+- [ ] Part 9.2: GitHub Workflows Security
 
 **Why first:** Python CLI JSON output must be clean before TypeScript CLI can parse it.
 
-### 🟡 Priority 2: TEST_REORGANIZATION.md (After CLEAN_CODE Part 2.2)
+### 🟠 Priority 2: REGISTRY_AUDIT_AND_PLAN.md (NEW - Architecture Fix)
 
-**Status:** PLANNED (10-12 day blockers identified) | **Depends on:** CommandResult migration
+**Status:** Audited (8-agent comprehensive analysis) | **Depends on:** CLEAN_CODE.md ~90%+ | **Blocks:** TEST_REORGANIZATION
+
+```
+docs/development/active/REGISTRY_AUDIT_AND_PLAN.md
+```
+
+Core implementation needed:
+- [ ] Part 4: Schema redesign (tool definitions via $ref, 47+ fields)
+- [ ] Part 5: Service layer refactor (registry_service.py expansion)
+- [ ] Part 6: Wizard ↔ Registry integration (currently disconnected)
+- [ ] Part 7: Boolean toggle extensibility
+- [ ] Part 8: Sync verification implementation
+
+**Why second:** Fixes the wizard/registry disconnect BEFORE test reorganization validates it. The 8-agent audit revealed critical gaps:
+- Registry only tracks 3 values (coverage, mutation, vulns_max)
+- Wizard creates configs but never updates registry.json
+- 47+ tool fields are ignored in sync operations
+
+### 🟡 Priority 3: TEST_REORGANIZATION.md (After Registry Integration)
+
+**Status:** PLANNED (10-12 day blockers identified) | **Depends on:** CommandResult migration + Registry fix
 
 ```
 docs/development/active/TEST_REORGANIZATION.md
@@ -49,9 +107,9 @@ Blockers to resolve first:
 - [ ] Schema blocks per-module overrides (`additionalProperties: false`)
 - [ ] 3 automation scripts must be created
 
-**Why second:** Tests need consistent command outputs to validate against.
+**Why third:** Tests need to validate registry integration alongside command outputs.
 
-### 🟢 Priority 3: DOC_AUTOMATION_AUDIT.md (Can parallel with TEST_REORGANIZATION)
+### 🟢 Priority 4: DOC_AUTOMATION_AUDIT.md (Can parallel with TEST_REORGANIZATION)
 
 **Status:** ~60% implemented | **Depends on:** Stable CLI surface
 
@@ -61,12 +119,14 @@ docs/development/active/DOC_AUTOMATION_AUDIT.md
 
 Core MVP:
 - [x] `cihub docs stale` - ✅ **COMPLETE** (2026-01-06) - Modularized package (6 modules, 63 tests including 15 Hypothesis)
+- [ ] `cihub docs audit` - Lifecycle enforcement
+- [ ] Part 13 features - Metrics drift, cross-doc consistency
 
-**Why third:** Documentation automation needs stable command signatures.
+**Why fourth:** Documentation automation needs stable command signatures.
 
-### 🔵 Priority 4: TYPESCRIPT_CLI_DESIGN.md (After CLEAN_CODE complete)
+### 🔵 Priority 5: TYPESCRIPT_CLI_DESIGN.md (After CLEAN_CODE complete)
 
-**Status:** Planning | **Depends on:** CLEAN_CODE.md (explicit prerequisite)
+**Status:** Planning | **Depends on:** CLEAN_CODE.md (100% - explicit prerequisite)
 
 ```
 docs/development/active/TYPESCRIPT_CLI_DESIGN.md
@@ -75,9 +135,9 @@ docs/development/active/TYPESCRIPT_CLI_DESIGN.md
 Explicit prerequisite in doc:
 > "DO NOT START THIS UNTIL CLEAN_CODE.md IS COMPLETE."
 
-**Why fourth:** TypeScript CLI consumes Python CLI JSON; needs clean output.
+**Why fifth:** TypeScript CLI consumes Python CLI JSON; needs clean output.
 
-### ⚪ Priority 5: PYQT_PLAN.md (Deferred)
+### ⚪ Priority 6: PYQT_PLAN.md (Deferred)
 
 **Status:** Reference only | **Depends on:** Everything above
 
@@ -90,23 +150,30 @@ docs/development/active/PYQT_PLAN.md
 ### Dependency Graph
 
 ```
-┌─────────────────────┐
-│   CLEAN_CODE.md     │ ◄─── START HERE
-│   (Foundation)      │
-└─────────┬───────────┘
-          │
-    ┌─────┴─────┬─────────────────┐
-    ▼           ▼                 ▼
+┌─────────────────────────┐
+│   CLEAN_CODE.md         │ ◄─── START HERE (#1)
+│   (Foundation ~90%)     │
+└───────────┬─────────────┘
+            │
+            ▼
+┌─────────────────────────┐
+│ REGISTRY_AUDIT_AND_     │ ◄─── NEW (#2)
+│ PLAN.md (Architecture)  │
+└───────────┬─────────────┘
+            │
+    ┌───────┴───────┬─────────────────┐
+    ▼               ▼                 ▼
 ┌───────────┐ ┌──────────────┐ ┌──────────────────────┐
 │ TEST_     │ │ DOC_AUTO_    │ │ TYPESCRIPT_CLI_      │
 │ REORG.md  │ │ AUDIT.md     │ │ DESIGN.md            │
+│   (#3)    │ │   (#4)       │ │   (#5)               │
 └─────┬─────┘ └──────────────┘ └──────────┬───────────┘
       │                                   │
       └───────────────┬───────────────────┘
                       ▼
               ┌───────────────┐
               │ PYQT_PLAN.md  │
-              │  (Deferred)   │
+              │   (#6)        │
               └───────────────┘
 ```
 
@@ -274,10 +341,18 @@ docs/development/active/PYQT_PLAN.md
 2. **CLI --help** is the authoritative interface documentation.
 3. **Schema** (`schema/ci-hub-config.schema.json`) is the authoritative config contract.
 
+> ⚠️ **REGISTRY ARCHITECTURE GAP (2026-01-06):** The registry system code (`registry_service.py`, `registry.schema.json`) is currently INCOMPLETE and should NOT be considered canonical until REGISTRY_AUDIT_AND_PLAN.md Parts 4-8 are implemented. The audit found:
+> - Registry only tracks 3 of 47+ values
+> - Wizard ↔ Registry are disconnected
+> - Schema blocks extensibility with `additionalProperties: false`
+>
+> **Until fixed:** Follow REGISTRY_AUDIT_AND_PLAN.md for registry architecture, not the current code.
+
 ## References (Background Only)
 
 **Active Design Docs** (in-progress designs, listed in `status/STATUS.md`):
 - `docs/development/active/CLEAN_CODE.md` (architecture improvements: polymorphism, encapsulation)
+- `docs/development/active/REGISTRY_AUDIT_AND_PLAN.md` (wizard↔registry integration, schema expansion - **NEW Priority #2**)
 - `docs/development/active/TEST_REORGANIZATION.md` (test suite restructuring: 2100+ tests → unit/integration/e2e)
 - `docs/development/active/DOC_AUTOMATION_AUDIT.md` (doc automation design: `cihub docs stale`, `cihub docs audit`)
 - `docs/development/active/TYPESCRIPT_CLI_DESIGN.md` (TypeScript interactive CLI - consumes Python CLI as backend)
@@ -404,7 +479,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 - [x] `cihub hub-ci badges` — Generate/validate CI badges from workflow artifacts.
 - [ ] `cihub config validate` (or `cihub validate --hub`) — Validate hub configs (resolves validate ambiguity)
 - [ ] `cihub audit` — Umbrella: docs check + links + adr check + config validate
-- [ ] `cihub docs stale` — Detect stale doc references via AST symbol extraction. Design: `active/DOC_AUTOMATION_AUDIT.md`
+- [x] `cihub docs stale` — ✅ **COMPLETE** (2026-01-06) Modularized package, 63 tests. Design: `active/DOC_AUTOMATION_AUDIT.md`
 - [ ] `cihub docs workflows` — Generate workflow tables from `.github/workflows/*.yml` (replaces manual guides/WORKFLOWS.md)
 - [ ] `cihub docs audit` — Doc lifecycle consistency checks (wire into `cihub check --audit`):
   - [ ] Every doc in `status/STATUS.md` Active Design Docs table must exist under `development/active/`
@@ -426,14 +501,15 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 ### 6b) Documentation Automation (Design: `active/DOC_AUTOMATION_AUDIT.md`)
 
 > **Design doc:** Full requirements and architecture in `docs/development/active/DOC_AUTOMATION_AUDIT.md`
+> **Status:** ~60% complete (Priority #4)
 
-- [ ] `cihub docs stale` — Detect stale code references in docs:
-  - [ ] Python AST symbol extraction (base vs head comparison)
-  - [ ] Schema key path diffing
-  - [ ] CLI surface drift detection (help snapshot comparison)
-  - [ ] File move/delete detection (`--name-status --find-renames`)
-  - [ ] Output modes: human, `--json`, `--ai` (LLM prompt pack)
-- [ ] `cihub docs audit` — Doc lifecycle consistency checks:
+- [x] `cihub docs stale` — ✅ **COMPLETE** (2026-01-06) Modularized package (6 modules, 63 tests including 15 Hypothesis)
+  - [x] Python AST symbol extraction (base vs head comparison) ✅
+  - [x] Schema key path diffing ✅
+  - [x] CLI surface drift detection (help snapshot comparison) ✅
+  - [x] File move/delete detection (`--name-status --find-renames`) ✅
+  - [x] Output modes: human, `--json`, `--ai` (LLM prompt pack) ✅
+- [ ] `cihub docs audit` — Doc lifecycle consistency checks (see DOC_AUTOMATION_AUDIT.md for details):
   - [ ] Validate `active/` ↔ `STATUS.md` sync
   - [ ] Validate `archive/` files have superseded headers
   - [ ] Plain-text reference scan for `docs/...` strings
@@ -521,9 +597,10 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 ### 9) Triage, Registry, and LLM Bundles (New)
 
 > **Implementation Note:** Triage bundles + prompt pack exist behind `CIHUB_EMIT_TRIAGE` env toggle.
-> **Update 2026-01-05:** Triage schema bumped to `cihub-triage-v2` with `tool_evidence` and `evidence_issues` sections.
-> Centralized registry + LLM diff outputs remain TODO.
+> **Update 2026-01-06:** Triage schema bumped to `cihub-triage-v2` with `tool_evidence` and `evidence_issues` sections.
+> **Registry:** See `docs/development/active/REGISTRY_AUDIT_AND_PLAN.md` for comprehensive registry implementation plan (Priority #2).
 
+**Triage (Implemented):**
 - [x] Define `cihub-triage-v2` schema with severity/blocker fields, tool evidence, and stable versioning. ✅
   - `tool_evidence`: per-tool configured/ran/required/result status with explanations
   - `evidence_issues`: validation warnings for tools lacking expected metrics/artifacts
@@ -533,22 +610,33 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
   - `.cihub/priority.json` (sorted failures)
   - `.cihub/triage.md` (LLM prompt pack)
   - `.cihub/history.jsonl` (append-only run log)
+
+**Triage Enhancements (TODO):**
 - [ ] Standardize artifact layout under `.cihub/artifacts/<tool>/` with a small manifest.
 - [ ] Extend `cihub triage` to surface docs drift findings from `.cihub/tool-outputs/` (category `docs`). See **6b) Documentation Automation**.
 - [ ] Normalize core outputs to standard formats (SARIF, Stryker mutation, pytest-json/CTRF, Cobertura/lcov, CycloneDX/SPDX).
 - [ ] Add severity map defaults (0-10) with category + fixability flags.
 - [ ] Add `cihub fix --safe` (deterministic auto-fixes only).
 - [ ] Add `cihub assist --prompt` (LLM-ready prompt pack from triage bundle).
-- [ ] Define registry format and CLI (`cihub registry list/show/set/diff/sync`). NOTE: this will add `config/registry.json` (Ask First).
-- [ ] Add drift detection by cohort (language + profile + hub) and report variance against expected thresholds.
-- [ ] Add registry versioning + rollback (immutable version history).
 - [ ] Add triage schema validation (`cihub triage --validate-schema`).
 - [ ] Add retention policies (`cihub triage prune --days N`).
-- [ ] Add aggregate pass rules (composite gating).
-- [ ] Add post-mortem logging for drift incidents.
-- [ ] Add continuous reconciliation (opt-in auto-sync).
-- [ ] Add RBAC guidance (defer to GitHub permissions for MVP).
-- [ ] Add DORA metrics derived from history (optional).
+
+**Registry (See REGISTRY_AUDIT_AND_PLAN.md - Priority #2):**
+> **Detailed plan:** `docs/development/active/REGISTRY_AUDIT_AND_PLAN.md` (19-part comprehensive audit)
+> The registry audit identified critical gaps: wizard↔registry disconnect, only 3/47+ fields tracked, etc.
+
+- [ ] **Part 4:** Schema redesign (tool definitions via $ref, 47+ fields)
+- [ ] **Part 5:** Service layer refactor (registry_service.py expansion)
+- [ ] **Part 6:** Wizard ↔ Registry integration (currently disconnected)
+- [ ] **Part 7:** Boolean toggle extensibility
+- [ ] **Part 8:** Sync verification implementation
+- [ ] Add drift detection by cohort (language + profile + hub) and report variance against expected thresholds
+- [ ] Add registry versioning + rollback (immutable version history)
+- [ ] Add aggregate pass rules (composite gating)
+- [ ] Add post-mortem logging for drift incidents
+- [ ] Add continuous reconciliation (opt-in auto-sync)
+- [ ] Add RBAC guidance (defer to GitHub permissions for MVP)
+- [ ] Add DORA metrics derived from history (optional)
 
 ### 10) Maintainability Improvements (From 2026-01-04 Audit)
 

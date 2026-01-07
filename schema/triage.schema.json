@@ -1,0 +1,242 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/jguida941/ci-cd-hub/schemas/triage.schema.json",
+  "title": "CIHub Triage Bundle Schema",
+  "description": "Schema for cihub triage output (triage.json)",
+  "type": "object",
+  "required": ["schema_version", "generated_at", "run", "summary", "failures"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^cihub-triage-v\\d+$",
+      "description": "Schema version identifier"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when triage was generated"
+    },
+    "run": {
+      "type": "object",
+      "description": "CI run metadata",
+      "properties": {
+        "correlation_id": {
+          "type": ["string", "null"],
+          "description": "Unique identifier for the CI run"
+        },
+        "repo": {
+          "type": ["string", "null"],
+          "description": "Repository name (owner/repo format)"
+        },
+        "commit_sha": {
+          "type": ["string", "null"],
+          "description": "Git commit SHA"
+        },
+        "branch": {
+          "type": ["string", "null"],
+          "description": "Git branch name"
+        },
+        "run_id": {
+          "type": ["string", "integer", "null"],
+          "description": "GitHub Actions run ID"
+        },
+        "run_number": {
+          "type": ["string", "integer", "null"],
+          "description": "GitHub Actions run number"
+        },
+        "workflow_ref": {
+          "type": ["string", "null"],
+          "description": "Workflow file reference"
+        },
+        "command": {
+          "type": ["string", "null"],
+          "description": "Command used to generate triage"
+        },
+        "args": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "Command arguments"
+        }
+      }
+    },
+    "paths": {
+      "type": "object",
+      "description": "Paths to relevant files",
+      "properties": {
+        "output_dir": {"type": "string"},
+        "report_path": {"type": "string"},
+        "summary_path": {"type": "string"}
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Triage summary statistics",
+      "required": ["overall_status", "failure_count"],
+      "properties": {
+        "overall_status": {
+          "type": "string",
+          "enum": ["passed", "failed", "success", "failure"],
+          "description": "Overall CI status (passed/failed from cihub, success/failure from GitHub API)"
+        },
+        "failure_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of failures"
+        },
+        "warning_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of warnings"
+        },
+        "info_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of info messages"
+        },
+        "evidence_error_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of evidence validation errors"
+        },
+        "skipped_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of skipped tools"
+        },
+        "required_not_run_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of required tools that didn't run"
+        },
+        "tool_counts": {
+          "type": "object",
+          "properties": {
+            "configured": {"type": "integer", "minimum": 0},
+            "ran": {"type": "integer", "minimum": 0},
+            "passed": {"type": "integer", "minimum": 0},
+            "failed": {"type": "integer", "minimum": 0}
+          }
+        }
+      }
+    },
+    "tool_evidence": {
+      "type": "array",
+      "description": "Evidence about each tool's status",
+      "items": {
+        "type": "object",
+        "required": ["tool", "status"],
+        "properties": {
+          "tool": {"type": "string"},
+          "configured": {"type": "boolean"},
+          "ran": {"type": "boolean"},
+          "require_run": {"type": "boolean"},
+          "success": {"type": ["boolean", "null"]},
+          "status": {
+            "type": "string",
+            "enum": ["passed", "failed", "skipped", "required_not_run", "not_configured"]
+          },
+          "explanation": {"type": "string"},
+          "metrics": {"type": "object"},
+          "has_artifacts": {"type": "boolean"}
+        }
+      }
+    },
+    "evidence_issues": {
+      "type": "array",
+      "description": "Validation issues with evidence",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tool": {"type": "string"},
+          "severity": {"type": "string", "enum": ["error", "warning", "info"]},
+          "issue": {"type": "string"},
+          "message": {"type": "string"}
+        }
+      }
+    },
+    "failures": {
+      "type": "array",
+      "description": "List of failures sorted by priority",
+      "items": {
+        "type": "object",
+        "required": ["id", "tool", "status", "severity", "category"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique failure identifier (tool:status)"
+          },
+          "tool": {
+            "type": "string",
+            "description": "Tool name"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["failed", "skipped", "required_not_run", "missing_report"],
+            "description": "Tool status"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["blocker", "high", "medium", "low"],
+            "description": "Failure severity"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["workflow", "security", "test", "lint", "docs", "build", "cihub"],
+            "description": "Failure category"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason code for the failure"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable failure message"
+          },
+          "artifacts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {"type": "string"},
+                "kind": {"type": "string"}
+              }
+            }
+          },
+          "reproduce": {
+            "type": "object",
+            "properties": {
+              "command": {"type": "string"},
+              "cwd": {"type": "string"},
+              "env": {"type": "object"}
+            }
+          },
+          "hints": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "errors": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Warning messages (e.g., test count regressions)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {"type": "string"},
+          "message": {"type": "string"},
+          "details": {"type": "object"}
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "description": "Additional notes",
+      "items": {"type": "string"}
+    }
+  }
+}

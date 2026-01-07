@@ -2,9 +2,37 @@
 
 **Date:** 2026-01-05
 **Status:** PLANNED (10-12 day blockers)
-**Priority:** 🟡 **#2** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
-**Depends On:** CLEAN_CODE.md Part 2.2 (CommandResult migration)
+**Priority:** 🟡 **#3** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
+**Depends On:** CLEAN_CODE.md Part 2.2 (CommandResult migration) + REGISTRY_AUDIT Part 6 (wizard integration)
 **Blocks:** Nothing (can run parallel with DOC_AUTOMATION after blockers resolved)
+
+---
+
+## Critical Test Gaps (7-Agent Audit 2026-01-06)
+
+> **Source:** Comprehensive 7-agent code review. These are HIGH PRIORITY gaps.
+
+### Commands Needing Tests
+
+| Command | Current Coverage | Missing |
+|---------|------------------|---------|
+| `cmd_registry` | **0%** | All 6 subcommands, error paths |
+| `cmd_fix` | ~40% | Error paths, tool failures, edge cases |
+| `cmd_check` | ~30% | Timeout handling, mode combinations |
+| `hub_ci/*` (49 commands) | ~5% | Most commands untested |
+
+### Services Needing Tests
+
+| Service | Tests? | Priority |
+|---------|--------|----------|
+| `triage/detection.py` | ❌ None | **CRITICAL** |
+| `triage/evidence.py` | ❌ None | **CRITICAL** |
+| `ci_engine/gates.py` | ❌ None | HIGH |
+| `ci_engine/helpers.py` | ❌ None | HIGH |
+| `repo_config.py` | ❌ None | MEDIUM |
+| `registry_service.py` | ❌ None | **CRITICAL** (see REGISTRY_AUDIT Part 15) |
+
+**Note:** Registry service testing is comprehensively covered in REGISTRY_AUDIT_AND_PLAN.md Part 15 with 6 test categories and ~1,350 lines of test code proposed.
 
 ---
 

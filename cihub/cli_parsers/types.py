@@ -42,3 +42,6 @@ class CommandHandlers:
     cmd_fix_deps: CommandHandler
     cmd_sync_templates: CommandHandler
     cmd_config: CommandHandler
+    cmd_fix: CommandHandler
+    cmd_registry: CommandHandler
+    cmd_hub: CommandHandler

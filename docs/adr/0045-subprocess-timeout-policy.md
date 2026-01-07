@@ -9,13 +9,13 @@
 
 The codebase has 33+ subprocess calls across 15+ files without timeout parameters. From the INCONSISTENCY.md audit:
 
-| File | Count | Risk |
-|------|-------|------|
-| `cihub/commands/verify.py` | 4 | CI job hangs |
-| `cihub/commands/check.py` | 3 | Local command hangs |
-| `cihub/commands/triage.py` | 5 | API call hangs |
-| `cihub/core/ci_runner/shared.py` | 2 | Build process hangs |
-| Various | 19+ | Mixed risk |
+| File                             | Count | Risk                |
+|----------------------------------|-------|---------------------|
+| `cihub/commands/verify.py`       | 4     | CI job hangs        |
+| `cihub/commands/check.py`        | 3     | Local command hangs |
+| `cihub/commands/triage.py`       | 5     | API call hangs      |
+| `cihub/core/ci_runner/shared.py` | 2     | Build process hangs |
+| Various                          | 19+   | Mixed risk          |
 
 **Problem:** Without timeouts, a subprocess can hang indefinitely, causing:
 1. CI jobs to stall until GitHub's 6-hour limit kills them
@@ -28,12 +28,12 @@ Establish a **Subprocess Timeout Policy** with tiered defaults based on operatio
 
 ### 1. Timeout Tiers
 
-| Tier | Timeout | Use Case |
-|------|---------|----------|
-| **Quick** | 30s | Git config, file checks, simple CLI tools |
-| **Network** | 60-120s | API calls, downloads, remote operations |
-| **Build** | 300-600s | Compilation, test suites, full builds |
-| **Extended** | 900s | Mutation testing, comprehensive scans |
+| Tier         | Timeout  | Use Case                                  |
+|--------------|----------|-------------------------------------------|
+| **Quick**    | 30s      | Git config, file checks, simple CLI tools |
+| **Network**  | 60-120s  | API calls, downloads, remote operations   |
+| **Build**    | 300-600s | Compilation, test suites, full builds     |
+| **Extended** | 900s     | Mutation testing, comprehensive scans     |
 
 ### 2. Standard Pattern
 

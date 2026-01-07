@@ -28,11 +28,20 @@ Single queue for known issues and near-term work.
 
 ---
 
-## New Backlog Items to Add (from current gaps)
+ht## From ADR-0035 (Triage/Registry)
 
 | Item                                        | Category          | Notes                                                         |
 |---------------------------------------------|-------------------|---------------------------------------------------------------|
-| Implement `cihub docs stale`                | CLI/Docs          | Design in `docs/development/active/DOC_AUTOMATION_AUDIT.md`   |
+| Implement `cihub registry` CLI              | CLI               | Centralized repo config management (list, show, set, diff, sync) |
+| Implement `cihub assist --prompt`           | CLI/LLM           | Generate LLM prompt pack from triage bundle                   |
+| Implement `cihub fix --safe`                | CLI               | Auto-fix: ruff, black, isort, badges                          |
+| Triage filtering flags                      | CLI               | `--min-severity`, `--category` for triage output filtering    |
+| Formal JSON Schema for triage               | Validation        | `schema/triage.schema.json` for bundle validation             |
+
+## Other Backlog Items
+
+| Item                                        | Category          | Notes                                                         |
+|---------------------------------------------|-------------------|---------------------------------------------------------------|
 | Implement `cihub docs audit` + manifest     | CLI/Docs          | Lifecycle/header checks, plain-text scan, `.cihub/tool-outputs` |
 | Generate `docs/reference/TOOLS.md`          | Docs              | From `cihub/tools/registry.py` via `cihub docs generate`       |
 | Generate `docs/reference/WORKFLOWS.md`      | Docs              | From `.github/workflows/*.yml`; guides stay narrative          |

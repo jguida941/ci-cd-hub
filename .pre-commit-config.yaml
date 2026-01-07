@@ -82,6 +82,17 @@ repos:
         types: [yaml]
 
   # --------------------------------------------------------------------------
+  # JSON Schema validation for hub configs
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/python-jsonschema/check-jsonschema
+    rev: 0.29.1
+    hooks:
+      - id: check-jsonschema
+        name: validate hub repo configs
+        files: '^config/repos/.*\.yaml$'
+        args: ['--schemafile', 'schema/ci-hub-config.schema.json']
+
+  # --------------------------------------------------------------------------
   # Markdown linting
   # --------------------------------------------------------------------------
   - repo: https://github.com/igorshubovych/markdownlint-cli

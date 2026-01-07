@@ -11,7 +11,7 @@ Users need a fast way to onboard repos to the hub with sane defaults and repeata
 - Repo template (`templates/repo/.ci-hub.yml`)
 - Hub-side repo template (`templates/hub/config/repos/repo-template.yaml`)
 - Profiles for fast/quality/security plus new minimal, compliance, coverage-gate variants
-- Helper to apply a profile onto a repo config (`scripts/apply_profile.py`)
+- Helper to apply a profile onto a repo config (`cihub config apply-profile`)
 
 We need to lock in how templates/profiles are structured, merged, and validated so future changes remain compatible and discoverable.
 
@@ -21,7 +21,7 @@ We need to lock in how templates/profiles are structured, merged, and validated 
 2. **Profiles are additive overlays**: profiles provide recommended tool toggles and thresholds; when applied, the target config wins on conflicts (overlay then user override). The helper performs a deep merge with user config taking precedence.
 3. **Profile catalog** lives under `templates/profiles/` with README matrix; new profiles must be documented there and be schema-valid.
 4. **Hub-side template** (`templates/hub/config/repos/repo-template.yaml`) is the blessed starter for per-repo configs; repo template (`templates/repo/.ci-hub.yml`) is the starter for in-repo overrides.
-5. **Validation is required**: any profile or template changes must pass `scripts/validate_config.py` against the schema.
+5. **Validation is required**: any profile or template changes must pass `cihub hub-ci validate-configs` against the schema.
 
 ## Consequences
 

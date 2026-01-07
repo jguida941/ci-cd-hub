@@ -1,0 +1,52 @@
+{
+  "$schema": "../schema/registry.schema.json",
+  "schema_version": "cihub-registry-v1",
+  "tiers": {
+    "strict": {
+      "description": "Maximum quality gates for production-critical code",
+      "profile": "tier-strict"
+    },
+    "standard": {
+      "description": "Balanced quality gates for most repositories",
+      "profile": null
+    },
+    "relaxed": {
+      "description": "Minimal gates for legacy or experimental code",
+      "profile": "tier-relaxed"
+    }
+  },
+  "repos": {
+    "canary-python": {
+      "tier": "standard",
+      "language": "python",
+      "description": "Python canary repo for CI validation",
+      "dispatch_enabled": true
+    },
+    "canary-java": {
+      "tier": "standard",
+      "language": "java",
+      "description": "Java canary repo for CI validation",
+      "dispatch_enabled": true
+    },
+    "fixtures-python-passing": {
+      "tier": "standard",
+      "language": "python",
+      "description": "Python fixture that should always pass"
+    },
+    "fixtures-python-failing": {
+      "tier": "relaxed",
+      "language": "python",
+      "description": "Python fixture for testing failure scenarios"
+    },
+    "fixtures-java-passing": {
+      "tier": "standard",
+      "language": "java",
+      "description": "Java fixture that should always pass"
+    },
+    "fixtures-java-failing": {
+      "tier": "relaxed",
+      "language": "java",
+      "description": "Java fixture for testing failure scenarios"
+    }
+  }
+}

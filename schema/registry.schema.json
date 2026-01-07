@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/jguida941/ci-cd-hub/schemas/registry.schema.json",
+  "title": "CIHub Registry Schema",
+  "description": "Schema for centralized repo configuration registry with tier-to-profile mapping",
+  "type": "object",
+  "required": ["schema_version", "tiers", "repos"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this schema file"
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^cihub-registry-v\\d+$",
+      "description": "Schema version identifier"
+    },
+    "tiers": {
+      "type": "object",
+      "description": "Tier definitions mapping to profile files",
+      "additionalProperties": {
+        "$ref": "#/$defs/tier"
+      }
+    },
+    "repos": {
+      "type": "object",
+      "description": "Repository configurations",
+      "additionalProperties": {
+        "$ref": "#/$defs/repo"
+      }
+    }
+  },
+  "$defs": {
+    "tier": {
+      "type": "object",
+      "required": ["description"],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Human-readable tier description"
+        },
+        "profile": {
+          "type": ["string", "null"],
+          "description": "Profile name in templates/profiles/ (null for default/standard tier)"
+        }
+      }
+    },
+    "repo": {
+      "type": "object",
+      "required": ["tier"],
+      "properties": {
+        "tier": {
+          "type": "string",
+          "description": "Tier name (must match a key in tiers)"
+        },
+        "language": {
+          "type": "string",
+          "enum": ["python", "java"],
+          "description": "Repository language"
+        },
+        "description": {
+          "type": "string",
+          "description": "Repository description"
+        },
+        "dispatch_enabled": {
+          "type": "boolean",
+          "description": "Whether dispatch workflows are enabled"
+        }
+      }
+    }
+  }
+}

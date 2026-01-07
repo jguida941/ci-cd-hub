@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-06 - CLI Re-exports Cleanup (Part 5.1)
+
+### Removed: CLI Re-exports (CLEAN_CODE.md Part 5.1)
+
+**Problem:** `cihub/cli.py` re-exported 50+ functions for backward compat, creating messy dependencies.
+
+**Solution:** Fixed imports directly instead of phased deprecation:
+- Updated ~20 test files to import from canonical locations
+- Removed 50+ re-export lines from `cli.py`
+- `cli.py` now only exports `main` and `build_parser`
+
+**Import changes:**
+- `CommandResult` → `from cihub.types import CommandResult`
+- `hub_root`, `get_git_branch`, etc. → `from cihub.utils import ...`
+- `render_dispatch_workflow` → `from cihub.services.templates import ...`
+- POM utilities → `from cihub.utils import ...`
+
+### Status
+- CLEAN_CODE.md: Part 5.1 ✅ COMPLETE
+- All 2234 tests passing
+
+---
+
 ## 2026-01-06 - RunCIOptions Dataclass (Part 3.2)
 
 ### New: `RunCIOptions` Dataclass (CLEAN_CODE.md Part 3.2)

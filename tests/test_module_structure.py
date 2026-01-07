@@ -80,10 +80,10 @@ class TestImportSmoke:
 class TestHubCiCommandCount:
     """Lock hub_ci command count to prevent silent command loss."""
 
-    EXPECTED_COMMAND_COUNT = 47
+    EXPECTED_COMMAND_COUNT = 48
 
     def test_command_count_locked(self) -> None:
-        """Exactly 47 cmd_* functions must exist in hub_ci."""
+        """Exactly 48 cmd_* functions must exist in hub_ci."""
         from cihub.commands import hub_ci
 
         cmd_funcs = [name for name in dir(hub_ci) if name.startswith("cmd_")]
@@ -96,48 +96,22 @@ class TestHubCiCommandCount:
 
 
 class TestCliFacadeExports:
-    """Verify CLI facade exports remain accessible.
+    """Verify CLI exports are actual CLI functions only.
 
-    These are the public API items that must remain importable from cihub.cli
-    even after utilities are moved to cihub/utils/.
+    Utilities should be imported from their canonical locations:
+    - cihub.types.CommandResult
+    - cihub.utils.* (hub_root, get_git_branch, etc.)
+    - cihub.services.* (build_repo_config, etc.)
     """
 
-    # All items that are imported from cihub.cli by other modules
-    # Must remain accessible after modularization
+    # Only actual CLI functions should be exported from cli.py
     CLI_FACADE_EXPORTS = [
-        # Core types and entry points
-        "CommandResult",
         "build_parser",
         "main",
-        # Path and validation utilities
-        "hub_root",
-        "validate_repo_path",
-        "validate_subdir",
-        # Executable resolution
-        "resolve_executable",
-        # Git utilities
-        "GIT_REMOTE_RE",
-        "get_git_branch",
-        "get_git_remote",
-        "parse_repo_from_remote",
-        # GitHub API utilities
-        "delete_remote_file",
-        "fetch_remote_file",
-        "gh_api_json",
-        "update_remote_file",
-        # Repo configuration
-        "build_repo_config",
-        "get_connected_repos",
-        "get_repo_entries",
-        "resolve_language",
-        # Workflow rendering
-        "render_dispatch_workflow",
-        # HTTP utilities
-        "safe_urlopen",
     ]
 
     def test_cli_facade_exports_accessible(self) -> None:
-        """All CLI facade items must be importable from cihub.cli."""
+        """CLI entry points must be importable from cihub.cli."""
         from cihub import cli
 
         missing = []
@@ -145,7 +119,25 @@ class TestCliFacadeExports:
             if not hasattr(cli, name):
                 missing.append(name)
 
-        assert not missing, f"Missing CLI facade exports: {missing}"
+        assert not missing, f"Missing CLI exports: {missing}"
+
+    def test_utilities_not_exported_from_cli(self) -> None:
+        """Utilities should NOT be exported from cli.py."""
+        from cihub import cli
+
+        # These should NOT be in cli anymore
+        deprecated_exports = [
+            "hub_root",
+            "validate_repo_path",
+            "GIT_REMOTE_RE",
+            "get_git_branch",
+            "safe_urlopen",
+        ]
+
+        still_exported = [name for name in deprecated_exports if hasattr(cli, name)]
+        assert not still_exported, (
+            f"Import from canonical locations, not cli.py: {still_exported}"
+        )
 
 
 class TestMockPatchTargets:

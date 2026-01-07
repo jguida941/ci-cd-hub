@@ -78,7 +78,7 @@ def _resolve_actionlint_version(version: str) -> str:
         import urllib.request
 
         request = urllib.request.Request(url, headers={"User-Agent": "cihub"})  # noqa: S310
-        with urllib.request.urlopen(request) as response:  # noqa: S310
+        with urllib.request.urlopen(request, timeout=60) as response:  # noqa: S310
             data = json.loads(response.read().decode("utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise RuntimeError(f"Failed to resolve latest actionlint version: {exc}") from exc

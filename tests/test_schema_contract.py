@@ -23,6 +23,7 @@ from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS
 SCHEMA_DIR = Path(__file__).parent.parent / "schema"
 REPORT_SCHEMA_PATH = SCHEMA_DIR / "ci-report.v2.json"
 CONFIG_SCHEMA_PATH = SCHEMA_DIR / "ci-hub-config.schema.json"
+TRIAGE_SCHEMA_PATH = SCHEMA_DIR / "triage.schema.json"
 
 
 @pytest.fixture
@@ -527,3 +528,194 @@ class TestConfigSchemaContract:
 
         for tool in expected_tools:
             assert tool in tool_defaults, f"gates.tool_defaults missing {tool}"
+
+
+class TestHardenRunnerSchemaContract:
+    """Validate harden_runner configuration in schema."""
+
+    @pytest.fixture
+    def minimal_python_config(self) -> dict[str, Any]:
+        """Minimal valid Python config for harden_runner tests."""
+        return {
+            "language": "python",
+            "repo": {"owner": "test", "name": "test-repo"},
+            "python": {"version": "3.12"},
+        }
+
+    def test_harden_runner_exists_in_schema(
+        self,
+        config_schema: dict[str, Any],
+    ) -> None:
+        """harden_runner section must exist in schema."""
+        assert "harden_runner" in config_schema["properties"], (
+            "Config schema missing 'harden_runner' section for workflow security"
+        )
+
+    def test_harden_runner_accepts_boolean(
+        self,
+        config_schema: dict[str, Any],
+        minimal_python_config: dict[str, Any],
+    ) -> None:
+        """harden_runner: true/false should validate."""
+        validator = jsonschema.Draft7Validator(config_schema)
+
+        # Boolean true should be valid
+        config_true = {**minimal_python_config, "harden_runner": True}
+        errors = list(validator.iter_errors(config_true))
+        assert not errors, f"harden_runner: true should be valid: {errors}"
+
+        # Boolean false should be valid
+        config_false = {**minimal_python_config, "harden_runner": False}
+        errors = list(validator.iter_errors(config_false))
+        assert not errors, f"harden_runner: false should be valid: {errors}"
+
+    def test_harden_runner_accepts_policy_object(
+        self,
+        config_schema: dict[str, Any],
+        minimal_python_config: dict[str, Any],
+    ) -> None:
+        """harden_runner: {policy: "audit|block|disabled"} should validate."""
+        validator = jsonschema.Draft7Validator(config_schema)
+
+        for policy in ["audit", "block", "disabled"]:
+            config = {**minimal_python_config, "harden_runner": {"policy": policy}}
+            errors = list(validator.iter_errors(config))
+            assert not errors, f"harden_runner.policy: {policy} should be valid: {errors}"
+
+    def test_harden_runner_rejects_invalid_policy(
+        self,
+        config_schema: dict[str, Any],
+        minimal_python_config: dict[str, Any],
+    ) -> None:
+        """harden_runner: {policy: "invalid"} should fail validation."""
+        validator = jsonschema.Draft7Validator(config_schema)
+
+        config = {**minimal_python_config, "harden_runner": {"policy": "invalid"}}
+        errors = list(validator.iter_errors(config))
+        assert errors, "harden_runner.policy: 'invalid' should fail validation"
+
+
+@pytest.fixture
+def triage_schema() -> dict[str, Any]:
+    """Load the triage.schema.json schema."""
+    return json.loads(TRIAGE_SCHEMA_PATH.read_text())
+
+
+class TestTriageSchemaContract:
+    """Validate triage bundle output against schema."""
+
+    def test_triage_schema_exists(self) -> None:
+        """Ensure triage schema file exists."""
+        assert TRIAGE_SCHEMA_PATH.exists(), f"Missing schema: {TRIAGE_SCHEMA_PATH}"
+
+    def test_triage_schema_is_valid_json(self) -> None:
+        """Triage schema must be valid JSON."""
+        content = TRIAGE_SCHEMA_PATH.read_text()
+        json.loads(content)  # Will raise if invalid
+
+    def test_sample_triage_validates(self, triage_schema: dict[str, Any]) -> None:
+        """Sample triage bundle must validate against schema."""
+        sample_triage = {
+            "schema_version": "cihub-triage-v2",
+            "generated_at": "2026-01-06T12:00:00Z",
+            "run": {
+                "correlation_id": "test-123",
+                "repo": "test/repo",
+                "commit_sha": "abc123",
+                "branch": "main",
+            },
+            "paths": {
+                "output_dir": "/tmp/test",
+                "report_path": "/tmp/test/report.json",
+                "summary_path": "/tmp/test/summary.md",
+            },
+            "summary": {
+                "overall_status": "passed",
+                "failure_count": 0,
+                "warning_count": 0,
+            },
+            "tool_evidence": [
+                {
+                    "tool": "pytest",
+                    "configured": True,
+                    "ran": True,
+                    "require_run": True,
+                    "success": True,
+                    "status": "passed",
+                    "explanation": "Tests passed",
+                    "metrics": {"tests_passed": 100},
+                    "has_artifacts": True,
+                }
+            ],
+            "evidence_issues": [],
+            "failures": [],
+            "warnings": [],
+            "notes": [],
+        }
+
+        # This will raise ValidationError if bundle doesn't match schema
+        jsonschema.validate(instance=sample_triage, schema=triage_schema)
+
+    def test_triage_schema_requires_mandatory_fields(
+        self, triage_schema: dict[str, Any]
+    ) -> None:
+        """Verify schema enforces required fields."""
+        incomplete = {"schema_version": "cihub-triage-v2"}
+
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(instance=incomplete, schema=triage_schema)
+
+    def test_triage_schema_validates_schema_version_pattern(
+        self, triage_schema: dict[str, Any]
+    ) -> None:
+        """schema_version must match pattern cihub-triage-vN."""
+        invalid = {
+            "schema_version": "wrong-format",  # Invalid pattern
+            "generated_at": "2026-01-06T12:00:00Z",
+            "run": {},
+            "summary": {"overall_status": "passed", "failure_count": 0},
+            "failures": [],
+        }
+
+        with pytest.raises(jsonschema.ValidationError) as exc_info:
+            jsonschema.validate(instance=invalid, schema=triage_schema)
+
+        assert "pattern" in str(exc_info.value).lower()
+
+    def test_triage_schema_validates_overall_status_enum(
+        self, triage_schema: dict[str, Any]
+    ) -> None:
+        """overall_status must be a valid enum value (passed/failed/success/failure)."""
+        invalid = {
+            "schema_version": "cihub-triage-v2",
+            "generated_at": "2026-01-06T12:00:00Z",
+            "run": {},
+            "summary": {"overall_status": "unknown", "failure_count": 0},  # Invalid
+            "failures": [],
+        }
+
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(instance=invalid, schema=triage_schema)
+
+    def test_triage_schema_validates_severity_enum(
+        self, triage_schema: dict[str, Any]
+    ) -> None:
+        """failure severity must be in allowed enum."""
+        invalid = {
+            "schema_version": "cihub-triage-v2",
+            "generated_at": "2026-01-06T12:00:00Z",
+            "run": {},
+            "summary": {"overall_status": "failed", "failure_count": 1},
+            "failures": [
+                {
+                    "id": "test:failed",
+                    "tool": "test",
+                    "status": "failed",
+                    "severity": "critical",  # Invalid - should be blocker/high/medium/low
+                    "category": "test",
+                }
+            ],
+        }
+
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(instance=invalid, schema=triage_schema)

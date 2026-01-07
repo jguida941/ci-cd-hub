@@ -1101,6 +1101,24 @@
     "reports": {
       "$ref": "#/definitions/reports"
     },
+    "harden_runner": {
+      "description": "StepSecurity harden-runner configuration for workflow security hardening",
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "policy": {
+              "default": "audit",
+              "description": "Harden-runner policy: audit (log only), block (deny unauthorized), or disabled",
+              "enum": ["audit", "block", "disabled"],
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    },
     "runner_isolation": {
       "oneOf": [
         { "type": "boolean" },

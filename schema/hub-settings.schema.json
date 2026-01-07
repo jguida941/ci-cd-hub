@@ -1,0 +1,79 @@
+{
+  "$id": "https://github.com/jguida941/ci-cd-hub/schema/hub-settings.schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CI/CD Hub Operational Settings",
+  "description": "Schema for config/hub-settings.yaml - controls how hub-internal workflows run",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "execution": {
+      "type": "object",
+      "description": "Execution control settings",
+      "additionalProperties": false,
+      "properties": {
+        "skip_mutation": {
+          "type": "boolean",
+          "default": false,
+          "description": "Skip mutation testing (pitest/mutmut) for faster runs"
+        },
+        "write_github_summary": {
+          "type": "boolean",
+          "default": true,
+          "description": "Write summary to GITHUB_STEP_SUMMARY"
+        },
+        "include_details": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include per-repo details in summary output"
+        }
+      }
+    },
+    "debug": {
+      "type": "object",
+      "description": "Debug and logging settings",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable CIHUB_DEBUG environment variable"
+        },
+        "verbose": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable CIHUB_VERBOSE for detailed logging"
+        },
+        "debug_context": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable CIHUB_DEBUG_CONTEXT for context debugging"
+        },
+        "emit_triage": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable CIHUB_EMIT_TRIAGE for triage bundle output"
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "description": "Security hardening settings",
+      "additionalProperties": false,
+      "properties": {
+        "harden_runner": {
+          "type": "object",
+          "description": "StepSecurity harden-runner configuration",
+          "additionalProperties": false,
+          "properties": {
+            "policy": {
+              "type": "string",
+              "enum": ["audit", "block", "disabled"],
+              "default": "audit",
+              "description": "Harden-runner egress policy: audit (log), block (deny), or disabled"
+            }
+          }
+        }
+      }
+    }
+  }
+}

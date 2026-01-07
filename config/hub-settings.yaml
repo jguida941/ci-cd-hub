@@ -1,0 +1,56 @@
+# ============================================================================
+# CI/CD Hub - Operational Settings
+# ============================================================================
+# Controls HOW the hub runs, not WHAT it runs on repos.
+# These settings apply to hub-internal workflows (hub-run-all, hub-orchestrator, etc.)
+#
+# Edit this file directly OR use: cihub hub config set <key> <value>
+#
+# Note: Per-repo tool configs live in config/repos/*.yaml and config/defaults.yaml
+# ============================================================================
+
+# ------------------------------------------------------------------------------
+# Execution Settings
+# ------------------------------------------------------------------------------
+# Control what gets run during hub CI operations
+
+execution:
+  # Skip mutation testing for faster runs (pitest for Java, mutmut for Python)
+  skip_mutation: false
+
+  # Write summary to GITHUB_STEP_SUMMARY (visible in Actions UI)
+  write_github_summary: true
+
+  # Include per-repo details in summary (can be large for many repos)
+  include_details: true
+
+# ------------------------------------------------------------------------------
+# Debug Settings
+# ------------------------------------------------------------------------------
+# Enable verbose output for troubleshooting
+
+debug:
+  # Enable CIHUB_DEBUG environment variable
+  enabled: false
+
+  # Enable CIHUB_VERBOSE for detailed logging
+  verbose: false
+
+  # Enable CIHUB_DEBUG_CONTEXT for context debugging
+  debug_context: false
+
+  # Enable CIHUB_EMIT_TRIAGE for triage bundle output
+  emit_triage: false
+
+# ------------------------------------------------------------------------------
+# Security Settings
+# ------------------------------------------------------------------------------
+# Workflow security hardening options
+
+security:
+  harden_runner:
+    # StepSecurity harden-runner policy
+    # - audit: Log network/file access (recommended default)
+    # - block: Block unauthorized egress (strict mode)
+    # - disabled: Skip harden-runner entirely
+    policy: audit

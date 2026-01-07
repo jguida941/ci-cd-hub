@@ -4,6 +4,11 @@
 # This workflow orchestrates CI/CD for all configured repositories.
 # It reads config, triggers builds, and aggregates reports.
 #
+# Settings Architecture:
+#   - Operational settings: config/hub-settings.yaml (edit with: cihub hub config set)
+#   - Per-repo configs: config/repos/*.yaml (edit with wizard or CLI)
+#   - Workflow inputs below are OVERRIDES for one-off runs (take precedence over config)
+#
 # Triggers:
 #   - Manual dispatch (workflow_dispatch)
 #   - Scheduled (e.g., nightly)
@@ -19,36 +24,42 @@ on:
         description: 'Comma-separated repo names (empty = all)'
         required: false
         type: string
+      # OVERRIDE inputs - leave empty to use config/hub-settings.yaml values
       write_github_summary:
-        description: 'Write summary to GITHUB_STEP_SUMMARY'
+        description: 'Override: Write summary to GITHUB_STEP_SUMMARY'
         required: false
-        type: boolean
-        default: true
+        type: string
+        default: ''
       include_details:
-        description: 'Include per-repo details in the summary (can be large)'
+        description: 'Override: Include per-repo details in summary'
         required: false
-        type: boolean
-        default: true
+        type: string
+        default: ''
       cihub_debug:
-        description: 'Enable CIHUB_DEBUG'
+        description: 'Override: Enable CIHUB_DEBUG'
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: ''
       cihub_verbose:
-        description: 'Enable CIHUB_VERBOSE'
+        description: 'Override: Enable CIHUB_VERBOSE'
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: ''
       cihub_debug_context:
-        description: 'Enable CIHUB_DEBUG_CONTEXT'
+        description: 'Override: Enable CIHUB_DEBUG_CONTEXT'
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: ''
       cihub_emit_triage:
-        description: 'Enable CIHUB_EMIT_TRIAGE'
+        description: 'Override: Enable CIHUB_EMIT_TRIAGE'
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: ''
+      harden_runner_policy:
+        description: 'Override: Harden-runner policy (audit/block/disabled)'
+        required: false
+        type: string
+        default: ''
 
   schedule:
     # Run nightly at 2 AM UTC
@@ -71,23 +82,73 @@ concurrency:
 
 jobs:
   # ============================================================================
+  # Load Hub Settings (config-file-first pattern)
+  # ============================================================================
+  load-settings:
+    name: Load Hub Settings
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      # Execution settings (flattened keys from hub-settings.yaml)
+      write_github_summary: ${{ steps.resolve.outputs.execution_write_github_summary }}
+      include_details: ${{ steps.resolve.outputs.execution_include_details }}
+      # Debug settings
+      debug_enabled: ${{ steps.resolve.outputs.debug_enabled }}
+      debug_verbose: ${{ steps.resolve.outputs.debug_verbose }}
+      debug_debug_context: ${{ steps.resolve.outputs.debug_debug_context }}
+      debug_emit_triage: ${{ steps.resolve.outputs.debug_emit_triage }}
+      # Security settings
+      security_harden_runner_policy: ${{ steps.resolve.outputs.security_harden_runner_policy }}
+
+    steps:
+      - name: Checkout Hub
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            config/hub-settings.yaml
+            cihub
+            pyproject.toml
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Install cihub (minimal)
+        run: pip install -e .
+
+      - name: Load Hub Settings
+        id: resolve
+        run: cihub hub config load --github-output --override-write-summary "${{ inputs.write_github_summary }}" --override-include-details "${{ inputs.include_details }}" --override-debug "${{ inputs.cihub_debug }}" --override-verbose "${{ inputs.cihub_verbose }}" --override-debug-context "${{ inputs.cihub_debug_context }}" --override-emit-triage "${{ inputs.cihub_emit_triage }}" --override-harden-runner-policy "${{ inputs.harden_runner_policy }}"
+
+  # ============================================================================
   # Load Configuration
   # ============================================================================
   load-config:
     name: Load Repository Config
     runs-on: ubuntu-latest
+    needs: load-settings
     permissions:
       contents: read
     outputs:
       matrix: ${{ steps.config.outputs.matrix }}
       repo_count: ${{ steps.config.outputs.count }}
     env:
-      CIHUB_DEBUG: ${{ inputs.cihub_debug && 'True' || 'False' }}
-      CIHUB_VERBOSE: ${{ inputs.cihub_verbose && 'True' || 'False' }}
-      CIHUB_DEBUG_CONTEXT: ${{ inputs.cihub_debug_context && 'True' || 'False' }}
-      CIHUB_EMIT_TRIAGE: ${{ inputs.cihub_emit_triage && 'True' || 'False' }}
+      CIHUB_DEBUG: ${{ needs.load-settings.outputs.debug_enabled == 'true' && 'True' || 'False' }}
+      CIHUB_VERBOSE: ${{ needs.load-settings.outputs.debug_verbose == 'true' && 'True' || 'False' }}
+      CIHUB_DEBUG_CONTEXT: ${{ needs.load-settings.outputs.debug_debug_context == 'true' && 'True' || 'False' }}
+      CIHUB_EMIT_TRIAGE: ${{ needs.load-settings.outputs.debug_emit_triage == 'true' && 'True' || 'False' }}
 
     steps:
+      - name: Harden Runner
+        if: ${{ needs.load-settings.outputs.security_harden_runner_policy != 'disabled' }}
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: ${{ needs.load-settings.outputs.security_harden_runner_policy || 'audit' }}
+
       - name: Checkout Hub
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -112,7 +173,7 @@ jobs:
       - name: Summary
         env:
           REPO_COUNT: ${{ steps.config.outputs.count }}
-          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ needs.load-settings.outputs.write_github_summary }}
         run: cihub report orchestrator-summary --mode load-config --repo-count "$REPO_COUNT"
 
   # ============================================================================
@@ -121,21 +182,27 @@ jobs:
   trigger-builds:
     name: Build ${{ matrix.config_basename }}
     runs-on: ubuntu-latest
-    needs: load-config
+    needs: [load-settings, load-config]
     if: needs.load-config.outputs.repo_count > 0
     permissions:
       contents: read
       actions: write  # For workflow dispatch
     env:
-      CIHUB_DEBUG: ${{ inputs.cihub_debug && 'True' || 'False' }}
-      CIHUB_VERBOSE: ${{ inputs.cihub_verbose && 'True' || 'False' }}
-      CIHUB_DEBUG_CONTEXT: ${{ inputs.cihub_debug_context && 'True' || 'False' }}
-      CIHUB_EMIT_TRIAGE: ${{ inputs.cihub_emit_triage && 'True' || 'False' }}
+      CIHUB_DEBUG: ${{ needs.load-settings.outputs.debug_enabled == 'true' && 'True' || 'False' }}
+      CIHUB_VERBOSE: ${{ needs.load-settings.outputs.debug_verbose == 'true' && 'True' || 'False' }}
+      CIHUB_DEBUG_CONTEXT: ${{ needs.load-settings.outputs.debug_debug_context == 'true' && 'True' || 'False' }}
+      CIHUB_EMIT_TRIAGE: ${{ needs.load-settings.outputs.debug_emit_triage == 'true' && 'True' || 'False' }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.load-config.outputs.matrix) }}
 
     steps:
+      - name: Harden Runner
+        if: ${{ needs.load-settings.outputs.security_harden_runner_policy != 'disabled' }}
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: ${{ needs.load-settings.outputs.security_harden_runner_policy || 'audit' }}
+
       - name: Checkout Hub
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -166,7 +233,7 @@ jobs:
           MATRIX_BRANCH: ${{ matrix.default_branch }}
           STEP_WORKFLOW_ID: ${{ steps.dispatch.outputs.workflow_id }}
           STEP_RUN_ID: ${{ steps.dispatch.outputs.run_id }}
-          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ needs.load-settings.outputs.write_github_summary }}
         run: cihub report orchestrator-summary --mode trigger-record --owner "$MATRIX_OWNER" --repo "$MATRIX_NAME" --language "$MATRIX_LANGUAGE" --branch "$MATRIX_BRANCH" --workflow-id "$STEP_WORKFLOW_ID" --run-id "$STEP_RUN_ID" --status "Triggered"
 
       - name: Save Dispatch Metadata
@@ -187,18 +254,24 @@ jobs:
   aggregate-reports:
     name: Aggregate Reports
     runs-on: ubuntu-latest
-    needs: [load-config, trigger-builds]
+    needs: [load-settings, load-config, trigger-builds]
     if: always()
     permissions:
       contents: read
       actions: read  # For reading run artifacts
     env:
-      CIHUB_DEBUG: ${{ inputs.cihub_debug && 'True' || 'False' }}
-      CIHUB_VERBOSE: ${{ inputs.cihub_verbose && 'True' || 'False' }}
-      CIHUB_DEBUG_CONTEXT: ${{ inputs.cihub_debug_context && 'True' || 'False' }}
-      CIHUB_EMIT_TRIAGE: ${{ inputs.cihub_emit_triage && 'True' || 'False' }}
+      CIHUB_DEBUG: ${{ needs.load-settings.outputs.debug_enabled == 'true' && 'True' || 'False' }}
+      CIHUB_VERBOSE: ${{ needs.load-settings.outputs.debug_verbose == 'true' && 'True' || 'False' }}
+      CIHUB_DEBUG_CONTEXT: ${{ needs.load-settings.outputs.debug_debug_context == 'true' && 'True' || 'False' }}
+      CIHUB_EMIT_TRIAGE: ${{ needs.load-settings.outputs.debug_emit_triage == 'true' && 'True' || 'False' }}
 
     steps:
+      - name: Harden Runner
+        if: ${{ needs.load-settings.outputs.security_harden_runner_policy != 'disabled' }}
+        uses: step-security/harden-runner@0634a2670c59f64b4a01f0f96f84700a4088b9f0 # v2.12.0
+        with:
+          egress-policy: ${{ needs.load-settings.outputs.security_harden_runner_policy || 'audit' }}
+
       - name: Checkout Hub
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -227,8 +300,8 @@ jobs:
           HUB_EVENT: ${{ github.event_name }}
           # Use HUB_DISPATCH_TOKEN for cross-repo artifact access
           HUB_DISPATCH_TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN }}
-          CIHUB_WRITE_GITHUB_SUMMARY: ${{ inputs.write_github_summary || 'true' }}
-          CIHUB_REPORT_INCLUDE_DETAILS: ${{ inputs.include_details || 'false' }}
+          CIHUB_WRITE_GITHUB_SUMMARY: ${{ needs.load-settings.outputs.write_github_summary }}
+          CIHUB_REPORT_INCLUDE_DETAILS: ${{ needs.load-settings.outputs.include_details }}
         run: cihub report aggregate --dispatch-dir dispatch-artifacts --output hub-report.json --details-output hub-report-details.md --defaults-file config/defaults.yaml
 
       - name: Upload Hub Report

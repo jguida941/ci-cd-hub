@@ -107,4 +107,17 @@ def add_triage_command(
         dest="gate_history",
         help="Analyze triage history for gate status changes over time",
     )
+    # Output filtering
+    triage.add_argument(
+        "--min-severity",
+        metavar="LEVEL",
+        choices=["blocker", "high", "medium", "low"],
+        help="Only show failures at or above this severity level (blocker > high > medium > low)",
+    )
+    triage.add_argument(
+        "--category",
+        metavar="CAT",
+        choices=["workflow", "security", "test", "lint", "docs", "build", "cihub"],
+        help="Only show failures in this category",
+    )
     triage.set_defaults(func=handlers.cmd_triage)

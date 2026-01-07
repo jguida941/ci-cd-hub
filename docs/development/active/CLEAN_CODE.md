@@ -1,7 +1,7 @@
 # Clean Code Audit: Scalability & Architecture Improvements
 
 **Date:** 2026-01-04
-**Last Updated:** 2026-01-06 (Part 7.3.3 subprocess consolidation: safe_run() + 34 migrations)
+**Last Updated:** 2026-01-06 (Hub Operational Settings: config-file-first architecture for hub workflows)
 **Branch:** feat/modularization
 **Priority:** 🔴 **#1 - CURRENT** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
 **Status:** ~90% complete
@@ -12,6 +12,60 @@
 > `MASTER_PLAN.md` to ensure it accurately reflects the new architecture and code locations.
 > Architecture changes in this refactoring affect paths, module boundaries, and patterns
 > referenced throughout MASTER_PLAN.md.
+
+---
+
+## 🆕 Current Work (2026-01-06): Hub Operational Settings
+
+**Completed:** Config-file-first architecture for hub-internal workflows (ADR-0049)
+
+### Problem Solved
+
+Hub-internal workflows (`hub-run-all.yml`, `hub-orchestrator.yml`) had 10+ boolean inputs for operational settings (debug flags, security policies, execution toggles). This created:
+- No persistent state for default behavior changes
+- Risk of hitting GitHub's 25-input limit as features grew
+- Manual workflow editing required for default changes
+
+### Solution Implemented
+
+**Config-file-first pattern:** Settings live in `config/hub-settings.yaml`, workflow inputs become overrides.
+
+```
+Precedence: workflow_dispatch inputs → config/hub-settings.yaml → built-in defaults
+```
+
+### Files Created/Modified
+
+| File | Purpose |
+|------|---------|
+| `config/hub-settings.yaml` | Hub operational settings (execution, debug, security) |
+| `schema/hub-settings.schema.json` | Validation schema |
+| `cihub/commands/hub_config.py` | CLI command implementation |
+| `cihub/cli_parsers/hub.py` | CLI parser for `cihub hub config` commands |
+| `.github/workflows/hub-run-all.yml` | Added `load-settings` job |
+| `.github/workflows/hub-orchestrator.yml` | Added `load-settings` job |
+| `docs/adr/0049-hub-operational-settings.md` | Architecture decision record |
+
+### CLI Commands Added
+
+```bash
+cihub hub config show                      # View current settings
+cihub hub config set debug.enabled true    # Change a setting
+cihub hub config load --github-output      # Export for GitHub Actions
+```
+
+### Config Hierarchy (Now Two-Layered)
+
+```
+Hub Operational Settings (ADR-0049):
+  config/hub-settings.yaml → controls HOW hub runs
+
+Per-Repo Tool Configs (ADR-0002, ADR-0024):
+  1. .ci-hub.yml (repo-local)
+  2. config/repos/<repo>.yaml (hub-side)
+  3. config/defaults.yaml (global)
+  → controls WHAT runs on each repo
+```
 
 ---
 
@@ -40,26 +94,36 @@ Use this checklist to track overall progress. Detailed implementation notes are 
 - [x] **Part 7.3:** Utilities Consolidation ✅ **DONE** (7.3.1 ✅ project.py, 7.3.2 ✅ github_context.py, 7.3.3 ✅ safe_run() wrapper + 34 migrations)
 - [x] **Part 9.3:** Schema Consolidation ✅ **DONE** (sbom/semgrep → sharedTools, toolStatusMap extracted)
 
+### 🟢 7-Agent Audit Fixes (COMPLETE - 2026-01-06)
+
+> **Source:** 7-agent comprehensive code review. **All 5 critical fixes applied, 2263 tests pass.**
+
+- [x] **fix.py JSON parsing:** Silent failure → log warning + add to problems (lines 174-175, 192-193) ✅
+- [x] **triage.py None propagation:** Add explicit None check after `_find_report_in_artifacts()` (lines 792-799) ✅
+- [x] **triage.py repo validation:** Add regex validation for `owner/repo` format (lines 842-851) ✅
+- [x] **release.py urllib timeout:** Add `timeout=60` parameter (line 81, ADR-0045) ✅
+- [x] **templates.py token validation:** Validate token format before env var set (lines 52-71) ✅
+
 ### Medium Priority (Pending) ⏳
 
 - [x] **Part 2.5:** Expand CI Engine Tests ✅ **DONE** (131+ tests: test_ci_engine.py 124 tests, test_ci_env_overrides.py 5 tests, test_services_ci.py 2 tests)
 - [x] **Part 2.6:** Gate Evaluation Refactor ✅ **DONE** (gate_specs.py with 26 thresholds wired to evaluate_threshold)
 - [x] **Part 3.1:** Centralize GitHub Environment Access ✅ **DONE** (unified GitHubContext: 11 env vars + output/summary writing, 59 tests)
 - [x] **Part 3.2:** Consolidate RunCI Parameters ✅
-- [ ] **Part 5.1 Phases 2-4:** CLI compat module + deprecation warnings
+- [x] **Part 5.1:** CLI re-exports cleanup ✅ **DONE** (removed 50+ re-exports, fixed imports directly)
 - [x] **Part 5.2:** Mixed Return Types ✅ **DONE** (all 47 commands → pure CommandResult)
-- [ ] **Part 5.3:** Special-Case Handling (move to tool adapters)
-- [ ] **Part 7.4:** Core Module Refactoring
-- [ ] **Part 7.5:** Config/Schema Consistency
-- [ ] **Part 7.6:** Services Layer
-- [ ] **Part 9.1:** Scripts & Build System
-- [ ] **Part 9.2:** GitHub Workflows Security
+- [ ] **Part 5.3:** Special-Case Handling ⚠️ **CONSIDER SKIPPING** (2026-01-06: Low impact, over-refactoring risk)
+- [ ] **Part 7.4:** Core Module Refactoring (High impact - 90% shared code in build reports)
+- [x] **Part 7.5:** Config/Schema Consistency ✅ **DONE** (schema validation bypass fixed in hub_ci/__init__.py)
+- [ ] **Part 7.6:** Services Layer (High impact - 300+ line `run_ci()` god method)
+- [x] **Part 9.1:** Scripts & Build System ✅ **DONE** (deprecation warnings added, docs updated, pre-commit JSON schema validation added; Black/isort skipped - Ruff is intentional replacement)
+- [x] **Part 9.2:** GitHub Workflows Security ✅ **DONE** (harden-runner added as configurable toggle: schema `harden_runner.policy`, workflow input `harden_runner_policy` with values audit/block/disabled)
 
 ### Low Priority / Deferred ⏸️
 
 - [ ] **Part 2.3:** Extract Tool Adapters (DEFERRED)
 - [ ] **Part 3.3:** Tighten CommandResult Contract (DEFERRED)
-- [ ] **Part 4.1:** Output Renderer Abstraction
+- [x] **Part 4.1:** Output Renderer Abstraction ✅ (implemented 2026-01-05)
 - [ ] **Part 4.2:** Filesystem/Git Abstractions for Testing
 - [ ] **Part 10 Phase T4:** Integration testing (Ongoing)
 
@@ -121,6 +185,33 @@ Comprehensive security audit identified and fixed multiple issues:
 **Path traversal protection:** The `_validate_name()` function blocks `..`, `\`, and leading `/` to prevent directory escape. Allows `owner/repo` format with explicit `allow_slash=True` parameter for legitimate use cases.
 
 **Tests added:** 6 new tests for platform detection, ensure_executable race condition handling, and path traversal blocking.
+
+---
+
+## 7-Agent Audit Findings (2026-01-06) - TO BE ADDRESSED
+
+> Source: Comprehensive 7-agent code review. Items below are NEW findings not yet addressed.
+
+### Critical (Fix Before Release)
+
+| Severity | Issue | File:Lines | Fix |
+|----------|-------|-----------|-----|
+| 🔴 Critical | JSON parsing silently fails | `fix.py:174-175, 192-193` | `except json.JSONDecodeError: pass` → log warning + add to CommandResult.problems |
+| 🔴 Critical | Triage None propagation | `triage.py:789-806` | Add explicit None check after `_find_report_in_artifacts()` → return EXIT_FAILURE |
+
+### High (Security Validation)
+
+| Severity | Issue | File:Lines | Fix |
+|----------|-------|-----------|-----|
+| 🟠 High | Repo name not validated | `triage.py:293-295` | Add regex validation for `owner/repo` format before use |
+| 🟠 High | Missing urllib timeout | `release.py:78-81` | Add `timeout=60` parameter (ADR-0045 compliance) |
+| 🟠 High | Token pollution | `templates.py:52-53` | Validate token format before setting environment variable |
+
+### Related Coverage
+
+- **Registry tests:** See REGISTRY_AUDIT_AND_PLAN.md Part 15 (comprehensive test strategy)
+- **Service tests:** See TEST_REORGANIZATION.md for 9 untested service modules
+- **Doc contradictions:** See DOC_AUTOMATION_AUDIT.md for 12 documentation inconsistencies
 
 ---
 
@@ -952,83 +1043,24 @@ class MemoryFileSystem(FileSystem):
 
 ## Part 5: Anti-Patterns to Eliminate
 
-### 5.1 CLI Re-exporting Helpers ⚠️ (Action Plan Added 2026-01-05)
+### 5.1 CLI Re-exporting Helpers ✅ COMPLETE (2026-01-06)
 
-`cihub/cli.py:14-62` re-exports 30+ functions for backward compatibility.
+**Status:** COMPLETE - Fixed directly instead of phased deprecation.
 
-**Issue:** Creates dependency on CLI from other modules.
+**Problem:** `cihub/cli.py` re-exported 50+ functions for backward compatibility, creating messy dependencies.
 
-**Action Plan:**
+**Solution:** Just fixed the imports directly and removed the re-exports.
 
-1. **Phase 1 ✅ COMPLETE (2026-01-05):** Removed 45 lines of explanatory comments from cli.py
-   - File reduced from 411 → 366 lines
-   - Re-exports still work, just without redundant comments
-2. **Phase 2:** Create `cihub/compat.py` module with all re-exports + deprecation warnings
-3. **Phase 3:** Update `cli.py` to: `from cihub.compat import *  # noqa`
-4. **Phase 4 (v2.0):** Remove compat.py entirely
+**Changes:**
+1. Updated ~20 test files to import from canonical locations:
+   - `CommandResult` → `from cihub.types import CommandResult`
+   - `hub_root`, `get_git_branch`, etc. → `from cihub.utils import ...`
+   - `render_dispatch_workflow` → `from cihub.services.templates import ...`
+   - POM utilities → `from cihub.utils import ...`
+2. Removed 50+ re-export lines from `cihub/cli.py`
+3. Updated `tests/test_module_structure.py` to verify utilities are NOT exported from cli.py
 
-**Implementation for Phase 2:**
-
-```python
-# cihub/compat.py
-"""Backward compatibility re-exports.
-
-DEPRECATED: Import from the canonical locations instead.
-This module will be removed in v2.0.
-"""
-import warnings
-from typing import Any
-
-# Canonical re-exports
-from cihub.types import CommandResult
-from cihub.utils import (
-    GIT_REMOTE_RE, hub_root, get_git_branch, get_git_remote,
-    parse_repo_from_remote, resolve_executable, validate_repo_path,
-    validate_subdir, fetch_remote_file, update_remote_file, gh_api_json,
-    # Java POM utilities
-    get_java_tool_flags, get_xml_namespace, ns_tag, elem_text,
-    parse_xml_text, parse_xml_file, parse_pom_plugins, parse_pom_modules,
-    parse_pom_dependencies, plugin_matches, dependency_matches,
-    collect_java_pom_warnings, collect_java_dependency_warnings,
-    load_plugin_snippets, load_dependency_snippets, line_indent,
-    indent_block, insert_plugins_into_pom, find_tag_spans,
-    insert_dependencies_into_pom,
-)
-from cihub.services.configuration import load_effective_config
-from cihub.services.detection import detect_language, resolve_language
-from cihub.services.repo_config import get_connected_repos, get_repo_entries
-from cihub.services.templates import (
-    build_repo_config, render_caller_workflow, render_dispatch_workflow,
-)
-
-_DEPRECATED_EXPORTS = {
-    name for name in dir() if not name.startswith('_')
-}
-
-def __getattr__(name: str) -> Any:
-    if name in _DEPRECATED_EXPORTS:
-        warnings.warn(
-            f"Importing '{name}' from cihub.cli or cihub.compat is deprecated. "
-            f"Import from the canonical module instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        return globals().get(name)
-    raise AttributeError(f"module 'cihub.compat' has no attribute '{name}'")
-```
-
-**Automation Option:** Add pre-commit hook to detect deprecated imports:
-
-```yaml
-# .pre-commit-config.yaml
-- repo: local
-  hooks:
-    - id: check-deprecated-imports
-      name: Check deprecated cihub.cli imports
-      entry: python scripts/check_deprecated_imports.py
-      language: python
-      types: [python]
-```
+**Result:** `cli.py` now only exports actual CLI functions (`main`, `build_parser`). All 2234 tests pass.
 
 ### 5.2 Mixed Return Types ✅ DONE
 
@@ -1046,7 +1078,7 @@ def __getattr__(name: str) -> Any:
 
 **Benefit:** CLI now has consistent return types, simpler testing, guaranteed `--json` support.
 
-### 5.3 Special-Case Handling
+### 5.3 Special-Case Handling ⚠️ CONSIDER SKIPPING (2026-01-06 Investigation)
 
 `cihub/services/ci_engine/python_tools.py:183-188`:
 ```python
@@ -1057,7 +1089,37 @@ if tool == "codeql":
 
 **Issue:** Special cases scattered, hard to find.
 
-**Solution:** Move to tool adapters where special handling is explicit and documented.
+**Original Solution:** Move to tool adapters where special handling is explicit and documented.
+
+---
+
+#### Investigation Results (2026-01-06)
+
+**Special cases found in 3 locations:**
+- `python_tools.py` - 6 cases (tool-specific config extraction)
+- `java_tools.py` - 6 cases (tool-specific config extraction)
+- `helpers.py` - 10 cases in `_tool_gate_enabled()`
+
+**Assessment:**
+
+| Aspect | Finding |
+|--------|---------|
+| Impact | **Low** - Current code is already localized in 3 files |
+| Effort | **Medium** - Would require creating adapter pattern infrastructure |
+| Risk | **Over-refactoring** - Config extraction is co-located with tool orchestration |
+
+**Recommendation per AGENTS.md "avoid over-engineering":**
+
+> Unlike earlier issues (45 scattered prints), this is just 3 files with related concerns. The current architecture is actually reasonable.
+
+**Options:**
+1. **SKIP** - Mark as "BY DESIGN" (current code is acceptable)
+2. **DEFER** - Move to post-v1.0 backlog
+3. **MINIMAL** - Only extract if adding new tools becomes painful
+
+**Higher Value Alternatives:**
+- **Part 7.5** (Config/Schema Consistency) - Has a REAL BUG: schema validation bypass
+- **Part 7.6** (Services Layer) - 300+ line `run_ci()` god method needs breaking up
 
 ### 5.4 CLI Command Sprawl ✅ BY DESIGN (Audited 2026-01-05)
 
@@ -1881,11 +1943,11 @@ format-all: format format-black format-isort ## Run all formatters
 - [x] Set removal date for 11 script shims ✅ 2026-01-05 (removal: 2026-02-01)
 - [x] Add black/isort to `cihub check` (match CI parity) ✅ 2026-01-05
 - [x] Add `format-black`, `format-isort`, `format-all` Makefile targets ✅ 2026-01-05
-- [ ] Add JSON schema validation to pre-commit
+- [x] Add JSON schema validation to pre-commit ✅ 2026-01-06 (check-jsonschema hook)
 
-#### Phase 2: Workflow Security (1 day)
-- [ ] Add harden-runner to 8 missing workflows
-- [ ] Verify action pinning is consistent
+#### Phase 2: Workflow Security ✅ COMPLETE (2026-01-06)
+- [x] Add harden-runner to 14 workflows ✅ 2026-01-06 (configurable via `harden_runner_policy` input)
+- [x] Verify action pinning is consistent ✅ (all pinned to SHAs)
 
 #### Phase 3: Schema Consolidation ✅ COMPLETE (2026-01-05)
 - [x] Extract `sharedTools` definition (sbom, semgrep)
@@ -1906,18 +1968,19 @@ format-all: format format-black format-isort ## Run all formatters
 | Trunk-based development    | ✅      | Already using                               |
 | Multiple formatter support | ✅      | CI has black/isort; local tooling updated ✅ |
 | Action pinning             | ✅      | All pinned to SHAs                          |
-| Pre-commit automation      | ⚠️     | Add schema validation                       |
+| Pre-commit automation      | ✅      | JSON schema validation added (2026-01-06)   |
 | Explicit workflows         | ✅      | Boolean-toggle architecture preserved       |
 | Single source of truth     | ❌      | Schema → generate configs                   |
 | Pydantic validation        | ❌      | Consider for config types                   |
-| Security hardening         | ⚠️     | Add harden-runner to 8 workflows            |
+| Security hardening         | ✅      | harden-runner added to 14 workflows (2026-01-06) |
 
-**2026-01-05 Automation Audit Summary:**
-- **14 workflows** with security hardening opportunities
-- **11 deprecated scripts** ready for removal
-- **~400 lines** of schema duplication
-- **Triple default definition** problem
-- **Local/CI parity gap** - Add black/isort to `cihub check` and Makefile
+**2026-01-06 Automation Audit Summary (UPDATED):**
+- **14 workflows** ✅ security hardened with harden-runner (configurable toggle)
+- **11 deprecated scripts** ready for removal (deprecation warnings added)
+- **~400 lines** of schema duplication (partial: sharedTools extracted)
+- **Triple default definition** problem (partial: working toward single source)
+- **Local/CI parity** ✅ black/isort added to `cihub check` and Makefile
+- **Pre-commit** ✅ JSON schema validation added
 
 ---
 

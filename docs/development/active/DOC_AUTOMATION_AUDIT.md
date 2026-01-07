@@ -36,6 +36,22 @@
 
 ---
 
+## Known Documentation Contradictions (7-Agent Audit 2026-01-06)
+
+> **Source:** Comprehensive 7-agent code review. These should be addressed by `cihub docs audit` when implemented.
+
+| # | Issue | Files | Impact |
+|---|-------|-------|--------|
+| 1 | CLI help snapshot missing registry command | `tests/snapshots/cli_help.txt` | Tests pass but snapshot stale |
+| 2 | ADR-0035 says `triage --ai`, but flag doesn't exist | `docs/adr/0035-*`, `cli_parsers/triage.py` | Confusing documentation |
+| 3 | ADR-0045 says `import from cihub.constants` but file doesn't exist | `docs/adr/0045-*` | Wrong import path documented |
+| 4 | Schema version v1 in ADR but v2 in code | `schema/triage.schema.json` | Minor confusion |
+| 5 | `--ai` flag for fix says "with --report" but not enforced | `cli_parsers/fix.py:39-42` | Silent ignore |
+
+**Action:** Update CLI snapshots, regenerate docs, fix ADR import paths. These are inputs for `cihub docs audit` implementation.
+
+---
+
 ## Index (Quick Navigation)
 
 - [Part 1: Current Documentation Inventory](#part-1-current-documentation-inventory)

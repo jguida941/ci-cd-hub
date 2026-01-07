@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """
-Validate a CI/CD Hub config file against the schema.
+DEPRECATED: This script is a shim for backwards compatibility.
 
-Usage:
+Use: cihub hub-ci validate-configs --repo <repo-name>
+
+This shim will be removed in the next release.
+
+Original functionality:
   python scripts/validate_config.py config/repos/my-repo.yaml
   python scripts/validate_config.py path/to/.ci-hub.yml \
     --schema hub-release/schema/ci-hub-config.schema.json
@@ -13,10 +17,19 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import warnings
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+# Emit deprecation warning on import
+warnings.warn(
+    "scripts.validate_config is deprecated. Use 'cihub hub-ci validate-configs' instead. "
+    "This shim will be removed in the next release.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 from jsonschema import Draft7Validator
 
 

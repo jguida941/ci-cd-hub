@@ -1,41 +1,35 @@
 # ADR-0035: Centralized Registry, Triage Bundle, and LLM-Ready Reports
 
-**Status**: Accepted
+**Status**: Implemented
 **Date:** 2025-12-31
 **Developer:** Justin Guida
-**Last Reviewed:** 2026-01-04
+**Last Reviewed:** 2026-01-06
 
-**Implementation Note (2026-01-04):**
-- ✅ Triage bundle + LLM prompt pack implemented behind `CIHUB_EMIT_TRIAGE` env toggle
-- ✅ Outputs: `.cihub/triage.json`, `priority.json`, `triage.md`, `history.jsonl`
-- ⏳ Centralized registry CLI (`cihub registry`) remains TODO
-- ⏳ LLM diff outputs and `cihub assist` remain TODO
-- ⏳ Formal JSON Schema (`schema/triage.schema.json`) deferred until validation command ships
+## Implementation Summary
 
-**Implementation Update (2026-01-05):**
-- ✅ **Artifact-first remote triage**: `cihub triage --run <id>` downloads to persistent path
-- ✅ **Persistent artifact storage**: `.cihub/runs/{run_id}/artifacts/` (durable, re-triageable)
-- ✅ **Multi-report auto-detection**: Finds all `report.json` files, routes to aggregation
-- ✅ **Multi-triage output**: `multi-triage.json` + `multi-triage.md` for N > 1 reports
-- ✅ **Artifact evidence audit**: Validates tool outputs, emits `evidence_issues` into bundles
-- ✅ **Schema + consistency validation**: Integrated into `generate_triage_bundle()`
-- ✅ **required_not_run detection**: Tools that should run but didn't appear as blockers
+Core features are now implemented:
 
-**Implementation Update (2026-01-05, late):**
-- ✅ **Workflow/branch filtering**: `cihub triage --workflow hub-ci.yml --branch main`
-- ✅ **Multi-report output modes**: `--aggregate` (combined) vs `--per-repo` (separate bundles + index)
-- ✅ **Historical gate tracking**: `cihub triage --gate-history` analyzes gate status changes
-- ✅ **Flaky test detection**: `cihub triage --detect-flaky` identifies flaky patterns from history
-- ✅ **Gate history in bundles**: `history.jsonl` now tracks `gate_failures`, `gate_passed_count`, `gate_failed_count`
+**Triage System** (`.cihub/triage.json`, `priority.json`, `triage.md`, `history.jsonl`):
+- Local and remote triage (`--run <id>`, `--latest`, `--watch`)
+- Multi-report aggregation (`--aggregate`, `--per-repo`)
+- Filtering (`--min-severity`, `--category`, `--workflow`, `--branch`)
+- Historical analysis (`--gate-history`, `--detect-flaky`)
+- Schema validation (`cihub hub-ci validate-triage`)
 
-**Implementation Update (2026-01-06):**
-- ✅ **Auto-latest triage**: `cihub triage --latest` auto-finds and triages most recent failed run (no run ID needed)
-- ✅ **Watch daemon**: `cihub triage --watch` polls for new failures and auto-triages them
-- ✅ **Configurable interval**: `cihub triage --watch --interval 60` (default: 30 seconds)
-- ✅ **Filter support in watch/latest**: Combine with `--workflow` and `--branch` filters
-- ✅ **LLM prompt pack**: `triage.md` auto-generated with every triage (no `--llm-pack` flag needed)
-- ✅ **AIRenderer pattern**: `docs stale --ai` uses polymorphic renderer for AI-consumable output
-- ✅ **AI formatter registry**: Extensible system for command-specific AI output formatting
+**Registry System** (`config/registry.json`):
+- Tier-based config management (`strict`, `standard`, `relaxed`)
+- CLI: `cihub registry list|show|set|add|diff|sync`
+- Per-repo threshold overrides
+- Schema: `schema/registry.schema.json`
+
+**Fix Command** (`cihub fix`):
+- Auto-fixers: `--safe` (ruff, black, isort / spotless)
+- Analyzers: `--report` (all lint/security tools)
+- AI output: `--ai` generates `.cihub/fix-report.md`
+
+**Schemas**:
+- `schema/triage.schema.json` with drift detection tests
+- `schema/registry.schema.json` for registry validation
 
 ## Context
 
@@ -59,118 +53,106 @@ We need:
 
 ### 1. Centralized Registry (`config/registry.json`)
 
-Single source of truth for all repo configurations:
+Single source of truth for all repo configurations (see `schema/registry.schema.json` for full schema):
 
 ```json
 {
-  "schema": "cihub-registry-v1",
-
+  "$schema": "../schema/registry.schema.json",
+  "schema_version": "cihub-registry-v1",
   "tiers": {
-    "strict":   {"coverage": 90, "mutation": 90, "vulns_max": 0},
-    "standard": {"coverage": 70, "mutation": 70, "vulns_max": 0},
-    "relaxed":  {"coverage": 50, "mutation": 0,  "vulns_max": 5},
-    "legacy":   {"coverage": 30, "mutation": 0,  "vulns_max": 20}
-  },
-
-  "repos": {
-    "jguida941/ci-cd-hub-canary-python": {
-      "language": "python",
-      "tier": "standard",
-      "dispatch_enabled": true,
-      "overrides": {}
+    "strict": {
+      "description": "High-quality production code with strict gates",
+      "coverage": 90, "mutation": 90, "vulns_max": 0
     },
-    "jguida941/ci-cd-hub-canary-java": {
-      "language": "java",
-      "tier": "standard",
-      "dispatch_enabled": true,
-      "overrides": {"mutation": 50}
+    "standard": {
+      "description": "Default tier for most repos",
+      "coverage": 70, "mutation": 70, "vulns_max": 0
+    },
+    "relaxed": {
+      "description": "Legacy or experimental code with relaxed gates",
+      "coverage": 50, "mutation": 0, "vulns_max": 5
     }
   },
-
-  "changelog": [
-    {"date": "2025-12-31", "repo": "canary-python", "change": "tier: relaxed → standard", "by": "claude"}
-  ]
+  "repos": {
+    "canary-python": {
+      "tier": "standard",
+      "description": "Python test fixture repo"
+    },
+    "canary-java": {
+      "tier": "standard",
+      "description": "Java test fixture repo",
+      "overrides": {"mutation": 50}
+    }
+  }
 }
 ```
 
 ### 2. Triage Bundle (`.cihub/triage.json`)
 
-Structured output from every CI run:
+Structured output from every CI run (see `schema/triage.schema.json` for full schema):
 
 ```json
 {
-  "schema": "cihub-triage-v1",
-  "timestamp": "2025-12-31T08:00:00Z",
-  "repo": {
-    "name": "jguida941/ci-cd-hub-canary-python",
-    "commit": "abc123",
-    "branch": "main"
-  },
-  "env": {
-    "python": "3.12",
-    "os": "ubuntu-latest"
+  "schema_version": "cihub-triage-v1",
+  "generated_at": "2025-12-31T08:00:00Z",
+  "run": {
+    "correlation_id": "abc123-def456",
+    "repo": "jguida941/ci-cd-hub-canary-python",
+    "commit_sha": "abc123",
+    "branch": "main",
+    "run_id": "12345678"
   },
   "summary": {
-    "passed": 15,
-    "failed": 3,
-    "skipped": 2,
-    "fixable_auto": 2,
-    "fixable_llm": 1
+    "overall_status": "failed",
+    "failure_count": 3,
+    "warning_count": 2,
+    "by_severity": {"blocker": 1, "high": 1, "medium": 1}
   },
-  "checks": [
+  "failures": [
     {
-      "name": "ruff",
-      "category": "lint",
-      "status": "failed",
-      "severity": 3,
-      "blocker": false,
-      "exit_code": 1,
-      "command": "ruff check .",
-      "duration_ms": 1200,
-      "tool": {"name": "ruff", "version": "0.8.6"},
-      "artifacts": [{"path": ".cihub/artifacts/ruff.sarif", "format": "sarif"}],
-      "summary": {"issues": 12},
-      "fix": {"safe": true, "commands": ["ruff check --fix ."]}
+      "gate": "gitleaks",
+      "category": "secrets",
+      "severity": "blocker",
+      "message": "2 secrets detected",
+      "details": {}
     },
     {
-      "name": "gitleaks",
-      "category": "secrets",
-      "status": "failed",
-      "severity": 10,
-      "blocker": true,
-      "artifacts": [{"path": ".cihub/artifacts/gitleaks.json", "format": "json"}],
-      "summary": {"leaks": 2},
-      "fix": {"safe": false}
+      "gate": "ruff",
+      "category": "lint",
+      "severity": "medium",
+      "message": "12 lint errors",
+      "details": {}
     }
-  ]
+  ],
+  "warnings": []
 }
 ```
 
 ### 3. Severity Mapping (Built into CLI)
 
-| Severity | Category | Examples |
-|----------|----------|----------|
-| 10 | Secrets | gitleaks, credential exposure |
-| 9 | Supply Chain | zizmor HIGH, workflow injection |
-| 8 | Security HIGH | bandit high, pip-audit critical |
-| 7 | Build/Test | pytest failures, build errors |
-| 6 | Types | mypy errors |
-| 5 | Coverage | Below threshold |
-| 4 | Mutation | Below threshold |
-| 3 | Lint | ruff errors |
-| 2 | Format | black, isort issues |
-| 1 | Docs | Link check, docs drift |
-| 0 | Optional | Missing optional tools |
+| Severity | Category      | Examples                        |
+|----------|---------------|---------------------------------|
+| 10       | Secrets       | gitleaks, credential exposure   |
+| 9        | Supply Chain  | zizmor HIGH, workflow injection |
+| 8        | Security HIGH | bandit high, pip-audit critical |
+| 7        | Build/Test    | pytest failures, build errors   |
+| 6        | Types         | mypy errors                     |
+| 5        | Coverage      | Below threshold                 |
+| 4        | Mutation      | Below threshold                 |
+| 3        | Lint          | ruff errors                     |
+| 2        | Format        | black, isort issues             |
+| 1        | Docs          | Link check, docs drift          |
+| 0        | Optional      | Missing optional tools          |
 
 ### 4. Standard Report Formats
 
-| Report Type | Format | Tools |
-|-------------|--------|-------|
-| Static Analysis | SARIF 2.1.0 | ruff, bandit, semgrep, trivy, CodeQL, zizmor |
-| Mutation Testing | Stryker Schema | mutmut (via adapter), pitest |
-| Test Results | pytest-json-report | pytest |
-| Coverage | Cobertura XML | pytest-cov, jacoco |
-| Dependencies | CycloneDX SBOM | pip-audit, OWASP |
+| Report Type      | Format             | Tools                                        |
+|------------------|--------------------|----------------------------------------------|
+| Static Analysis  | SARIF 2.1.0        | ruff, bandit, semgrep, trivy, CodeQL, zizmor |
+| Mutation Testing | Stryker Schema     | mutmut (via adapter), pitest                 |
+| Test Results     | pytest-json-report | pytest                                       |
+| Coverage         | Cobertura XML      | pytest-cov, jacoco                           |
+| Dependencies     | CycloneDX SBOM     | pip-audit, OWASP                             |
 
 ### 5. LLM Prompt Pack (`.cihub/triage.md`)
 
@@ -183,9 +165,9 @@ Human/LLM readable summary with artifact links (not inline logs):
 **Time:** 2025-12-31T08:00:00Z
 
 ## Summary
-- ✅ Passed: 15
-- ❌ Failed: 3 (2 auto-fixable, 1 needs review)
-- ⏭️ Skipped: 2
+- Passed: 15
+- Failed: 3 (2 auto-fixable, 1 needs review)
+- Skipped: 2
 
 ## Critical Issues (fix first)
 | Sev | Check | Status | Action |
@@ -202,6 +184,7 @@ isort .
 ```
 
 ## Artifacts
+```
 - `.cihub/artifacts/ruff.sarif` (SARIF)
 - `.cihub/artifacts/pytest.json` (pytest-json-report)
 - `.cihub/artifacts/gitleaks.json` (JSON)
@@ -210,58 +193,60 @@ isort .
 ### 6. CLI Commands
 
 ```bash
-# Registry management (TODO)
-cihub registry list                    # Show all repos
-cihub registry show <repo>             # Show repo config
+# Registry management
+cihub registry list                    # Show all repos with tiers
+cihub registry show <repo>             # Show repo config + effective settings
 cihub registry set <repo> --tier X     # Update tier
 cihub registry set <repo> --coverage X # Override threshold
-cihub registry diff                    # Show pending changes
+cihub registry add <repo> --tier X     # Add new repo
+cihub registry diff                    # Show drift vs repo configs
 cihub registry sync --dry-run          # Preview sync
-cihub registry sync --yes              # Push to repos
+cihub registry sync --yes              # Apply to repo configs
 
-# Triage - Local mode (from existing report.json) ✅ IMPLEMENTED
+# Triage - Local mode
 cihub triage                           # Generate triage from local .cihub/report.json
 cihub triage --output-dir ./out        # Custom output directory
 cihub triage --report path/to/report.json  # Custom report path
 cihub triage --json                    # JSON output only
 
-# Triage - Filtering (TODO)
-cihub triage --min-severity 6          # Only failures >= severity 6
-cihub triage --category security       # Only security checks
-# Note: --llm-pack not needed - triage.md is auto-generated as LLM prompt pack
+# Triage - Filtering
+cihub triage --min-severity high       # Only failures >= severity (blocker/high/medium/low)
+cihub triage --category security       # Only failures in category
 
-# Triage - Remote mode (from GitHub workflow runs) ✅ IMPLEMENTED
+# Triage - Remote mode (from GitHub workflow runs)
 cihub triage --run <RUN_ID>            # Analyze specific workflow run
 cihub triage --latest                  # Auto-find and triage most recent failed run
 cihub triage --watch                   # Watch for new failures (background daemon)
 cihub triage --watch --interval 60     # Custom polling interval (default: 30s)
 cihub triage --repo owner/repo         # Target different repository
 
-# Triage - Workflow/branch filtering (works with --run, --latest, --watch) ✅ IMPLEMENTED
+# Triage - Workflow/branch filtering
 cihub triage --latest --workflow hub-ci.yml   # Filter by workflow
 cihub triage --latest --branch main           # Filter by branch
 cihub triage --watch --workflow hub-ci.yml --branch main  # Combined filters
 
-# Triage - Multi-report mode (for orchestrator runs) ✅ IMPLEMENTED
+# Triage - Multi-report mode (for orchestrator runs)
 cihub triage --run <ID> --aggregate    # Combine multiple reports into one bundle
 cihub triage --run <ID> --per-repo     # Separate bundles with index file
 cihub triage --multi --reports-dir ./  # Process local directory of reports
 
-# Triage - Historical analysis ✅ IMPLEMENTED
+# Triage - Historical analysis
 cihub triage --gate-history            # Analyze gate status changes over time
 cihub triage --detect-flaky            # Identify flaky test patterns from history
 
-# AI/LLM output modes ✅ IMPLEMENTED
+# Fix command
+cihub fix --safe                       # Auto-fix: ruff, black, isort / spotless
+cihub fix --safe --dry-run             # Preview what would be fixed
+cihub fix --report                     # Run all analyzers, report issues
+cihub fix --report --json              # JSON output for tooling
+cihub fix --report --ai                # Generate AI-consumable report (.cihub/fix-report.md)
+
+# AI/LLM output modes
 cihub docs stale --ai                  # AI-consumable markdown for stale doc analysis
-cihub docs stale --ai-output FILE      # Write AI output to specific file
 # Note: triage.md is auto-generated as LLM prompt pack (no flag needed)
 
-# Fix (apply safe fixes) - TODO
-cihub fix --safe                       # Auto-fix: ruff, black, isort, badges
-cihub fix --safe --dry-run             # Preview fixes
-
-# Assist (generate LLM prompt) - TODO
-cihub assist --prompt                  # Generate prompt pack from triage
+# Schema validation
+cihub hub-ci validate-triage           # Validate triage.json against schema
 ```
 
 ### 7. Output Paths
@@ -280,37 +265,22 @@ cihub assist --prompt                  # Generate prompt pack from triage
     └── coverage.xml
 ```
 
-### 8. Validation and Lifecycle (Added)
+### 8. Validation and Lifecycle
 
 **Schema validation** ensures the triage bundle stays stable for LLMs and downstream tools:
 
 ```bash
-cihub triage --validate-schema
+cihub hub-ci validate-triage                   # Validate .cihub/triage.json
+cihub hub-ci validate-triage --triage-file X   # Validate specific file
 ```
 
-Schema file (v1): `schema/triage.schema.json`
+Schema files (v1):
+- `schema/triage.schema.json` - Triage bundle schema
+- `schema/registry.schema.json` - Registry schema
 
-**Registry versioning** makes changes immutable and reversible:
-
-```json
-{
-  "schema": "cihub-registry-v1",
-  "version": 42,
-  "previous_version": 41
-}
-```
-
-Rollback:
-
-```bash
-cihub registry rollback --to 41
-```
-
-**Retention policies** keep history and artifacts bounded:
-
-```bash
-cihub triage prune --days 30
-```
+**Planned features** (not yet implemented):
+- Registry versioning with rollback support
+- Retention policies (`cihub triage prune --days 30`)
 
 ### 9. Aggregate Pass Rules (Planned)
 
@@ -341,17 +311,19 @@ Capture root-cause notes alongside drift events (in `history.jsonl`):
 
 ### 11. Continuous Reconciliation (Planned, Opt-In)
 
-GitOps-style drift correction:
+GitOps-style drift correction (not yet implemented):
 
+**Current implementation:**
 ```bash
-cihub registry sync --auto
-cihub registry sync --interval 3m
+cihub registry diff                  # Show drift from tier defaults
+cihub registry sync --dry-run        # Preview what would change
+cihub registry sync --yes            # Apply changes
 ```
 
-Modes:
-- warn (default)
-- fail (strict)
-- auto (push fixes)
+**Planned enhancements:**
+- `--auto` mode for automated drift correction
+- `--interval` for scheduled reconciliation
+- Enforcement modes: warn (default), fail (strict), auto (push fixes)
 
 ### 12. RBAC (Deferred)
 

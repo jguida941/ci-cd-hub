@@ -37,6 +37,76 @@ from cihub.utils.exec_utils import (
 # Maximum errors to include in triage bundle (prevents huge payloads)
 MAX_ERRORS_IN_TRIAGE = 20
 
+# Severity ordering (lower = more severe)
+SEVERITY_ORDER = {"blocker": 0, "high": 1, "medium": 2, "low": 3}
+
+
+def _filter_bundle(
+    bundle: TriageBundle,
+    min_severity: str | None,
+    category: str | None,
+) -> TriageBundle:
+    """Filter triage bundle failures by severity and/or category.
+
+    Args:
+        bundle: Original TriageBundle
+        min_severity: Minimum severity level (blocker > high > medium > low)
+        category: Category filter (workflow, security, test, lint, docs, build, cihub)
+
+    Returns:
+        New TriageBundle with filtered failures
+    """
+    if not min_severity and not category:
+        return bundle
+
+    # Filter failures
+    original_failures = bundle.triage.get("failures", [])
+    filtered_failures = []
+
+    for failure in original_failures:
+        # Check severity filter
+        if min_severity:
+            failure_severity = failure.get("severity", "low")
+            if SEVERITY_ORDER.get(failure_severity, 99) > SEVERITY_ORDER.get(min_severity, 99):
+                continue
+
+        # Check category filter
+        if category:
+            failure_category = failure.get("category", "")
+            if failure_category != category:
+                continue
+
+        filtered_failures.append(failure)
+
+    # Create new triage dict with filtered failures
+    new_triage = dict(bundle.triage)
+    new_triage["failures"] = filtered_failures
+    new_triage["summary"] = dict(new_triage.get("summary", {}))
+    new_triage["summary"]["failure_count"] = len(filtered_failures)
+
+    # Add filter metadata
+    new_triage["filters_applied"] = {
+        "min_severity": min_severity,
+        "category": category,
+        "original_failure_count": len(original_failures),
+        "filtered_failure_count": len(filtered_failures),
+    }
+
+    # Create new priority dict with filtered failures
+    new_priority = dict(bundle.priority)
+    new_priority["failures"] = filtered_failures
+    new_priority["failure_count"] = len(filtered_failures)
+
+    # Regenerate markdown with filtered data
+    new_markdown = _build_markdown(new_triage)
+
+    return TriageBundle(
+        triage=new_triage,
+        priority=new_priority,
+        markdown=new_markdown,
+        history_entry=bundle.history_entry,  # Keep original history entry
+    )
+
 
 def _build_meta(args: argparse.Namespace) -> dict[str, object]:
     return {
@@ -719,6 +789,15 @@ def _triage_single_run(run_id: str, repo: str | None, output_dir: Path) -> str |
     # Find report.json in artifacts
     report_path = _find_report_in_artifacts(artifacts_dir)
 
+    # Explicit None check - return early if no report found
+    if report_path is None:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"No report.json found in artifacts for run {run_id}",
+            problems=[f"Could not locate report.json in {artifacts_dir}"],
+            data={"run_id": run_id, "repo": repo, "artifacts_dir": str(artifacts_dir)},
+        )
+
     # Build metadata
     meta = {
         "command": f"cihub triage --run {run_id}",
@@ -759,6 +838,18 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
     run_id = getattr(args, "run", None)
     artifacts_dir = getattr(args, "artifacts_dir", None)
     repo = getattr(args, "repo", None)
+
+    # Validate repo format (owner/repo) to prevent injection
+    if repo is not None:
+        repo_pattern = re.compile(r"^[a-zA-Z0-9][-a-zA-Z0-9]*/[a-zA-Z0-9][-a-zA-Z0-9_.]*$")
+        if not repo_pattern.match(repo):
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=f"Invalid repo format: {repo}",
+                problems=[f"Repo must be in 'owner/repo' format (got: {repo})"],
+                data={"repo": repo},
+            )
+
     multi_mode = getattr(args, "multi", False)
     reports_dir = getattr(args, "reports_dir", None)
     detect_flaky = getattr(args, "detect_flaky", False)
@@ -770,6 +861,8 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
     latest_mode = getattr(args, "latest", False)
     watch_mode = getattr(args, "watch", False)
     watch_interval = getattr(args, "interval", 30)
+    min_severity = getattr(args, "min_severity", None)
+    category_filter = getattr(args, "category", None)
 
     # Handle --watch mode (background daemon)
     if watch_mode:
@@ -906,6 +999,8 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
 
             # Single report or log-fallback mode (returns TriageBundle)
             bundle = result
+            # Apply filters if specified
+            bundle = _filter_bundle(bundle, min_severity, category_filter)
             run_dir = output_dir / "runs" / run_id
             artifacts = write_triage_bundle(bundle, run_dir)
         elif artifacts_dir:
@@ -915,6 +1010,8 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
                 output_dir=artifacts_path,
                 meta=_build_meta(args),
             )
+            # Apply filters if specified
+            bundle = _filter_bundle(bundle, min_severity, category_filter)
             artifacts = write_triage_bundle(bundle, output_dir)
         else:
             # Local mode (existing behavior)
@@ -926,6 +1023,8 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
                 summary_path=summary_path,
                 meta=_build_meta(args),
             )
+            # Apply filters if specified
+            bundle = _filter_bundle(bundle, min_severity, category_filter)
             artifacts = write_triage_bundle(bundle, output_dir)
     except Exception as exc:  # noqa: BLE001 - surface error in CLI
         return CommandResult(
@@ -938,9 +1037,24 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             }],
         )
 
+    # Build summary with filter info
+    failure_count = bundle.triage.get("summary", {}).get("failure_count", 0)
+    filters_applied = bundle.triage.get("filters_applied")
+    if filters_applied:
+        original_count = filters_applied.get("original_failure_count", 0)
+        filter_desc = []
+        if filters_applied.get("min_severity"):
+            filter_desc.append(f"severity>={filters_applied['min_severity']}")
+        if filters_applied.get("category"):
+            filter_desc.append(f"category={filters_applied['category']}")
+        filter_str = ", ".join(filter_desc)
+        summary = f"Triage bundle generated ({failure_count}/{original_count} failures, filtered by {filter_str})"
+    else:
+        summary = f"Triage bundle generated ({failure_count} failures)"
+
     return CommandResult(
         exit_code=EXIT_SUCCESS,
-        summary="Triage bundle generated",
+        summary=summary,
         artifacts={key: str(path) for key, path in artifacts.items()},
         files_generated=[
             str(artifacts["triage"]),
@@ -949,7 +1063,8 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
         ],
         data={
             "schema_version": bundle.triage.get("schema_version", ""),
-            "failure_count": bundle.triage.get("summary", {}).get("failure_count", 0),
+            "failure_count": failure_count,
+            "filters_applied": filters_applied,
             "key_values": {
                 "triage": str(artifacts["triage"]),
                 "priority": str(artifacts["priority"]),

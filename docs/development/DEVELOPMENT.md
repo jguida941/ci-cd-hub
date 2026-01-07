@@ -2,7 +2,9 @@
 
 ## Goal
 
-**hub-release** is a centralized CI/CD orchestrator that runs quality pipelines for Java and Python repositories. Repos stay clean - they don't need workflow files. The hub clones repos and runs all tools (coverage, linting, security, mutation testing) with simple boolean toggles.
+**hub-release** is a centralized CI/CD orchestrator that runs quality pipelines for Java and Python repositories.  
+Repos stay clean - they don't need workflow files. The hub clones repos and runs all tools (coverage, linting,   
+security, mutation testing) with simple boolean toggles.
 
 ---
 

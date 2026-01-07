@@ -637,7 +637,7 @@ class TestNewCommand:
 
     def test_new_dry_run(self, tmp_path: Path, capsys) -> None:
         """new --dry-run shows what would be created."""
-        with patch("cihub.cli.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.new.hub_root", return_value=tmp_path):
             (tmp_path / "config" / "repos").mkdir(parents=True)
             (tmp_path / "config" / "defaults.yaml").write_text("repo:\n  owner: test\n")
 

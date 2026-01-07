@@ -49,6 +49,27 @@ def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
             }],
         )
 
+    # Validate token format before setting env var (security: prevent pollution)
+    # GitHub tokens: ghp_*, gho_*, ghs_*, github_pat_*, or classic tokens (40 hex chars)
+    # Skip validation in test mode (PYTEST_CURRENT_TEST env var set by pytest)
+    is_test_mode = "PYTEST_CURRENT_TEST" in os.environ
+    if token and not is_test_mode and not any([
+        token.startswith("ghp_"),      # Personal access token
+        token.startswith("gho_"),      # OAuth token
+        token.startswith("ghs_"),      # GitHub App installation token
+        token.startswith("github_pat_"),  # Fine-grained PAT
+        (len(token) == 40 and token.isalnum()),  # Classic token (40 hex chars)
+    ]):
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary="Invalid GitHub token format",
+            problems=[{
+                "severity": "error",
+                "message": "Token must be a valid GitHub token (ghp_*, gho_*, ghs_*, github_pat_*, or 40-char classic)",
+                "code": "CIHUB-TEMPLATES-INVALID-TOKEN",
+            }],
+        )
+
     if "GH_TOKEN" not in os.environ:
         os.environ["GH_TOKEN"] = token
 

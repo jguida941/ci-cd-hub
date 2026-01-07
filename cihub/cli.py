@@ -11,58 +11,8 @@ from cihub.cli_parsers.builder import build_parser as _build_parser
 from cihub.cli_parsers.types import CommandHandlers
 from cihub.exit_codes import EXIT_FAILURE, EXIT_INTERNAL_ERROR, EXIT_SUCCESS
 from cihub.output import get_renderer
-from cihub.services.configuration import load_effective_config  # noqa: F401 - re-export
-from cihub.services.detection import detect_language, resolve_language  # noqa: F401 - re-export
-from cihub.services.repo_config import (  # noqa: F401 - re-export
-    get_connected_repos,
-    get_repo_entries,
-)
-from cihub.services.templates import (  # noqa: F401 - re-export
-    build_repo_config,
-    render_caller_workflow,
-    render_dispatch_workflow,
-)
-from cihub.types import CommandResult  # noqa: E402, F401 - re-export for compatibility
-from cihub.utils import (  # noqa: E402, F401 - re-exports for compatibility
-    GIT_REMOTE_RE,
-    collect_java_dependency_warnings,
-    collect_java_pom_warnings,
-    dependency_matches,
-    elem_text,
-    fetch_remote_file,
-    find_tag_spans,
-    get_git_branch,
-    get_git_remote,
-    get_java_tool_flags,
-    get_xml_namespace,
-    gh_api_json,
-    hub_root,
-    indent_block,
-    insert_dependencies_into_pom,
-    insert_plugins_into_pom,
-    line_indent,
-    load_dependency_snippets,
-    load_plugin_snippets,
-    ns_tag,
-    parse_pom_dependencies,
-    parse_pom_modules,
-    parse_pom_plugins,
-    parse_repo_from_remote,
-    parse_xml_file,
-    parse_xml_text,
-    plugin_matches,
-    resolve_executable,
-    update_remote_file,
-    validate_repo_path,
-    validate_subdir,
-)
+from cihub.types import CommandResult
 from cihub.utils.env import env_bool
-from cihub.utils.fs import write_text  # noqa: F401 - re-export
-from cihub.utils.github_api import delete_remote_file  # noqa: F401 - re-export
-from cihub.utils.net import safe_urlopen  # noqa: F401 - re-export
-
-# apply_pom_fixes and apply_dependency_fixes are now in cihub.commands.pom
-# They are not re-exported here to avoid circular imports
 
 
 def is_debug_enabled(env: Mapping[str, str] | None = None) -> bool:
@@ -243,6 +193,24 @@ def cmd_dispatch(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_fix(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.fix import cmd_fix as handler
+
+    return handler(args)
+
+
+def cmd_registry(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.registry_cmd import cmd_registry as handler
+
+    return handler(args)
+
+
+def cmd_hub(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.hub_config import cmd_hub as handler
+
+    return handler(args)
+
+
 def build_parser() -> argparse.ArgumentParser:
     handlers = CommandHandlers(
         cmd_detect=cmd_detect,
@@ -274,6 +242,9 @@ def build_parser() -> argparse.ArgumentParser:
         cmd_fix_deps=cmd_fix_deps,
         cmd_sync_templates=cmd_sync_templates,
         cmd_config=cmd_config,
+        cmd_fix=cmd_fix,
+        cmd_registry=cmd_registry,
+        cmd_hub=cmd_hub,
     )
     return _build_parser(handlers)
 

@@ -6,7 +6,7 @@ import argparse
 
 from cihub.cli import build_parser
 
-DELEGATED_SUBCOMMAND_ROOTS = {"dispatch", "hub-ci"}
+DELEGATED_SUBCOMMAND_ROOTS = {"dispatch", "hub", "hub-ci", "registry"}
 EXPECTED_JSON_PATHS = {
     "adr check",
     "adr list",
@@ -30,12 +30,17 @@ EXPECTED_JSON_PATHS = {
     "docs links",
     "docs stale",
     "doctor",
+    "fix",
     "fix-deps",
     "fix-pom",
+    "hub config load",
+    "hub config set",
+    "hub config show",
     "init",
     "hub-ci",
     "new",
     "preflight",
+    "registry",
     "report",
     "report aggregate",
     "report build",

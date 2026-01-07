@@ -58,6 +58,7 @@ from .validation import (
     cmd_syntax_check,
     cmd_validate_configs,
     cmd_validate_profiles,
+    cmd_validate_triage,
     cmd_verify_matrix_keys,
 )
 
@@ -104,6 +105,7 @@ def cmd_hub_ci(args: argparse.Namespace) -> CommandResult:
         "zizmor-check": cmd_zizmor_check,
         "validate-configs": cmd_validate_configs,
         "validate-profiles": cmd_validate_profiles,
+        "validate-triage": cmd_validate_triage,
         "license-check": cmd_license_check,
         "gitleaks-summary": cmd_gitleaks_summary,
         "pytest-summary": cmd_pytest_summary,

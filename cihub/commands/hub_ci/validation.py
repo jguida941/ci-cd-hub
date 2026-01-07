@@ -460,3 +460,89 @@ def cmd_quarantine_check(args: argparse.Namespace) -> CommandResult:
         ],
         data={"violations": violations, "scanned_root": str(root)},
     )
+
+
+def cmd_validate_triage(args: argparse.Namespace) -> CommandResult:
+    """Validate triage.json against the triage schema.
+
+    Usage:
+        cihub hub-ci validate-triage --path .cihub/triage.json
+        cihub hub-ci validate-triage --path /path/to/triage.json
+    """
+    import json
+
+    import jsonschema
+
+    triage_path = Path(getattr(args, "path", None) or ".cihub/triage.json")
+    if not triage_path.is_absolute():
+        triage_path = Path.cwd() / triage_path
+
+    if not triage_path.exists():
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Triage file not found: {triage_path}",
+            problems=[{"severity": "error", "message": f"File not found: {triage_path}"}],
+        )
+
+    # Load the triage schema
+    schema_path = hub_root() / "schema" / "triage.schema.json"
+    if not schema_path.exists():
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="Triage schema not found",
+            problems=[{"severity": "error", "message": f"Schema not found: {schema_path}"}],
+        )
+
+    try:
+        triage_data = json.loads(triage_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Invalid JSON in triage file: {e}",
+            problems=[{"severity": "error", "message": f"JSON parse error: {e}"}],
+        )
+
+    try:
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Invalid JSON in schema file: {e}",
+            problems=[{"severity": "error", "message": f"Schema parse error: {e}"}],
+        )
+
+    # Validate
+    validator = jsonschema.Draft7Validator(schema)
+    errors = list(validator.iter_errors(triage_data))
+
+    if errors:
+        problems = []
+        for err in errors[:10]:  # Limit to first 10 errors
+            path = ".".join(str(p) for p in err.path) or "<root>"
+            problems.append({
+                "severity": "error",
+                "message": f"{path}: {err.message}",
+                "code": "CIHUB-TRIAGE-SCHEMA-VIOLATION",
+            })
+
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Triage validation failed: {len(errors)} error(s)",
+            problems=problems,
+            data={
+                "error_count": len(errors),
+                "schema_version": triage_data.get("schema_version", "unknown"),
+                "triage_path": str(triage_path),
+            },
+        )
+
+    schema_version = triage_data.get("schema_version", "unknown")
+    return CommandResult(
+        exit_code=EXIT_SUCCESS,
+        summary=f"Triage validation passed ({schema_version})",
+        data={
+            "schema_version": schema_version,
+            "triage_path": str(triage_path),
+            "failure_count": triage_data.get("summary", {}).get("failure_count", 0),
+        },
+    )

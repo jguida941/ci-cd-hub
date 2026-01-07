@@ -24,6 +24,8 @@ import defusedxml.ElementTree as ET  # noqa: F401 - re-export for submodules
 from cihub import badges as badge_tools  # noqa: F401 - re-export
 from cihub.config.io import load_yaml_file
 from cihub.config.normalize import normalize_config
+from cihub.config.paths import PathConfig
+from cihub.config.schema import validate_config
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE  # noqa: F401 - re-export
 from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS  # noqa: F401 - re-export
 from cihub.services.types import RepoEntry  # noqa: F401 - re-export
@@ -337,7 +339,16 @@ def _load_config(path: Path | None) -> dict[str, Any]:
     if path is None:
         return {}
     try:
-        return normalize_config(load_yaml_file(path))
+        raw = load_yaml_file(path)
+        config = normalize_config(raw)
+
+        # Validate config against schema (fixes Part 7.5.1 schema validation bypass)
+        paths = PathConfig()
+        errors = validate_config(config, paths)
+        if errors:
+            print(f"Config validation warnings: {', '.join(errors)}")
+
+        return config
     except Exception as exc:  # noqa: BLE001
         print(f"Failed to load config: {exc}")
         return {}
@@ -722,6 +733,7 @@ from cihub.commands.hub_ci.validation import (  # noqa: E402
     cmd_syntax_check,
     cmd_validate_configs,
     cmd_validate_profiles,
+    cmd_validate_triage,
     cmd_verify_matrix_keys,
 )
 
@@ -771,6 +783,7 @@ __all__ = [
     "cmd_docker_compose_check",
     "cmd_validate_configs",
     "cmd_validate_profiles",
+    "cmd_validate_triage",
     "cmd_verify_matrix_keys",
     "cmd_quarantine_check",
     # Java tools

@@ -27,6 +27,8 @@ from hypothesis import given, settings, strategies as st
 PRINT_ALLOWLIST: set[str] = {
     # Interactive daemon mode - needs real-time output for --watch (cannot use CommandResult)
     "triage.py",      # --watch daemon + --latest auto-select print real-time progress
+    # Hub settings display - intentionally prints YAML for user visibility
+    "hub_config.py",  # hub config show/load prints YAML or key=value for GitHub Actions
     # Worst offenders (migrate first)
     # "triage.py",    # MIGRATED - 34 prints → CommandResult
     # "secrets.py",   # MIGRATED - 32 prints → CommandResult
