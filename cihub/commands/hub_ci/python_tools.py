@@ -106,7 +106,7 @@ def cmd_coverage_verify(args: argparse.Namespace) -> CommandResult:
     ctx = OutputContext.from_args(args)
 
     if not coverage_path.exists():
-        ctx.write_summary("## Coverage Verification\n\n❌ **FAILED**: Coverage file not found\n")
+        ctx.write_summary("## Coverage Verification\n\n**FAILED**: Coverage file not found\n")
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Coverage file not found: {coverage_path}",
@@ -146,14 +146,14 @@ def cmd_coverage_verify(args: argparse.Namespace) -> CommandResult:
 
         summary = (
             "## Coverage Verification\n\n"
-            f"✅ **PASSED**: Coverage database loaded successfully\n\n"
+            f"**PASSED**: Coverage database loaded successfully\n\n"
             f"- **Measured files**: {file_count}\n"
         )
 
         if mutation_targets:
             summary += "\n### Mutation Target Coverage\n\n"
             for target, covered in mutation_coverage:
-                status = "✅" if covered else "⚠️"
+                status = "[covered]" if covered else "[NOT covered]"
                 summary += f"- {status} `{target}`\n"
 
         summary += "\n### Sample Files\n"
@@ -177,7 +177,7 @@ def cmd_coverage_verify(args: argparse.Namespace) -> CommandResult:
             },
         )
     except Exception as exc:
-        ctx.write_summary(f"## Coverage Verification\n\n❌ **FAILED**: {exc}\n")
+        ctx.write_summary(f"## Coverage Verification\n\n**FAILED**: {exc}\n")
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Failed to load coverage database: {exc}",
