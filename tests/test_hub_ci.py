@@ -1122,7 +1122,8 @@ class TestPlatformDetection:
 
         result = _get_kyverno_platform_suffix()
         assert "_" in result
-        os_part, arch_part = result.split("_")
+        # Use split with maxsplit=1 since arch can contain underscore (x86_64)
+        os_part, arch_part = result.split("_", 1)
         assert os_part in ("darwin", "linux", "windows")
         assert arch_part in ("x86_64", "arm64")
 
