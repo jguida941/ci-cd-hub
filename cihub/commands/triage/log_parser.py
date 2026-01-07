@@ -235,9 +235,7 @@ def parse_log_failures(
                     if error_lines and current_step:
                         raw_step_logs = "\n".join(step_logs)
                         failures.append(
-                            create_log_failure(
-                                current_job, current_step, error_lines, run_id, repo, raw_step_logs
-                            )
+                            create_log_failure(current_job, current_step, error_lines, run_id, repo, raw_step_logs)
                         )
                     current_step = step
                     error_lines = []
@@ -259,9 +257,7 @@ def parse_log_failures(
     # Save last batch
     if error_lines and current_step:
         raw_step_logs = "\n".join(step_logs)
-        failures.append(
-            create_log_failure(current_job, current_step, error_lines, run_id, repo, raw_step_logs)
-        )
+        failures.append(create_log_failure(current_job, current_step, error_lines, run_id, repo, raw_step_logs))
 
     return failures
 
