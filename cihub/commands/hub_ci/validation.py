@@ -270,16 +270,23 @@ def cmd_enforce_command_result(args: argparse.Namespace) -> CommandResult:
     ADR-0042: All commands should return CommandResult instead of printing directly.
     This check enforces a maximum allowance for print() calls in cihub/commands/.
 
-    Allowed exceptions (documented in CLEAN_CODE.md Part 2.2):
+    Allowlisted files (may use print() for interactive/GitHub output):
+      - triage.py: --watch daemon mode needs real-time output
+      - hub_config.py: hub config show/load prints YAML or key=value for GitHub Actions
+
+    Allowed exceptions in non-allowlisted files (documented in CLEAN_CODE.md Part 2.2):
       - check.py: 3 progress indicators
-      - hub_ci/__init__.py: 3 helpers
+      - hub_ci/__init__.py: 4 helpers (github-output, config warnings)
       - report/helpers.py: 1 fallback
 
-    Total allowed: 7 prints
+    Total allowed in non-allowlisted files: 8 prints
     """
     root = Path(getattr(args, "path", None) or hub_root())
     commands_dir = root / "cihub" / "commands"
-    max_allowed = getattr(args, "max_allowed", 7)
+    max_allowed = getattr(args, "max_allowed", 8)
+
+    # Files allowed to use print() for interactive/streaming output
+    allowlisted_files = {"triage.py", "hub_config.py"}
 
     if not commands_dir.exists():
         return CommandResult(
@@ -300,6 +307,9 @@ def cmd_enforce_command_result(args: argparse.Namespace) -> CommandResult:
 
     for path in commands_dir.rglob("*.py"):
         if not path.is_file():
+            continue
+        # Skip allowlisted files
+        if path.name in allowlisted_files:
             continue
         try:
             content = path.read_text(encoding="utf-8")

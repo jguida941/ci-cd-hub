@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
-from cihub.types import CommandResult
 from cihub.commands import check as check_module
+from cihub.types import CommandResult
 
 FAST_STEPS = [
     "preflight",

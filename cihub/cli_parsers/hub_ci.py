@@ -557,8 +557,8 @@ def add_hub_ci_commands(subparsers, add_json_flag, handlers: CommandHandlers) ->
     hub_ci_enforce_cmd_result.add_argument(
         "--max-allowed",
         type=int,
-        default=7,
-        help="Maximum allowed print() calls in cihub/commands/ (default: 7)",
+        default=8,
+        help="Maximum allowed print() calls in cihub/commands/ (default: 8)",
     )
     add_summary_args(hub_ci_enforce_cmd_result)
     hub_ci_enforce_cmd_result.add_argument(

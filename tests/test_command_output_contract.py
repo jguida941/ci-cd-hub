@@ -212,7 +212,7 @@ class TestCommandOutputContract:
 
         if missing:
             pytest.fail(
-                f"Allowlist contains non-existent files (remove them):\n"
+                "Allowlist contains non-existent files (remove them):\n"
                 + "\n".join(f"  {f}" for f in missing)
             )
 

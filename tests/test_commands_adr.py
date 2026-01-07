@@ -6,7 +6,6 @@ import argparse
 from pathlib import Path
 from unittest.mock import patch
 
-from cihub.types import CommandResult
 from cihub.commands.adr import (
     ADR_PATTERN,
     _check_adr_links,
@@ -23,6 +22,7 @@ from cihub.commands.adr import (
     cmd_adr_new,
 )
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.types import CommandResult
 
 
 class TestStripFencedBlocks:

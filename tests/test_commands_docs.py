@@ -2,8 +2,8 @@ import argparse
 import json
 from pathlib import Path
 
-from cihub.types import CommandResult
 from cihub.commands.docs import _check_internal_links, _run_lychee, cmd_docs
+from cihub.types import CommandResult
 
 
 def test_docs_generate_writes_files(tmp_path: Path) -> None:
