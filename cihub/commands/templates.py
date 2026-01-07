@@ -74,7 +74,8 @@ def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
             problems=[
                 {
                     "severity": "error",
-                    "message": "Token must be a valid GitHub token (ghp_*, gho_*, ghs_*, github_pat_*, or 40-char classic)",
+                    "message": "Token must be a valid GitHub token "
+                    "(ghp_*, gho_*, ghs_*, github_pat_*, or 40-char classic)",
                     "code": "CIHUB-TEMPLATES-INVALID-TOKEN",
                 }
             ],
