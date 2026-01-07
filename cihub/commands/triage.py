@@ -1063,10 +1063,16 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
         })
 
     # Generate suggestions based on failures
-    suggestions: list[str] = []
+    suggestions: list[dict[str, Any]] = []
     if problems:
-        suggestions.append(f"Run 'cat {artifacts['priority']}' for detailed failure info")
-        suggestions.append(f"Run 'cat {artifacts['markdown']}' for human-readable summary")
+        suggestions.append({
+            "message": f"Run 'cat {artifacts['priority']}' for detailed failure info",
+            "code": "CIHUB-TRIAGE-VIEW-PRIORITY",
+        })
+        suggestions.append({
+            "message": f"Run 'cat {artifacts['markdown']}' for human-readable summary",
+            "code": "CIHUB-TRIAGE-VIEW-MARKDOWN",
+        })
 
     return CommandResult(
         exit_code=EXIT_SUCCESS,
