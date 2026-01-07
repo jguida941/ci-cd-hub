@@ -77,21 +77,16 @@ def cmd_black(args: argparse.Namespace) -> CommandResult:
 
 def _get_mutation_targets() -> list[str]:
     """Get mutation target paths from pyproject.toml."""
+    import tomllib
+
     pyproject = Path("pyproject.toml")
     if not pyproject.exists():
         return []
 
     try:
-        import tomllib
-    except ImportError:
-        try:
-            import tomli as tomllib  # type: ignore[import-not-found]
-        except ImportError:
-            return []
-
-    try:
         config = tomllib.loads(pyproject.read_text())
-        return config.get("tool", {}).get("mutmut", {}).get("paths_to_mutate", [])
+        paths = config.get("tool", {}).get("mutmut", {}).get("paths_to_mutate", [])
+        return list(paths) if isinstance(paths, (list, tuple)) else []
     except Exception:
         return []
 
@@ -135,10 +130,7 @@ def cmd_coverage_verify(args: argparse.Namespace) -> CommandResult:
                 # Check if any file in the directory is covered
                 covered = any(target in f for f in measured_files)
             else:
-                covered = (
-                    target_path.name in measured_basenames
-                    or any(target in f for f in measured_files)
-                )
+                covered = target_path.name in measured_basenames or any(target in f for f in measured_files)
             mutation_coverage.append((target, covered))
 
         # Show first few files for debugging
