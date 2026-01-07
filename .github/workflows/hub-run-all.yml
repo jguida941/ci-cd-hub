@@ -133,7 +133,25 @@ jobs:
 
       - name: Load Hub Settings
         id: resolve
-        run: cihub hub config load --github-output --override-skip-mutation "${{ inputs.skip_mutation }}" --override-write-summary "${{ inputs.write_github_summary }}" --override-include-details "${{ inputs.include_details }}" --override-debug "${{ inputs.cihub_debug }}" --override-verbose "${{ inputs.cihub_verbose }}" --override-debug-context "${{ inputs.cihub_debug_context }}" --override-emit-triage "${{ inputs.cihub_emit_triage }}" --override-harden-runner-policy "${{ inputs.harden_runner_policy }}"
+        env:
+          OVERRIDE_SKIP_MUTATION: ${{ inputs.skip_mutation }}
+          OVERRIDE_WRITE_SUMMARY: ${{ inputs.write_github_summary }}
+          OVERRIDE_INCLUDE_DETAILS: ${{ inputs.include_details }}
+          OVERRIDE_DEBUG: ${{ inputs.cihub_debug }}
+          OVERRIDE_VERBOSE: ${{ inputs.cihub_verbose }}
+          OVERRIDE_DEBUG_CONTEXT: ${{ inputs.cihub_debug_context }}
+          OVERRIDE_EMIT_TRIAGE: ${{ inputs.cihub_emit_triage }}
+          OVERRIDE_HARDEN_RUNNER_POLICY: ${{ inputs.harden_runner_policy }}
+        run: |
+          cihub hub config load --github-output \
+            --override-skip-mutation "$OVERRIDE_SKIP_MUTATION" \
+            --override-write-summary "$OVERRIDE_WRITE_SUMMARY" \
+            --override-include-details "$OVERRIDE_INCLUDE_DETAILS" \
+            --override-debug "$OVERRIDE_DEBUG" \
+            --override-verbose "$OVERRIDE_VERBOSE" \
+            --override-debug-context "$OVERRIDE_DEBUG_CONTEXT" \
+            --override-emit-triage "$OVERRIDE_EMIT_TRIAGE" \
+            --override-harden-runner-policy "$OVERRIDE_HARDEN_RUNNER_POLICY"
 
   # ============================================================================
   # Discover Repos (via cihub discover)
