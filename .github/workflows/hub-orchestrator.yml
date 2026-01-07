@@ -239,7 +239,20 @@ jobs:
         env:
           HUB_DISPATCH_TOKEN: ${{ secrets.HUB_DISPATCH_TOKEN || secrets.GITHUB_TOKEN }}
           CORRELATION_ID: ${{ github.run_id }}-${{ github.run_attempt || '1' }}-${{ matrix.config_basename }}
-        run: cihub dispatch trigger --owner "${{ matrix.owner }}" --repo "${{ matrix.name }}" --ref "${{ matrix.default_branch }}" --workflow "${{ matrix.dispatch_workflow || 'hub-ci.yml' }}" --correlation-id "${CORRELATION_ID}" --dispatch-enabled "${{ matrix.dispatch_enabled }}" --timeout 1800
+          MATRIX_OWNER: ${{ matrix.owner }}
+          MATRIX_NAME: ${{ matrix.name }}
+          MATRIX_BRANCH: ${{ matrix.default_branch }}
+          MATRIX_WORKFLOW: ${{ matrix.dispatch_workflow || 'hub-ci.yml' }}
+          MATRIX_DISPATCH_ENABLED: ${{ matrix.dispatch_enabled }}
+        run: |
+          cihub dispatch trigger \
+            --owner "$MATRIX_OWNER" \
+            --repo "$MATRIX_NAME" \
+            --ref "$MATRIX_BRANCH" \
+            --workflow "$MATRIX_WORKFLOW" \
+            --correlation-id "${CORRELATION_ID}" \
+            --dispatch-enabled "$MATRIX_DISPATCH_ENABLED" \
+            --timeout 1800
 
       - name: Record Build Trigger
         env:

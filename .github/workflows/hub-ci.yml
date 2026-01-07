@@ -193,7 +193,7 @@ jobs:
       trivy_cvss_fail: ${{ fromJson(needs.config.outputs.trivy_cvss_fail) }}
       retention_days: ${{ fromJson(needs.config.outputs.retention_days) }}
       write_github_summary: ${{ fromJson(needs.config.outputs.write_github_summary) }}
-    secrets: inherit
+    secrets: inherit  # zizmor: ignore[secrets-inherit] - intentional for reusable workflow
 
   # ============================================================================
   # Java CI
@@ -243,4 +243,4 @@ jobs:
       max_pmd_violations: ${{ fromJson(needs.config.outputs.max_pmd_violations) }}
       retention_days: ${{ fromJson(needs.config.outputs.retention_days) }}
       write_github_summary: ${{ fromJson(needs.config.outputs.write_github_summary) }}
-    secrets: inherit
+    secrets: inherit  # zizmor: ignore[secrets-inherit] - intentional for reusable workflow
