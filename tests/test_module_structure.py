@@ -135,9 +135,7 @@ class TestCliFacadeExports:
         ]
 
         still_exported = [name for name in deprecated_exports if hasattr(cli, name)]
-        assert not still_exported, (
-            f"Import from canonical locations, not cli.py: {still_exported}"
-        )
+        assert not still_exported, f"Import from canonical locations, not cli.py: {still_exported}"
 
 
 class TestMockPatchTargets:

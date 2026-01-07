@@ -89,9 +89,7 @@ class TestStrategyCommonBehavior:
         ],
         ids=["python_runners", "java_runners"],
     )
-    def test_strategy_runners_are_callable(
-        self, language: str, expected_runners: list[str]
-    ) -> None:
+    def test_strategy_runners_are_callable(self, language: str, expected_runners: list[str]) -> None:
         """Property: strategy runners are callable functions."""
         strategy = get_strategy(language)
         runners = strategy.get_runners()

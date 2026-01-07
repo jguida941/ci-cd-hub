@@ -516,10 +516,12 @@ def cmd_kyverno_test(args: argparse.Namespace) -> CommandResult:
             elif "warn: 1" in result:
                 status = "WARN"
                 if fail_on_warn:
-                    problems.append({
-                        "severity": "warning",
-                        "message": f"Policy {policy_name} warned on {fixture_name}",
-                    })
+                    problems.append(
+                        {
+                            "severity": "warning",
+                            "message": f"Policy {policy_name} warned on {fixture_name}",
+                        }
+                    )
             else:
                 status = "SKIP (not applicable)"
             test_results.append({"policy": policy_name, "fixture": fixture_name, "status": status})
@@ -677,20 +679,24 @@ def cmd_zizmor_check(args: argparse.Namespace) -> CommandResult:
                 if level == "note":
                     continue
 
-                findings.append({
-                    "rule": rule_id,
-                    "file": artifact,
-                    "line": line,
-                    "level": level,
-                    "message": message,
-                })
-                problems.append({
-                    "severity": "error" if level in ("error", "unknown") else "warning",
-                    "message": f"{rule_id}: {artifact}:{line}",
-                    "code": rule_id.replace("/", "-").upper(),
-                    "file": artifact,
-                    "line": line,
-                })
+                findings.append(
+                    {
+                        "rule": rule_id,
+                        "file": artifact,
+                        "line": line,
+                        "level": level,
+                        "message": message,
+                    }
+                )
+                problems.append(
+                    {
+                        "severity": "error" if level in ("error", "unknown") else "warning",
+                        "message": f"{rule_id}: {artifact}:{line}",
+                        "code": rule_id.replace("/", "-").upper(),
+                        "file": artifact,
+                        "line": line,
+                    }
+                )
     except json.JSONDecodeError:
         pass
 

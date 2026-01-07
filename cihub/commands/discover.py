@@ -90,10 +90,12 @@ def cmd_discover(args: argparse.Namespace) -> CommandResult:
                 handle.write(f"count={len(entries)}\n")
             github_output_written = True
         else:
-            problems.append({
-                "severity": "warning",
-                "message": "--github-output specified but GITHUB_OUTPUT not set",
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": "--github-output specified but GITHUB_OUTPUT not set",
+                }
+            )
             items.append("Warning: --github-output specified but GITHUB_OUTPUT not set")
 
     # Build summary output

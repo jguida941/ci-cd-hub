@@ -836,10 +836,15 @@ def _get_latest_failed_run(
     """
     gh_bin = resolve_executable("gh")
     cmd = [
-        gh_bin, "run", "list",
-        "--status", "failure",
-        "--limit", "1",
-        "--json", "databaseId,name,headBranch,createdAt",
+        gh_bin,
+        "run",
+        "list",
+        "--status",
+        "failure",
+        "--limit",
+        "1",
+        "--json",
+        "databaseId,name,headBranch,createdAt",
     ]
     if repo:
         cmd.extend(["--repo", repo])
@@ -901,10 +906,15 @@ def _watch_for_failures(
             # Get recent failed runs
             gh_bin = resolve_executable("gh")
             cmd = [
-                gh_bin, "run", "list",
-                "--status", "failure",
-                "--limit", "5",
-                "--json", "databaseId,name,headBranch,createdAt,conclusion",
+                gh_bin,
+                "run",
+                "list",
+                "--status",
+                "failure",
+                "--limit",
+                "5",
+                "--json",
+                "databaseId,name,headBranch,createdAt,conclusion",
             ]
             if repo:
                 cmd.extend(["--repo", repo])
@@ -1035,11 +1045,13 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"Invalid repo format: {repo}",
-                problems=[{
-                    "severity": "error",
-                    "message": f"Repo must be in 'owner/repo' format (got: {repo})",
-                    "code": "CIHUB-TRIAGE-INVALID-REPO",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": f"Repo must be in 'owner/repo' format (got: {repo})",
+                        "code": "CIHUB-TRIAGE-INVALID-REPO",
+                    }
+                ],
                 data={"repo": repo},
             )
 
@@ -1084,11 +1096,13 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"No failed runs found{filter_desc}",
-                problems=[{
-                    "severity": "info",
-                    "message": "No recent failed workflow runs to triage",
-                    "code": "CIHUB-TRIAGE-NO-FAILURES",
-                }],
+                problems=[
+                    {
+                        "severity": "info",
+                        "message": "No recent failed workflow runs to triage",
+                        "code": "CIHUB-TRIAGE-NO-FAILURES",
+                    }
+                ],
             )
         print(f"Auto-selected latest failed run: {run_id}")
 
@@ -1114,8 +1128,7 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_SUCCESS,
             summary=(
-                f"Flaky analysis: score={flaky_result['flakiness_score']}%, "
-                f"suspected={flaky_result['suspected_flaky']}"
+                f"Flaky analysis: score={flaky_result['flakiness_score']}%, suspected={flaky_result['suspected_flaky']}"
             ),
             data={
                 **flaky_result,
@@ -1160,11 +1173,13 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary="No report.json found for tool verification",
-                problems=[{
-                    "severity": "error",
-                    "message": "Provide --report path or use --run/--latest to fetch artifacts",
-                    "code": "CIHUB-VERIFY-NO-REPORT",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": "Provide --report path or use --run/--latest to fetch artifacts",
+                        "code": "CIHUB-VERIFY-NO-REPORT",
+                    }
+                ],
             )
 
         verify_result = _verify_tools_from_report(report_path, reports_dir_path)
@@ -1172,42 +1187,52 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
         # Build problems from verification issues
         verify_problems: list[dict[str, Any]] = []
         for item in verify_result.get("drift", []):
-            verify_problems.append({
-                "severity": "warning",
-                "message": f"{item['tool']}: {item['message']}",
-                "code": "CIHUB-VERIFY-DRIFT",
-                "category": "tool",
-                "tool": item["tool"],
-            })
+            verify_problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"{item['tool']}: {item['message']}",
+                    "code": "CIHUB-VERIFY-DRIFT",
+                    "category": "tool",
+                    "tool": item["tool"],
+                }
+            )
         for item in verify_result.get("no_proof", []):
-            verify_problems.append({
-                "severity": "warning",
-                "message": f"{item['tool']}: {item['message']}",
-                "code": "CIHUB-VERIFY-NO-PROOF",
-                "category": "tool",
-                "tool": item["tool"],
-            })
+            verify_problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"{item['tool']}: {item['message']}",
+                    "code": "CIHUB-VERIFY-NO-PROOF",
+                    "category": "tool",
+                    "tool": item["tool"],
+                }
+            )
         for item in verify_result.get("failures", []):
-            verify_problems.append({
-                "severity": "error",
-                "message": f"{item['tool']}: {item['message']}",
-                "code": "CIHUB-VERIFY-FAILED",
-                "category": "tool",
-                "tool": item["tool"],
-            })
+            verify_problems.append(
+                {
+                    "severity": "error",
+                    "message": f"{item['tool']}: {item['message']}",
+                    "code": "CIHUB-VERIFY-FAILED",
+                    "category": "tool",
+                    "tool": item["tool"],
+                }
+            )
 
         # Build suggestions
         verify_suggestions: list[dict[str, Any]] = []
         if verify_result.get("drift"):
-            verify_suggestions.append({
-                "message": "Check workflow config - ensure tools are enabled in workflow steps",
-                "code": "CIHUB-VERIFY-CHECK-WORKFLOW",
-            })
+            verify_suggestions.append(
+                {
+                    "message": "Check workflow config - ensure tools are enabled in workflow steps",
+                    "code": "CIHUB-VERIFY-CHECK-WORKFLOW",
+                }
+            )
         if verify_result.get("no_proof"):
-            verify_suggestions.append({
-                "message": "Tools may have run but not produced expected output files",
-                "code": "CIHUB-VERIFY-CHECK-OUTPUTS",
-            })
+            verify_suggestions.append(
+                {
+                    "message": "Tools may have run but not produced expected output files",
+                    "code": "CIHUB-VERIFY-CHECK-OUTPUTS",
+                }
+            )
 
         exit_code = EXIT_SUCCESS if verify_result["verified"] else EXIT_FAILURE
 
@@ -1239,25 +1264,31 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             # Extract problems from failures_by_tool
             multi_problems: list[dict[str, Any]] = []
             for tool, repos in result_data.get("failures_by_tool", {}).items():
-                multi_problems.append({
-                    "severity": "error",
-                    "message": f"{tool}: {len(repos)} repo(s) failed",
-                    "code": f"CIHUB-MULTI-{tool.upper()}",
-                    "category": "tool",
-                    "tool": tool,
-                    "repos": repos,
-                })
+                multi_problems.append(
+                    {
+                        "severity": "error",
+                        "message": f"{tool}: {len(repos)} repo(s) failed",
+                        "code": f"CIHUB-MULTI-{tool.upper()}",
+                        "category": "tool",
+                        "tool": tool,
+                        "repos": repos,
+                    }
+                )
 
             multi_suggestions: list[dict[str, Any]] = []
             if multi_problems:
-                multi_suggestions.append({
-                    "message": f"Run 'cat {artifacts['multi_markdown']}' for detailed breakdown",
-                    "code": "CIHUB-MULTI-VIEW-MARKDOWN",
-                })
-                multi_suggestions.append({
-                    "message": f"Run 'cat {artifacts['multi_triage']}' for JSON data",
-                    "code": "CIHUB-MULTI-VIEW-JSON",
-                })
+                multi_suggestions.append(
+                    {
+                        "message": f"Run 'cat {artifacts['multi_markdown']}' for detailed breakdown",
+                        "code": "CIHUB-MULTI-VIEW-MARKDOWN",
+                    }
+                )
+                multi_suggestions.append(
+                    {
+                        "message": f"Run 'cat {artifacts['multi_triage']}' for JSON data",
+                        "code": "CIHUB-MULTI-VIEW-JSON",
+                    }
+                )
 
             return CommandResult(
                 exit_code=EXIT_SUCCESS,
@@ -1290,7 +1321,9 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
         if run_id:
             # Remote run analysis mode (with persistent artifacts)
             result = _generate_remote_triage_bundle(
-                run_id, repo, output_dir,
+                run_id,
+                repo,
+                output_dir,
                 force_aggregate=aggregate_mode,
                 force_per_repo=per_repo_mode,
             )
@@ -1312,7 +1345,9 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
                     data={
                         **result_data,
                         "run_note": run_note,
-                    } if run_note else result_data,
+                    }
+                    if run_note
+                    else result_data,
                 )
 
             # Single report or log-fallback mode (returns TriageBundle)
@@ -1348,11 +1383,13 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Failed to generate triage bundle: {exc}",
-            problems=[{
-                "severity": "error",
-                "message": str(exc),
-                "code": "CIHUB-TRIAGE-ERROR",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": str(exc),
+                    "code": "CIHUB-TRIAGE-ERROR",
+                }
+            ],
         )
 
     # Build summary with filter info
@@ -1373,13 +1410,15 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
     # Extract failures as problems for visibility
     problems: list[dict[str, Any]] = []
     for failure in bundle.priority.get("failures", []):
-        problems.append({
-            "severity": failure.get("severity", "error"),
-            "message": failure.get("message", "Unknown failure"),
-            "code": failure.get("id", "CIHUB-TRIAGE-FAILURE"),
-            "category": failure.get("category", "unknown"),
-            "tool": failure.get("tool", "unknown"),
-        })
+        problems.append(
+            {
+                "severity": failure.get("severity", "error"),
+                "message": failure.get("message", "Unknown failure"),
+                "code": failure.get("id", "CIHUB-TRIAGE-FAILURE"),
+                "category": failure.get("category", "unknown"),
+                "tool": failure.get("tool", "unknown"),
+            }
+        )
 
     # Run tool verification and add to output
     tool_verification: dict[str, Any] | None = None
@@ -1393,38 +1432,48 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             )
             # Add tool verification issues to problems
             for item in tool_verification.get("drift", []):
-                problems.append({
-                    "severity": "warning",
-                    "message": f"Tool '{item['tool']}': {item['message']}",
-                    "code": "CIHUB-VERIFY-DRIFT",
-                    "category": "tool",
-                    "tool": item["tool"],
-                })
+                problems.append(
+                    {
+                        "severity": "warning",
+                        "message": f"Tool '{item['tool']}': {item['message']}",
+                        "code": "CIHUB-VERIFY-DRIFT",
+                        "category": "tool",
+                        "tool": item["tool"],
+                    }
+                )
             for item in tool_verification.get("no_proof", []):
-                problems.append({
-                    "severity": "warning",
-                    "message": f"Tool '{item['tool']}': {item['message']}",
-                    "code": "CIHUB-VERIFY-NO-PROOF",
-                    "category": "tool",
-                    "tool": item["tool"],
-                })
+                problems.append(
+                    {
+                        "severity": "warning",
+                        "message": f"Tool '{item['tool']}': {item['message']}",
+                        "code": "CIHUB-VERIFY-NO-PROOF",
+                        "category": "tool",
+                        "tool": item["tool"],
+                    }
+                )
 
     # Generate suggestions based on failures
     suggestions: list[dict[str, Any]] = []
     if problems:
-        suggestions.append({
-            "message": f"Run 'cat {artifacts['priority']}' for detailed failure info",
-            "code": "CIHUB-TRIAGE-VIEW-PRIORITY",
-        })
-        suggestions.append({
-            "message": f"Run 'cat {artifacts['markdown']}' for human-readable summary",
-            "code": "CIHUB-TRIAGE-VIEW-MARKDOWN",
-        })
+        suggestions.append(
+            {
+                "message": f"Run 'cat {artifacts['priority']}' for detailed failure info",
+                "code": "CIHUB-TRIAGE-VIEW-PRIORITY",
+            }
+        )
+        suggestions.append(
+            {
+                "message": f"Run 'cat {artifacts['markdown']}' for human-readable summary",
+                "code": "CIHUB-TRIAGE-VIEW-MARKDOWN",
+            }
+        )
     if tool_verification and (tool_verification.get("drift") or tool_verification.get("no_proof")):
-        suggestions.append({
-            "message": "Run 'cihub triage --verify-tools' for detailed tool verification",
-            "code": "CIHUB-TRIAGE-VERIFY-TOOLS",
-        })
+        suggestions.append(
+            {
+                "message": "Run 'cihub triage --verify-tools' for detailed tool verification",
+                "code": "CIHUB-TRIAGE-VERIFY-TOOLS",
+            }
+        )
 
     return CommandResult(
         exit_code=EXIT_SUCCESS,

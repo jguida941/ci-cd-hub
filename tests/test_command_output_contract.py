@@ -26,7 +26,7 @@ from hypothesis import strategies as st
 # Goal: empty list = all commands follow the contract
 PRINT_ALLOWLIST: set[str] = {
     # Interactive daemon mode - needs real-time output for --watch (cannot use CommandResult)
-    "triage.py",      # --watch daemon + --latest auto-select print real-time progress
+    "triage.py",  # --watch daemon + --latest auto-select print real-time progress
     # Hub settings display - intentionally prints YAML for user visibility
     "hub_config.py",  # hub config show/load prints YAML or key=value for GitHub Actions
     # Worst offenders (migrate first)
@@ -48,11 +48,11 @@ PRINT_ALLOWLIST: set[str] = {
     # "run.py",        # MIGRATED - 6 prints → CommandResult
     # Lower priority
     # "scaffold.py",   # MIGRATED - 5 prints → CommandResult
-    "check.py",       # 5 prints
-    "ci.py",          # 4 prints
-    "preflight.py",   # 3 prints
+    "check.py",  # 5 prints
+    "ci.py",  # 4 prints
+    "preflight.py",  # 3 prints
     # "detect.py",      # MIGRATED - 3 prints → CommandResult
-    "verify.py",      # 2 prints
+    "verify.py",  # 2 prints
     "config_outputs.py",  # 2 prints
 }
 
@@ -186,9 +186,7 @@ class TestCommandOutputContract:
             prints = find_print_calls(filepath)
             if prints:
                 for line_no, code in prints:
-                    violations.append(
-                        f"{filepath.relative_to(hub_ci_dir)}:{line_no}: {code}"
-                    )
+                    violations.append(f"{filepath.relative_to(hub_ci_dir)}:{line_no}: {code}")
 
         if violations:
             pytest.fail(
@@ -211,10 +209,7 @@ class TestCommandOutputContract:
                     missing.append(f"{subpkg}/{filename}")
 
         if missing:
-            pytest.fail(
-                "Allowlist contains non-existent files (remove them):\n"
-                + "\n".join(f"  {f}" for f in missing)
-            )
+            pytest.fail("Allowlist contains non-existent files (remove them):\n" + "\n".join(f"  {f}" for f in missing))
 
     def test_track_migration_progress(self) -> None:
         """Report current migration progress (informational)."""
@@ -264,9 +259,7 @@ class TestCommandResultContract:
         ],
         ids=["adr", "check", "validate", "smoke", "docs"],
     )
-    def test_command_result_has_expected_fields(
-        self, subcommand: str, expected_fields: list[str]
-    ) -> None:
+    def test_command_result_has_expected_fields(self, subcommand: str, expected_fields: list[str]) -> None:
         """Commands should populate expected CommandResult fields.
 
         This is a contract test - verifies commands return structured data
@@ -318,12 +311,7 @@ class TestPrintPatternDetection:
     def test_detects_multiple_prints(self, tmp_path: Path) -> None:
         """Detects all print() calls in a file."""
         test_file = tmp_path / "test.py"
-        test_file.write_text(
-            'print("one")\n'
-            'x = 1\n'
-            'print("two")\n'
-            'print("three")\n'
-        )
+        test_file.write_text('print("one")\nx = 1\nprint("two")\nprint("three")\n')
 
         prints = find_print_calls(test_file)
         assert len(prints) == 3
@@ -338,9 +326,7 @@ class TestPrintPatternDetection:
         # Generate file with print at specific line
         lines = ["x = 1\n"] * (num_lines - 1) + ['print("test")\n']
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".py", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.writelines(lines)
             f.flush()
 
@@ -362,15 +348,11 @@ class TestAllowlistManagement:
 
         # This will fail when migration is complete (good!)
         # Update this assertion as migration progresses
-        assert total_allowlisted > 0, (
-            "All commands migrated! Remove this test and the allowlist."
-        )
+        assert total_allowlisted > 0, "All commands migrated! Remove this test and the allowlist."
 
     def test_no_duplicate_entries(self) -> None:
         """Allowlist should have no duplicates."""
         # PRINT_ALLOWLIST is a set, so no duplicates possible
         # But check subpackage lists
         for subpkg, files in SUBPACKAGE_ALLOWLISTS.items():
-            assert len(files) == len(set(files)), (
-                f"Duplicate entries in {subpkg} allowlist"
-            )
+            assert len(files) == len(set(files)), f"Duplicate entries in {subpkg} allowlist"

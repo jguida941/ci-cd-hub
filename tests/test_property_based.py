@@ -26,19 +26,36 @@ coverage_strategy = st.integers(min_value=0, max_value=100)
 threshold_strategy = st.integers(min_value=0, max_value=1000)
 
 # Strategy for tool names
-tool_name_strategy = st.sampled_from([
-    "pytest", "ruff", "black", "isort", "mypy", "bandit",
-    "pip_audit", "trivy", "mutmut", "coverage",
-    "jacoco", "checkstyle", "spotbugs", "pmd", "owasp", "pitest",
-])
+tool_name_strategy = st.sampled_from(
+    [
+        "pytest",
+        "ruff",
+        "black",
+        "isort",
+        "mypy",
+        "bandit",
+        "pip_audit",
+        "trivy",
+        "mutmut",
+        "coverage",
+        "jacoco",
+        "checkstyle",
+        "spotbugs",
+        "pmd",
+        "owasp",
+        "pitest",
+    ]
+)
 
 # Strategy for language names
 language_strategy = st.sampled_from(["python", "java"])
 
 # Strategy for simple config dicts
-simple_config_strategy = st.fixed_dictionaries({
-    "enabled": st.booleans(),
-})
+simple_config_strategy = st.fixed_dictionaries(
+    {
+        "enabled": st.booleans(),
+    }
+)
 
 # Strategy for nested dicts (for deep_merge testing)
 nested_dict_strategy = st.recursive(

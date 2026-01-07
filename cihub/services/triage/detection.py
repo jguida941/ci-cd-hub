@@ -161,8 +161,7 @@ def detect_flaky_patterns(history_path: Path, min_runs: int = 5) -> dict[str, An
 
         # Add recent history summary
         recent_statuses = [
-            "pass" if e.get("overall_status") in ("success", "passed") else "fail"
-            for e in entries[-10:]
+            "pass" if e.get("overall_status") in ("success", "passed") else "fail" for e in entries[-10:]
         ]
         result["recent_history"] = "".join(recent_statuses)
 
@@ -246,11 +245,13 @@ def detect_gate_changes(history_path: Path, min_runs: int = 2) -> dict[str, Any]
             # Recurring: fails more than 50% of the time
             fail_rate = sum(history) / len(history)
             if fail_rate > 0.5 and len(history) >= 3:
-                result["recurring_failures"].append({
-                    "gate": gate,
-                    "fail_rate": round(fail_rate * 100, 1),
-                    "history": ["fail" if f else "pass" for f in history[-10:]],
-                })
+                result["recurring_failures"].append(
+                    {
+                        "gate": gate,
+                        "fail_rate": round(fail_rate * 100, 1),
+                        "history": ["fail" if f else "pass" for f in history[-10:]],
+                    }
+                )
 
         result["gate_history"] = {k: ["fail" if f else "pass" for f in v[-10:]] for k, v in gate_history.items()}
 

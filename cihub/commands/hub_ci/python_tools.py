@@ -129,13 +129,15 @@ def cmd_mutmut(args: argparse.Namespace) -> CommandResult:
     score = (killed * 100) // tested
 
     ctx = OutputContext.from_args(args)
-    ctx.write_outputs({
-        "mutation_score": str(score),
-        "killed": str(killed),
-        "survived": str(survived),
-        "timeout": str(timeout),
-        "suspicious": str(suspicious),
-    })
+    ctx.write_outputs(
+        {
+            "mutation_score": str(score),
+            "killed": str(killed),
+            "survived": str(survived),
+            "timeout": str(timeout),
+            "suspicious": str(suspicious),
+        }
+    )
     summary = (
         "## Mutation Testing\n\n"
         "| Metric | Value |\n"
@@ -166,9 +168,7 @@ def cmd_mutmut(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Mutation score {score}% below {args.min_score}% threshold",
-            problems=[
-                {"severity": "error", "message": f"Mutation score {score}% below {args.min_score}% threshold"}
-            ],
+            problems=[{"severity": "error", "message": f"Mutation score {score}% below {args.min_score}% threshold"}],
             data=result_data,
         )
     summary += f"\n**PASSED**: Score {score}% meets {args.min_score}% threshold\n"

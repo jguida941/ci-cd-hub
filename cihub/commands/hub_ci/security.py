@@ -239,10 +239,12 @@ def cmd_security_pip_audit(args: argparse.Namespace) -> CommandResult:
         if proc.returncode != 0:
             # Tool failed without producing output - warn but continue
             tool_status = "failed"
-            problems.append({
-                "severity": "warning",
-                "message": f"pip-audit failed (exit {proc.returncode}): {proc.stderr or 'no output'}",
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"pip-audit failed (exit {proc.returncode}): {proc.stderr or 'no output'}",
+                }
+            )
 
     vulns = 0
     try:
@@ -253,10 +255,12 @@ def cmd_security_pip_audit(args: argparse.Namespace) -> CommandResult:
         vulns = 0
         if proc.returncode != 0:
             tool_status = "failed"
-            problems.append({
-                "severity": "warning",
-                "message": f"pip-audit produced invalid JSON (exit {proc.returncode})",
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"pip-audit produced invalid JSON (exit {proc.returncode})",
+                }
+            )
 
     ctx = OutputContext.from_args(args)
     ctx.write_outputs({"vulnerabilities": str(vulns), "tool_status": tool_status})
@@ -285,10 +289,12 @@ def cmd_security_bandit(args: argparse.Namespace) -> CommandResult:
         if proc.returncode != 0:
             # Tool failed without producing output - warn but continue
             tool_status = "failed"
-            problems.append({
-                "severity": "warning",
-                "message": f"bandit failed (exit {proc.returncode}): {proc.stderr or 'no output'}",
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"bandit failed (exit {proc.returncode}): {proc.stderr or 'no output'}",
+                }
+            )
 
     high = 0
     try:
@@ -300,10 +306,12 @@ def cmd_security_bandit(args: argparse.Namespace) -> CommandResult:
         high = 0
         if proc.returncode != 0:
             tool_status = "failed"
-            problems.append({
-                "severity": "warning",
-                "message": f"bandit produced invalid JSON (exit {proc.returncode})",
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"bandit produced invalid JSON (exit {proc.returncode})",
+                }
+            )
 
     ctx = OutputContext.from_args(args)
     ctx.write_outputs({"high": str(high), "tool_status": tool_status})
@@ -337,10 +345,12 @@ def cmd_security_ruff(args: argparse.Namespace) -> CommandResult:
         issues = 0
         # ruff returns non-zero when issues found (normal), but invalid JSON is a problem
         tool_status = "failed"
-        problems.append({
-            "severity": "warning",
-            "message": f"ruff produced invalid JSON (exit {proc.returncode}): {proc.stderr or 'no output'}",
-        })
+        problems.append(
+            {
+                "severity": "warning",
+                "message": f"ruff produced invalid JSON (exit {proc.returncode}): {proc.stderr or 'no output'}",
+            }
+        )
 
     ctx = OutputContext.from_args(args)
     ctx.write_outputs({"issues": str(issues), "tool_status": tool_status})
@@ -389,17 +399,21 @@ def cmd_security_owasp(args: argparse.Namespace) -> CommandResult:
             high = 0
             if proc and proc.returncode != 0:
                 tool_status = "failed"
-                problems.append({
-                    "severity": "warning",
-                    "message": f"OWASP dependency-check produced invalid JSON (exit {proc.returncode})",
-                })
+                problems.append(
+                    {
+                        "severity": "warning",
+                        "message": f"OWASP dependency-check produced invalid JSON (exit {proc.returncode})",
+                    }
+                )
     elif proc and proc.returncode != 0:
         # Tool ran but produced no report
         tool_status = "failed"
-        problems.append({
-            "severity": "warning",
-            "message": f"OWASP dependency-check failed (exit {proc.returncode}): no report generated",
-        })
+        problems.append(
+            {
+                "severity": "warning",
+                "message": f"OWASP dependency-check failed (exit {proc.returncode}): no report generated",
+            }
+        )
 
     ctx = OutputContext.from_args(args)
     ctx.write_outputs({"critical": str(critical), "high": str(high), "tool_status": tool_status})

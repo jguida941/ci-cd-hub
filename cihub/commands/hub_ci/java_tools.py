@@ -139,13 +139,15 @@ def cmd_smoke_java_tests(args: argparse.Namespace) -> CommandResult:
     runtime = f"{totals['time']:.2f}s"
 
     ctx = OutputContext.from_args(args)
-    ctx.write_outputs({
-        "total": str(totals["tests"]),
-        "passed": str(passed),
-        "failed": str(failed),
-        "skipped": str(totals["skipped"]),
-        "runtime": runtime,
-    })
+    ctx.write_outputs(
+        {
+            "total": str(totals["tests"]),
+            "passed": str(passed),
+            "failed": str(failed),
+            "skipped": str(totals["skipped"]),
+            "runtime": runtime,
+        }
+    )
 
     return CommandResult(
         exit_code=EXIT_SUCCESS,
@@ -178,12 +180,14 @@ def cmd_smoke_java_coverage(args: argparse.Namespace) -> CommandResult:
     total = covered + missed
     percent = int((covered * 100) / total) if total > 0 else 0
     ctx = OutputContext.from_args(args)
-    ctx.write_outputs({
-        "covered": str(covered),
-        "missed": str(missed),
-        "percent": str(percent),
-        "lines": f"{covered} / {total}",
-    })
+    ctx.write_outputs(
+        {
+            "covered": str(covered),
+            "missed": str(missed),
+            "percent": str(percent),
+            "lines": f"{covered} / {total}",
+        }
+    )
 
     return CommandResult(
         exit_code=EXIT_SUCCESS,

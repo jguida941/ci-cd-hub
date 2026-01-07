@@ -656,18 +656,14 @@ class TestTriageSchemaContract:
         # This will raise ValidationError if bundle doesn't match schema
         jsonschema.validate(instance=sample_triage, schema=triage_schema)
 
-    def test_triage_schema_requires_mandatory_fields(
-        self, triage_schema: dict[str, Any]
-    ) -> None:
+    def test_triage_schema_requires_mandatory_fields(self, triage_schema: dict[str, Any]) -> None:
         """Verify schema enforces required fields."""
         incomplete = {"schema_version": "cihub-triage-v2"}
 
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.validate(instance=incomplete, schema=triage_schema)
 
-    def test_triage_schema_validates_schema_version_pattern(
-        self, triage_schema: dict[str, Any]
-    ) -> None:
+    def test_triage_schema_validates_schema_version_pattern(self, triage_schema: dict[str, Any]) -> None:
         """schema_version must match pattern cihub-triage-vN."""
         invalid = {
             "schema_version": "wrong-format",  # Invalid pattern
@@ -682,9 +678,7 @@ class TestTriageSchemaContract:
 
         assert "pattern" in str(exc_info.value).lower()
 
-    def test_triage_schema_validates_overall_status_enum(
-        self, triage_schema: dict[str, Any]
-    ) -> None:
+    def test_triage_schema_validates_overall_status_enum(self, triage_schema: dict[str, Any]) -> None:
         """overall_status must be a valid enum value (passed/failed/success/failure)."""
         invalid = {
             "schema_version": "cihub-triage-v2",
@@ -697,9 +691,7 @@ class TestTriageSchemaContract:
         with pytest.raises(jsonschema.ValidationError):
             jsonschema.validate(instance=invalid, schema=triage_schema)
 
-    def test_triage_schema_validates_severity_enum(
-        self, triage_schema: dict[str, Any]
-    ) -> None:
+    def test_triage_schema_validates_severity_enum(self, triage_schema: dict[str, Any]) -> None:
         """failure severity must be in allowed enum."""
         invalid = {
             "schema_version": "cihub-triage-v2",

@@ -60,26 +60,30 @@ def find_stale_references(
             # Check if there's a likely rename - provide better suggestion
             if token in rename_map:
                 suggestion = f"Consider updating to `{rename_map[token]}`"
-            stale.append(StaleReference(
-                doc_file=ref.file,
-                doc_line=ref.line,
-                reference=token,
-                reason=REASON_REMOVED,
-                suggestion=suggestion,
-                context=ref.context,
-            ))
+            stale.append(
+                StaleReference(
+                    doc_file=ref.file,
+                    doc_line=ref.line,
+                    reference=token,
+                    reason=REASON_REMOVED,
+                    suggestion=suggestion,
+                    context=ref.context,
+                )
+            )
             continue
 
         # Check if it matches a renamed symbol
         if token in rename_map:
-            stale.append(StaleReference(
-                doc_file=ref.file,
-                doc_line=ref.line,
-                reference=token,
-                reason=REASON_RENAMED,
-                suggestion=f"Update to `{rename_map[token]}`",
-                context=ref.context,
-            ))
+            stale.append(
+                StaleReference(
+                    doc_file=ref.file,
+                    doc_line=ref.line,
+                    reference=token,
+                    reason=REASON_RENAMED,
+                    suggestion=f"Update to `{rename_map[token]}`",
+                    context=ref.context,
+                )
+            )
             continue
 
         # Check if it references a deleted file
@@ -88,14 +92,16 @@ def find_stale_references(
                 suggestion = "File was deleted"
                 if token in file_rename_map:
                     suggestion = f"File renamed to `{file_rename_map[token]}`"
-                stale.append(StaleReference(
-                    doc_file=ref.file,
-                    doc_line=ref.line,
-                    reference=token,
-                    reason=REASON_DELETED_FILE,
-                    suggestion=suggestion,
-                    context=ref.context,
-                ))
+                stale.append(
+                    StaleReference(
+                        doc_file=ref.file,
+                        doc_line=ref.line,
+                        reference=token,
+                        reason=REASON_DELETED_FILE,
+                        suggestion=suggestion,
+                        context=ref.context,
+                    )
+                )
 
     return stale
 

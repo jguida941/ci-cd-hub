@@ -461,18 +461,9 @@ class TestGroupStaleByFile:
 
     def test_groups_by_file(self) -> None:
         refs = [
-            StaleReference(
-                doc_file="a.md", doc_line=1, reference="x",
-                reason="removed", suggestion="", context=""
-            ),
-            StaleReference(
-                doc_file="b.md", doc_line=2, reference="y",
-                reason="removed", suggestion="", context=""
-            ),
-            StaleReference(
-                doc_file="a.md", doc_line=3, reference="z",
-                reason="removed", suggestion="", context=""
-            ),
+            StaleReference(doc_file="a.md", doc_line=1, reference="x", reason="removed", suggestion="", context=""),
+            StaleReference(doc_file="b.md", doc_line=2, reference="y", reason="removed", suggestion="", context=""),
+            StaleReference(doc_file="a.md", doc_line=3, reference="z", reason="removed", suggestion="", context=""),
         ]
         grouped = group_stale_by_file(refs)
         assert len(grouped["a.md"]) == 2
@@ -598,10 +589,12 @@ class TestGitOperations:
 
     def test_is_git_repo_returns_false_for_non_repo(self, tmp_path: Path) -> None:
         from cihub.commands.docs_stale import is_git_repo
+
         assert not is_git_repo(tmp_path)
 
     def test_resolve_git_ref_returns_none_for_invalid(self, tmp_path: Path) -> None:
         from cihub.commands.docs_stale import resolve_git_ref
+
         # In a non-git directory, any ref is invalid
         assert resolve_git_ref("HEAD", tmp_path) is None
 
@@ -717,6 +710,7 @@ class TestPropertyBasedExtraction:
     def _valid_python_identifier(s: str) -> bool:
         """Check if string is a valid Python identifier."""
         import keyword
+
         return s.isidentifier() and not keyword.iskeyword(s)
 
     def test_extracted_symbols_have_valid_names(self) -> None:
@@ -920,9 +914,7 @@ class TestPropertyBasedSerialization:
 
         @given(removed=symbol_list, added=symbol_list, renamed=rename_list)
         @settings(max_examples=30)
-        def check_serialization(
-            removed: list[str], added: list[str], renamed: list[tuple[str, str]]
-        ) -> None:
+        def check_serialization(removed: list[str], added: list[str], renamed: list[tuple[str, str]]) -> None:
             report = StaleReport(
                 git_range="HEAD~5",
                 removed_symbols=removed,

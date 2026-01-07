@@ -125,9 +125,7 @@ class TestGetRepoName:
         [None, "string", 123, [], True],
         ids=["none", "string", "int", "list", "bool"],
     )
-    def test_handles_invalid_repo_config_types(
-        self, tmp_path: Path, repo_value: object
-    ) -> None:
+    def test_handles_invalid_repo_config_types(self, tmp_path: Path, repo_value: object) -> None:
         """Non-dict repo config values are handled gracefully."""
         config = {"repo": repo_value}
         with patch.dict(os.environ, {}, clear=True):
@@ -240,9 +238,7 @@ class TestDetectJavaProjectType:
         ],
         ids=["one", "five", "ten"],
     )
-    def test_module_count_variants(
-        self, tmp_path: Path, module_count: int, expected: str
-    ) -> None:
+    def test_module_count_variants(self, tmp_path: Path, module_count: int, expected: str) -> None:
         """Module count is correctly extracted."""
         modules = "\n".join(f"<module>module{i}</module>" for i in range(module_count))
         pom = tmp_path / "pom.xml"

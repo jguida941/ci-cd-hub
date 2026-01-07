@@ -150,9 +150,7 @@ class TestLoadJsonReport:
         ],
         ids=["dict", "empty_list", "nested", "null", "number", "string"],
     )
-    def test_parses_valid_json(
-        self, tmp_path: Path, content: str, expected_data: Any
-    ) -> None:
+    def test_parses_valid_json(self, tmp_path: Path, content: str, expected_data: Any) -> None:
         """load_json_report parses various valid JSON formats."""
         report = tmp_path / "report.json"
         report.write_text(content, encoding="utf-8")
@@ -172,9 +170,7 @@ class TestLoadJsonReport:
         ],
         ids=["invalid_syntax", "single_quotes", "unquoted_keys", "empty"],
     )
-    def test_returns_error_for_invalid_json(
-        self, tmp_path: Path, content: str
-    ) -> None:
+    def test_returns_error_for_invalid_json(self, tmp_path: Path, content: str) -> None:
         """load_json_report returns error for invalid JSON."""
         report = tmp_path / "report.json"
         report.write_text(content, encoding="utf-8")
@@ -200,9 +196,7 @@ class TestLoadJsonReport:
         [None, [], {}, {"default": "value"}, 0, ""],
         ids=["none", "list", "dict", "populated_dict", "zero", "empty_string"],
     )
-    def test_returns_default_on_error(
-        self, tmp_path: Path, default: Any
-    ) -> None:
+    def test_returns_default_on_error(self, tmp_path: Path, default: Any) -> None:
         """load_json_report returns specified default on any error."""
         missing = tmp_path / "missing.json"
 
@@ -344,10 +338,7 @@ class TestRunToolWithJsonReport:
         """run_tool_with_json_report passes env to subprocess."""
         report = tmp_path / "report.json"
         # Python code to write env var to JSON
-        py_code = (
-            "import os, json; "
-            f"json.dump({{'val': os.environ.get('TEST_VAR')}}, open('{report}', 'w'))"
-        )
+        py_code = f"import os, json; json.dump({{'val': os.environ.get('TEST_VAR')}}, open('{report}', 'w'))"
 
         result = run_tool_with_json_report(
             cmd=["python", "-c", py_code],
@@ -366,11 +357,16 @@ class TestRunToolWithJsonReportIntegration:
         """Simulates bandit SAST tool pattern."""
         report = tmp_path / "bandit.json"
         # Simulate bandit output
-        report.write_text(json.dumps({
-            "results": [
-                {"issue_severity": "HIGH", "issue_text": "Test issue"},
-            ],
-        }), encoding="utf-8")
+        report.write_text(
+            json.dumps(
+                {
+                    "results": [
+                        {"issue_severity": "HIGH", "issue_text": "Test issue"},
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
 
         result = run_tool_with_json_report(
             cmd=["python", "-c", "pass"],  # Pretend bandit ran
@@ -387,9 +383,14 @@ class TestRunToolWithJsonReportIntegration:
         """Simulates pip-audit vulnerability scan pattern."""
         report = tmp_path / "pip-audit.json"
         # Simulate pip-audit output
-        report.write_text(json.dumps([
-            {"name": "package1", "vulns": [{"id": "CVE-2024-001"}]},
-        ]), encoding="utf-8")
+        report.write_text(
+            json.dumps(
+                [
+                    {"name": "package1", "vulns": [{"id": "CVE-2024-001"}]},
+                ]
+            ),
+            encoding="utf-8",
+        )
 
         result = run_tool_with_json_report(
             cmd=["python", "-c", "pass"],

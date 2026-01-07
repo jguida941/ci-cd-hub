@@ -133,9 +133,7 @@ class JavaStrategy(LanguageStrategy):
                 build_tool = "maven"
 
         runners = self.get_runners()
-        return _run_java_tools(
-            config, repo_path, workdir, output_dir, build_tool, problems, runners
-        )
+        return _run_java_tools(config, repo_path, workdir, output_dir, build_tool, problems, runners)
 
     def evaluate_gates(
         self,

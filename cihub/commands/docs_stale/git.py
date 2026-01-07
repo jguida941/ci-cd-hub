@@ -208,6 +208,7 @@ def _similarity_ratio(s1: str, s2: str) -> float:
         return 0.0
 
     from difflib import SequenceMatcher
+
     return SequenceMatcher(None, s1, s2).ratio()
 
 

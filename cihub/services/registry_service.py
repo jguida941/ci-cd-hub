@@ -73,13 +73,15 @@ def list_repos(registry: dict[str, Any]) -> list[dict[str, Any]]:
             "vulns_max": overrides.get("vulns_max", tier_defaults.get("vulns_max", 0)),
         }
 
-        result.append({
-            "name": name,
-            "tier": tier_name,
-            "description": config.get("description", ""),
-            "effective": effective,
-            "has_overrides": bool(overrides),
-        })
+        result.append(
+            {
+                "name": name,
+                "tier": tier_name,
+                "description": config.get("description", ""),
+                "effective": effective,
+                "has_overrides": bool(overrides),
+            }
+        )
 
     return sorted(result, key=lambda x: x["name"])
 
@@ -209,56 +211,66 @@ def compute_diff(registry: dict[str, Any], configs_dir: Path) -> list[dict[str, 
         # Try to load actual repo config
         config_path = configs_dir / f"{repo_name}.yaml"
         if not config_path.exists():
-            diffs.append({
-                "repo": repo_name,
-                "field": "config_file",
-                "registry_value": "present",
-                "actual_value": "missing",
-                "severity": "warning",
-            })
+            diffs.append(
+                {
+                    "repo": repo_name,
+                    "field": "config_file",
+                    "registry_value": "present",
+                    "actual_value": "missing",
+                    "severity": "warning",
+                }
+            )
             continue
 
         try:
             actual = load_yaml_file(config_path)
         except Exception as exc:  # noqa: BLE001
-            diffs.append({
-                "repo": repo_name,
-                "field": "config_file",
-                "registry_value": "valid",
-                "actual_value": f"error: {exc}",
-                "severity": "error",
-            })
+            diffs.append(
+                {
+                    "repo": repo_name,
+                    "field": "config_file",
+                    "registry_value": "valid",
+                    "actual_value": f"error: {exc}",
+                    "severity": "error",
+                }
+            )
             continue
 
         # Compare thresholds
         thresholds = actual.get("thresholds", {})
 
         if thresholds.get("coverage", 70) != effective["coverage"]:
-            diffs.append({
-                "repo": repo_name,
-                "field": "coverage",
-                "registry_value": effective["coverage"],
-                "actual_value": thresholds.get("coverage", 70),
-                "severity": "warning",
-            })
+            diffs.append(
+                {
+                    "repo": repo_name,
+                    "field": "coverage",
+                    "registry_value": effective["coverage"],
+                    "actual_value": thresholds.get("coverage", 70),
+                    "severity": "warning",
+                }
+            )
 
         if thresholds.get("mutation_score", 70) != effective["mutation"]:
-            diffs.append({
-                "repo": repo_name,
-                "field": "mutation",
-                "registry_value": effective["mutation"],
-                "actual_value": thresholds.get("mutation_score", 70),
-                "severity": "warning",
-            })
+            diffs.append(
+                {
+                    "repo": repo_name,
+                    "field": "mutation",
+                    "registry_value": effective["mutation"],
+                    "actual_value": thresholds.get("mutation_score", 70),
+                    "severity": "warning",
+                }
+            )
 
         if thresholds.get("vulns_max", 0) != effective["vulns_max"]:
-            diffs.append({
-                "repo": repo_name,
-                "field": "vulns_max",
-                "registry_value": effective["vulns_max"],
-                "actual_value": thresholds.get("vulns_max", 0),
-                "severity": "warning",
-            })
+            diffs.append(
+                {
+                    "repo": repo_name,
+                    "field": "vulns_max",
+                    "registry_value": effective["vulns_max"],
+                    "actual_value": thresholds.get("vulns_max", 0),
+                    "severity": "warning",
+                }
+            )
 
     return diffs
 
@@ -292,21 +304,25 @@ def sync_to_configs(
 
         config_path = configs_dir / f"{repo_name}.yaml"
         if not config_path.exists():
-            changes.append({
-                "repo": repo_name,
-                "action": "skip",
-                "reason": "config file not found",
-            })
+            changes.append(
+                {
+                    "repo": repo_name,
+                    "action": "skip",
+                    "reason": "config file not found",
+                }
+            )
             continue
 
         try:
             config = load_yaml_file(config_path)
         except Exception as exc:  # noqa: BLE001
-            changes.append({
-                "repo": repo_name,
-                "action": "skip",
-                "reason": f"failed to load: {exc}",
-            })
+            changes.append(
+                {
+                    "repo": repo_name,
+                    "action": "skip",
+                    "reason": f"failed to load: {exc}",
+                }
+            )
             continue
 
         # Update thresholds
@@ -326,21 +342,25 @@ def sync_to_configs(
             thresholds["vulns_max"] = effective["vulns_max"]
 
         if not repo_changes:
-            changes.append({
-                "repo": repo_name,
-                "action": "unchanged",
-                "reason": "already in sync",
-            })
+            changes.append(
+                {
+                    "repo": repo_name,
+                    "action": "unchanged",
+                    "reason": "already in sync",
+                }
+            )
             continue
 
         if not dry_run:
             with config_path.open("w", encoding="utf-8") as f:
                 yaml.dump(config, f, default_flow_style=False, sort_keys=False)
 
-        changes.append({
-            "repo": repo_name,
-            "action": "updated" if not dry_run else "would_update",
-            "fields": repo_changes,
-        })
+        changes.append(
+            {
+                "repo": repo_name,
+                "action": "updated" if not dry_run else "would_update",
+                "fields": repo_changes,
+            }
+        )
 
     return changes

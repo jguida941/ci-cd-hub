@@ -21,10 +21,22 @@ DEFAULT_SINCE = "HEAD~10"
 PARSED_FENCE_TYPES = frozenset({"bash", "shell", "console", "sh", "zsh", ""})
 
 # Fence types to skip (illustrative code examples)
-SKIPPED_FENCE_TYPES = frozenset({
-    "python", "json", "yaml", "xml", "java", "javascript",
-    "typescript", "go", "rust", "sql", "html", "css",
-})
+SKIPPED_FENCE_TYPES = frozenset(
+    {
+        "python",
+        "json",
+        "yaml",
+        "xml",
+        "java",
+        "javascript",
+        "typescript",
+        "go",
+        "rust",
+        "sql",
+        "html",
+        "css",
+    }
+)
 
 # Default exclusion patterns (Part 11 Decision 2)
 DEFAULT_EXCLUDE_PATTERNS = [
@@ -34,18 +46,46 @@ DEFAULT_EXCLUDE_PATTERNS = [
 
 # False positive filters (Part 11)
 # Common tokens that appear in backticks but aren't code symbols
-FALSE_POSITIVE_TOKENS = frozenset({
-    # Boolean/null literals
-    "true", "false", "none", "null", "yes", "no",
-    # Log levels
-    "ok", "error", "warning", "info", "debug",
-    # Protocol/network
-    "http", "https", "localhost", "github",
-    # File extensions
-    "md", "py", "json", "yaml", "yml", "txt",
-    # Single letters (often used as variables in examples)
-    "a", "b", "c", "i", "j", "k", "n", "x", "y", "z",
-})
+FALSE_POSITIVE_TOKENS = frozenset(
+    {
+        # Boolean/null literals
+        "true",
+        "false",
+        "none",
+        "null",
+        "yes",
+        "no",
+        # Log levels
+        "ok",
+        "error",
+        "warning",
+        "info",
+        "debug",
+        # Protocol/network
+        "http",
+        "https",
+        "localhost",
+        "github",
+        # File extensions
+        "md",
+        "py",
+        "json",
+        "yaml",
+        "yml",
+        "txt",
+        # Single letters (often used as variables in examples)
+        "a",
+        "b",
+        "c",
+        "i",
+        "j",
+        "k",
+        "n",
+        "x",
+        "y",
+        "z",
+    }
+)
 
 
 # =============================================================================
@@ -180,17 +220,11 @@ class StaleReport:
             "changed_symbols": {
                 "removed": self.removed_symbols,
                 "added": self.added_symbols,
-                "renamed": [
-                    {"old": old, "new": new}
-                    for old, new in self.renamed_symbols
-                ],
+                "renamed": [{"old": old, "new": new} for old, new in self.renamed_symbols],
             },
             "file_changes": {
                 "deleted": self.deleted_files,
-                "renamed": [
-                    {"old": old, "new": new}
-                    for old, new in self.renamed_files
-                ],
+                "renamed": [{"old": old, "new": new} for old, new in self.renamed_files],
             },
             "stale_references": [
                 {

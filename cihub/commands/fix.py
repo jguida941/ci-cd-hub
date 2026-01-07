@@ -79,17 +79,21 @@ def _run_safe_fixes(repo_path: Path, language: str, dry_run: bool) -> CommandRes
                 if rc == 0:
                     fixes_applied.append(name)
                 else:
-                    errors.append({
-                        "severity": "warning",
-                        "message": f"{name} failed: {stderr[:200]}",
-                        "code": f"CIHUB-FIX-{name.upper()}-FAILED",
-                    })
+                    errors.append(
+                        {
+                            "severity": "warning",
+                            "message": f"{name} failed: {stderr[:200]}",
+                            "code": f"CIHUB-FIX-{name.upper()}-FAILED",
+                        }
+                    )
             else:
-                errors.append({
-                    "severity": "warning",
-                    "message": f"{name} not installed, skipping",
-                    "code": f"CIHUB-FIX-{name.upper()}-MISSING",
-                })
+                errors.append(
+                    {
+                        "severity": "warning",
+                        "message": f"{name} not installed, skipping",
+                        "code": f"CIHUB-FIX-{name.upper()}-MISSING",
+                    }
+                )
 
     elif language == "java":
         if (repo_path / "pom.xml").exists():
@@ -112,11 +116,13 @@ def _run_safe_fixes(repo_path: Path, language: str, dry_run: bool) -> CommandRes
             if rc == 0:
                 fixes_applied.append(name)
             else:
-                errors.append({
-                    "severity": "error",
-                    "message": f"spotless failed: {stderr[:200]}",
-                    "code": "CIHUB-FIX-SPOTLESS-FAILED",
-                })
+                errors.append(
+                    {
+                        "severity": "error",
+                        "message": f"spotless failed: {stderr[:200]}",
+                        "code": "CIHUB-FIX-SPOTLESS-FAILED",
+                    }
+                )
 
     else:
         return CommandResult(
@@ -222,9 +228,7 @@ def _run_report(repo_path: Path, language: str) -> dict[str, list[dict[str, Any]
     return all_issues
 
 
-def _generate_ai_report(
-    repo_path: Path, language: str, all_issues: dict[str, list[dict[str, Any]]]
-) -> str:
+def _generate_ai_report(repo_path: Path, language: str, all_issues: dict[str, list[dict[str, Any]]]) -> str:
     """Generate AI-consumable markdown report."""
     now = datetime.now(timezone.utc).isoformat()
     total = sum(len(v) for v in all_issues.values())
@@ -349,11 +353,13 @@ def cmd_fix(args: argparse.Namespace) -> CommandResult:
     problems = []
     for tool, issues in all_issues.items():
         for issue in issues:
-            problems.append({
-                "severity": issue.get("severity", "warning"),
-                "message": f"[{tool}] {issue.get('message', 'Issue found')}",
-                "code": f"CIHUB-FIX-{tool.upper()}",
-            })
+            problems.append(
+                {
+                    "severity": issue.get("severity", "warning"),
+                    "message": f"[{tool}] {issue.get('message', 'Issue found')}",
+                    "code": f"CIHUB-FIX-{tool.upper()}",
+                }
+            )
 
     return CommandResult(
         exit_code=EXIT_SUCCESS if total == 0 else EXIT_FAILURE,

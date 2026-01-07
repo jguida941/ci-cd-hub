@@ -127,11 +127,13 @@ def cmd_setup_secrets(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="Non-interactive mode requires --token",
-            problems=[{
-                "severity": "error",
-                "message": "Non-interactive mode requires --token",
-                "code": "CIHUB-SECRETS-REQUIRES-TOKEN",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Non-interactive mode requires --token",
+                    "code": "CIHUB-SECRETS-REQUIRES-TOKEN",
+                }
+            ],
         )
 
     # Token prompt (interactive only)
@@ -144,22 +146,26 @@ def cmd_setup_secrets(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="No token provided",
-            problems=[{
-                "severity": "error",
-                "message": "No token provided",
-                "code": "CIHUB-SECRETS-NO-TOKEN",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "No token provided",
+                    "code": "CIHUB-SECRETS-NO-TOKEN",
+                }
+            ],
         )
 
     if any(ch.isspace() for ch in token):
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="Token contains whitespace; paste the raw token value",
-            problems=[{
-                "severity": "error",
-                "message": "Token contains whitespace; paste the raw token value",
-                "code": "CIHUB-SECRETS-INVALID-TOKEN",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Token contains whitespace; paste the raw token value",
+                    "code": "CIHUB-SECRETS-INVALID-TOKEN",
+                }
+            ],
         )
 
     messages: list[str] = []
@@ -172,11 +178,13 @@ def cmd_setup_secrets(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"Token verification failed: {message}",
-                problems=[{
-                    "severity": "error",
-                    "message": f"Token verification failed: {message}",
-                    "code": "CIHUB-SECRETS-VERIFY-FAILED",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": f"Token verification failed: {message}",
+                        "code": "CIHUB-SECRETS-VERIFY-FAILED",
+                    }
+                ],
             )
         messages.append(f"Token verified: {message}")
 
@@ -212,11 +220,13 @@ def cmd_setup_secrets(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Failed to set secret on {hub_repo}: {error}",
-            problems=[{
-                "severity": "error",
-                "message": f"Failed to set secret on {hub_repo}: {error}",
-                "code": "CIHUB-SECRETS-SET-FAILED",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Failed to set secret on {hub_repo}: {error}",
+                    "code": "CIHUB-SECRETS-SET-FAILED",
+                }
+            ],
         )
     messages.append(f"[OK] {hub_repo}")
 
@@ -237,20 +247,22 @@ def cmd_setup_secrets(args: argparse.Namespace) -> CommandResult:
                 suffix = f" ({error})" if error else " (no admin access)"
                 messages.append(f"[FAIL] {repo}{suffix}")
                 repo_results.append({"repo": repo, "status": "failed", "message": error or ""})
-                problems.append({
-                    "severity": "warning",
-                    "message": f"Failed to set secret on {repo}: {error or 'no admin access'}",
-                    "code": "CIHUB-SECRETS-REPO-FAILED",
-                })
+                problems.append(
+                    {
+                        "severity": "warning",
+                        "message": f"Failed to set secret on {repo}: {error or 'no admin access'}",
+                        "code": "CIHUB-SECRETS-REPO-FAILED",
+                    }
+                )
                 failures += 1
 
     # Build summary
     connected_repos = get_connected_repos()
     suggestions = []
     if connected_repos:
-        suggestions.append({
-            "message": "Ensure PAT has 'repo' scope (classic) or Actions R/W (fine-grained) on all repos"
-        })
+        suggestions.append(
+            {"message": "Ensure PAT has 'repo' scope (classic) or Actions R/W (fine-grained) on all repos"}
+        )
 
     summary = "Secrets updated" if failures == 0 else f"Secrets updated with {failures} failure(s)"
 
@@ -280,14 +292,14 @@ def cmd_setup_nvd(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="Non-interactive mode requires --nvd-key",
-            problems=[{
-                "severity": "error",
-                "message": "Non-interactive mode requires --nvd-key",
-                "code": "CIHUB-NVD-REQUIRES-KEY",
-            }],
-            suggestions=[{
-                "message": "Get a free key at: https://nvd.nist.gov/developers/request-an-api-key"
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Non-interactive mode requires --nvd-key",
+                    "code": "CIHUB-NVD-REQUIRES-KEY",
+                }
+            ],
+            suggestions=[{"message": "Get a free key at: https://nvd.nist.gov/developers/request-an-api-key"}],
         )
 
     # Key prompt (interactive only)
@@ -300,25 +312,27 @@ def cmd_setup_nvd(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="No NVD API key provided",
-            problems=[{
-                "severity": "error",
-                "message": "No NVD API key provided",
-                "code": "CIHUB-NVD-NO-KEY",
-            }],
-            suggestions=[{
-                "message": "Get a free key at: https://nvd.nist.gov/developers/request-an-api-key"
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "No NVD API key provided",
+                    "code": "CIHUB-NVD-NO-KEY",
+                }
+            ],
+            suggestions=[{"message": "Get a free key at: https://nvd.nist.gov/developers/request-an-api-key"}],
         )
 
     if any(ch.isspace() for ch in nvd_key):
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="Key contains whitespace; paste the raw key value",
-            problems=[{
-                "severity": "error",
-                "message": "Key contains whitespace; paste the raw key value",
-                "code": "CIHUB-NVD-INVALID-KEY",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Key contains whitespace; paste the raw key value",
+                    "code": "CIHUB-NVD-INVALID-KEY",
+                }
+            ],
         )
 
     messages: list[str] = []
@@ -332,11 +346,13 @@ def cmd_setup_nvd(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"NVD API key verification failed: {message}",
-                problems=[{
-                    "severity": "error",
-                    "message": f"NVD API key verification failed: {message}",
-                    "code": "CIHUB-NVD-VERIFY-FAILED",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": f"NVD API key verification failed: {message}",
+                        "code": "CIHUB-NVD-VERIFY-FAILED",
+                    }
+                ],
             )
         messages.append(f"NVD API key verified: {message}")
 
@@ -374,23 +390,27 @@ def cmd_setup_nvd(args: argparse.Namespace) -> CommandResult:
             suffix = f" ({error})" if error else " (no admin access)"
             messages.append(f"[FAIL] {repo}{suffix}")
             repo_results.append({"repo": repo, "status": "failed", "message": error or ""})
-            problems.append({
-                "severity": "warning",
-                "message": f"Failed to set secret on {repo}: {error or 'no admin access'}",
-                "code": "CIHUB-NVD-REPO-FAILED",
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"Failed to set secret on {repo}: {error or 'no admin access'}",
+                    "code": "CIHUB-NVD-REPO-FAILED",
+                }
+            )
 
     failures = len(java_repos) - success_count
     summary = f"NVD key set on {success_count}/{len(java_repos)} Java repos"
 
     suggestions = []
     if failures > 0:
-        suggestions.append({
-            "message": (
-                "For repos you don't have admin access to, "
-                "set the secret manually: gh secret set NVD_API_KEY -R owner/repo"
-            )
-        })
+        suggestions.append(
+            {
+                "message": (
+                    "For repos you don't have admin access to, "
+                    "set the secret manually: gh secret set NVD_API_KEY -R owner/repo"
+                )
+            }
+        )
 
     return CommandResult(
         exit_code=EXIT_FAILURE if failures else EXIT_SUCCESS,

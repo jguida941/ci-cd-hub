@@ -50,10 +50,20 @@ adr_title_strategy = st.text(
 adr_status_strategy = st.sampled_from([None, "Proposed", "Accepted", "Superseded", "Deprecated"])
 
 # Tool names for triage
-tool_name_strategy = st.sampled_from([
-    "pytest", "ruff", "black", "mypy", "bandit", "pip_audit",
-    "jacoco", "checkstyle", "spotbugs", "owasp",
-])
+tool_name_strategy = st.sampled_from(
+    [
+        "pytest",
+        "ruff",
+        "black",
+        "mypy",
+        "bandit",
+        "pip_audit",
+        "jacoco",
+        "checkstyle",
+        "spotbugs",
+        "owasp",
+    ]
+)
 
 # Exit codes (0-255)
 exit_code_strategy = st.integers(min_value=0, max_value=255)
@@ -99,9 +109,7 @@ class TestAdrCommandContracts:
         ],
         ids=["valid_title", "empty_title"],
     )
-    def test_adr_new_title_validation(
-        self, tmp_path: Path, title: str, expected_success: bool
-    ) -> None:
+    def test_adr_new_title_validation(self, tmp_path: Path, title: str, expected_success: bool) -> None:
         """cmd_adr_new validates title and returns proper exit code."""
         from cihub.commands.adr import cmd_adr_new
 
@@ -125,9 +133,7 @@ class TestAdrCommandContracts:
         ],
         ids=["accepted", "proposed", "missing_status"],
     )
-    def test_adr_list_parses_status(
-        self, tmp_path: Path, adr_content: str, expected_status: str
-    ) -> None:
+    def test_adr_list_parses_status(self, tmp_path: Path, adr_content: str, expected_status: str) -> None:
         """cmd_adr_list correctly parses ADR status from content."""
         from cihub.commands.adr import cmd_adr_list
 
@@ -337,9 +343,7 @@ class TestSecretsCommandContracts:
         ],
         ids=["no_verify", "verify_success", "verify_401", "verify_500"],
     )
-    def test_verification_modes(
-        self, verify_mode: bool, http_status: int | None, expected_exit: int
-    ) -> None:
+    def test_verification_modes(self, verify_mode: bool, http_status: int | None, expected_exit: int) -> None:
         """Verification mode handles different HTTP responses."""
         import io
         import urllib.error
@@ -456,9 +460,7 @@ java:
         ],
         ids=["no_config", "no_pom", "valid_setup"],
     )
-    def test_fix_pom_prerequisites(
-        self, tmp_path: Path, has_config: bool, has_pom: bool, expected_exit: int
-    ) -> None:
+    def test_fix_pom_prerequisites(self, tmp_path: Path, has_config: bool, has_pom: bool, expected_exit: int) -> None:
         """cmd_fix_pom validates prerequisites correctly."""
         from cihub.commands.pom import cmd_fix_pom
 
@@ -491,9 +493,7 @@ java:
         ],
         ids=["dry_run", "apply"],
     )
-    def test_fix_pom_apply_modes(
-        self, tmp_path: Path, apply_mode: bool, expected_in_summary: str
-    ) -> None:
+    def test_fix_pom_apply_modes(self, tmp_path: Path, apply_mode: bool, expected_in_summary: str) -> None:
         """cmd_fix_pom reflects apply vs dry-run mode in summary."""
         from cihub.commands.pom import cmd_fix_pom
 
@@ -546,14 +546,9 @@ class TestCommandResultContracts:
         severities=st.lists(severity_strategy, min_size=0, max_size=10),
     )
     @settings(max_examples=30)
-    def test_problems_structure_valid(
-        self, num_problems: int, severities: list[str]
-    ) -> None:
+    def test_problems_structure_valid(self, num_problems: int, severities: list[str]) -> None:
         """Property: Problems list maintains expected structure."""
-        problems = [
-            {"severity": s, "message": f"Problem {i}"}
-            for i, s in enumerate(severities[:num_problems])
-        ]
+        problems = [{"severity": s, "message": f"Problem {i}"} for i, s in enumerate(severities[:num_problems])]
         result = CommandResult(exit_code=1, problems=problems)
 
         for p in result.problems:

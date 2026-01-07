@@ -120,11 +120,13 @@ def cmd_hub_ci(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary=f"Unknown hub-ci subcommand: {args.subcommand}",
-            problems=[{
-                "severity": "error",
-                "message": f"Unknown subcommand '{args.subcommand}'",
-                "code": "CIHUB-UNKNOWN-SUBCOMMAND",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Unknown subcommand '{args.subcommand}'",
+                    "code": "CIHUB-UNKNOWN-SUBCOMMAND",
+                }
+            ],
         )
 
     # Execute handler - may return int (legacy) or CommandResult (migrated)

@@ -38,10 +38,12 @@ def cmd_smoke_python_install(args: argparse.Namespace) -> CommandResult:
     for cmd in commands:
         proc = _run_command(cmd, repo_path)
         if proc.returncode != 0:
-            problems.append({
-                "severity": "warning",
-                "message": proc.stdout or proc.stderr or "pip install failed",
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": proc.stdout or proc.stderr or "pip install failed",
+                }
+            )
 
     req_files = ["requirements.txt", "requirements-dev.txt"]
     installed_req_files: list[str] = []
@@ -59,10 +61,7 @@ def cmd_smoke_python_install(args: argparse.Namespace) -> CommandResult:
             _run_command(["pip", "install", "-e", "."], repo_path)
         pyproject_installed = True
 
-    summary = (
-        f"Python dependencies installed "
-        f"({len(installed_req_files)} req files, pyproject: {pyproject_installed})"
-    )
+    summary = f"Python dependencies installed ({len(installed_req_files)} req files, pyproject: {pyproject_installed})"
     return CommandResult(
         exit_code=EXIT_SUCCESS,
         summary=summary,
@@ -101,23 +100,27 @@ def cmd_smoke_python_tests(args: argparse.Namespace) -> CommandResult:
 
     total = passed + failed + skipped
     ctx = OutputContext.from_args(args)
-    ctx.write_outputs({
-        "total": str(total),
-        "passed": str(passed),
-        "failed": str(failed),
-        "skipped": str(skipped),
-        "coverage": str(coverage),
-    })
+    ctx.write_outputs(
+        {
+            "total": str(total),
+            "passed": str(passed),
+            "failed": str(failed),
+            "skipped": str(skipped),
+            "coverage": str(coverage),
+        }
+    )
 
     # Return FAILURE if any tests failed, SUCCESS otherwise
     exit_code = EXIT_FAILURE if failed > 0 else EXIT_SUCCESS
     problems = []
     if failed > 0:
-        problems.append({
-            "severity": "error",
-            "message": f"{failed} test(s) failed",
-            "code": "CIHUB-SMOKE-TEST-FAILURE",
-        })
+        problems.append(
+            {
+                "severity": "error",
+                "message": f"{failed} test(s) failed",
+                "code": "CIHUB-SMOKE-TEST-FAILURE",
+            }
+        )
 
     return CommandResult(
         exit_code=exit_code,

@@ -255,11 +255,13 @@ def cmd_docs_links(args: argparse.Namespace) -> CommandResult:
     if not has_lychee:
         # Fallback to internal checker (always offline)
         if external:
-            warnings.append({
-                "severity": "warning",
-                "message": "--external requires lychee. Install with: brew install lychee",
-                "code": "CIHUB-DOCS-NO-LYCHEE",
-            })
+            warnings.append(
+                {
+                    "severity": "warning",
+                    "message": "--external requires lychee. Install with: brew install lychee",
+                    "code": "CIHUB-DOCS-NO-LYCHEE",
+                }
+            )
         problems = _check_internal_links(docs_dir)
         exit_code = EXIT_FAILURE if problems else EXIT_SUCCESS
         tool_used = "internal"

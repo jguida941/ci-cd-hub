@@ -103,10 +103,7 @@ def detect_language(repo_path: Path) -> str:
             best_lang = lang
 
     if best_score < 0.5 or best_lang is None:
-        raise ValueError(
-            f"Could not detect language in {repo_path}. "
-            "No language markers found with confidence >= 0.5"
-        )
+        raise ValueError(f"Could not detect language in {repo_path}. No language markers found with confidence >= 0.5")
 
     return best_lang
 

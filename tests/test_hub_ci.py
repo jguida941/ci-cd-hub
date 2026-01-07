@@ -1060,6 +1060,7 @@ class TestCmdSmokePython:
         assert isinstance(result, CommandResult)
         # EXIT_FAILURE expected when tests fail (2 failed tests)
         from cihub.exit_codes import EXIT_FAILURE
+
         assert result.exit_code == EXIT_FAILURE
         assert result.data["passed"] == 10
         assert result.data["failed"] == 2

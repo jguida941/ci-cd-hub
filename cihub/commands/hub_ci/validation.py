@@ -34,11 +34,13 @@ def cmd_syntax_check(args: argparse.Namespace) -> CommandResult:
             try:
                 py_compile.compile(str(file_path), doraise=True)
             except py_compile.PyCompileError as exc:
-                error_list.append({
-                    "severity": "error",
-                    "message": f"{file_path}: {exc.msg}",
-                    "file": str(file_path),
-                })
+                error_list.append(
+                    {
+                        "severity": "error",
+                        "message": f"{file_path}: {exc.msg}",
+                        "file": str(file_path),
+                    }
+                )
 
     if error_list:
         return CommandResult(
@@ -61,10 +63,12 @@ def cmd_repo_check(args: argparse.Namespace) -> CommandResult:
 
     problems: list[dict[str, str]] = []
     if not present and args.owner and args.name:
-        problems.append({
-            "severity": "warning",
-            "message": f"Repo checkout failed for {args.owner}/{args.name}",
-        })
+        problems.append(
+            {
+                "severity": "warning",
+                "message": f"Repo checkout failed for {args.owner}/{args.name}",
+            }
+        )
 
     return CommandResult(
         exit_code=EXIT_SUCCESS,
@@ -146,10 +150,12 @@ def cmd_validate_configs(args: argparse.Namespace) -> CommandResult:
             generate_workflow_inputs(config)
             validated.append(repo)
         except Exception as e:  # noqa: BLE001 - catch all config errors
-            problems.append({
-                "severity": "error",
-                "message": f"Config validation failed for {repo}: {e}",
-            })
+            problems.append(
+                {
+                    "severity": "error",
+                    "message": f"Config validation failed for {repo}: {e}",
+                }
+            )
 
     if problems:
         return CommandResult(
@@ -298,12 +304,13 @@ def cmd_enforce_command_result(args: argparse.Namespace) -> CommandResult:
     # Find all print() calls not marked as allowed and not to stderr
     # Use regex to detect actual print function calls, not mentions in strings/comments
     import re
+
     violations: list[dict[str, str | int]] = []
     allowed_patterns = ["# ALLOWED:", "file=sys.stderr", "file = sys.stderr"]
 
     # Pattern to match actual print( function calls at start of statement
     # This avoids matching "print(" inside strings, comments, or as part of other identifiers
-    print_call_pattern = re.compile(r'^\s*print\s*\(')
+    print_call_pattern = re.compile(r"^\s*print\s*\(")
 
     for path in commands_dir.rglob("*.py"):
         if not path.is_file():
@@ -354,11 +361,13 @@ def cmd_enforce_command_result(args: argparse.Namespace) -> CommandResult:
                 rel_path = str(path.relative_to(root))
             except ValueError:
                 rel_path = str(path)
-            violations.append({
-                "file": rel_path,
-                "line": line_num,
-                "content": stripped[:80],  # Truncate for readability
-            })
+            violations.append(
+                {
+                    "file": rel_path,
+                    "line": line_num,
+                    "content": stripped[:80],  # Truncate for readability
+                }
+            )
 
     count = len(violations)
 
@@ -388,10 +397,7 @@ def cmd_enforce_command_result(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"CommandResult pattern violation: {count} prints, expected ≤{max_allowed}",
-            problems=[
-                {"severity": "error", "message": f"{v['file']}:{v['line']}: {v['content']}"}
-                for v in violations
-            ],
+            problems=[{"severity": "error", "message": f"{v['file']}:{v['line']}: {v['content']}"} for v in violations],
             data={"print_count": count, "max_allowed": max_allowed, "violations": violations},
         )
 
@@ -448,11 +454,13 @@ def cmd_quarantine_check(args: argparse.Namespace) -> CommandResult:
                         rel_path = str(path.relative_to(root))
                     except ValueError:
                         rel_path = str(path)
-                    violations.append({
-                        "file": rel_path,
-                        "line": line_num,
-                        "content": line.strip(),
-                    })
+                    violations.append(
+                        {
+                            "file": rel_path,
+                            "line": line_num,
+                            "content": line.strip(),
+                        }
+                    )
 
     if not violations:
         return CommandResult(
@@ -464,10 +472,7 @@ def cmd_quarantine_check(args: argparse.Namespace) -> CommandResult:
     return CommandResult(
         exit_code=EXIT_FAILURE,
         summary=f"QUARANTINE IMPORT VIOLATION: {len(violations)} violation(s)",
-        problems=[
-            {"severity": "error", "message": f"{v['file']}:{v['line']}: {v['content']}"}
-            for v in violations
-        ],
+        problems=[{"severity": "error", "message": f"{v['file']}:{v['line']}: {v['content']}"} for v in violations],
         data={"violations": violations, "scanned_root": str(root)},
     )
 
@@ -529,11 +534,13 @@ def cmd_validate_triage(args: argparse.Namespace) -> CommandResult:
         problems = []
         for err in errors[:10]:  # Limit to first 10 errors
             path = ".".join(str(p) for p in err.path) or "<root>"
-            problems.append({
-                "severity": "error",
-                "message": f"{path}: {err.message}",
-                "code": "CIHUB-TRIAGE-SCHEMA-VIOLATION",
-            })
+            problems.append(
+                {
+                    "severity": "error",
+                    "message": f"{path}: {err.message}",
+                    "code": "CIHUB-TRIAGE-SCHEMA-VIOLATION",
+                }
+            )
 
         return CommandResult(
             exit_code=EXIT_FAILURE,

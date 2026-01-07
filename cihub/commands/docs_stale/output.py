@@ -198,9 +198,7 @@ def format_github_summary(report: StaleReport, since: str) -> str:
         lines.append("")
         # Limit to first 10 for concise summary
         for ref in report.stale_references[:10]:
-            lines.append(
-                f"- `{ref.doc_file}:{ref.doc_line}`: `{ref.reference}` ({ref.reason})"
-            )
+            lines.append(f"- `{ref.doc_file}:{ref.doc_line}`: `{ref.reference}` ({ref.reason})")
         if len(report.stale_references) > 10:
             lines.append(f"- ... and {len(report.stale_references) - 10} more")
     else:

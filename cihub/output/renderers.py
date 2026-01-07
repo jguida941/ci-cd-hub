@@ -108,10 +108,7 @@ class HumanRenderer(OutputRenderer):
 
         if "table" in data:
             table_data = data["table"]
-            parts.append(self._render_table(
-                table_data.get("rows", []),
-                table_data.get("headers")
-            ))
+            parts.append(self._render_table(table_data.get("rows", []), table_data.get("headers")))
 
         if "key_values" in data:
             parts.append(self._render_key_values(data["key_values"]))
@@ -125,7 +122,8 @@ class HumanRenderer(OutputRenderer):
         # - Keys with complex nested structures (lists, dicts)
         known_keys = {"items", "table", "key_values", "raw_output"}
         other_keys = {
-            k for k in data.keys()
+            k
+            for k in data.keys()
             if k not in known_keys
             and not k.endswith("_report")
             and not isinstance(data[k], (list, dict))  # Skip complex nested data
@@ -289,10 +287,12 @@ class AIRenderer(OutputRenderer):
         ]
 
         if result.problems:
-            lines.extend([
-                "## Problems",
-                "",
-            ])
+            lines.extend(
+                [
+                    "## Problems",
+                    "",
+                ]
+            )
             for p in result.problems:
                 severity = p.get("severity", "info")
                 message = p.get("message", "")
@@ -300,13 +300,15 @@ class AIRenderer(OutputRenderer):
             lines.append("")
 
         if result.data:
-            lines.extend([
-                "## Data",
-                "",
-                "```json",
-                json.dumps(result.data, indent=2, default=str),
-                "```",
-            ])
+            lines.extend(
+                [
+                    "## Data",
+                    "",
+                    "```json",
+                    json.dumps(result.data, indent=2, default=str),
+                    "```",
+                ]
+            )
 
         return "\n".join(lines)
 

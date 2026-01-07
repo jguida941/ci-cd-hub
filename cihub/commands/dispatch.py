@@ -196,12 +196,14 @@ def _cmd_dispatch_trigger(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=message,
-            problems=[{
-                "severity": "error",
-                "message": message,
-                "detail": dispatch_result.error or "",
-                "code": "CIHUB-DISPATCH-FAILED",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": message,
+                    "detail": dispatch_result.error or "",
+                    "code": "CIHUB-DISPATCH-FAILED",
+                }
+            ],
         )
 
     # Poll for run ID

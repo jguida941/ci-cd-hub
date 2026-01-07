@@ -38,11 +38,13 @@ def cmd_registry(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary=f"Unknown registry subcommand: {subcommand}",
-            problems=[{
-                "severity": "error",
-                "message": f"Unknown subcommand '{subcommand}'",
-                "code": "CIHUB-REGISTRY-UNKNOWN-SUBCOMMAND",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Unknown subcommand '{subcommand}'",
+                    "code": "CIHUB-REGISTRY-UNKNOWN-SUBCOMMAND",
+                }
+            ],
         )
 
     return handler(args)
@@ -96,11 +98,13 @@ def _cmd_show(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Repo not found: {repo_name}",
-            problems=[{
-                "severity": "error",
-                "message": f"Repo '{repo_name}' not in registry",
-                "code": "CIHUB-REGISTRY-NOT-FOUND",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Repo '{repo_name}' not in registry",
+                    "code": "CIHUB-REGISTRY-NOT-FOUND",
+                }
+            ],
         )
 
     # Format for display
@@ -116,10 +120,12 @@ def _cmd_show(args: argparse.Namespace) -> CommandResult:
     ]
 
     if config["overrides"]:
-        lines.extend([
-            "",
-            "Overrides (from tier defaults):",
-        ])
+        lines.extend(
+            [
+                "",
+                "Overrides (from tier defaults):",
+            ]
+        )
         for key, value in config["overrides"].items():
             tier_val = config["tier_defaults"].get(key, "?")
             lines.append(f"  {key}: {tier_val} -> {value}")
@@ -150,11 +156,13 @@ def _cmd_set(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_USAGE,
                 summary=str(exc),
-                problems=[{
-                    "severity": "error",
-                    "message": str(exc),
-                    "code": "CIHUB-REGISTRY-INVALID-TIER",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": str(exc),
+                        "code": "CIHUB-REGISTRY-INVALID-TIER",
+                    }
+                ],
             )
 
     # Handle overrides
@@ -174,11 +182,13 @@ def _cmd_set(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="No changes specified",
-            problems=[{
-                "severity": "error",
-                "message": "Specify --tier or an override (--coverage, --mutation, --vulns-max)",
-                "code": "CIHUB-REGISTRY-NO-CHANGES",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Specify --tier or an override (--coverage, --mutation, --vulns-max)",
+                    "code": "CIHUB-REGISTRY-NO-CHANGES",
+                }
+            ],
         )
 
     # Save changes
@@ -204,11 +214,13 @@ def _cmd_diff(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Configs directory not found: {configs_dir}",
-            problems=[{
-                "severity": "error",
-                "message": f"Directory not found: {configs_dir}",
-                "code": "CIHUB-REGISTRY-DIR-NOT-FOUND",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Directory not found: {configs_dir}",
+                    "code": "CIHUB-REGISTRY-DIR-NOT-FOUND",
+                }
+            ],
         )
 
     diffs = compute_diff(registry, configs_dir)
@@ -224,8 +236,7 @@ def _cmd_diff(args: argparse.Namespace) -> CommandResult:
     lines = []
     for diff in diffs:
         lines.append(
-            f"{diff['repo']}: {diff['field']} "
-            f"(registry: {diff['registry_value']}, actual: {diff['actual_value']})"
+            f"{diff['repo']}: {diff['field']} (registry: {diff['registry_value']}, actual: {diff['actual_value']})"
         )
 
     return CommandResult(
@@ -248,11 +259,13 @@ def _cmd_sync(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Configs directory not found: {configs_dir}",
-            problems=[{
-                "severity": "error",
-                "message": f"Directory not found: {configs_dir}",
-                "code": "CIHUB-REGISTRY-DIR-NOT-FOUND",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Directory not found: {configs_dir}",
+                    "code": "CIHUB-REGISTRY-DIR-NOT-FOUND",
+                }
+            ],
         )
 
     dry_run = args.dry_run or not args.yes
@@ -311,11 +324,13 @@ def _cmd_add(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Repo already exists: {repo_name}",
-            problems=[{
-                "severity": "error",
-                "message": f"Repo '{repo_name}' already in registry. Use 'registry set' to modify.",
-                "code": "CIHUB-REGISTRY-EXISTS",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Repo '{repo_name}' already in registry. Use 'registry set' to modify.",
+                    "code": "CIHUB-REGISTRY-EXISTS",
+                }
+            ],
         )
 
     # Validate tier
@@ -324,11 +339,13 @@ def _cmd_add(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary=f"Unknown tier: {tier}",
-            problems=[{
-                "severity": "error",
-                "message": f"Unknown tier '{tier}'. Available: {available}",
-                "code": "CIHUB-REGISTRY-INVALID-TIER",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Unknown tier '{tier}'. Available: {available}",
+                    "code": "CIHUB-REGISTRY-INVALID-TIER",
+                }
+            ],
         )
 
     # Add repo

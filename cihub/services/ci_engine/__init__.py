@@ -247,7 +247,11 @@ def run_ci(
         # Get language-specific kwargs merged with caller-provided kwargs
         run_kwargs = strategy.get_run_kwargs(config, install_deps=install_deps)
         tool_outputs, tools_ran, tools_success = strategy.run_tools(
-            config, repo_path, run_workdir, output_dir, problems,
+            config,
+            repo_path,
+            run_workdir,
+            output_dir,
+            problems,
             **run_kwargs,
         )
     except Exception as exc:

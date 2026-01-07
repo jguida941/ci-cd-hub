@@ -146,9 +146,7 @@ class TestTokenValidation:
             call_kwargs = mock_subprocess.call_args
             assert call_kwargs.kwargs.get("input") == "ghp_valid_token"
 
-    def test_token_from_argument(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
-    ) -> None:
+    def test_token_from_argument(self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos) -> None:
         """Use token from --token argument."""
         args = argparse.Namespace(
             hub_repo="owner/hub",
@@ -171,9 +169,7 @@ class TestTokenValidation:
 class TestTokenVerification:
     """Tests for GitHub API token verification."""
 
-    def test_verify_token_success(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
-    ) -> None:
+    def test_verify_token_success(self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos) -> None:
         """Verify valid token against GitHub API."""
         with mock.patch("cihub.commands.secrets.safe_urlopen") as mock_urlopen:
             mock_urlopen.return_value = make_urlopen_response({"login": "testuser"}, scopes="repo, workflow")
@@ -268,9 +264,7 @@ class TestCrossRepoAccessVerification:
             items = result.data.get("items", [])
             assert any("Cross-repo access verified" in item for item in items)
 
-    def test_cross_repo_access_404(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
-    ) -> None:
+    def test_cross_repo_access_404(self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos) -> None:
         """Fail when repo not found (404)."""
         with mock.patch("cihub.commands.secrets.safe_urlopen") as mock_urlopen:
             mock_urlopen.side_effect = [
@@ -295,9 +289,7 @@ class TestCrossRepoAccessVerification:
             assert "Cross-repo access failed" in result.summary
             assert "not found" in result.summary.lower()
 
-    def test_cross_repo_access_401(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
-    ) -> None:
+    def test_cross_repo_access_401(self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos) -> None:
         """Fail when token lacks repo scope (401)."""
         with mock.patch("cihub.commands.secrets.safe_urlopen") as mock_urlopen:
             mock_urlopen.side_effect = [
@@ -332,9 +324,7 @@ class TestCrossRepoAccessVerification:
 class TestSecretSetting:
     """Tests for gh secret set subprocess calls."""
 
-    def test_set_secret_success(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
-    ) -> None:
+    def test_set_secret_success(self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos) -> None:
         """Successfully set secret on hub repo."""
         args = argparse.Namespace(
             hub_repo="owner/hub",
@@ -374,9 +364,7 @@ class TestSecretSetting:
             assert result.exit_code == EXIT_FAILURE
             assert "Failed" in result.summary
 
-    def test_set_secret_all_repos(
-        self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos
-    ) -> None:
+    def test_set_secret_all_repos(self, mock_subprocess, mock_resolve_executable, mock_get_connected_repos) -> None:
         """Set secret on hub and all connected repos."""
         args = argparse.Namespace(
             hub_repo="owner/hub",

@@ -88,12 +88,14 @@ def cmd_update(args: argparse.Namespace) -> CommandResult:
 
     if not owner:
         owner = "unknown"
-        problems.append({
-            "severity": "warning",
-            "message": "Could not detect repo owner; set repo.owner manually.",
-            "code": "CIHUB-UPDATE-WARN",
-            "file": str(config_path),
-        })
+        problems.append(
+            {
+                "severity": "warning",
+                "message": "Could not detect repo owner; set repo.owner manually.",
+                "code": "CIHUB-UPDATE-WARN",
+                "file": str(config_path),
+            }
+        )
 
     base = build_repo_config(language, owner, name, branch, subdir=subdir)
     merged = deep_merge(base, existing)

@@ -179,11 +179,13 @@ def cmd_hub(args) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_USAGE,
                 summary=f"Unknown path: {path}",
-                problems=[{
-                    "severity": "error",
-                    "message": f"Unknown path: {path}. Valid paths: {', '.join(valid_paths)}",
-                    "code": "CIHUB-HUB-INVALID-PATH",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": f"Unknown path: {path}. Valid paths: {', '.join(valid_paths)}",
+                        "code": "CIHUB-HUB-INVALID-PATH",
+                    }
+                ],
             )
 
         value = _parse_value(value_str)

@@ -38,9 +38,7 @@ class TestGetRenderer:
         ],
         ids=["human", "json", "ai", "ai_over_json"],
     )
-    def test_returns_correct_renderer(
-        self, json_mode: bool, ai_mode: bool, expected_type: type
-    ) -> None:
+    def test_returns_correct_renderer(self, json_mode: bool, ai_mode: bool, expected_type: type) -> None:
         """Factory returns correct renderer type based on mode flags."""
         renderer = get_renderer(json_mode=json_mode, ai_mode=ai_mode)
         assert isinstance(renderer, expected_type)
@@ -256,9 +254,7 @@ class TestJsonRenderer:
         ],
         ids=["success", "failure_1", "failure_2", "failure_127"],
     )
-    def test_status_based_on_exit_code(
-        self, exit_code: int, expected_status: str
-    ) -> None:
+    def test_status_based_on_exit_code(self, exit_code: int, expected_status: str) -> None:
         """Status is success for 0, failure otherwise."""
         result = CommandResult(exit_code=exit_code)
         renderer = JsonRenderer()
@@ -398,9 +394,7 @@ class TestPropertyBased:
         exit_code=st.integers(min_value=0, max_value=255),
     )
     @settings(max_examples=50)
-    def test_json_renderer_always_valid_json(
-        self, summary: str, exit_code: int
-    ) -> None:
+    def test_json_renderer_always_valid_json(self, summary: str, exit_code: int) -> None:
         """Property: JsonRenderer always produces valid JSON."""
         result = CommandResult(exit_code=exit_code, summary=summary)
         renderer = JsonRenderer()
@@ -415,10 +409,7 @@ class TestPropertyBased:
     @settings(max_examples=30)
     def test_human_renderer_no_crash(self, num_problems: int, exit_code: int) -> None:
         """Property: HumanRenderer never crashes."""
-        problems = [
-            {"severity": "error", "message": f"Problem {i}"}
-            for i in range(num_problems)
-        ]
+        problems = [{"severity": "error", "message": f"Problem {i}"} for i in range(num_problems)]
         result = CommandResult(exit_code=exit_code, problems=problems)
         renderer = HumanRenderer()
         output = renderer.render(result, "test", 100)

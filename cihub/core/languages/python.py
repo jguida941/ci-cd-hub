@@ -129,9 +129,7 @@ class PythonStrategy(LanguageStrategy):
 
         # Run tools
         runners = self.get_runners()
-        return _run_python_tools(
-            config, repo_path, workdir, output_dir, problems, runners
-        )
+        return _run_python_tools(config, repo_path, workdir, output_dir, problems, runners)
 
     def evaluate_gates(
         self,

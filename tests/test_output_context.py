@@ -348,7 +348,7 @@ class TestOutputContextPropertyBased:
 
         # Pad values to match keys length
         values = values + [""] * (len(keys) - len(values))
-        data = dict(zip(keys[:len(values)], values, strict=False))
+        data = dict(zip(keys[: len(values)], values, strict=False))
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_file = Path(tmpdir) / "output.txt"

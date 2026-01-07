@@ -42,32 +42,42 @@ def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary=missing_token_err,
-            problems=[{
-                "severity": "error",
-                "message": missing_token_err,
-                "code": "CIHUB-TEMPLATES-NO-TOKEN",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": missing_token_err,
+                    "code": "CIHUB-TEMPLATES-NO-TOKEN",
+                }
+            ],
         )
 
     # Validate token format before setting env var (security: prevent pollution)
     # GitHub tokens: ghp_*, gho_*, ghs_*, github_pat_*, or classic tokens (40 hex chars)
     # Skip validation in test mode (PYTEST_CURRENT_TEST env var set by pytest)
     is_test_mode = "PYTEST_CURRENT_TEST" in os.environ
-    if token and not is_test_mode and not any([
-        token.startswith("ghp_"),      # Personal access token
-        token.startswith("gho_"),      # OAuth token
-        token.startswith("ghs_"),      # GitHub App installation token
-        token.startswith("github_pat_"),  # Fine-grained PAT
-        (len(token) == 40 and token.isalnum()),  # Classic token (40 hex chars)
-    ]):
+    if (
+        token
+        and not is_test_mode
+        and not any(
+            [
+                token.startswith("ghp_"),  # Personal access token
+                token.startswith("gho_"),  # OAuth token
+                token.startswith("ghs_"),  # GitHub App installation token
+                token.startswith("github_pat_"),  # Fine-grained PAT
+                (len(token) == 40 and token.isalnum()),  # Classic token (40 hex chars)
+            ]
+        )
+    ):
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="Invalid GitHub token format",
-            problems=[{
-                "severity": "error",
-                "message": "Token must be a valid GitHub token (ghp_*, gho_*, ghs_*, github_pat_*, or 40-char classic)",
-                "code": "CIHUB-TEMPLATES-INVALID-TOKEN",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Token must be a valid GitHub token (ghp_*, gho_*, ghs_*, github_pat_*, or 40-char classic)",
+                    "code": "CIHUB-TEMPLATES-INVALID-TOKEN",
+                }
+            ],
         )
 
     if "GH_TOKEN" not in os.environ:
@@ -83,11 +93,13 @@ def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_USAGE,
                 summary=f"Repos not found in config/repos/*.yaml: {', '.join(missing)}",
-                problems=[{
-                    "severity": "error",
-                    "message": f"Repos not found in config/repos/*.yaml: {', '.join(missing)}",
-                    "code": "CIHUB-TEMPLATES-REPO-NOT-FOUND",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": f"Repos not found in config/repos/*.yaml: {', '.join(missing)}",
+                        "code": "CIHUB-TEMPLATES-REPO-NOT-FOUND",
+                    }
+                ],
             )
         entries = [repo_map[repo] for repo in args.repo]
 
@@ -116,11 +128,13 @@ def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
             desired = render_dispatch_workflow(language, dispatch_workflow)
         except ValueError as exc:
             messages.append(f"[ERROR] {repo} {path}: {exc}")
-            problems.append({
-                "severity": "error",
-                "message": f"{repo} {path}: {exc}",
-                "code": "CIHUB-TEMPLATES-RENDER-ERROR",
-            })
+            problems.append(
+                {
+                    "severity": "error",
+                    "message": f"{repo} {path}: {exc}",
+                    "code": "CIHUB-TEMPLATES-RENDER-ERROR",
+                }
+            )
             repo_result["status"] = "error"
             repo_result["message"] = str(exc)
             failures += 1
@@ -156,11 +170,13 @@ def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
                 repo_result["status"] = "updated"
             except RuntimeError as exc:
                 messages.append(f"[FAIL] {repo} {path} update failed: {exc}")
-                problems.append({
-                    "severity": "error",
-                    "message": f"{repo} {path} update failed: {exc}",
-                    "code": "CIHUB-TEMPLATES-UPDATE-FAILED",
-                })
+                problems.append(
+                    {
+                        "severity": "error",
+                        "message": f"{repo} {path} update failed: {exc}",
+                        "code": "CIHUB-TEMPLATES-UPDATE-FAILED",
+                    }
+                )
                 failures += 1
                 repo_result["status"] = "failed"
                 repo_result["message"] = str(exc)
@@ -191,11 +207,13 @@ def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
                             repo_result["stale"].append({"path": stale_path, "status": "deleted"})
                         except RuntimeError as exc:
                             messages.append(f"[WARN] {repo} {stale_path} delete failed: {exc}")
-                            problems.append({
-                                "severity": "warning",
-                                "message": f"{repo} {stale_path} delete failed: {exc}",
-                                "code": "CIHUB-TEMPLATES-DELETE-FAILED",
-                            })
+                            problems.append(
+                                {
+                                    "severity": "warning",
+                                    "message": f"{repo} {stale_path} delete failed: {exc}",
+                                    "code": "CIHUB-TEMPLATES-DELETE-FAILED",
+                                }
+                            )
                             repo_result["stale"].append(
                                 {
                                     "path": stale_path,
@@ -246,16 +264,18 @@ def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
                             "current_v1": current_v1[:7] if current_v1 else None,
                             "head_sha": head_sha[:7],
                         },
-                        problems=[{
-                            "severity": "warning",
-                            "message": (
-                                f"Will force-push v1 tag from "
-                                f"{current_v1[:7] if current_v1 else 'none'} to {head_sha[:7]}. "
-                                f"This affects all repositories referencing "
-                                f"jguida941/hub-release/.github/workflows/*@v1"
-                            ),
-                            "code": "CIHUB-TEMPLATES-TAG-CONFIRM",
-                        }],
+                        problems=[
+                            {
+                                "severity": "warning",
+                                "message": (
+                                    f"Will force-push v1 tag from "
+                                    f"{current_v1[:7] if current_v1 else 'none'} to {head_sha[:7]}. "
+                                    f"This affects all repositories referencing "
+                                    f"jguida941/hub-release/.github/workflows/*@v1"
+                                ),
+                                "code": "CIHUB-TEMPLATES-TAG-CONFIRM",
+                            }
+                        ],
                     )
 
                 safe_run(
@@ -272,11 +292,13 @@ def cmd_sync_templates(args: argparse.Namespace) -> CommandResult:
                 tag_status = "updated"
         except (subprocess.CalledProcessError, CommandNotFoundError, CommandTimeoutError) as exc:
             messages.append(f"[WARN] Failed to update v1 tag: {exc}")
-            problems.append({
-                "severity": "warning",
-                "message": f"Failed to update v1 tag: {exc}",
-                "code": "CIHUB-TEMPLATES-TAG-FAILED",
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"Failed to update v1 tag: {exc}",
+                    "code": "CIHUB-TEMPLATES-TAG-FAILED",
+                }
+            )
             tag_status = "failed"
     elif args.dry_run and args.update_tag:
         messages.append("# Would update v1 tag to HEAD")

@@ -53,36 +53,44 @@ def extract_python_symbols(content: str, file_path: str = "<unknown>") -> list[C
 
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
-            symbols.append(CodeSymbol(
-                name=node.name,
-                kind="function",
-                file=file_path,
-                line=node.lineno,
-            ))
+            symbols.append(
+                CodeSymbol(
+                    name=node.name,
+                    kind="function",
+                    file=file_path,
+                    line=node.lineno,
+                )
+            )
         elif isinstance(node, ast.AsyncFunctionDef):
-            symbols.append(CodeSymbol(
-                name=node.name,
-                kind="async_function",
-                file=file_path,
-                line=node.lineno,
-            ))
+            symbols.append(
+                CodeSymbol(
+                    name=node.name,
+                    kind="async_function",
+                    file=file_path,
+                    line=node.lineno,
+                )
+            )
         elif isinstance(node, ast.ClassDef):
-            symbols.append(CodeSymbol(
-                name=node.name,
-                kind="class",
-                file=file_path,
-                line=node.lineno,
-            ))
+            symbols.append(
+                CodeSymbol(
+                    name=node.name,
+                    kind="class",
+                    file=file_path,
+                    line=node.lineno,
+                )
+            )
         elif isinstance(node, ast.Assign):
             # Check for module-level constants (UPPER_CASE names)
             for target in node.targets:
                 if isinstance(target, ast.Name) and target.id.isupper():
-                    symbols.append(CodeSymbol(
-                        name=target.id,
-                        kind="constant",
-                        file=file_path,
-                        line=node.lineno,
-                    ))
+                    symbols.append(
+                        CodeSymbol(
+                            name=target.id,
+                            kind="constant",
+                            file=file_path,
+                            line=node.lineno,
+                        )
+                    )
 
     return symbols
 
@@ -289,13 +297,15 @@ def extract_doc_references(
             key = (reference, _line)
             if key not in seen:
                 seen.add(key)
-                refs.append(DocReference(
-                    reference=reference,
-                    kind=kind,
-                    file=file_path,
-                    line=_line,
-                    context=_ctx,
-                ))
+                refs.append(
+                    DocReference(
+                        reference=reference,
+                        kind=kind,
+                        file=file_path,
+                        line=_line,
+                        context=_ctx,
+                    )
+                )
 
         # Extract backtick references
         for match in backtick_re.finditer(line):

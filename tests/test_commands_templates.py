@@ -123,9 +123,7 @@ class TestSyncTemplatesNoToken:
         assert result.data.get("skipped") is True
         assert "Missing GitHub token" in result.summary
 
-    def test_dry_run_skips_without_token(
-        self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_dry_run_skips_without_token(self, base_args: argparse.Namespace, monkeypatch: pytest.MonkeyPatch) -> None:
         """Returns CommandResult with exit_code 0 (skip) when --dry-run and no token."""
         monkeypatch.delenv("GH_TOKEN", raising=False)
         monkeypatch.delenv("GITHUB_TOKEN", raising=False)

@@ -165,11 +165,13 @@ def cmd_docs_stale(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="Not a git repository",
-            problems=[{
-                "severity": "error",
-                "message": f"{root} is not a git repository",
-                "code": "CIHUB-DOCS-NOT-GIT",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"{root} is not a git repository",
+                    "code": "CIHUB-DOCS-NOT-GIT",
+                }
+            ],
         )
 
     # Resolve git ref
@@ -178,11 +180,13 @@ def cmd_docs_stale(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary=f"Invalid git reference: {since}",
-            problems=[{
-                "severity": "error",
-                "message": f"Could not resolve git reference: {since}",
-                "code": "CIHUB-DOCS-BAD-REF",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Could not resolve git reference: {since}",
+                    "code": "CIHUB-DOCS-BAD-REF",
+                }
+            ],
         )
 
     # Build exclusion patterns
@@ -252,11 +256,13 @@ def cmd_docs_stale(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"Failed to write tool output: {e}",
-                problems=[{
-                    "severity": "error",
-                    "message": f"Could not write to {tool_output}: {e}",
-                    "code": "CIHUB-DOCS-WRITE-ERROR",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": f"Could not write to {tool_output}: {e}",
+                        "code": "CIHUB-DOCS-WRITE-ERROR",
+                    }
+                ],
             )
 
     # Write AI output if requested
@@ -270,11 +276,13 @@ def cmd_docs_stale(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"Failed to write AI output: {e}",
-                problems=[{
-                    "severity": "error",
-                    "message": f"Could not write to {ai_output}: {e}",
-                    "code": "CIHUB-DOCS-WRITE-ERROR",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": f"Could not write to {ai_output}: {e}",
+                        "code": "CIHUB-DOCS-WRITE-ERROR",
+                    }
+                ],
             )
 
     # Write to output directory if requested
@@ -282,21 +290,19 @@ def cmd_docs_stale(args: argparse.Namespace) -> CommandResult:
         try:
             out_path = Path(output_dir)
             out_path.mkdir(parents=True, exist_ok=True)
-            (out_path / "docs_stale.json").write_text(
-                json.dumps(json_data, indent=2), encoding="utf-8"
-            )
-            (out_path / "docs_stale.prompt.md").write_text(
-                format_ai_output(report), encoding="utf-8"
-            )
+            (out_path / "docs_stale.json").write_text(json.dumps(json_data, indent=2), encoding="utf-8")
+            (out_path / "docs_stale.prompt.md").write_text(format_ai_output(report), encoding="utf-8")
         except OSError as e:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"Failed to write to output directory: {e}",
-                problems=[{
-                    "severity": "error",
-                    "message": f"Could not write to {output_dir}: {e}",
-                    "code": "CIHUB-DOCS-WRITE-ERROR",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": f"Could not write to {output_dir}: {e}",
+                        "code": "CIHUB-DOCS-WRITE-ERROR",
+                    }
+                ],
             )
 
     # Write GitHub summary if requested (checks both --summary and --github-summary)
@@ -321,11 +327,14 @@ def cmd_docs_stale(args: argparse.Namespace) -> CommandResult:
     return CommandResult(
         exit_code=exit_code,
         summary=summary,
-        problems=[{
-            "severity": "warning" if not fail_on_stale else "error",
-            "message": f"{ref.doc_file}:{ref.doc_line}: `{ref.reference}` ({ref.reason})",
-            "code": "CIHUB-DOCS-STALE",
-        } for ref in stale],
+        problems=[
+            {
+                "severity": "warning" if not fail_on_stale else "error",
+                "message": f"{ref.doc_file}:{ref.doc_line}: `{ref.reference}` ({ref.reason})",
+                "code": "CIHUB-DOCS-STALE",
+            }
+            for ref in stale
+        ],
         data={
             **json_data,
             "stale_report": report,  # For AIRenderer

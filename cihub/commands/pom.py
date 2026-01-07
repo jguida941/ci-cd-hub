@@ -187,11 +187,13 @@ def cmd_fix_pom(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary=f"Config not found: {config_path}",
-            problems=[{
-                "severity": "error",
-                "message": f"Config not found: {config_path}",
-                "code": "CIHUB-POM-NO-CONFIG",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Config not found: {config_path}",
+                    "code": "CIHUB-POM-NO-CONFIG",
+                }
+            ],
         )
 
     config = load_ci_config(repo_path)
@@ -227,10 +229,7 @@ def cmd_fix_pom(args: argparse.Namespace) -> CommandResult:
     if dep_result.diff:
         diffs.append(dep_result.diff)
 
-    problems = [
-        {"severity": "warning", "message": w, "code": "CIHUB-POM-WARNING"}
-        for w in warnings
-    ]
+    problems = [{"severity": "warning", "message": w, "code": "CIHUB-POM-WARNING"} for w in warnings]
 
     summary = "POM fix applied" if args.apply else "POM fix dry-run complete"
     if exit_code == EXIT_FAILURE:
@@ -261,11 +260,13 @@ def cmd_fix_deps(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary=f"Config not found: {config_path}",
-            problems=[{
-                "severity": "error",
-                "message": f"Config not found: {config_path}",
-                "code": "CIHUB-DEPS-NO-CONFIG",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Config not found: {config_path}",
+                    "code": "CIHUB-DEPS-NO-CONFIG",
+                }
+            ],
         )
 
     config = load_ci_config(repo_path)
@@ -286,10 +287,7 @@ def cmd_fix_deps(args: argparse.Namespace) -> CommandResult:
 
     result = apply_dependency_fixes(repo_path, config, apply=args.apply)
 
-    problems = [
-        {"severity": "warning", "message": w, "code": "CIHUB-DEPS-WARNING"}
-        for w in result.warnings
-    ]
+    problems = [{"severity": "warning", "message": w, "code": "CIHUB-DEPS-WARNING"} for w in result.warnings]
 
     summary = "Dependencies applied" if args.apply else "Dependency dry-run complete"
     if result.exit_code == EXIT_FAILURE:
