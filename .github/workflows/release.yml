@@ -52,12 +52,14 @@ jobs:
       - name: Validate python-ci.yml
         env:
           ACTIONLINT_BIN: ${{ steps.actionlint-install.outputs.path }}
-        run: cihub hub-ci actionlint --workflow .github/workflows/python-ci.yml --bin "$ACTIONLINT_BIN"
+        # ACTIONLINT_BIN env var provides bin path; no --bin flag needed
+        run: cihub hub-ci actionlint --workflow .github/workflows/python-ci.yml
 
       - name: Validate java-ci.yml
         env:
           ACTIONLINT_BIN: ${{ steps.actionlint-install.outputs.path }}
-        run: cihub hub-ci actionlint --workflow .github/workflows/java-ci.yml --bin "$ACTIONLINT_BIN"
+        # ACTIONLINT_BIN env var provides bin path; no --bin flag needed
+        run: cihub hub-ci actionlint --workflow .github/workflows/java-ci.yml
 
       - name: Install dependencies
         run: pip install pytest pyyaml jsonschema

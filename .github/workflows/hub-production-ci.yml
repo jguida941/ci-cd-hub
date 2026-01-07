@@ -188,7 +188,8 @@ jobs:
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACTIONLINT_BIN: ${{ steps.actionlint-install.outputs.path }}
-        run: cihub hub-ci actionlint --workflow .github/workflows/hub-production-ci.yml --bin "$ACTIONLINT_BIN" --reviewdog
+        # ACTIONLINT_BIN env var provides bin path; no --bin flag needed
+        run: cihub hub-ci actionlint --workflow .github/workflows/hub-production-ci.yml --reviewdog
 
   zizmor:
     name: Workflow Security (zizmor)

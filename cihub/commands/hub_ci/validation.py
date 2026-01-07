@@ -13,6 +13,7 @@ from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS
 from cihub.services.types import RepoEntry
 from cihub.types import CommandResult
 from cihub.utils.github_context import OutputContext
+from cihub.utils.env import resolve_flag
 from cihub.utils.paths import hub_root
 
 from . import _bool_str
@@ -61,12 +62,16 @@ def cmd_repo_check(args: argparse.Namespace) -> CommandResult:
     ctx = OutputContext.from_args(args)
     ctx.write_outputs({"present": _bool_str(present)})
 
+    # Resolve owner/name with env var fallback (CIHUB_OWNER, CIHUB_REPO)
+    owner = resolve_flag(getattr(args, "owner", None), "CIHUB_OWNER")
+    name = resolve_flag(getattr(args, "name", None), "CIHUB_REPO")
+
     problems: list[dict[str, str]] = []
-    if not present and args.owner and args.name:
+    if not present and owner and name:
         problems.append(
             {
                 "severity": "warning",
-                "message": f"Repo checkout failed for {args.owner}/{args.name}",
+                "message": f"Repo checkout failed for {owner}/{name}",
             }
         )
 

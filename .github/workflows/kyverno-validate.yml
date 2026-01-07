@@ -64,7 +64,8 @@ jobs:
         id: validate
         env:
           KYVERNO_BIN: ${{ steps.kyverno-install.outputs.path }}
-        run: cihub hub-ci kyverno-validate --policies-dir "policies/kyverno" --templates-dir "templates/kyverno" --bin "$KYVERNO_BIN" --github-output
+        # KYVERNO_BIN env var provides bin path; no --bin flag needed
+        run: cihub hub-ci kyverno-validate --policies-dir "policies/kyverno" --templates-dir "templates/kyverno" --github-output
 
       - name: Generate Summary
         if: always()

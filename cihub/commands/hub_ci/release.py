@@ -16,7 +16,7 @@ import defusedxml.ElementTree as ET  # Secure XML parsing
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
-from cihub.utils.env import env_int
+from cihub.utils.env import env_int, resolve_flag
 from cihub.utils.exec_utils import (
     TIMEOUT_NETWORK,
     CommandNotFoundError,
@@ -147,7 +147,10 @@ def cmd_actionlint_install(args: argparse.Namespace) -> CommandResult:
 
 
 def cmd_actionlint(args: argparse.Namespace) -> CommandResult:
-    bin_path = args.bin or shutil.which("actionlint") or ""
+    # Resolve bin with env var fallback (ACTIONLINT_BIN), then system PATH
+    bin_path = resolve_flag(getattr(args, "bin", None), "ACTIONLINT_BIN")
+    if not bin_path:
+        bin_path = shutil.which("actionlint") or ""
     if not bin_path:
         local = Path("actionlint")
         if local.exists():
@@ -441,6 +444,8 @@ def _kyverno_apply(policy: Path, resource: Path, bin_path: str | None = None) ->
 def cmd_kyverno_validate(args: argparse.Namespace) -> CommandResult:
     policies_dir = Path(args.policies_dir)
     templates_dir = Path(args.templates_dir) if args.templates_dir else None
+    # Resolve bin with env var fallback (KYVERNO_BIN)
+    bin_path = resolve_flag(getattr(args, "bin", None), "KYVERNO_BIN", default="kyverno")
 
     failed = 0
     validated = 0
@@ -458,7 +463,7 @@ def cmd_kyverno_validate(args: argparse.Namespace) -> CommandResult:
         )
 
     for policy in _iter_yaml_files(policies_dir):
-        output = _kyverno_apply(policy, Path(os.devnull), args.bin)
+        output = _kyverno_apply(policy, Path(os.devnull), bin_path)
         lowered = output.lower()
         if "error" in lowered or "invalid" in lowered or "failed" in lowered:
             failed += 1
@@ -468,7 +473,7 @@ def cmd_kyverno_validate(args: argparse.Namespace) -> CommandResult:
 
     if templates_dir and templates_dir.exists():
         for template in _iter_yaml_files(templates_dir):
-            output = _kyverno_apply(template, Path(os.devnull), args.bin)
+            output = _kyverno_apply(template, Path(os.devnull), bin_path)
             lowered = output.lower()
             if "error" in lowered or "invalid" in lowered or "failed" in lowered:
                 failed += 1
@@ -492,6 +497,8 @@ def cmd_kyverno_test(args: argparse.Namespace) -> CommandResult:
     policies_dir = Path(args.policies_dir)
     fixtures_dir = Path(args.fixtures_dir)
     fail_on_warn = str(args.fail_on_warn).strip().lower() in {"true", "1", "yes", "y", "on"}
+    # Resolve bin with env var fallback (KYVERNO_BIN)
+    bin_path = resolve_flag(getattr(args, "bin", None), "KYVERNO_BIN", default="kyverno")
     problems: list[dict[str, str]] = []
     test_results: list[dict[str, str]] = []
 
@@ -508,7 +515,7 @@ def cmd_kyverno_test(args: argparse.Namespace) -> CommandResult:
         policy_name = policy.stem
         for fixture in _iter_yaml_files(fixtures_dir):
             fixture_name = fixture.name
-            result = _kyverno_apply(policy, fixture, args.bin)
+            result = _kyverno_apply(policy, fixture, bin_path)
             if "pass: 1" in result:
                 status = "PASS"
             elif "fail: 1" in result:

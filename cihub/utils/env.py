@@ -53,6 +53,48 @@ def env_int(name: str, default: int = 0, env: Mapping[str, str] | None = None) -
         return default
 
 
+def resolve_flag(
+    arg_value: str | None,
+    env_name: str,
+    default: str | None = None,
+    env: Mapping[str, str] | None = None,
+) -> str | None:
+    """Resolve a CLI flag with environment variable fallback.
+
+    Priority order:
+    1. Explicit arg_value (if not None/empty)
+    2. Environment variable (env_name)
+    3. Default value
+
+    This allows workflows to set env vars and skip explicit --flag args.
+
+    Args:
+        arg_value: Value from argparse (may be None or empty string)
+        env_name: Environment variable name to check as fallback
+        default: Default value if both arg and env are empty
+        env: Optional env dict (defaults to os.environ)
+
+    Returns:
+        Resolved value or None
+
+    Example:
+        owner = resolve_flag(args.owner, "CIHUB_OWNER")
+        repo = resolve_flag(args.repo, "CIHUB_REPO")
+        bin_path = resolve_flag(args.bin, "KYVERNO_BIN")
+    """
+    # If explicit arg provided, use it
+    if arg_value:
+        return arg_value
+
+    # Check environment variable
+    env_map: Mapping[str, str] = os.environ if env is None else env
+    env_value = env_map.get(env_name)
+    if env_value:
+        return env_value
+
+    return default
+
+
 def get_github_token(
     explicit_token: str | None = None,
     token_env: str | None = None,

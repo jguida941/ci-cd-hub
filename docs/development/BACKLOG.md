@@ -13,6 +13,7 @@ Single queue for known issues and near-term work.
 
 | Item                                | Category       | Notes                                                              |
 |-------------------------------------|----------------|--------------------------------------------------------------------|
+| CLI env-var flag fallback           | CLI            | Allow common flags (`--owner`, `--repo`, `--bin`) to read from env vars. Started: `resolve_flag()` helper + kyverno/actionlint. Extend to remaining commands. |
 | Token Permissions Hardening         | Supply Chain   | Reconfirm workflow `permissions:` coverage; pin `harden-runner`    |
 | PyQt6 GUI ADR + MVP scope           | Planning       | Define ADR/minimal viable scope for GUI tool                       |
 | Restore relaxed thresholds          | Fixtures       | ADR-0018 notes some thresholds relaxed due to tool config issues   |
