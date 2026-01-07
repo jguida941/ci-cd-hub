@@ -60,9 +60,7 @@ class TestVerifyToolsFromReport:
             ),
         ],
     )
-    def test_verify_tool_scenarios(
-        self, scenario: dict, expected_status: str, tmp_path: Path
-    ) -> None:
+    def test_verify_tool_scenarios(self, scenario: dict, expected_status: str, tmp_path: Path) -> None:
         """Parameterized test for all tool states."""
         report_path = tmp_path / "report.json"
         report_path.write_text(json.dumps(scenario), encoding="utf-8")
@@ -70,9 +68,7 @@ class TestVerifyToolsFromReport:
         result = verify_tools_from_report(report_path)
 
         # Find the tool entry in the matrix
-        tool_entry = next(
-            (e for e in result["tool_matrix"] if e["tool"] == "pytest"), None
-        )
+        tool_entry = next((e for e in result["tool_matrix"] if e["tool"] == "pytest"), None)
         assert tool_entry is not None
         assert tool_entry["status"] == expected_status
 
@@ -171,11 +167,7 @@ class TestVerifyToolsFromReport:
         assert counts["drift"] == 1  # mypy (configured but didn't run)
         assert counts["skipped"] == 1  # bandit (not configured)
         assert (
-            counts["passed"]
-            + counts["failures"]
-            + counts["drift"]
-            + counts["skipped"]
-            + counts["no_proof"]
+            counts["passed"] + counts["failures"] + counts["drift"] + counts["skipped"] + counts["no_proof"]
         ) == counts["total"]
 
     def test_report_not_found_returns_error(self, tmp_path: Path) -> None:

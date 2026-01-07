@@ -96,9 +96,7 @@ class TestGitHubRunClient:
     def test_init_detects_repo_from_git(self, monkeypatch) -> None:
         """Test client auto-detects repo from git remote."""
         mock_result = MagicMock(returncode=0, stdout="git@github.com:owner/repo.git\n")
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result
-        )
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
 
         client = GitHubRunClient(repo=None)
 
@@ -106,12 +104,8 @@ class TestGitHubRunClient:
 
     def test_detect_repo_handles_https_url(self, monkeypatch) -> None:
         """Test repo detection handles HTTPS URLs."""
-        mock_result = MagicMock(
-            returncode=0, stdout="https://github.com/owner/repo.git\n"
-        )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result
-        )
+        mock_result = MagicMock(returncode=0, stdout="https://github.com/owner/repo.git\n")
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
 
         repo = GitHubRunClient._detect_repo()
 
@@ -120,9 +114,7 @@ class TestGitHubRunClient:
     def test_detect_repo_returns_none_on_failure(self, monkeypatch) -> None:
         """Test repo detection returns None when git fails."""
         mock_result = MagicMock(returncode=1, stdout="")
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result
-        )
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
 
         repo = GitHubRunClient._detect_repo()
 
@@ -145,12 +137,8 @@ class TestGitHubRunClient:
             ),
             stderr="",
         )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result
-        )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.resolve_executable", lambda x: "gh"
-        )
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
+        monkeypatch.setattr("cihub.commands.triage.github.resolve_executable", lambda x: "gh")
 
         client = GitHubRunClient(repo="owner/repo")
         info = client.fetch_run_info("123")
@@ -162,12 +150,8 @@ class TestGitHubRunClient:
     def test_fetch_run_info_raises_on_failure(self, monkeypatch) -> None:
         """Test fetch_run_info raises RuntimeError on gh failure."""
         mock_result = MagicMock(returncode=1, stdout="", stderr="Not found")
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result
-        )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.resolve_executable", lambda x: "gh"
-        )
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
+        monkeypatch.setattr("cihub.commands.triage.github.resolve_executable", lambda x: "gh")
 
         client = GitHubRunClient(repo="owner/repo")
 
@@ -192,9 +176,7 @@ class TestGitHubRunClient:
             )
 
         monkeypatch.setattr("cihub.commands.triage.github.safe_run", mock_safe_run)
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.resolve_executable", lambda x: "gh"
-        )
+        monkeypatch.setattr("cihub.commands.triage.github.resolve_executable", lambda x: "gh")
 
         client = GitHubRunClient(repo="owner/repo")
         runs = client.list_runs(workflow="ci.yml", branch="main", limit=5)
@@ -208,12 +190,8 @@ class TestGitHubRunClient:
     def test_list_runs_returns_empty_on_invalid_response(self, monkeypatch) -> None:
         """Test list_runs returns empty list on non-list response."""
         mock_result = MagicMock(returncode=0, stdout="{}", stderr="")
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result
-        )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.resolve_executable", lambda x: "gh"
-        )
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
+        monkeypatch.setattr("cihub.commands.triage.github.resolve_executable", lambda x: "gh")
 
         client = GitHubRunClient(repo="owner/repo")
         runs = client.list_runs()
@@ -223,12 +201,8 @@ class TestGitHubRunClient:
     def test_download_artifacts_success(self, monkeypatch, tmp_path: Path) -> None:
         """Test successful artifact download."""
         mock_result = MagicMock(returncode=0)
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result
-        )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.resolve_executable", lambda x: "gh"
-        )
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
+        monkeypatch.setattr("cihub.commands.triage.github.resolve_executable", lambda x: "gh")
 
         # Create a file to simulate download
         (tmp_path / "artifact.txt").write_text("test")
@@ -238,17 +212,11 @@ class TestGitHubRunClient:
 
         assert result is True
 
-    def test_download_artifacts_returns_false_on_failure(
-        self, monkeypatch, tmp_path: Path
-    ) -> None:
+    def test_download_artifacts_returns_false_on_failure(self, monkeypatch, tmp_path: Path) -> None:
         """Test download_artifacts returns False on gh failure."""
         mock_result = MagicMock(returncode=1)
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result
-        )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.resolve_executable", lambda x: "gh"
-        )
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
+        monkeypatch.setattr("cihub.commands.triage.github.resolve_executable", lambda x: "gh")
 
         client = GitHubRunClient(repo="owner/repo")
         result = client.download_artifacts("123", tmp_path)
@@ -261,12 +229,8 @@ class TestGitHubRunClient:
             returncode=0,
             stdout="test-job\ttest-step\t2024-01-01 ##[error]Test failed",
         )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result
-        )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.resolve_executable", lambda x: "gh"
-        )
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
+        monkeypatch.setattr("cihub.commands.triage.github.resolve_executable", lambda x: "gh")
 
         client = GitHubRunClient(repo="owner/repo")
         logs = client.fetch_failed_logs("123")
@@ -276,12 +240,8 @@ class TestGitHubRunClient:
     def test_fetch_failed_logs_returns_empty_on_failure(self, monkeypatch) -> None:
         """Test fetch_failed_logs returns empty string on failure."""
         mock_result = MagicMock(returncode=1, stdout="")
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result
-        )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.resolve_executable", lambda x: "gh"
-        )
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
+        monkeypatch.setattr("cihub.commands.triage.github.resolve_executable", lambda x: "gh")
 
         client = GitHubRunClient(repo="owner/repo")
         logs = client.fetch_failed_logs("123")
@@ -290,32 +250,20 @@ class TestGitHubRunClient:
 
     def test_get_latest_failed_run_success(self, monkeypatch) -> None:
         """Test get_latest_failed_run returns most recent failed run."""
-        mock_result = MagicMock(
-            returncode=0, stdout=json.dumps([{"databaseId": 999}])
-        )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result
-        )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.resolve_executable", lambda x: "gh"
-        )
+        mock_result = MagicMock(returncode=0, stdout=json.dumps([{"databaseId": 999}]))
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
+        monkeypatch.setattr("cihub.commands.triage.github.resolve_executable", lambda x: "gh")
 
         client = GitHubRunClient(repo="owner/repo")
         run_id = client.get_latest_failed_run()
 
         assert run_id == "999"
 
-    def test_get_latest_failed_run_returns_none_when_no_failures(
-        self, monkeypatch
-    ) -> None:
+    def test_get_latest_failed_run_returns_none_when_no_failures(self, monkeypatch) -> None:
         """Test get_latest_failed_run returns None when no failures found."""
         mock_result = MagicMock(returncode=0, stdout="[]")
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result
-        )
-        monkeypatch.setattr(
-            "cihub.commands.triage.github.resolve_executable", lambda x: "gh"
-        )
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
+        monkeypatch.setattr("cihub.commands.triage.github.resolve_executable", lambda x: "gh")
 
         client = GitHubRunClient(repo="owner/repo")
         run_id = client.get_latest_failed_run()
@@ -328,9 +276,7 @@ class TestModuleLevelFunctions:
 
     def test_get_current_repo_delegates_to_client(self, monkeypatch) -> None:
         """Test get_current_repo uses GitHubRunClient._detect_repo."""
-        monkeypatch.setattr(
-            GitHubRunClient, "_detect_repo", staticmethod(lambda: "owner/repo")
-        )
+        monkeypatch.setattr(GitHubRunClient, "_detect_repo", staticmethod(lambda: "owner/repo"))
 
         result = get_current_repo()
 
@@ -366,9 +312,7 @@ class TestModuleLevelFunctions:
 
         assert len(result) == 1
 
-    def test_download_artifacts_delegates_to_client(
-        self, monkeypatch, tmp_path: Path
-    ) -> None:
+    def test_download_artifacts_delegates_to_client(self, monkeypatch, tmp_path: Path) -> None:
         """Test download_artifacts creates client and delegates."""
         mock_instance = MagicMock()
         mock_instance.download_artifacts.return_value = True

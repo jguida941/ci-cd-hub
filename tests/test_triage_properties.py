@@ -42,9 +42,7 @@ class TestLogParserProperties:
         st.lists(st.text(max_size=100), min_size=0, max_size=10),  # errors
     )
     @settings(max_examples=50)
-    def test_create_log_failure_always_returns_valid_dict(
-        self, job: str, step: str, errors: list[str]
-    ) -> None:
+    def test_create_log_failure_always_returns_valid_dict(self, job: str, step: str, errors: list[str]) -> None:
         """Property: create_log_failure always returns a dict with required keys."""
         result = create_log_failure(job, step, errors)
 
@@ -112,9 +110,7 @@ class TestVerificationProperties:
         )
     )
     @settings(max_examples=30)
-    def test_verification_handles_any_tool_config(
-        self, tools_configured: dict[str, bool]
-    ) -> None:
+    def test_verification_handles_any_tool_config(self, tools_configured: dict[str, bool]) -> None:
         """Property: verification never crashes for any tool configuration."""
         import tempfile
 
@@ -149,9 +145,7 @@ class TestVerificationProperties:
         )
     )
     @settings(max_examples=30)
-    def test_tool_counts_sum_to_total(
-        self, tools_configured: dict[str, bool]
-    ) -> None:
+    def test_tool_counts_sum_to_total(self, tools_configured: dict[str, bool]) -> None:
         """Property: sum of all status counts equals total tools."""
         import tempfile
 
@@ -212,9 +206,7 @@ class TestFilterBundleProperties:
         st.sampled_from(["blocker", "high", "medium", "low", None]),
         st.sampled_from(["test", "lint", "security", "workflow", None]),
     )
-    def test_filter_reduces_or_maintains_count(
-        self, min_severity: str | None, category: str | None
-    ) -> None:
+    def test_filter_reduces_or_maintains_count(self, min_severity: str | None, category: str | None) -> None:
         """Property: filtering never increases failure count."""
         bundle = TriageBundle(
             triage={
@@ -241,10 +233,9 @@ class TestToolInferenceProperties:
     """Property-based tests for tool inference from step names."""
 
     @given(
-        st.sampled_from([
-            "pytest", "ruff", "mypy", "bandit", "pip-audit",
-            "checkstyle", "spotbugs", "actionlint", "unknown-tool"
-        ])
+        st.sampled_from(
+            ["pytest", "ruff", "mypy", "bandit", "pip-audit", "checkstyle", "spotbugs", "actionlint", "unknown-tool"]
+        )
     )
     def test_known_tools_inferred_correctly(self, tool_name: str) -> None:
         """Property: step names containing tool names infer that tool."""
