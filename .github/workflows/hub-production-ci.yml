@@ -219,11 +219,9 @@ jobs:
       - name: Upgrade pip
         run: pip install --upgrade pip
 
-      - name: Install cihub
-        run: pip install -e .
-
-      - name: Install zizmor
-        run: pip install zizmor>=1.0.0  # Need 1.x for proper SARIF level output
+      - name: Install cihub with CI tools
+        # Version constraint from pyproject.toml[ci], pinned in requirements/ci.txt
+        run: pip install -e . && pip install zizmor>=1.0.0
 
       - name: Run zizmor
         run: python -m cihub hub-ci zizmor-run --output zizmor.sarif

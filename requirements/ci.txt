@@ -1,0 +1,49 @@
+# CI Tool Versions - Pinned for reproducible CI builds
+# This is the SINGLE SOURCE OF TRUTH for CI tool versions.
+#
+# To update: modify versions here, then CI workflows automatically use them.
+# Corresponds to pyproject.toml [project.optional-dependencies] ci
+#
+# Generated from pyproject.toml minimum versions with manual pinning for stability.
+# Last updated: 2026-01-07
+
+# Core dependencies
+-r requirements.txt
+
+# =============================================================================
+# Stage 1: Linting & Type Checking
+# =============================================================================
+ruff==0.14.10                    # Python linting
+mypy==1.14.1                     # Type checking
+yamllint==1.35.1                 # YAML linting
+types-PyYAML==6.0.12.20241230    # Type stubs
+
+# =============================================================================
+# Stage 2: Testing
+# =============================================================================
+pytest==8.3.4                    # Test framework
+pytest-cov==6.0.0                # Coverage plugin
+pytest-benchmark==5.1.0          # Benchmark plugin
+syrupy==4.9.1                    # Snapshot testing
+hypothesis==6.130.0              # Property-based testing
+mutmut==3.4.0                    # Mutation testing
+
+# =============================================================================
+# Stage 3: Security
+# =============================================================================
+bandit[toml]==1.8.3              # SAST for Python
+pip-audit==2.8.0                 # Dependency vulnerability scanning
+semgrep==1.109.0                 # Advanced SAST
+zizmor==1.4.0                    # GitHub Actions security scanner
+
+# =============================================================================
+# Stage 4: Workflow Security
+# =============================================================================
+# actionlint is installed via cihub hub-ci actionlint-install (binary)
+
+# =============================================================================
+# Stage 5: Compliance
+# =============================================================================
+pip-licenses==5.0.0              # License compliance
+black==24.12.0                   # Formatter (CI parity check)
+isort==5.13.2                    # Import sorting (CI parity check)

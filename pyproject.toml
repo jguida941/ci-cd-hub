@@ -31,7 +31,7 @@ dev = [
     "black>=24.0",  # Optional formatter (CI parity)
     "isort>=5.12.0",  # Import sorting (CI parity)
     "yamllint>=1.33.0",
-    "zizmor>=0.9.0",
+    "zizmor>=1.0.0",  # Requires 1.x for proper SARIF level output
     # Type Checking
     "mypy>=1.8.0",
     "types-PyYAML>=6.0",
@@ -45,18 +45,24 @@ dev = [
     "pip-licenses>=4.3.0",
 ]
 ci = [
+    # See requirements/ci.txt for pinned CI versions
     "pytest>=7.0",
     "pytest-cov>=4.0",
+    "pytest-benchmark>=5.0.0",
+    "syrupy>=4.0.0",
+    "hypothesis>=6.0",
+    "mutmut>=2.4.0",
     "ruff>=0.8.0",
+    "mypy>=1.8.0",
+    "yamllint>=1.33.0",
+    "types-PyYAML>=6.0",
     "black>=24.0",
     "isort>=5.12.0",
-    "mypy>=1.8.0",
     "bandit[toml]>=1.7.9",
     "pip-audit>=2.7.0",
-    "mutmut>=2.4.0",
-    "hypothesis>=6.0",
     "semgrep>=1.90.0",
-    "zizmor>=0.9.0",
+    "zizmor>=1.0.0",  # Requires 1.x for proper SARIF level output
+    "pip-licenses>=4.3.0",
 ]
 wizard = [
     "questionary>=2.0.0",
