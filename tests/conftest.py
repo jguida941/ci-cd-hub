@@ -54,12 +54,19 @@ try:
     # - MUTATION_SCORE_MIN: set by our CI workflow
     # - MUTANT_UNDER_TEST: set by mutmut during actual mutation testing
     # - CI: standard CI environment variable
+    # - Non-interactive (no TTY): likely subprocess (mutmut, CI pipeline, etc.)
+    import sys
+
     if os.environ.get("MUTATION_SCORE_MIN") is not None or os.environ.get("MUTANT_UNDER_TEST") is not None:
         # Running under mutation testing - use constrained deterministic profile
         settings.load_profile("mutation")
     elif os.environ.get("CI") is not None:
         # Running in CI - use deterministic profile
         settings.load_profile("ci")
+    elif not sys.stdin.isatty():
+        # Running in a subprocess (likely mutmut or similar) - use mutation profile
+        # This catches cases where env vars aren't propagated to subprocess
+        settings.load_profile("mutation")
     # Otherwise use default profile (randomized, for local development exploration)
 
 except ImportError:
