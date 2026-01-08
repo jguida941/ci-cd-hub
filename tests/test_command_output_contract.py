@@ -323,7 +323,7 @@ class TestPrintPatternDetection:
     @pytest.mark.hypothesis
     @pytest.mark.skipif(
         os.environ.get("MUTATION_SCORE_MIN") is not None,
-        reason="Skip hypothesis test during mutation testing (flaky in CI mutmut clean test)"
+        reason="Skip hypothesis test during mutation testing (flaky in CI mutmut clean test)",
     )
     @given(st.integers(min_value=1, max_value=50))
     @settings(max_examples=20)
