@@ -315,6 +315,18 @@ jobs:
           CIHUB_CODEQL_SUCCESS: ${{ steps.codeql_analyze.outcome == 'success' }}
         run: cihub ci --workdir "$WORKDIR" --correlation-id "$CORRELATION_ID" --output-dir .cihub --install-deps
 
+      - name: Debug - List output files
+        if: always()
+        run: |
+          echo "=== PWD ==="
+          pwd
+          echo "=== .cihub contents ==="
+          ls -la .cihub/ 2>/dev/null || echo ".cihub/ does not exist"
+          echo "=== .cihub/tool-outputs contents ==="
+          ls -la .cihub/tool-outputs/ 2>/dev/null || echo ".cihub/tool-outputs/ does not exist"
+          echo "=== Find all .cihub files ==="
+          find . -name ".cihub" -type d 2>/dev/null || echo "No .cihub directories found"
+
       - name: Read report outputs
         id: report
         run: cihub report outputs --report .cihub/report.json
