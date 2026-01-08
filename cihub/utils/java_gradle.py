@@ -152,9 +152,7 @@ def find_insertion_point_for_config(content: str) -> int:
 # ============================================================================
 
 
-def collect_gradle_warnings(
-    repo_path: Path, config: dict[str, Any]
-) -> tuple[list[str], list[str]]:
+def collect_gradle_warnings(repo_path: Path, config: dict[str, Any]) -> tuple[list[str], list[str]]:
     """Collect warnings about missing plugins in Gradle build file.
 
     Returns:
@@ -290,9 +288,7 @@ def load_gradle_config_snippets() -> dict[str, str]:
 # ============================================================================
 
 
-def insert_plugins_into_gradle(
-    content: str, plugin_ids: list[str], snippets: dict[str, str]
-) -> tuple[str, bool]:
+def insert_plugins_into_gradle(content: str, plugin_ids: list[str], snippets: dict[str, str]) -> tuple[str, bool]:
     """Insert plugin declarations into a Gradle build file.
 
     Returns:
@@ -368,9 +364,7 @@ def insert_plugins_into_gradle(
         return updated, True
 
 
-def insert_configs_into_gradle(
-    content: str, plugin_ids: list[str], snippets: dict[str, str]
-) -> tuple[str, bool]:
+def insert_configs_into_gradle(content: str, plugin_ids: list[str], snippets: dict[str, str]) -> tuple[str, bool]:
     """Insert plugin configuration blocks into a Gradle build file.
 
     Returns:

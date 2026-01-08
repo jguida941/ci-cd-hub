@@ -31,9 +31,7 @@ class GradleFixResult:
     files_modified: list[str] = field(default_factory=list)
 
 
-def apply_gradle_fixes(
-    repo_path: Path, config: dict[str, Any], apply: bool, include_configs: bool
-) -> GradleFixResult:
+def apply_gradle_fixes(repo_path: Path, config: dict[str, Any], apply: bool, include_configs: bool) -> GradleFixResult:
     """Apply plugin fixes to Gradle build file.
 
     Args:
@@ -84,9 +82,7 @@ def apply_gradle_fixes(
     build_text = build_path.read_text(encoding="utf-8")
 
     # Insert plugins
-    updated_text, inserted = insert_plugins_into_gradle(
-        build_text, missing_plugins, plugin_snippets
-    )
+    updated_text, inserted = insert_plugins_into_gradle(build_text, missing_plugins, plugin_snippets)
     if not inserted:
         result.exit_code = EXIT_FAILURE
         result.warnings.append("Failed to update build.gradle - unable to find insertion point.")
@@ -94,9 +90,7 @@ def apply_gradle_fixes(
 
     # Optionally insert configs
     if include_configs:
-        updated_text, configs_inserted = insert_configs_into_gradle(
-            updated_text, missing_plugins, config_snippets
-        )
+        updated_text, configs_inserted = insert_configs_into_gradle(updated_text, missing_plugins, config_snippets)
         if not configs_inserted:
             result.warnings.append("Warning: Could not insert some configuration blocks.")
 
@@ -154,10 +148,7 @@ def cmd_fix_gradle(args: argparse.Namespace) -> CommandResult:
     include_configs = getattr(args, "with_configs", False)
     result = apply_gradle_fixes(repo_path, config, apply=args.apply, include_configs=include_configs)
 
-    problems = [
-        {"severity": "warning", "message": w, "code": "CIHUB-GRADLE-WARNING"}
-        for w in result.warnings
-    ]
+    problems = [{"severity": "warning", "message": w, "code": "CIHUB-GRADLE-WARNING"} for w in result.warnings]
 
     summary = "Gradle fix applied" if args.apply else "Gradle fix dry-run complete"
     if result.exit_code == EXIT_FAILURE:
