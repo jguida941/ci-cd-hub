@@ -205,7 +205,19 @@ class HumanRenderer(OutputRenderer):
         return "\n".join(lines)
 
     def _render_problems(self, problems: Sequence[dict[str, Any]]) -> str:
-        """Render problems with severity icons."""
+        """Render problems with severity icons.
+
+        Note: We avoid using [warning] and [error] brackets because GitHub Actions
+        parses these as annotations and corrupts the output.
+        """
+        # Format: "severity: icon message" - no brackets to avoid GitHub Actions parsing
+        prefixes = {
+            "error": "ERROR",
+            "warning": "WARN",
+            "info": "INFO",
+            "success": "OK",
+            "critical": "CRIT",
+        }
         icons = {
             "error": "✗",
             "warning": "⚠",
@@ -218,8 +230,9 @@ class HumanRenderer(OutputRenderer):
         for p in problems:
             severity = p.get("severity", "info")
             message = p.get("message", "Unknown issue")
+            prefix = prefixes.get(severity.lower(), "INFO")
             icon = icons.get(severity.lower(), "•")
-            lines.append(f"  [{severity}] {icon} {message}")
+            lines.append(f"  {prefix}: {icon} {message}")
 
         return "\n".join(lines)
 
