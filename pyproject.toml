@@ -165,7 +165,11 @@ mutate_only_covered_lines = true
 # Note: mutmut 3.x uses pytest_add_cli_args, NOT test_command
 # - Use deterministic hypothesis profile (derandomize=True, fewer examples, database=None)
 # - Ignore triage tests (require specific fixtures that aren't available in mutmut subprocess)
+# - Ignore test files with hypothesis tests that fail in mutmut's subprocess environment
+#   (hypothesis has fundamental issues with mutmut's subprocess isolation - tests pass in
+#   normal pytest but fail in mutmut's clean test phase with truncated tracebacks)
 pytest_add_cli_args = [
     "--hypothesis-profile=mutation",
     "--ignore-glob=**/test_triage*.py",
+    "--ignore-glob=**/test_exec_utils.py",
 ]
