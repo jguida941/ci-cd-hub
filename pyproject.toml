@@ -161,7 +161,9 @@ paths_to_mutate = [
 tests_dir = ["tests/"]
 also_copy = ["cihub/", "scripts/", "config/", "schema/", "templates/", ".github/", "pyproject.toml"]
 mutate_only_covered_lines = true
-# Use deterministic hypothesis profile via MUTATION_SCORE_MIN env var (set by CI)
-# conftest.py detects this and loads hypothesis "mutation" profile with derandomize=True
-# Exclude test_command_output_contract.py due to persistent hypothesis test issues in mutmut
-test_command = "pytest -x --ignore-glob='**/test_triage*.py' --ignore-glob='**/test_command_output_contract.py'"
+# Exclude flaky hypothesis tests from mutation testing via pytest CLI args
+# Note: mutmut 3.x uses pytest_add_cli_args, NOT test_command
+pytest_add_cli_args = [
+    "--ignore-glob=**/test_triage*.py",
+    "--ignore-glob=**/test_command_output_contract.py",
+]
