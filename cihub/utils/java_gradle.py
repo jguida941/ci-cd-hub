@@ -398,7 +398,7 @@ def insert_configs_into_gradle(
         block = textwrap.dedent(block).strip()
         formatted_blocks.append(block)
 
-    config_text = "\n\n" + "\n\n".join(formatted_blocks)
+    config_text = "\n\n" + "\n\n".join(formatted_blocks) + "\n"
 
     updated = content[:insert_pos] + config_text + content[insert_pos:]
     return updated, True
