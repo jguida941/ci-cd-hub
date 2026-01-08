@@ -195,48 +195,51 @@ class JavaStrategy(LanguageStrategy):
             # Check which tools are enabled and which plugins are missing
             tool_flags = get_gradle_tool_flags(config)
             missing_plugins = []
+            enabled_plugins = []
             for tool, enabled in tool_flags.items():
                 if tool not in GRADLE_TOOL_PLUGINS or not enabled:
                     continue
                 plugin_id = GRADLE_TOOL_PLUGINS[tool]
+                enabled_plugins.append(plugin_id)
                 if plugin_id not in declared_plugins:
                     missing_plugins.append(plugin_id)
 
-            if not missing_plugins:
-                return  # Nothing to fix
-
-            # Load snippets and fix plugins
-            plugin_snippets = load_gradle_plugin_snippets()
-            build_text = build_path.read_text(encoding="utf-8")
-            updated_text, success = insert_plugins_into_gradle(build_text, missing_plugins, plugin_snippets)
-
             plugins_added = 0
             configs_added = 0
+            files_added = 0
 
-            if success and updated_text != build_text:
-                plugins_added = len(missing_plugins)
-                # Also add corresponding config blocks for added plugins
-                config_snippets = load_gradle_config_snippets()
-                updated_text, config_success = insert_configs_into_gradle(
-                    updated_text, missing_plugins, config_snippets
-                )
-                if config_success:
-                    configs_added = len([p for p in missing_plugins if p in config_snippets])
+            # Add missing plugins and their config blocks
+            if missing_plugins:
+                plugin_snippets = load_gradle_plugin_snippets()
+                build_text = build_path.read_text(encoding="utf-8")
+                updated_text, success = insert_plugins_into_gradle(build_text, missing_plugins, plugin_snippets)
 
-                build_path.write_text(updated_text, encoding="utf-8")
+                if success and updated_text != build_text:
+                    plugins_added = len(missing_plugins)
+                    # Also add corresponding config blocks for added plugins
+                    config_snippets = load_gradle_config_snippets()
+                    updated_text, config_success = insert_configs_into_gradle(
+                        updated_text, missing_plugins, config_snippets
+                    )
+                    if config_success:
+                        configs_added = len([p for p in missing_plugins if p in config_snippets])
+
+                    build_path.write_text(updated_text, encoding="utf-8")
+
+            # Always scaffold missing config files for ALL enabled plugins (not just newly added)
+            files_added = self._scaffold_gradle_config_files(
+                workdir_path, enabled_plugins, tool_flags
+            )
+
+            # Report what was fixed
+            if plugins_added or configs_added or files_added:
                 msg_parts = []
                 if plugins_added:
                     msg_parts.append(f"{plugins_added} missing plugins")
                 if configs_added:
                     msg_parts.append(f"{configs_added} config blocks")
-
-                # Scaffold missing config files for added plugins
-                files_added = self._scaffold_gradle_config_files(
-                    workdir_path, missing_plugins, tool_flags
-                )
                 if files_added:
                     msg_parts.append(f"{files_added} config files")
-
                 problems.append({
                     "severity": "info",
                     "message": f"Auto-fixed build.gradle: added {', '.join(msg_parts)}",
