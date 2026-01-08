@@ -163,13 +163,9 @@ also_copy = ["cihub/", "scripts/", "config/", "schema/", "templates/", ".github/
 mutate_only_covered_lines = true
 # Configure pytest for mutation testing via CLI args
 # Note: mutmut 3.x uses pytest_add_cli_args, NOT test_command
-# - Use deterministic hypothesis profile (derandomize=True, fewer examples)
-# - Ignore triage tests (require specific fixtures)
-# - Ignore hypothesis test files that fail in mutmut subprocess
-#   (these tests pass in normal pytest but fail in mutmut's subprocess environment)
+# - Use deterministic hypothesis profile (derandomize=True, fewer examples, database=None)
+# - Ignore triage tests (require specific fixtures that aren't available in mutmut subprocess)
 pytest_add_cli_args = [
     "--hypothesis-profile=mutation",
     "--ignore-glob=**/test_triage*.py",
-    "--ignore-glob=**/test_command_output_contract.py",
-    "--ignore-glob=**/test_exec_utils.py",
 ]

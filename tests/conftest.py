@@ -37,12 +37,16 @@ try:
     )
 
     # Mutation testing profile - even more constrained for speed
+    # database=None is CRITICAL for mutmut compatibility - the hypothesis database
+    # causes failures in subprocess environments because mutmut runs pytest in a
+    # subprocess with a different working directory, and the database path becomes invalid
     settings.register_profile(
         "mutation",
         derandomize=True,
         max_examples=20,  # Fewer examples for faster mutation runs
         phases=[Phase.explicit, Phase.generate],  # Skip reuse and shrinking
         deadline=None,
+        database=None,  # Disable database for subprocess compatibility
     )
 
     # Load appropriate profile based on environment
