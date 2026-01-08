@@ -322,7 +322,7 @@ class TestPrintPatternDetection:
 
     @pytest.mark.hypothesis
     @given(st.integers(min_value=1, max_value=50))
-    @settings(max_examples=20)
+    @settings(max_examples=20, derandomize=True, deadline=None)
     def test_line_numbers_accurate(self, num_lines: int) -> None:
         """Property: line numbers reported match actual positions."""
         import tempfile

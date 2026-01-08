@@ -46,7 +46,11 @@ try:
     )
 
     # Load appropriate profile based on environment
-    if os.environ.get("MUTATION_SCORE_MIN") is not None:
+    # Check multiple indicators for mutation testing/CI environment:
+    # - MUTATION_SCORE_MIN: set by our CI workflow
+    # - MUTANT_UNDER_TEST: set by mutmut during actual mutation testing
+    # - CI: standard CI environment variable
+    if os.environ.get("MUTATION_SCORE_MIN") is not None or os.environ.get("MUTANT_UNDER_TEST") is not None:
         # Running under mutation testing - use constrained deterministic profile
         settings.load_profile("mutation")
     elif os.environ.get("CI") is not None:
