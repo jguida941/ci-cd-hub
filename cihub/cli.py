@@ -139,6 +139,12 @@ def cmd_fix_deps(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_fix_gradle(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.gradle import cmd_fix_gradle as handler
+
+    return handler(args)
+
+
 def cmd_setup_secrets(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.secrets import cmd_setup_secrets as handler
 
@@ -240,6 +246,7 @@ def build_parser() -> argparse.ArgumentParser:
         cmd_setup_nvd=cmd_setup_nvd,
         cmd_fix_pom=cmd_fix_pom,
         cmd_fix_deps=cmd_fix_deps,
+        cmd_fix_gradle=cmd_fix_gradle,
         cmd_sync_templates=cmd_sync_templates,
         cmd_config=cmd_config,
         cmd_fix=cmd_fix,

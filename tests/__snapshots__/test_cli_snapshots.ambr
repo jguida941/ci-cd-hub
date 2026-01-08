@@ -59,11 +59,11 @@
 # name: TestHelpSnapshots.test_main_help_snapshot
   list([
     'usage: cihub [-h] [--version]',
-    '{detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup-secrets,setup-nvd,fix-pom,fix-deps,sync-templates,config,registry}',
+    '{detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry}',
     '...',
     'CI/CD Hub CLI',
     'positional arguments:',
-    '{detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup-secrets,setup-nvd,fix-pom,fix-deps,sync-templates,config,registry}',
+    '{detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry}',
     'detect              Detect repo language and tools',
     'preflight           Check environment readiness',
     'doctor              Alias for preflight',
@@ -95,6 +95,8 @@
     'fix-pom             Add missing Maven plugins/dependencies to pom.xml for',
     'Java repos',
     'fix-deps            Add missing Maven dependencies for Java repos',
+    'fix-gradle          Add missing Gradle plugins to build.gradle for Java',
+    'repos',
     'sync-templates      Sync caller workflow templates to dispatch-enabled',
     'repos',
     'config              Manage hub-side repo configs (config/repos/*.yaml)',

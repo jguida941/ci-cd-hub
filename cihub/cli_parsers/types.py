@@ -40,6 +40,7 @@ class CommandHandlers:
     cmd_setup_nvd: CommandHandler
     cmd_fix_pom: CommandHandler
     cmd_fix_deps: CommandHandler
+    cmd_fix_gradle: CommandHandler
     cmd_sync_templates: CommandHandler
     cmd_config: CommandHandler
     cmd_fix: CommandHandler

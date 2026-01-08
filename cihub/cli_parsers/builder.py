@@ -42,6 +42,7 @@ def _default_handlers() -> CommandHandlers:
         cmd_setup_nvd=_noop_handler,
         cmd_fix_pom=_noop_handler,
         cmd_fix_deps=_noop_handler,
+        cmd_fix_gradle=_noop_handler,
         cmd_sync_templates=_noop_handler,
         cmd_config=_noop_handler,
         cmd_fix=_noop_handler,

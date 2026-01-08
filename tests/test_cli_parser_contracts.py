@@ -32,6 +32,7 @@ EXPECTED_JSON_PATHS = {
     "doctor",
     "fix",
     "fix-deps",
+    "fix-gradle",
     "fix-pom",
     "hub config load",
     "hub config set",

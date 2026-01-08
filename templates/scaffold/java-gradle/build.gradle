@@ -1,5 +1,11 @@
 plugins {
     id 'java'
+    id 'jacoco'
+    id 'checkstyle'
+    id 'pmd'
+    id 'com.github.spotbugs' version '6.0.7'
+    id 'info.solidsoft.pitest' version '1.15.0'
+    id 'org.owasp.dependencycheck' version '9.0.9'
 }
 
 repositories {
@@ -12,4 +18,64 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+// JaCoCo - Code Coverage
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+// Checkstyle - Code Style
+checkstyle {
+    toolVersion = '10.12.5'
+    maxWarnings = 0
+    ignoreFailures = false
+}
+
+// SpotBugs - Bug Detection
+spotbugs {
+    toolVersion = '4.8.3'
+    ignoreFailures = false
+    effort = 'max'
+    reportLevel = 'low'
+}
+
+spotbugsMain {
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+// PMD - Static Analysis
+pmd {
+    toolVersion = '7.0.0'
+    consoleOutput = true
+    ruleSets = []
+    ignoreFailures = false
+}
+
+// PITest - Mutation Testing
+pitest {
+    junit5PluginVersion = '1.2.1'
+    targetClasses = ['com.example.*']
+    targetTests = ['com.example.*']
+    threads = 4
+    outputFormats = ['XML', 'HTML']
+    timestampedReports = false
+}
+
+// OWASP Dependency Check - Vulnerability Scanning
+dependencyCheck {
+    format = 'ALL'
+    failBuildOnCVSS = 11
 }

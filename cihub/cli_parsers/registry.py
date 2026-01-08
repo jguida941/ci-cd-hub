@@ -12,6 +12,7 @@ from cihub.cli_parsers.discover import add_discover_command
 from cihub.cli_parsers.dispatch import add_dispatch_commands
 from cihub.cli_parsers.docs import add_docs_commands
 from cihub.cli_parsers.fix import add_fix_commands
+from cihub.cli_parsers.gradle import add_gradle_commands
 from cihub.cli_parsers.hub import add_hub_commands
 from cihub.cli_parsers.hub_ci import add_hub_ci_commands
 from cihub.cli_parsers.pom import add_pom_commands
@@ -43,6 +44,7 @@ PARSER_GROUPS: list[ParserGroup] = [
     add_repo_setup_commands,
     add_secrets_commands,
     add_pom_commands,
+    add_gradle_commands,
     add_templates_commands,
     add_config_commands,
     add_registry_commands,
