@@ -20,7 +20,7 @@ import os
 from pathlib import Path
 
 import pytest
-from hypothesis import given, settings
+from hypothesis import given
 from hypothesis import strategies as st
 
 # Files pending migration - remove from list as each is migrated
