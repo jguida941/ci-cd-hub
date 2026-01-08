@@ -118,8 +118,8 @@ class JavaStrategy(LanguageStrategy):
         from cihub.services.ci_engine.java_tools import _run_java_tools
 
         # Detect build tool if not provided by checking for build files
+        workdir_path = repo_path / workdir
         if build_tool is None:
-            workdir_path = repo_path / workdir
             # Check for Gradle files first (more specific)
             if (
                 (workdir_path / "build.gradle").exists()
@@ -132,8 +132,120 @@ class JavaStrategy(LanguageStrategy):
                 # Default to maven (pom.xml or unknown)
                 build_tool = "maven"
 
+        # Auto-fix build files before running tools (CLI-first architecture)
+        self._auto_fix_build_files(workdir_path, config, build_tool, problems)
+
         runners = self.get_runners()
         return _run_java_tools(config, repo_path, workdir, output_dir, build_tool, problems, runners)
+
+    def _auto_fix_build_files(
+        self,
+        workdir_path: Path,
+        config: dict[str, Any],
+        build_tool: str,
+        problems: list[dict[str, Any]],
+    ) -> None:
+        """Auto-fix build files to add missing plugins before tool execution.
+
+        This ensures Gradle/Maven projects have the required plugins declared
+        so tools can produce output files. Part of CLI-first architecture.
+        """
+        if build_tool == "gradle":
+            self._auto_fix_gradle(workdir_path, config, problems)
+        elif build_tool == "maven":
+            self._auto_fix_maven(workdir_path, config, problems)
+
+    def _auto_fix_gradle(
+        self,
+        workdir_path: Path,
+        config: dict[str, Any],
+        problems: list[dict[str, Any]],
+    ) -> None:
+        """Auto-fix Gradle build.gradle to add missing plugins."""
+        build_path = workdir_path / "build.gradle"
+        if not build_path.exists():
+            return  # Kotlin DSL or missing - skip
+
+        try:
+            from cihub.utils.java_gradle import (
+                collect_gradle_warnings,
+                insert_plugins_into_gradle,
+                load_gradle_plugin_snippets,
+            )
+
+            warnings, missing_plugins = collect_gradle_warnings(workdir_path, config)
+            if not missing_plugins:
+                return  # Nothing to fix
+
+            # Load snippets and fix
+            snippets = load_gradle_plugin_snippets()
+            build_text = build_path.read_text(encoding="utf-8")
+            updated_text, success = insert_plugins_into_gradle(build_text, missing_plugins, snippets)
+
+            if success and updated_text != build_text:
+                build_path.write_text(updated_text, encoding="utf-8")
+                problems.append({
+                    "severity": "info",
+                    "message": f"Auto-fixed build.gradle: added {len(missing_plugins)} missing plugins",
+                    "code": "CIHUB-CI-GRADLE-AUTOFIX",
+                })
+        except Exception as exc:  # noqa: BLE001 - best effort, don't break CI
+            problems.append({
+                "severity": "warning",
+                "message": f"Gradle auto-fix failed: {exc}",
+                "code": "CIHUB-CI-GRADLE-AUTOFIX-FAILED",
+            })
+
+    def _auto_fix_maven(
+        self,
+        workdir_path: Path,
+        config: dict[str, Any],
+        problems: list[dict[str, Any]],
+    ) -> None:
+        """Auto-fix Maven pom.xml to add missing plugins."""
+        pom_path = workdir_path / "pom.xml"
+        if not pom_path.exists():
+            return
+
+        try:
+            from cihub.utils.java_pom import (
+                collect_java_pom_warnings,
+                insert_plugins_into_pom,
+                load_plugin_snippets,
+            )
+
+            warnings, missing_plugins = collect_java_pom_warnings(workdir_path, config)
+            if not missing_plugins:
+                return  # Nothing to fix
+
+            # Load snippets and fix
+            snippets = load_plugin_snippets()
+            blocks = []
+            for plugin_id in missing_plugins:
+                snippet = snippets.get(plugin_id)
+                if snippet:
+                    blocks.append(snippet)
+
+            if not blocks:
+                return
+
+            pom_text = pom_path.read_text(encoding="utf-8")
+            plugin_block = "\n\n".join(blocks)
+            updated_text, success = insert_plugins_into_pom(pom_text, plugin_block)
+
+            if success and updated_text != pom_text:
+                pom_path.write_text(updated_text, encoding="utf-8")
+                problems.append({
+                    "severity": "info",
+                    "message": f"Auto-fixed pom.xml: added {len(missing_plugins)} missing plugins",
+                    "code": "CIHUB-CI-MAVEN-AUTOFIX",
+                })
+        except Exception as exc:  # noqa: BLE001 - best effort, don't break CI
+            problems.append({
+                "severity": "warning",
+                "message": f"Maven auto-fix failed: {exc}",
+                "code": "CIHUB-CI-MAVEN-AUTOFIX-FAILED",
+            })
 
     def evaluate_gates(
         self,
