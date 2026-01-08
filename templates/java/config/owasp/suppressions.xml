@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  CI/CD Hub - OWASP Dependency-Check Suppressions
+  ================================================
+  Suppress false positives and known-acceptable vulnerabilities.
+  Auto-scaffolded by `cihub fix-gradle`. Customize as needed.
+
+  Documentation: https://jeremylong.github.io/DependencyCheck/general/suppression.html
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+    <!--
+      FALSE POSITIVE: PITest vs LINE messenger app
+      The CPE matching incorrectly identifies pitest-command-line as the LINE app
+    -->
+    <suppress>
+        <notes><![CDATA[
+            False positive: CVE-2015-0897 is for LINE messenger app, not PITest.
+            PITest's pitest-command-line package is incorrectly matched.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.pitest/pitest-command-line@.*$</packageUrl>
+        <cve>CVE-2015-0897</cve>
+    </suppress>
+
+    <!--
+      Transitive dependency vulnerabilities from build plugins.
+      These are build-time only, not runtime, and don't affect the application.
+      Review and remove suppressions when updated plugin versions are available.
+    -->
+
+    <!-- commons-beanutils: auth bypass via classloader (build-time only) -->
+    <suppress until="2026-06-01">
+        <notes><![CDATA[
+            CVE-2025-48734: commons-beanutils auth bypass. Transitive dep from Checkstyle.
+            Build-time only, not runtime. Suppressed until plugins update their deps.
+            Fixed in commons-beanutils 1.11.0.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/commons-beanutils/commons-beanutils@.*$</packageUrl>
+        <cve>CVE-2025-48734</cve>
+    </suppress>
+
+    <!-- commons-lang3: DoS via StackOverflow on long inputs (build-time only) -->
+    <suppress until="2026-06-01">
+        <notes><![CDATA[
+            CVE-2025-48924: commons-lang3 DoS (StackOverflow). Transitive dep from
+            Checkstyle and PMD. Build-time only. Fixed in commons-lang3 3.18.0.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.commons/commons-lang3@.*$</packageUrl>
+        <cve>CVE-2025-48924</cve>
+    </suppress>
+
+</suppressions>

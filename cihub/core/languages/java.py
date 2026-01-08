@@ -271,24 +271,27 @@ class JavaStrategy(LanguageStrategy):
         templates_dir = hub_root() / "templates" / "java" / "config"
 
         # Map of plugin IDs to their required config file paths
-        plugin_config_files: dict[str, tuple[str, str]] = {
-            # (relative_target_path, template_subpath)
-            "checkstyle": ("config/checkstyle/checkstyle.xml", "checkstyle/checkstyle.xml"),
+        plugin_config_files: dict[str, list[tuple[str, str]]] = {
+            # List of (relative_target_path, template_subpath) tuples
+            "checkstyle": [("config/checkstyle/checkstyle.xml", "checkstyle/checkstyle.xml")],
+            "org.owasp.dependencycheck": [
+                ("config/owasp/suppressions.xml", "owasp/suppressions.xml")
+            ],
         }
 
         for plugin_id in added_plugins:
             if plugin_id not in plugin_config_files:
                 continue
 
-            target_rel, template_subpath = plugin_config_files[plugin_id]
-            target_path = workdir_path / target_rel
-            template_path = templates_dir / template_subpath
+            for target_rel, template_subpath in plugin_config_files[plugin_id]:
+                target_path = workdir_path / target_rel
+                template_path = templates_dir / template_subpath
 
-            # Only scaffold if template exists and target doesn't
-            if template_path.exists() and not target_path.exists():
-                target_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy(template_path, target_path)
-                files_added += 1
+                # Only scaffold if template exists and target doesn't
+                if template_path.exists() and not target_path.exists():
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy(template_path, target_path)
+                    files_added += 1
 
         return files_added
 

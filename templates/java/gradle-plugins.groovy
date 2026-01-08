@@ -38,7 +38,8 @@ id 'info.solidsoft.pitest' version '1.19.0-rc.2'
 
 // @plugin:org.owasp.dependencycheck
 // OWASP Dependency Check - Vulnerability Scanning (enabled by default)
-id 'org.owasp.dependencycheck' version '9.0.9'
+// NOTE: Version 12.x includes fix for failOnError behavior with unavailable NVD
+id 'org.owasp.dependencycheck' version '12.1.0'
 
 // ============================================================================
 // CONFIGURATION BLOCK SNIPPETS
@@ -92,8 +93,8 @@ pmd {
 // @config:info.solidsoft.pitest
 pitest {
     junit5PluginVersion = '1.2.1'
-    targetClasses = ['*']  // Match all classes (customize to your package)
-    targetTests = ['*']    // Match all tests
+    // Note: targetClasses not specified - PITest will auto-detect from sourceSets
+    // Specifying ['*'] would cause PITest to try mutating its own jars
     threads = 4
     outputFormats = ['XML', 'HTML']
     timestampedReports = false
@@ -103,8 +104,17 @@ pitest {
 // @config:org.owasp.dependencycheck
 dependencyCheck {
     format = 'ALL'
-    failBuildOnCVSS = 11
-    failOnError = false  // Continue even if NVD API is unavailable
+    failBuildOnCVSS = 7  // Fail on high/critical CVEs (CVSS >= 7.0)
+    // failOnError handles NVD API failures gracefully
+    failOnError = false
+    // Suppress false positives and build-time-only transitive deps
+    suppressionFile = 'config/owasp/suppressions.xml'
+    nvd {
+        // Set NVD_API_KEY env var for faster updates (highly recommended)
+        apiKey = System.getenv('NVD_API_KEY') ?: ''
+        delay = 3500  // Required delay between API calls (ms)
+        validForHours = 24  // Cache NVD data for 24 hours
+    }
 }
 
 /*

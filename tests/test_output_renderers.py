@@ -80,9 +80,9 @@ class TestHumanRenderer:
         )
         renderer = HumanRenderer()
         output = renderer.render(result, "test", 100)
-        assert "[error]" in output
+        assert "ERROR:" in output
         assert "Test failed" in output
-        assert "[warning]" in output
+        assert "WARN:" in output
         assert "Low coverage" in output
 
     def test_renders_items_list(self) -> None:

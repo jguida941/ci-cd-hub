@@ -21,6 +21,10 @@
     </module>
     <module name="FileTabCharacter"/>
     <module name="NewlineAtEndOfFile"/>
+    <module name="LineLength">
+        <property name="max" value="120"/>
+        <property name="ignorePattern" value="^package.*|^import.*|href|http://|https://|ftp://"/>
+    </module>
 
     <!-- TreeWalker module for AST-based checks -->
     <module name="TreeWalker">
@@ -41,10 +45,6 @@
         <module name="UnusedImports"/>
 
         <!-- Size violations -->
-        <module name="LineLength">
-            <property name="max" value="120"/>
-            <property name="ignorePattern" value="^package.*|^import.*|a]* href|href|http://|https://|ftp://"/>
-        </module>
         <module name="MethodLength">
             <property name="max" value="150"/>
         </module>

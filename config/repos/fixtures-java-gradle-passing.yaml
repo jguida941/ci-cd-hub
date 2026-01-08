@@ -33,7 +33,7 @@ java:
     semgrep:
       enabled: true
     trivy:
-      enabled: false
+      enabled: true
     codeql:
       enabled: false
 

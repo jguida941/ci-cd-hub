@@ -2,10 +2,26 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from cihub.config.io import load_yaml_file
 from cihub.utils.paths import hub_root
+
+
+def detect_java_build_tool(repo_path: Path | None) -> str:
+    """Detect Java build tool from repo structure.
+
+    Returns 'gradle' if build.gradle exists, otherwise 'maven'.
+    """
+    if repo_path is None:
+        return "maven"
+    repo_path = Path(repo_path)
+    if (repo_path / "build.gradle").exists() or (repo_path / "build.gradle.kts").exists():
+        return "gradle"
+    if (repo_path / "settings.gradle").exists() or (repo_path / "settings.gradle.kts").exists():
+        return "gradle"
+    return "maven"
 
 
 def build_repo_config(
@@ -14,6 +30,7 @@ def build_repo_config(
     name: str,
     branch: str,
     subdir: str | None = None,
+    repo_path: Path | None = None,
 ) -> dict[str, Any]:
     template_path = hub_root() / "templates" / "repo" / ".ci-hub.yml"
     base = load_yaml_file(template_path)
@@ -32,6 +49,11 @@ def build_repo_config(
 
     if language == "java":
         base.pop("python", None)
+        # Detect build tool from repo structure
+        java_block = base.get("java", {})
+        if isinstance(java_block, dict):
+            java_block["build_tool"] = detect_java_build_tool(repo_path)
+            base["java"] = java_block
     elif language == "python":
         base.pop("java", None)
 

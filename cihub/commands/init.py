@@ -109,7 +109,11 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
 
     # Validate subdir to prevent path traversal
     subdir = validate_subdir(args.subdir or "")
-    detected_config = build_repo_config(language, owner, name, branch, subdir=subdir)
+    # Pass repo_path for build tool detection
+    effective_repo_path = repo_path / subdir if subdir else repo_path
+    detected_config = build_repo_config(
+        language, owner, name, branch, subdir=subdir, repo_path=effective_repo_path
+    )
 
     if args.wizard:
         if not HAS_WIZARD:
