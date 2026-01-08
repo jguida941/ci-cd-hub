@@ -54,12 +54,27 @@ class TestResolveExecutable:
         result = resolve_executable("nonexistent_command_xyz_123")
         assert result == "nonexistent_command_xyz_123"
 
-    @given(st.text(min_size=1, max_size=50, alphabet=st.characters(blacklist_categories=("Cs",))))
-    # Note: Do NOT use explicit @settings here - let conftest.py's mutation profile
-    # control settings (especially database=None for mutmut subprocess compatibility)
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "a",  # single char
+            "test",  # normal word
+            "some-command",  # with hyphen
+            "path/to/cmd",  # with slashes
+            "  spaces  ",  # whitespace
+            "émoji🎉",  # unicode
+            "a" * 50,  # long string
+            "../../../etc/passwd",  # path traversal attempt
+            "cmd; rm -rf /",  # injection attempt
+            "$(whoami)",  # command substitution
+        ],
+    )
     def test_never_raises_on_arbitrary_input(self, name: str) -> None:
-        """resolve_executable should never raise, regardless of input."""
-        assume("\x00" not in name)  # Null bytes cause issues with shutil.which
+        """resolve_executable should never raise, regardless of input.
+
+        Note: Converted from hypothesis test due to mutmut subprocess issues.
+        Tests various edge cases that hypothesis would generate.
+        """
         result = resolve_executable(name)
         assert isinstance(result, str)
 
