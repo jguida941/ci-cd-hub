@@ -161,9 +161,11 @@ paths_to_mutate = [
 tests_dir = ["tests/"]
 also_copy = ["cihub/", "scripts/", "config/", "schema/", "templates/", ".github/", "pyproject.toml"]
 mutate_only_covered_lines = true
-# Exclude flaky hypothesis tests from mutation testing via pytest CLI args
+# Configure pytest for mutation testing via CLI args
 # Note: mutmut 3.x uses pytest_add_cli_args, NOT test_command
+# - Use deterministic hypothesis profile (derandomize=True, fewer examples)
+# - Ignore triage tests that require specific fixtures
 pytest_add_cli_args = [
+    "--hypothesis-profile=mutation",
     "--ignore-glob=**/test_triage*.py",
-    "--ignore-glob=**/test_command_output_contract.py",
 ]
