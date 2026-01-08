@@ -151,7 +151,7 @@ jobs:
     name: Python CI
     needs: config
     if: needs.config.outputs.language == 'python'
-    uses: ./.github/workflows/python-ci.yml
+    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
     with:
       python_version: ${{ needs.config.outputs.python_version }}
       workdir: ${{ needs.config.outputs.workdir }}
@@ -202,7 +202,7 @@ jobs:
     name: Java CI
     needs: config
     if: needs.config.outputs.language == 'java'
-    uses: ./.github/workflows/java-ci.yml
+    uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@v1
     with:
       java_version: ${{ needs.config.outputs.java_version }}
       build_tool: ${{ needs.config.outputs.build_tool }}
