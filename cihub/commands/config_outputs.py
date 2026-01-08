@@ -105,6 +105,7 @@ def cmd_config_outputs(args: argparse.Namespace) -> CommandResult:
         "max_ruff_errors": _tool_int(config, "python", "ruff", "max_errors", 0),
         "max_black_issues": _tool_int(config, "python", "black", "max_issues", 0),
         "max_isort_issues": _tool_int(config, "python", "isort", "max_issues", 0),
+        "max_pip_audit_vulns": _tool_int(config, "python", "pip_audit", "max_vulns", 0),
     }
     python_thresholds["owasp_cvss_fail"] = python_thresholds["trivy_cvss_fail"]
 
@@ -176,6 +177,7 @@ def cmd_config_outputs(args: argparse.Namespace) -> CommandResult:
         "max_ruff_errors": str(python_thresholds["max_ruff_errors"]),
         "max_black_issues": str(python_thresholds["max_black_issues"]),
         "max_isort_issues": str(python_thresholds["max_isort_issues"]),
+        "max_pip_audit_vulns": str(python_thresholds["max_pip_audit_vulns"]),
         "max_checkstyle_errors": str(java_thresholds["max_checkstyle_errors"]),
         "max_spotbugs_bugs": str(java_thresholds["max_spotbugs_bugs"]),
         "max_pmd_violations": str(java_thresholds["max_pmd_violations"]),
