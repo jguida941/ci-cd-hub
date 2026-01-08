@@ -6,11 +6,57 @@ Fixtures here are automatically available to all tests without explicit imports.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, Callable
 from unittest.mock import MagicMock
 
 import pytest
+
+# =============================================================================
+# Hypothesis Configuration for Deterministic Testing
+# =============================================================================
+# Configure hypothesis to use derandomize=True in CI/mutation testing.
+# This makes hypothesis use a deterministic seed based on the test function name,
+# ensuring the same examples are generated on every run. This prevents flaky tests
+# while still getting full property-based testing coverage.
+#
+# See: https://hypothesis.readthedocs.io/en/latest/settings.html#hypothesis.settings.derandomize
+
+try:
+    from hypothesis import Phase, settings
+
+    # Register a deterministic profile for CI and mutation testing
+    # derandomize=True seeds RNG from test function hash = same examples every run
+    settings.register_profile(
+        "ci",
+        derandomize=True,
+        max_examples=50,  # Reasonable coverage without being slow
+        phases=[Phase.explicit, Phase.reuse, Phase.generate],  # Skip shrinking for speed
+        deadline=None,  # No timeout in CI (mutation testing can be slow)
+    )
+
+    # Mutation testing profile - even more constrained for speed
+    settings.register_profile(
+        "mutation",
+        derandomize=True,
+        max_examples=20,  # Fewer examples for faster mutation runs
+        phases=[Phase.explicit, Phase.generate],  # Skip reuse and shrinking
+        deadline=None,
+    )
+
+    # Load appropriate profile based on environment
+    if os.environ.get("MUTATION_SCORE_MIN") is not None:
+        # Running under mutation testing - use constrained deterministic profile
+        settings.load_profile("mutation")
+    elif os.environ.get("CI") is not None:
+        # Running in CI - use deterministic profile
+        settings.load_profile("ci")
+    # Otherwise use default profile (randomized, for local development exploration)
+
+except ImportError:
+    # hypothesis not installed - skip configuration
+    pass
 
 # =============================================================================
 # Repository Fixtures

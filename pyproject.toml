@@ -126,7 +126,7 @@ skip = ["_quarantine"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 markers = [
-    "hypothesis: hypothesis-based property tests (excluded from mutation testing)"
+    "hypothesis: hypothesis-based property tests (run with derandomize=True in CI/mutation)"
 ]
 
 [tool.coverage.run]
@@ -161,5 +161,6 @@ paths_to_mutate = [
 tests_dir = ["tests/"]
 also_copy = ["cihub/", "scripts/", "config/", "schema/", "templates/", ".github/", "pyproject.toml"]
 mutate_only_covered_lines = true
-# Exclude flaky hypothesis tests from mutation testing
-test_command = "pytest -x --ignore-glob='**/test_triage*.py' -m 'not hypothesis'"
+# Use deterministic hypothesis profile via MUTATION_SCORE_MIN env var (set by CI)
+# conftest.py detects this and loads hypothesis "mutation" profile with derandomize=True
+test_command = "pytest -x --ignore-glob='**/test_triage*.py'"
