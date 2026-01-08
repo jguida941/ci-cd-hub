@@ -319,6 +319,7 @@ class TestPrintPatternDetection:
         assert len(prints) == 3
         assert [p[0] for p in prints] == [1, 3, 4]
 
+    @pytest.mark.hypothesis
     @given(st.integers(min_value=1, max_value=50))
     @settings(max_examples=20)
     def test_line_numbers_accurate(self, num_lines: int) -> None:
