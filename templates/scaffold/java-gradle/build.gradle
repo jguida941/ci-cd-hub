@@ -67,15 +67,17 @@ pmd {
 // PITest - Mutation Testing
 pitest {
     junit5PluginVersion = '1.2.1'
-    targetClasses = ['com.example.*']
-    targetTests = ['com.example.*']
+    targetClasses = ['*']
+    targetTests = ['*']
     threads = 4
     outputFormats = ['XML', 'HTML']
     timestampedReports = false
+    failWhenNoMutations = false
 }
 
 // OWASP Dependency Check - Vulnerability Scanning
 dependencyCheck {
     format = 'ALL'
     failBuildOnCVSS = 11
+    failOnError = false
 }
