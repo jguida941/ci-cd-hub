@@ -33,7 +33,8 @@ id 'pmd'
 
 // @plugin:info.solidsoft.pitest
 // PITest - Mutation Testing (enabled by default, expensive)
-id 'info.solidsoft.pitest' version '1.15.0'
+// NOTE: Version 1.19.0-rc.2+ required for Gradle 9.x compatibility
+id 'info.solidsoft.pitest' version '1.19.0-rc.2'
 
 // @plugin:org.owasp.dependencycheck
 // OWASP Dependency Check - Vulnerability Scanning (enabled by default)
