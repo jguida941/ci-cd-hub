@@ -151,7 +151,16 @@ def run_checkstyle(workdir: Path, output_dir: Path, build_tool: str) -> ToolResu
     proc = shared._run_tool_command("checkstyle", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
-    report_paths = shared._find_files(workdir, ["checkstyle-result.xml"])
+    # Maven outputs to checkstyle-result.xml, Gradle outputs to build/reports/checkstyle/main.xml
+    report_paths = shared._find_files(
+        workdir,
+        [
+            "checkstyle-result.xml",
+            "target/checkstyle-result.xml",
+            "build/reports/checkstyle/main.xml",
+            "build/reports/checkstyle/*.xml",
+        ],
+    )
     metrics = _parse_checkstyle_files(report_paths)
     ran = bool(report_paths)
     return ToolResult(
@@ -174,7 +183,16 @@ def run_spotbugs(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult
     proc = shared._run_tool_command("spotbugs", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
-    report_paths = shared._find_files(workdir, ["spotbugsXml.xml"])
+    # Maven outputs to spotbugsXml.xml, Gradle outputs to build/reports/spotbugs/main.xml
+    report_paths = shared._find_files(
+        workdir,
+        [
+            "spotbugsXml.xml",
+            "target/spotbugsXml.xml",
+            "build/reports/spotbugs/main.xml",
+            "build/reports/spotbugs/*.xml",
+        ],
+    )
     metrics = _parse_spotbugs_files(report_paths)
     ran = bool(report_paths)
     return ToolResult(
@@ -197,7 +215,16 @@ def run_pmd(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
     proc = shared._run_tool_command("pmd", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
-    report_paths = shared._find_files(workdir, ["pmd.xml"])
+    # Maven outputs to pmd.xml or target/pmd.xml, Gradle outputs to build/reports/pmd/main.xml
+    report_paths = shared._find_files(
+        workdir,
+        [
+            "pmd.xml",
+            "target/pmd.xml",
+            "build/reports/pmd/main.xml",
+            "build/reports/pmd/*.xml",
+        ],
+    )
     metrics = _parse_pmd_files(report_paths)
     ran = bool(report_paths)
     return ToolResult(

@@ -115,8 +115,8 @@ def _poll_for_run_id(
 
             # Match runs created after dispatch (with 2s tolerance)
             if created_ts >= started_after - 2 and run.get("head_branch") == branch:
-                if run.get("status") != "completed":
-                    return str(run.get("id"))
+                # Return any matching run - even completed ones (fast workflows)
+                return str(run.get("id"))
 
         delay = min(delay * 2, 30.0)
 
