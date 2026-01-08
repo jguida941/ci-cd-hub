@@ -930,10 +930,20 @@ def cmd_summary(args: argparse.Namespace) -> CommandResult:
     event_name = os.environ.get("GH_EVENT_NAME", "")
 
     def ran(status: str) -> str:
-        return "true" if status not in ("skipped", "cancelled") else "false"
+        """Return true/false for whether tool ran."""
+        if status in ("skipped", "cancelled"):
+            return "false"
+        return "true"
 
     def ok(status: str) -> str:
-        return "true" if status == "success" else "false"
+        """Return descriptive text for tool result."""
+        if status == "success":
+            return "passed"
+        if status == "skipped":
+            return "skipped"
+        if status == "cancelled":
+            return "cancelled"
+        return "failed"
 
     def status_text(status: str) -> str:
         if status == "success":

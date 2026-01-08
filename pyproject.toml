@@ -138,7 +138,12 @@ omit = [
     "scripts/run_cli_integration.py",
     "scripts/validate_summary.py",
     "scripts/verify_hub_matrix_keys.py",
-    "cihub/wizard/*",
+    # Note: cihub/wizard/validators.py is in mutation targets, so we measure coverage
+    # The rest of wizard uses interactive prompts and is hard to unit test
+    "cihub/wizard/questions/*",
+    "cihub/wizard/summary.py",
+    "cihub/wizard/core.py",
+    "cihub/wizard/styles.py",
     "cihub/__main__.py",
 ]
 
