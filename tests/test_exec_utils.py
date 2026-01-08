@@ -55,7 +55,8 @@ class TestResolveExecutable:
         assert result == "nonexistent_command_xyz_123"
 
     @given(st.text(min_size=1, max_size=50, alphabet=st.characters(blacklist_categories=("Cs",))))
-    @settings(max_examples=20)
+    # Note: Do NOT use explicit @settings here - let conftest.py's mutation profile
+    # control settings (especially database=None for mutmut subprocess compatibility)
     def test_never_raises_on_arbitrary_input(self, name: str) -> None:
         """resolve_executable should never raise, regardless of input."""
         assume("\x00" not in name)  # Null bytes cause issues with shutil.which

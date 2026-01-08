@@ -322,7 +322,8 @@ class TestPrintPatternDetection:
 
     @pytest.mark.hypothesis
     @given(st.integers(min_value=1, max_value=50))
-    @settings(max_examples=20, derandomize=True, deadline=None)
+    # Note: Do NOT use explicit @settings here - let conftest.py's mutation profile
+    # control settings (especially database=None for mutmut subprocess compatibility)
     def test_line_numbers_accurate(self, num_lines: int) -> None:
         """Property: line numbers reported match actual positions."""
         import tempfile
