@@ -170,7 +170,9 @@ class JavaStrategy(LanguageStrategy):
             from cihub.utils.java_gradle import (
                 GRADLE_TOOL_PLUGINS,
                 get_gradle_tool_flags,
+                insert_configs_into_gradle,
                 insert_plugins_into_gradle,
+                load_gradle_config_snippets,
                 load_gradle_plugin_snippets,
                 parse_gradle_plugins,
             )
@@ -203,16 +205,41 @@ class JavaStrategy(LanguageStrategy):
             if not missing_plugins:
                 return  # Nothing to fix
 
-            # Load snippets and fix
-            snippets = load_gradle_plugin_snippets()
+            # Load snippets and fix plugins
+            plugin_snippets = load_gradle_plugin_snippets()
             build_text = build_path.read_text(encoding="utf-8")
-            updated_text, success = insert_plugins_into_gradle(build_text, missing_plugins, snippets)
+            updated_text, success = insert_plugins_into_gradle(build_text, missing_plugins, plugin_snippets)
+
+            plugins_added = 0
+            configs_added = 0
 
             if success and updated_text != build_text:
+                plugins_added = len(missing_plugins)
+                # Also add corresponding config blocks for added plugins
+                config_snippets = load_gradle_config_snippets()
+                updated_text, config_success = insert_configs_into_gradle(
+                    updated_text, missing_plugins, config_snippets
+                )
+                if config_success:
+                    configs_added = len([p for p in missing_plugins if p in config_snippets])
+
                 build_path.write_text(updated_text, encoding="utf-8")
+                msg_parts = []
+                if plugins_added:
+                    msg_parts.append(f"{plugins_added} missing plugins")
+                if configs_added:
+                    msg_parts.append(f"{configs_added} config blocks")
+
+                # Scaffold missing config files for added plugins
+                files_added = self._scaffold_gradle_config_files(
+                    workdir_path, missing_plugins, tool_flags
+                )
+                if files_added:
+                    msg_parts.append(f"{files_added} config files")
+
                 problems.append({
                     "severity": "info",
-                    "message": f"Auto-fixed build.gradle: added {len(missing_plugins)} missing plugins",
+                    "message": f"Auto-fixed build.gradle: added {', '.join(msg_parts)}",
                     "code": "CIHUB-CI-GRADLE-AUTOFIX",
                 })
         except Exception as exc:  # noqa: BLE001 - best effort, don't break CI
@@ -221,6 +248,46 @@ class JavaStrategy(LanguageStrategy):
                 "message": f"Gradle auto-fix failed: {exc}",
                 "code": "CIHUB-CI-GRADLE-AUTOFIX-FAILED",
             })
+
+    def _scaffold_gradle_config_files(
+        self,
+        workdir_path: Path,
+        added_plugins: list[str],
+        tool_flags: dict[str, bool],
+    ) -> int:
+        """Scaffold missing config files for Gradle plugins.
+
+        Returns:
+            Number of files added
+        """
+        import shutil
+
+        from cihub.utils.paths import hub_root
+
+        files_added = 0
+        templates_dir = hub_root() / "templates" / "java" / "config"
+
+        # Map of plugin IDs to their required config file paths
+        plugin_config_files: dict[str, tuple[str, str]] = {
+            # (relative_target_path, template_subpath)
+            "checkstyle": ("config/checkstyle/checkstyle.xml", "checkstyle/checkstyle.xml"),
+        }
+
+        for plugin_id in added_plugins:
+            if plugin_id not in plugin_config_files:
+                continue
+
+            target_rel, template_subpath = plugin_config_files[plugin_id]
+            target_path = workdir_path / target_rel
+            template_path = templates_dir / template_subpath
+
+            # Only scaffold if template exists and target doesn't
+            if template_path.exists() and not target_path.exists():
+                target_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy(template_path, target_path)
+                files_added += 1
+
+        return files_added
 
     def _auto_fix_maven(
         self,
