@@ -185,11 +185,13 @@ class JavaStrategy(LanguageStrategy):
             # Parse existing plugins directly from the build.gradle
             declared_plugins, error = parse_gradle_plugins(build_path)
             if error:
-                problems.append({
-                    "severity": "warning",
-                    "message": f"Gradle auto-fix: {error}",
-                    "code": "CIHUB-CI-GRADLE-AUTOFIX-FAILED",
-                })
+                problems.append(
+                    {
+                        "severity": "warning",
+                        "message": f"Gradle auto-fix: {error}",
+                        "code": "CIHUB-CI-GRADLE-AUTOFIX-FAILED",
+                    }
+                )
                 return
 
             # Check which tools are enabled and which plugins are missing
@@ -227,9 +229,7 @@ class JavaStrategy(LanguageStrategy):
                     build_path.write_text(updated_text, encoding="utf-8")
 
             # Always scaffold missing config files for ALL enabled plugins (not just newly added)
-            files_added = self._scaffold_gradle_config_files(
-                workdir_path, enabled_plugins, tool_flags
-            )
+            files_added = self._scaffold_gradle_config_files(workdir_path, enabled_plugins, tool_flags)
 
             # Report what was fixed
             if plugins_added or configs_added or files_added:
@@ -240,17 +240,21 @@ class JavaStrategy(LanguageStrategy):
                     msg_parts.append(f"{configs_added} config blocks")
                 if files_added:
                     msg_parts.append(f"{files_added} config files")
-                problems.append({
-                    "severity": "info",
-                    "message": f"Auto-fixed build.gradle: added {', '.join(msg_parts)}",
-                    "code": "CIHUB-CI-GRADLE-AUTOFIX",
-                })
+                problems.append(
+                    {
+                        "severity": "info",
+                        "message": f"Auto-fixed build.gradle: added {', '.join(msg_parts)}",
+                        "code": "CIHUB-CI-GRADLE-AUTOFIX",
+                    }
+                )
         except Exception as exc:  # noqa: BLE001 - best effort, don't break CI
-            problems.append({
-                "severity": "warning",
-                "message": f"Gradle auto-fix failed: {exc}",
-                "code": "CIHUB-CI-GRADLE-AUTOFIX-FAILED",
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"Gradle auto-fix failed: {exc}",
+                    "code": "CIHUB-CI-GRADLE-AUTOFIX-FAILED",
+                }
+            )
 
     def _scaffold_gradle_config_files(
         self,
@@ -274,9 +278,7 @@ class JavaStrategy(LanguageStrategy):
         plugin_config_files: dict[str, list[tuple[str, str]]] = {
             # List of (relative_target_path, template_subpath) tuples
             "checkstyle": [("config/checkstyle/checkstyle.xml", "checkstyle/checkstyle.xml")],
-            "org.owasp.dependencycheck": [
-                ("config/owasp/suppressions.xml", "owasp/suppressions.xml")
-            ],
+            "org.owasp.dependencycheck": [("config/owasp/suppressions.xml", "owasp/suppressions.xml")],
         }
 
         for plugin_id in added_plugins:
@@ -324,11 +326,13 @@ class JavaStrategy(LanguageStrategy):
             # Parse existing plugins directly from the pom.xml
             plugins, plugins_mgmt, has_modules, error = parse_pom_plugins(pom_path)
             if error:
-                problems.append({
-                    "severity": "warning",
-                    "message": f"Maven auto-fix: {error}",
-                    "code": "CIHUB-CI-MAVEN-AUTOFIX-FAILED",
-                })
+                problems.append(
+                    {
+                        "severity": "warning",
+                        "message": f"Maven auto-fix: {error}",
+                        "code": "CIHUB-CI-MAVEN-AUTOFIX-FAILED",
+                    }
+                )
                 return
 
             # Check which tools are enabled and which plugins are missing
@@ -364,17 +368,21 @@ class JavaStrategy(LanguageStrategy):
 
             if success and updated_text != pom_text:
                 pom_path.write_text(updated_text, encoding="utf-8")
-                problems.append({
-                    "severity": "info",
-                    "message": f"Auto-fixed pom.xml: added {len(missing_plugins)} missing plugins",
-                    "code": "CIHUB-CI-MAVEN-AUTOFIX",
-                })
+                problems.append(
+                    {
+                        "severity": "info",
+                        "message": f"Auto-fixed pom.xml: added {len(missing_plugins)} missing plugins",
+                        "code": "CIHUB-CI-MAVEN-AUTOFIX",
+                    }
+                )
         except Exception as exc:  # noqa: BLE001 - best effort, don't break CI
-            problems.append({
-                "severity": "warning",
-                "message": f"Maven auto-fix failed: {exc}",
-                "code": "CIHUB-CI-MAVEN-AUTOFIX-FAILED",
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"Maven auto-fix failed: {exc}",
+                    "code": "CIHUB-CI-MAVEN-AUTOFIX-FAILED",
+                }
+            )
 
     def evaluate_gates(
         self,
