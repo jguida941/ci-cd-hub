@@ -168,12 +168,38 @@ class JavaStrategy(LanguageStrategy):
 
         try:
             from cihub.utils.java_gradle import (
-                collect_gradle_warnings,
+                GRADLE_TOOL_PLUGINS,
+                get_gradle_tool_flags,
                 insert_plugins_into_gradle,
                 load_gradle_plugin_snippets,
+                parse_gradle_plugins,
             )
 
-            warnings, missing_plugins = collect_gradle_warnings(workdir_path, config)
+            # Check build_tool - must be gradle
+            build_tool = config.get("java", {}).get("build_tool", "maven")
+            if build_tool != "gradle":
+                return
+
+            # Parse existing plugins directly from the build.gradle
+            declared_plugins, error = parse_gradle_plugins(build_path)
+            if error:
+                problems.append({
+                    "severity": "warning",
+                    "message": f"Gradle auto-fix: {error}",
+                    "code": "CIHUB-CI-GRADLE-AUTOFIX-FAILED",
+                })
+                return
+
+            # Check which tools are enabled and which plugins are missing
+            tool_flags = get_gradle_tool_flags(config)
+            missing_plugins = []
+            for tool, enabled in tool_flags.items():
+                if tool not in GRADLE_TOOL_PLUGINS or not enabled:
+                    continue
+                plugin_id = GRADLE_TOOL_PLUGINS[tool]
+                if plugin_id not in declared_plugins:
+                    missing_plugins.append(plugin_id)
+
             if not missing_plugins:
                 return  # Nothing to fix
 
@@ -209,12 +235,42 @@ class JavaStrategy(LanguageStrategy):
 
         try:
             from cihub.utils.java_pom import (
-                collect_java_pom_warnings,
+                JAVA_TOOL_PLUGINS,
+                get_java_tool_flags,
                 insert_plugins_into_pom,
                 load_plugin_snippets,
+                parse_pom_plugins,
+                plugin_matches,
             )
 
-            warnings, missing_plugins = collect_java_pom_warnings(workdir_path, config)
+            # Check build_tool - must be maven
+            build_tool = config.get("java", {}).get("build_tool", "maven")
+            if build_tool != "maven":
+                return
+
+            # Parse existing plugins directly from the pom.xml
+            plugins, plugins_mgmt, has_modules, error = parse_pom_plugins(pom_path)
+            if error:
+                problems.append({
+                    "severity": "warning",
+                    "message": f"Maven auto-fix: {error}",
+                    "code": "CIHUB-CI-MAVEN-AUTOFIX-FAILED",
+                })
+                return
+
+            # Check which tools are enabled and which plugins are missing
+            tool_flags = get_java_tool_flags(config)
+            missing_plugins = []
+            for tool, enabled in tool_flags.items():
+                if tool not in JAVA_TOOL_PLUGINS or not enabled:
+                    continue
+                group_id, artifact_id = JAVA_TOOL_PLUGINS[tool]
+                if plugin_matches(plugins, group_id, artifact_id):
+                    continue
+                if plugin_matches(plugins_mgmt, group_id, artifact_id):
+                    continue  # In pluginManagement is ok for auto-fix purposes
+                missing_plugins.append((group_id, artifact_id))
+
             if not missing_plugins:
                 return  # Nothing to fix
 
