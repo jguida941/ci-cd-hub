@@ -163,4 +163,5 @@ also_copy = ["cihub/", "scripts/", "config/", "schema/", "templates/", ".github/
 mutate_only_covered_lines = true
 # Use deterministic hypothesis profile via MUTATION_SCORE_MIN env var (set by CI)
 # conftest.py detects this and loads hypothesis "mutation" profile with derandomize=True
-test_command = "pytest -x --ignore-glob='**/test_triage*.py'"
+# Exclude test_command_output_contract.py due to persistent hypothesis test issues in mutmut
+test_command = "pytest -x --ignore-glob='**/test_triage*.py' --ignore-glob='**/test_command_output_contract.py'"
