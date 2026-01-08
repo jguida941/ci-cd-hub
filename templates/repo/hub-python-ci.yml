@@ -9,7 +9,7 @@
 # 2. Passes all settings to the appropriate language-specific workflow
 #
 # NOTE: Update the @ref below to match your desired hub version:
-#   - Use @v1 (recommended) for stable releases
+#   - Use @main (recommended) for stable releases
 #   - Use @main for latest (may have breaking changes)
 # ============================================================================
 
@@ -48,9 +48,9 @@ permissions:
 
 jobs:
   ci:
-    uses: jguida941/ci-cd-hub/.github/workflows/hub-ci.yml@v1
+    uses: jguida941/ci-cd-hub/.github/workflows/hub-ci.yml@main
     with:
       hub_correlation_id: ${{ github.event.inputs.hub_correlation_id || '' }}
       hub_repo: jguida941/ci-cd-hub
-      hub_ref: v1
+      hub_ref: main
     secrets: inherit
