@@ -16,12 +16,9 @@ existing code is migrated incrementally.
 from __future__ import annotations
 
 import ast
-import os
 from pathlib import Path
 
 import pytest
-from hypothesis import given
-from hypothesis import strategies as st
 
 # Files pending migration - remove from list as each is migrated
 # Goal: empty list = all commands follow the contract
@@ -320,30 +317,26 @@ class TestPrintPatternDetection:
         assert len(prints) == 3
         assert [p[0] for p in prints] == [1, 3, 4]
 
-    @pytest.mark.hypothesis
-    @given(st.integers(min_value=1, max_value=50))
-    # Note: Do NOT use explicit @settings here - let conftest.py's mutation profile
-    # control settings (especially database=None for mutmut subprocess compatibility)
-    def test_line_numbers_accurate(self, num_lines: int) -> None:
-        """Property: line numbers reported match actual positions."""
-        import tempfile
+    def test_line_numbers_accurate_parametrized(self, tmp_path: Path) -> None:
+        """Property: line numbers reported match actual positions.
 
-        # Generate file with print at specific line
-        lines = ["x = 1\n"] * (num_lines - 1) + ['print("test")\n']
+        Note: This was converted from a hypothesis test to parametrized test
+        because hypothesis has known issues running in mutmut's subprocess
+        environment (database path issues, subprocess isolation).
+        """
+        # Test a range of line counts to cover the same cases hypothesis would
+        for num_lines in [1, 5, 10, 25, 50]:
+            # Generate file with print at specific line
+            lines = ["x = 1\n"] * (num_lines - 1) + ['print("test")\n']
 
-        # Create temp file, close it, then read - ensures file is flushed
-        fd, temp_path = tempfile.mkstemp(suffix=".py")
-        try:
-            os.write(fd, "".join(lines).encode())
-            os.close(fd)
+            test_file = tmp_path / f"test_{num_lines}.py"
+            test_file.write_text("".join(lines))
 
-            prints = find_print_calls(Path(temp_path))
+            prints = find_print_calls(test_file)
 
             # Should find exactly one print at the last line
-            assert len(prints) == 1
-            assert prints[0][0] == num_lines
-        finally:
-            os.unlink(temp_path)
+            assert len(prints) == 1, f"Expected 1 print at line {num_lines}, got {len(prints)}"
+            assert prints[0][0] == num_lines, f"Expected line {num_lines}, got {prints[0][0]}"
 
 
 class TestAllowlistManagement:
