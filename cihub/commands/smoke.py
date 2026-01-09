@@ -301,8 +301,8 @@ def _resolve_types(args: argparse.Namespace) -> list[str]:
     if args.all:
         return ALL_TYPES
     if args.type:
-        # args.type is a single string, not a list - wrap it
-        return [args.type]
+        # args.type is already a list from action="append"
+        return args.type
     return DEFAULT_TYPES
 
 
