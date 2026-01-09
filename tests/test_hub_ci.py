@@ -251,6 +251,94 @@ class TestCmdRuff:
         assert result.data["issues"] == 1
 
 
+class TestCmdRuffFormat:
+    """Tests for cmd_ruff_format command."""
+
+    @mock.patch("cihub.commands.hub_ci.python_tools._run_command")
+    def test_returns_success_when_clean(self, mock_run: mock.Mock) -> None:
+        from cihub.commands.hub_ci import cmd_ruff_format
+        from cihub.exit_codes import EXIT_SUCCESS
+        from cihub.types import CommandResult
+
+        mock_run.return_value = mock.Mock(stdout="", stderr="", returncode=0)
+
+        args = argparse.Namespace(
+            path=".",
+            force_exclude=False,
+            output=None,
+            github_output=False,
+            json=True,  # suppress OutputContext stdout fallback
+        )
+        result = cmd_ruff_format(args)
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
+        assert result.data["needs_format"] is False
+
+    @mock.patch("cihub.commands.hub_ci.python_tools._run_command")
+    def test_returns_failure_when_needs_formatting(self, mock_run: mock.Mock) -> None:
+        from cihub.commands.hub_ci import cmd_ruff_format
+        from cihub.exit_codes import EXIT_FAILURE
+
+        mock_run.return_value = mock.Mock(stdout="Would reformat x.py\n", stderr="", returncode=1)
+
+        args = argparse.Namespace(
+            path=".",
+            force_exclude=False,
+            output=None,
+            github_output=False,
+            json=True,
+        )
+        result = cmd_ruff_format(args)
+        assert result.exit_code == EXIT_FAILURE
+        assert result.data["needs_format"] is True
+
+
+class TestCmdMypy:
+    """Tests for cmd_mypy command."""
+
+    @mock.patch("cihub.commands.hub_ci.python_tools._run_command")
+    def test_returns_success_when_no_errors(self, mock_run: mock.Mock) -> None:
+        from cihub.commands.hub_ci import cmd_mypy
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        mock_run.return_value = mock.Mock(stdout="Success: no issues found\n", stderr="", returncode=0)
+
+        args = argparse.Namespace(
+            path="cihub",
+            ignore_missing_imports=True,
+            show_error_codes=True,
+            output=None,
+            github_output=False,
+            json=True,
+        )
+        result = cmd_mypy(args)
+        assert result.exit_code == EXIT_SUCCESS
+        assert result.data["errors"] == 0
+
+    @mock.patch("cihub.commands.hub_ci.python_tools._run_command")
+    def test_counts_errors_from_output(self, mock_run: mock.Mock) -> None:
+        from cihub.commands.hub_ci import cmd_mypy
+        from cihub.exit_codes import EXIT_FAILURE
+
+        mock_run.return_value = mock.Mock(
+            stdout="cihub/x.py:1: error: Incompatible types\ncihub/y.py:2: error: Name defined twice\n",
+            stderr="",
+            returncode=1,
+        )
+
+        args = argparse.Namespace(
+            path="cihub",
+            ignore_missing_imports=True,
+            show_error_codes=True,
+            output=None,
+            github_output=False,
+            json=True,
+        )
+        result = cmd_mypy(args)
+        assert result.exit_code == EXIT_FAILURE
+        assert result.data["errors"] == 2
+
+
 class TestCmdBlack:
     """Tests for cmd_black command."""
 
@@ -1168,3 +1256,45 @@ class TestEnsureExecutable:
         missing_file = tmp_path / "will_be_deleted"
         result = ensure_executable(missing_file)
         assert result is False  # No exception, just returns False
+
+
+class TestCmdYamllint:
+    """Tests for cmd_yamllint command."""
+
+    @mock.patch("cihub.commands.hub_ci.validation.safe_run")
+    def test_returns_success_when_clean(self, mock_safe_run: mock.Mock) -> None:
+        from cihub.commands.hub_ci import cmd_yamllint
+        from cihub.exit_codes import EXIT_SUCCESS
+
+        mock_safe_run.return_value = mock.Mock(stdout="", stderr="", returncode=0)
+        args = argparse.Namespace(
+            config=None,
+            paths=["config/defaults.yaml"],
+            output=None,
+            github_output=False,
+            json=True,
+        )
+        result = cmd_yamllint(args)
+        assert result.exit_code == EXIT_SUCCESS
+        assert result.data["issues"] == 0
+
+    @mock.patch("cihub.commands.hub_ci.validation.safe_run")
+    def test_returns_failure_when_issues_found(self, mock_safe_run: mock.Mock) -> None:
+        from cihub.commands.hub_ci import cmd_yamllint
+        from cihub.exit_codes import EXIT_FAILURE
+
+        mock_safe_run.return_value = mock.Mock(
+            stdout="config/defaults.yaml:1: [error] syntax error\n",
+            stderr="",
+            returncode=1,
+        )
+        args = argparse.Namespace(
+            config=None,
+            paths=["config/defaults.yaml"],
+            output=None,
+            github_output=False,
+            json=True,
+        )
+        result = cmd_yamllint(args)
+        assert result.exit_code == EXIT_FAILURE
+        assert result.data["issues"] == 1

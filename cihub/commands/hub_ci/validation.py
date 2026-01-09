@@ -13,6 +13,12 @@ from cihub.services.discovery import _THRESHOLD_KEYS, _TOOL_KEYS
 from cihub.services.types import RepoEntry
 from cihub.types import CommandResult
 from cihub.utils.env import resolve_flag
+from cihub.utils.exec_utils import (
+    TIMEOUT_QUICK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 from cihub.utils.github_context import OutputContext
 from cihub.utils.paths import hub_root
 
@@ -53,6 +59,45 @@ def cmd_syntax_check(args: argparse.Namespace) -> CommandResult:
     return CommandResult(
         exit_code=EXIT_SUCCESS,
         summary="✓ Python syntax valid",
+    )
+
+
+def cmd_yamllint(args: argparse.Namespace) -> CommandResult:
+    """Run yamllint across hub YAML configs."""
+    config = getattr(args, "config", None)
+    if not config:
+        config = '{extends: relaxed, rules: {line-length: disable}}'
+
+    cmd = ["yamllint", "-d", str(config), *list(getattr(args, "paths", []))]
+
+    try:
+        proc = safe_run(cmd, timeout=TIMEOUT_QUICK, check=False)
+    except CommandNotFoundError:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="yamllint: command not found",
+            problems=[{"severity": "error", "message": "yamllint not found (install yamllint)"}],
+        )
+    except CommandTimeoutError:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary="yamllint: timed out",
+            problems=[{"severity": "error", "message": "yamllint timed out"}],
+        )
+
+    output = (proc.stdout or "") + (proc.stderr or "")
+    lines = [ln for ln in output.splitlines() if ln.strip()]
+    issues = len(lines) if proc.returncode != 0 else 0
+
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"issues": str(issues)})
+
+    preview = "\n".join(lines[:20])
+    return CommandResult(
+        exit_code=EXIT_SUCCESS if proc.returncode == 0 else EXIT_FAILURE,
+        summary=f"yamllint: {issues} issue(s)" if issues else "yamllint: clean",
+        problems=[{"severity": "error", "message": preview}] if proc.returncode != 0 and preview else [],
+        data={"issues": issues, "output_preview": preview, "paths": list(getattr(args, "paths", []))},
     )
 
 

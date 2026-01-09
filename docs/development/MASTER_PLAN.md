@@ -74,25 +74,30 @@ Must complete **before** starting other docs:
 
 **Why first:** Python CLI JSON output must be clean before TypeScript CLI can parse it.
 
-### 🟠 Priority 2: REGISTRY_AUDIT_AND_PLAN.md (NEW - Architecture Fix)
+### 🟠 Priority 2: SYSTEM_INTEGRATION_PLAN.md (Consolidated Architecture Fix)
 
-**Status:** Audited (8-agent comprehensive analysis) | **Depends on:** CLEAN_CODE.md ~90%+ | **Blocks:** TEST_REORGANIZATION
+**Status:** Consolidated (13-agent comprehensive analysis) | **Depends on:** CLEAN_CODE.md ~90%+ | **Blocks:** TEST_REORGANIZATION
 
 ```
-docs/development/active/REGISTRY_AUDIT_AND_PLAN.md
+docs/development/active/SYSTEM_INTEGRATION_PLAN.md
 ```
+
+> **Note:** This consolidates the former REGISTRY_AUDIT_AND_PLAN.md, WIZARD_IMPROVEMENTS.md, and COMPREHENSIVE_SYSTEM_AUDIT.md into a single actionable plan.
 
 Core implementation needed:
-- [ ] Part 4: Schema redesign (tool definitions via $ref, 47+ fields)
-- [ ] Part 5: Service layer refactor (registry_service.py expansion)
-- [ ] Part 6: Wizard ↔ Registry integration (currently disconnected)
-- [ ] Part 7: Boolean toggle extensibility
-- [ ] Part 8: Sync verification implementation
+- [x] Phase 0: Safety + JSON purity (registry keys, --json guard/tests)
+- [x] Phase 1: Critical fixes & CLI wrappers (min_score normalization, hub-ci wrappers, cihub block)
+- [ ] Phase 2: Registry schema + service (full config scope)
+- [ ] Phase 3: Registry bootstrap + drift detection
+- [ ] Phase 4: Wizard parity + profile integration
+- [ ] Phase 5: CLI management commands (profile/registry/tool/threshold/repo)
+- [ ] Phase 6: Schema extensibility (custom tools end-to-end)
 
-**Why second:** Fixes the wizard/registry disconnect BEFORE test reorganization validates it. The 8-agent audit revealed critical gaps:
-- Registry only tracks 3 values (coverage, mutation, vulns_max)
+**Why second:** Fixes the wizard/registry disconnect BEFORE test reorganization validates it. The multi-agent audits revealed critical gaps:
+- Registry only tracks 3 of 40+ values
 - Wizard creates configs but never updates registry.json
-- 47+ tool fields are ignored in sync operations
+- Wizard doesn't surface existing 12 profiles
+- CLI management surface is incomplete (audit required)
 
 ### 🟡 Priority 3: TEST_REORGANIZATION.md (After Registry Integration)
 

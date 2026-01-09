@@ -689,8 +689,10 @@ from cihub.commands.hub_ci.java_tools import (  # noqa: E402
 from cihub.commands.hub_ci.python_tools import (  # noqa: E402
     cmd_black,
     cmd_coverage_verify,
+    cmd_mypy,
     cmd_mutmut,
     cmd_ruff,
+    cmd_ruff_format,
 )
 from cihub.commands.hub_ci.release import (  # noqa: E402
     cmd_actionlint,
@@ -736,6 +738,7 @@ from cihub.commands.hub_ci.validation import (  # noqa: E402
     cmd_validate_profiles,
     cmd_validate_triage,
     cmd_verify_matrix_keys,
+    cmd_yamllint,
 )
 
 # ============================================================================
@@ -764,7 +767,9 @@ __all__ = [
     "EMPTY_SARIF",
     # Python tools
     "cmd_ruff",
+    "cmd_ruff_format",
     "cmd_black",
+    "cmd_mypy",
     "cmd_coverage_verify",
     "cmd_mutmut",
     # Badges
@@ -780,6 +785,7 @@ __all__ = [
     "cmd_security_owasp",
     # Validation
     "cmd_syntax_check",
+    "cmd_yamllint",
     "cmd_repo_check",
     "cmd_source_check",
     "cmd_docker_compose_check",

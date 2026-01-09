@@ -438,7 +438,7 @@ Checks:
 
 ## Open Questions
 
-1. Should we use pytest markers (`@pytest.mark.unit`) or rely on directory structure?
+1. Should we use pytest markercodes (`@pytest.mark.unit`) or rely on directory structure?
 2. How frequently should mutation testing run? (Expensive)
 3. Should regression tests reference GitHub issue numbers?
 4. Integration with IDE test runners (VSCode, PyCharm)?

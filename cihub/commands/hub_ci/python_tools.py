@@ -42,20 +42,82 @@ def cmd_ruff(args: argparse.Namespace) -> CommandResult:
     ctx = OutputContext.from_args(args)
     ctx.write_outputs({"issues": str(issues)})
 
-    try:
-        github_proc = safe_run(
-            cmd + ["--output-format=github"],
-            timeout=TIMEOUT_NETWORK,
-            capture_output=False,  # Let github-format output go to terminal
-        )
-        passed = github_proc.returncode == 0
-    except (CommandNotFoundError, CommandTimeoutError):
-        passed = False
+    json_mode = getattr(args, "json", False)
+    if json_mode:
+        # In JSON mode, stdout must remain JSON-only. Don't stream github-format output.
+        passed = json_proc.returncode == 0
+    else:
+        try:
+            github_proc = safe_run(
+                cmd + ["--output-format=github"],
+                timeout=TIMEOUT_NETWORK,
+                capture_output=False,  # Let github-format output go to terminal
+            )
+            passed = github_proc.returncode == 0
+        except (CommandNotFoundError, CommandTimeoutError):
+            passed = False
     return CommandResult(
         exit_code=EXIT_SUCCESS if passed else EXIT_FAILURE,
         summary=f"Ruff: {issues} issues found" if issues else "Ruff: no issues",
         problems=[{"severity": "error", "message": f"Ruff found {issues} issues"}] if not passed else [],
         data={"issues": issues, "passed": passed},
+    )
+
+
+def cmd_ruff_format(args: argparse.Namespace) -> CommandResult:
+    """Run ruff formatter in check mode.
+
+    Note: In JSON mode, stdout must remain JSON-only. This command captures all tool output.
+    """
+    cmd = ["ruff", "format", "--check", args.path]
+    if getattr(args, "force_exclude", False):
+        cmd.append("--force-exclude")
+
+    proc = _run_command(cmd, Path("."))
+    output = (proc.stdout or "") + (proc.stderr or "")
+    preview = output[:MAX_LOG_PREVIEW_CHARS]
+    needs_format = proc.returncode != 0
+
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"needs_format": "true" if needs_format else "false"})
+
+    problems = []
+    if needs_format and preview.strip():
+        problems = [{"severity": "error", "message": preview.strip()}]
+    elif needs_format:
+        problems = [{"severity": "error", "message": "Ruff format check failed"}]
+
+    return CommandResult(
+        exit_code=EXIT_FAILURE if needs_format else EXIT_SUCCESS,
+        summary="Ruff format: needs reformatting" if needs_format else "Ruff format: clean",
+        problems=problems,
+        data={"needs_format": needs_format, "output_preview": preview},
+    )
+
+
+def cmd_mypy(args: argparse.Namespace) -> CommandResult:
+    """Run mypy type checking."""
+    cmd = ["mypy", args.path]
+    if getattr(args, "ignore_missing_imports", False):
+        cmd.append("--ignore-missing-imports")
+    if getattr(args, "show_error_codes", False):
+        cmd.append("--show-error-codes")
+
+    proc = _run_command(cmd, Path("."))
+    output = (proc.stdout or "") + (proc.stderr or "")
+    preview = output[:MAX_LOG_PREVIEW_CHARS]
+    errors = len(re.findall(r":\s*error:", output))
+    if proc.returncode != 0 and errors == 0:
+        errors = 1
+
+    ctx = OutputContext.from_args(args)
+    ctx.write_outputs({"errors": str(errors)})
+
+    return CommandResult(
+        exit_code=EXIT_SUCCESS if proc.returncode == 0 else EXIT_FAILURE,
+        summary=f"Mypy: {errors} error(s)" if errors else "Mypy: no errors",
+        problems=[{"severity": "error", "message": preview.strip() or "mypy failed"}] if proc.returncode != 0 else [],
+        data={"errors": errors, "output_preview": preview},
     )
 
 
@@ -342,6 +404,8 @@ def cmd_mutmut(args: argparse.Namespace) -> CommandResult:
         f"| Total Tested | {tested} |\n"
     )
 
+    min_mutation_score = getattr(args, "min_mutation_score", getattr(args, "min_score", 70))
+
     result_data = {
         "mutation_score": score,
         "killed": killed,
@@ -350,23 +414,27 @@ def cmd_mutmut(args: argparse.Namespace) -> CommandResult:
         "suspicious": suspicious,
         "skipped": skipped,
         "tested": tested,
-        "min_score": args.min_score,
+        # Canonical key (schema/inputs use min_mutation_score). Keep min_score as alias for compatibility.
+        "min_mutation_score": min_mutation_score,
+        "min_score": min_mutation_score,
     }
 
-    if score < args.min_score:
-        summary += f"\n**FAILED**: Score {score}% below {args.min_score}% threshold\n"
+    if score < min_mutation_score:
+        summary += f"\n**FAILED**: Score {score}% below {min_mutation_score}% threshold\n"
         ctx.write_summary(summary)
         return CommandResult(
             exit_code=EXIT_FAILURE,
-            summary=f"Mutation score {score}% below {args.min_score}% threshold",
-            problems=[{"severity": "error", "message": f"Mutation score {score}% below {args.min_score}% threshold"}],
+            summary=f"Mutation score {score}% below {min_mutation_score}% threshold",
+            problems=[
+                {"severity": "error", "message": f"Mutation score {score}% below {min_mutation_score}% threshold"}
+            ],
             data=result_data,
         )
-    summary += f"\n**PASSED**: Score {score}% meets {args.min_score}% threshold\n"
+    summary += f"\n**PASSED**: Score {score}% meets {min_mutation_score}% threshold\n"
     ctx.write_summary(summary)
 
     return CommandResult(
         exit_code=EXIT_SUCCESS,
-        summary=f"Mutation testing passed: {score}% (threshold: {args.min_score}%)",
+        summary=f"Mutation testing passed: {score}% (threshold: {min_mutation_score}%)",
         data=result_data,
     )

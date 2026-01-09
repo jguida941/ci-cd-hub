@@ -46,3 +46,4 @@ class CommandHandlers:
     cmd_fix: CommandHandler
     cmd_registry: CommandHandler
     cmd_hub: CommandHandler
+    cmd_setup: CommandHandler

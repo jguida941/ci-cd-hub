@@ -2,6 +2,144 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-09 - JSON Mode Purity + New Hub-CI Commands (CLI Hardening)
+
+### New: JSON Mode Purity for CLI Commands
+
+**Problem:** When commands are invoked with `--json`, auxiliary output (github-format annotations, stdout summaries) pollutes the JSON stream, breaking programmatic consumers.
+
+**Solution:** Added `json_mode` field to `GitHubContext` that suppresses non-JSON stdout:
+- `write_outputs()` skips stdout fallback in JSON mode (use GITHUB_OUTPUT instead)
+- `write_summary()` skips stdout fallback in JSON mode (use GITHUB_STEP_SUMMARY instead)
+- `cmd_ruff()` skips `--output-format=github` pass in JSON mode
+
+**Test Coverage:**
+- New test directory: `tests/test_cli_contracts/`
+- JSON purity tests: `tests/test_cli_contracts/test_json_purity.py`
+
+### New: Hub-CI Python Tool Commands
+
+**New commands:**
+- `cihub hub-ci yamllint` - Lint YAML files (hub defaults, repo configs, profiles)
+- `cihub hub-ci ruff-format` - Run ruff formatter in check mode
+- `cihub hub-ci mypy` - Run mypy type checking
+
+**Also:**
+- All hub-ci subparsers now accept `--json` flag directly (not only at parent level)
+- `--min-mutation-score` is now the canonical arg name (alias: `--min-score`)
+
+### New: Setup Wizard Command (ADR-0051)
+
+**New command:** `cihub setup` - Complete onboarding wizard
+
+**Steps orchestrated:**
+1. Project creation (scaffold) OR detection of existing project
+2. Configuration file generation (.ci-hub.yml)
+3. Workflow file creation (.github/workflows/hub-ci.yml)
+4. Configuration validation
+5. Local CI run (optional)
+6. GitHub setup - repo creation and push (optional)
+7. GitHub Actions trigger (optional)
+
+**ADR-0051 (Wizard Profile-First Design):**
+- Profiles are presented as starting points, not restrictions
+- Users ALWAYS see individual tool checkboxes for customization
+- Reduces wizard from 15+ prompts to 3-4 for most users
+
+---
+
+## 2026-01-09 - Registry Schema Normalization + Threshold Resolution (Phase 2.4b)
+
+### Update: Schema-Aligned Threshold Keys
+
+**Problem:** Registry used legacy threshold keys (`coverage`, `mutation`, `vulns_max`) while the schema uses (`coverage_min`, `mutation_score_min`, `max_critical_vulns`, `max_high_vulns`).
+
+**Solution:** Registry service now normalizes threshold keys on load/save:
+
+| Legacy Key | Schema Key |
+|------------|------------|
+| `coverage` | `coverage_min` |
+| `mutation` | `mutation_score_min` |
+| `vulns_max` | `max_critical_vulns`, `max_high_vulns` |
+
+**Backward compatibility:** Legacy keys still accepted, normalized on load.
+
+### Update: Effective Threshold Resolution
+
+**`list_repos()` and `get_repo_config()` now compute effective thresholds from:**
+1. Schema defaults (fallback)
+2. Profile config (if tier specifies a profile)
+3. Tier config fragment (`tiers.<tier>.config.thresholds`)
+4. Legacy tier threshold keys (top-level in tier)
+5. Repo config fragment (`repos.<repo>.config.thresholds`)
+6. Explicit overrides (`repos.<repo>.overrides`)
+
+**New list output fields:**
+- `has_threshold_overrides`: True if repo has any per-repo threshold config
+- `has_config_thresholds`: True if repo has `config.thresholds` (managedConfig)
+
+### Update: Registry Schema Strictness
+
+- `registry.schema.json` now has `additionalProperties: false` at root
+- Added extensive `$defs` for sparse config fragments referencing `ci-hub-config.schema.json`
+- Added `managedConfig` definition with allowlisted config keys
+
+### Update: Repo Metadata Normalization
+
+**Problem:** Repo metadata (`language`, `dispatch_enabled`) was duplicated at top-level and in `config.repo`.
+
+**Solution:** `_normalize_repo_metadata_inplace()` deduplicates when values match; `_compute_repo_metadata_drift()` detects conflicts.
+
+### Test Coverage
+
+New test files:
+- `tests/test_registry_cross_root.py` - Hub root derivation for `--configs-dir`
+- `tests/test_registry_roundtrip_invariant.py` - Registry write/read preserves values
+- `tests/test_registry_schema_contract.py` - Schema contract validation
+- `tests/test_registry_service_threshold_mapping.py` - Threshold resolution tests
+
+---
+
+## 2026-01-09 - Registry Sync Applies Managed Config Fragments (Phase 2.3a)
+
+### New: `cihub registry sync` applies tier/repo config fragments
+
+**Behavior:** `cihub registry sync` now merges allowlisted tier/repo config fragments (`tiers.<tier>.config`, `repos.<repo>.config`) into `config/repos/<repo>.yaml` in addition to threshold syncing.
+
+**Notes:**
+- Sync merges the tier's `profile` config (if present) plus `tiers.<tier>.config` plus `repos.<repo>.config`.
+- Sync does **not** expand `thresholds_profile` (threshold profile presets) yet.
+- This is a partial Phase 2.3 step; full “registry owns all hub-managed config” is still pending Phase 2.2/2.4.
+
+**Test Coverage:**
+- Sync applies tier fragments: `tests/test_registry_service_threshold_mapping.py::test_sync_to_configs_applies_tier_config_fragments`
+- Round-trip via loader: `tests/test_registry_roundtrip_invariant.py`
+
+### Update: `cihub registry diff` surfaces managedConfig drift (Phase 2.4a)
+
+**Behavior:** `cihub registry diff` now reuses the sync engine in dry-run mode to surface drift for allowlisted non-threshold keys (repo/tools/gates/reports/etc), in addition to thresholds drift.
+
+**Also fixed:**
+- `--configs-dir` now derives a hub root for registry/profiles/defaults loading, and errors if the hub root cannot be derived or the target `config/registry.json` is missing.
+- Registry list `*` marker reflects any per-repo threshold config (explicit overrides or managedConfig.thresholds).
+- Registry sync applies managed fragments without globally normalizing repo configs (avoids rewriting unrelated keys).
+- Fragment normalization skips CVSS fallback injection for sparse fragments (no automatic `trivy_cvss_fail`).
+
+---
+
+## 2026-01-08 - Registry Sparse Config Audit (Phase 2.2a)
+
+### New: Sparse Config Fragment Audit in `cihub registry diff`
+
+**Problem:** Registry config fragments are intended to be sparse, but redundant values can accumulate and hide drift.
+
+**Solution:** `cihub registry diff` now reports non-sparse config fragment values as `sparse.config.*` warnings for both tier and repo config fragments.
+
+**Test Coverage:**
+- New sparse audit tests for tier and repo config fragments in `tests/test_registry_service_threshold_mapping.py`
+
+---
+
 ## 2026-01-07 - Triage Command Modularization (ADR-0050)
 
 ### Refactor: Triage Command Package (ADR-0050 Phases 1-3)

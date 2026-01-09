@@ -322,7 +322,7 @@ jobs:
         run: python -m cihub hub-ci ruff --path . --force-exclude --github-output
 
       - name: Ruff format check
-        run: ruff format --check . --force-exclude
+        run: python -m cihub hub-ci ruff-format --path . --force-exclude
 
   syntax-check:
     name: Python Syntax
@@ -388,7 +388,7 @@ jobs:
         run: pip install mypy==1.14.1 pyyaml==6.0.2 jsonschema==4.23.0 types-PyYAML==6.0.12.20241230
 
       - name: Run mypy
-        run: mypy cihub/ --ignore-missing-imports --show-error-codes
+        run: python -m cihub hub-ci mypy --path cihub
 
   yaml-lint:
     name: YAML Lint
@@ -416,7 +416,7 @@ jobs:
         run: pip install yamllint==1.35.1
 
       - name: Lint YAML
-        run: 'yamllint -d "{extends: relaxed, rules: {line-length: disable}}" config/defaults.yaml config/repos/ templates/profiles/'
+        run: python -m cihub hub-ci yamllint
 
   # ============================================================================
   # Stage 2: Testing

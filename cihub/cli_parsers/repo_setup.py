@@ -125,3 +125,30 @@ def add_repo_setup_commands(
     validate.add_argument("--repo", required=True, help="Path to repo")
     validate.add_argument("--strict", action="store_true", help="Fail if pom.xml warnings are found")
     validate.set_defaults(func=handlers.cmd_validate)
+
+    # Complete setup wizard that orchestrates the full onboarding workflow
+    setup = subparsers.add_parser(
+        "setup",
+        help="Complete setup wizard for onboarding repos to CI/CD Hub",
+        description=(
+            "Interactive wizard that guides you through the complete CI/CD setup process: "
+            "scaffold → detect → configure → validate → run CI → push to GitHub"
+        ),
+    )
+    add_json_flag(setup)
+    setup.add_argument(
+        "--repo",
+        default=".",
+        help="Path to repository (default: current directory)",
+    )
+    setup.add_argument(
+        "--new",
+        action="store_true",
+        help="Force creation of a new project (scaffold)",
+    )
+    setup.add_argument(
+        "--skip-github",
+        action="store_true",
+        help="Skip GitHub repository setup steps",
+    )
+    setup.set_defaults(func=handlers.cmd_setup)

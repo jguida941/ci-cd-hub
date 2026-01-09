@@ -4,6 +4,7 @@
   "title": "CIHub Registry Schema",
   "description": "Schema for centralized repo configuration registry with tier-to-profile mapping",
   "type": "object",
+  "additionalProperties": false,
   "required": ["schema_version", "tiers", "repos"],
   "properties": {
     "$schema": {
@@ -31,8 +32,140 @@
     }
   },
   "$defs": {
+    "cihubRepoFull": {
+      "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/repo"
+    },
+    "cihubRepoSparse": {
+      "type": "object",
+      "description": "Sparse repo metadata overrides for registry storage (owner/name optional).",
+      "additionalProperties": false,
+      "dependencies": {
+        "owner": ["name"],
+        "name": ["owner"]
+      },
+      "properties": {
+        "default_branch": {
+          "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/repo/properties/default_branch"
+        },
+        "dispatch_enabled": {
+          "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/repo/properties/dispatch_enabled"
+        },
+        "dispatch_workflow": {
+          "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/repo/properties/dispatch_workflow"
+        },
+        "force_all_tools": {
+          "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/repo/properties/force_all_tools"
+        },
+        "language": {
+          "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/repo/properties/language"
+        },
+        "name": {
+          "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/repo/properties/name"
+        },
+        "owner": {
+          "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/repo/properties/owner"
+        },
+        "repo_side_execution": {
+          "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/repo/properties/repo_side_execution"
+        },
+        "run_group": {
+          "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/repo/properties/run_group"
+        },
+        "subdir": {
+          "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/repo/properties/subdir"
+        },
+        "use_central_runner": {
+          "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/repo/properties/use_central_runner"
+        }
+      }
+    },
+    "cihubRepo": {
+      "anyOf": [
+        { "$ref": "#/$defs/cihubRepoSparse" },
+        { "$ref": "#/$defs/cihubRepoFull" }
+      ]
+    },
+    "cihubLanguage": {
+      "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/language"
+    },
+    "cihubPython": {
+      "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/python"
+    },
+    "cihubJava": {
+      "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/java"
+    },
+    "cihubThresholds": {
+      "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/definitions/thresholds"
+    },
+    "cihubGates": {
+      "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/gates"
+    },
+    "cihubReports": {
+      "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/definitions/reports"
+    },
+    "cihubNotifications": {
+      "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/notifications"
+    },
+    "cihubHardenRunner": {
+      "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/harden_runner"
+    },
+    "cihubThresholdsProfile": {
+      "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/properties/thresholds_profile"
+    },
+    "cihubCliToggles": {
+      "$ref": "https://github.com/jguida941/ci-cd-hub/schema/ci-hub-config.schema.json#/definitions/cihubConfig"
+    },
+    "managedConfig": {
+      "type": "object",
+      "description": "Allowlisted subset of ci-hub-config (stored sparsely in registry; optional fields).",
+      "additionalProperties": false,
+      "properties": {
+        "version": { "type": "string" },
+        "language": { "$ref": "#/$defs/cihubLanguage" },
+        "repo": { "$ref": "#/$defs/cihubRepo" },
+        "python": { "$ref": "#/$defs/cihubPython" },
+        "java": { "$ref": "#/$defs/cihubJava" },
+        "thresholds": { "$ref": "#/$defs/cihubThresholds" },
+        "gates": { "$ref": "#/$defs/cihubGates" },
+        "reports": { "$ref": "#/$defs/cihubReports" },
+        "notifications": { "$ref": "#/$defs/cihubNotifications" },
+        "harden_runner": { "$ref": "#/$defs/cihubHardenRunner" },
+        "thresholds_profile": { "$ref": "#/$defs/cihubThresholdsProfile" },
+        "cihub": { "$ref": "#/$defs/cihubCliToggles" }
+      }
+    },
+    "thresholdOverrides": {
+      "type": "object",
+      "description": "Threshold override keys used by registry_service (schema-aligned, with legacy aliases supported).",
+      "additionalProperties": false,
+      "properties": {
+        "coverage_min": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "mutation_score_min": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "max_critical_vulns": { "type": "integer", "minimum": 0 },
+        "max_high_vulns": { "type": "integer", "minimum": 0 },
+
+        "coverage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "LEGACY: use coverage_min"
+        },
+        "mutation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "LEGACY: use mutation_score_min"
+        },
+        "vulns_max": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "LEGACY: use max_critical_vulns/max_high_vulns"
+        }
+      }
+    },
     "tier": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["description"],
       "properties": {
         "description": {
@@ -42,11 +175,22 @@
         "profile": {
           "type": ["string", "null"],
           "description": "Profile name in templates/profiles/ (null for default/standard tier)"
-        }
+        },
+        "config": {
+          "$ref": "#/$defs/managedConfig"
+        },
+        "coverage_min": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "mutation_score_min": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "max_critical_vulns": { "type": "integer", "minimum": 0 },
+        "max_high_vulns": { "type": "integer", "minimum": 0 },
+        "coverage": { "type": "integer", "minimum": 0, "maximum": 100, "description": "LEGACY: use coverage_min" },
+        "mutation": { "type": "integer", "minimum": 0, "maximum": 100, "description": "LEGACY: use mutation_score_min" },
+        "vulns_max": { "type": "integer", "minimum": 0, "description": "LEGACY: use max_critical_vulns/max_high_vulns" }
       }
     },
     "repo": {
       "type": "object",
+      "additionalProperties": false,
       "required": ["tier"],
       "properties": {
         "tier": {
@@ -65,6 +209,12 @@
         "dispatch_enabled": {
           "type": "boolean",
           "description": "Whether dispatch workflows are enabled"
+        },
+        "overrides": {
+          "$ref": "#/$defs/thresholdOverrides"
+        },
+        "config": {
+          "$ref": "#/$defs/managedConfig"
         }
       }
     }

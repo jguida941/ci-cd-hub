@@ -48,6 +48,7 @@ def _default_handlers() -> CommandHandlers:
         cmd_fix=_noop_handler,
         cmd_registry=_noop_handler,
         cmd_hub=_noop_handler,
+        cmd_setup=_noop_handler,
     )
 
 

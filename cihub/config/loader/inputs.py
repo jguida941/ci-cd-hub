@@ -123,11 +123,15 @@ def generate_workflow_inputs(config: dict) -> dict:
     inputs["write_github_summary"] = bool(github_summary.get("enabled", True))
 
     # Debug and triage inputs (dispatch inputs)
-    cihub_cfg = config.get("cihub", {}) or {}
-    inputs["cihub_debug"] = cihub_cfg.get("debug", False)
-    inputs["cihub_verbose"] = cihub_cfg.get("verbose", False)
-    inputs["cihub_debug_context"] = cihub_cfg.get("debug_context", False)
-    inputs["cihub_emit_triage"] = cihub_cfg.get("emit_triage", False)
+    #
+    # Contract: this config block is optional and must never crash input generation,
+    # even if users provide an invalid shape (e.g., `cihub: true`).
+    cihub_value = config.get("cihub")
+    cihub_cfg = cihub_value if isinstance(cihub_value, dict) else {}
+    inputs["cihub_debug"] = bool(cihub_cfg.get("debug", False))
+    inputs["cihub_verbose"] = bool(cihub_cfg.get("verbose", False))
+    inputs["cihub_debug_context"] = bool(cihub_cfg.get("debug_context", False))
+    inputs["cihub_emit_triage"] = bool(cihub_cfg.get("emit_triage", False))
 
     # Metadata for internal use (not dispatch inputs)
     repo = config.get("repo", {})

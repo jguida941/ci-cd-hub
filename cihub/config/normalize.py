@@ -46,6 +46,24 @@ def _normalize_tool_configs_inplace(config: dict[str, Any]) -> None:
                 tools[tool_name] = {"enabled": tool_value}
 
 
+def _normalize_deprecated_tool_fields_inplace(config: dict[str, Any]) -> None:
+    """Normalize deprecated/alias tool fields to canonical names.
+
+    This keeps backward compatibility with older configs while keeping the
+    internal config model consistent for downstream consumers (inputs, gates, TS CLI).
+    """
+    python_cfg = config.get("python")
+    if isinstance(python_cfg, dict):
+        tools = python_cfg.get("tools")
+        if isinstance(tools, dict):
+            mutmut_cfg = tools.get("mutmut")
+            if isinstance(mutmut_cfg, dict):
+                # Deprecated alias: mutmut.min_score -> mutmut.min_mutation_score
+                if "min_mutation_score" not in mutmut_cfg and "min_score" in mutmut_cfg:
+                    mutmut_cfg["min_mutation_score"] = mutmut_cfg.get("min_score")
+                mutmut_cfg.pop("min_score", None)
+
+
 def _normalize_enabled_sections_inplace(config: dict[str, Any]) -> None:
     for key in _FEATURE_TOGGLES:
         value = config.get(key)
@@ -90,6 +108,7 @@ def normalize_config(config: dict[str, Any], apply_thresholds_profile: bool = Tr
         return {}
     normalized = copy.deepcopy(config)
     _normalize_tool_configs_inplace(normalized)
+    _normalize_deprecated_tool_fields_inplace(normalized)
     _normalize_enabled_sections_inplace(normalized)
     if apply_thresholds_profile:
         _apply_thresholds_profile_inplace(normalized)

@@ -79,6 +79,7 @@ class GitHubContext:
     github_output: bool = False
     summary_path: str | None = None
     github_summary: bool = False
+    json_mode: bool = False
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> GitHubContext:
@@ -124,6 +125,7 @@ class GitHubContext:
             github_output=getattr(args, "github_output", False),
             summary_path=getattr(args, "summary", None),
             github_summary=getattr(args, "github_summary", False),
+            json_mode=getattr(args, "json", False),
         )
 
     def with_output_config(
@@ -156,6 +158,7 @@ class GitHubContext:
             updates["github_output"] = getattr(args, "github_output", False)
             updates["summary_path"] = getattr(args, "summary", None)
             updates["github_summary"] = getattr(args, "github_summary", False)
+            updates["json_mode"] = getattr(args, "json", False)
         if output_path is not None:
             updates["output_path"] = output_path
         if github_output is not None:
@@ -230,6 +233,10 @@ class GitHubContext:
         """
         resolved = self._resolve_output_path()
         if resolved is None:
+            # In JSON mode, stdout must remain JSON-only. Outputs should be captured in
+            # CommandResult.data by the command, or written to GITHUB_OUTPUT.
+            if self.json_mode:
+                return
             for key, value in values.items():
                 print(f"{key}={value}")
             return
@@ -248,6 +255,10 @@ class GitHubContext:
         """
         resolved = self._resolve_summary_path()
         if resolved is None:
+            # In JSON mode, stdout must remain JSON-only. Summaries should be captured in
+            # CommandResult.summary/data by the command, or written to GITHUB_STEP_SUMMARY.
+            if self.json_mode:
+                return
             print(text)
             return
         with open(resolved, "a", encoding="utf-8") as handle:

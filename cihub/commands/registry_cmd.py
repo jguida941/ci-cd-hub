@@ -20,6 +20,37 @@ from cihub.types import CommandResult
 from cihub.utils.paths import hub_root
 
 
+def _derive_hub_root_from_configs_dir(configs_dir: Path) -> Path | None:
+    """Best-effort derivation of hub root from a config/repos directory.
+
+    This prevents cross-root profile leakage when users point --configs-dir at a
+    different checkout.
+    """
+    try:
+        configs_dir = configs_dir.resolve()
+    except Exception:  # noqa: BLE001
+        pass
+
+    try:
+        if configs_dir.name == "repos" and configs_dir.parent.name == "config":
+            return configs_dir.parent.parent
+        if configs_dir.name == "config":
+            return configs_dir.parent
+    except Exception:  # noqa: BLE001
+        return None
+
+    # Heuristic: walk upward looking for a hub root (config/defaults.yaml + templates/profiles).
+    try:
+        parents = [configs_dir, *list(configs_dir.parents)[:5]]
+        for candidate in parents:
+            if (candidate / "config" / "defaults.yaml").exists() and (candidate / "templates" / "profiles").exists():
+                return candidate
+    except Exception:  # noqa: BLE001
+        return None
+
+    return None
+
+
 def cmd_registry(args: argparse.Namespace) -> CommandResult:
     """Dispatch registry subcommands."""
     subcommand: str | None = getattr(args, "subcommand", None)
@@ -70,11 +101,12 @@ def _cmd_list(args: argparse.Namespace) -> CommandResult:
     # Format for display
     lines = []
     for repo in repos:
-        override_marker = "*" if repo["has_overrides"] else " "
+        override_marker = "*" if repo.get("has_threshold_overrides") else " "
         eff = repo["effective"]
         lines.append(
             f"{repo['name']:<30} {repo['tier']:<10}{override_marker} "
-            f"cov={eff['coverage']:>3}% mut={eff['mutation']:>3}% vuln<={eff['vulns_max']}"
+            f"cov>={eff['coverage_min']:>3}% mut>={eff['mutation_score_min']:>3}% "
+            f"crit<={eff['max_critical_vulns']} high<={eff['max_high_vulns']}"
         )
 
     return CommandResult(
@@ -114,9 +146,10 @@ def _cmd_show(args: argparse.Namespace) -> CommandResult:
         f"Description: {config['description'] or '-'}",
         "",
         "Effective Settings:",
-        f"  coverage:  {config['effective']['coverage']}%",
-        f"  mutation:  {config['effective']['mutation']}%",
-        f"  vulns_max: {config['effective']['vulns_max']}",
+        f"  coverage_min:        {config['effective']['coverage_min']}%",
+        f"  mutation_score_min:  {config['effective']['mutation_score_min']}%",
+        f"  max_critical_vulns:  {config['effective']['max_critical_vulns']}",
+        f"  max_high_vulns:      {config['effective']['max_high_vulns']}",
     ]
 
     if config["overrides"]:
@@ -207,8 +240,6 @@ def _cmd_set(args: argparse.Namespace) -> CommandResult:
 
 def _cmd_diff(args: argparse.Namespace) -> CommandResult:
     """Show drift from tier defaults vs actual configs."""
-    registry = load_registry()
-
     configs_dir = Path(args.configs_dir) if args.configs_dir else hub_root() / "config" / "repos"
     if not configs_dir.exists():
         return CommandResult(
@@ -223,7 +254,43 @@ def _cmd_diff(args: argparse.Namespace) -> CommandResult:
             ],
         )
 
-    diffs = compute_diff(registry, configs_dir)
+    hub_root_for_target = _derive_hub_root_from_configs_dir(configs_dir)
+    if args.configs_dir and hub_root_for_target is None:
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=f"Unable to derive hub root from --configs-dir: {configs_dir}",
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Expected --configs-dir to point at <hub>/config or <hub>/config/repos (or be within a hub root).",
+                    "code": "CIHUB-REGISTRY-CONFIGS-DIR-NO-HUB-ROOT",
+                }
+            ],
+            suggestions=[
+                "Pass --configs-dir <hub>/config/repos (recommended).",
+                "Or run the command from the target hub checkout so default paths apply.",
+            ],
+        )
+    hub_root_for_target = hub_root_for_target or hub_root()
+    registry_path = hub_root_for_target / "config" / "registry.json"
+    if args.configs_dir and not registry_path.exists():
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Registry file not found: {registry_path}",
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Missing registry.json in derived hub root: {registry_path}",
+                    "code": "CIHUB-REGISTRY-NO-REGISTRY-FILE",
+                }
+            ],
+            suggestions=[
+                f"Create {registry_path} (see schema/registry.schema.json) or copy it from your hub checkout.",
+                "Then rerun cihub registry diff/sync.",
+            ],
+        )
+    registry = load_registry(registry_path=registry_path)
+    diffs = compute_diff(registry, configs_dir, hub_root_path=hub_root_for_target)
 
     if not diffs:
         return CommandResult(
@@ -252,8 +319,6 @@ def _cmd_diff(args: argparse.Namespace) -> CommandResult:
 
 def _cmd_sync(args: argparse.Namespace) -> CommandResult:
     """Sync registry settings to repo configs."""
-    registry = load_registry()
-
     configs_dir = Path(args.configs_dir) if args.configs_dir else hub_root() / "config" / "repos"
     if not configs_dir.exists():
         return CommandResult(
@@ -268,9 +333,45 @@ def _cmd_sync(args: argparse.Namespace) -> CommandResult:
             ],
         )
 
+    hub_root_for_target = _derive_hub_root_from_configs_dir(configs_dir)
+    if args.configs_dir and hub_root_for_target is None:
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=f"Unable to derive hub root from --configs-dir: {configs_dir}",
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Expected --configs-dir to point at <hub>/config or <hub>/config/repos (or be within a hub root).",
+                    "code": "CIHUB-REGISTRY-CONFIGS-DIR-NO-HUB-ROOT",
+                }
+            ],
+            suggestions=[
+                "Pass --configs-dir <hub>/config/repos (recommended).",
+                "Or run the command from the target hub checkout so default paths apply.",
+            ],
+        )
+    hub_root_for_target = hub_root_for_target or hub_root()
+    registry_path = hub_root_for_target / "config" / "registry.json"
+    if args.configs_dir and not registry_path.exists():
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Registry file not found: {registry_path}",
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Missing registry.json in derived hub root: {registry_path}",
+                    "code": "CIHUB-REGISTRY-NO-REGISTRY-FILE",
+                }
+            ],
+            suggestions=[
+                f"Create {registry_path} (see schema/registry.schema.json) or copy it from your hub checkout.",
+                "Then rerun cihub registry diff/sync.",
+            ],
+        )
+    registry = load_registry(registry_path=registry_path)
     dry_run = args.dry_run or not args.yes
 
-    changes = sync_to_configs(registry, configs_dir, dry_run=dry_run)
+    changes = sync_to_configs(registry, configs_dir, dry_run=dry_run, hub_root_path=hub_root_for_target)
 
     # Count actual changes
     updates = [c for c in changes if c["action"] in ("updated", "would_update")]

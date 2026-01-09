@@ -217,6 +217,12 @@ def cmd_hub(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_setup(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.setup import cmd_setup as handler
+
+    return handler(args)
+
+
 def build_parser() -> argparse.ArgumentParser:
     handlers = CommandHandlers(
         cmd_detect=cmd_detect,
@@ -252,6 +258,7 @@ def build_parser() -> argparse.ArgumentParser:
         cmd_fix=cmd_fix,
         cmd_registry=cmd_registry,
         cmd_hub=cmd_hub,
+        cmd_setup=cmd_setup,
     )
     return _build_parser(handlers)
 

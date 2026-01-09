@@ -63,6 +63,22 @@ def add_hub_ci_commands(subparsers, add_json_flag, handlers: CommandHandlers) ->
         help="Paths to check (files or directories)",
     )
 
+    hub_ci_yamllint = hub_ci_sub.add_parser(
+        "yamllint",
+        help="Lint YAML files (hub defaults, repo configs, profiles)",
+    )
+    hub_ci_yamllint.add_argument(
+        "--config",
+        help='yamllint config string (passed to -d). Default: "{extends: relaxed, rules: {line-length: disable}}"',
+    )
+    hub_ci_yamllint.add_argument(
+        "paths",
+        nargs="*",
+        default=["config/defaults.yaml", "config/repos/", "templates/profiles/"],
+        help="Paths to lint",
+    )
+    add_output_args(hub_ci_yamllint)
+
     hub_ci_repo_check = hub_ci_sub.add_parser(
         "repo-check",
         help="Check if a repo checkout is present",
@@ -336,14 +352,45 @@ def add_hub_ci_commands(subparsers, add_json_flag, handlers: CommandHandlers) ->
     hub_ci_ruff.add_argument("--force-exclude", action="store_true", help="Force ruff exclude rules")
     add_output_args(hub_ci_ruff)
 
+    hub_ci_ruff_format = hub_ci_sub.add_parser(
+        "ruff-format",
+        help="Run ruff formatter in check mode (fails if formatting is needed)",
+    )
+    add_path_args(hub_ci_ruff_format, default=".", help_text="Path to format check")
+    hub_ci_ruff_format.add_argument("--force-exclude", action="store_true", help="Force ruff exclude rules")
+    add_output_args(hub_ci_ruff_format)
+
     hub_ci_black = hub_ci_sub.add_parser("black", help="Run black and emit issue count")
     add_path_args(hub_ci_black, default=".", help_text="Path to check")
     add_output_args(hub_ci_black)
 
+    hub_ci_mypy = hub_ci_sub.add_parser("mypy", help="Run mypy type checking")
+    add_path_args(hub_ci_mypy, default="cihub", help_text="Path to type check")
+    hub_ci_mypy.add_argument(
+        "--no-ignore-missing-imports",
+        action="store_false",
+        dest="ignore_missing_imports",
+        help="Do not ignore missing imports (default: ignore missing imports)",
+    )
+    hub_ci_mypy.add_argument(
+        "--no-show-error-codes",
+        action="store_false",
+        dest="show_error_codes",
+        help="Do not show error codes (default: show error codes)",
+    )
+    add_output_args(hub_ci_mypy)
+
     hub_ci_mutmut = hub_ci_sub.add_parser("mutmut", help="Run mutmut and emit summary outputs")
     hub_ci_mutmut.add_argument("--workdir", default=".", help="Workdir to scan")
     add_output_dir_args(hub_ci_mutmut, help_text="Directory for mutmut logs")
-    hub_ci_mutmut.add_argument("--min-score", type=int, default=70, help="Minimum mutation score")
+    hub_ci_mutmut.add_argument(
+        "--min-mutation-score",
+        "--min-score",
+        dest="min_mutation_score",
+        type=int,
+        default=70,
+        help="Minimum mutation score",
+    )
     add_output_args(hub_ci_mutmut)
     add_summary_args(hub_ci_mutmut)
     hub_ci_mutmut.add_argument(
@@ -583,3 +630,8 @@ def add_hub_ci_commands(subparsers, add_json_flag, handlers: CommandHandlers) ->
         action="store_true",
         help="Append summary to GITHUB_STEP_SUMMARY",
     )
+
+    # Support `cihub hub-ci <subcommand> --json` (not only `cihub hub-ci --json <subcommand>`).
+    # This keeps JSON invocation consistent for TypeScript wrapper callers that append --json.
+    for subparser in hub_ci_sub.choices.values():
+        add_json_flag(subparser)

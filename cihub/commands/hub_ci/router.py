@@ -16,7 +16,14 @@ from .java_tools import (
     cmd_smoke_java_spotbugs,
     cmd_smoke_java_tests,
 )
-from .python_tools import cmd_black, cmd_coverage_verify, cmd_mutmut, cmd_ruff
+from .python_tools import (
+    cmd_black,
+    cmd_coverage_verify,
+    cmd_mypy,
+    cmd_mutmut,
+    cmd_ruff,
+    cmd_ruff_format,
+)
 from .release import (
     cmd_actionlint,
     cmd_actionlint_install,
@@ -60,6 +67,7 @@ from .validation import (
     cmd_validate_profiles,
     cmd_validate_triage,
     cmd_verify_matrix_keys,
+    cmd_yamllint,
 )
 
 
@@ -69,6 +77,7 @@ def cmd_hub_ci(args: argparse.Namespace) -> CommandResult:
         "actionlint-install": cmd_actionlint_install,
         "actionlint": cmd_actionlint,
         "syntax-check": cmd_syntax_check,
+        "yamllint": cmd_yamllint,
         "repo-check": cmd_repo_check,
         "source-check": cmd_source_check,
         "security-pip-audit": cmd_security_pip_audit,
@@ -94,7 +103,9 @@ def cmd_hub_ci(args: argparse.Namespace) -> CommandResult:
         "release-parse-tag": cmd_release_parse_tag,
         "release-update-tag": cmd_release_update_tag,
         "ruff": cmd_ruff,
+        "ruff-format": cmd_ruff_format,
         "black": cmd_black,
+        "mypy": cmd_mypy,
         "mutmut": cmd_mutmut,
         "coverage-verify": cmd_coverage_verify,
         "badges": cmd_badges,

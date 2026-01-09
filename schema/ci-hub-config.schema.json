@@ -64,6 +64,17 @@
         }
       ]
     },
+    "cihubConfig": {
+      "additionalProperties": false,
+      "description": "CLI behavior toggles used by workflows and triage (debug/verbose/context/triage bundle).",
+      "properties": {
+        "debug": { "default": false, "type": "boolean" },
+        "verbose": { "default": false, "type": "boolean" },
+        "debug_context": { "default": false, "type": "boolean" },
+        "emit_triage": { "default": false, "type": "boolean" }
+      },
+      "type": "object"
+    },
     "hubCi": {
       "oneOf": [
         { "type": "boolean" },
@@ -278,7 +289,7 @@
               "properties": {
                 "enabled": { "default": true, "type": "boolean" },
                 "fail_on_cvss": { "default": 7, "maximum": 10, "minimum": 0, "type": "integer" },
-                "require_run_or_fail": { "default": true, "type": "boolean" },
+                "require_run_or_fail": { "default": false, "type": "boolean" },
                 "use_nvd_api_key": { "default": true, "type": "boolean" }
               },
               "type": "object"
@@ -498,7 +509,13 @@
               "properties": {
                 "enabled": { "default": false, "type": "boolean" },
                 "min_mutation_score": { "default": 70, "maximum": 100, "minimum": 0, "type": "integer" },
-                "min_score": { "default": 0, "maximum": 100, "minimum": 0, "type": "integer" },
+                "min_score": {
+                  "default": 70,
+                  "description": "DEPRECATED: alias for min_mutation_score (will be removed in a future schema version)",
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "require_run_or_fail": { "default": false, "type": "boolean" },
                 "timeout_minutes": { "default": 15, "type": "integer" }
               },
@@ -573,6 +590,7 @@
               "properties": {
                 "enabled": { "default": false, "type": "boolean" },
                 "fail_on_critical": { "default": false, "type": "boolean" },
+                "fail_on_cvss": { "default": 7, "maximum": 10, "minimum": 0, "type": "number" },
                 "fail_on_high": { "default": false, "type": "boolean" },
                 "require_run_or_fail": { "default": true, "type": "boolean" }
               },
@@ -1097,6 +1115,9 @@
         "name"
       ],
       "type": "object"
+    },
+    "cihub": {
+      "$ref": "#/definitions/cihubConfig"
     },
     "reports": {
       "$ref": "#/definitions/reports"

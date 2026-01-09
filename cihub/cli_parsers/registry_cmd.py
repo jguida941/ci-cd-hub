@@ -53,3 +53,8 @@ def add_registry_commands(
     add_cmd.add_argument("repo", help="Repository name")
     add_cmd.add_argument("--tier", default="standard", help="Initial tier (default: standard)")
     add_cmd.add_argument("--description", help="Repository description")
+
+    # Support `cihub registry <subcommand> --json` (not only `cihub registry --json <subcommand>`).
+    # This keeps JSON invocation consistent for TypeScript wrapper callers that append --json.
+    for subparser in registry_sub.choices.values():
+        add_json_flag(subparser)
