@@ -62,15 +62,15 @@ Single source of truth for all repo configurations (see `schema/registry.schema.
   "tiers": {
     "strict": {
       "description": "High-quality production code with strict gates",
-      "coverage": 90, "mutation": 90, "vulns_max": 0
+      "coverage_min": 90, "mutation_score_min": 90, "max_critical_vulns": 0, "max_high_vulns": 0
     },
     "standard": {
       "description": "Default tier for most repos",
-      "coverage": 70, "mutation": 70, "vulns_max": 0
+      "coverage_min": 70, "mutation_score_min": 70, "max_critical_vulns": 0, "max_high_vulns": 0
     },
     "relaxed": {
       "description": "Legacy or experimental code with relaxed gates",
-      "coverage": 50, "mutation": 0, "vulns_max": 5
+      "coverage_min": 50, "mutation_score_min": 0, "max_critical_vulns": 5, "max_high_vulns": 5
     }
   },
   "repos": {
@@ -81,7 +81,7 @@ Single source of truth for all repo configurations (see `schema/registry.schema.
     "canary-java": {
       "tier": "standard",
       "description": "Java test fixture repo",
-      "overrides": {"mutation": 50}
+      "overrides": {"mutation_score_min": 50}
     }
   }
 }

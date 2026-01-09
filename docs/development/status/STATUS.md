@@ -5,7 +5,7 @@
 > **Action Items:** See [MASTER_PLAN.md](../MASTER_PLAN.md) for all tasks.
 > **Architecture:** See [ARCH_OVERVIEW.md](../architecture/ARCH_OVERVIEW.md)
 >
-> **Last Updated:** 2026-01-06 (Security audit + consistency fixes)
+> **Last Updated:** 2026-01-09 (SYSTEM_INTEGRATION_PLAN.md, ADR-0051)
 > **Version Target:** v1.0.0
 
 ---
@@ -17,9 +17,11 @@
 
 | Design Doc | Purpose | Status |
 |------------|---------|--------|
-| [CLEAN_CODE.md](../active/CLEAN_CODE.md) | Architecture improvements (polymorphism, encapsulation) | 🔄 In Progress (Phase 3) |
+| [CLEAN_CODE.md](../active/CLEAN_CODE.md) | Architecture improvements (polymorphism, encapsulation) | 🔄 In Progress (~90%) |
+| [SYSTEM_INTEGRATION_PLAN.md](../active/SYSTEM_INTEGRATION_PLAN.md) | Registry/wizard/schema integration | 🔄 Active (Consolidated) |
 | [TEST_REORGANIZATION.md](../active/TEST_REORGANIZATION.md) | Test suite restructuring plan | 📋 Planned (Audit Complete) |
 | [DOC_AUTOMATION_AUDIT.md](../active/DOC_AUTOMATION_AUDIT.md) | `cihub docs stale` command design | 📋 Designed |
+| [TYPESCRIPT_CLI_DESIGN.md](../active/TYPESCRIPT_CLI_DESIGN.md) | TypeScript CLI wrapper design | 📋 Planning |
 | [PYQT_PLAN.md](../active/PYQT_PLAN.md) | PyQt6 GUI wrapper design | 📋 Reference |
 
 ---
@@ -75,10 +77,10 @@
 
 ## ADR Status
 
-- **Total:** 48 ADRs (0001-0029, 0031-0048)
+- **Total:** 51 ADRs (0001-0029, 0031-0051)
 - **Health Score:** 9.3/10
-- **Accepted:** 46 (including ADR-0048 accepted 2026-01-06)
-- **Proposed:** 2 (ADR-0005, ADR-0026)
+- **Accepted:** 47
+- **Proposed:** 3 (ADR-0005, ADR-0026, ADR-0051)
 - **Superseded:** 1 (ADR-0013 → ADR-0014)
 
 ### ADRs Needing Review
@@ -117,8 +119,10 @@ docs/
     ├── CI_PARITY.md             # Local vs CI check parity map
     ├── active/                  # In-flight design docs (listed below)
     │   ├── CLEAN_CODE.md
+    │   ├── SYSTEM_INTEGRATION_PLAN.md
     │   ├── TEST_REORGANIZATION.md
     │   ├── DOC_AUTOMATION_AUDIT.md
+    │   ├── TYPESCRIPT_CLI_DESIGN.md
     │   └── PYQT_PLAN.md
     ├── specs/                   # Consolidated requirements (REQUIREMENTS.md)
     ├── research/                # Historical research log

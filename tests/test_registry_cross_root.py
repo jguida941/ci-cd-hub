@@ -188,3 +188,19 @@ def test_registry_sync_errors_when_registry_missing_in_target_hub_root(tmp_path:
     result = _cmd_sync(args)
     assert result.exit_code == EXIT_FAILURE
     assert result.suggestions
+
+
+def test_registry_diff_errors_when_registry_missing_in_target_hub_root(tmp_path: Path) -> None:
+    from cihub.commands.registry_cmd import _cmd_diff
+    from cihub.exit_codes import EXIT_FAILURE
+
+    hub = tmp_path / "external-hub"
+    configs_dir = hub / "config" / "repos"
+    configs_dir.mkdir(parents=True)
+
+    args = type("Args", (), {"configs_dir": str(configs_dir)})()
+    result = _cmd_diff(args)
+    assert result.exit_code == EXIT_FAILURE
+    assert result.problems
+    assert result.problems[0]["code"] == "CIHUB-REGISTRY-NO-REGISTRY-FILE"
+    assert result.suggestions

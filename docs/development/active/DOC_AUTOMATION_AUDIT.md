@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-04
 **Last Updated:** 2026-01-06 (docs_stale package modularization complete)
-**Priority:** 🟢 **#3** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
+**Priority:** 🟢 **#4** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
 **Status:** ~60% implemented (core `docs stale` MVP complete)
 **Depends On:** Stable CLI surface (CLEAN_CODE.md)
 **Can Parallel:** TEST_REORGANIZATION.md (both need stable CLI)

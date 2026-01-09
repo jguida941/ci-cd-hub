@@ -1,7 +1,7 @@
 # CI/CD Hub - Master Plan
 
 **Status:** Canonical plan for all active work
-**Last Updated:** 2026-01-06 (priority order revised, registry audit integrated)
+**Last Updated:** 2026-01-09 (SYSTEM_INTEGRATION_PLAN.md consolidation)
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
 
@@ -12,7 +12,7 @@
 | Priority | Document | Status | Next Action |
 |----------|----------|--------|-------------|
 | **#1 🔴** | CLEAN_CODE.md | ~90% | Part 5.3: Special-Case Handling |
-| **#2 🟠** | REGISTRY_AUDIT_AND_PLAN.md | Audited | Implement Parts 4-8 (schema + service) |
+| **#2 🟠** | SYSTEM_INTEGRATION_PLAN.md | Active | Phase 2-6 (schema, wizard, registry parity) |
 | **#3 🟡** | TEST_REORGANIZATION.md | PLANNED | Resolve blockers first |
 | **#4 🟢** | DOC_AUTOMATION_AUDIT.md | ~60% | `docs audit`, Part 13 features |
 | **#5 🔵** | TYPESCRIPT_CLI_DESIGN.md | Planning | Wait for CLEAN_CODE.md 100% |
@@ -34,7 +34,7 @@ MASTER_PLAN.md
 
 Individual Planning Docs (Priority Order)
 ├── #1 CLEAN_CODE.md         → HOW to implement architecture improvements
-├── #2 REGISTRY_AUDIT.md     → HOW to fix registry/wizard disconnect
+├── #2 SYSTEM_INTEGRATION_PLAN.md → HOW to fix registry/wizard disconnect
 ├── #3 TEST_REORGANIZATION.md → HOW to restructure 2100+ tests
 ├── #4 DOC_AUTOMATION_AUDIT.md → HOW to implement doc automation
 ├── #5 TYPESCRIPT_CLI_DESIGN.md → HOW to build TypeScript CLI

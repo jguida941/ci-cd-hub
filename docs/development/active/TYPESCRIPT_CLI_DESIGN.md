@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-05
 **Status:** Planning
-**Priority:** 🔵 **#4** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
+**Priority:** 🔵 **#5** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
 **Depends On:** CLEAN_CODE.md (100% complete - explicit prerequisite)
 **Blocks:** PYQT_PLAN.md
 **Purpose:** Design document for a Claude Code / Codex-style interactive CLI built with TypeScript and Ink (React for terminals).

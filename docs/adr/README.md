@@ -50,6 +50,9 @@ Existing:
 - [ADR-0046: OutputRenderer Pattern](0046-output-renderer-pattern.md)
 - [ADR-0047: Config Validation Order](0047-config-validation-order.md)
 - [ADR-0048: Documentation Automation Strategy](0048-documentation-automation-strategy.md)
+- [ADR-0049: Hub Operational Settings](0049-hub-operational-settings.md)
+- [ADR-0050: Triage Command Modularization](0050-triage-command-modularization.md)
+- [ADR-0051: Wizard Profile-First Design](0051-wizard-profile-first-design.md)
 
 Template starter:
 ```markdown
