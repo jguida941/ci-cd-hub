@@ -301,8 +301,11 @@ def _resolve_types(args: argparse.Namespace) -> list[str]:
     if args.all:
         return ALL_TYPES
     if args.type:
-        # args.type is already a list from action="append"
-        return args.type
+        # From CLI with action="append": args.type is a list
+        # From tests with direct Namespace: args.type may be a string
+        if isinstance(args.type, list):
+            return list(args.type)
+        return [args.type]
     return DEFAULT_TYPES
 
 
