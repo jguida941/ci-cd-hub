@@ -13,21 +13,30 @@
 
 Centralized CI/CD for Java and Python repos with config-driven toggles, reusable workflows, and a single hub that runs pipelines across many repositories.
 
-## Status Notice (Refactor In Progress)
+> [!NOTE]
+> **Refactor In Progress** — We're aligning CLI/registry integration and doc automation.
+> Some commands may be incomplete. See [STATUS.md](docs/development/status/STATUS.md) for current state.
 
-Note: We are in a major refactor of the CLI/registry integration and doc automation. Some automation commands may be incomplete or in flux while we align registry sync/diff behavior and add `cihub docs audit` + Part 13 checks (parallel workstream). For current state, see `docs/development/status/STATUS.md` and `docs/development/active/SYSTEM_INTEGRATION_PLAN.md`.
+---
 
-## Why CI/CD Hub
+## Why CI/CD Hub?
 
-- One CLI to run consistent CI across many repos (Python + Java) with reusable workflows.
-- Schema-validated config with a clear 3-tier merge (defaults → hub → repo).
-- Single commands for CI runs, report aggregation, and triage artifacts.
+| Problem | Solution |
+|---------|----------|
+| Hours writing YAML per repo | One CLI generates config + workflows in minutes |
+| Copy-paste configs that drift | 3-tier merge (defaults → hub → repo) keeps everything in sync |
+| Manually configuring 10+ tools | Schema-validated config with profiles that auto-configure tools |
+| Debugging cryptic CI failures | Triage bundles with prioritized, actionable reports |
+
+---
 
 ## Who It's For
 
-- Hub/Org admins who want centralized standards across many repos.
-- Teams that need consistent CI gates across Python and Java.
-- Maintainers who want minimal YAML and reproducible workflows.
+| Audience | Use Case |
+|----------|----------|
+| Hub/Org Admins | Centralized standards across many repos |
+| Teams | Consistent CI gates across Python and Java |
+| Maintainers | Minimal YAML, reproducible workflows |
 
 ## Core Concepts
 
@@ -53,10 +62,33 @@ python -m cihub ci
 - Central mode: the hub clones repos and runs pipelines directly from a single workflow.
 - Distributed mode: the hub dispatches workflows to each repo via caller templates and reusable workflows.
 
+---
+
 ## Toolchains
 
-- Java: JaCoCo, Checkstyle, SpotBugs, PMD, OWASP DC, PITest, jqwik, Semgrep, Trivy, CodeQL, SBOM, Docker.
-- Python: pytest, Ruff, Black, isort, Bandit, pip-audit, mypy, mutmut, Hypothesis, Semgrep, Trivy, CodeQL, SBOM, Docker.
+### Python
+
+| Category | Tools |
+|----------|-------|
+| Testing | pytest, Hypothesis |
+| Linting | Ruff, Black, isort |
+| Types | mypy |
+| Security | Bandit, pip-audit |
+| Mutation | mutmut |
+
+### Java
+
+| Category | Tools |
+|----------|-------|
+| Coverage | JaCoCo |
+| Quality | Checkstyle, SpotBugs, PMD |
+| Security | OWASP Dependency-Check |
+| Mutation | PITest |
+| Testing | jqwik |
+
+### Shared
+
+Semgrep, Trivy, CodeQL, SBOM, Docker
 
 ## Quick Start
 
@@ -89,9 +121,11 @@ gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub -f run_group=fixtures
 
 ## Debugging & Triage
 
-- Tracebacks: `CIHUB_DEBUG=True`
-- Tool logs: `CIHUB_VERBOSE=True`
-- Triage bundle: `CIHUB_EMIT_TRIAGE=True` (writes `.cihub/triage.json`, `priority.json`, `triage.md`)
+| Flag | Effect |
+|------|--------|
+| `CIHUB_DEBUG=True` | Show tracebacks |
+| `CIHUB_VERBOSE=True` | Show tool logs |
+| `CIHUB_EMIT_TRIAGE=True` | Write triage bundle (`.cihub/triage.json`, `priority.json`, `triage.md`) |
 
 ## Installation (local development)
 
@@ -103,14 +137,16 @@ pip install -r requirements/requirements-dev.txt
 
 ## Documentation
 
-- [Docs Index](docs/README.md) - Full map of guides, references, and development docs
-- [Getting Started](docs/guides/GETTING_STARTED.md) - Primary entry point for new users
-- [CLI Reference](docs/reference/CLI.md) - Generated from `cihub docs generate`
-- [Config Reference](docs/reference/CONFIG.md) - Generated from schema
-- [Tools Reference](docs/reference/TOOLS.md)
-- [Troubleshooting](docs/guides/TROUBLESHOOTING.md)
-- [Development Guide](docs/development/DEVELOPMENT.md) - Maintainer workflow
-- [Current Status](docs/development/status/STATUS.md)
+| Doc | Description |
+|-----|-------------|
+| [Docs Index](docs/README.md) | Full map of guides, references, and development docs |
+| [Getting Started](docs/guides/GETTING_STARTED.md) | Primary entry point for new users |
+| [CLI Reference](docs/reference/CLI.md) | Generated from `cihub docs generate` |
+| [Config Reference](docs/reference/CONFIG.md) | Generated from schema |
+| [Tools Reference](docs/reference/TOOLS.md) | Tool registry and options |
+| [Troubleshooting](docs/guides/TROUBLESHOOTING.md) | Common issues and fixes |
+| [Development Guide](docs/development/DEVELOPMENT.md) | Maintainer workflow |
+| [Current Status](docs/development/status/STATUS.md) | Refactor progress |
 
 ## Contributing
 
