@@ -1,0 +1,35 @@
+# ============================================================================
+# Tier: Relaxed - Minimal gates for legacy or experimental code
+# ============================================================================
+# This tier profile sets permissive thresholds for quality gates.
+# It's language-agnostic - tool enablement comes from language profiles.
+#
+# Use for: Legacy code, experimental projects, proof-of-concepts
+# Pairs with: python-minimal, java-minimal profiles
+# ============================================================================
+
+thresholds:
+  # Coverage requirements - minimal bar
+  coverage_min: 50
+  mutation_score_min: 40
+
+  # Vulnerability tolerance - some tolerance for legacy
+  max_critical_vulns: 0      # Still block critical vulns
+  max_high_vulns: 5          # Allow some high vulns in legacy
+
+  # CVSS thresholds - more permissive
+  owasp_cvss_fail: 9.0       # Only block critical CVSS
+  trivy_cvss_fail: 9.0
+
+  # Code quality - more permissive
+  max_ruff_errors: 10
+  max_black_issues: 20
+  max_isort_issues: 20
+  max_semgrep_findings: 5
+  max_checkstyle_errors: 20
+  max_spotbugs_bugs: 10
+  max_pmd_violations: 20
+
+gates:
+  # Allow tools to be skipped without failing
+  require_run_or_fail: false

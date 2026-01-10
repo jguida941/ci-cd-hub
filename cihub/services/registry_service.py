@@ -12,12 +12,33 @@ from typing import Any
 from cihub.utils.paths import hub_root
 
 
-_DEFAULT_THRESHOLDS: dict[str, int] = {
+# All threshold fields from schema/ci-hub-config.schema.json#/definitions/thresholds
+# These are the registry-managed threshold keys with their schema defaults.
+_DEFAULT_THRESHOLDS: dict[str, int | float] = {
+    # Coverage & Mutation
     "coverage_min": 70,
     "mutation_score_min": 70,
+    # Security Vulnerabilities (vuln counts)
     "max_critical_vulns": 0,
     "max_high_vulns": 0,
+    "max_pip_audit_vulns": 0,
+    # CVSS Score Thresholds
+    "owasp_cvss_fail": 7.0,
+    "trivy_cvss_fail": 7.0,
+    # SAST Findings
+    "max_semgrep_findings": 0,
+    # Python Linting
+    "max_ruff_errors": 0,
+    "max_black_issues": 0,
+    "max_isort_issues": 0,
+    # Java Linting/Static Analysis
+    "max_checkstyle_errors": 0,
+    "max_spotbugs_bugs": 0,
+    "max_pmd_violations": 0,
 }
+
+# Keys that are integers vs floats (for type coercion)
+_FLOAT_THRESHOLD_KEYS: frozenset[str] = frozenset({"owasp_cvss_fail", "trivy_cvss_fail"})
 
 
 def _as_int(value: Any) -> int | None:
@@ -35,13 +56,33 @@ def _as_int(value: Any) -> int | None:
     return None
 
 
+def _as_number(value: Any) -> int | float | None:
+    """Coerce JSON-ish values to int or float, returning None if not coercible."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, str):
+        text = value.strip()
+        try:
+            if "." in text:
+                return float(text)
+            return int(text)
+        except ValueError:
+            return None
+    return None
+
+
 def _get_threshold_value(
     overrides: dict[str, Any],
     tier_defaults: dict[str, Any],
     *,
     key: str,
-) -> int:
-    """Get effective threshold value from overrides/tier defaults with legacy support."""
+) -> int | float:
+    """Get effective threshold value from overrides/tier defaults with legacy support.
+
+    Handles both integer thresholds and float CVSS thresholds.
+    """
     legacy_key: str | None = None
     if key == "coverage_min":
         legacy_key = "coverage"
@@ -50,26 +91,40 @@ def _get_threshold_value(
     elif key in ("max_critical_vulns", "max_high_vulns"):
         legacy_key = "vulns_max"
 
+    # Use float-aware coercion for CVSS thresholds
+    coerce = _as_number if key in _FLOAT_THRESHOLD_KEYS else _as_int
+
     # Overrides win
-    val = _as_int(overrides.get(key))
+    val = coerce(overrides.get(key))
     if val is not None:
         return val
     if legacy_key:
-        legacy_val = _as_int(overrides.get(legacy_key))
+        legacy_val = coerce(overrides.get(legacy_key))
         if legacy_val is not None:
             return legacy_val
 
     # Then tier defaults
-    val = _as_int(tier_defaults.get(key))
+    val = coerce(tier_defaults.get(key))
     if val is not None:
         return val
     if legacy_key:
-        legacy_val = _as_int(tier_defaults.get(legacy_key))
+        legacy_val = coerce(tier_defaults.get(legacy_key))
         if legacy_val is not None:
             return legacy_val
 
     # Fall back to schema defaults
     return _DEFAULT_THRESHOLDS[key]
+
+
+def _compute_all_effective_thresholds(
+    overrides: dict[str, Any],
+    tier_defaults: dict[str, Any],
+) -> dict[str, int | float]:
+    """Compute effective values for all threshold fields.
+
+    Returns a dict with all 14 threshold keys and their effective values.
+    """
+    return {key: _get_threshold_value(overrides, tier_defaults, key=key) for key in _DEFAULT_THRESHOLDS}
 
 
 def _normalize_threshold_dict_inplace(data: dict[str, Any]) -> None:
@@ -277,13 +332,8 @@ def list_repos(registry: dict[str, Any], *, hub_root_path: Path | None = None) -
 
         tier_defaults = tier_threshold_defaults.get(tier_name, {})
 
-        # Compute effective settings (profile/tier/repo baselines + overrides)
-        effective = {
-            "coverage_min": _get_threshold_value(combined_overrides, tier_defaults, key="coverage_min"),
-            "mutation_score_min": _get_threshold_value(combined_overrides, tier_defaults, key="mutation_score_min"),
-            "max_critical_vulns": _get_threshold_value(combined_overrides, tier_defaults, key="max_critical_vulns"),
-            "max_high_vulns": _get_threshold_value(combined_overrides, tier_defaults, key="max_high_vulns"),
-        }
+        # Compute effective settings for ALL threshold fields (profile/tier/repo baselines + overrides)
+        effective = _compute_all_effective_thresholds(combined_overrides, tier_defaults)
 
         result.append(
             {
@@ -353,25 +403,16 @@ def get_repo_config(
         combined_overrides.update(repo_fragment["thresholds"])
     combined_overrides.update(overrides)
 
-    # Compute effective settings
-    effective = {
-        "coverage_min": _get_threshold_value(combined_overrides, tier_defaults, key="coverage_min"),
-        "mutation_score_min": _get_threshold_value(
-            combined_overrides, tier_defaults, key="mutation_score_min"
-        ),
-        "max_critical_vulns": _get_threshold_value(combined_overrides, tier_defaults, key="max_critical_vulns"),
-        "max_high_vulns": _get_threshold_value(combined_overrides, tier_defaults, key="max_high_vulns"),
-    }
+    # Compute effective settings for ALL threshold fields
+    effective = _compute_all_effective_thresholds(combined_overrides, tier_defaults)
+
+    # Compute tier defaults (what the repo would have with no overrides)
+    tier_defaults_computed = _compute_all_effective_thresholds({}, tier_defaults)
 
     return {
         "name": repo_name,
         "tier": tier_name,
-        "tier_defaults": {
-            "coverage_min": _get_threshold_value({}, tier_defaults, key="coverage_min"),
-            "mutation_score_min": _get_threshold_value({}, tier_defaults, key="mutation_score_min"),
-            "max_critical_vulns": _get_threshold_value({}, tier_defaults, key="max_critical_vulns"),
-            "max_high_vulns": _get_threshold_value({}, tier_defaults, key="max_high_vulns"),
-        },
+        "tier_defaults": tier_defaults_computed,
         "overrides": overrides,
         "effective": effective,
         "description": config.get("description", ""),
@@ -410,33 +451,33 @@ def set_repo_override(
     registry: dict[str, Any],
     repo_name: str,
     key: str,
-    value: int,
+    value: int | float,
 ) -> dict[str, Any]:
     """Set an override value for a repo.
 
     Args:
         registry: Registry dict (modified in place)
         repo_name: Name of the repo
-        key: Override key (coverage/mutation/vulns_max) or schema key
-             (coverage_min/mutation_score_min/max_{critical,high}_vulns)
+        key: Override key - accepts all schema threshold keys plus legacy aliases.
+             Schema keys: coverage_min, mutation_score_min, max_critical_vulns,
+                          max_high_vulns, max_pip_audit_vulns, owasp_cvss_fail,
+                          trivy_cvss_fail, max_semgrep_findings, max_ruff_errors,
+                          max_black_issues, max_isort_issues, max_checkstyle_errors,
+                          max_spotbugs_bugs, max_pmd_violations
+             Legacy keys: coverage, mutation, vulns_max
         value: Override value
 
     Returns:
         Updated repo config
     """
-    valid_keys = {
-        # Legacy keys (CLI flags still use these)
-        "coverage",
-        "mutation",
-        "vulns_max",
-        # Schema-aligned keys (preferred storage)
-        "coverage_min",
-        "mutation_score_min",
-        "max_critical_vulns",
-        "max_high_vulns",
-    }
+    # All schema-aligned threshold keys
+    schema_keys = set(_DEFAULT_THRESHOLDS.keys())
+    # Legacy key aliases for backward compatibility
+    legacy_keys = {"coverage", "mutation", "vulns_max"}
+    valid_keys = schema_keys | legacy_keys
+
     if key not in valid_keys:
-        raise ValueError(f"Invalid override key: {key}. Valid: {', '.join(valid_keys)}")
+        raise ValueError(f"Invalid override key: {key}. Valid: {', '.join(sorted(valid_keys))}")
 
     repos = registry.setdefault("repos", {})
     if repo_name not in repos:
@@ -918,7 +959,7 @@ def sync_to_configs(
 
             config = deep_merge(config, merged_fragment)
 
-        # Update thresholds
+        # Update thresholds - sync ALL threshold fields from effective config
         thresholds = config.setdefault("thresholds", {})
         if not isinstance(thresholds, dict):
             thresholds = {}
@@ -929,17 +970,10 @@ def sync_to_configs(
             if legacy_key in thresholds:
                 thresholds.pop(legacy_key, None)
 
-        if thresholds.get("coverage_min", 70) != effective["coverage_min"]:
-            thresholds["coverage_min"] = effective["coverage_min"]
-
-        if thresholds.get("mutation_score_min", 70) != effective["mutation_score_min"]:
-            thresholds["mutation_score_min"] = effective["mutation_score_min"]
-
-        if thresholds.get("max_critical_vulns", 0) != effective["max_critical_vulns"]:
-            thresholds["max_critical_vulns"] = effective["max_critical_vulns"]
-
-        if thresholds.get("max_high_vulns", 0) != effective["max_high_vulns"]:
-            thresholds["max_high_vulns"] = effective["max_high_vulns"]
+        # Sync all threshold fields from registry-computed effective values
+        for key, default_val in _DEFAULT_THRESHOLDS.items():
+            if thresholds.get(key, default_val) != effective[key]:
+                thresholds[key] = effective[key]
 
         # Keep top-level language consistent with repo.language when present.
         repo_block = config.get("repo")

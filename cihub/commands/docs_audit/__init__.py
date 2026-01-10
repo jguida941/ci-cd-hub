@@ -6,13 +6,15 @@ structure, lifecycle, and metadata according to project conventions.
 Architecture (from DOC_AUTOMATION_AUDIT.md Part 12.J):
 1. LIFECYCLE - Validate active/ ↔ STATUS.md sync, archive headers
 2. ADR METADATA - Lint Status/Date/Superseded-by fields
-3. REFERENCES - Scan for broken docs/... path references
-4. OUTPUT - Human, JSON, or GitHub summary format
+3. HEADERS - Universal header enforcement for manual docs (Part 12.Q)
+4. REFERENCES - Scan for broken docs/... path references
+5. OUTPUT - Human, JSON, or GitHub summary format
 
 Module structure:
 - types: Data models (AuditFinding, AuditReport, ADRMetadata)
 - lifecycle: Lifecycle validation (active/, archive/, STATUS.md)
 - adr: ADR metadata linting
+- headers: Universal header enforcement (Part 12.Q)
 - references: Plain-text docs/ reference scanning
 - output: Output formatters (human, JSON, GitHub summary)
 
@@ -54,6 +56,17 @@ from .output import (
     format_json_output,
     group_findings_by_category,
     group_findings_by_file,
+)
+from .headers import (
+    EXEMPT_DIRS,
+    EXEMPT_FILES,
+    GENERATED_DOCS,
+    has_generated_banner,
+    has_superseded_header,
+    is_exempt_doc,
+    parse_doc_header,
+    validate_doc_headers,
+    validate_header_value,
 )
 from .references import extract_doc_references, validate_doc_references
 from .types import (
@@ -100,6 +113,16 @@ __all__ = [
     # Reference functions
     "extract_doc_references",
     "validate_doc_references",
+    # Header functions (Part 12.Q)
+    "GENERATED_DOCS",
+    "EXEMPT_DIRS",
+    "EXEMPT_FILES",
+    "is_exempt_doc",
+    "has_superseded_header",
+    "has_generated_banner",
+    "parse_doc_header",
+    "validate_header_value",
+    "validate_doc_headers",
     # Consistency functions (Part 13)
     "find_duplicate_tasks",
     "validate_timestamps",
@@ -119,13 +142,14 @@ __all__ = [
 def cmd_docs_audit(args: argparse.Namespace) -> CommandResult:
     """Run documentation audit.
 
-    Validates documentation lifecycle, ADR metadata, references, and consistency.
+    Validates documentation lifecycle, ADR metadata, headers, references, and consistency.
 
     Args:
         args: Parsed command line arguments
             --output-dir: Output directory for artifacts (default: .cihub/tool-outputs)
             --json: JSON output mode
             --github-summary: Write to GITHUB_STEP_SUMMARY
+            --skip-headers: Skip Part 12.Q universal header validation
             --skip-references: Skip reference scanning (faster)
             --skip-consistency: Skip Part 13 consistency checks (faster)
 
@@ -154,12 +178,18 @@ def cmd_docs_audit(args: argparse.Namespace) -> CommandResult:
     adr_findings = validate_adr_metadata(adr_files, repo_root)
     report.findings.extend(adr_findings)
 
-    # 3. Reference validation (optional, can be slow)
+    # 3. Universal header validation (Part 12.Q)
+    skip_headers = getattr(args, "skip_headers", False)
+    if not skip_headers:
+        header_findings = validate_doc_headers(repo_root)
+        report.findings.extend(header_findings)
+
+    # 4. Reference validation (optional, can be slow)
     if not skip_references:
         ref_findings = validate_doc_references(repo_root)
         report.findings.extend(ref_findings)
 
-    # 4. Consistency validation (Part 13: duplicates, timestamps, placeholders)
+    # 5. Consistency validation (Part 13: duplicates, timestamps, placeholders)
     if not skip_consistency:
         consistency_findings = validate_consistency(repo_root)
         report.findings.extend(consistency_findings)

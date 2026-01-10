@@ -130,6 +130,11 @@ def add_docs_commands(
         help="Skip plain-text reference scanning (faster)",
     )
     docs_audit.add_argument(
+        "--skip-headers",
+        action="store_true",
+        help="Skip Part 12.Q universal header validation",
+    )
+    docs_audit.add_argument(
         "--skip-consistency",
         action="store_true",
         help="Skip Part 13 consistency checks (duplicates, timestamps, placeholders)",

@@ -147,4 +147,4 @@ From INCONSISTENCY.md audit, prioritize by risk:
 
 ## Related Documentation
 
-- `docs/development/INCONSISTENCY.md` - Full audit of missing timeouts
+- `docs/development/archive/INCONSISTENCY_2026-01-06.md` - Full audit of missing timeouts (archived)

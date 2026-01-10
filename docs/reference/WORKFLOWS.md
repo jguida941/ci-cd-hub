@@ -3,9 +3,6 @@
 **Generated from:** `.github/workflows/*.yml`  
 **Regenerate with:** `cihub docs generate`  
 
-**Templates & Profiles:** For ready-made repo configs and tool profiles,  
-see `templates/README.md` (apply via `cihub config apply-profile ...`).  
-
 ---
 
 ## Quick Reference

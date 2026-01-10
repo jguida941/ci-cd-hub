@@ -40,7 +40,7 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
             "bandit": {"enabled": True},
             "pip_audit": {"enabled": True},
             "mypy": {"enabled": False},
-            "mutmut": {"enabled": True, "min_mutation_score": 70},
+            "mutmut": {"enabled": False, "min_mutation_score": 70},
             "hypothesis": {"enabled": True},
             "sbom": {"enabled": False, "format": "cyclonedx"},
             "semgrep": {"enabled": False, "max_findings": 0},

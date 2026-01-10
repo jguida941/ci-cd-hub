@@ -193,11 +193,25 @@ effective = {
 
 **Fixed:** Setup now rejects `--json` with a CommandResult error, and JSON purity contract tests exist (representative sample).
 
-### 2.9 Tiers / Profiles / Thresholds Profile Mapping Is Unclear
+### 2.9 Tiers / Profiles / Thresholds Profile Mapping (RESOLVED 2026-01-09)
 
-**Current:** Registry tiers, template profiles, and `thresholds_profile` exist in parallel without a canonical mapping.
+**Status:** [x] **RESOLVED** - Canonical mapping defined and tier profiles created.
 
-**Impact:** Users can end up with conflicting defaults; plan must define a single source of truth.
+**Solution:**
+- **Tiers** (strict/standard/relaxed) are language-agnostic quality levels that set thresholds
+- **Profiles** (fast/quality/security/minimal/compliance/coverage-gate) are language-specific tool configurations
+- **Tier profiles** (`templates/profiles/tier-strict.yaml`, `tier-relaxed.yaml`) provide threshold overrides only
+- **Language profiles** (`python-fast.yaml`, `java-quality.yaml`, etc.) provide tool enablement
+
+**Canonical Mapping:**
+
+| Tier | Threshold Profile | Description |
+|------|-------------------|-------------|
+| `strict` | `tier-strict` | Coverage ≥85%, mutation ≥80%, zero tolerance for vulns |
+| `standard` | (defaults) | Coverage ≥70%, mutation ≥70%, balanced gates |
+| `relaxed` | `tier-relaxed` | Coverage ≥50%, mutation ≥40%, permissive for legacy |
+
+**Composition:** A repo config is built from: `defaults` → `language profile` (optional) → `tier profile` → `repo overrides`
 
 ### 2.10 Missing CLI Capabilities (Audit Required)
 
@@ -652,14 +666,14 @@ tests/
 
 - [x] 2.1 Expand registry.schema.json with allowlisted keys
 - [x] 2.2a Add sparse config fragment audit (defaults/profile baseline)
-- [ ] 2.2 Rewrite registry_service.py for full config scope (sparse storage)
+- [x] 2.2 Rewrite registry_service.py for full config scope (sparse storage) (2026-01-09: expanded to all 14 threshold fields)
 - [ ] 2.3 Implement full sync to config/repos
 - [x] 2.3a Sync tier/repo config fragments into config/repos (managedConfig; includes tier profile merge)
 - [x] 2.3b Orchestrator-safe dispatch artifacts for nested config basenames (config_basename_safe)
 - [x] 2.4a Diff surfaces managedConfig drift via dry-run sync (non-threshold keys + thresholds) + cross-root --configs-dir handling
 - [x] 2.4b Diff flags orphan config/repos YAMLs + unmanaged top-level keys (allowlist-driven)
 - [ ] 2.4 Diff surfaces .ci-hub.yml overrides + non-tool drift
-- [ ] 2.5 Define canonical tier/profile/thresholds_profile mapping
+- [x] 2.5 Define canonical tier/profile/thresholds_profile mapping (2026-01-09: tier profiles created)
 
 ### Phase 3: Registry Bootstrap & Drift
 

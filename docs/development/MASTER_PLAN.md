@@ -359,13 +359,13 @@ docs/development/active/PYQT_PLAN.md
 > - Wizard ↔ Registry are disconnected
 > - Schema blocks extensibility with `additionalProperties: false`
 >
-> **Until fixed:** Follow REGISTRY_AUDIT_AND_PLAN.md for registry architecture, not the current code.
+> **Until fixed:** Follow `docs/development/archive/REGISTRY_AUDIT_AND_PLAN.md` (archived) for registry architecture reference.
 
 ## References (Background Only)
 
 **Active Design Docs** (in-progress designs, listed in `status/STATUS.md`):
 - `docs/development/active/CLEAN_CODE.md` (architecture improvements: polymorphism, encapsulation)
-- `docs/development/active/REGISTRY_AUDIT_AND_PLAN.md` (wizard↔registry integration, schema expansion - **NEW Priority #2**)
+- `docs/development/archive/REGISTRY_AUDIT_AND_PLAN.md` (wizard↔registry integration, schema expansion - **archived**)
 - `docs/development/active/TEST_REORGANIZATION.md` (test suite restructuring: 2100+ tests → unit/integration/e2e)
 - `docs/development/active/DOC_AUTOMATION_AUDIT.md` (doc automation design: `cihub docs stale`, `cihub docs audit`)
 - `docs/development/active/TYPESCRIPT_CLI_DESIGN.md` (TypeScript interactive CLI - consumes Python CLI as backend)
@@ -617,7 +617,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 
 > **Implementation Note:** Triage bundles + prompt pack exist behind `CIHUB_EMIT_TRIAGE` env toggle.
 > **Update 2026-01-06:** Triage schema bumped to `cihub-triage-v2` with `tool_evidence` and `evidence_issues` sections.
-> **Registry:** See `docs/development/active/REGISTRY_AUDIT_AND_PLAN.md` for comprehensive registry implementation plan (Priority #2).
+> **Registry:** See `docs/development/archive/REGISTRY_AUDIT_AND_PLAN.md` for registry implementation plan (archived reference).
 
 **Triage (Implemented):**
 - [x] Define `cihub-triage-v2` schema with severity/blocker fields, tool evidence, and stable versioning. [x]
@@ -641,7 +641,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 - [ ] Add retention policies (`cihub triage prune --days N`).
 
 **Registry (See REGISTRY_AUDIT_AND_PLAN.md - Priority #2):**
-> **Detailed plan:** `docs/development/active/REGISTRY_AUDIT_AND_PLAN.md` (19-part comprehensive audit)
+> **Detailed plan:** `docs/development/archive/REGISTRY_AUDIT_AND_PLAN.md` (19-part comprehensive audit - archived)
 > The registry audit identified critical gaps: wizard↔registry disconnect, only 3/47+ fields tracked, etc.
 
 - [ ] **Part 4:** Schema redesign (tool definitions via $ref, 47+ fields)

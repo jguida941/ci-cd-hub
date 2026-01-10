@@ -1,0 +1,36 @@
+# ============================================================================
+# Tier: Strict - Maximum quality gates for production-critical code
+# ============================================================================
+# This tier profile sets stricter thresholds for quality gates.
+# It's language-agnostic - tool enablement comes from language profiles.
+#
+# Use for: Production services, core libraries, public APIs
+# Pairs with: python-quality, java-quality, or python-security profiles
+# ============================================================================
+
+thresholds:
+  # Coverage requirements - higher bar
+  coverage_min: 85
+  mutation_score_min: 80
+
+  # Vulnerability tolerance - zero tolerance
+  max_critical_vulns: 0
+  max_high_vulns: 0
+  max_pip_audit_vulns: 0
+
+  # CVSS thresholds - stricter
+  owasp_cvss_fail: 5.0
+  trivy_cvss_fail: 5.0
+
+  # Code quality - zero tolerance
+  max_ruff_errors: 0
+  max_black_issues: 0
+  max_isort_issues: 0
+  max_semgrep_findings: 0
+  max_checkstyle_errors: 0
+  max_spotbugs_bugs: 0
+  max_pmd_violations: 0
+
+gates:
+  # Enforce all configured tools must run
+  require_run_or_fail: true

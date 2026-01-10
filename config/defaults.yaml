@@ -427,3 +427,14 @@ hub_ci:
   thresholds:
     coverage_min: 70
     mutation_score_min: 70
+
+# ------------------------------------------------------------------------------
+# CLI Behavior Toggles (cihub block)
+# ------------------------------------------------------------------------------
+# These control CLI runtime behavior and are consumed by workflows/triage.
+# Override via CIHUB_* environment variables or per-repo .ci-hub.yml.
+cihub:
+  debug: false         # CIHUB_DEBUG - Show tracebacks on errors
+  verbose: false       # CIHUB_VERBOSE - Stream tool stdout/stderr
+  debug_context: false # CIHUB_DEBUG_CONTEXT - Show CLI context blocks
+  emit_triage: false   # CIHUB_EMIT_TRIAGE - Generate triage bundles

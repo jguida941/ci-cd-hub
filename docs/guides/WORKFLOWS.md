@@ -1,10 +1,10 @@
-# Workflows Reference
+# Workflows Guide
 
-**Verified against**: `.github/workflows/*.yml`.  
-Update this doc when workflow triggers or inputs change.  
+**For detailed tables of triggers and inputs:** See the auto-generated [reference/WORKFLOWS.md](../reference/WORKFLOWS.md).  
+**To regenerate the reference:** Run `cihub docs generate`.
 
-**Templates & Profiles:** For ready-made repo configs and tool profiles.  
-See `templates/README.md` (apply via `python -m cihub config apply-profile ...`).
+**Templates & Profiles:** For ready-made repo configs and tool profiles,
+see `templates/README.md` (apply via `cihub config apply-profile ...`).
 
 ---
 
