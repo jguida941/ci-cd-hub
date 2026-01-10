@@ -112,9 +112,9 @@ Dispatches workflows inside target repos. This mode requires target repos to hav
 - Repo-level override `repo.force_all_tools: true` (in config) force-enables all tools for that repo; default is `false`.
 
 ### Known Gaps (TODO)
-- [ ] Run ID capture is best-effort and not correlated to artifacts yet
-- [~] Aggregation downloads `ci-report` artifact when present; vuln rollup still TBD
-- [~] Hub-run fails on missing/failed dispatches; still best-effort for run-id lookup and artifact presence
+- [x] Run ID capture now uses `hub_correlation_id` for reliable artifact matching (ADR-0023)
+- [~] Aggregation downloads `ci-report` artifact when present; vuln rollup still TBD (see BACKLOG.md)
+- [~] Hub-run fails on missing/failed dispatches; correlation fallback implemented but still best-effort
 
 ---
 

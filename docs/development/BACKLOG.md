@@ -42,7 +42,7 @@ Single queue for known issues and near-term work.
 | Item | Category | Notes |
 |---------------------------------------------|-------------------|---------------------------------------------------------------|
 | Generate `docs/reference/TOOLS.md` | Docs | From `cihub/tools/registry.py` via `cihub docs generate` |
-| Generate `docs/reference/WORKFLOWS.md` | Docs | From `.github/workflows/*.yml`; guides stay narrative |
+| Vulnerability rollup in aggregation | Reporting | Aggregate vuln counts across repos in hub report (WORKFLOWS.md line 116) |
 | Enforce `--json` for all commands | CLI UX | Contract test; include hub-ci subcommands |
 | Pin `harden-runner` and unpinned actions | Supply Chain | Version pins across all workflows |
 
@@ -58,6 +58,7 @@ Move items here when done:
 | Implement `cihub registry` CLI | 2026-01 | list/show/set/diff/sync/add subcommands |
 | Implement `cihub docs audit` | 2026-01 | ~80% complete, wired into `cihub check --audit` |
 | Consolidate `_tool_enabled()` helper | 2026-01 | Canonical in `cihub/config/normalize.py` |
+| Generate `docs/reference/WORKFLOWS.md` | 2026-01 | Auto-generated from `.github/workflows/*.yml` via `cihub docs generate` |
 | Gate-spec refactor | 2026-01 | 27 ThresholdSpecs in gate_specs.py |
 | Expand CI engine tests | 2026-01 | 2 -> 151+ tests |
 
