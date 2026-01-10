@@ -15,8 +15,6 @@ from pathlib import Path
 from .types import (
     ACTIVE_DOCS_DIR,
     ARCHIVE_DOCS_DIR,
-    MASTER_PLAN_PATH,
-    README_PATH,
     STATUS_MD_PATH,
     SUPERSEDED_HEADER_PATTERNS,
     AuditFinding,

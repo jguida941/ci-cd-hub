@@ -19,7 +19,6 @@ from pathlib import Path
 
 from .types import (
     DUPLICATE_SIMILARITY_THRESHOLD,
-    PLACEHOLDER_PATTERNS,
     PLANNING_DOCS,
     TIMESTAMP_ERROR_DAYS,
     TIMESTAMP_PATTERNS,
@@ -29,7 +28,6 @@ from .types import (
     FindingCategory,
     FindingSeverity,
     TaskEntry,
-    TimestampInfo,
 )
 
 

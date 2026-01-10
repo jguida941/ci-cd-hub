@@ -174,7 +174,7 @@ def validate_doc_references(repo_root: Path) -> list[AuditFinding]:
                                 file=rel_path,
                                 line=line_num,
                                 code="CIHUB-AUDIT-BROKEN-REF",
-                                suggestion=f"Update reference to correct path or remove if obsolete",
+                                suggestion="Update reference to correct path or remove if obsolete",
                             )
                         )
 

@@ -24,7 +24,7 @@
 | Metrics drift detection | ❌ **NOT IMPLEMENTED** | Part 13.R — detect stale counts (for `docs stale`) |
 | Duplicate task detection | ✅ **IMPLEMENTED** | Part 13.S — fuzzy matching across planning docs |
 | Timestamp freshness | ✅ **IMPLEMENTED** | Part 13.T — "Last Updated" header staleness |
-| Placeholder detection | ✅ **IMPLEMENTED** | Part 13.V — personal usernames, local paths |
+| Placeholder detection | ✅ **IMPLEMENTED** | Part 13.V — markers (YOUR_*, TODO:), local paths (GitHub usernames disabled - too noisy) |
 | Checklist-reality sync | ❌ **NOT IMPLEMENTED** | Part 13.U — verify [ ] items against code |
 | Cross-doc consistency | ❌ **NOT IMPLEMENTED** | Part 13.W — ensure same facts across docs |
 | CHANGELOG validation | ❌ **NOT IMPLEMENTED** | Part 13.X — format and ordering checks |
@@ -39,13 +39,14 @@
 - ✅ --output-dir wired in check --audit → writes .cihub/tool-outputs/docs_audit.json
 - ✅ Duplicate task detection with fuzzy matching (Part 13.S)
 - ✅ Timestamp freshness validation (Part 13.T)
-- ✅ Placeholder detection: usernames, paths, markers (Part 13.V)
+- ✅ Placeholder detection: markers (YOUR_*, TODO:), local paths (Part 13.V) — GitHub usernames disabled (too noisy)
 
 **NOT yet implemented in `docs audit`:**
 - ❌ Specs hygiene: REQUIREMENTS.md validation (Part 12.J)
 - ❌ Path-change update rules (Part 12.J)
 - ❌ Universal doc header enforcement (Part 12.Q)
 - ❌ Doc inventory/counts (Part 12.M)
+- ❌ Docs index consistency: `docs/README.md` active doc list must match STATUS.md + active/ (Part 13.W)
 - ❌ Checklist-reality sync (Part 13.U)
 
 **Tests:** 22 tests in `tests/test_docs_audit.py` (types, lifecycle, ADR, references, consistency)
@@ -77,6 +78,7 @@ cihub/commands/docs_audit/
 | 3 | ADR-0045 says `import from cihub.constants` but file doesn't exist | `docs/adr/0045-*` | Wrong import path documented |
 | 4 | Schema version v1 in ADR but v2 in code | `schema/triage.schema.json` | Minor confusion |
 | 5 | `--ai` flag for fix says "with --report" but not enforced | `cli_parsers/fix.py:39-42` | Silent ignore |
+| 6 | Docs index omits active design docs | `docs/README.md` | Confusing entry point |
 
 **Action:** Update CLI snapshots, regenerate docs, fix ADR import paths. These are inputs for `cihub docs audit` implementation.
 
@@ -1492,6 +1494,7 @@ def find_placeholders(
 - Test count: STATUS.md says "2120", MASTER_PLAN says "2104", DEVELOPMENT.md says "80+"
 - ADR count: STATUS.md says "37", adr/README.md lists 44 files
 - Command count: DEVELOPMENT.md says "11", reality is "28"
+- Docs index: `docs/README.md` active list missing files in `docs/development/active/`
 
 **Implementation for `cihub docs audit`:**
 
@@ -1518,6 +1521,15 @@ DOCS_WITH_METRICS = {
         'docs/development/status/STATUS.md',
         'docs/adr/README.md',
     ],
+}
+
+# Non-metric consistency checks
+DOCS_WITH_LISTS = {
+    'active_docs': {
+        'source_dir': 'docs/development/active',
+        'index_doc': 'docs/README.md',
+        'status_doc': 'docs/development/status/STATUS.md',
+    },
 }
 
 def validate_cross_doc_consistency() -> list[ConsistencyIssue]:

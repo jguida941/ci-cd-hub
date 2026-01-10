@@ -13,7 +13,6 @@ from pathlib import Path
 
 from .types import (
     ADR_DIR,
-    ADR_REQUIRED_FIELDS,
     ADR_VALID_STATUSES,
     ADRMetadata,
     AuditFinding,

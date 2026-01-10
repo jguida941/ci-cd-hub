@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-
 # =============================================================================
 # Constants
 # =============================================================================
@@ -285,14 +284,9 @@ TIMESTAMP_PATTERNS = [
 ]
 
 # Placeholder patterns (Part 13.V)
-PLACEHOLDER_PATTERNS = [
-    # GitHub usernames in URLs (potential personal forks)
-    (r"github\.com/([a-zA-Z0-9_-]+)/", "github_username"),
-    # Common placeholder markers
-    (r"\b(YOUR_[A-Z_]+|CHANGE_ME|TODO:|FIXME:|XXX:)\b", "placeholder_marker"),
-    # Hardcoded local paths
-    (r"(/Users/[^/\s]+|/home/[^/\s]+|C:\\\\Users\\\\[^\\\\]+)", "local_path"),
-]
+# NOTE: GitHub username detection was removed (too many false positives).
+# Patterns are now defined inline in consistency.py::find_placeholders()
+# to allow for easier tuning without changing the types module.
 
 # Default thresholds
 TIMESTAMP_WARN_DAYS = 7

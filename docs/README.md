@@ -67,7 +67,10 @@ Internal planning and governance docs:
 
 **Active Design Docs** (`development/active/`):
 - [CLEAN_CODE.md](development/active/CLEAN_CODE.md) - Architecture improvements
+- [SYSTEM_INTEGRATION_PLAN.md](development/active/SYSTEM_INTEGRATION_PLAN.md) - Registry/wizard/schema integration
+- [TEST_REORGANIZATION.md](development/active/TEST_REORGANIZATION.md) - Test suite restructuring plan
 - [DOC_AUTOMATION_AUDIT.md](development/active/DOC_AUTOMATION_AUDIT.md) - `cihub docs stale` design
+- [TYPESCRIPT_CLI_DESIGN.md](development/active/TYPESCRIPT_CLI_DESIGN.md) - TypeScript CLI wrapper design
 - [PYQT_PLAN.md](development/active/PYQT_PLAN.md) - PyQt6 GUI wrapper design
 
 **Architecture:**

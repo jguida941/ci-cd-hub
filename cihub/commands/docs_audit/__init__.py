@@ -32,6 +32,14 @@ from cihub.utils.paths import hub_root
 
 # Import from submodules
 from .adr import get_adr_files, parse_adr_metadata, validate_adr_metadata
+from .consistency import (
+    check_timestamp_freshness,
+    find_duplicate_tasks,
+    find_placeholders,
+    parse_checklist_items,
+    validate_consistency,
+    validate_timestamps,
+)
 from .lifecycle import (
     check_active_status_sync,
     check_archive_superseded_headers,
@@ -47,23 +55,13 @@ from .output import (
     group_findings_by_category,
     group_findings_by_file,
 )
-from .consistency import (
-    check_timestamp_freshness,
-    find_duplicate_tasks,
-    find_placeholders,
-    parse_checklist_items,
-    validate_consistency,
-    validate_timestamps,
-)
 from .references import extract_doc_references, validate_doc_references
 from .types import (
+    ACTIVE_DOCS_DIR,
     ADR_DIR,
     ADR_REQUIRED_FIELDS,
     ADR_VALID_STATUSES,
-    ACTIVE_DOCS_DIR,
     ARCHIVE_DOCS_DIR,
-    MASTER_PLAN_PATH,
-    README_PATH,
     STATUS_MD_PATH,
     ADRMetadata,
     AuditFinding,

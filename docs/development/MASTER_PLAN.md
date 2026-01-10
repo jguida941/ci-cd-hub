@@ -14,7 +14,7 @@
 | **#1 🔴** | CLEAN_CODE.md | ~90% | Part 5.3: Special-Case Handling |
 | **#2 🟠** | SYSTEM_INTEGRATION_PLAN.md | Active | Phase 2-6 (schema, wizard, registry parity) |
 | **#3 🟡** | TEST_REORGANIZATION.md | PLANNED | Resolve blockers first |
-| **#4 🟢** | DOC_AUTOMATION_AUDIT.md | ~80% | Part 13.S/T/V done; remaining: Q headers, specs |
+| **#4 🟢** | DOC_AUTOMATION_AUDIT.md | ~80% | Part 13 R/U/W/X + Q headers + specs hygiene |
 | **#5 🔵** | TYPESCRIPT_CLI_DESIGN.md | Planning | Wait for CLEAN_CODE.md 100% |
 | **#6 ⚪** | PYQT_PLAN.md | DEFERRED | Wait for all above |
 
@@ -116,7 +116,7 @@ Blockers to resolve first:
 
 ### 🟢 Priority 4: DOC_AUTOMATION_AUDIT.md (Can parallel with TEST_REORGANIZATION)
 
-**Status:** ~65% implemented (optional artifact outputs now available) | **Depends on:** Stable CLI surface
+**Status:** ~80% implemented (optional artifact outputs now available) | **Depends on:** Stable CLI surface
 
 ```
 docs/development/active/DOC_AUTOMATION_AUDIT.md
