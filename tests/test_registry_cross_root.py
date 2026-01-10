@@ -168,6 +168,75 @@ def test_registry_diff_errors_when_hub_root_cannot_be_derived(tmp_path: Path) ->
     assert result.suggestions
 
 
+def test_registry_sync_accepts_config_dir_and_maps_to_repos_dir(tmp_path: Path) -> None:
+    """--configs-dir may point to <hub>/config and should map to <hub>/config/repos."""
+    from cihub.commands.registry_cmd import _cmd_sync
+
+    hub = tmp_path / "external-hub"
+    configs_dir = hub / "config"
+    repos_dir = configs_dir / "repos"
+    profiles_dir = hub / "templates" / "profiles"
+    repos_dir.mkdir(parents=True)
+    profiles_dir.mkdir(parents=True)
+
+    (profiles_dir / "custom.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "thresholds": {"coverage_min": 91, "mutation_score_min": 81},
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    (hub / "config" / "registry.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "cihub-registry-v1",
+                "tiers": {"standard": {"description": "Standard", "profile": "custom"}},
+                "repos": {"demo-repo": {"tier": "standard"}},
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    repo_path = repos_dir / "demo-repo.yaml"
+    repo_path.write_text(
+        yaml.safe_dump(
+            {
+                "repo": {"owner": "o", "name": "n", "language": "python", "default_branch": "main"},
+                "language": "python",
+                "thresholds": {
+                    "coverage_min": 70,
+                    "mutation_score_min": 70,
+                    "max_critical_vulns": 0,
+                    "max_high_vulns": 0,
+                },
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    args = type(
+        "Args",
+        (),
+        {
+            "configs_dir": str(configs_dir),
+            "dry_run": False,
+            "yes": True,
+        },
+    )()
+    result = _cmd_sync(args)
+    assert result.exit_code == 0
+
+    updated = yaml.safe_load(repo_path.read_text(encoding="utf-8"))
+    assert updated["thresholds"]["coverage_min"] == 91
+    assert updated["thresholds"]["mutation_score_min"] == 81
+
+
 def test_registry_sync_errors_when_registry_missing_in_target_hub_root(tmp_path: Path) -> None:
     from cihub.commands.registry_cmd import _cmd_sync
     from cihub.exit_codes import EXIT_FAILURE

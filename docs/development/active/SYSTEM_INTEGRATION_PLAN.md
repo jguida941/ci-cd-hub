@@ -58,6 +58,9 @@ These decisions keep CLI/wizard parity and preserve the existing 3-tier config m
 7. **Profile mapping is explicit** - tier -> profile name -> config fragment; thresholds_profile is derived or deprecated.
 8. **JSON purity is required** - non-interactive commands emit a single JSON payload; interactive commands reject `--json` with CommandResult.
 9. **Registry repo metadata precedence (temporary)** - when both are present, `repos.<name>.config.repo` is canonical; top-level `repos.<name>.language/dispatch_enabled` are legacy/back-compat and must not disagree (treat disagreement as drift).
+10. **Drift buckets (Phase 2.4)**:
+   - `unmanaged_key.*` → **warning** (schema-valid but not registry-managed yet)
+   - `unknown_key.*` → **error** (schema-invalid; likely typo/stale field)
 
 ---
 
@@ -650,7 +653,8 @@ tests/
 - [ ] 2.2 Rewrite registry_service.py for full config scope (sparse storage)
 - [ ] 2.3 Implement full sync to config/repos
 - [x] 2.3a Sync tier/repo config fragments into config/repos (managedConfig; includes tier profile merge)
-- [x] 2.4a Diff surfaces managedConfig drift via dry-run sync (non-threshold keys + thresholds)
+- [x] 2.4a Diff surfaces managedConfig drift via dry-run sync (non-threshold keys + thresholds) + cross-root --configs-dir handling
+- [x] 2.4b Diff flags orphan config/repos YAMLs + unmanaged top-level keys (allowlist-driven)
 - [ ] 2.4 Diff surfaces .ci-hub.yml overrides + non-tool drift
 - [ ] 2.5 Define canonical tier/profile/thresholds_profile mapping
 

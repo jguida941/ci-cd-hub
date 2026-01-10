@@ -457,6 +457,158 @@ def test_compute_diff_reports_managedconfig_repo_drift(tmp_path: Path) -> None:
     )
 
 
+def test_compute_diff_flags_orphan_config_files(tmp_path: Path) -> None:
+    """Full drift should flag repo config YAMLs that exist without a registry entry."""
+    from cihub.services.registry_service import compute_diff, load_registry
+
+    configs_dir = tmp_path / "config" / "repos"
+    configs_dir.mkdir(parents=True)
+
+    # Orphan config file: no matching registry["repos"] entry.
+    orphan_name = "orphan-repo"
+    orphan_path = configs_dir / f"{orphan_name}.yaml"
+    _write_repo_config(
+        orphan_path,
+        thresholds={
+            "coverage_min": 70,
+            "mutation_score_min": 70,
+            "max_critical_vulns": 0,
+            "max_high_vulns": 0,
+        },
+    )
+
+    registry = load_registry(registry_path=None)
+    registry["tiers"] = {"standard": {"description": "Standard", "profile": None}}
+    registry["repos"] = {"tracked-repo": {"tier": "standard"}}
+
+    diffs = compute_diff(registry, configs_dir)
+    assert any(
+        d["repo"] == orphan_name and d["field"] == "registry_entry" and d["registry_value"] == "missing"
+        for d in diffs
+    )
+
+
+def test_compute_diff_flags_orphan_nested_config_files(tmp_path: Path) -> None:
+    """Nested configs (owner/repo.yaml) should also be scanned."""
+    from cihub.services.registry_service import compute_diff, load_registry
+
+    configs_dir = tmp_path / "config" / "repos"
+    (configs_dir / "owner").mkdir(parents=True)
+
+    orphan_name = "owner/orphan-repo"
+    orphan_path = configs_dir / "owner" / "orphan-repo.yaml"
+    _write_repo_config(
+        orphan_path,
+        thresholds={
+            "coverage_min": 70,
+            "mutation_score_min": 70,
+            "max_critical_vulns": 0,
+            "max_high_vulns": 0,
+        },
+    )
+
+    registry = load_registry(registry_path=None)
+    registry["tiers"] = {"standard": {"description": "Standard", "profile": None}}
+    registry["repos"] = {}
+
+    diffs = compute_diff(registry, configs_dir)
+    assert any(d["repo"] == orphan_name and d["field"] == "registry_entry" for d in diffs)
+
+
+def test_compute_diff_flags_unmanaged_top_level_keys(tmp_path: Path) -> None:
+    """Full drift should flag config keys that are outside managedConfig allowlist."""
+    from cihub.services.registry_service import compute_diff, load_registry
+
+    configs_dir = tmp_path / "config" / "repos"
+    configs_dir.mkdir(parents=True)
+
+    repo_name = "demo-repo"
+    repo_path = configs_dir / f"{repo_name}.yaml"
+    repo_path.write_text(
+        yaml.safe_dump(
+            {
+                "repo": {"owner": "o", "name": "n", "language": "python", "default_branch": "main"},
+                "thresholds": {
+                    "coverage_min": 70,
+                    "mutation_score_min": 70,
+                    "max_critical_vulns": 0,
+                    "max_high_vulns": 0,
+                },
+                # Valid in main schema but NOT currently in registry.managedConfig allowlist.
+                "extra_tests": [{"name": "x", "command": "echo hi"}],
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    registry = load_registry(registry_path=None)
+    registry["tiers"] = {"standard": {"description": "Standard", "profile": None}}
+    registry["repos"] = {repo_name: {"tier": "standard"}}
+
+    diffs = compute_diff(registry, configs_dir)
+    assert any(
+        d["repo"] == repo_name and d["field"] == "unmanaged_key.extra_tests" for d in diffs
+    )
+
+
+def test_compute_diff_flags_unknown_top_level_keys_as_errors(tmp_path: Path) -> None:
+    """Schema-invalid keys should be flagged separately as unknown_key.* with error severity."""
+    from cihub.services.registry_service import compute_diff, load_registry
+
+    configs_dir = tmp_path / "config" / "repos"
+    configs_dir.mkdir(parents=True)
+
+    repo_name = "demo-repo"
+    repo_path = configs_dir / f"{repo_name}.yaml"
+    repo_path.write_text(
+        yaml.safe_dump(
+            {
+                "repo": {"owner": "o", "name": "n", "language": "python", "default_branch": "main"},
+                "thresholds": {
+                    "coverage_min": 70,
+                    "mutation_score_min": 70,
+                    "max_critical_vulns": 0,
+                    "max_high_vulns": 0,
+                },
+                "typo_field": True,  # not in config schema
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    registry = load_registry(registry_path=None)
+    registry["tiers"] = {"standard": {"description": "Standard", "profile": None}}
+    registry["repos"] = {repo_name: {"tier": "standard"}}
+
+    diffs = compute_diff(registry, configs_dir)
+    assert any(
+        d["repo"] == repo_name
+        and d["field"] == "unknown_key.typo_field"
+        and d["severity"] == "error"
+        for d in diffs
+    )
+
+
+def test_compute_diff_dedupes_unreadable_yaml_errors(tmp_path: Path) -> None:
+    """Unreadable repo YAML should not produce duplicate config_file diffs."""
+    from cihub.services.registry_service import compute_diff, load_registry
+
+    configs_dir = tmp_path / "config" / "repos"
+    configs_dir.mkdir(parents=True)
+
+    repo_name = "bad-repo"
+    (configs_dir / f"{repo_name}.yaml").write_text("repo: [\n", encoding="utf-8")  # invalid YAML
+
+    registry = load_registry(registry_path=None)
+    registry["tiers"] = {"standard": {"description": "Standard", "profile": None}}
+    registry["repos"] = {repo_name: {"tier": "standard"}}
+
+    diffs = compute_diff(registry, configs_dir)
+    errors = [d for d in diffs if d["repo"] == repo_name and d["field"] == "config_file"]
+    assert len(errors) == 1
+
 def test_compute_diff_reports_sparse_tier_config_values(tmp_path: Path) -> None:
     """Sparse audit should flag tier config values that match defaults."""
     from cihub.services.registry_service import compute_diff, load_registry

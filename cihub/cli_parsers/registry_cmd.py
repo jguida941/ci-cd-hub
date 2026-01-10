@@ -40,11 +40,17 @@ def add_registry_commands(
 
     # registry diff
     diff = registry_sub.add_parser("diff", help="Show drift from tier defaults vs actual configs")
-    diff.add_argument("--configs-dir", help="Path to config/repos/ directory")
+    diff.add_argument(
+        "--configs-dir",
+        help="Path to config/repos/ (or <hub>/config or any path within a hub root)",
+    )
 
     # registry sync
     sync = registry_sub.add_parser("sync", help="Sync registry settings to repo configs")
-    sync.add_argument("--configs-dir", help="Path to config/repos/ directory")
+    sync.add_argument(
+        "--configs-dir",
+        help="Path to config/repos/ (or <hub>/config or any path within a hub root)",
+    )
     sync.add_argument("--dry-run", action="store_true", help="Show what would change without modifying files")
     sync.add_argument("--yes", action="store_true", help="Apply changes without confirmation")
 

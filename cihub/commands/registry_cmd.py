@@ -240,25 +240,13 @@ def _cmd_set(args: argparse.Namespace) -> CommandResult:
 
 def _cmd_diff(args: argparse.Namespace) -> CommandResult:
     """Show drift from tier defaults vs actual configs."""
-    configs_dir = Path(args.configs_dir) if args.configs_dir else hub_root() / "config" / "repos"
-    if not configs_dir.exists():
-        return CommandResult(
-            exit_code=EXIT_FAILURE,
-            summary=f"Configs directory not found: {configs_dir}",
-            problems=[
-                {
-                    "severity": "error",
-                    "message": f"Directory not found: {configs_dir}",
-                    "code": "CIHUB-REGISTRY-DIR-NOT-FOUND",
-                }
-            ],
-        )
+    configs_arg = Path(args.configs_dir) if args.configs_dir else hub_root() / "config" / "repos"
 
-    hub_root_for_target = _derive_hub_root_from_configs_dir(configs_dir)
+    hub_root_for_target = _derive_hub_root_from_configs_dir(configs_arg)
     if args.configs_dir and hub_root_for_target is None:
         return CommandResult(
             exit_code=EXIT_USAGE,
-            summary=f"Unable to derive hub root from --configs-dir: {configs_dir}",
+            summary=f"Unable to derive hub root from --configs-dir: {configs_arg}",
             problems=[
                 {
                     "severity": "error",
@@ -272,6 +260,27 @@ def _cmd_diff(args: argparse.Namespace) -> CommandResult:
             ],
         )
     hub_root_for_target = hub_root_for_target or hub_root()
+    if args.configs_dir:
+        # Allow --configs-dir to be <hub>/config or <hub>/config/repos (or any path within hub root).
+        if configs_arg.name == "repos" and configs_arg.parent.name == "config":
+            configs_dir = configs_arg
+        else:
+            configs_dir = hub_root_for_target / "config" / "repos"
+    else:
+        configs_dir = configs_arg
+
+    if not configs_dir.exists():
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Configs directory not found: {configs_dir}",
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Directory not found: {configs_dir}",
+                    "code": "CIHUB-REGISTRY-DIR-NOT-FOUND",
+                }
+            ],
+        )
     registry_path = hub_root_for_target / "config" / "registry.json"
     if args.configs_dir and not registry_path.exists():
         return CommandResult(
@@ -319,25 +328,13 @@ def _cmd_diff(args: argparse.Namespace) -> CommandResult:
 
 def _cmd_sync(args: argparse.Namespace) -> CommandResult:
     """Sync registry settings to repo configs."""
-    configs_dir = Path(args.configs_dir) if args.configs_dir else hub_root() / "config" / "repos"
-    if not configs_dir.exists():
-        return CommandResult(
-            exit_code=EXIT_FAILURE,
-            summary=f"Configs directory not found: {configs_dir}",
-            problems=[
-                {
-                    "severity": "error",
-                    "message": f"Directory not found: {configs_dir}",
-                    "code": "CIHUB-REGISTRY-DIR-NOT-FOUND",
-                }
-            ],
-        )
+    configs_arg = Path(args.configs_dir) if args.configs_dir else hub_root() / "config" / "repos"
 
-    hub_root_for_target = _derive_hub_root_from_configs_dir(configs_dir)
+    hub_root_for_target = _derive_hub_root_from_configs_dir(configs_arg)
     if args.configs_dir and hub_root_for_target is None:
         return CommandResult(
             exit_code=EXIT_USAGE,
-            summary=f"Unable to derive hub root from --configs-dir: {configs_dir}",
+            summary=f"Unable to derive hub root from --configs-dir: {configs_arg}",
             problems=[
                 {
                     "severity": "error",
@@ -351,6 +348,26 @@ def _cmd_sync(args: argparse.Namespace) -> CommandResult:
             ],
         )
     hub_root_for_target = hub_root_for_target or hub_root()
+    if args.configs_dir:
+        if configs_arg.name == "repos" and configs_arg.parent.name == "config":
+            configs_dir = configs_arg
+        else:
+            configs_dir = hub_root_for_target / "config" / "repos"
+    else:
+        configs_dir = configs_arg
+
+    if not configs_dir.exists():
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Configs directory not found: {configs_dir}",
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Directory not found: {configs_dir}",
+                    "code": "CIHUB-REGISTRY-DIR-NOT-FOUND",
+                }
+            ],
+        )
     registry_path = hub_root_for_target / "config" / "registry.json"
     if args.configs_dir and not registry_path.exists():
         return CommandResult(

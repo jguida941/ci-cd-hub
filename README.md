@@ -13,6 +13,41 @@
 
 Centralized CI/CD for Java and Python repos with config-driven toggles, reusable workflows, and a single hub that runs pipelines across many repositories.
 
+## Status Notice (Refactor In Progress)
+
+Note: We are in a major refactor of the CLI/registry integration and doc automation. Some automation commands may be incomplete or in flux while we align registry sync/diff behavior and add `cihub docs audit` + Part 13 checks (parallel workstream). For current state, see `docs/development/status/STATUS.md` and `docs/development/active/SYSTEM_INTEGRATION_PLAN.md`.
+
+## Why CI/CD Hub
+
+- One CLI to run consistent CI across many repos (Python + Java) with reusable workflows.
+- Schema-validated config with a clear 3-tier merge (defaults → hub → repo).
+- Single commands for CI runs, report aggregation, and triage artifacts.
+
+## Who It's For
+
+- Hub/Org admins who want centralized standards across many repos.
+- Teams that need consistent CI gates across Python and Java.
+- Maintainers who want minimal YAML and reproducible workflows.
+
+## Core Concepts
+
+- Hub repo: hosts defaults, templates, workflows, and repo configs.
+- Target repo: owns `.ci-hub.yml` for per-repo overrides.
+- Merge order: defaults → hub config → repo config (repo wins).
+
+## CLI Flow (Short)
+
+```bash
+# Guided onboarding (interactive)
+python -m cihub setup
+
+# Or generate config + workflow directly
+python -m cihub init --repo . --apply
+
+# Run CI locally (uses .ci-hub.yml)
+python -m cihub ci
+```
+
 ## Execution Modes
 
 - Central mode: the hub clones repos and runs pipelines directly from a single workflow.
@@ -68,12 +103,14 @@ pip install -r requirements/requirements-dev.txt
 
 ## Documentation
 
-- [Full Docs Index](docs/README.md)
-- [Design Journey](docs/development/architecture/DESIGN_JOURNEY.md) - How this project evolved and what I learned
-- [Architecture Overview](docs/development/architecture/ARCH_OVERVIEW.md)
-- [Current Status](docs/development/status/STATUS.md)
+- [Docs Index](docs/README.md) - Full map of guides, references, and development docs
+- [Getting Started](docs/guides/GETTING_STARTED.md) - Primary entry point for new users
+- [CLI Reference](docs/reference/CLI.md) - Generated from `cihub docs generate`
+- [Config Reference](docs/reference/CONFIG.md) - Generated from schema
+- [Tools Reference](docs/reference/TOOLS.md)
 - [Troubleshooting](docs/guides/TROUBLESHOOTING.md)
-- [Smoke Test Guide (Maintainers)](docs/guides/INTEGRATION_SMOKE_TEST.md)
+- [Development Guide](docs/development/DEVELOPMENT.md) - Maintainer workflow
+- [Current Status](docs/development/status/STATUS.md)
 
 ## Contributing
 

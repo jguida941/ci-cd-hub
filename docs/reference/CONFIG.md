@@ -90,11 +90,17 @@ Source: `schema/ci-hub-config.schema.json`
 | `repo.run_group` | string | no | full | Grouping label for selective runs (e.g., full, fixtures, smoke) |
 | `repo.subdir` | string | no |  | Optional subdirectory within the repo |
 | `repo.use_central_runner` | boolean | no | true | Use central runner mode (hub clones and executes) vs distributed mode (dispatch to target repo workflow) |
+| `cihub` | object | no |  | CLI behavior toggles used by workflows and triage (debug/verbose/context/triage bundle). |
+| `cihub.debug` | boolean | no | false |  |
+| `cihub.verbose` | boolean | no | false |  |
+| `cihub.debug_context` | boolean | no | false |  |
+| `cihub.emit_triage` | boolean | no | false |  |
 | `reports` | object | no |  |  |
 | `reports.badges` | boolean|object | no |  |  |
 | `reports.codecov` | boolean|object | no |  |  |
 | `reports.github_summary` | boolean|object | no |  |  |
 | `reports.retention_days` | integer | no | 30 |  |
+| `harden_runner` | boolean|object | no |  | StepSecurity harden-runner configuration for workflow security hardening |
 | `runner_isolation` | boolean|object | no |  |  |
 | `supply_chain` | boolean|object | no |  |  |
 | `telemetry` | boolean|object | no |  |  |

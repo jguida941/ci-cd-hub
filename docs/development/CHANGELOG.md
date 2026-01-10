@@ -121,6 +121,7 @@ New test files:
 
 **Also fixed:**
 - `--configs-dir` now derives a hub root for registry/profiles/defaults loading, and errors if the hub root cannot be derived or the target `config/registry.json` is missing.
+- `--configs-dir` accepts `<hub>/config` and maps it to `<hub>/config/repos`.
 - Registry list `*` marker reflects any per-repo threshold config (explicit overrides or managedConfig.thresholds).
 - Registry sync applies managed fragments without globally normalizing repo configs (avoids rewriting unrelated keys).
 - Fragment normalization skips CVSS fallback injection for sparse fragments (no automatic `trivy_cvss_fail`).

@@ -641,6 +641,54 @@ def _compute_sparse_config_fragment_diffs(
     return diffs
 
 
+def _get_managed_config_top_level_keys(*, hub_root_path: Path | None = None) -> set[str]:
+    """Return the registry-managed top-level config keys (allowlist).
+
+    Source of truth: schema/registry.schema.json $defs.managedConfig.properties.
+    """
+    root = hub_root_path or hub_root()
+    schema_path = root / "schema" / "registry.schema.json"
+    try:
+        raw = json.loads(schema_path.read_text(encoding="utf-8"))
+        defs = raw.get("$defs", {})
+        managed = defs.get("managedConfig", {})
+        props = managed.get("properties", {})
+        if isinstance(props, dict) and props:
+            return set(props.keys())
+    except Exception:  # noqa: BLE001
+        pass
+
+    # Conservative fallback (keeps diff usable even if schema missing).
+    return {
+        "version",
+        "language",
+        "repo",
+        "python",
+        "java",
+        "thresholds",
+        "gates",
+        "reports",
+        "notifications",
+        "harden_runner",
+        "thresholds_profile",
+        "cihub",
+    }
+
+
+def _get_config_schema_top_level_keys(*, hub_root_path: Path | None = None) -> set[str]:
+    """Return the config schema's allowed top-level keys (schema/ci-hub-config.schema.json properties)."""
+    root = hub_root_path or hub_root()
+    schema_path = root / "schema" / "ci-hub-config.schema.json"
+    try:
+        raw = json.loads(schema_path.read_text(encoding="utf-8"))
+        props = raw.get("properties", {})
+        if isinstance(props, dict) and props:
+            return set(props.keys())
+    except Exception:  # noqa: BLE001
+        pass
+    return set()
+
+
 def compute_diff(
     registry: dict[str, Any], configs_dir: Path, *, hub_root_path: Path | None = None
 ) -> list[dict[str, Any]]:
@@ -669,15 +717,79 @@ def compute_diff(
         if isinstance(repo_cfg, dict):
             diffs.extend(_compute_repo_metadata_drift(repo_name, repo_cfg))
 
+    # Phase 2.4 (full drift): detect orphan config files and unmanaged top-level keys
+    # in config/repos/*.yaml that are not in the registry-managed allowlist.
+    managed_top_level_keys = _get_managed_config_top_level_keys(hub_root_path=hub_root_path)
+    config_schema_top_level_keys = _get_config_schema_top_level_keys(hub_root_path=hub_root_path)
+    registry_repo_names = set(repos.keys())
+    failed_load: set[str] = set()
+    for config_path in sorted(configs_dir.rglob("*.yaml")):
+        try:
+            rel = config_path.relative_to(configs_dir)
+            repo_name = rel.with_suffix("").as_posix()
+        except Exception:  # noqa: BLE001
+            repo_name = config_path.stem
+        if repo_name not in registry_repo_names:
+            diffs.append(
+                {
+                    "repo": repo_name,
+                    "field": "registry_entry",
+                    "registry_value": "missing",
+                    "actual_value": "config_file_present",
+                    "severity": "warning",
+                }
+            )
+        try:
+            actual = load_yaml_file(config_path)
+        except Exception as exc:  # noqa: BLE001
+            diffs.append(
+                {
+                    "repo": repo_name,
+                    "field": "config_file",
+                    "registry_value": "valid",
+                    "actual_value": f"error: {exc}",
+                    "severity": "error",
+                }
+            )
+            failed_load.add(repo_name)
+            continue
+        if not isinstance(actual, dict):
+            continue
+        for key in sorted(actual.keys()):
+            if config_schema_top_level_keys and key not in config_schema_top_level_keys:
+                diffs.append(
+                    {
+                        "repo": repo_name,
+                        "field": f"unknown_key.{key}",
+                        "registry_value": "schema_invalid",
+                        "actual_value": "present",
+                        "severity": "error",
+                    }
+                )
+            elif key not in managed_top_level_keys:
+                diffs.append(
+                    {
+                        "repo": repo_name,
+                        "field": f"unmanaged_key.{key}",
+                        "registry_value": "not_managed",
+                        "actual_value": "present",
+                        "severity": "warning",
+                    }
+                )
+
     # Phase 2.4: non-threshold managedConfig drift. Reuse the sync engine in dry-run mode
     # to compute the intended on-disk state across allowlisted keys.
     for change in sync_to_configs(registry, configs_dir, dry_run=True, hub_root_path=hub_root_path):
         if change.get("action") == "skip":
             reason = change.get("reason", "skipped")
+            repo_name = change.get("repo", "<unknown>")
+            if repo_name in failed_load and "failed to load" in str(reason):
+                # Avoid duplicate config_file drift entries; orphan scan already surfaced it.
+                continue
             severity = "error" if "failed to load" in str(reason) else "warning"
             diffs.append(
                 {
-                    "repo": change.get("repo", "<unknown>"),
+                    "repo": repo_name,
                     "field": "config_file",
                     "registry_value": "present",
                     "actual_value": reason,
