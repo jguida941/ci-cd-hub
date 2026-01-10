@@ -425,10 +425,11 @@ thresholds:
 **Config Management**
 | Command | Purpose |
 |---------|---------|
-| `cihub config --repo <name> show` | Display hub config |
-| `cihub config --repo <name> set <path> <value>` | Update a config value |
-| `cihub config --repo <name> enable <tool>` | Enable a tool |
-| `cihub config --repo <name> disable <tool>` | Disable a tool |
+| `cihub config show --repo <name>` | Display hub config |
+| `cihub config set <path> <value> --repo <name>` | Update a config value |
+| `cihub config enable <tool> --repo <name>` | Enable a tool |
+| `cihub config disable <tool> --repo <name>` | Disable a tool |
+| `cihub config apply-profile <profile> --repo <name>` | Apply a profile |
 
 **Documentation & ADRs**
 | Command | Purpose |

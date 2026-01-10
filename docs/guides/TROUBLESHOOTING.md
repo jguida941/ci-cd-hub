@@ -4,6 +4,71 @@ Common issues and their solutions, organized by category.
 
 ---
 
+## Debugging Tools
+
+### Environment Flags
+
+Enable these flags for more diagnostic output:
+
+| Flag | Effect |
+|------|--------|
+| `CIHUB_DEBUG=True` | Show full Python tracebacks |
+| `CIHUB_VERBOSE=True` | Stream tool stdout/stderr output |
+| `CIHUB_DEBUG_CONTEXT=True` | Emit structured debug context blocks |
+| `CIHUB_EMIT_TRIAGE=True` | Generate triage bundle after CI runs |
+
+Example:
+```bash
+CIHUB_DEBUG=True CIHUB_VERBOSE=True cihub ci --repo .
+```
+
+---
+
+### Triage Command
+
+Analyze CI failures automatically:
+
+```bash
+# Triage most recent failed run
+cihub triage --latest
+
+# Triage specific run by ID
+cihub triage --run 12345678
+
+# Verify tools ran correctly
+cihub triage --verify-tools
+```
+
+---
+
+### Triage Bundle Outputs
+
+When `CIHUB_EMIT_TRIAGE=True` is set, these files are written to `.cihub/`:
+
+| File | Purpose |
+|------|---------|
+| `triage.json` | Machine-readable triage data (schema v2) |
+| `priority.json` | Prioritized list of failures |
+| `triage.md` | Human-readable summary |
+| `history.jsonl` | Historical tracking data |
+
+The `.cihub/tool-outputs/` directory contains per-tool JSON output for detailed inspection.
+
+---
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | Failure (tests failed, lint errors, etc.) |
+| 2 | Usage error (invalid arguments) |
+| 3 | Declined (user cancelled) |
+| 4 | Internal error |
+| 130 | Interrupted (Ctrl+C) |
+
+---
+
 ## Configuration Issues
 
 ### Schema validation fails
