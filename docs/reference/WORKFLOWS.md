@@ -1,10 +1,10 @@
 # Workflows Reference
 
-> **Generated Reference** - Do not edit manually.
-> This document describes the GitHub Actions workflows in `.github/workflows/`.
-> For usage guidance, see [guides/WORKFLOWS.md](../guides/WORKFLOWS.md).
->
-> **Last Updated:** 2026-01-09
+> **Generated Reference** - DO NOT EDIT MANUALLY  
+> This document describes the GitHub Actions workflows in `.github/workflows/`.  
+
+> For usage guidance, see [guides/WORKFLOWS.md](../guides/WORKFLOWS.md).  
+> **Last Updated:** 2026-01-09  
 
 ---
 
