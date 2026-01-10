@@ -23,17 +23,15 @@ Single queue for known issues and near-term work.
 | Item | Category | Notes |
 |---------------------------------------|----------------|--------------------------------------------------------------------|
 | Dependabot for Satellite Repos | Supply Chain | Extend dependabot.yml to satellite repos; see ADR-0030 |
-| Kotlin project support | CLI | Mentioned in RESEARCH_LOG.md as TODO |
 | Validate configs against actual repos | Testing | audit.md mentions this as incomplete |
 | Fuzzing Support | Supply Chain | Scorecard flagged; consider OSS-Fuzz for config parsing/validation |
 
 ---
 
-ht## From ADR-0035 (Triage/Registry)
+## From ADR-0035 (Triage/Registry)
 
 | Item | Category | Notes |
 |---------------------------------------------|-------------------|---------------------------------------------------------------|
-| Implement `cihub registry` CLI | CLI | Centralized repo config management (list, show, set, diff, sync) |
 | Implement `cihub assist --prompt` | CLI/LLM | Generate LLM prompt pack from triage bundle |
 | Implement `cihub fix --safe` | CLI | Auto-fix: ruff, black, isort, badges |
 | Triage filtering flags | CLI | `--min-severity`, `--category` for triage output filtering |
@@ -43,12 +41,8 @@ ht## From ADR-0035 (Triage/Registry)
 
 | Item | Category | Notes |
 |---------------------------------------------|-------------------|---------------------------------------------------------------|
-| Implement `cihub docs audit` + manifest | CLI/Docs | Lifecycle/header checks, plain-text scan, `.cihub/tool-outputs` |
 | Generate `docs/reference/TOOLS.md` | Docs | From `cihub/tools/registry.py` via `cihub docs generate` |
 | Generate `docs/reference/WORKFLOWS.md` | Docs | From `.github/workflows/*.yml`; guides stay narrative |
-| Consolidate `_tool_enabled()` helper | Code quality | Single helper + tests |
-| Gate-spec refactor | Code quality | Declarative gates per language strategy |
-| Expand CI engine tests | Testing | Increase coverage in `tests/test_services_ci.py` |
 | Enforce `--json` for all commands | CLI UX | Contract test; include hub-ci subcommands |
 | Pin `harden-runner` and unpinned actions | Supply Chain | Version pins across all workflows |
 
@@ -61,3 +55,23 @@ Move items here when done:
 |--------------------------------------|-----------|-----------|
 | CLI modular restructure (Phases 1-5) | 2025-12 | - |
 | Wizard cancellation safety | 2025-12 | - |
+| Implement `cihub registry` CLI | 2026-01 | list/show/set/diff/sync/add subcommands |
+| Implement `cihub docs audit` | 2026-01 | ~80% complete, wired into `cihub check --audit` |
+| Consolidate `_tool_enabled()` helper | 2026-01 | Canonical in `cihub/config/normalize.py` |
+| Gate-spec refactor | 2026-01 | 27 ThresholdSpecs in gate_specs.py |
+| Expand CI engine tests | 2026-01 | 2 -> 151+ tests |
+
+---
+
+## Future/Aspirational (Quarantine)
+
+The following items from `_quarantine/phase11_docs/docs/backlog.md` are enterprise-grade features that may be added in the future but are not current priorities:
+
+- Per-repo secret brokerage (GitHub App + Vault)
+- Token-bucket rate limiting with Redis
+- BigQuery telemetry dashboards
+- Kyverno/OPA policy enforcement (audit -> enforce)
+- OCI artifact signing and admission verification
+- Cross-time determinism gating
+
+These remain in quarantine for reference and may be revisited post-v1.0.
