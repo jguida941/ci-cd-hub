@@ -51,21 +51,21 @@ When `inputs.run_jacoco` is declared as `type: boolean`, GitHub Actions interpre
 
 ```
 YAML Config (bool)
-    ↓
+ ↓
 Python loads (bool)
-    ↓
+ ↓
 CLI env overrides (CIHUB_RUN_* / CIHUB_WRITE_GITHUB_SUMMARY)
-    ↓
+ ↓
 Python writes to GITHUB_OUTPUT (string "true"/"false")
-    ↓
+ ↓
 JavaScript reads env var (string)
-    ↓
+ ↓
 asBool() normalizes to 'true'/'false' string
-    ↓
+ ↓
 workflow_dispatch API receives string
-    ↓
+ ↓
 GitHub converts to boolean (type: boolean input)
-    ↓
+ ↓
 Workflow uses native boolean
 ```
 
@@ -73,25 +73,25 @@ The `asBool()` helper in the orchestrator handles various truthy representations
 
 ```javascript
 function asBool(value) {
-  if (typeof value === 'boolean') return value ? 'true' : 'false';
-  const s = String(value).toLowerCase().trim();
-  return ['true', '1', 'yes', 'on'].includes(s) ? 'true' : 'false';
+ if (typeof value === 'boolean') return value ? 'true' : 'false';
+ const s = String(value).toLowerCase().trim();
+ return ['true', '1', 'yes', 'on'].includes(s) ? 'true' : 'false';
 }
 ```
 
 ## Alternatives Considered
 
 1. **Keep string comparisons everywhere:**
-   Rejected. Error-prone and inconsistent with GitHub Actions' type system.
+ Rejected. Error-prone and inconsistent with GitHub Actions' type system.
 
 2. **Use only implicit truthy checks:**
-   ```yaml
-   ${{ inputs.run_jacoco && steps.jacoco.outcome == 'success' }}
-   ```
-   This works but is less explicit. We chose explicit `== true` for clarity.
+ ```yaml
+ ${{ inputs.run_jacoco && steps.jacoco.outcome == 'success' }}
+ ```
+ This works but is less explicit. We chose explicit `== true` for clarity.
 
 3. **Convert all inputs to strings:**
-   Rejected. Loses type safety and breaks dispatch UI checkboxes.
+ Rejected. Loses type safety and breaks dispatch UI checkboxes.
 
 ## Consequences
 

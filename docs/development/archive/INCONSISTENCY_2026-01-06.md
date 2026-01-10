@@ -59,11 +59,11 @@ Without timeouts, subprocesses can hang indefinitely, causing CI jobs to stall.
 
 ```python
 try:
-    validate_config(config, "merged-config")
+ validate_config(config, "merged-config")
 except ConfigValidationError:
-    if exit_on_validation_error:
-        sys.exit(1)  # <-- Library code should not call sys.exit()
-    raise
+ if exit_on_validation_error:
+ sys.exit(1) # <-- Library code should not call sys.exit()
+ raise
 ```
 
 **Problem:** Library code that calls `sys.exit()` makes it impossible to test error paths and breaks composability.
@@ -157,13 +157,13 @@ Functions returning `dict` without type parameters reduce type safety.
 **Current (vague):**
 ```python
 def get_config() -> dict:
-    ...
+ ...
 ```
 
 **Recommended (specific):**
 ```python
 def get_config() -> dict[str, Any]:
-    ...
+ ...
 ```
 
 **Locations:**
@@ -227,8 +227,8 @@ Common arguments (--repo, --json, --verbose) are defined repeatedly instead of u
 **Count:** ~15 locations
 
 ```python
-except Exception:  # Too broad
-    pass
+except Exception: # Too broad
+ pass
 ```
 
 **Recommended:** Catch specific exceptions where possible.
@@ -343,7 +343,7 @@ group.add_argument("--no-flag", dest="flag", action="store_false")
 
 **Location:** `cihub/cli_parsers/dispatch.py:34-36`
 ```python
-type=lambda x: x.lower() != "false"  # Anti-pattern
+type=lambda x: x.lower() != "false" # Anti-pattern
 ```
 
 **Official Pattern:** Use named functions for type converters
@@ -461,7 +461,7 @@ data = json.loads(path.read_text(encoding="utf-8"))
 **Official Pattern:**
 ```python
 with path.open(encoding="utf-8") as f:
-    data = json.load(f)
+ data = json.load(f)
 ```
 
 ### Compliance: EXCELLENT
@@ -491,14 +491,14 @@ The codebase demonstrates **exemplary modern typing**:
 
 **2 instances** use deprecated syntax:
 ```python
-default: Optional[str] = None  # Should be: str | None
+default: Optional[str] = None # Should be: str | None
 ```
 
 ---
 
 ## 16. logging Module (Official Docs Audit)
 
-### Status: NOT APPLICABLE - Intentional Architecture Choice ✅
+### Status: NOT APPLICABLE - Intentional Architecture Choice [x]
 
 **Source:** https://docs.python.org/3/library/logging.html
 
@@ -515,10 +515,10 @@ Command → CommandResult(data={...}) → Renderer → JSON or Human output
 **Current Pattern (INTENTIONAL - Better Than Logging):**
 ```python
 return CommandResult(
-    summary="Detected Python project",
-    problems=[{"severity": "error", "code": "MISSING-TOOL", ...}],
-    artifacts={"report": "path/to/file"},
-    data={"language": "python", ...}
+ summary="Detected Python project",
+ problems=[{"severity": "error", "code": "MISSING-TOOL", ...}],
+ artifacts={"report": "path/to/file"},
+ data={"language": "python", ...}
 )
 ```
 
@@ -533,11 +533,11 @@ return CommandResult(
 | `--json` flag impossible | `--json` flag works perfectly |
 
 **Architecture Benefits (Already Implemented):**
-- ✅ `--json` flag produces clean AI-consumable output
-- ✅ `CIHUB_DEBUG` env var for opt-in diagnostics to stderr
-- ✅ `CommandResult.problems` has severity/code fields (richer than log levels)
-- ✅ 47 commands already return structured data
-- ✅ 84% reduction in direct prints (CLEAN_CODE.md Part 2.2 complete)
+- [x] `--json` flag produces clean AI-consumable output
+- [x] `CIHUB_DEBUG` env var for opt-in diagnostics to stderr
+- [x] `CommandResult.problems` has severity/code fields (richer than log levels)
+- [x] 47 commands already return structured data
+- [x] 84% reduction in direct prints (CLEAN_CODE.md Part 2.2 complete)
 
 **Conclusion:** Python's logging docs are written for applications/services. CLI tools that generate structured reports for AI consumption correctly use return-value patterns instead. **No action needed.**
 
@@ -550,25 +550,25 @@ return CommandResult(
 **Source:** https://docs.python.org/3/library/dataclasses.html
 
 **Positive Findings:**
-- ✅ All mutable defaults use `field(default_factory=...)`
-- ✅ 6 classes properly use `frozen=True`
-- ✅ Proper inheritance patterns
-- ✅ Custom serialization via `to_payload()` methods
+- [x] All mutable defaults use `field(default_factory=...)`
+- [x] 6 classes properly use `frozen=True`
+- [x] Proper inheritance patterns
+- [x] Custom serialization via `to_payload()` methods
 
 ### Optional Improvements:
 
 **Consider `slots=True`:**
 ```python
-@dataclass(frozen=True, slots=True)  # More memory efficient
+@dataclass(frozen=True, slots=True) # More memory efficient
 class ThresholdSpec:
-    ...
+ ...
 ```
 
 **Consider `kw_only=True`:**
 ```python
-@dataclass(kw_only=True)  # Prevents positional argument mistakes
+@dataclass(kw_only=True) # Prevents positional argument mistakes
 class CiRunResult:
-    ...
+ ...
 ```
 
 ---
@@ -582,10 +582,10 @@ class CiRunResult:
 - https://docs.python.org/3/tutorial/errors.html
 
 **Positive Findings:**
-- ✅ No bare `except:` clauses
-- ✅ All custom exceptions inherit from `Exception`
-- ✅ Proper context managers for resources
-- ✅ Descriptive exception messages
+- [x] No bare `except:` clauses
+- [x] All custom exceptions inherit from `Exception`
+- [x] Proper context managers for resources
+- [x] Descriptive exception messages
 
 ### Issue: Missing Explicit Exception Chaining
 
@@ -594,12 +594,12 @@ class CiRunResult:
 ```python
 # Current (implicit chaining)
 except Exception as exc:
-    log_error(exc)
-    raise
+ log_error(exc)
+ raise
 
 # Recommended (explicit chaining)
 except Exception as exc:
-    raise RuntimeError(f"Failed: {exc}") from exc
+ raise RuntimeError(f"Failed: {exc}") from exc
 ```
 
 ### Issue: Broad Exception Catches
@@ -619,7 +619,7 @@ except Exception as exc:
 | pathlib | 94% | 5 missing encoding specs |
 | json | 95% | 17 using loads() instead of load() |
 | typing | 98% | 2 Optional[] instances |
-| logging | N/A | ✅ Intentional - CommandResult pattern is better for AI-consumable CLI |
+| logging | N/A | [x] Intentional - CommandResult pattern is better for AI-consumable CLI |
 | dataclasses | 95% | Missing slots=True optimization |
 | exceptions | 85% | Missing explicit chaining |
 
@@ -627,7 +627,7 @@ except Exception as exc:
 
 ## Updated Priority List
 
-### Completed ✅
+### Completed [x]
 1. ~~Add subprocess timeouts (40+ calls)~~ - DONE (all 36 subprocess calls now have timeouts)
 2. ~~Add `encoding='utf-8'` to 5 read_text() calls~~ - DONE
 3. ~~Use mutually exclusive groups for flag pairs~~ - DONE (bandit --fail-on-high, ci --write-github-summary)

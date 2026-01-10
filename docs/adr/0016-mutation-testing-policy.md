@@ -1,9 +1,9 @@
 # ADR-0016: Mutation Testing Policy
 
-**Status**: Accepted  
-**Date:** 2025-12-18  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-18
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -38,13 +38,13 @@ Callers can choose enforcement level:
 **Advisory (default)**: Run and report, never fail
 ```yaml
 run_mutmut: true
-mutation_score_min: 0  # Any score acceptable
+mutation_score_min: 0 # Any score acceptable
 ```
 
 **Warning**: Run and warn if below threshold (current behavior)
 ```yaml
 run_mutmut: true
-mutation_score_min: 70  # Warn if below 70%
+mutation_score_min: 70 # Warn if below 70%
 # continue-on-error: true (in workflow)
 ```
 
@@ -111,8 +111,8 @@ Mutation Score = (Killed Mutants / Total Mutants) × 100
 
 ```toml
 [tool.mutmut]
-paths_to_mutate = ["src/"]          # Array format required in 3.x
-tests_dir = ["tests/"]              # Array format required in 3.x
+paths_to_mutate = ["src/"] # Array format required in 3.x
+tests_dir = ["tests/"] # Array format required in 3.x
 also_copy = ["scripts/", "config/"] # Additional dirs needed by tests
 ```
 
@@ -120,9 +120,9 @@ also_copy = ["scripts/", "config/"] # Additional dirs needed by tests
 
 ```yaml
 - name: Run mutmut
-  run: mutmut run  # 3.x reads all config from pyproject.toml
-  continue-on-error: true
-  timeout-minutes: 15
+ run: mutmut run # 3.x reads all config from pyproject.toml
+ continue-on-error: true
+ timeout-minutes: 15
 ```
 
 **Version differences (2.x vs 3.x):**
@@ -166,24 +166,24 @@ This happens because mutmut calls `set_start_method('fork')` without `force=True
 ```bash
 # Find and patch mutmut
 sed -i '' "s/set_start_method('fork')/set_start_method('fork', force=True)/" \
-  .venv/lib/python3.12/site-packages/mutmut/__main__.py
+ .venv/lib/python3.12/site-packages/mutmut/__main__.py
 ```
 
 **Additional performance config:**
 ```toml
 [tool.mutmut]
-mutate_only_covered_lines = true  # Only mutate lines with test coverage
+mutate_only_covered_lines = true # Only mutate lines with test coverage
 ```
 
 ### Mutation Testing Results (2025-12-26)
 
 | Module | Mutants | Killed | Survived | Score |
 |--------|---------|--------|----------|-------|
-| `config/merge.py` | 27 | 27 | 0 | **100%** ✅ |
-| `commands/detect.py` | 20 | 17 | 3 | **85%** ✅ |
-| `config/io.py` | 94 | 87 | 7 | **93%** ✅ |
-| `cli.py` | ~2480 | ~17 | ~2000+ | **~5%** ❌ |
-| `commands/secrets.py` | N/A | 0 | N/A | **0%** ❌ |
+| `config/merge.py` | 27 | 27 | 0 | **100%** [x] |
+| `commands/detect.py` | 20 | 17 | 3 | **85%** [x] |
+| `config/io.py` | 94 | 87 | 7 | **93%** [x] |
+| `cli.py` | ~2480 | ~17 | ~2000+ | **~5%** [ ] |
+| `commands/secrets.py` | N/A | 0 | N/A | **0%** [ ] |
 
 **Priority for improvement:**
 1. `cli.py` - Main entry point, needs systematic breakdown
@@ -194,9 +194,9 @@ mutate_only_covered_lines = true  # Only mutate lines with test coverage
 
 ```yaml
 - name: Run PITest
-  run: mvn test-compile org.pitest:pitest-maven:mutationCoverage
-  continue-on-error: true
-  timeout-minutes: 15
+ run: mvn test-compile org.pitest:pitest-maven:mutationCoverage
+ continue-on-error: true
+ timeout-minutes: 15
 ```
 
 ## Migration Path

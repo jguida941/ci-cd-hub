@@ -1,6 +1,6 @@
 # CLI Examples
 
-> **Quick Reference** — This is a companion to [GETTING_STARTED.md](GETTING_STARTED.md).
+> **Quick Reference** - This is a companion to [GETTING_STARTED.md](GETTING_STARTED.md).
 > Use this for copy-paste commands. For full context, see the Getting Started guide.
 
 Practical, copy-paste command examples. For full flags and options, see `docs/reference/CLI.md` or run `python -m cihub <command> --help`.
@@ -66,17 +66,17 @@ cat /path/to/repo/.cihub/summary.md
 Run all auto-fixers (safe, deterministic):
 
 ```bash
-cihub fix --safe                        # Auto-fix Python (ruff, black, isort) or Java (spotless)
-cihub fix --safe --repo /path/to/repo   # Specific repo
-cihub fix --safe --dry-run              # Preview what would be fixed
+cihub fix --safe # Auto-fix Python (ruff, black, isort) or Java (spotless)
+cihub fix --safe --repo /path/to/repo # Specific repo
+cihub fix --safe --dry-run # Preview what would be fixed
 ```
 
 Run all analyzers and report issues for manual review:
 
 ```bash
-cihub fix --report                      # Human-readable report
-cihub fix --report --json               # JSON output for tooling
-cihub fix --report --ai                 # Generate AI-consumable markdown (.cihub/fix-report.md)
+cihub fix --report # Human-readable report
+cihub fix --report --json # JSON output for tooling
+cihub fix --report --ai # Generate AI-consumable markdown (.cihub/fix-report.md)
 ```
 
 Python tools (--report): mypy, bandit, pip_audit, semgrep, trivy
@@ -102,54 +102,54 @@ python -m cihub report aggregate --reports-dir reports --output hub-report.json
 Analyze local CI output:
 
 ```bash
-cihub triage                                    # From local .cihub/report.json
-cihub triage --output-dir ./out                 # Custom output directory
-cihub triage --report path/to/report.json       # Custom report path
-cihub triage --min-severity high                # Only show high+ severity failures
-cihub triage --category security                # Only show security failures
-cihub triage --min-severity high --category security  # Combine filters
+cihub triage # From local .cihub/report.json
+cihub triage --output-dir ./out # Custom output directory
+cihub triage --report path/to/report.json # Custom report path
+cihub triage --min-severity high # Only show high+ severity failures
+cihub triage --category security # Only show security failures
+cihub triage --min-severity high --category security # Combine filters
 ```
 
 Analyze remote GitHub workflow runs:
 
 ```bash
-cihub triage --run 20756904005                  # Specific run ID
-cihub triage --latest                           # Most recent failed run (auto-detect)
-cihub triage --latest --workflow hub-ci.yml     # Filter by workflow
-cihub triage --latest --branch main             # Filter by branch
-cihub triage --repo owner/name --latest         # Different repository
+cihub triage --run 20756904005 # Specific run ID
+cihub triage --latest # Most recent failed run (auto-detect)
+cihub triage --latest --workflow hub-ci.yml # Filter by workflow
+cihub triage --latest --branch main # Filter by branch
+cihub triage --repo owner/name --latest # Different repository
 ```
 
 Watch for failures (background daemon):
 
 ```bash
-cihub triage --watch                            # Poll every 30s
-cihub triage --watch --interval 60              # Poll every 60s
-cihub triage --watch --workflow hub-ci.yml      # Filter by workflow
+cihub triage --watch # Poll every 30s
+cihub triage --watch --interval 60 # Poll every 60s
+cihub triage --watch --workflow hub-ci.yml # Filter by workflow
 ```
 
 Multi-report mode (orchestrator runs):
 
 ```bash
-cihub triage --run <ID> --aggregate             # Combine into single bundle
-cihub triage --run <ID> --per-repo              # Separate bundles with index
-cihub triage --multi --reports-dir ./artifacts  # Local multi-report
+cihub triage --run <ID> --aggregate # Combine into single bundle
+cihub triage --run <ID> --per-repo # Separate bundles with index
+cihub triage --multi --reports-dir ./artifacts # Local multi-report
 ```
 
 Historical analysis:
 
 ```bash
-cihub triage --gate-history                     # Gate status changes over time
-cihub triage --detect-flaky                     # Flaky test pattern detection
+cihub triage --gate-history # Gate status changes over time
+cihub triage --detect-flaky # Flaky test pattern detection
 ```
 
 Outputs (in `.cihub/runs/{run_id}/` for remote, `.cihub/` for local):
 
 ```bash
-cat .cihub/triage.json      # Full structured bundle
-cat .cihub/priority.json    # Sorted failures only
-cat .cihub/triage.md        # LLM prompt pack (AI-consumable summary)
-cat .cihub/history.jsonl    # Append-only run history
+cat .cihub/triage.json # Full structured bundle
+cat .cihub/priority.json # Sorted failures only
+cat .cihub/triage.md # LLM prompt pack (AI-consumable summary)
+cat .cihub/history.jsonl # Append-only run history
 ```
 
 ---
@@ -159,25 +159,25 @@ cat .cihub/history.jsonl    # Append-only run history
 List repos and their tiers:
 
 ```bash
-cihub registry list                             # All repos with effective settings
-cihub registry list --tier standard             # Filter by tier
-cihub registry show canary-python               # Detailed config for a repo
+cihub registry list # All repos with effective settings
+cihub registry list --tier standard # Filter by tier
+cihub registry show canary-python # Detailed config for a repo
 ```
 
 Modify tier or thresholds:
 
 ```bash
-cihub registry set canary-python --tier strict  # Change tier
-cihub registry set canary-python --coverage 80  # Add threshold override
-cihub registry add new-repo --tier relaxed      # Add new repo to registry
+cihub registry set canary-python --tier strict # Change tier
+cihub registry set canary-python --coverage 80 # Add threshold override
+cihub registry add new-repo --tier relaxed # Add new repo to registry
 ```
 
 Sync settings to repo configs:
 
 ```bash
-cihub registry diff                             # Show drift from registry
-cihub registry sync --dry-run                   # Preview changes
-cihub registry sync --yes                       # Apply changes
+cihub registry diff # Show drift from registry
+cihub registry sync --dry-run # Preview changes
+cihub registry sync --yes # Apply changes
 ```
 
 ---
@@ -213,37 +213,37 @@ python -m cihub config-outputs --repo /path/to/repo --github-output
 Generate and check reference docs:
 
 ```bash
-python -m cihub docs generate                    # Generate CLI.md, CONFIG.md
-python -m cihub docs check                       # Verify generated docs are up-to-date
-python -m cihub docs links                       # Check internal links
-python -m cihub docs links --external            # Also check external URLs (requires lychee)
+python -m cihub docs generate # Generate CLI.md, CONFIG.md
+python -m cihub docs check # Verify generated docs are up-to-date
+python -m cihub docs links # Check internal links
+python -m cihub docs links --external # Also check external URLs (requires lychee)
 ```
 
 Detect stale documentation references:
 
 ```bash
-python -m cihub docs stale                       # Check last 10 commits
-python -m cihub docs stale --since main          # Check against main branch
-python -m cihub docs stale --fail-on-stale       # CI mode - fail if stale refs found
-python -m cihub docs stale --ai                  # Generate AI-consumable markdown
-python -m cihub docs stale --output-dir .cihub/tool-outputs  # Write JSON + prompt pack
+python -m cihub docs stale # Check last 10 commits
+python -m cihub docs stale --since main # Check against main branch
+python -m cihub docs stale --fail-on-stale # CI mode - fail if stale refs found
+python -m cihub docs stale --ai # Generate AI-consumable markdown
+python -m cihub docs stale --output-dir .cihub/tool-outputs # Write JSON + prompt pack
 ```
 
 Audit documentation structure and metadata:
 
 ```bash
-python -m cihub docs audit                       # Full audit (lifecycle, ADR, references)
-python -m cihub docs audit --skip-references     # Fast mode - skip path scanning
-python -m cihub docs audit --json                # Machine-readable output
-python -m cihub docs audit --output-dir .cihub/tool-outputs  # Write docs_audit.json
+python -m cihub docs audit # Full audit (lifecycle, ADR, references)
+python -m cihub docs audit --skip-references # Fast mode - skip path scanning
+python -m cihub docs audit --json # Machine-readable output
+python -m cihub docs audit --output-dir .cihub/tool-outputs # Write docs_audit.json
 ```
 
 ADR management:
 
 ```bash
-python -m cihub adr list                         # List all ADRs
-python -m cihub adr new "Add new workflow policy"  # Create new ADR
-python -m cihub adr check                        # Validate ADR structure
+python -m cihub adr list # List all ADRs
+python -m cihub adr new "Add new workflow policy" # Create new ADR
+python -m cihub adr check # Validate ADR structure
 ```
 
 ---
@@ -281,7 +281,7 @@ python -m cihub hub-ci pip-audit --path .
 python -m cihub hub-ci mutmut --workdir . --output-dir .cihub
 python -m cihub hub-ci validate-configs
 python -m cihub hub-ci validate-profiles
-python -m cihub hub-ci validate-triage                        # Validate triage.json against schema
+python -m cihub hub-ci validate-triage # Validate triage.json against schema
 python -m cihub hub-ci license-check
 ```
 

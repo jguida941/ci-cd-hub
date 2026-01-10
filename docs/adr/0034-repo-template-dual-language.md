@@ -1,9 +1,9 @@
 # ADR-0034: Repo Template Includes Both Language Sections
 
-**Status**: Accepted  
-**Date:** 2025-12-30  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-30  
+**Status**: Accepted
+**Date:** 2025-12-30
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-30
 
 ## Context
 
@@ -18,7 +18,7 @@ block for that language unless a user manually edits the file.
 - Keep a single repo template (`templates/repo/.ci-hub.yml`).
 - Include both `python` and `java` sections in the template.
 - `cihub init/update` set `language` and remove the unused block in
-  `build_repo_config` so generated configs contain only the relevant section.
+ `build_repo_config` so generated configs contain only the relevant section.
 - Manual users can delete the unused block; behavior is keyed off `language`.
 
 ## Consequences
@@ -35,6 +35,6 @@ Negative:
 ## Alternatives Considered
 
 1. **Separate per-language templates**
-   - Rejected: duplicates template maintenance and requires CLI/doc/test updates.
+ - Rejected: duplicates template maintenance and requires CLI/doc/test updates.
 2. **Keep one section commented out**
-   - Rejected: Java init can produce invalid configs without manual edits.
+ - Rejected: Java init can produce invalid configs without manual edits.

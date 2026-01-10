@@ -33,15 +33,15 @@ CLI architecture is close but not fully JSON-pure yet:
 
 ### Key Architectural Findings
 
-| System                | Status       | Details                                                                      |
+| System | Status | Details |
 |-----------------------|--------------|------------------------------------------------------------------------------|
-| Config Loading        | ✅ WORKING    | 3-tier merge chain functions correctly                                       |
-| Boolean Normalization | ✅ WORKING    | `tool: true` → `tool: {enabled: true}` works                                 |
-| Wizard                | ✅ WORKING    | Creates configs, but disconnected from registry                              |
-| Registry CLI          | ⚠️ PARTIAL   | Commands exist but only track a small threshold subset (schema-aligned keys) |
-| Wizard ↔ Registry     | ❌ BROKEN     | Not connected at all                                                         |
-| Registry → YAML Sync  | ⚠️ PARTIAL   | Sync is now schema-safe for threshold keys; full config scope still missing  |
-| Profiles              | ⚠️ UNDERUSED | 12 profiles exist but wizard doesn't surface them                            |
+| Config Loading | [x] WORKING | 3-tier merge chain functions correctly |
+| Boolean Normalization | [x] WORKING | `tool: true` → `tool: {enabled: true}` works |
+| Wizard | [x] WORKING | Creates configs, but disconnected from registry |
+| Registry CLI | WARNING: PARTIAL | Commands exist but only track a small threshold subset (schema-aligned keys) |
+| Wizard ↔ Registry | [ ] BROKEN | Not connected at all |
+| Registry → YAML Sync | WARNING: PARTIAL | Sync is now schema-safe for threshold keys; full config scope still missing |
+| Profiles | WARNING: UNDERUSED | 12 profiles exist but wizard doesn't surface them |
 
 ---
 
@@ -59,8 +59,8 @@ These decisions keep CLI/wizard parity and preserve the existing 3-tier config m
 8. **JSON purity is required** - non-interactive commands emit a single JSON payload; interactive commands reject `--json` with CommandResult.
 9. **Registry repo metadata precedence (temporary)** - when both are present, `repos.<name>.config.repo` is canonical; top-level `repos.<name>.language/dispatch_enabled` are legacy/back-compat and must not disagree (treat disagreement as drift).
 10. **Drift buckets (Phase 2.4)**:
-   - `unmanaged_key.*` → **warning** (schema-valid but not registry-managed yet)
-   - `unknown_key.*` → **error** (schema-invalid; likely typo/stale field)
+ - `unmanaged_key.*` → **warning** (schema-valid but not registry-managed yet)
+ - `unknown_key.*` → **error** (schema-invalid; likely typo/stale field)
 11. **Repo config identity (v1.0)** - the repo key is the **config filename/path** relative to `config/repos/` (supports nested `owner/repo.yaml`), not `repo.owner`/`repo.name` inside the YAML. Ownership metadata can differ; drift is reported against the file-path identity.
 
 ---
@@ -79,29 +79,29 @@ These decisions keep CLI/wizard parity and preserve the existing 3-tier config m
 ### 1.1 Current Data Flow (BROKEN)
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌──────────────────┐
-│   Wizard    │────▶│ config/     │     │  registry.json   │
-│ (cihub new) │     │ repos/*.yaml│     │  (3 values only) │
-└─────────────┘     └─────────────┘     └──────────────────┘
-     │                    │
-     ▼                    ▼
-  MAY WRITE           USED BY CI
-  .ci-hub.yml         engine
-  directly            (registry ignored)
+┌─────────────┐ ┌─────────────┐ ┌──────────────────┐
+│ Wizard │────▶│ config/ │ │ registry.json │
+│ (cihub new) │ │ repos/*.yaml│ │ (3 values only) │
+└─────────────┘ └─────────────┘ └──────────────────┘
+ │ │
+ ▼ ▼
+ MAY WRITE USED BY CI
+ .ci-hub.yml engine
+ directly (registry ignored)
 ```
 
 ### 1.2 Correct Data Flow (TARGET)
 
 ```
-┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│ Wizard/CLI  │────▶│  registry.json   │────▶│ config/repos/    │
-│ (services) │     │  (non-defaults)  │     │ *.yaml            │
-└─────────────┘     └──────────────────┘     └──────────────────┘
-     │                     │                        │
-     ▼                     ▼                        ▼
- repo-side apply       SOURCE OF                load_config
- (explicit)            TRUTH                    merge chain
-                                            defaults + repo + .ci-hub.yml
+┌─────────────┐ ┌──────────────────┐ ┌──────────────────┐
+│ Wizard/CLI │────▶│ registry.json │────▶│ config/repos/ │
+│ (services) │ │ (non-defaults) │ │ *.yaml │
+└─────────────┘ └──────────────────┘ └──────────────────┘
+ │ │ │
+ ▼ ▼ ▼
+ repo-side apply SOURCE OF load_config
+ (explicit) TRUTH merge chain
+ defaults + repo + .ci-hub.yml
 ```
 
 ### 1.3 Core Design Principles
@@ -126,10 +126,10 @@ These decisions keep CLI/wizard parity and preserve the existing 3-tier config m
 
 ```python
 effective = {
-    "coverage_min": ...,
-    "mutation_score_min": ...,
-    "max_critical_vulns": ...,
-    "max_high_vulns": ...,
+ "coverage_min": ...,
+ "mutation_score_min": ...,
+ "max_critical_vulns": ...,
+ "max_high_vulns": ...,
 }
 ```
 
@@ -142,7 +142,7 @@ effective = {
 
 **Location:** `services/registry_service.py`
 
-**Status:** ✅ **RESOLVED in Phase 0.1**
+**Status:** [x] **RESOLVED in Phase 0.1**
 
 **Fix implemented:**
 - Registry now normalizes legacy keys to schema-aligned keys on load/save (`coverage_min`, `mutation_score_min`, `max_{critical,high}_vulns`)
@@ -160,10 +160,10 @@ effective = {
 
 | Issue | Location | Impact |
 |-------|----------|--------|
-| `mutmut.min_score` alias not normalized/deprecated | schema/ci-hub-config.schema.json (mutmut), config/normalize.py | ✅ Fixed: alias normalized to `min_mutation_score`; schema marks `min_score` deprecated |
-| Missing `cihub` block | schema/ci-hub-config.schema.json, config/loader/inputs.py | ✅ Fixed: schema now includes `cihub` and inputs are robust to invalid shapes |
-| Schema defaults disagree with defaults.yaml (`mutmut.enabled`) | schema/ci-hub-config.schema.json, config/defaults.yaml | ✅ Fixed: defaults aligned (mutmut disabled by default) |
-| `python.tools.trivy.fail_on_cvss` not in schema but read in inputs | schema/ci-hub-config.schema.json, config/loader/inputs.py | ✅ Fixed: schema includes `fail_on_cvss` and defaults provide a value |
+| `mutmut.min_score` alias not normalized/deprecated | schema/ci-hub-config.schema.json (mutmut), config/normalize.py | [x] Fixed: alias normalized to `min_mutation_score`; schema marks `min_score` deprecated |
+| Missing `cihub` block | schema/ci-hub-config.schema.json, config/loader/inputs.py | [x] Fixed: schema now includes `cihub` and inputs are robust to invalid shapes |
+| Schema defaults disagree with defaults.yaml (`mutmut.enabled`) | schema/ci-hub-config.schema.json, config/defaults.yaml | [x] Fixed: defaults aligned (mutmut disabled by default) |
+| `python.tools.trivy.fail_on_cvss` not in schema but read in inputs | schema/ci-hub-config.schema.json, config/loader/inputs.py | [x] Fixed: schema includes `fail_on_cvss` and defaults provide a value |
 
 ### 2.5 Registry Bypass in CLI/Wizard
 
@@ -177,11 +177,11 @@ effective = {
 
 **Fix implemented:** Workflow now calls CLI wrappers (no raw tool invocations).
 
-| Tool        | Previous                  | Now                                      |
+| Tool | Previous | Now |
 |-------------|---------------------------|------------------------------------------|
 | Ruff format | `ruff format --check ...` | `python -m cihub hub-ci ruff-format ...` |
-| mypy        | `mypy ...`                | `python -m cihub hub-ci mypy ...`        |
-| yamllint    | `yamllint ...`            | `python -m cihub hub-ci yamllint ...`    |
+| mypy | `mypy ...` | `python -m cihub hub-ci mypy ...` |
+| yamllint | `yamllint ...` | `python -m cihub hub-ci yamllint ...` |
 
 ### 2.7 Wizard Doesn't Use Profiles
 
@@ -210,58 +210,58 @@ Defaults shown below reflect **defaults.yaml** (current effective defaults). Sch
 
 ### 3.1 Python Tools (14)
 
-| Tool       | Key Settings                                       | Default                              |
+| Tool | Key Settings | Default |
 |------------|----------------------------------------------------|--------------------------------------|
-| pytest     | enabled, min_coverage, fail_fast                   | enabled=true, min_coverage=70        |
-| ruff       | enabled, fail_on_error, max_errors                 | enabled=true                         |
-| black      | enabled, fail_on_format_issues, max_issues         | enabled=true                         |
-| isort      | enabled, fail_on_issues, max_issues                | enabled=true                         |
-| mypy       | enabled, require_run_or_fail                       | enabled=false                        |
-| bandit     | enabled, fail_on_high/medium/low                   | enabled=true, fail_on_high=true      |
-| pip_audit  | enabled, fail_on_vuln                              | enabled=true                         |
-| mutmut     | enabled, min_mutation_score (min_score deprecated) | enabled=false, min_mutation_score=70 |
-| hypothesis | enabled                                            | enabled=true                         |
-| semgrep    | enabled, fail_on_findings                          | enabled=false                        |
-| trivy      | enabled, fail_on_critical/high                     | enabled=false                        |
-| codeql     | enabled, languages                                 | enabled=false                        |
-| docker     | enabled, compose_file                              | enabled=false                        |
-| sbom       | enabled, format                                    | enabled=false                        |
+| pytest | enabled, min_coverage, fail_fast | enabled=true, min_coverage=70 |
+| ruff | enabled, fail_on_error, max_errors | enabled=true |
+| black | enabled, fail_on_format_issues, max_issues | enabled=true |
+| isort | enabled, fail_on_issues, max_issues | enabled=true |
+| mypy | enabled, require_run_or_fail | enabled=false |
+| bandit | enabled, fail_on_high/medium/low | enabled=true, fail_on_high=true |
+| pip_audit | enabled, fail_on_vuln | enabled=true |
+| mutmut | enabled, min_mutation_score (min_score deprecated) | enabled=false, min_mutation_score=70 |
+| hypothesis | enabled | enabled=true |
+| semgrep | enabled, fail_on_findings | enabled=false |
+| trivy | enabled, fail_on_critical/high | enabled=false |
+| codeql | enabled, languages | enabled=false |
+| docker | enabled, compose_file | enabled=false |
+| sbom | enabled, format | enabled=false |
 
 ### 3.2 Java Tools (12)
 
-| Tool       | Key Settings                                 | Default                       |
+| Tool | Key Settings | Default |
 |------------|----------------------------------------------|-------------------------------|
-| jacoco     | enabled, min_coverage                        | enabled=true, min_coverage=70 |
-| checkstyle | enabled, fail_on_violation                   | enabled=true                  |
-| spotbugs   | enabled, fail_on_error, max_bugs             | enabled=true                  |
-| pmd        | enabled, fail_on_violation                   | enabled=true                  |
-| owasp      | enabled, fail_on_cvss                        | enabled=true, fail_on_cvss=7  |
-| pitest     | enabled, min_mutation_score                  | enabled=true                  |
-| jqwik      | enabled                                      | enabled=false                 |
-| semgrep    | enabled, fail_on_findings                    | enabled=false                 |
-| trivy      | enabled, fail_on_critical/high, fail_on_cvss | enabled=false                 |
-| codeql     | enabled, languages                           | enabled=false                 |
-| docker     | enabled, compose_file                        | enabled=false                 |
-| sbom       | enabled, format                              | enabled=false                 |
+| jacoco | enabled, min_coverage | enabled=true, min_coverage=70 |
+| checkstyle | enabled, fail_on_violation | enabled=true |
+| spotbugs | enabled, fail_on_error, max_bugs | enabled=true |
+| pmd | enabled, fail_on_violation | enabled=true |
+| owasp | enabled, fail_on_cvss | enabled=true, fail_on_cvss=7 |
+| pitest | enabled, min_mutation_score | enabled=true |
+| jqwik | enabled | enabled=false |
+| semgrep | enabled, fail_on_findings | enabled=false |
+| trivy | enabled, fail_on_critical/high, fail_on_cvss | enabled=false |
+| codeql | enabled, languages | enabled=false |
+| docker | enabled, compose_file | enabled=false |
+| sbom | enabled, format | enabled=false |
 
 ### 3.3 Global Thresholds
 
-| Field                 | Type            | Default |
+| Field | Type | Default |
 |-----------------------|-----------------|---------|
-| coverage_min          | integer (0-100) | 70      |
-| mutation_score_min    | integer (0-100) | 70      |
-| max_critical_vulns    | integer         | 0       |
-| max_high_vulns        | integer         | 0       |
-| max_pip_audit_vulns   | integer         | 0       |
-| owasp_cvss_fail       | float (0-10)    | 7.0     |
-| trivy_cvss_fail       | float (0-10)    | 7.0     |
-| max_semgrep_findings  | integer         | 0       |
-| max_ruff_errors       | integer         | 0       |
-| max_black_issues      | integer         | 0       |
-| max_isort_issues      | integer         | 0       |
-| max_checkstyle_errors | integer         | 0       |
-| max_spotbugs_bugs     | integer         | 0       |
-| max_pmd_violations    | integer         | 0       |
+| coverage_min | integer (0-100) | 70 |
+| mutation_score_min | integer (0-100) | 70 |
+| max_critical_vulns | integer | 0 |
+| max_high_vulns | integer | 0 |
+| max_pip_audit_vulns | integer | 0 |
+| owasp_cvss_fail | float (0-10) | 7.0 |
+| trivy_cvss_fail | float (0-10) | 7.0 |
+| max_semgrep_findings | integer | 0 |
+| max_ruff_errors | integer | 0 |
+| max_black_issues | integer | 0 |
+| max_isort_issues | integer | 0 |
+| max_checkstyle_errors | integer | 0 |
+| max_spotbugs_bugs | integer | 0 |
+| max_pmd_violations | integer | 0 |
 
 ---
 
@@ -277,55 +277,55 @@ Profiles are a **starting point**, then ALWAYS show checkboxes for customization
 
 ```
 ┌─────────────────────────────────────────────────────────-────┐
-│                    CIHub Setup Wizard                        │
+│ CIHub Setup Wizard │
 ├───────────────────────────────────────────────────────-──────┤
-│                                                              │
-│  Step 1: Project Detection                                   │
-│  ────────────────────────                                    │
-│  ✓ Detected: Python (pyproject.toml)                         │
-│                                                              │
-│  Step 2: Select CI Profile                                   │
-│  ─────────────────────────                                   │
-│  Profiles determine your default tool selection and          │
-│  quality gates. You can customize after selecting.           │
-│                                                              │
-│  ○ Fast (Recommended)                                        │
-│    pytest, ruff, black, bandit, pip-audit (~5 min)           │
-│                                                              │
-│  ○ Quality                                                   │
-│    Fast + mypy, mutmut (~20 min)                             │
-│                                                              │
-│  ○ Security                                                  │
-│    bandit, pip-audit, semgrep, trivy, codeql (~30 min)       │
-│                                                              │
-│  ○ Start from scratch                                        │
-│    Configure each tool individually                          │
-│                                                              │
-│  Step 3: Customize Tools (always shown)                      │
-│  ──────────────────────────────────────                      │
-│  Pre-filled based on "Fast" profile. Toggle to customize:    │
-│                                                              │
-│  ☑ pytest          ☑ ruff           ☑ black                  │
-│  ☐ isort           ☐ mypy           ☑ bandit                 │
-│  ☑ pip-audit       ☐ mutmut         ☐ semgrep                │
-│  ☐ trivy           ☐ codeql         ☐ sbom                   │
-│                                                              │
-│  Step 4: Quality Gates                                       │
-│  ─────────────────────                                       │
-│  Based on "Fast" profile defaults:                           │
-│                                                              │
-│  Min coverage:     [70]%                                     │
-│  Fail on high:     [Yes]                                     │
-│  Format mode:      ○ Check  ○ Fix                            │
-│                                                              │
-│  Step 5: Preview & Confirm                                   │
-│  ─────────────────────────                                   │
-│  Files to create:                                            │
-│    • .ci-hub.yml                                             │
-│    • .github/workflows/hub-ci.yml                            │
-│                                                              │
-│  [Preview .ci-hub.yml]  [Create Files]  [Cancel]             │
-│                                                              │
+│ │
+│ Step 1: Project Detection │
+│ ──────────────────────── │
+│ [x] Detected: Python (pyproject.toml) │
+│ │
+│ Step 2: Select CI Profile │
+│ ───────────────────────── │
+│ Profiles determine your default tool selection and │
+│ quality gates. You can customize after selecting. │
+│ │
+│ ○ Fast (Recommended) │
+│ pytest, ruff, black, bandit, pip-audit (~5 min) │
+│ │
+│ ○ Quality │
+│ Fast + mypy, mutmut (~20 min) │
+│ │
+│ ○ Security │
+│ bandit, pip-audit, semgrep, trivy, codeql (~30 min) │
+│ │
+│ ○ Start from scratch │
+│ Configure each tool individually │
+│ │
+│ Step 3: Customize Tools (always shown) │
+│ ────────────────────────────────────── │
+│ Pre-filled based on "Fast" profile. Toggle to customize: │
+│ │
+│ pytest ruff black │
+│ isort mypy bandit │
+│ pip-audit mutmut semgrep │
+│ trivy codeql sbom │
+│ │
+│ Step 4: Quality Gates │
+│ ───────────────────── │
+│ Based on "Fast" profile defaults: │
+│ │
+│ Min coverage: [70]% │
+│ Fail on high: [Yes] │
+│ Format mode: ○ Check ○ Fix │
+│ │
+│ Step 5: Preview & Confirm │
+│ ───────────────────────── │
+│ Files to create: │
+│ • .ci-hub.yml │
+│ • .github/workflows/hub-ci.yml │
+│ │
+│ [Preview .ci-hub.yml] [Create Files] [Cancel] │
+│ │
 └─────────────────────────────────────────────────────────-────┘
 ```
 
@@ -404,11 +404,11 @@ Profiles are a **starting point**, then ALWAYS show checkboxes for customization
 
 | # | Task | Commands | Priority |
 |---|------|----------|----------|
-| 5.1 | Profile management | create, list, show, edit, delete, import, export | 🔴 CRITICAL |
-| 5.2 | Registry management | remove, bootstrap, import/export | 🔴 CRITICAL |
-| 5.3 | Tool management | list, enable, disable, configure, status, validate | 🟠 HIGH |
-| 5.4 | Threshold management | get, set, list, reset, compare | 🟠 HIGH |
-| 5.5 | Repo management | list, update, migrate, clone, verify-connectivity | 🟡 MEDIUM |
+| 5.1 | Profile management | create, list, show, edit, delete, import, export | CRITICAL |
+| 5.2 | Registry management | remove, bootstrap, import/export | CRITICAL |
+| 5.3 | Tool management | list, enable, disable, configure, status, validate | HIGH |
+| 5.4 | Threshold management | get, set, list, reset, compare | HIGH |
+| 5.5 | Repo management | list, update, migrate, clone, verify-connectivity | MEDIUM |
 
 ### Phase 6: Schema & Extensibility (Week 6)
 
@@ -442,33 +442,33 @@ Every CLI command must be tested across these configurations:
 
 ```
 ┌────────────────────┬─────────┬─────────┬───────┬────────┬─────────┬─────────┬─────────┬───────────┬───────┬────────┐
-│ Command            │ py-root │ py-setup│ java-m│ java-g │ monorepo│ py-sub  │ java-sub│ java-multi│ empty │ no-git │
+│ Command │ py-root │ py-setup│ java-m│ java-g │ monorepo│ py-sub │ java-sub│ java-multi│ empty │ no-git │
 ├────────────────────┼─────────┼─────────┼───────┼────────┼─────────┼─────────┼─────────┼───────────┼───────┼────────┤
-│ cihub detect       │ ✓       │ ✓       │ ✓     │ ✓      │ ✓       │ ✓       │ ✓       │ ✓         │ ✓     │ ✓      │
-│ cihub init         │ ✓       │ ✓       │ ✓     │ ✓      │ ✓       │ ✓       │ ✓       │ ✓         │ E     │ E      │
-│ cihub validate     │ ✓       │ ✓       │ ✓     │ ✓      │ ✓       │ ✓       │ ✓       │ ✓         │ E     │ E      │
-│ cihub ci           │ ✓       │ ✓       │ ✓     │ ✓      │ ✓       │ ✓       │ ✓       │ ✓         │ E     │ E      │
-│ cihub check        │ ✓       │ ✓       │ ✓     │ ✓      │ ✓       │ ✓       │ ✓       │ ✓         │ E     │ E      │
-│ cihub triage       │ ✓       │ ✓       │ ✓     │ ✓      │ ✓       │ ✓       │ ✓       │ ✓         │ E     │ E      │
-│ cihub setup        │ ✓       │ ✓       │ ✓     │ ✓      │ ✓       │ ✓       │ ✓       │ ✓         │ ✓     │ ✓      │
-│ cihub scaffold     │ ✓       │ ✓       │ ✓     │ ✓      │ ✓       │ N/A     │ N/A     │ N/A       │ ✓     │ ✓      │
+│ cihub detect │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │
+│ cihub init │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ E │ E │
+│ cihub validate │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ E │ E │
+│ cihub ci │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ E │ E │
+│ cihub check │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ E │ E │
+│ cihub triage │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ E │ E │
+│ cihub setup │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │ [x] │
+│ cihub scaffold │ [x] │ [x] │ [x] │ [x] │ [x] │ N/A │ N/A │ N/A │ [x] │ [x] │
 └────────────────────┴─────────┴─────────┴───────┴────────┴─────────┴─────────┴─────────┴───────────┴───────┴────────┘
 
-Legend: ✓ = Must pass, E = Expected error (graceful), N/A = Not applicable
+Legend: [x] = Must pass, E = Expected error (graceful), N/A = Not applicable
 ```
 
 ### 6.3 Sync Verification Matrix
 
 | Sync Point | Current Status | Tests Required |
 |------------|----------------|----------------|
-| Wizard → Registry | ❌ BROKEN | Integration tests |
-| Registry → config/repos | ⚠️ 3 fields only | Full field sync tests |
-| defaults + config/repos + .ci-hub.yml → load_config | ⚠️ PARTIAL | Precedence tests |
-| Registry bootstrap (configs → registry) | ❌ NO | Import/conflict tests |
-| YAML → Workflow | ❌ NO verification | Contract tests |
-| Schema ↔ Code | ⚠️ PARTIAL | Schema-code parity tests |
-| Profile ↔ Registry | ❌ NO | Profile existence tests |
-| Thresholds ↔ Gates | ❌ NO | Gate evaluation tests |
+| Wizard → Registry | [ ] BROKEN | Integration tests |
+| Registry → config/repos | WARNING: 3 fields only | Full field sync tests |
+| defaults + config/repos + .ci-hub.yml → load_config | WARNING: PARTIAL | Precedence tests |
+| Registry bootstrap (configs → registry) | [ ] NO | Import/conflict tests |
+| YAML → Workflow | [ ] NO verification | Contract tests |
+| Schema ↔ Code | WARNING: PARTIAL | Schema-code parity tests |
+| Profile ↔ Registry | [ ] NO | Profile existence tests |
+| Thresholds ↔ Gates | [ ] NO | Gate evaluation tests |
 
 ### 6.4 Edge Cases (38+ identified)
 
@@ -572,35 +572,35 @@ cihub export registry --filter-language python
 
 ```
 tests/
-├── test_repo_shapes/                    # NEW: Repo shape matrix tests
-│   ├── conftest.py                      # Repo shape fixtures
-│   ├── test_detect_shapes.py
-│   ├── test_init_shapes.py
-│   ├── test_ci_shapes.py
-│   └── test_hub_ci_shapes.py
-├── test_wizard_flows/                   # NEW: Wizard flow tests
-│   ├── conftest.py
-│   ├── test_profile_selection.py
-│   ├── test_checkbox_interaction.py
-│   ├── test_setup_wizard.py
-│   └── test_cli_wizard_parity.py
-├── test_registry/                       # NEW: Registry tests
-│   ├── test_registry_service_unit.py
-│   ├── test_registry_integration.py
-│   ├── test_registry_contracts.py
-│   ├── test_registry_properties.py      # Hypothesis
-│   ├── test_registry_bootstrap.py
-│   ├── test_registry_drift.py
-│   └── test_registry_e2e.py
-├── test_config_precedence/              # NEW: Merge order + repo-side apply
-│   ├── test_merge_order.py
-│   └── test_repo_side_apply.py
-├── test_cli_contracts/                  # NEW: JSON purity + output contracts
-│   └── test_json_purity.py
-├── test_schema_validation/              # NEW: Schema validation tests
-│   ├── test_field_validation.py
-│   ├── test_deprecation_warnings.py
-│   └── test_schema_evolution.py
+├── test_repo_shapes/ # NEW: Repo shape matrix tests
+│ ├── conftest.py # Repo shape fixtures
+│ ├── test_detect_shapes.py
+│ ├── test_init_shapes.py
+│ ├── test_ci_shapes.py
+│ └── test_hub_ci_shapes.py
+├── test_wizard_flows/ # NEW: Wizard flow tests
+│ ├── conftest.py
+│ ├── test_profile_selection.py
+│ ├── test_checkbox_interaction.py
+│ ├── test_setup_wizard.py
+│ └── test_cli_wizard_parity.py
+├── test_registry/ # NEW: Registry tests
+│ ├── test_registry_service_unit.py
+│ ├── test_registry_integration.py
+│ ├── test_registry_contracts.py
+│ ├── test_registry_properties.py # Hypothesis
+│ ├── test_registry_bootstrap.py
+│ ├── test_registry_drift.py
+│ └── test_registry_e2e.py
+├── test_config_precedence/ # NEW: Merge order + repo-side apply
+│ ├── test_merge_order.py
+│ └── test_repo_side_apply.py
+├── test_cli_contracts/ # NEW: JSON purity + output contracts
+│ └── test_json_purity.py
+├── test_schema_validation/ # NEW: Schema validation tests
+│ ├── test_field_validation.py
+│ ├── test_deprecation_warnings.py
+│ └── test_schema_evolution.py
 └── existing tests...
 ```
 
@@ -630,13 +630,13 @@ tests/
 
 ## Part 9: Implementation Checklist
 
-### Phase 0: Safety + JSON Purity ✅
+### Phase 0: Safety + JSON Purity [x]
 
 - [x] 0.1 Fix registry threshold key mapping to schema
 - [x] 0.2 Enforce JSON purity (interactive commands reject `--json`; no stdout prints in JSON mode)
 - [x] 0.3 Add JSON purity contract tests
 
-### Phase 1: Workflow Parity Hardening ✅
+### Phase 1: Workflow Parity Hardening [x]
 
 - [x] 1.1 Normalize min_score alias → min_mutation_score + deprecate
 - [x] 1.2 Add hub-ci ruff format wrapper
@@ -647,7 +647,7 @@ tests/
 - [x] 1.7 Align schema defaults with defaults.yaml (mutmut/trivy)
 - [x] 1.8 Resolve python trivy CVSS decision (tool-level vs thresholds)
 
-### Phase 2: Registry Schema + Service ☐
+### Phase 2: Registry Schema + Service
 
 - [x] 2.1 Expand registry.schema.json with allowlisted keys
 - [x] 2.2a Add sparse config fragment audit (defaults/profile baseline)
@@ -659,13 +659,13 @@ tests/
 - [ ] 2.4 Diff surfaces .ci-hub.yml overrides + non-tool drift
 - [ ] 2.5 Define canonical tier/profile/thresholds_profile mapping
 
-### Phase 3: Registry Bootstrap & Drift ☐
+### Phase 3: Registry Bootstrap & Drift
 
 - [ ] 3.1 Add registry bootstrap/import command with --dry-run
 - [ ] 3.2 Implement conflict strategies + audit report
 - [ ] 3.3 Add drift report across registry/config/repos/.ci-hub.yml
 
-### Phase 4: Wizard Parity + Profile Integration ☐
+### Phase 4: Wizard Parity + Profile Integration
 
 - [ ] 4.1 Wizard uses shared service layer (no direct writes)
 - [ ] 4.2 Add profile selection step
@@ -673,7 +673,7 @@ tests/
 - [ ] 4.4 Expose non-tool settings in wizard
 - [ ] 4.5 Setup wizard uses registry + optional repo-side apply
 
-### Phase 5: CLI Management Commands ☐
+### Phase 5: CLI Management Commands
 
 - [ ] 5.1 Profile management commands
 - [ ] 5.2 Registry remove/bootstrap/import/export commands
@@ -681,12 +681,12 @@ tests/
 - [ ] 5.4 Threshold management commands
 - [ ] 5.5 Repo management commands
 
-### Phase 6: Schema & Extensibility ☐
+### Phase 6: Schema & Extensibility
 
 - [ ] 6.1 Enable custom tools (x- prefix) end-to-end
 - [ ] 6.2 Update command contracts + generated docs
 
-### Test Implementation ☐
+### Test Implementation
 
 - [ ] Create test_repo_shapes/ with fixtures
 - [ ] Create test_wizard_flows/
@@ -702,11 +702,11 @@ tests/
 
 ## Part 10: Quick Wins (< 1 hour each)
 
-1. ✅ Add `--json` guard for interactive commands (setup)
-2. ✅ Fix registry threshold key mapping to schema
-3. ✅ Normalize `min_score` → `min_mutation_score`, align hub-ci mutmut args
-4. ✅ Add hub-ci ruff format wrapper (subcommand or flag)
-5. ✅ Add `cihub` block to schema (debug/triage toggles)
+1. [x] Add `--json` guard for interactive commands (setup)
+2. [x] Fix registry threshold key mapping to schema
+3. [x] Normalize `min_score` → `min_mutation_score`, align hub-ci mutmut args
+4. [x] Add hub-ci ruff format wrapper (subcommand or flag)
+5. [x] Add `cihub` block to schema (debug/triage toggles)
 6. Add inline comments to scaffold output files
 7. Document all `CIHUB_*` env toggles in one place
 8. Add "See Also" to command help text
@@ -753,8 +753,8 @@ The following documents have been consolidated into this plan:
 | Finding | Details |
 |---------|---------|
 | Unused fields | ~24% of schema fields are reserved/future features |
-| `min_score` mismatch | ✅ Fixed: deprecated alias normalized to `min_mutation_score` |
-| Missing `cihub` block | ✅ Fixed: schema now includes `cihub` debug/triage toggles |
+| `min_score` mismatch | [x] Fixed: deprecated alias normalized to `min_mutation_score` |
+| Missing `cihub` block | [x] Fixed: schema now includes `cihub` debug/triage toggles |
 | Registry keys | Registry normalizes legacy keys to schema-aligned keys on load/save; still limited to a small threshold subset |
 
 ### A.3 Wizard Audit Results (Corrected)
@@ -764,8 +764,8 @@ The following documents have been consolidated into this plan:
 | Metric | Count |
 |--------|-------|
 | Commands with wizard support | 4 of 106+ |
-| Profile selection | ❌ Not implemented (only applies profile if passed in) |
-| Registry integration | ❌ Not implemented |
+| Profile selection | [ ] Not implemented (only applies profile if passed in) |
+| Registry integration | [ ] Not implemented |
 
 **Wizard-supported commands:**
 1. `cihub setup` - Full workflow wizard
@@ -779,10 +779,10 @@ The following documents have been consolidated into this plan:
 
 | Workflow | Status | Issues |
 |----------|--------|--------|
-| python-ci.yml | ✅ COMPLIANT | All tools via CLI |
-| java-ci.yml | ✅ COMPLIANT | All tools via CLI |
-| hub-ci.yml | ✅ COMPLIANT | Pure routing |
-| hub-production-ci.yml | ✅ COMPLIANT | All tools via CLI (ruff-format/mypy/yamllint wrappers) |
+| python-ci.yml | [x] COMPLIANT | All tools via CLI |
+| java-ci.yml | [x] COMPLIANT | All tools via CLI |
+| hub-ci.yml | [x] COMPLIANT | Pure routing |
+| hub-production-ci.yml | [x] COMPLIANT | All tools via CLI (ruff-format/mypy/yamllint wrappers) |
 
 ### A.5 User Journey Audit Results (Agent 5)
 
@@ -799,9 +799,9 @@ The following documents have been consolidated into this plan:
 **Proposed directories in Part 8 do NOT exist yet:**
 
 ```
-tests/test_repo_shapes/     → EMPTY (needs creation)
-tests/test_wizard_flows/    → EMPTY (needs creation)
-tests/test_registry/        → EMPTY (needs creation)
+tests/test_repo_shapes/ → EMPTY (needs creation)
+tests/test_wizard_flows/ → EMPTY (needs creation)
+tests/test_registry/ → EMPTY (needs creation)
 tests/test_config_precedence/ → EMPTY (needs creation)
 tests/test_schema_validation/ → EMPTY (needs creation)
 ```

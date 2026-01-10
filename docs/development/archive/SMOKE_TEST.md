@@ -64,30 +64,30 @@ The dedicated fixtures repo (`jguida941/ci-cd-hub-fixtures`) contains subdirs fo
 
 ### Fixture Matrix
 
-| Fixture Subdir           | Language | Config File                                            | Purpose                     |
+| Fixture Subdir | Language | Config File | Purpose |
 |--------------------------|----------|--------------------------------------------------------|-----------------------------|
-| `java-maven-pass`        | Java     | `config/repos/fixtures-java-passing.yaml`              | Maven, all Java tools pass  |
-| `java-maven-fail`        | Java     | `config/repos/fixtures-java-failing.yaml`              | Maven, controlled failures  |
-| `java-gradle-pass`       | Java     | `config/repos/fixtures-java-gradle-passing.yaml`       | Gradle coverage             |
-| `java-gradle-fail`       | Java     | `config/repos/fixtures-java-gradle-failing.yaml`       | Gradle failure paths        |
-| `java-multi-module-pass` | Java     | `config/repos/fixtures-java-multi-module-passing.yaml` | Parent/child modules        |
-| `python-pyproject-pass`  | Python   | `config/repos/fixtures-python-passing.yaml`            | pyproject layout            |
-| `python-pyproject-fail`  | Python   | `config/repos/fixtures-python-failing.yaml`            | pyproject failures          |
-| `python-setup-pass`      | Python   | `config/repos/fixtures-python-setup-passing.yaml`      | setup.py layout             |
-| `python-setup-fail`      | Python   | `config/repos/fixtures-python-setup-failing.yaml`      | setup.py failures           |
-| `python-src-layout-pass` | Python   | `config/repos/fixtures-python-src-layout-passing.yaml` | src/ layout                 |
-| `monorepo-pass/java`     | Java     | `config/repos/fixtures-monorepo-java-passing.yaml`     | Mixed repo, Java subdir     |
-| `monorepo-fail/java`     | Java     | `config/repos/fixtures-monorepo-java-failing.yaml`     | Mixed repo, Java failures   |
-| `monorepo-pass/python`   | Python   | `config/repos/fixtures-monorepo-python-passing.yaml`   | Mixed repo, Python subdir   |
-| `monorepo-fail/python`   | Python   | `config/repos/fixtures-monorepo-python-failing.yaml`   | Mixed repo, Python failures |
+| `java-maven-pass` | Java | `config/repos/fixtures-java-passing.yaml` | Maven, all Java tools pass |
+| `java-maven-fail` | Java | `config/repos/fixtures-java-failing.yaml` | Maven, controlled failures |
+| `java-gradle-pass` | Java | `config/repos/fixtures-java-gradle-passing.yaml` | Gradle coverage |
+| `java-gradle-fail` | Java | `config/repos/fixtures-java-gradle-failing.yaml` | Gradle failure paths |
+| `java-multi-module-pass` | Java | `config/repos/fixtures-java-multi-module-passing.yaml` | Parent/child modules |
+| `python-pyproject-pass` | Python | `config/repos/fixtures-python-passing.yaml` | pyproject layout |
+| `python-pyproject-fail` | Python | `config/repos/fixtures-python-failing.yaml` | pyproject failures |
+| `python-setup-pass` | Python | `config/repos/fixtures-python-setup-passing.yaml` | setup.py layout |
+| `python-setup-fail` | Python | `config/repos/fixtures-python-setup-failing.yaml` | setup.py failures |
+| `python-src-layout-pass` | Python | `config/repos/fixtures-python-src-layout-passing.yaml` | src/ layout |
+| `monorepo-pass/java` | Java | `config/repos/fixtures-monorepo-java-passing.yaml` | Mixed repo, Java subdir |
+| `monorepo-fail/java` | Java | `config/repos/fixtures-monorepo-java-failing.yaml` | Mixed repo, Java failures |
+| `monorepo-pass/python` | Python | `config/repos/fixtures-monorepo-python-passing.yaml` | Mixed repo, Python subdir |
+| `monorepo-fail/python` | Python | `config/repos/fixtures-monorepo-python-failing.yaml` | Mixed repo, Python failures |
 
 ### Heavy Tool Fixtures (Optional)
 
 Heavy tools (Trivy, CodeQL) are **off by default** for speed. For nightly/release validation:
 
-| Fixture Config               | Purpose                 | When to Run          |
+| Fixture Config | Purpose | When to Run |
 |------------------------------|-------------------------|----------------------|
-| `fixtures-java-heavy.yaml`   | Java + Trivy + CodeQL   | Nightly, pre-release |
+| `fixtures-java-heavy.yaml` | Java + Trivy + CodeQL | Nightly, pre-release |
 | `fixtures-python-heavy.yaml` | Python + Trivy + CodeQL | Nightly, pre-release |
 
 > **Note:** These fixtures are NOT part of the default smoke test. Run them intentionally when you need to verify heavy tool pipelines.
@@ -96,11 +96,11 @@ To create these configs:
 ```yaml
 # fixtures-java-heavy.yaml
 java:
-  tools:
-    trivy:
-      enabled: true
-    codeql:
-      enabled: true
+ tools:
+ trivy:
+ enabled: true
+ codeql:
+ enabled: true
 ```
 
 ### Naming Convention
@@ -119,8 +119,8 @@ java:
 2. Select the **"Smoke Test"** workflow
 3. Click **"Run workflow"**
 4. Choose options:
-   - **Branch**: Select branch to test (usually `main` or `master`)
-   - **Skip mutation testing**: Leave checked (default - faster)
+ - **Branch**: Select branch to test (usually `main` or `master`)
+ - **Skip mutation testing**: Leave checked (default - faster)
 5. Click **"Run workflow"** to start
 
 The workflow will run for approximately 5-10 minutes.
@@ -133,7 +133,7 @@ gh workflow run smoke-test.yml
 
 # Or with specific inputs
 gh workflow run smoke-test.yml \
-  --field skip_mutation=true
+ --field skip_mutation=true
 ```
 
 ### Method 3: Trigger via Hub Run All Workflow
@@ -142,8 +142,8 @@ You can also use the main hub workflow with specific repos:
 
 ```bash
 gh workflow run hub-run-all.yml \
-  --field repos="smoke-test-java,smoke-test-python" \
-  --field skip_mutation=true
+ --field repos="smoke-test-java,smoke-test-python" \
+ --field skip_mutation=true
 ```
 
 ---
@@ -173,10 +173,10 @@ The smoke-test-java job should generate:
 
 Expected artifacts:
 - `reports-java-spring-tutorials/` containing:
-  - `target/surefire-reports/` (test results)
-  - `target/site/jacoco/` (coverage HTML)
-  - `target/checkstyle-result.xml`
-  - `target/spotbugsXml.xml`
+ - `target/surefire-reports/` (test results)
+ - `target/site/jacoco/` (coverage HTML)
+ - `target/checkstyle-result.xml`
+ - `target/spotbugsXml.xml`
 
 #### 4. Python Repository Results
 The smoke-test-python job should generate:
@@ -188,10 +188,10 @@ The smoke-test-python job should generate:
 
 Expected artifacts:
 - `reports-ci-cd-bst-demo-github-actions/` containing:
-  - `coverage.xml`
-  - `htmlcov/` (coverage HTML)
-  - `ruff-report.json`
-  - Test output
+ - `coverage.xml`
+ - `htmlcov/` (coverage HTML)
+ - `ruff-report.json`
+ - Test output
 
 #### 5. Hub Summary
 The summary job should display:
@@ -219,16 +219,16 @@ Expected: Status = "completed", Conclusion = "success"
 1. Go to the Actions tab
 2. Click on the latest smoke test run
 3. Check each job's summary:
-   - **test-java**: Should show QA Metrics table with coverage %, test counts, and quality gates
-   - **test-python**: Should show QA Metrics table with pytest results, coverage %, and lint status
-   - **summary**: Should show hub summary with repo count
+ - **test-java**: Should show QA Metrics table with coverage %, test counts, and quality gates
+ - **test-python**: Should show QA Metrics table with pytest results, coverage %, and lint status
+ - **summary**: Should show hub summary with repo count
 
 ### Check 3: Artifacts
 
 1. In the workflow run page, scroll to the bottom
 2. Verify artifacts are uploaded:
-   - `reports-java-spring-tutorials` (should contain test/coverage/tool outputs)
-   - `reports-ci-cd-bst-demo-github-actions` (should contain coverage and reports)
+ - `reports-java-spring-tutorials` (should contain test/coverage/tool outputs)
+ - `reports-ci-cd-bst-demo-github-actions` (should contain coverage and reports)
 
 Download and inspect to ensure they contain actual data (not empty files).
 
@@ -277,8 +277,8 @@ Inspect logs for each job to verify:
 
 **Solution:**
 1. Verify the test repositories exist and are accessible:
-   - `https://github.com/jguida941/java-spring-tutorials`
-   - `https://github.com/jguida941/ci-cd-bst-demo-github-actions`
+ - `https://github.com/jguida941/java-spring-tutorials`
+ - `https://github.com/jguida941/ci-cd-bst-demo-github-actions`
 2. Check repository visibility (public repos don't need auth)
 3. If private, ensure GITHUB_TOKEN has access
 
@@ -366,76 +366,76 @@ Verify artifacts are stored:
 
 ```yaml
 repo:
-  owner: jguida941
-  name: java-spring-tutorials
-  language: java
-  default_branch: main
+ owner: jguida941
+ name: java-spring-tutorials
+ language: java
+ default_branch: main
 
 java:
-  version: "21"
-  tools:
-    jacoco:
-      enabled: true
-      min_coverage: 50
-    checkstyle:
-      enabled: true
-      fail_on_violation: false
-    spotbugs:
-      enabled: true
-      fail_on_error: false
-    owasp:
-      enabled: false  # Skip for speed
-    pitest:
-      enabled: false  # Skip for speed
-    codeql:
-      enabled: false
-    docker:
-      enabled: false
+ version: "21"
+ tools:
+ jacoco:
+ enabled: true
+ min_coverage: 50
+ checkstyle:
+ enabled: true
+ fail_on_violation: false
+ spotbugs:
+ enabled: true
+ fail_on_error: false
+ owasp:
+ enabled: false # Skip for speed
+ pitest:
+ enabled: false # Skip for speed
+ codeql:
+ enabled: false
+ docker:
+ enabled: false
 
 thresholds:
-  coverage_min: 50
-  mutation_score_min: 0
-  max_critical_vulns: 100
-  max_high_vulns: 100
+ coverage_min: 50
+ mutation_score_min: 0
+ max_critical_vulns: 100
+ max_high_vulns: 100
 ```
 
 ### Python: `config/repos/smoke-test-python.yaml`
 
 ```yaml
 repo:
-  owner: jguida941
-  name: ci-cd-bst-demo-github-actions
-  language: python
-  default_branch: main
+ owner: jguida941
+ name: ci-cd-bst-demo-github-actions
+ language: python
+ default_branch: main
 
 python:
-  version: "3.12"
-  tools:
-    pytest:
-      enabled: true
-      min_coverage: 50
-      fail_fast: false
-    ruff:
-      enabled: true
-      fail_on_error: false
-    bandit:
-      enabled: false
-    pip_audit:
-      enabled: false
-    mypy:
-      enabled: false
-    black:
-      enabled: true
-    codeql:
-      enabled: false
-    docker:
-      enabled: false
+ version: "3.12"
+ tools:
+ pytest:
+ enabled: true
+ min_coverage: 50
+ fail_fast: false
+ ruff:
+ enabled: true
+ fail_on_error: false
+ bandit:
+ enabled: false
+ pip_audit:
+ enabled: false
+ mypy:
+ enabled: false
+ black:
+ enabled: true
+ codeql:
+ enabled: false
+ docker:
+ enabled: false
 
 thresholds:
-  coverage_min: 50
-  mutation_score_min: 0
-  max_critical_vulns: 100
-  max_high_vulns: 100
+ coverage_min: 50
+ mutation_score_min: 0
+ max_critical_vulns: 100
+ max_high_vulns: 100
 ```
 
 ---
@@ -446,12 +446,12 @@ thresholds:
 
 For a smoke test to pass, it MUST demonstrate:
 
-1. ✅ **Discovery works**: 2 repositories discovered
-2. ✅ **Java CI runs**: Tests execute, coverage generated, tools run
-3. ✅ **Python CI runs**: pytest runs, coverage generated, linting works
-4. ✅ **Artifacts uploaded**: Both repos produce artifacts
-5. ✅ **Summaries generated**: Step summaries show metrics tables
-6. ✅ **Hub summary works**: Final summary job completes
+1. [x] **Discovery works**: 2 repositories discovered
+2. [x] **Java CI runs**: Tests execute, coverage generated, tools run
+3. [x] **Python CI runs**: pytest runs, coverage generated, linting works
+4. [x] **Artifacts uploaded**: Both repos produce artifacts
+5. [x] **Summaries generated**: Step summaries show metrics tables
+6. [x] **Hub summary works**: Final summary job completes
 
 ### Quality Expectations (Nice-to-Have)
 
@@ -507,7 +507,7 @@ These would be purpose-built for testing and could include:
 
 After smoke test passes:
 
-1. ✅ Mark smoke test checkbox in `docs/development/specs/REQUIREMENTS.md` (P0 Release Gates -> Templates + Smoke Test)
+1. [x] Mark smoke test checkbox in `docs/development/specs/REQUIREMENTS.md` (P0 Release Gates -> Templates + Smoke Test)
 2. Run smoke test on CI/CD (not just manually)
 3. Add smoke test to pre-release checklist
 4. Document smoke test in release notes

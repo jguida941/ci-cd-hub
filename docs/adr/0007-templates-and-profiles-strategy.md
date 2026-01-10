@@ -1,9 +1,9 @@
 # ADR-0007: Templates and Profiles Strategy
 
-**Status**: Accepted  
-**Date:** 2026-01-02  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2026-01-02
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -17,7 +17,7 @@ We need to lock in how templates/profiles are structured, merged, and validated 
 
 ## Decision
 
-1. **Single source of truth for defaults** remains `config/defaults.yaml`; templates must not drift—comments guide usage but do not override defaults unless copied by users.
+1. **Single source of truth for defaults** remains `config/defaults.yaml`; templates must not drift-comments guide usage but do not override defaults unless copied by users.
 2. **Profiles are additive overlays**: profiles provide recommended tool toggles and thresholds; when applied, the target config wins on conflicts (overlay then user override). The helper performs a deep merge with user config taking precedence.
 3. **Profile catalog** lives under `templates/profiles/` with README matrix; new profiles must be documented there and be schema-valid.
 4. **Hub-side template** (`templates/hub/config/repos/repo-template.yaml`) is the blessed starter for per-repo configs; repo template (`templates/repo/.ci-hub.yml`) is the starter for in-repo overrides.

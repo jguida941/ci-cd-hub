@@ -1,4 +1,4 @@
-> **⚠️ SUPERSEDED**: This document has been merged into [GETTING_STARTED.md](GETTING_STARTED.md).
+> **WARNING: SUPERSEDED**: This document has been merged into [GETTING_STARTED.md](GETTING_STARTED.md).
 > See the **Distributed Mode: Repo-Side Setup** and **Secrets Setup** sections there.
 > This file is kept for historical reference only.
 
@@ -21,20 +21,20 @@ The hub now uses a thin caller workflow (`hub-ci.yml`) that invokes the reusable
 ### Recommended: cihub CLI
 
 1. **Generate caller + config in the target repo:**
-   ```bash
-   cd /path/to/your-repo
-   python -m cihub init --repo . --apply
-   ```
-   This creates:
-   - `.ci-hub.yml`
-   - `.github/workflows/hub-ci.yml`
+ ```bash
+ cd /path/to/your-repo
+ python -m cihub init --repo . --apply
+ ```
+ This creates:
+ - `.ci-hub.yml`
+ - `.github/workflows/hub-ci.yml`
 
 2. **Commit and push:**
-   ```bash
-   git add .ci-hub.yml .github/workflows/hub-ci.yml
-   git commit -m "Add hub CI caller"
-   git push
-   ```
+ ```bash
+ git add .ci-hub.yml .github/workflows/hub-ci.yml
+ git commit -m "Add hub CI caller"
+ git push
+ ```
 
 ### Manual fallback (same result)
 
@@ -85,21 +85,21 @@ The caller workflow generates a `report.json` artifact that the hub aggregates:
 
 ```json
 {
-  "repo": "owner/repo",
-  "language": "java|python",
-  "results": {
-    "coverage": 85,           // % or null if not run
-    "mutation_score": 70,     // % or null if not run
-    "checkstyle_violations": 5,
-    "spotbugs_bugs": 0,
-    // ... all tool metrics
-  },
-  "tools_ran": {
-    "jacoco": true,
-    "checkstyle": true,
-    "spotbugs": false,        // Tool was disabled
-    // ...
-  }
+ "repo": "owner/repo",
+ "language": "java|python",
+ "results": {
+ "coverage": 85, // % or null if not run
+ "mutation_score": 70, // % or null if not run
+ "checkstyle_violations": 5,
+ "spotbugs_bugs": 0,
+ // ... all tool metrics
+ },
+ "tools_ran": {
+ "jacoco": true,
+ "checkstyle": true,
+ "spotbugs": false, // Tool was disabled
+ // ...
+ }
 }
 ```
 
@@ -122,9 +122,9 @@ The hub requires two secrets for full functionality:
 1. Go to GitHub → Settings → Developer settings → Personal access tokens
 2. **Classic PAT (recommended):** Generate new token (classic) → scopes: `repo` + `workflow`
 3. **Fine-grained PAT (stricter):**
-   - Resource owner: your account
-   - Repository access: include hub + all target repos
-   - Permissions: Actions Read/Write, Contents Read, Metadata Read
+ - Resource owner: your account
+ - Repository access: include hub + all target repos
+ - Permissions: Actions Read/Write, Contents Read, Metadata Read
 4. Generate and copy the token
 
 ### Step 2: Set HUB_DISPATCH_TOKEN

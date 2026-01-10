@@ -1,9 +1,9 @@
 # ADR-0020: Schema Backward Compatibility
 
-**Status**: Accepted  
-**Date:** 2025-12-18  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-18
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -72,22 +72,22 @@ The `validate_report.sh` script always requires `schema_version: "2.0"`. This is
 
 ```yaml
 - name: Aggregate Reports
-  run: |
-    python scripts/aggregate_reports.py \
-      --reports-dir ./reports \
-      --output dashboard.html \
-      --schema-mode warn
+ run: |
+ python scripts/aggregate_reports.py \
+ --reports-dir ./reports \
+ --output dashboard.html \
+ --schema-mode warn
 ```
 
 ### CI Workflow (Strict Mode - Post Migration)
 
 ```yaml
 - name: Aggregate Reports
-  run: |
-    python scripts/aggregate_reports.py \
-      --reports-dir ./reports \
-      --output dashboard.html \
-      --schema-mode strict
+ run: |
+ python scripts/aggregate_reports.py \
+ --reports-dir ./reports \
+ --output dashboard.html \
+ --schema-mode strict
 ```
 
 ### Fixture Validation (Always Strict)

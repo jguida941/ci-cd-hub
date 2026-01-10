@@ -19,7 +19,7 @@ Each layer is normalized before merging, then the final merged config is validat
 ```python
 # BEFORE (problematic)
 config = load_yaml(defaults_path)
-config = normalize_config(config)  # Normalization might mask invalid values
+config = normalize_config(config) # Normalization might mask invalid values
 
 repo_override = normalize_config(load_yaml(repo_override_path))
 config = deep_merge(config, repo_override)
@@ -41,18 +41,18 @@ This created a correctness issue:
 ```python
 # AFTER (correct)
 config = load_yaml(defaults_path)
-validate_config(config, "defaults (pre-normalize)")  # Catch invalid defaults
+validate_config(config, "defaults (pre-normalize)") # Catch invalid defaults
 config = normalize_config(config)
 
 repo_override_raw = load_yaml(repo_override_path)
 if repo_override_raw:
-    validate_config(repo_override_raw, "hub override (pre-normalize)")  # Catch invalid override
+ validate_config(repo_override_raw, "hub override (pre-normalize)") # Catch invalid override
 repo_override = normalize_config(repo_override_raw)
 config = deep_merge(config, repo_override)
 
 repo_local = load_yaml(repo_config_path)
 if repo_local:
-    validate_config(repo_local, "repo local (pre-normalize)")  # Catch invalid local config
+ validate_config(repo_local, "repo local (pre-normalize)") # Catch invalid local config
 repo_local = normalize_config(repo_local)
 config = deep_merge(config, repo_local)
 
@@ -64,40 +64,40 @@ validate_config(config, "merged-config")
 
 ```
 ┌─────────────────┐
-│  Load defaults  │
+│ Load defaults │
 └────────┬────────┘
-         │
-         ▼
+ │
+ ▼
 ┌─────────────────┐
-│ Validate (pre)  │ ◄── Catch invalid defaults early
+│ Validate (pre) │ ◄── Catch invalid defaults early
 └────────┬────────┘
-         │
-         ▼
+ │
+ ▼
 ┌─────────────────┐
-│   Normalize     │
+│ Normalize │
 └────────┬────────┘
-         │
-         ▼
+ │
+ ▼
 ┌─────────────────┐
-│ Load override   │
+│ Load override │
 └────────┬────────┘
-         │
-         ▼
+ │
+ ▼
 ┌─────────────────┐
-│ Validate (pre)  │ ◄── Catch invalid repo config early
+│ Validate (pre) │ ◄── Catch invalid repo config early
 └────────┬────────┘
-         │
-         ▼
+ │
+ ▼
 ┌─────────────────┐
-│   Normalize     │
+│ Normalize │
 └────────┬────────┘
-         │
-         ▼
+ │
+ ▼
 ┌─────────────────┐
-│     Merge       │
+│ Merge │
 └────────┬────────┘
-         │
-         ▼
+ │
+ ▼
 ┌─────────────────┐
 │ Validate (post) │ ◄── Verify merged result is valid
 └─────────────────┘
@@ -109,14 +109,14 @@ Error messages now indicate which layer and stage failed:
 
 ```
 Config validation failed for hub override (fixtures-python.yaml, pre-normalize):
-  - thresholds.coverage_min: 'high' is not of type 'number'
+ - thresholds.coverage_min: 'high' is not of type 'number'
 ```
 
 This makes debugging much easier than:
 
 ```
 Config validation failed for merged-config:
-  - (no errors because normalization fixed it)
+ - (no errors because normalization fixed it)
 ```
 
 ## Consequences

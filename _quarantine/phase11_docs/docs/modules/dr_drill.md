@@ -17,10 +17,10 @@ The drill is parameterised by `data/dr/manifest.json`. The manifest pins:
 
 ```bash
 python tools/run_dr_drill.py \
-  --manifest data/dr/manifest.json \
-  --output artifacts/dr/dr-report.json \
-  --ndjson artifacts/dr/dr-events.ndjson \
-  --evidence-dir artifacts/dr
+ --manifest data/dr/manifest.json \
+ --output artifacts/dr/dr-report.json \
+ --ndjson artifacts/dr/dr-events.ndjson \
+ --evidence-dir artifacts/dr
 ```
 
 Optional flags:

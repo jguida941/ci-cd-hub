@@ -8,38 +8,38 @@ Create `cihub/services/` with pure Python APIs returning dataclasses. CLI calls 
 ```python
 @dataclass
 class ServiceResult:
-    """Not frozen to allow inheritance."""
-    success: bool
-    errors: list[str] = field(default_factory=list)
-    warnings: list[str] = field(default_factory=list)
+ """Not frozen to allow inheritance."""
+ success: bool
+ errors: list[str] = field(default_factory=list)
+ warnings: list[str] = field(default_factory=list)
 
 @dataclass
 class RepoEntry:
-    """Mutable - built incrementally from config loading."""
-    config_basename: str
-    name: str
-    owner: str
-    language: str
-    branch: str
-    subdir: str = ""
-    subdir_safe: str = ""           # subdir with / → -
-    run_group: str = "full"
-    dispatch_enabled: bool = True
-    dispatch_workflow: str = "hub-ci.yml"
-    tools: dict[str, bool]          # run_* flags
-    thresholds: dict[str, int | float | None]
-    java_version: str | None = None
-    python_version: str | None = None
-    build_tool: str | None = None
-    retention_days: int | None = None
-    write_github_summary: bool = True
+ """Mutable - built incrementally from config loading."""
+ config_basename: str
+ name: str
+ owner: str
+ language: str
+ branch: str
+ subdir: str = ""
+ subdir_safe: str = "" # subdir with / → -
+ run_group: str = "full"
+ dispatch_enabled: bool = True
+ dispatch_workflow: str = "hub-ci.yml"
+ tools: dict[str, bool] # run_* flags
+ thresholds: dict[str, int | float | None]
+ java_version: str | None = None
+ python_version: str | None = None
+ build_tool: str | None = None
+ retention_days: int | None = None
+ write_github_summary: bool = True
 
-    @property
-    def full(self) -> str:
-        """owner/name"""
+ @property
+ def full(self) -> str:
+ """owner/name"""
 
-    def to_matrix_entry(self) -> dict[str, Any]:
-        """Flattens tools/thresholds for GitHub Actions."""
+ def to_matrix_entry(self) -> dict[str, Any]:
+ """Flattens tools/thresholds for GitHub Actions."""
 ```
 
 ## Discovery Service (`cihub/services/discovery.py`)
@@ -47,25 +47,25 @@ class RepoEntry:
 ```python
 @dataclass
 class DiscoveryFilters:
-    run_groups: list[str] = field(default_factory=list)
-    repos: list[str] = field(default_factory=list)
+ run_groups: list[str] = field(default_factory=list)
+ repos: list[str] = field(default_factory=list)
 
 @dataclass
 class DiscoveryResult(ServiceResult):
-    entries: list[RepoEntry] = field(default_factory=list)
+ entries: list[RepoEntry] = field(default_factory=list)
 
-    @property
-    def count(self) -> int: ...
-    def to_matrix(self) -> dict[str, Any]: ...
+ @property
+ def count(self) -> int: ...
+ def to_matrix(self) -> dict[str, Any]: ...
 
 def discover_repositories(
-    hub_root: Path,
-    filters: DiscoveryFilters | None = None,
+ hub_root: Path,
+ filters: DiscoveryFilters | None = None,
 ) -> DiscoveryResult:
-    """Wraps existing load_config + generate_workflow_inputs.
+ """Wraps existing load_config + generate_workflow_inputs.
 
-    Captures loader stderr as warnings (no prints to terminal).
-    """
+ Captures loader stderr as warnings (no prints to terminal).
+ """
 ```
 
 ## Design Notes

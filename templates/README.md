@@ -8,8 +8,8 @@ Quick reference for templates.
 - **Java POM snippets:** `templates/java/pom-plugins.xml` – config-driven plugin stubs for Maven repos.
 - **Java dependency snippets:** `templates/java/pom-dependencies.xml` – config-driven dependency stubs for Maven repos.
 - **Profiles:** `templates/profiles/*.yaml` – fast/quality/security plus new minimal, compliance, and coverage-gate variants for Java and Python.
-  - Hub config lives in `config/repos/` (in this repo).
-  - Repo-local overrides live in `.ci-hub.yml` (inside each target repo).
+ - Hub config lives in `config/repos/` (in this repo).
+ - Repo-local overrides live in `.ci-hub.yml` (inside each target repo).
 - **Legacy dispatch templates:** `templates/legacy/*.yml` – archived; do not use for new repos.
 
 ## How to use profiles quickly

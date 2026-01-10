@@ -6,12 +6,12 @@
 
 2. Install tooling deps:
 
-   ```bash
-   python -m pip install --upgrade pip
-   python -m pip install -r requirements-dev.txt
-   # Optional: ingest helpers
-   python -m pip install google-cloud-bigquery
-   ```
+ ```bash
+ python -m pip install --upgrade pip
+ python -m pip install -r requirements-dev.txt
+ # Optional: ingest helpers
+ python -m pip install google-cloud-bigquery
+ ```
 
 3. For scripts that call container tooling (`cosign`, `oras`, `syft`, `kyverno`), run `./scripts/install_tools.sh` or install pinned versions manually.
 
@@ -22,10 +22,10 @@
 - Keep PRs focused on one module/pillar; include before/after context and testing evidence in the description.
 
 - Follow commit prefixes:
-  - `feat:<module>` new functionality
-  - `fix:<module>` bug fixes
-  - `docs:<module>` documentation-only
-  - `ops:<module>` runbook or infra changes
+ - `feat:<module>` new functionality
+ - `fix:<module>` bug fixes
+ - `docs:<module>` documentation-only
+ - `ops:<module>` runbook or infra changes
 
 ## Definition of Done / Checklist
 

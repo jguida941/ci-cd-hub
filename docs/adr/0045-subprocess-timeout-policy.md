@@ -9,13 +9,13 @@
 
 The codebase has 33+ subprocess calls across 15+ files without timeout parameters. From the INCONSISTENCY.md audit:
 
-| File                             | Count | Risk                |
+| File | Count | Risk |
 |----------------------------------|-------|---------------------|
-| `cihub/commands/verify.py`       | 4     | CI job hangs        |
-| `cihub/commands/check.py`        | 3     | Local command hangs |
-| `cihub/commands/triage.py`       | 5     | API call hangs      |
-| `cihub/core/ci_runner/shared.py` | 2     | Build process hangs |
-| Various                          | 19+   | Mixed risk          |
+| `cihub/commands/verify.py` | 4 | CI job hangs |
+| `cihub/commands/check.py` | 3 | Local command hangs |
+| `cihub/commands/triage.py` | 5 | API call hangs |
+| `cihub/core/ci_runner/shared.py` | 2 | Build process hangs |
+| Various | 19+ | Mixed risk |
 
 **Problem:** Without timeouts, a subprocess can hang indefinitely, causing:
 1. CI jobs to stall until GitHub's 6-hour limit kills them
@@ -28,12 +28,12 @@ Establish a **Subprocess Timeout Policy** with tiered defaults based on operatio
 
 ### 1. Timeout Tiers
 
-| Tier         | Timeout  | Use Case                                  |
+| Tier | Timeout | Use Case |
 |--------------|----------|-------------------------------------------|
-| **Quick**    | 30s      | Git config, file checks, simple CLI tools |
-| **Network**  | 60-120s  | API calls, downloads, remote operations   |
-| **Build**    | 300-600s | Compilation, test suites, full builds     |
-| **Extended** | 900s     | Mutation testing, comprehensive scans     |
+| **Quick** | 30s | Git config, file checks, simple CLI tools |
+| **Network** | 60-120s | API calls, downloads, remote operations |
+| **Build** | 300-600s | Compilation, test suites, full builds |
+| **Extended** | 900s | Mutation testing, comprehensive scans |
 
 ### 2. Standard Pattern
 
@@ -43,26 +43,26 @@ from cihub.constants import TIMEOUT_QUICK, TIMEOUT_NETWORK, TIMEOUT_BUILD
 
 # Quick operation
 result = subprocess.run(
-    ["git", "config", "--get", "user.name"],
-    capture_output=True,
-    text=True,
-    timeout=TIMEOUT_QUICK,  # 30s
+ ["git", "config", "--get", "user.name"],
+ capture_output=True,
+ text=True,
+ timeout=TIMEOUT_QUICK, # 30s
 )
 
 # Network operation
 result = subprocess.run(
-    ["gh", "api", "/repos/owner/repo"],
-    capture_output=True,
-    text=True,
-    timeout=TIMEOUT_NETWORK,  # 120s
+ ["gh", "api", "/repos/owner/repo"],
+ capture_output=True,
+ text=True,
+ timeout=TIMEOUT_NETWORK, # 120s
 )
 
 # Build operation
 result = subprocess.run(
-    ["mvn", "package", "-DskipTests"],
-    capture_output=True,
-    text=True,
-    timeout=TIMEOUT_BUILD,  # 600s
+ ["mvn", "package", "-DskipTests"],
+ capture_output=True,
+ text=True,
+ timeout=TIMEOUT_BUILD, # 600s
 )
 ```
 
@@ -70,28 +70,28 @@ result = subprocess.run(
 
 ```python
 try:
-    result = subprocess.run(cmd, timeout=TIMEOUT_QUICK, ...)
+ result = subprocess.run(cmd, timeout=TIMEOUT_QUICK, ...)
 except subprocess.TimeoutExpired as exc:
-    # Log and handle gracefully
-    return CommandResult(
-        exit_code=EXIT_FAILURE,
-        summary=f"Command timed out after {TIMEOUT_QUICK}s",
-        problems=[{
-            "severity": "error",
-            "code": "SUBPROCESS_TIMEOUT",
-            "message": f"Command '{' '.join(cmd)}' exceeded {TIMEOUT_QUICK}s timeout",
-        }],
-    )
+ # Log and handle gracefully
+ return CommandResult(
+ exit_code=EXIT_FAILURE,
+ summary=f"Command timed out after {TIMEOUT_QUICK}s",
+ problems=[{
+ "severity": "error",
+ "code": "SUBPROCESS_TIMEOUT",
+ "message": f"Command '{' '.join(cmd)}' exceeded {TIMEOUT_QUICK}s timeout",
+ }],
+ )
 ```
 
 ### 4. Constants Module
 
 ```python
 # cihub/constants.py
-TIMEOUT_QUICK = 30      # Quick operations (git config, file checks)
-TIMEOUT_NETWORK = 120   # Network/API operations
-TIMEOUT_BUILD = 600     # Build/test operations (10 minutes)
-TIMEOUT_EXTENDED = 900  # Extended operations (mutation testing)
+TIMEOUT_QUICK = 30 # Quick operations (git config, file checks)
+TIMEOUT_NETWORK = 120 # Network/API operations
+TIMEOUT_BUILD = 600 # Build/test operations (10 minutes)
+TIMEOUT_EXTENDED = 900 # Extended operations (mutation testing)
 ```
 
 ### 5. Migration Priority

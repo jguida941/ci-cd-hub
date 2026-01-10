@@ -10,10 +10,10 @@ Run mutation analyzers (e.g., Stryker, mutmut) and emit structured resilience te
 
 ```bash
 python tools/mutation_observatory.py \
-  --config config/mutation-observatory.ci.yaml \
-  --output artifacts/mutation/run.json \
-  --ndjson artifacts/mutation/run.ndjson \
-  --markdown artifacts/mutation/summary.md
+ --config config/mutation-observatory.ci.yaml \
+ --output artifacts/mutation/run.json \
+ --ndjson artifacts/mutation/run.ndjson \
+ --markdown artifacts/mutation/summary.md
 ```
 
 ## Configuration

@@ -24,10 +24,10 @@ Implement **virtual tools** as gates without dedicated runners:
 
 ```yaml
 python:
-  tools:
-    hypothesis:
-      enabled: true
-      fail_on_error: true  # Toggle to make optional
+ tools:
+ hypothesis:
+ enabled: true
+ fail_on_error: true # Toggle to make optional
 ```
 
 ### 2. Gate Evaluation (run-check pattern)
@@ -40,10 +40,10 @@ hypothesis_cfg = config.get("python", {}).get("tools", {}).get("hypothesis", {})
 fail_hypothesis = bool(hypothesis_cfg.get("fail_on_error", True))
 
 if tools_configured.get("hypothesis") and fail_hypothesis:
-    if not tools_ran.get("hypothesis"):
-        failures.append("hypothesis did not run")
-    elif not tools_success.get("hypothesis"):
-        failures.append("hypothesis failed")
+ if not tools_ran.get("hypothesis"):
+ failures.append("hypothesis did not run")
+ elif not tools_success.get("hypothesis"):
+ failures.append("hypothesis failed")
 ```
 
 ### 3. Tools Using This Pattern
@@ -61,9 +61,9 @@ Virtual tools set their status in the same `tools_ran` / `tools_success` dicts:
 
 ```json
 {
-  "tools_configured": { "hypothesis": true },
-  "tools_ran": { "hypothesis": true },
-  "tools_success": { "hypothesis": true }
+ "tools_configured": { "hypothesis": true },
+ "tools_ran": { "hypothesis": true },
+ "tools_success": { "hypothesis": true }
 }
 ```
 
@@ -102,12 +102,12 @@ This is useful for:
 ## Test Coverage
 
 - `tests/test_ci_engine.py::TestVirtualToolGates` - 6 tests covering:
-  - Hypothesis not run detection
-  - Hypothesis failure detection
-  - Hypothesis skip when `fail_on_error: false`
-  - jqwik not run detection
-  - jqwik failure detection
-  - jqwik skip when `fail_on_error: false`
+ - Hypothesis not run detection
+ - Hypothesis failure detection
+ - Hypothesis skip when `fail_on_error: false`
+ - jqwik not run detection
+ - jqwik failure detection
+ - jqwik skip when `fail_on_error: false`
 
 ## Files Changed
 

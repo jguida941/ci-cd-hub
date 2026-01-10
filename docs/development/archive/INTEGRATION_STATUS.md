@@ -23,8 +23,8 @@ These are foundational utilities that other tools depend on.
 
 | File | Copied | Target | Imports | Tests | Wired | Done | Notes |
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
-| `safe_subprocess.py` | ☐ | `cihub/utils/` | ☐ | ☐ | N/A | ☐ | **PILOT** - Graduate first |
-| `derive_dr_current_time.py` | ☐ | `cihub/utils/` | ☐ | ☐ | N/A | ☐ | Time utility for DR |
+| `safe_subprocess.py` | | `cihub/utils/` | | | N/A | | **PILOT** - Graduate first |
+| `derive_dr_current_time.py` | | `cihub/utils/` | | | N/A | | Time utility for DR |
 
 ---
 
@@ -34,17 +34,17 @@ SLSA provenance, SBOM, VEX, signing, Rekor.
 
 | File | Copied | Target | Imports | Tests | Wired | Done | Notes |
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
-| `provenance_io.py` | ☐ | `cihub/tools/provenance/` | ☐ | ☐ | ☐ | ☐ | Read/write SLSA envelopes |
-| `normalize_provenance.py` | ☐ | `cihub/tools/provenance/` | ☐ | ☐ | ☐ | ☐ | Normalize formats |
-| `verify_provenance.py` | ☐ | `cihub/tools/provenance/` | ☐ | ☐ | ☐ | ☐ | Verify signatures |
-| `export_provenance_envelope.py` | ☐ | `cihub/tools/provenance/` | ☐ | ☐ | ☐ | ☐ | Export to file |
-| `generate_vex.py` | ☐ | `cihub/tools/vex/` | ☐ | ☐ | ☐ | ☐ | VEX document generation |
-| `build_vuln_input.py` | ☐ | `cihub/tools/vex/` | ☐ | ☐ | ☐ | ☐ | Vulnerability input builder |
-| `build_issuer_subject_input.py` | ☐ | `cihub/tools/provenance/` | ☐ | ☐ | ☐ | ☐ | SLSA issuer/subject |
-| `rekor_monitor.sh` | ☐ | `cihub/tools/scripts/` | ☐ | ☐ | ☐ | ☐ | Rekor transparency log |
-| `publish_referrers.sh` | ☐ | `cihub/tools/scripts/` | ☐ | ☐ | ☐ | ☐ | OCI referrers |
-| `sign_evidence_bundle.sh` | ☐ | `cihub/tools/scripts/` | ☐ | ☐ | ☐ | ☐ | Cosign signing |
-| `cache_provenance.sh` | ☐ | `cihub/tools/scripts/` | ☐ | ☐ | ☐ | ☐ | Provenance caching |
+| `provenance_io.py` | | `cihub/tools/provenance/` | | | | | Read/write SLSA envelopes |
+| `normalize_provenance.py` | | `cihub/tools/provenance/` | | | | | Normalize formats |
+| `verify_provenance.py` | | `cihub/tools/provenance/` | | | | | Verify signatures |
+| `export_provenance_envelope.py` | | `cihub/tools/provenance/` | | | | | Export to file |
+| `generate_vex.py` | | `cihub/tools/vex/` | | | | | VEX document generation |
+| `build_vuln_input.py` | | `cihub/tools/vex/` | | | | | Vulnerability input builder |
+| `build_issuer_subject_input.py` | | `cihub/tools/provenance/` | | | | | SLSA issuer/subject |
+| `rekor_monitor.sh` | | `cihub/tools/scripts/` | | | | | Rekor transparency log |
+| `publish_referrers.sh` | | `cihub/tools/scripts/` | | | | | OCI referrers |
+| `sign_evidence_bundle.sh` | | `cihub/tools/scripts/` | | | | | Cosign signing |
+| `cache_provenance.sh` | | `cihub/tools/scripts/` | | | | | Provenance caching |
 
 ---
 
@@ -54,10 +54,10 @@ Chaos testing and disaster recovery.
 
 | File | Copied | Target | Imports | Tests | Wired | Done | Notes |
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
-| `run_chaos.py` | ☐ | `cihub/tools/chaos/` | ☐ | ☐ | ☐ | ☐ | Chaos test runner |
-| `run_dr_drill.py` | ☐ | `cihub/tools/dr/` | ☐ | ☐ | ☐ | ☐ | DR drill runner |
-| `dr_drill/*.py` | ☐ | `cihub/tools/dr/` | ☐ | ☐ | ☐ | ☐ | DR drill modules |
-| `chaos/chaos-fixture.json` | ☐ | `config/chaos/` | N/A | N/A | N/A | ☐ | Config file |
+| `run_chaos.py` | | `cihub/tools/chaos/` | | | | | Chaos test runner |
+| `run_dr_drill.py` | | `cihub/tools/dr/` | | | | | DR drill runner |
+| `dr_drill/*.py` | | `cihub/tools/dr/` | | | | | DR drill modules |
+| `chaos/chaos-fixture.json` | | `config/chaos/` | N/A | N/A | N/A | | Config file |
 
 ---
 
@@ -67,10 +67,10 @@ Cache optimization and predictive scheduling.
 
 | File | Copied | Target | Imports | Tests | Wired | Done | Notes |
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
-| `cache_sentinel.py` | ☐ | `cihub/tools/cache/` | ☐ | ☐ | ☐ | ☐ | Cache quarantine |
-| `predictive_scheduler.py` | ☐ | `cihub/tools/scheduler/` | ☐ | ☐ | ☐ | ☐ | ML-based scheduling |
-| `emit_cache_quarantine_event.py` | ☐ | `cihub/tools/cache/` | ☐ | ☐ | ☐ | ☐ | Telemetry events |
-| `generate_scheduler_reports.py` | ☐ | `cihub/tools/scheduler/` | ☐ | ☐ | ☐ | ☐ | Scheduler reports |
+| `cache_sentinel.py` | | `cihub/tools/cache/` | | | | | Cache quarantine |
+| `predictive_scheduler.py` | | `cihub/tools/scheduler/` | | | | | ML-based scheduling |
+| `emit_cache_quarantine_event.py` | | `cihub/tools/cache/` | | | | | Telemetry events |
+| `generate_scheduler_reports.py` | | `cihub/tools/scheduler/` | | | | | Scheduler reports |
 
 ---
 
@@ -80,13 +80,13 @@ Kyverno and OPA/Rego policy enforcement.
 
 | File | Copied | Target | Imports | Tests | Wired | Done | Notes |
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
-| `kyverno_policy_checker.py` | ☐ | `cihub/tools/policy/` | ☐ | ☐ | ☐ | ☐ | Kyverno validation |
-| `prepare_policy_inputs.py` | ☐ | `cihub/tools/policy/` | ☐ | ☐ | ☐ | ☐ | Policy input prep |
-| `deploy_kyverno.sh` | ☐ | `cihub/tools/scripts/` | ☐ | ☐ | ☐ | ☐ | Kyverno deployment |
-| `deploy_kyverno_policies.sh` | ☐ | `cihub/tools/scripts/` | ☐ | ☐ | ☐ | ☐ | Policy deployment |
-| `run_kyverno_kind.sh` | ☐ | `cihub/tools/scripts/` | ☐ | ☐ | ☐ | ☐ | Kind cluster testing |
-| `policies/*.rego` | ☐ | `policies/` | N/A | ☐ | N/A | ☐ | OPA policies |
-| `deploy/kyverno/*.yaml` | ☐ | `deploy/kyverno/` | N/A | N/A | N/A | ☐ | K8s manifests |
+| `kyverno_policy_checker.py` | | `cihub/tools/policy/` | | | | | Kyverno validation |
+| `prepare_policy_inputs.py` | | `cihub/tools/policy/` | | | | | Policy input prep |
+| `deploy_kyverno.sh` | | `cihub/tools/scripts/` | | | | | Kyverno deployment |
+| `deploy_kyverno_policies.sh` | | `cihub/tools/scripts/` | | | | | Policy deployment |
+| `run_kyverno_kind.sh` | | `cihub/tools/scripts/` | | | | | Kind cluster testing |
+| `policies/*.rego` | | `policies/` | N/A | | N/A | | OPA policies |
+| `deploy/kyverno/*.yaml` | | `deploy/kyverno/` | N/A | N/A | N/A | | K8s manifests |
 
 ---
 
@@ -96,8 +96,8 @@ Mutation testing and failure analysis.
 
 | File | Copied | Target | Imports | Tests | Wired | Done | Notes |
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
-| `mutation_observatory.py` | ☐ | `cihub/tools/mutation/` | ☐ | ☐ | ☐ | ☐ | Mutation analysis |
-| `autopsy/*.py` | ☐ | `cihub/autopsy/` | ☐ | ☐ | ☐ | ☐ | Failure analysis |
+| `mutation_observatory.py` | | `cihub/tools/mutation/` | | | | | Mutation analysis |
+| `autopsy/*.py` | | `cihub/autopsy/` | | | | | Failure analysis |
 
 ---
 
@@ -107,11 +107,11 @@ Telemetry and data ingestion.
 
 | File | Copied | Target | Imports | Tests | Wired | Done | Notes |
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
-| `chaos_dr_ingest.py` | ☐ | `cihub/ingestion/` | ☐ | ☐ | ☐ | ☐ | BigQuery ingest |
-| `event_loader.py` | ☐ | `cihub/ingestion/` | ☐ | ☐ | ☐ | ☐ | Event loading |
-| `consolidate_telemetry.py` | ☐ | `cihub/ingestion/` | ☐ | ☐ | ☐ | ☐ | Telemetry consolidation |
-| `emit_pipeline_run.py` | ☐ | `cihub/ingestion/` | ☐ | ☐ | ☐ | ☐ | Pipeline run events |
-| `record_job_telemetry.py` | ☐ | `cihub/ingestion/` | ☐ | ☐ | ☐ | ☐ | Job telemetry |
+| `chaos_dr_ingest.py` | | `cihub/ingestion/` | | | | | BigQuery ingest |
+| `event_loader.py` | | `cihub/ingestion/` | | | | | Event loading |
+| `consolidate_telemetry.py` | | `cihub/ingestion/` | | | | | Telemetry consolidation |
+| `emit_pipeline_run.py` | | `cihub/ingestion/` | | | | | Pipeline run events |
+| `record_job_telemetry.py` | | `cihub/ingestion/` | | | | | Job telemetry |
 
 ---
 
@@ -121,10 +121,10 @@ Security and integrity checks.
 
 | File | Copied | Target | Imports | Tests | Wired | Done | Notes |
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
-| `check_runner_isolation.py` | ☐ | `cihub/validators/` | ☐ | ☐ | ☐ | ☐ | Runner budget check |
-| `check_schema_registry.py` | ☐ | `cihub/validators/` | ☐ | ☐ | ☐ | ☐ | Schema validation |
-| `check_workflow_integrity.py` | ☐ | `cihub/validators/` | ☐ | ☐ | ☐ | ☐ | Workflow integrity |
-| `enforce_concurrency_budget.py` | ☐ | `cihub/validators/` | ☐ | ☐ | ☐ | ☐ | Concurrency limits |
+| `check_runner_isolation.py` | | `cihub/validators/` | | | | | Runner budget check |
+| `check_schema_registry.py` | | `cihub/validators/` | | | | | Schema validation |
+| `check_workflow_integrity.py` | | `cihub/validators/` | | | | | Workflow integrity |
+| `enforce_concurrency_budget.py` | | `cihub/validators/` | | | | | Concurrency limits |
 
 ---
 
@@ -134,10 +134,10 @@ Shell scripts for security enforcement.
 
 | File | Copied | Target | Imports | Tests | Wired | Done | Notes |
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
-| `scan_runtime_secrets.sh` | ☐ | `cihub/tools/scripts/` | N/A | ☐ | ☐ | ☐ | Secret scanning |
-| `enforce_egress_control.sh` | ☐ | `cihub/tools/scripts/` | N/A | ☐ | ☐ | ☐ | Egress enforcement |
-| `github_actions_egress_wrapper.sh` | ☐ | `cihub/tools/scripts/` | N/A | ☐ | ☐ | ☐ | Egress wrapper |
-| `determinism_check.sh` | ☐ | `cihub/tools/scripts/` | N/A | ☐ | ☐ | ☐ | Build determinism |
+| `scan_runtime_secrets.sh` | | `cihub/tools/scripts/` | N/A | | | | Secret scanning |
+| `enforce_egress_control.sh` | | `cihub/tools/scripts/` | N/A | | | | Egress enforcement |
+| `github_actions_egress_wrapper.sh` | | `cihub/tools/scripts/` | N/A | | | | Egress wrapper |
+| `determinism_check.sh` | | `cihub/tools/scripts/` | N/A | | | | Build determinism |
 
 ---
 
@@ -147,14 +147,14 @@ Other execution scripts.
 
 | File | Copied | Target | Imports | Tests | Wired | Done | Notes |
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
-| `resolve_container_digest.py` | ☐ | `cihub/runners/` | ☐ | ☐ | ☐ | ☐ | Container resolution |
-| `ephemeral_data_lab.py` | ☐ | `cihub/runners/` | ☐ | ☐ | ☐ | ☐ | Ephemeral testing |
-| `run_dbt.py` | ☐ | `cihub/runners/` | ☐ | ☐ | ☐ | ☐ | dbt execution |
-| `load_projects.py` | ☐ | `cihub/runners/` | ☐ | ☐ | ☐ | ☐ | Project loading |
-| `load_repository_matrix.py` | ☐ | `cihub/runners/` | ☐ | ☐ | ☐ | ☐ | Repo matrix |
-| `capture_canary_decision.py` | ☐ | `cihub/runners/` | ☐ | ☐ | ☐ | ☐ | Canary decisions |
-| `build_project_ci_summary.py` | ☐ | `cihub/runners/` | ☐ | ☐ | ☐ | ☐ | CI summary |
-| `install_tools.sh` | ☐ | `scripts/` | N/A | N/A | N/A | ☐ | Tool installation |
+| `resolve_container_digest.py` | | `cihub/runners/` | | | | | Container resolution |
+| `ephemeral_data_lab.py` | | `cihub/runners/` | | | | | Ephemeral testing |
+| `run_dbt.py` | | `cihub/runners/` | | | | | dbt execution |
+| `load_projects.py` | | `cihub/runners/` | | | | | Project loading |
+| `load_repository_matrix.py` | | `cihub/runners/` | | | | | Repo matrix |
+| `capture_canary_decision.py` | | `cihub/runners/` | | | | | Canary decisions |
+| `build_project_ci_summary.py` | | `cihub/runners/` | | | | | CI summary |
+| `install_tools.sh` | | `scripts/` | N/A | N/A | N/A | | Tool installation |
 
 ---
 
@@ -164,11 +164,11 @@ Static configuration and data files.
 
 | File | Copied | Target | Imports | Tests | Wired | Done | Notes |
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
-| `models/*.yml` | ☐ | `models/` | N/A | N/A | N/A | ☐ | dbt models |
-| `dashboards/*.json` | ☐ | `dashboards/` | N/A | N/A | N/A | ☐ | Grafana dashboards |
-| `data/*.yaml` | ☐ | `data/` | N/A | N/A | N/A | ☐ | Data files |
-| `.bandit*.yaml` | ☐ | `.` | N/A | N/A | N/A | ☐ | Bandit config |
-| `.markdownlint*` | ☐ | `.` | N/A | N/A | N/A | ☐ | Markdown lint config |
+| `models/*.yml` | | `models/` | N/A | N/A | N/A | | dbt models |
+| `dashboards/*.json` | | `dashboards/` | N/A | N/A | N/A | | Grafana dashboards |
+| `data/*.yaml` | | `data/` | N/A | N/A | N/A | | Data files |
+| `.bandit*.yaml` | | `.` | N/A | N/A | N/A | | Bandit config |
+| `.markdownlint*` | | `.` | N/A | N/A | N/A | | Markdown lint config |
 
 ---
 
@@ -178,10 +178,10 @@ Docs that need consolidation.
 
 | File | Copied | Target | Imports | Tests | Wired | Done | Notes |
 |------|:------:|--------|:-------:|:-----:|:-----:|:----:|-------|
-| `docs/SUPPLY_CHAIN.md` | ☐ | `docs/guides/` | N/A | N/A | N/A | ☐ | Supply chain guide |
-| `docs/DR_RUNBOOK.md` | ☐ | `docs/guides/` | N/A | N/A | N/A | ☐ | DR runbook |
-| `.github/SECURITY.md` | ☐ | `docs/guides/` | N/A | N/A | N/A | ☐ | Security guide |
-| `docs/adr/*.md` | ☐ | `docs/adr/` | N/A | N/A | N/A | ☐ | Merge with existing |
+| `docs/SUPPLY_CHAIN.md` | | `docs/guides/` | N/A | N/A | N/A | | Supply chain guide |
+| `docs/DR_RUNBOOK.md` | | `docs/guides/` | N/A | N/A | N/A | | DR runbook |
+| `.github/SECURITY.md` | | `docs/guides/` | N/A | N/A | N/A | | Security guide |
+| `docs/adr/*.md` | | `docs/adr/` | N/A | N/A | N/A | | Merge with existing |
 
 ---
 

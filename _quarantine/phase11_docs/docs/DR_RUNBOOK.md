@@ -30,13 +30,13 @@
 
 - Run the ingest helper after each scheduled drill to push NDJSON into BigQuery:
 
-  ```bash
-  python ingest/chaos_dr_ingest.py \
-    --project <gcp-project> \
-    --dataset ci_intel \
-    --dr-ndjson artifacts/evidence/dr/events.ndjson \
-    --dr-run-id "$(date -u +dr-%Y%m%dT%H%M%SZ)"
-  ```
+ ```bash
+ python ingest/chaos_dr_ingest.py \
+ --project <gcp-project> \
+ --dataset ci_intel \
+ --dr-ndjson artifacts/evidence/dr/events.ndjson \
+ --dr-run-id "$(date -u +dr-%Y%m%dT%H%M%SZ)"
+ ```
 
 - Add `--chaos-ndjson artifacts/evidence/chaos/events.ndjson` when a chaos trial and DR drill run together.
 

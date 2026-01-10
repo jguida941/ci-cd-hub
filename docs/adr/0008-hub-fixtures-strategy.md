@@ -1,9 +1,9 @@
 # ADR-0008: Hub Fixtures Strategy
 
-**Status**: Accepted  
-**Date:** 2026-01-02  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-30  
+**Status**: Accepted
+**Date:** 2026-01-02
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-30
 
 ## Context
 
@@ -12,8 +12,8 @@ The hub needs deterministic, end-to-end validation of workflows, templates, and 
 ## Decision
 
 1. Maintain a separate fixtures repository (`ci-cd-hub-fixtures`) containing:
-   - `java-passing`, `java-failing`
-   - `python-passing`, `python-failing`
+ - `java-passing`, `java-failing`
+ - `python-passing`, `python-failing`
 2. Hub configs `config/repos/fixtures-*.yaml` point to those fixture projects; smoke tests default to them for predictable results.
 3. Any new tool/template/profile should be validated against the fixtures via the hub smoke-test workflow before marking requirements as complete.
 4. Fixtures remain minimal and stable; intentional failing cases stay failing to assert failure paths.

@@ -1,6 +1,6 @@
 # CLI Modularization Plan - Refined (v2)
 
-> **⚠️ SUPERSEDED** - This plan was executed and completed on 2026-01-03/04.
+> **WARNING: SUPERSEDED** - This plan was executed and completed on 2026-01-03/04.
 > See [MASTER_PLAN.md](../MASTER_PLAN.md) for current execution status and [status/STATUS.md](../status/STATUS.md) for ongoing work.
 > Archived to [archive/Jan3.md](archive/Jan3.md).
 
@@ -29,26 +29,26 @@ Turn cihub/cli.py from a "utility dumping ground" into a thin facade while keepi
 
  Correct Layering (Target)
 
- cli.py, cli_parsers/*, commands/*  (entry points - depend on everything below)
-     ↓
- services/*  (business logic)
-     ↓
- core/*  (domain logic, tool runners)
-     ↓
- utils/*  (pure helpers - NO imports from above)
+ cli.py, cli_parsers/*, commands/* (entry points - depend on everything below)
+ ↓
+ services/* (business logic)
+ ↓
+ core/* (domain logic, tool runners)
+ ↓
+ utils/* (pure helpers - NO imports from above)
 
  ---
  What Already Exists (Don't Duplicate!)
 
- | Module                    | Has                                                | Missing            |
+ | Module | Has | Missing |
  |---------------------------|----------------------------------------------------|--------------------|
- | utils/github_api.py       | fetch_remote_file, update_remote_file, gh_api_json | delete_remote_file |
- | utils/env.py              | env_bool, env_str, _parse_env_bool                 | -                  |
- | utils/debug.py            | debug_context_enabled, emit_debug_context          | -                  |
- | config/loader/core.py     | load_config() with schema validation               | -                  |
- | services/configuration.py | load_repo_config, resolve_tool_path                | -                  |
- | services/discovery.py     | discover_repositories (advanced)                   | -                  |
- | services/types.py         | RepoEntry dataclass, ServiceResult                 | -                  |
+ | utils/github_api.py | fetch_remote_file, update_remote_file, gh_api_json | delete_remote_file |
+ | utils/env.py | env_bool, env_str, _parse_env_bool | - |
+ | utils/debug.py | debug_context_enabled, emit_debug_context | - |
+ | config/loader/core.py | load_config() with schema validation | - |
+ | services/configuration.py | load_repo_config, resolve_tool_path | - |
+ | services/discovery.py | discover_repositories (advanced) | - |
+ | services/types.py | RepoEntry dataclass, ServiceResult | - |
 
  NOTE: cihub/templates.py does NOT exist - safe to create services/templates.py
 
@@ -146,14 +146,14 @@ Turn cihub/cli.py from a "utility dumping ground" into a thin facade while keepi
 
  # WRONG (current cli.py - no validation)
  def load_effective_config(repo_path):
-     defaults = load_yaml_file(defaults_path)
-     local = load_yaml_file(local_path)
-     return deep_merge(defaults, local)  # No schema check!
+ defaults = load_yaml_file(defaults_path)
+ local = load_yaml_file(local_path)
+ return deep_merge(defaults, local) # No schema check!
 
  # RIGHT (must delegate)
  def load_effective_config(repo_path):
-     from cihub.config.loader.core import load_config
-     return load_config(repo_name, hub_root, repo_path)  # Uses jsonschema!
+ from cihub.config.loader.core import load_config
+ return load_config(repo_name, hub_root, repo_path) # Uses jsonschema!
 
  ---
  Execution Approach

@@ -10,11 +10,11 @@ Convert `fixtures/supply_chain/vex_exemptions.json` into a CycloneDX VEX documen
 
 ```bash
 python tools/generate_vex.py \
-  --config fixtures/supply_chain/vex_exemptions.json \
-  --output artifacts/sbom/app.vex.json \
-  --subject ghcr.io/org/image@sha256:<digest> \
-  --manufacturer <org> \
-  --product <image-name>
+ --config fixtures/supply_chain/vex_exemptions.json \
+ --output artifacts/sbom/app.vex.json \
+ --subject ghcr.io/org/image@sha256:<digest> \
+ --manufacturer <org> \
+ --product <image-name>
 ```
 
 ## Configuration

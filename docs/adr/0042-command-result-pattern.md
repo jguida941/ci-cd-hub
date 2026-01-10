@@ -12,22 +12,22 @@ CLI commands had inconsistent output patterns:
 ```python
 # Pattern 1: Print and return int
 def cmd_foo(args):
-    print("Result: OK")
-    return 0
+ print("Result: OK")
+ return 0
 
 # Pattern 2: Return CommandResult only in JSON mode
 def cmd_bar(args):
-    if args.json:
-        return CommandResult(exit_code=0, summary="OK")
-    print("Result: OK")
-    return 0
+ if args.json:
+ return CommandResult(exit_code=0, summary="OK")
+ print("Result: OK")
+ return 0
 
 # Pattern 3: Mixed print + return
 def cmd_baz(args):
-    print("Starting...")
-    result = do_work()
-    print(f"Done: {result}")
-    return CommandResult(exit_code=0, summary=str(result))
+ print("Starting...")
+ result = do_work()
+ print(f"Done: {result}")
+ return CommandResult(exit_code=0, summary=str(result))
 ```
 
 This created problems:
@@ -45,11 +45,11 @@ Standardize all commands to return `CommandResult`:
 ```python
 @dataclass
 class CommandResult:
-    exit_code: int
-    summary: str
-    data: dict | None = None
-    artifacts: dict[str, str] | None = None
-    problems: list[dict] | None = None
+ exit_code: int
+ summary: str
+ data: dict | None = None
+ artifacts: dict[str, str] | None = None
+ problems: list[dict] | None = None
 ```
 
 ### 2. Helper Functions
@@ -57,53 +57,53 @@ class CommandResult:
 ```python
 # cihub/commands/hub_ci/__init__.py
 def result_ok(summary: str, *, data=None, problems=None) -> CommandResult:
-    """Create successful CommandResult."""
-    return CommandResult(
-        exit_code=EXIT_SUCCESS,
-        summary=summary,
-        data=data,
-        problems=problems,
-    )
+ """Create successful CommandResult."""
+ return CommandResult(
+ exit_code=EXIT_SUCCESS,
+ summary=summary,
+ data=data,
+ problems=problems,
+ )
 
 def result_fail(summary: str, *, problems=None, data=None) -> CommandResult:
-    """Create failed CommandResult with auto-generated problem."""
-    if problems is None:
-        problems = [{"severity": "error", "message": summary}]
-    return CommandResult(
-        exit_code=EXIT_FAILURE,
-        summary=summary,
-        data=data,
-        problems=problems,
-    )
+ """Create failed CommandResult with auto-generated problem."""
+ if problems is None:
+ problems = [{"severity": "error", "message": summary}]
+ return CommandResult(
+ exit_code=EXIT_FAILURE,
+ summary=summary,
+ data=data,
+ problems=problems,
+ )
 ```
 
 ### 3. Command Pattern
 
 ```python
 def cmd_example(args: argparse.Namespace) -> int | CommandResult:
-    """Example command following the pattern."""
-    json_mode = getattr(args, "json", False)
+ """Example command following the pattern."""
+ json_mode = getattr(args, "json", False)
 
-    try:
-        result = do_work()
+ try:
+ result = do_work()
 
-        if json_mode:
-            return result_ok(
-                summary=f"Processed {result.count} items",
-                data={"count": result.count, "items": result.items},
-            )
+ if json_mode:
+ return result_ok(
+ summary=f"Processed {result.count} items",
+ data={"count": result.count, "items": result.items},
+ )
 
-        # Human-readable output
-        print(f"Processed {result.count} items")
-        for item in result.items:
-            print(f"  - {item}")
-        return EXIT_SUCCESS
+ # Human-readable output
+ print(f"Processed {result.count} items")
+ for item in result.items:
+ print(f" - {item}")
+ return EXIT_SUCCESS
 
-    except Exception as e:
-        if json_mode:
-            return result_fail(f"Failed: {e}")
-        print(f"Error: {e}")
-        return EXIT_FAILURE
+ except Exception as e:
+ if json_mode:
+ return result_fail(f"Failed: {e}")
+ print(f"Error: {e}")
+ return EXIT_FAILURE
 ```
 
 ### 4. CLI Router Handling
@@ -114,11 +114,11 @@ The CLI router handles both return types:
 # In main CLI
 result = command_func(args)
 if isinstance(result, CommandResult):
-    if args.json:
-        print(json.dumps(result.to_dict(), indent=2))
-    sys.exit(result.exit_code)
+ if args.json:
+ print(json.dumps(result.to_dict(), indent=2))
+ sys.exit(result.exit_code)
 else:
-    sys.exit(result)
+ sys.exit(result)
 ```
 
 ### 5. Migration Scope

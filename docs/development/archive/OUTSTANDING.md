@@ -48,13 +48,13 @@
 
 ## Testing Gaps
 
-| Script                      | Current Coverage | Target |
+| Script | Current Coverage | Target |
 |-----------------------------|------------------|--------|
-| `load_config.py`            | ~30%             | 80%    |
-| `validate_config.py`        | ~50%             | 80%    |
-| `aggregate_reports.py`      | 0%               | 80%    |
-| `apply_profile.py`          | 0%               | 80%    |
-| `verify_hub_matrix_keys.py` | 0%               | 80%    |
+| `load_config.py` | ~30% | 80% |
+| `validate_config.py` | ~50% | 80% |
+| `aggregate_reports.py` | 0% | 80% |
+| `apply_profile.py` | 0% | 80% |
+| `verify_hub_matrix_keys.py` | 0% | 80% |
 
 **Current tests:** 5
 **Target tests:** 40+

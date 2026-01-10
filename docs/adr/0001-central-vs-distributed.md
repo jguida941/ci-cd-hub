@@ -1,9 +1,9 @@
 # ADR-0001: Central vs. Distributed Execution
 
-**Status**: Accepted  
-**Date:** 2025-12-14  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-14
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -33,4 +33,4 @@ Considerations:
 - Docs and templates emphasize central mode first.
 - Orchestrator is maintained but marked optional; requires permissions and validation.
 - Aggregation must handle missing run IDs/artifacts gracefully and fail hub run on downstream failure.
-- Future dashboards/fixtures should focus on central mode; distributed coverage remains best-effort. 
+- Future dashboards/fixtures should focus on central mode; distributed coverage remains best-effort.

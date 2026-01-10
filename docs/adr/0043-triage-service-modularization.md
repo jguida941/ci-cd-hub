@@ -27,10 +27,10 @@ Split into a package with focused modules:
 
 ```
 cihub/services/triage/
-    __init__.py     # Re-exports public API
-    types.py        # Data models (TriageBundle, ToolEvidence, etc.)
-    evidence.py     # Evidence building and validation
-    detection.py    # Flaky/regression detection algorithms
+ __init__.py # Re-exports public API
+ types.py # Data models (TriageBundle, ToolEvidence, etc.)
+ evidence.py # Evidence building and validation
+ detection.py # Flaky/regression detection algorithms
 ```
 
 ### 2. Module Responsibilities
@@ -39,26 +39,26 @@ cihub/services/triage/
 ```python
 @dataclass
 class ToolStatus:
-    status: str  # passed, failed, skipped, required_not_run
-    reason: str | None = None
+ status: str # passed, failed, skipped, required_not_run
+ reason: str | None = None
 
 @dataclass
 class ToolEvidence:
-    tool: str
-    status: ToolStatus
-    metrics: dict | None = None
-    artifacts: list[str] | None = None
+ tool: str
+ status: ToolStatus
+ metrics: dict | None = None
+ artifacts: list[str] | None = None
 
 @dataclass
 class TriageBundle:
-    triage: dict
-    priority: dict
-    markdown: str
-    history_entry: dict
+ triage: dict
+ priority: dict
+ markdown: str
+ history_entry: dict
 
 class MultiTriageResult:
-    # Aggregated results from multiple bundles
-    ...
+ # Aggregated results from multiple bundles
+ ...
 
 # Constants
 TRIAGE_SCHEMA_VERSION = "cihub-triage-v2"
@@ -69,43 +69,43 @@ CATEGORY_ORDER = ["security", "test", "gate", "lint", "build", "docs"]
 **evidence.py** - Evidence Building
 ```python
 def build_tool_evidence(
-    report: dict,
-    tool_key: str,
-    output_dir: Path,
+ report: dict,
+ tool_key: str,
+ output_dir: Path,
 ) -> ToolEvidence:
-    """Build evidence for a single tool from report data."""
-    ...
+ """Build evidence for a single tool from report data."""
+ ...
 
 def validate_artifact_evidence(
-    bundle: TriageBundle,
-    output_dir: Path,
+ bundle: TriageBundle,
+ output_dir: Path,
 ) -> list[dict]:
-    """Validate artifacts exist and are non-empty."""
-    ...
+ """Validate artifacts exist and are non-empty."""
+ ...
 ```
 
 **detection.py** - Detection Algorithms
 ```python
 def detect_flaky_patterns(
-    history_path: Path,
-    min_runs: int = 5,
+ history_path: Path,
+ min_runs: int = 5,
 ) -> dict[str, Any]:
-    """Detect flaky test patterns from triage history."""
-    ...
+ """Detect flaky test patterns from triage history."""
+ ...
 
 def detect_gate_changes(
-    history_path: Path,
-    min_runs: int = 2,
+ history_path: Path,
+ min_runs: int = 2,
 ) -> dict[str, Any]:
-    """Detect gate status changes over time."""
-    ...
+ """Detect gate status changes over time."""
+ ...
 
 def detect_test_count_regression(
-    history_path: Path,
-    current_count: int,
+ history_path: Path,
+ current_count: int,
 ) -> list[dict]:
-    """Detect test count drops >10%."""
-    ...
+ """Detect test count drops >10%."""
+ ...
 ```
 
 ### 3. Public API (__init__.py)
@@ -113,12 +113,12 @@ def detect_test_count_regression(
 ```python
 # Re-export everything for backward compatibility
 from .types import (
-    ToolStatus, ToolEvidence, TriageBundle, MultiTriageResult,
-    TRIAGE_SCHEMA_VERSION, SEVERITY_ORDER, CATEGORY_ORDER, ...
+ ToolStatus, ToolEvidence, TriageBundle, MultiTriageResult,
+ TRIAGE_SCHEMA_VERSION, SEVERITY_ORDER, CATEGORY_ORDER, ...
 )
 from .evidence import build_tool_evidence, validate_artifact_evidence
 from .detection import (
-    detect_flaky_patterns, detect_gate_changes, detect_test_count_regression
+ detect_flaky_patterns, detect_gate_changes, detect_test_count_regression
 )
 
 # Bundle generation stays in triage_service.py for now

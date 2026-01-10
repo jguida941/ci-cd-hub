@@ -25,12 +25,12 @@ the following configuration:
 ### Ecosystems Covered
 
 1. **GitHub Actions** (`github-actions`)
-   - Updates action versions in `.github/workflows/`
-   - Critical for supply-chain security (pinned SHA updates)
+ - Updates action versions in `.github/workflows/`
+ - Critical for supply-chain security (pinned SHA updates)
 
 2. **Python pip** (`pip`)
-   - Updates dependencies in `requirements.txt`, `pyproject.toml`
-   - Keeps security and dev dependencies current
+ - Updates dependencies in `requirements.txt`, `pyproject.toml`
+ - Keeps security and dev dependencies current
 
 ### Update Policy
 

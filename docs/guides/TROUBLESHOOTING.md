@@ -14,13 +14,13 @@ Common issues and their solutions, organized by category.
 
 **Fix:**
 1. Run locally: `python -m cihub hub-ci validate-configs`
-   - Single repo: `python -m cihub hub-ci validate-configs --repo my-repo`
+ - Single repo: `python -m cihub hub-ci validate-configs --repo my-repo`
 2. Check error messages for specific field issues
 3. Reference [CONFIG.md](../reference/CONFIG.md) for valid fields
 4. Common issues:
-   - `min_coverage: 150` → must be 0-100
-   - `language: ruby` → must be `java` or `python`
-   - Typo in field name
+ - `min_coverage: 150` → must be 0-100
+ - `language: ruby` → must be `java` or `python`
+ - Typo in field name
 
 ---
 
@@ -47,8 +47,8 @@ Common issues and their solutions, organized by category.
 **Fix:**
 ```yaml
 repo:
-  name: my-app
-  language: java  # or python
+ name: my-app
+ language: java # or python
 ```
 
 ---
@@ -78,8 +78,8 @@ repo:
 **Fix:**
 ```yaml
 repo:
-  name: my-app
-  default_branch: main  # or master, develop, etc.
+ name: my-app
+ default_branch: main # or master, develop, etc.
 ```
 
 ---
@@ -97,25 +97,25 @@ repo:
 ```xml
 <!-- pom.xml for JaCoCo -->
 <plugin>
-  <groupId>org.jacoco</groupId>
-  <artifactId>jacoco-maven-plugin</artifactId>
-  <version>0.8.11</version>
+ <groupId>org.jacoco</groupId>
+ <artifactId>jacoco-maven-plugin</artifactId>
+ <version>0.8.11</version>
 </plugin>
 
 <!-- pom.xml for PITest -->
 <plugin>
-  <groupId>org.pitest</groupId>
-  <artifactId>pitest-maven</artifactId>
-  <version>1.15.0</version>
+ <groupId>org.pitest</groupId>
+ <artifactId>pitest-maven</artifactId>
+ <version>1.15.0</version>
 </plugin>
 ```
 
 Or disable the tool:
 ```yaml
 java:
-  tools:
-    jacoco:
-      enabled: false
+ tools:
+ jacoco:
+ enabled: false
 ```
 
 ---
@@ -178,20 +178,20 @@ java:
 ```xml
 <!-- pom.xml JaCoCo enforcement -->
 <execution>
-  <id>check</id>
-  <goals><goal>check</goal></goals>
-  <configuration>
-    <rules>
-      <rule>
-        <limits>
-          <limit>
-            <counter>LINE</counter>
-            <minimum>0.70</minimum>
-          </limit>
-        </limits>
-      </rule>
-    </rules>
-  </configuration>
+ <id>check</id>
+ <goals><goal>check</goal></goals>
+ <configuration>
+ <rules>
+ <rule>
+ <limits>
+ <limit>
+ <counter>LINE</counter>
+ <minimum>0.70</minimum>
+ </limit>
+ </limits>
+ </rule>
+ </rules>
+ </configuration>
 </execution>
 ```
 
@@ -222,11 +222,11 @@ java:
 1. Use `skip_mutation: true` for PR checks
 2. Run mutation testing only on nightly builds
 3. Configure PITest to target specific packages:
-   ```xml
-   <targetClasses>
-     <param>com.myapp.core.*</param>
-   </targetClasses>
-   ```
+ ```xml
+ <targetClasses>
+ <param>com.myapp.core.*</param>
+ </targetClasses>
+ ```
 
 ---
 
@@ -239,10 +239,10 @@ java:
 **Fix:**
 ```yaml
 java:
-  tools:
-    spotbugs:
-      threshold: high  # Only report HIGH priority bugs
-      effort: min      # Less thorough analysis
+ tools:
+ spotbugs:
+ threshold: high # Only report HIGH priority bugs
+ effort: min # Less thorough analysis
 ```
 
 ---
@@ -256,11 +256,11 @@ java:
 **Fix:** Add `ruff.toml` to repo:
 ```toml
 [lint]
-select = ["E", "F"]  # Only errors and pyflakes
-ignore = ["E501"]    # Ignore line length
+select = ["E", "F"] # Only errors and pyflakes
+ignore = ["E501"] # Ignore line length
 
 [lint.per-file-ignores]
-"tests/*" = ["S101"]  # Allow assert in tests
+"tests/*" = ["S101"] # Allow assert in tests
 ```
 
 ---
@@ -275,12 +275,12 @@ ignore = ["E501"]    # Ignore line length
 1. Add `--ignore-missing-imports` (hub does this by default)
 2. Or install stubs: `pip install types-requests types-PyYAML`
 3. Or disable mypy:
-   ```yaml
-   python:
-     tools:
-       mypy:
-         enabled: false
-   ```
+ ```yaml
+ python:
+ tools:
+ mypy:
+ enabled: false
+ ```
 
 ---
 
@@ -403,33 +403,33 @@ exclude_dirs = tests,docs
 
 **Fix:**
 1. Verify health endpoint path:
-   ```yaml
-   java:
-     tools:
-       docker:
-         health_endpoint: /health  # or /actuator/health
-   ```
+ ```yaml
+ java:
+ tools:
+ docker:
+ health_endpoint: /health # or /actuator/health
+ ```
 2. Ensure the compose file matches your config (default: `docker-compose.yml`):
-   ```yaml
-   java:
-     tools:
-       docker:
-         compose_file: docker-compose.yml
-   ```
+ ```yaml
+ java:
+ tools:
+ docker:
+ compose_file: docker-compose.yml
+ ```
 3. Increase timeout:
-   ```yaml
-   java:
-     tools:
-       docker:
-         health_timeout: 600  # 10 minutes
-   ```
+ ```yaml
+ java:
+ tools:
+ docker:
+ health_timeout: 600 # 10 minutes
+ ```
 4. Disable Docker if not needed:
-   ```yaml
-   java:
-     tools:
-       docker:
-         enabled: false
-   ```
+ ```yaml
+ java:
+ tools:
+ docker:
+ enabled: false
+ ```
 
 ---
 
@@ -467,7 +467,7 @@ exclude_dirs = tests,docs
 **Fix:**
 ```yaml
 reports:
-  retention_days: 90  # Increase from default 30
+ retention_days: 90 # Increase from default 30
 ```
 
 ---

@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discovered dynamically from `config/repositories.yaml`, per-repo HTTP allowlists are applied via proxy environment variables, and per-repo test timeouts are honoured. However, the platform still lacks several pieces required for true multi-tenant operation—namely secret scoping, fair scheduling, strong runtime isolation, and cost tracking.
+The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discovered dynamically from `config/repositories.yaml`, per-repo HTTP allowlists are applied via proxy environment variables, and per-repo test timeouts are honoured. However, the platform still lacks several pieces required for true multi-tenant operation-namely secret scoping, fair scheduling, strong runtime isolation, and cost tracking.
 
 **Current capability (v1.0.10)**: Matrix-based execution with dynamic repo configuration, proxy-based egress allowlists, per-repo test timeouts, shared telemetry and evidence bundles.
 **Missing for v1.0**: Per-repo secrets, rate limiting, hard resource isolation, cross-repo dependency management, hierarchical config inheritance, cost allocation, GitOps orchestration.
@@ -13,14 +13,14 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 
 ### 1.1 Repo Isolation Mechanisms
 
-**Status**: ⚠️ PARTIAL - Logical separation with proxy egress, but shared runtime
+**Status**: WARNING: PARTIAL - Logical separation with proxy egress, but shared runtime
 
 #### What Exists:
 - **Matrix-based segmentation** driven by `scripts/load_repository_matrix.py` using `config/repositories.yaml`
-  - Each repo checked out under `project/${{ matrix.path }}`
-  - Per-repo cache keys scoped by `matrix.name`
-  - Proxy-based egress allowlists exported per repo (`.github/workflows/release.yml:130-156`)
-  - Per-repo test timeouts enforced with `timeout "${TIMEOUT_SECONDS}s"` (`release.yml:283-310`)
+ - Each repo checked out under `project/${{ matrix.path }}`
+ - Per-repo cache keys scoped by `matrix.name`
+ - Proxy-based egress allowlists exported per repo (`.github/workflows/release.yml:130-156`)
+ - Per-repo test timeouts enforced with `timeout "${TIMEOUT_SECONDS}s"` (`release.yml:283-310`)
 
 #### What's Missing:
 - **No container-level or process isolation** – all matrix entries share the same GitHub-hosted runner
@@ -30,14 +30,14 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 
 ### 1.2 Per-Repo Configuration Capabilities
 
-**Status**: ⚠️ PARTIAL - Dynamic registry with limited overrides
+**Status**: WARNING: PARTIAL - Dynamic registry with limited overrides
 
 #### What Exists:
 - **Dynamic registry** (`config/repositories.yaml`) feeding the workflow matrix
 - **Configurable knobs per repo**:
-  - `path`, `package` flag for build/install behavior
-  - `build_timeout` parsed into `matrix.timeout_minutes`
-  - `allowed_egress` merged into per-repo proxy allowlists
+ - `path`, `package` flag for build/install behavior
+ - `build_timeout` parsed into `matrix.timeout_minutes`
+ - `allowed_egress` merged into per-repo proxy allowlists
 
 #### What's Missing:
 - **Per-repo secrets/vars mapping** – still pending (shared `GITHUB_TOKEN`)
@@ -47,16 +47,16 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 
 ### 1.3 Tenant/Repo Segregation in Caching, Artifacts
 
-**Status**: ⚠️ PARTIAL - Naming-based only
+**Status**: WARNING: PARTIAL - Naming-based only
 
 #### Cache Segregation:
 - **Keyed by repo owner + runner OS + repo-specific paths**:
-  ```yaml
-  key: ${{ github.repository_owner }}-${{ runner.os }}-pip-${{ hashFiles('project/**/requirements*.txt', 'project/**/pyproject.toml') }}
-  ```
-  - Fork caches isolated via `github.repository_owner` prefix
-  - Per-repo path included in hash
-  - ✅ Cache manifests signed per-repo with cosign
+ ```yaml
+ key: ${{ github.repository_owner }}-${{ runner.os }}-pip-${{ hashFiles('project/**/requirements*.txt', 'project/**/pyproject.toml') }}
+ ```
+ - Fork caches isolated via `github.repository_owner` prefix
+ - Per-repo path included in hash
+ - [x] Cache manifests signed per-repo with cosign
 
 #### Missing:
 - **No cache quotas per repo** - All repos share 5GB GitHub Actions cache
@@ -67,13 +67,13 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 
 #### Artifact Segregation:
 - **Per-job named uploads** (`artifacts/logs/${{ matrix.name }}.log`):
-  ```yaml
-  name: project-test-logs-${{ matrix.name }}-${{ github.run_attempt }}
-  name: cache-manifest-${{ matrix.name }}
-  name: job-telemetry-${{ matrix.name }}-${{ github.run_attempt }}
-  ```
-  - ✅ Artifacts namespace-keyed by repo name
-  - ✅ Per-repo telemetry emitted separately
+ ```yaml
+ name: project-test-logs-${{ matrix.name }}-${{ github.run_attempt }}
+ name: cache-manifest-${{ matrix.name }}
+ name: job-telemetry-${{ matrix.name }}-${{ github.run_attempt }}
+ ```
+ - [x] Artifacts namespace-keyed by repo name
+ - [x] Per-repo telemetry emitted separately
 
 #### Missing:
 - **No per-repo retention controls** - GitHub default 90-day retention applies to all
@@ -84,18 +84,18 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 
 ### 1.4 Repo-Level Permissions/RBAC
 
-**Status**: ❌ ABSENT - All-or-nothing GitHub token
+**Status**: [ ] ABSENT - All-or-nothing GitHub token
 
 #### What Exists:
 - **Workflow-level permissions**:
-  ```yaml
-  permissions:
-    contents: read
-    id-token: write  # For keyless signing
-    actions: read
-  ```
-  - Least-privilege OIDC-only (no PATs)
-  - Shared GITHUB_TOKEN for all matrix jobs
+ ```yaml
+ permissions:
+ contents: read
+ id-token: write # For keyless signing
+ actions: read
+ ```
+ - Least-privilege OIDC-only (no PATs)
+ - Shared GITHUB_TOKEN for all matrix jobs
 
 #### Missing:
 - **No per-repo access control** - Same token reads all repos
@@ -111,21 +111,21 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 
 ### 2.1 Queue Management, Rate Limiting
 
-**Status**: ⚠️ BASIC - Workflow-level only
+**Status**: WARNING: BASIC - Workflow-level only
 
 #### What Exists:
 - **Concurrency budgets** (`config/runner-isolation.yaml`):
-  ```yaml
-  workflows:
-    release.yml:
-      max_in_progress: 1
-  workflows:
-    project-tests:
-      max_parallel: 2
-  ```
-  - `max_in_progress: 1` - Only one release run at a time
-  - `max_parallel: 2` - Only 2 matrix jobs in parallel
-  - Enforced via GitHub API query in `scripts/enforce_concurrency_budget.py`
+ ```yaml
+ workflows:
+ release.yml:
+ max_in_progress: 1
+ workflows:
+ project-tests:
+ max_parallel: 2
+ ```
+ - `max_in_progress: 1` - Only one release run at a time
+ - `max_parallel: 2` - Only 2 matrix jobs in parallel
+ - Enforced via GitHub API query in `scripts/enforce_concurrency_budget.py`
 
 #### What's Missing:
 - **No per-repo concurrency budget** - All repos share `max_parallel: 2`
@@ -141,17 +141,17 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 
 ### 2.2 Concurrency Controls Across Repos
 
-**Status**: ⚠️ BASIC - Global controls only
+**Status**: WARNING: BASIC - Global controls only
 
 #### What Exists:
 - **Release workflow concurrency**:
-  ```yaml
-  concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: true
-  ```
-  - Cancel in-progress run when new tag pushed
-  - Per-workflow grouping
+ ```yaml
+ concurrency:
+ group: ${{ github.workflow }}-${{ github.ref }}
+ cancel-in-progress: true
+ ```
+ - Cancel in-progress run when new tag pushed
+ - Per-workflow grouping
 
 #### Missing:
 - **No per-repo queue depth limit** - If repo X submits 100 tags, all queue globally
@@ -164,7 +164,7 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 
 ### 2.3 Resource Allocation/Budgeting Per Repo
 
-**Status**: ❌ ABSENT
+**Status**: [ ] ABSENT
 
 #### Missing:
 - **No CPU/memory quotas** - All repos on ubuntu-22.04 (shared 4 CPU, 16 GB)
@@ -183,7 +183,7 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 
 ### 2.4 Fairness Mechanisms
 
-**Status**: ❌ ABSENT
+**Status**: [ ] ABSENT
 
 #### Missing:
 - **No token bucket** - Plan mentions "runner fairness: token-bucket throttling" (STATUS.md:51) but not implemented
@@ -200,7 +200,7 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 
 ### 3.1 API Gateway Patterns
 
-**Status**: ❌ ABSENT - No API gateway
+**Status**: [ ] ABSENT - No API gateway
 
 #### What Exists:
 - **GitHub Actions as orchestrator** - Uses GitHub's API for workflow dispatch
@@ -223,12 +223,12 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 
 ### 3.2 Service Discovery Mechanisms
 
-**Status**: 🟡 PARTIAL - YAML-backed registry, no control plane
+**Status**: PARTIAL - YAML-backed registry, no control plane
 
 #### What Exists:
 - **Git-based registry** (`config/repositories.yaml`)
-  - Repos enabled/disabled without editing workflows
-  - Settings injected into matrix via `scripts/load_repository_matrix.py`
+ - Repos enabled/disabled without editing workflows
+ - Settings injected into matrix via `scripts/load_repository_matrix.py`
 
 #### Missing:
 - **No dynamic service discovery** beyond Git (no Consul/Eureka/etcd)
@@ -239,7 +239,7 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 
 ### 3.3 Inter-Repo Dependency Handling
 
-**Status**: ❌ ABSENT
+**Status**: [ ] ABSENT
 
 #### Missing:
 - **No dependency DAG** - No way to declare "repo X depends on repo Y's artifacts"
@@ -249,24 +249,24 @@ The CI/CD hub is now a **single-hub, multi-repo pilot**: repositories are discov
 - **No shared state management** - No way to coordinate state across repos (e.g., "release only if all repos passed")
 - **No orchestration workflow** - Monolithic release.yml, not choreography
 
-**Example Gap**: 
+**Example Gap**:
 ```
 Repo: vector-space
-  depends_on: 
-    - learn-caesar-cipher (latest release)
+ depends_on:
+ - learn-caesar-cipher (latest release)
 But currently: vector-space can't specify this dependency
 ```
 
 ### 3.4 Centralized Configuration Management
 
-**Status**: ⚠️ MINIMAL - GitOps-style config without validation
+**Status**: WARNING: MINIMAL - GitOps-style config without validation
 
 #### What Exists:
 - **Checked-in configs**:
-  - `config/repositories.yaml` – dynamic registry + per-repo knobs
-  - `config/runner-isolation.yaml` – workflow-level concurrency budgets
-  - `.github/workflows/*.yml` – orchestration definitions
-  - `schema/pipeline_run.v1.2.json` – telemetry schema
+ - `config/repositories.yaml` – dynamic registry + per-repo knobs
+ - `config/runner-isolation.yaml` – workflow-level concurrency budgets
+ - `.github/workflows/*.yml` – orchestration definitions
+ - `schema/pipeline_run.v1.2.json` – telemetry schema
 
 #### Missing:
 - **No config server or API** – updates require Git PRs
@@ -288,30 +288,30 @@ But currently: vector-space can't specify this dependency
 
 ### 4.1 Per-Repo Metrics/Dashboards
 
-**Status**: ⚠️ PARTIAL - Telemetry collection exists, dashboards TBD
+**Status**: WARNING: PARTIAL - Telemetry collection exists, dashboards TBD
 
 #### What Exists:
 - **Per-repo telemetry recording** (`scripts/record_job_telemetry.py`):
-  ```python
-  record: {
-    "job": args.job_name,  # e.g., "learn-caesar-cipher"
-    "duration_ms": args.duration_ms,
-    "queue_ms": args.queue_ms,
-    "status": args.status,
-    "cache_hit": args.cache_hit,
-    "runner_type": args.runner_type,
-    "runner_size": args.runner_size,
-  }
-  ```
-  - NDJSON telemetry appended to artifacts
-  - Job name includes repo name
-  - Duration, cache hit, status tracked
+ ```python
+ record: {
+ "job": args.job_name, # e.g., "learn-caesar-cipher"
+ "duration_ms": args.duration_ms,
+ "queue_ms": args.queue_ms,
+ "status": args.status,
+ "cache_hit": args.cache_hit,
+ "runner_type": args.runner_type,
+ "runner_size": args.runner_size,
+ }
+ ```
+ - NDJSON telemetry appended to artifacts
+ - Job name includes repo name
+ - Duration, cache hit, status tracked
 
 - **Per-repo logs uploaded**:
-  ```yaml
-  name: project-test-logs-${{ matrix.name }}-${{ github.run_attempt }}
-  name: job-telemetry-${{ matrix.name }}-${{ github.run_attempt }}
-  ```
+ ```yaml
+ name: project-test-logs-${{ matrix.name }}-${{ github.run_attempt }}
+ name: job-telemetry-${{ matrix.name }}-${{ github.run_attempt }}
+ ```
 
 #### Missing:
 - **No time-series DB** - Telemetry stored as NDJSON artifacts, not queryable DB
@@ -323,27 +323,27 @@ But currently: vector-space can't specify this dependency
 - **No custom metrics** - Only job-level, not business metrics (e.g., "deployments per day per repo")
 
 **Data Pipeline Exists but Incomplete**:
-- ✅ Telemetry emitted (scripts/emit_pipeline_run.py)
-- ✅ NDJSON schema defined (schema/pipeline_run.v1.2.json)
-- ✅ dbt staging/marts models written (models/staging, models/marts)
-- ❌ No BigQuery integration (vars: CI_INTEL_BQ_PROJECT, CI_INTEL_BQ_DATASET not configured)
-- ❌ Dashboards not implemented
+- [x] Telemetry emitted (scripts/emit_pipeline_run.py)
+- [x] NDJSON schema defined (schema/pipeline_run.v1.2.json)
+- [x] dbt staging/marts models written (models/staging, models/marts)
+- [ ] No BigQuery integration (vars: CI_INTEL_BQ_PROJECT, CI_INTEL_BQ_DATASET not configured)
+- [ ] Dashboards not implemented
 
 ### 4.2 Cross-Repo Analytics
 
-**Status**: ⚠️ PARTIAL - Schema supports it, implementation TBD
+**Status**: WARNING: PARTIAL - Schema supports it, implementation TBD
 
 #### What Exists:
 - **Unified schema for all repos**:
-  ```json
-  {
-    "repo": "string",  // "owner/repo"
-    "jobs": [...],     // all jobs in run
-    "tests": {...}     // aggregate test counts
-  }
-  ```
-  - Single schema version (v1.2) for all repos
-  - All pipeline runs stored in same NDJSON
+ ```json
+ {
+ "repo": "string", // "owner/repo"
+ "jobs": [...], // all jobs in run
+ "tests": {...} // aggregate test counts
+ }
+ ```
+ - Single schema version (v1.2) for all repos
+ - All pipeline runs stored in same NDJSON
 
 #### Missing:
 - **No cross-repo aggregation** - No SQL to say "compare success rate across all repos"
@@ -356,17 +356,17 @@ But currently: vector-space can't specify this dependency
 
 ### 4.3 Centralized Logging with Repo Context
 
-**Status**: ⚠️ PARTIAL - Logs captured, centralization TBD
+**Status**: WARNING: PARTIAL - Logs captured, centralization TBD
 
 #### What Exists:
 - **Per-repo logs uploaded**:
-  ```
-  artifacts/logs/${{ matrix.name }}.log
-  artifacts/logs/${{ matrix.name }}.duration
-  artifacts/logs/${{ matrix.name }}.changed
-  ```
-  - Structured NDJSON for job telemetry
-  - Duration and changed file count recorded
+ ```
+ artifacts/logs/${{ matrix.name }}.log
+ artifacts/logs/${{ matrix.name }}.duration
+ artifacts/logs/${{ matrix.name }}.changed
+ ```
+ - Structured NDJSON for job telemetry
+ - Duration and changed file count recorded
 
 #### Missing:
 - **No log aggregation** - Logs stored in GitHub artifacts, not ELK/Splunk/CloudLogging
@@ -380,19 +380,19 @@ But currently: vector-space can't specify this dependency
 
 ### 4.4 Cost Allocation Per Repo
 
-**Status**: ⚠️ MINIMAL - Schema supports it, not implemented
+**Status**: WARNING: MINIMAL - Schema supports it, not implemented
 
 #### What Exists:
 - **Schema fields for cost tracking**:
-  ```json
-  {
-    "carbon_g_co2e": "number",
-    "energy": { "kwh": "number" },
-    "cost": "..."  // present in schema
-  }
-  ```
-  - Fields in pipeline_run.v1.2.json
-  - `emit_pipeline_run.py` accepts `--carbon-g-co2e` and `--energy-kwh`
+ ```json
+ {
+ "carbon_g_co2e": "number",
+ "energy": { "kwh": "number" },
+ "cost": "..." // present in schema
+ }
+ ```
+ - Fields in pipeline_run.v1.2.json
+ - `emit_pipeline_run.py` accepts `--carbon-g-co2e` and `--energy-kwh`
 
 #### Missing:
 - **No cost calculation** - No script to calculate cost from duration/runner size
@@ -409,19 +409,19 @@ But currently: vector-space can't specify this dependency
 
 ### 5.1 Deployment Ordering/Dependencies
 
-**Status**: ❌ ABSENT - All repos in parallel
+**Status**: [ ] ABSENT - All repos in parallel
 
 #### Current State:
 - All repos tested in **parallel** via GitHub matrix:
-  ```yaml
-  strategy:
-    fail-fast: false
-    max-parallel: 2
-    matrix:
-      include:
-        - learn-caesar-cipher
-        - vector-space
-  ```
+ ```yaml
+ strategy:
+ fail-fast: false
+ max-parallel: 2
+ matrix:
+ include:
+ - learn-caesar-cipher
+ - vector-space
+ ```
 
 #### Missing:
 - **No sequential deployment** - Can't deploy repo A before repo B
@@ -439,20 +439,20 @@ Current: No way to express this; vector-space tests against whatever is already 
 
 ### 5.2 Rollout Strategies Across Repos
 
-**Status**: ⚠️ PARTIAL - Single strategy only
+**Status**: WARNING: PARTIAL - Single strategy only
 
 #### What Exists:
 - **Canary decision capture** (`scripts/capture_canary_decision.py`):
-  ```python
-  {
-    "decision": "promote|rollback|hold",
-    "window": { "start": "...", "end": "..." },
-    "metrics_uri": "...",
-  }
-  ```
-  - Can record promote/rollback decisions
-  - Window-based (not percentage-based)
-  - Embedded in pipeline_run.v1.2
+ ```python
+ {
+ "decision": "promote|rollback|hold",
+ "window": { "start": "...", "end": "..." },
+ "metrics_uri": "...",
+ }
+ ```
+ - Can record promote/rollback decisions
+ - Window-based (not percentage-based)
+ - Embedded in pipeline_run.v1.2
 
 #### Missing:
 - **No multi-repo canary** - Canary applied to single release artifact, not across repos
@@ -466,20 +466,20 @@ Current: No way to express this; vector-space tests against whatever is already 
 
 ### 5.3 Environment Promotion Across Repos
 
-**Status**: ⚠️ MINIMAL - Schema supports it, no orchestration
+**Status**: WARNING: MINIMAL - Schema supports it, no orchestration
 
 #### What Exists:
 - **Environment field in schema**:
-  ```json
-  "environment": "enum: preview|dev|staging|prod|test"
-  ```
-  - Single environment per run
-  - Can emit telemetry with environment
+ ```json
+ "environment": "enum: preview|dev|staging|prod|test"
+ ```
+ - Single environment per run
+ - Can emit telemetry with environment
 
 - **Deployment ID tracking**:
-  ```json
-  "deployment_id": "string"
-  ```
+ ```json
+ "deployment_id": "string"
+ ```
 
 #### Missing:
 - **No promotion workflow** - No "deploy to dev, then staging, then prod"
@@ -495,7 +495,7 @@ Current: No way to express this; vector-space tests against whatever is already 
 
 ### 5.4 GitOps Patterns
 
-**Status**: ❌ ABSENT - Workflow dispatch and GitHub Actions only
+**Status**: [ ] ABSENT - Workflow dispatch and GitHub Actions only
 
 #### Missing:
 - **No Flux** - No declarative desired state in git
@@ -513,13 +513,13 @@ Current: No way to express this; vector-space tests against whatever is already 
 
 ### 6.1 Hierarchical Config (Org → Repo)
 
-**Status**: ❌ ABSENT - Flat structure only
+**Status**: [ ] ABSENT - Flat structure only
 
 #### What Exists:
 - **Org-level config files**:
-  - `config/repositories.yaml` - repo list
-  - `config/runner-isolation.yaml` - concurrency limits
-  - `.github/workflows/*.yml` - workflow definitions
+ - `config/repositories.yaml` - repo list
+ - `config/runner-isolation.yaml` - concurrency limits
+ - `.github/workflows/*.yml` - workflow definitions
 
 #### Missing:
 - **No org defaults** - Can't define "all repos use ubuntu-latest by default"
@@ -533,14 +533,14 @@ Current: No way to express this; vector-space tests against whatever is already 
 ```yaml
 # Desired:
 org_defaults:
-  runner: ubuntu-latest
-  timeout: 6h
+ runner: ubuntu-latest
+ timeout: 6h
 teams:
-  platform:
-    runner: ubuntu-22.04
+ platform:
+ runner: ubuntu-22.04
 repos:
-  vector-space:
-    timeout: 12h
+ vector-space:
+ timeout: 12h
 
 # Current:
 hardcoded per workflow
@@ -548,7 +548,7 @@ hardcoded per workflow
 
 ### 6.2 Configuration Inheritance
 
-**Status**: ❌ ABSENT
+**Status**: [ ] ABSENT
 
 #### Missing:
 - **No base configs** - No templates to inherit from
@@ -560,16 +560,16 @@ hardcoded per workflow
 
 ### 6.3 Override Mechanisms
 
-**Status**: ⚠️ MINIMAL - ENV vars only
+**Status**: WARNING: MINIMAL - ENV vars only
 
 #### What Exists:
 - **GitHub Actions env vars**:
-  ```yaml
-  env:
-    INGEST_PROJECT: ${{ vars.CI_INTEL_BQ_PROJECT || secrets.CI_INTEL_BQ_PROJECT || '' }}
-  ```
-  - Can override via secrets or vars
-  - Fallback to empty string if not set
+ ```yaml
+ env:
+ INGEST_PROJECT: ${{ vars.CI_INTEL_BQ_PROJECT || secrets.CI_INTEL_BQ_PROJECT || '' }}
+ ```
+ - Can override via secrets or vars
+ - Fallback to empty string if not set
 
 #### Missing:
 - **No runtime overrides** - Can't override at job start time
@@ -580,18 +580,18 @@ hardcoded per workflow
 
 ### 6.4 Templating Capabilities
 
-**Status**: ⚠️ MINIMAL - GitHub Actions syntax only
+**Status**: WARNING: MINIMAL - GitHub Actions syntax only
 
 #### What Exists:
 - **GitHub Actions templating**:
-  ```yaml
-  strategy:
-    matrix:
-      include:
-        - name: ${{ matrix.name }}
-  ```
-  - Context interpolation (github.*, env.*, matrix.*)
-  - Conditionals (if:)
+ ```yaml
+ strategy:
+ matrix:
+ include:
+ - name: ${{ matrix.name }}
+ ```
+ - Context interpolation (github.*, env.*, matrix.*)
+ - Conditionals (if:)
 
 #### Missing:
 - **No Jinja2/Mustache** - No template language
@@ -606,30 +606,30 @@ hardcoded per workflow
 
 | Category | Feature | Status | Impact | Priority |
 |----------|---------|--------|--------|----------|
-| **Tenancy** | Container isolation | ❌ | No process/network boundaries | CRITICAL |
-| **Tenancy** | Secrets per-repo | ❌ | Token sharing risk | HIGH |
-| **Tenancy** | Dynamic repo registration | ❌ | Must edit code to add repos | HIGH |
-| **Tenancy** | RBAC per-repo | ❌ | All maintainers can release all repos | HIGH |
-| **Scalability** | Per-repo queue budgets | ❌ | Starvation risk | MEDIUM |
-| **Scalability** | Fair scheduling | ❌ | No SLO enforcement | MEDIUM |
-| **Scalability** | Resource quotas | ❌ | No cost limits | MEDIUM |
-| **Scalability** | Rate limiting | ❌ | Can exhaust GitHub API | MEDIUM |
-| **Service Mesh** | API gateway | ❌ | Tightly coupled to GHA | HIGH |
-| **Service Mesh** | Service discovery | ⚠️ | Static only | MEDIUM |
-| **Service Mesh** | Dependency DAG | ❌ | No orchestration | MEDIUM |
-| **Service Mesh** | Config server | ❌ | All configs hardcoded | HIGH |
-| **Observability** | Dashboards | ❌ | No visibility | MEDIUM |
-| **Observability** | Cost allocation | ❌ | No chargeback | LOW |
-| **Observability** | Log aggregation | ❌ | Logs in GitHub artifacts | LOW |
-| **Observability** | Cross-repo analytics | ❌ | No correlation | MEDIUM |
-| **Deployment** | Dependency ordering | ❌ | All parallel, no DAG | MEDIUM |
-| **Deployment** | Progressive rollout | ❌ | All-or-nothing | MEDIUM |
-| **Deployment** | GitOps | ❌ | Imperative only | MEDIUM |
-| **Deployment** | Environment promotion | ⚠️ | Manual only | MEDIUM |
-| **Config** | Hierarchical config | ❌ | Flat YAML only | MEDIUM |
-| **Config** | Config inheritance | ❌ | Copy-paste configs | MEDIUM |
-| **Config** | Per-repo overrides | ❌ | Can't customize per repo | MEDIUM |
-| **Config** | Templating DSL | ❌ | No code generation | LOW |
+| **Tenancy** | Container isolation | [ ] | No process/network boundaries | CRITICAL |
+| **Tenancy** | Secrets per-repo | [ ] | Token sharing risk | HIGH |
+| **Tenancy** | Dynamic repo registration | [ ] | Must edit code to add repos | HIGH |
+| **Tenancy** | RBAC per-repo | [ ] | All maintainers can release all repos | HIGH |
+| **Scalability** | Per-repo queue budgets | [ ] | Starvation risk | MEDIUM |
+| **Scalability** | Fair scheduling | [ ] | No SLO enforcement | MEDIUM |
+| **Scalability** | Resource quotas | [ ] | No cost limits | MEDIUM |
+| **Scalability** | Rate limiting | [ ] | Can exhaust GitHub API | MEDIUM |
+| **Service Mesh** | API gateway | [ ] | Tightly coupled to GHA | HIGH |
+| **Service Mesh** | Service discovery | WARNING: | Static only | MEDIUM |
+| **Service Mesh** | Dependency DAG | [ ] | No orchestration | MEDIUM |
+| **Service Mesh** | Config server | [ ] | All configs hardcoded | HIGH |
+| **Observability** | Dashboards | [ ] | No visibility | MEDIUM |
+| **Observability** | Cost allocation | [ ] | No chargeback | LOW |
+| **Observability** | Log aggregation | [ ] | Logs in GitHub artifacts | LOW |
+| **Observability** | Cross-repo analytics | [ ] | No correlation | MEDIUM |
+| **Deployment** | Dependency ordering | [ ] | All parallel, no DAG | MEDIUM |
+| **Deployment** | Progressive rollout | [ ] | All-or-nothing | MEDIUM |
+| **Deployment** | GitOps | [ ] | Imperative only | MEDIUM |
+| **Deployment** | Environment promotion | WARNING: | Manual only | MEDIUM |
+| **Config** | Hierarchical config | [ ] | Flat YAML only | MEDIUM |
+| **Config** | Config inheritance | [ ] | Copy-paste configs | MEDIUM |
+| **Config** | Per-repo overrides | [ ] | Can't customize per repo | MEDIUM |
+| **Config** | Templating DSL | [ ] | No code generation | LOW |
 
 ---
 

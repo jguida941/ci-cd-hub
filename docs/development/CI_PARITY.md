@@ -90,7 +90,7 @@ These steps only run locally via `cihub check` and are not in the CI workflow.
 Shows which checks run at each `cihub check` tier:
 
 ```
-cihub check              # Fast (~30s)
+cihub check # Fast (~30s)
 ├── preflight
 ├── lint (ruff)
 ├── format (ruff)
@@ -101,19 +101,19 @@ cihub check              # Fast (~30s)
 ├── docs-check
 └── smoke (scaffold + validate only; does NOT run `cihub ci` unless `--full` is set)
 
-cihub check --audit      # + ~15s
+cihub check --audit # + ~15s
 ├── docs-links
 ├── adr-check
 ├── validate-configs
 └── validate-profiles
 
-cihub check --security   # + ~2min
+cihub check --security # + ~2min
 ├── bandit
 ├── pip-audit
 ├── gitleaks (optional)
 └── trivy (optional)
 
-cihub check --full       # + ~1min
+cihub check --full # + ~1min
 ├── zizmor (optional)
 ├── validate-templates
 ├── verify-contracts
@@ -121,10 +121,10 @@ cihub check --full       # + ~1min
 ├── license-check
 └── sync-templates-check (requires GH_TOKEN)
 
-cihub check --mutation   # + ~15min
+cihub check --mutation # + ~15min
 └── mutmut
 
-cihub check --all        # Everything
+cihub check --all # Everything
 ```
 
 **Important:** `cihub check --full` (and `--all`) also runs the `smoke` step in full mode

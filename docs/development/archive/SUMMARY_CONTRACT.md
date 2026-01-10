@@ -44,12 +44,12 @@ All summaries must be written via `GITHUB_STEP_SUMMARY`. Do not mix mechanisms.
 - Java: `JaCoCo Coverage`, `PITest`, `Checkstyle`, `PMD`, `SpotBugs`, `OWASP Dependency-Check`, `Semgrep`, `Trivy`, `jqwik`, `CodeQL`, `Docker`
 - Python: `pytest`, `mutmut`, `Ruff`, `Black`, `isort`, `mypy`, `Bandit`, `pip-audit`, `Semgrep`, `Trivy`, `hypothesis`, `CodeQL`, `Docker`
 - Hub Production (hub-production-ci.yml):
-  - Workflow: `actionlint`, `zizmor`
-  - Quality: `ruff`, `syntax`, `mypy`, `yamllint`
-  - Testing: `pytest`, `mutmut`
-  - Security: `bandit`, `pip-audit`, `gitleaks`, `trivy`
-  - Validate: `templates`, `configs`, `matrix-keys`, `licenses`
-  - Supply Chain: `dependency-review`, `scorecard`
+ - Workflow: `actionlint`, `zizmor`
+ - Quality: `ruff`, `syntax`, `mypy`, `yamllint`
+ - Testing: `pytest`, `mutmut`
+ - Security: `bandit`, `pip-audit`, `gitleaks`, `trivy`
+ - Validate: `templates`, `configs`, `matrix-keys`, `licenses`
+ - Supply Chain: `dependency-review`, `scorecard`
 
 ### Boolean Contract
 - **Canonical output:** summaries must emit lowercase `true` or `false`.
@@ -244,28 +244,28 @@ These items MUST be addressed before starting the implementation phases:
 **Current state** (`scripts/validate_summary.py:18-40`):
 ```python
 JAVA_SUMMARY_MAP = {
-    "JaCoCo Coverage": "jacoco",
-    "PITest": "pitest",
-    "Checkstyle": "checkstyle",
-    "PMD": "pmd",
-    "SpotBugs": "spotbugs",
-    "OWASP Dependency-Check": "owasp",
-    "Semgrep": "semgrep",
-    "Trivy": "trivy",
+ "JaCoCo Coverage": "jacoco",
+ "PITest": "pitest",
+ "Checkstyle": "checkstyle",
+ "PMD": "pmd",
+ "SpotBugs": "spotbugs",
+ "OWASP Dependency-Check": "owasp",
+ "Semgrep": "semgrep",
+ "Trivy": "trivy",
 }
 # MISSING: jqwik, CodeQL, Docker, maven/gradle (build tool)
 
 PYTHON_SUMMARY_MAP = {
-    "pytest": "pytest",
-    "mutmut": "mutmut",
-    "Ruff": "ruff",
-    "Black": "black",
-    "isort": "isort",
-    "mypy": "mypy",
-    "Bandit": "bandit",
-    "pip-audit": "pip_audit",
-    "Semgrep": "semgrep",
-    "Trivy": "trivy",
+ "pytest": "pytest",
+ "mutmut": "mutmut",
+ "Ruff": "ruff",
+ "Black": "black",
+ "isort": "isort",
+ "mypy": "mypy",
+ "Bandit": "bandit",
+ "pip-audit": "pip_audit",
+ "Semgrep": "semgrep",
+ "Trivy": "trivy",
 }
 # MISSING: hypothesis, CodeQL, Docker
 ```
@@ -277,15 +277,15 @@ PYTHON_SUMMARY_MAP = {
 **Current state** (`scripts/validate_summary.py:42-65`):
 ```python
 JAVA_ARTIFACTS = {
-    "jacoco": ["**/target/site/jacoco/jacoco.xml"],
-    "checkstyle": ["**/checkstyle-result.xml"],
-    # ... existing entries
+ "jacoco": ["**/target/site/jacoco/jacoco.xml"],
+ "checkstyle": ["**/checkstyle-result.xml"],
+ # ... existing entries
 }
 # MISSING: jqwik, codeql, docker
 
 PYTHON_ARTIFACTS = {
-    "pytest": ["**/coverage.xml", ...],
-    # ... existing entries
+ "pytest": ["**/coverage.xml", ...],
+ # ... existing entries
 }
 # MISSING: hypothesis, codeql, docker
 ```
@@ -296,15 +296,15 @@ PYTHON_ARTIFACTS = {
 
 **Current schema** (`schema/ci-report.v2.json`) is missing:
 
-| Field                              | Status    | Required By               |
+| Field | Status | Required By |
 |------------------------------------|-----------|---------------------------|
-| `tools_configured`                 | ❌ Missing | Summary to Report Mapping |
-| `tools_success`                    | ❌ Missing | Summary to Report Mapping |
-| `thresholds.max_critical_vulns`    | ❌ Missing | Quality Gates             |
-| `thresholds.max_high_vulns`        | ❌ Missing | Quality Gates             |
-| `thresholds.max_semgrep_findings`  | ❌ Missing | Quality Gates             |
-| `thresholds.max_checkstyle_errors` | ❌ Missing | Quality Gates             |
-| `thresholds.max_spotbugs_bugs`     | ❌ Missing | Quality Gates             |
+| `tools_configured` | [ ] Missing | Summary to Report Mapping |
+| `tools_success` | [ ] Missing | Summary to Report Mapping |
+| `thresholds.max_critical_vulns` | [ ] Missing | Quality Gates |
+| `thresholds.max_high_vulns` | [ ] Missing | Quality Gates |
+| `thresholds.max_semgrep_findings` | [ ] Missing | Quality Gates |
+| `thresholds.max_checkstyle_errors` | [ ] Missing | Quality Gates |
+| `thresholds.max_spotbugs_bugs` | [ ] Missing | Quality Gates |
 
 **Note**: These thresholds ARE output by workflows (java-ci.yml:197-200) but not in schema.
 
@@ -318,8 +318,8 @@ PYTHON_ARTIFACTS = {
 
 | Tool | Workflow | In Plan? | Notes |
 |------|----------|----------|-------|
-| `maven`/`gradle` | java-ci.yml:580 | ❌ No | Build tool row in Tools Enabled table |
-| `hypothesis` | python-ci.yml | ✅ Yes | Listed correctly |
+| `maven`/`gradle` | java-ci.yml:580 | [ ] No | Build tool row in Tools Enabled table |
+| `hypothesis` | python-ci.yml | [x] Yes | Listed correctly |
 
 **Action required**: Add build tool (maven/gradle) to Java tools list in plan.
 
@@ -371,25 +371,25 @@ Current summary format:
 
 ### Schema vs Workflow Output Alignment
 
-| Field               | In Schema? | In Workflow Output? | Notes                                    |
+| Field | In Schema? | In Workflow Output? | Notes |
 |---------------------|------------|---------------------|------------------------------------------|
-| `results.build`     | ✅          | ✅ java-ci           | Java uses `build`                        |
-| `results.test`      | ✅          | ✅ python-ci         | Python uses `test`                       |
-| `tools_ran`         | ✅          | ✅                   | Both workflows                           |
-| `tools_configured`  | ❌          | ❌                   | Plan requires, neither has               |
-| `tools_success`     | ❌          | ❌                   | Plan requires, neither has               |
-| `thresholds` (full) | Partial    | ✅                   | Workflow outputs more than schema allows |
+| `results.build` | [x] | [x] java-ci | Java uses `build` |
+| `results.test` | [x] | [x] python-ci | Python uses `test` |
+| `tools_ran` | [x] | [x] | Both workflows |
+| `tools_configured` | [ ] | [ ] | Plan requires, neither has |
+| `tools_success` | [ ] | [ ] | Plan requires, neither has |
+| `thresholds` (full) | Partial | [x] | Workflow outputs more than schema allows |
 
 ---
 
 ### Potential Breaking Changes
 
-| Change                                              | Impact                          | Mitigation                       |
+| Change | Impact | Mitigation |
 |-----------------------------------------------------|---------------------------------|----------------------------------|
-| New required sections in summary                    | Downstream parsing may break    | Phase rollout, version flag      |
+| New required sections in summary | Downstream parsing may break | Phase rollout, version flag |
 | Adding `tools_configured`/`tools_success` to schema | Existing reports won't validate | Schema v2.1? Or optional fields? |
-| Renaming tool display names                         | `validate_summary.py` will fail | Update mappings first            |
-| Changing orchestrator summary format                | Dashboard may break             | Keep aggregator format separate  |
+| Renaming tool display names | `validate_summary.py` will fail | Update mappings first |
+| Changing orchestrator summary format | Dashboard may break | Keep aggregator format separate |
 
 ---
 
@@ -397,12 +397,12 @@ Current summary format:
 
 These scripts parse report.json and/or artifacts - verify compatibility:
 
-| Script                                 | Parses                | Fields Used                            | Status                   |
+| Script | Parses | Fields Used | Status |
 |----------------------------------------|-----------------------|----------------------------------------|--------------------------|
-| `scripts/validate_summary.py`          | summary + report.json | `tools_ran`, mappings                  | ⚠️ Needs updates         |
-| `scripts/aggregate_reports.py`         | report.json           | `results`, `tool_metrics`, `tools_ran` | ✅ OK                     |
-| `cihub report aggregate`              | report.json           | Same as above                          | ✅ OK                     |
-| `hub-orchestrator.yml` (CLI command)  | report.json           | All fields                             | ✅ OK                     |
+| `scripts/validate_summary.py` | summary + report.json | `tools_ran`, mappings | WARNING: Needs updates |
+| `scripts/aggregate_reports.py` | report.json | `results`, `tool_metrics`, `tools_ran` | [x] OK |
+| `cihub report aggregate` | report.json | Same as above | [x] OK |
+| `hub-orchestrator.yml` (CLI command) | report.json | All fields | [x] OK |
 
 ---
 
@@ -436,12 +436,12 @@ These scripts parse report.json and/or artifacts - verify compatibility:
 
 ### Risk Assessment
 
-| Risk                              | Likelihood | Impact | Mitigation                    |
+| Risk | Likelihood | Impact | Mitigation |
 |-----------------------------------|------------|--------|-------------------------------|
-| Breaking `validate_summary.py`    | High       | Medium | Complete Phase 0 first        |
-| Breaking orchestrator aggregation | Medium     | High   | Test with fixture repos       |
-| Schema validation failures        | High       | Low    | Make new fields optional      |
-| Dashboard rendering issues        | Medium     | Medium | Golden samples before rollout |
+| Breaking `validate_summary.py` | High | Medium | Complete Phase 0 first |
+| Breaking orchestrator aggregation | Medium | High | Test with fixture repos |
+| Schema validation failures | High | Low | Make new fields optional |
+| Dashboard rendering issues | Medium | Medium | Golden samples before rollout |
 
 ---
 
@@ -455,9 +455,9 @@ This section documents exactly what each script parses and what would break.
 
 **What it parses from report.json**:
 ```python
-tools_ran = report.get("tools_ran", {})        # Line 258
-tools_configured = report.get("tools_configured", {})  # Line 259 - CURRENTLY EMPTY
-tools_success = report.get("tools_success", {})        # Line 260 - CURRENTLY EMPTY
+tools_ran = report.get("tools_ran", {}) # Line 258
+tools_configured = report.get("tools_configured", {}) # Line 259 - CURRENTLY EMPTY
+tools_success = report.get("tools_success", {}) # Line 260 - CURRENTLY EMPTY
 ```
 
 **Current tool mappings** (lines 18-40):
@@ -488,12 +488,12 @@ tools_success = report.get("tools_success", {})        # Line 260 - CURRENTLY EM
 
 **Artifact expectations** (lines 42-65):
 
-| JAVA_ARTIFACTS               | PYTHON_ARTIFACTS               |
+| JAVA_ARTIFACTS | PYTHON_ARTIFACTS |
 |------------------------------|--------------------------------|
-| jacoco, checkstyle, spotbugs | pytest, ruff, bandit           |
-| pmd, owasp, pitest           | pip_audit, black, isort        |
-| semgrep, trivy               | mypy, mutmut, **hypothesis** ✅ |
-|                              | semgrep, trivy                 |
+| jacoco, checkstyle, spotbugs | pytest, ruff, bandit |
+| pmd, owasp, pitest | pip_audit, black, isort |
+| semgrep, trivy | mypy, mutmut, **hypothesis** [x] |
+| | semgrep, trivy |
 
 **Note**: `hypothesis` is in PYTHON_ARTIFACTS but NOT in PYTHON_SUMMARY_MAP - inconsistency!
 
@@ -516,8 +516,8 @@ tools_ran = report.get("tools_ran", {})
 ```
 
 **Does NOT parse**:
-- `tools_configured` ❌
-- `tools_success` ❌
+- `tools_configured` [ ]
+- `tools_success` [ ]
 
 **Fields extracted from results** (lines 118-137):
 - `coverage`
@@ -560,8 +560,8 @@ tools_ran = report_data.get("tools_ran", {})
 ```
 
 **Does NOT parse**:
-- `tools_configured` ❌
-- `tools_success` ❌
+- `tools_configured` [ ]
+- `tools_success` [ ]
 
 **Metrics tracked in run_status** (lines 137-163):
 All metrics above plus `tools_ran` dict.
@@ -605,54 +605,54 @@ All metrics above plus `tools_ran` dict.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         WORKFLOW EXECUTION                          │
+│ WORKFLOW EXECUTION │
 ├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  java-ci.yml / python-ci.yml                                        │
-│       │                                                             │
-│       ├── Emits → GITHUB_STEP_SUMMARY (markdown)                    │
-│       │            └── ## Tools Enabled table                       │
-│       │            └── ## Thresholds (effective)                    │
-│       │            └── ### Results                                  │
-│       │                                                             │
-│       └── Emits → report.json (artifact)                            │
-│                    └── schema_version: "2.0"                        │
-│                    └── results: { coverage, mutation_score, ... }   │
-│                    └── tool_metrics: { ... }                        │
-│                    └── tools_ran: { jacoco: true, ... }             │
-│                    └── tools_configured: ❌ MISSING                  │
-│                    └── tools_success: ❌ MISSING                     │
-│                                                                     │
+│ │
+│ java-ci.yml / python-ci.yml │
+│ │ │
+│ ├── Emits → GITHUB_STEP_SUMMARY (markdown) │
+│ │ └── ## Tools Enabled table │
+│ │ └── ## Thresholds (effective) │
+│ │ └── ### Results │
+│ │ │
+│ └── Emits → report.json (artifact) │
+│ └── schema_version: "2.0" │
+│ └── results: { coverage, mutation_score, ... } │
+│ └── tool_metrics: { ... } │
+│ └── tools_ran: { jacoco: true, ... } │
+│ └── tools_configured: [ ] MISSING │
+│ └── tools_success: [ ] MISSING │
+│ │
 └─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
+ │
+ ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         VALIDATION LAYER                            │
+│ VALIDATION LAYER │
 ├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  validate_summary.py                                                │
-│       │                                                             │
-│       ├── Reads: summary markdown + report.json                     │
-│       ├── Checks: tools_ran matches summary table                   │
-│       ├── Checks: tools_configured (if present) matches             │
-│       ├── Checks: artifacts exist for successful tools              │
-│       └── Returns: warnings list                                    │
-│                                                                     │
+│ │
+│ validate_summary.py │
+│ │ │
+│ ├── Reads: summary markdown + report.json │
+│ ├── Checks: tools_ran matches summary table │
+│ ├── Checks: tools_configured (if present) matches │
+│ ├── Checks: artifacts exist for successful tools │
+│ └── Returns: warnings list │
+│ │
 └─────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
+ │
+ ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                         AGGREGATION LAYER                           │
+│ AGGREGATION LAYER │
 ├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  aggregate_reports.py                                               │
-│       └── Reads: report.json files                                  │
-│       └── Generates: dashboard.html or summary.json                 │
-│                                                                     │
-│  cihub report aggregate (orchestrator)                              │
-│       └── Reads: dispatch metadata + report.json from child runs    │
-│       └── Generates: hub-report.json + GITHUB_STEP_SUMMARY          │
-│                                                                     │
+│ │
+│ aggregate_reports.py │
+│ └── Reads: report.json files │
+│ └── Generates: dashboard.html or summary.json │
+│ │
+│ cihub report aggregate (orchestrator) │
+│ └── Reads: dispatch metadata + report.json from child runs │
+│ └── Generates: hub-report.json + GITHUB_STEP_SUMMARY │
+│ │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -662,38 +662,38 @@ All metrics above plus `tools_ran` dict.
 
 ### Java Tools (All Sources)
 
-| Tool         | In Schema tools_ran | In Workflow | In JAVA_SUMMARY_MAP | In JAVA_ARTIFACTS | In defaults.yaml |
+| Tool | In Schema tools_ran | In Workflow | In JAVA_SUMMARY_MAP | In JAVA_ARTIFACTS | In defaults.yaml |
 |--------------|---------------------|-------------|---------------------|-------------------|------------------|
-| jacoco       | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
-| checkstyle   | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
-| spotbugs     | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
-| pmd          | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
-| owasp        | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
-| pitest       | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
-| jqwik        | ✅                   | ✅           | ❌                   | ❌                 | ✅                |
-| semgrep      | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
-| trivy        | ✅                   | ✅           | ✅                   | ✅                 | ✅                |
-| codeql       | ✅                   | ✅           | ❌                   | ❌                 | ✅                |
-| docker       | ✅                   | ✅           | ❌                   | ❌                 | ✅                |
-| maven/gradle | ❌                   | ✅ (summary) | ❌                   | ❌                 | ✅ (build_tool)   |
+| jacoco | [x] | [x] | [x] | [x] | [x] |
+| checkstyle | [x] | [x] | [x] | [x] | [x] |
+| spotbugs | [x] | [x] | [x] | [x] | [x] |
+| pmd | [x] | [x] | [x] | [x] | [x] |
+| owasp | [x] | [x] | [x] | [x] | [x] |
+| pitest | [x] | [x] | [x] | [x] | [x] |
+| jqwik | [x] | [x] | [ ] | [ ] | [x] |
+| semgrep | [x] | [x] | [x] | [x] | [x] |
+| trivy | [x] | [x] | [x] | [x] | [x] |
+| codeql | [x] | [x] | [ ] | [ ] | [x] |
+| docker | [x] | [x] | [ ] | [ ] | [x] |
+| maven/gradle | [ ] | [x] (summary) | [ ] | [ ] | [x] (build_tool) |
 
 ### Python Tools (All Sources)
 
-| Tool       | In Schema tools_ran | In Workflow | In PYTHON_SUMMARY_MAP | In PYTHON_ARTIFACTS | In defaults.yaml |
+| Tool | In Schema tools_ran | In Workflow | In PYTHON_SUMMARY_MAP | In PYTHON_ARTIFACTS | In defaults.yaml |
 |------------|---------------------|-------------|-----------------------|---------------------|------------------|
-| pytest     | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
-| ruff       | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
-| bandit     | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
-| pip_audit  | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
-| mypy       | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
-| black      | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
-| isort      | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
-| mutmut     | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
-| hypothesis | ✅                   | ✅           | ❌                     | ✅                   | ✅                |
-| semgrep    | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
-| trivy      | ✅                   | ✅           | ✅                     | ✅                   | ✅                |
-| codeql     | ✅                   | ✅           | ❌                     | ❌                   | ✅                |
-| docker     | ✅                   | ✅           | ❌                     | ❌                   | ✅                |
+| pytest | [x] | [x] | [x] | [x] | [x] |
+| ruff | [x] | [x] | [x] | [x] | [x] |
+| bandit | [x] | [x] | [x] | [x] | [x] |
+| pip_audit | [x] | [x] | [x] | [x] | [x] |
+| mypy | [x] | [x] | [x] | [x] | [x] |
+| black | [x] | [x] | [x] | [x] | [x] |
+| isort | [x] | [x] | [x] | [x] | [x] |
+| mutmut | [x] | [x] | [x] | [x] | [x] |
+| hypothesis | [x] | [x] | [ ] | [x] | [x] |
+| semgrep | [x] | [x] | [x] | [x] | [x] |
+| trivy | [x] | [x] | [x] | [x] | [x] |
+| codeql | [x] | [x] | [ ] | [ ] | [x] |
+| docker | [x] | [x] | [ ] | [ ] | [x] |
 
 ---
 
@@ -703,47 +703,47 @@ All metrics above plus `tools_ran` dict.
 
 ```json
 {
-  "tools_ran": {
-    "pytest": boolean, "ruff": boolean, "bandit": boolean,
-    "pip_audit": boolean, "mypy": boolean, "hypothesis": boolean,
-    "black": boolean, "isort": boolean, "mutmut": boolean,
-    "jacoco": boolean, "checkstyle": boolean, "spotbugs": boolean,
-    "pmd": boolean, "owasp": boolean, "pitest": boolean,
-    "jqwik": boolean, "semgrep": boolean, "trivy": boolean,
-    "docker": boolean, "codeql": boolean
-  },
-  "thresholds": {
-    "coverage_min": number,
-    "mutation_score_min": number,
-    "owasp_cvss_fail": number,
-    "trivy_cvss_fail": number,
-    "max_pmd_violations": number
-  }
+ "tools_ran": {
+ "pytest": boolean, "ruff": boolean, "bandit": boolean,
+ "pip_audit": boolean, "mypy": boolean, "hypothesis": boolean,
+ "black": boolean, "isort": boolean, "mutmut": boolean,
+ "jacoco": boolean, "checkstyle": boolean, "spotbugs": boolean,
+ "pmd": boolean, "owasp": boolean, "pitest": boolean,
+ "jqwik": boolean, "semgrep": boolean, "trivy": boolean,
+ "docker": boolean, "codeql": boolean
+ },
+ "thresholds": {
+ "coverage_min": number,
+ "mutation_score_min": number,
+ "owasp_cvss_fail": number,
+ "trivy_cvss_fail": number,
+ "max_pmd_violations": number
+ }
 }
 ```
 
 **Required additions for plan**:
 ```json
 {
-  "tools_configured": { /* same structure as tools_ran */ },
-  "tools_success": { /* same structure as tools_ran */ },
-  "thresholds": {
-    // Existing:
-    "coverage_min": number,
-    "mutation_score_min": number,
-    "owasp_cvss_fail": number,
-    "trivy_cvss_fail": number,
-    "max_pmd_violations": number,
-    // Missing:
-    "max_critical_vulns": number,
-    "max_high_vulns": number,
-    "max_semgrep_findings": number,
-    "max_checkstyle_errors": number,
-    "max_spotbugs_bugs": number,
-    "max_ruff_errors": number,
-    "max_black_issues": number,
-    "max_isort_issues": number
-  }
+ "tools_configured": { /* same structure as tools_ran */ },
+ "tools_success": { /* same structure as tools_ran */ },
+ "thresholds": {
+ // Existing:
+ "coverage_min": number,
+ "mutation_score_min": number,
+ "owasp_cvss_fail": number,
+ "trivy_cvss_fail": number,
+ "max_pmd_violations": number,
+ // Missing:
+ "max_critical_vulns": number,
+ "max_high_vulns": number,
+ "max_semgrep_findings": number,
+ "max_checkstyle_errors": number,
+ "max_spotbugs_bugs": number,
+ "max_ruff_errors": number,
+ "max_black_issues": number,
+ "max_isort_issues": number
+ }
 }
 ```
 
@@ -756,37 +756,37 @@ Based on deep analysis, here's the complete pre-requisite checklist:
 ### validate_summary.py Updates
 
 - [ ] Add to JAVA_SUMMARY_MAP:
-  - `"jqwik": "jqwik"`
-  - `"CodeQL": "codeql"`
-  - `"Docker": "docker"`
+ - `"jqwik": "jqwik"`
+ - `"CodeQL": "codeql"`
+ - `"Docker": "docker"`
 
 - [ ] Add to PYTHON_SUMMARY_MAP:
-  - `"Hypothesis": "hypothesis"` (already in artifacts, missing in map!)
-  - `"CodeQL": "codeql"`
-  - `"Docker": "docker"`
+ - `"Hypothesis": "hypothesis"` (already in artifacts, missing in map!)
+ - `"CodeQL": "codeql"`
+ - `"Docker": "docker"`
 
 - [ ] Add to JAVA_ARTIFACTS:
-  - `"jqwik": ["**/jqwik-report.json"]` (or appropriate pattern)
-  - `"codeql": []` (CodeQL uploads to Security tab, no local artifact)
-  - `"docker": []` (Docker produces images, not file artifacts)
+ - `"jqwik": ["**/jqwik-report.json"]` (or appropriate pattern)
+ - `"codeql": []` (CodeQL uploads to Security tab, no local artifact)
+ - `"docker": []` (Docker produces images, not file artifacts)
 
 - [ ] Add to PYTHON_ARTIFACTS:
-  - `"codeql": []`
-  - `"docker": []`
+ - `"codeql": []`
+ - `"docker": []`
 
 ### Schema Updates
 
 - [ ] Add `tools_configured` object (optional, same keys as tools_ran)
 - [ ] Add `tools_success` object (optional, same keys as tools_ran)
 - [ ] Add missing thresholds:
-  - `max_critical_vulns`
-  - `max_high_vulns`
-  - `max_semgrep_findings`
-  - `max_checkstyle_errors`
-  - `max_spotbugs_bugs`
-  - `max_ruff_errors`
-  - `max_black_issues`
-  - `max_isort_issues`
+ - `max_critical_vulns`
+ - `max_high_vulns`
+ - `max_semgrep_findings`
+ - `max_checkstyle_errors`
+ - `max_spotbugs_bugs`
+ - `max_ruff_errors`
+ - `max_black_issues`
+ - `max_isort_issues`
 
 ### Workflow Updates (java-ci.yml, python-ci.yml)
 
@@ -812,16 +812,16 @@ Based on deep analysis, here's the complete pre-requisite checklist:
 **Options**:
 
 1. **Keep build tool row**: Add `maven`/`gradle` to JAVA_SUMMARY_MAP
-   - Pro: Shows build status in tool table
-   - Con: Build isn't really a "quality tool", it's infrastructure
+ - Pro: Shows build status in tool table
+ - Con: Build isn't really a "quality tool", it's infrastructure
 
 2. **Remove build tool row from Tools Enabled**: Report build status separately
-   - Pro: Cleaner separation of concerns
-   - Con: Requires summary restructure
+ - Pro: Cleaner separation of concerns
+ - Con: Requires summary restructure
 
 3. **Add to report.json as separate field**: `build_tool: "maven"` + `build_success: true`
-   - Pro: Explicit tracking without conflating with quality tools
-   - Con: Schema change needed
+ - Pro: Explicit tracking without conflating with quality tools
+ - Con: Schema change needed
 
 **Recommendation**: Option 3 - keep build separate from quality tools.
 
@@ -848,13 +848,13 @@ This section provides concrete solutions for all identified gaps.
 
 ## Aggregate Tools Summary
 
-| Category | Tool            | Repos Configured | Repos Ran | Repos Passed | Repos Failed |
+| Category | Tool | Repos Configured | Repos Ran | Repos Passed | Repos Failed |
 |----------|-----------------|------------------|-----------|--------------|--------------|
-| Testing  | JaCoCo Coverage | 5                | 5         | 4            | 1            |
-| Testing  | PITest          | 3                | 2         | 2            | 0            |
-| Linting  | Checkstyle      | 5                | 5         | 3            | 2            |
-| Security | OWASP           | 4                | 4         | 4            | 0            |
-| Security | Semgrep         | 2                | 0         | -            | -            |
+| Testing | JaCoCo Coverage | 5 | 5 | 4 | 1 |
+| Testing | PITest | 3 | 2 | 2 | 0 |
+| Linting | Checkstyle | 5 | 5 | 3 | 2 |
+| Security | OWASP | 4 | 4 | 4 | 0 |
+| Security | Semgrep | 2 | 0 | - | - |
 
 
 ## Per-Repo Summary (existing format, keep)
@@ -875,46 +875,46 @@ This section provides concrete solutions for all identified gaps.
 ```yaml
 # In the Generate Report step, add:
 "tools_configured": {
-  "jacoco": ${{ inputs.run_jacoco }},
-  "checkstyle": ${{ inputs.run_checkstyle }},
-  "spotbugs": ${{ inputs.run_spotbugs }},
-  "pmd": ${{ inputs.run_pmd }},
-  "owasp": ${{ inputs.run_owasp }},
-  "pitest": ${{ inputs.run_pitest }},
-  "jqwik": ${{ inputs.run_jqwik }},
-  "semgrep": ${{ inputs.run_semgrep }},
-  "trivy": ${{ inputs.run_trivy }},
-  "codeql": ${{ inputs.run_codeql }},
-  "docker": ${{ inputs.run_docker }}
+ "jacoco": ${{ inputs.run_jacoco }},
+ "checkstyle": ${{ inputs.run_checkstyle }},
+ "spotbugs": ${{ inputs.run_spotbugs }},
+ "pmd": ${{ inputs.run_pmd }},
+ "owasp": ${{ inputs.run_owasp }},
+ "pitest": ${{ inputs.run_pitest }},
+ "jqwik": ${{ inputs.run_jqwik }},
+ "semgrep": ${{ inputs.run_semgrep }},
+ "trivy": ${{ inputs.run_trivy }},
+ "codeql": ${{ inputs.run_codeql }},
+ "docker": ${{ inputs.run_docker }}
 },
 "tools_success": {
-  "jacoco": ${{ needs.build-test.outputs.jacoco_success == 'true' }},
-  "checkstyle": ${{ needs.build-test.outputs.checkstyle_success == 'true' }},
-  ...
+ "jacoco": ${{ needs.build-test.outputs.jacoco_success == 'true' }},
+ "checkstyle": ${{ needs.build-test.outputs.checkstyle_success == 'true' }},
+ ...
 }
 ```
 
 **python-ci.yml report job addition**:
 ```yaml
 "tools_configured": {
-  "pytest": ${{ inputs.run_pytest }},
-  "ruff": ${{ inputs.run_ruff }},
-  "bandit": ${{ inputs.run_bandit }},
-  "pip_audit": ${{ inputs.run_pip_audit }},
-  "mypy": ${{ inputs.run_mypy }},
-  "black": ${{ inputs.run_black }},
-  "isort": ${{ inputs.run_isort }},
-  "mutmut": ${{ inputs.run_mutmut }},
-  "hypothesis": ${{ inputs.run_hypothesis }},
-  "semgrep": ${{ inputs.run_semgrep }},
-  "trivy": ${{ inputs.run_trivy }},
-  "codeql": ${{ inputs.run_codeql }},
-  "docker": ${{ inputs.run_docker }}
+ "pytest": ${{ inputs.run_pytest }},
+ "ruff": ${{ inputs.run_ruff }},
+ "bandit": ${{ inputs.run_bandit }},
+ "pip_audit": ${{ inputs.run_pip_audit }},
+ "mypy": ${{ inputs.run_mypy }},
+ "black": ${{ inputs.run_black }},
+ "isort": ${{ inputs.run_isort }},
+ "mutmut": ${{ inputs.run_mutmut }},
+ "hypothesis": ${{ inputs.run_hypothesis }},
+ "semgrep": ${{ inputs.run_semgrep }},
+ "trivy": ${{ inputs.run_trivy }},
+ "codeql": ${{ inputs.run_codeql }},
+ "docker": ${{ inputs.run_docker }}
 },
 "tools_success": {
-  "pytest": ${{ needs.test.outputs.status == 'success' }},
-  "ruff": ${{ needs.lint.outputs.ruff_success == 'true' }},
-  ...
+ "pytest": ${{ needs.test.outputs.status == 'success' }},
+ "ruff": ${{ needs.lint.outputs.ruff_success == 'true' }},
+ ...
 }
 ```
 
@@ -923,58 +923,58 @@ This section provides concrete solutions for all identified gaps.
 **Add to JAVA_SUMMARY_MAP** (line ~27):
 ```python
 JAVA_SUMMARY_MAP = {
-    "JaCoCo Coverage": "jacoco",
-    "PITest": "pitest",
-    "Checkstyle": "checkstyle",
-    "PMD": "pmd",
-    "SpotBugs": "spotbugs",
-    "OWASP Dependency-Check": "owasp",
-    "Semgrep": "semgrep",
-    "Trivy": "trivy",
-    # ADD THESE:
-    "jqwik": "jqwik",
-    "CodeQL": "codeql",
-    "Docker": "docker",
+ "JaCoCo Coverage": "jacoco",
+ "PITest": "pitest",
+ "Checkstyle": "checkstyle",
+ "PMD": "pmd",
+ "SpotBugs": "spotbugs",
+ "OWASP Dependency-Check": "owasp",
+ "Semgrep": "semgrep",
+ "Trivy": "trivy",
+ # ADD THESE:
+ "jqwik": "jqwik",
+ "CodeQL": "codeql",
+ "Docker": "docker",
 }
 ```
 
 **Add to PYTHON_SUMMARY_MAP** (line ~40):
 ```python
 PYTHON_SUMMARY_MAP = {
-    "pytest": "pytest",
-    "mutmut": "mutmut",
-    "Ruff": "ruff",
-    "Black": "black",
-    "isort": "isort",
-    "mypy": "mypy",
-    "Bandit": "bandit",
-    "pip-audit": "pip_audit",
-    "Semgrep": "semgrep",
-    "Trivy": "trivy",
-    # ADD THESE:
-    "Hypothesis": "hypothesis",
-    "CodeQL": "codeql",
-    "Docker": "docker",
+ "pytest": "pytest",
+ "mutmut": "mutmut",
+ "Ruff": "ruff",
+ "Black": "black",
+ "isort": "isort",
+ "mypy": "mypy",
+ "Bandit": "bandit",
+ "pip-audit": "pip_audit",
+ "Semgrep": "semgrep",
+ "Trivy": "trivy",
+ # ADD THESE:
+ "Hypothesis": "hypothesis",
+ "CodeQL": "codeql",
+ "Docker": "docker",
 }
 ```
 
 **Add to JAVA_ARTIFACTS** (line ~51):
 ```python
 JAVA_ARTIFACTS = {
-    # existing...
-    "jqwik": [],  # jqwik doesn't produce file artifacts, runs inline
-    "codeql": [],  # CodeQL uploads to Security tab
-    "docker": [],  # Docker produces images, not files
+ # existing...
+ "jqwik": [], # jqwik doesn't produce file artifacts, runs inline
+ "codeql": [], # CodeQL uploads to Security tab
+ "docker": [], # Docker produces images, not files
 }
 ```
 
 **Add to PYTHON_ARTIFACTS** (line ~65):
 ```python
 PYTHON_ARTIFACTS = {
-    # existing...
-    # hypothesis already present at line 62!
-    "codeql": [],
-    "docker": [],
+ # existing...
+ # hypothesis already present at line 62!
+ "codeql": [],
+ "docker": [],
 }
 ```
 
@@ -989,9 +989,9 @@ tools_success = report.get("tools_success", {})
 **Add to repo_detail** (after line 159):
 ```python
 if tools_configured:
-    repo_detail["tools_configured"] = tools_configured
+ repo_detail["tools_configured"] = tools_configured
 if tools_success:
-    repo_detail["tools_success"] = tools_success
+ repo_detail["tools_success"] = tools_success
 ```
 
 **Add aggregate stats to summary**:
@@ -999,17 +999,17 @@ if tools_success:
 # Count tools across all repos
 tool_stats = {}
 for report in reports:
-    for tool, configured in report.get("tools_configured", {}).items():
-        if tool not in tool_stats:
-            tool_stats[tool] = {"configured": 0, "ran": 0, "passed": 0, "failed": 0}
-        if configured:
-            tool_stats[tool]["configured"] += 1
-        if report.get("tools_ran", {}).get(tool):
-            tool_stats[tool]["ran"] += 1
-        if report.get("tools_success", {}).get(tool):
-            tool_stats[tool]["passed"] += 1
-        elif report.get("tools_ran", {}).get(tool):
-            tool_stats[tool]["failed"] += 1
+ for tool, configured in report.get("tools_configured", {}).items():
+ if tool not in tool_stats:
+ tool_stats[tool] = {"configured": 0, "ran": 0, "passed": 0, "failed": 0}
+ if configured:
+ tool_stats[tool]["configured"] += 1
+ if report.get("tools_ran", {}).get(tool):
+ tool_stats[tool]["ran"] += 1
+ if report.get("tools_success", {}).get(tool):
+ tool_stats[tool]["passed"] += 1
+ elif report.get("tools_ran", {}).get(tool):
+ tool_stats[tool]["failed"] += 1
 
 summary["tool_stats"] = tool_stats
 ```
@@ -1031,45 +1031,45 @@ run_status["tools_success"] = report_data.get("tools_success", {})
 **Update generate_summary_markdown to emit unified format**:
 ```python
 def generate_tool_aggregate_table(results: list[dict]) -> str:
-    """Generate unified Tools Enabled aggregate table."""
-    tool_stats = {}
+ """Generate unified Tools Enabled aggregate table."""
+ tool_stats = {}
 
-    for r in results:
-        for tool, configured in r.get("tools_configured", {}).items():
-            if tool not in tool_stats:
-                tool_stats[tool] = {"configured": 0, "ran": 0, "passed": 0}
-            if configured:
-                tool_stats[tool]["configured"] += 1
-            if r.get("tools_ran", {}).get(tool):
-                tool_stats[tool]["ran"] += 1
-            if r.get("tools_success", {}).get(tool):
-                tool_stats[tool]["passed"] += 1
+ for r in results:
+ for tool, configured in r.get("tools_configured", {}).items():
+ if tool not in tool_stats:
+ tool_stats[tool] = {"configured": 0, "ran": 0, "passed": 0}
+ if configured:
+ tool_stats[tool]["configured"] += 1
+ if r.get("tools_ran", {}).get(tool):
+ tool_stats[tool]["ran"] += 1
+ if r.get("tools_success", {}).get(tool):
+ tool_stats[tool]["passed"] += 1
 
-    lines = [
-        "## Tools Summary (Aggregate)",
-        "",
-        "| Category | Tool | Configured | Ran | Passed |",
-        "|----------|------|------------|-----|--------|",
-    ]
+ lines = [
+ "## Tools Summary (Aggregate)",
+ "",
+ "| Category | Tool | Configured | Ran | Passed |",
+ "|----------|------|------------|-----|--------|",
+ ]
 
-    # Categorize tools
-    categories = {
-        "Testing": ["jacoco", "pytest", "pitest", "mutmut", "hypothesis", "jqwik"],
-        "Linting": ["checkstyle", "spotbugs", "pmd", "ruff", "black", "isort", "mypy"],
-        "Security": ["owasp", "bandit", "pip_audit", "semgrep", "trivy", "codeql"],
-        "Container": ["docker"],
-    }
+ # Categorize tools
+ categories = {
+ "Testing": ["jacoco", "pytest", "pitest", "mutmut", "hypothesis", "jqwik"],
+ "Linting": ["checkstyle", "spotbugs", "pmd", "ruff", "black", "isort", "mypy"],
+ "Security": ["owasp", "bandit", "pip_audit", "semgrep", "trivy", "codeql"],
+ "Container": ["docker"],
+ }
 
-    for category, tools in categories.items():
-        for tool in tools:
-            if tool in tool_stats:
-                stats = tool_stats[tool]
-                lines.append(
-                    f"| {category} | {tool} | {stats['configured']} | "
-                    f"{stats['ran']} | {stats['passed']} |"
-                )
+ for category, tools in categories.items():
+ for tool in tools:
+ if tool in tool_stats:
+ stats = tool_stats[tool]
+ lines.append(
+ f"| {category} | {tool} | {stats['configured']} | "
+ f"{stats['ran']} | {stats['passed']} |"
+ )
 
-    return "\n".join(lines)
+ return "\n".join(lines)
 ```
 
 ### Solution 6: Update Schema
@@ -1077,45 +1077,45 @@ def generate_tool_aggregate_table(results: list[dict]) -> str:
 **Add to schema/ci-report.v2.json**:
 ```json
 {
-  "tools_configured": {
-    "type": "object",
-    "description": "Which tools were configured to run (from inputs)",
-    "additionalProperties": false,
-    "properties": {
-      "pytest": { "type": "boolean" },
-      "ruff": { "type": "boolean" },
-      // ... same keys as tools_ran
-    }
-  },
-  "tools_success": {
-    "type": "object",
-    "description": "Which tools completed successfully",
-    "additionalProperties": false,
-    "properties": {
-      "pytest": { "type": "boolean" },
-      "ruff": { "type": "boolean" },
-      // ... same keys as tools_ran
-    }
-  },
-  "thresholds": {
-    "properties": {
-      // Existing:
-      "coverage_min": { "type": ["number", "null"] },
-      "mutation_score_min": { "type": ["number", "null"] },
-      "owasp_cvss_fail": { "type": ["number", "null"] },
-      "trivy_cvss_fail": { "type": ["number", "null"] },
-      "max_pmd_violations": { "type": ["integer", "null"] },
-      // ADD:
-      "max_critical_vulns": { "type": ["integer", "null"] },
-      "max_high_vulns": { "type": ["integer", "null"] },
-      "max_semgrep_findings": { "type": ["integer", "null"] },
-      "max_checkstyle_errors": { "type": ["integer", "null"] },
-      "max_spotbugs_bugs": { "type": ["integer", "null"] },
-      "max_ruff_errors": { "type": ["integer", "null"] },
-      "max_black_issues": { "type": ["integer", "null"] },
-      "max_isort_issues": { "type": ["integer", "null"] }
-    }
-  }
+ "tools_configured": {
+ "type": "object",
+ "description": "Which tools were configured to run (from inputs)",
+ "additionalProperties": false,
+ "properties": {
+ "pytest": { "type": "boolean" },
+ "ruff": { "type": "boolean" },
+ // ... same keys as tools_ran
+ }
+ },
+ "tools_success": {
+ "type": "object",
+ "description": "Which tools completed successfully",
+ "additionalProperties": false,
+ "properties": {
+ "pytest": { "type": "boolean" },
+ "ruff": { "type": "boolean" },
+ // ... same keys as tools_ran
+ }
+ },
+ "thresholds": {
+ "properties": {
+ // Existing:
+ "coverage_min": { "type": ["number", "null"] },
+ "mutation_score_min": { "type": ["number", "null"] },
+ "owasp_cvss_fail": { "type": ["number", "null"] },
+ "trivy_cvss_fail": { "type": ["number", "null"] },
+ "max_pmd_violations": { "type": ["integer", "null"] },
+ // ADD:
+ "max_critical_vulns": { "type": ["integer", "null"] },
+ "max_high_vulns": { "type": ["integer", "null"] },
+ "max_semgrep_findings": { "type": ["integer", "null"] },
+ "max_checkstyle_errors": { "type": ["integer", "null"] },
+ "max_spotbugs_bugs": { "type": ["integer", "null"] },
+ "max_ruff_errors": { "type": ["integer", "null"] },
+ "max_black_issues": { "type": ["integer", "null"] },
+ "max_isort_issues": { "type": ["integer", "null"] }
+ }
+ }
 }
 ```
 
@@ -1127,79 +1127,79 @@ def generate_tool_aggregate_table(results: list[dict]) -> str:
 **Goal**: Prepare infrastructure without breaking anything.
 
 1. **Update validate_summary.py**
-   - Add jqwik, CodeQL, Docker to JAVA_SUMMARY_MAP
-   - Add Hypothesis, CodeQL, Docker to PYTHON_SUMMARY_MAP
-   - Add empty artifact patterns for codeql, docker
-   - Run tests: `pytest tests/test_aggregate_reports.py -v`
+ - Add jqwik, CodeQL, Docker to JAVA_SUMMARY_MAP
+ - Add Hypothesis, CodeQL, Docker to PYTHON_SUMMARY_MAP
+ - Add empty artifact patterns for codeql, docker
+ - Run tests: `pytest tests/test_aggregate_reports.py -v`
 
 2. **Update schema/ci-report.v2.json**
-   - Add `tools_configured` (optional object)
-   - Add `tools_success` (optional object)
-   - Add missing threshold fields
-   - Run tests: `pytest tests/test_contract_consistency.py -v`
+ - Add `tools_configured` (optional object)
+ - Add `tools_success` (optional object)
+ - Add missing threshold fields
+ - Run tests: `pytest tests/test_contract_consistency.py -v`
 
 3. **Update test fixtures**
-   - Add new fields to test report.json files
-   - Verify all tests pass
+ - Add new fields to test report.json files
+ - Verify all tests pass
 
 ### Phase 1: Emit New Fields
 **Goal**: Workflows start emitting `tools_configured` and `tools_success`.
 
 1. **Update java-ci.yml**
-   - Add `tools_configured` to report.json output
-   - Add `tools_success` to report.json output
-   - Capture step outcomes for each tool
-   - Update Tools Enabled table Success column
+ - Add `tools_configured` to report.json output
+ - Add `tools_success` to report.json output
+ - Capture step outcomes for each tool
+ - Update Tools Enabled table Success column
 
 2. **Update python-ci.yml**
-   - Same as Java
+ - Same as Java
 
 3. **Verify**
-   - Run smoke test repos
-   - Validate report.json has new fields
-   - Run `validate_summary.py --strict`
+ - Run smoke test repos
+ - Validate report.json has new fields
+ - Run `validate_summary.py --strict`
 
 ### Phase 2: Update Aggregation Scripts
 **Goal**: Scripts use new fields for richer reporting.
 
 1. **Update aggregate_reports.py**
-   - Parse `tools_configured` and `tools_success`
-   - Add tool_stats to summary output
-   - Update HTML dashboard with tool aggregate view
+ - Parse `tools_configured` and `tools_success`
+ - Add tool_stats to summary output
+ - Update HTML dashboard with tool aggregate view
 
 2. **Update cihub report aggregate**
-   - Parse new fields
-   - Add `generate_tool_aggregate_table()` function
-   - Include in GITHUB_STEP_SUMMARY
+ - Parse new fields
+ - Add `generate_tool_aggregate_table()` function
+ - Include in GITHUB_STEP_SUMMARY
 
 ### Phase 3: Unify Orchestrator Format
 **Goal**: Orchestrator emits same format as child workflows.
 
 1. **Update hub-orchestrator.yml (CLI aggregate output)**
-   - Add Tools Summary (Aggregate) table
-   - Keep per-repo metrics table (but after Tools Summary)
-   - Use consistent section headers
+ - Add Tools Summary (Aggregate) table
+ - Keep per-repo metrics table (but after Tools Summary)
+ - Use consistent section headers
 
 2. **Update hub-security.yml**
-   - Add Tools Enabled table with security tools
-   - Use same format as reusable workflows
+ - Add Tools Enabled table with security tools
+ - Use same format as reusable workflows
 
 ### Phase 4: Polish & Documentation
 **Goal**: Complete the unification.
 
 1. **Add golden samples**
-   - Save example summaries to `docs/development/summaries/`
-   - Include passing and failing examples
-   - Include Java and Python examples
+ - Save example summaries to `docs/development/summaries/`
+ - Include passing and failing examples
+ - Include Java and Python examples
 
 2. **Update documentation**
-   - `docs/guides/GETTING_STARTED.md`
-   - `docs/reference/CONFIG.md`
-   - `docs/guides/WORKFLOWS.md`
+ - `docs/guides/GETTING_STARTED.md`
+ - `docs/reference/CONFIG.md`
+ - `docs/guides/WORKFLOWS.md`
 
 3. **Add drift detection**
-   - CI check that validates summary format
-   - Fail PR if format drifts from specification
+ - CI check that validates summary format
+ - Fail PR if format drifts from specification
 
 ---
 

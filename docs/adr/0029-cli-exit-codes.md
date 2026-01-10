@@ -1,9 +1,9 @@
 # ADR-0029: CLI Exit Code Registry
 
-**Status**: Accepted  
-**Date:** 2025-12-26  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-26
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -46,8 +46,8 @@ expose the same `exit_code` value in the response envelope.
 ## Alternatives Considered
 
 1. **Keep numeric literals in each command**
-   - Rejected: prone to drift and harder to document.
+ - Rejected: prone to drift and harder to document.
 
 2. **Use only two exit codes (0/1)**
-   - Rejected: loses important signal (usage errors vs user cancel vs internal).
+ - Rejected: loses important signal (usage errors vs user cancel vs internal).
 

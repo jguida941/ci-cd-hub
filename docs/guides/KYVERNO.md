@@ -54,13 +54,13 @@ kubectl get clusterpolicies
 ```yaml
 # Blocks any workflow-* ConfigMap containing pull_request_target
 spec:
-  validationFailureAction: Enforce
-  rules:
-    - name: check-workflow-triggers
-      match:
-        resources:
-          kinds: [ConfigMap]
-          names: ["workflow-*"]
+ validationFailureAction: Enforce
+ rules:
+ - name: check-workflow-triggers
+ match:
+ resources:
+ kinds: [ConfigMap]
+ names: ["workflow-*"]
 ```
 
 ### require-referrers
@@ -131,29 +131,29 @@ Edit placeholders:
 
 ```yaml
 spec:
-  rules:
-    - name: example
-      exclude:
-        any:
-          - resources:
-              namespaces:
-                - kube-system
-                - monitoring
-                - your-exception-namespace
+ rules:
+ - name: example
+ exclude:
+ any:
+ - resources:
+ namespaces:
+ - kube-system
+ - monitoring
+ - your-exception-namespace
 ```
 
 ### Adding Label-Based Exceptions
 
 ```yaml
 spec:
-  rules:
-    - name: example
-      exclude:
-        any:
-          - resources:
-              selector:
-                matchLabels:
-                  skip-policy: "true"
+ rules:
+ - name: example
+ exclude:
+ any:
+ - resources:
+ selector:
+ matchLabels:
+ skip-policy: "true"
 ```
 
 ---
@@ -164,7 +164,7 @@ Use the Kyverno CLI to validate policies locally:
 
 ```bash
 # Install Kyverno CLI
-brew install kyverno  # macOS
+brew install kyverno # macOS
 # Or download from releases
 
 # Validate policy syntax
@@ -192,8 +192,8 @@ The hub includes a validation workflow (`.github/workflows/kyverno-validate.yml`
 
 ```
 Code Push → Hub CI (testing, scanning) → Build Image → Sign with Cosign → Push to Registry
-                                                                              ↓
-                                                         Kyverno verifies signature at deploy time
+ ↓
+ Kyverno verifies signature at deploy time
 ```
 
 ---

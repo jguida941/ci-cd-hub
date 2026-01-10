@@ -1,9 +1,9 @@
 # ADR-0009: Monorepo Support via repo.subdir
 
-**Status**: Accepted  
-**Date:** 2026-12-15  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-30  
+**Status**: Accepted
+**Date:** 2026-12-15
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-30
 
 ## Context
 
@@ -24,10 +24,10 @@ All jobs that run tools must set `defaults.run.working-directory` to scope opera
 
 ```yaml
 jobs:
-  lint:
-    defaults:
-      run:
-        working-directory: ${{ inputs.workdir }}
+ lint:
+ defaults:
+ run:
+ working-directory: ${{ inputs.workdir }}
 ```
 
 **Jobs requiring workdir scoping:**
@@ -45,10 +45,10 @@ CodeQL requires explicit `source-root` to scope analysis:
 
 ```yaml
 - name: Initialize CodeQL
-  uses: github/codeql-action/init@v3
-  with:
-    languages: python
-    source-root: ${{ inputs.workdir }}
+ uses: github/codeql-action/init@v3
+ with:
+ languages: python
+ source-root: ${{ inputs.workdir }}
 ```
 
 Without `source-root`, CodeQL scans the entire checkout (all fixtures instead of just one).
@@ -59,20 +59,20 @@ The `trivy-action` outputs files to **workspace root**, ignoring `working-direct
 
 ```yaml
 - name: Run Trivy Scan
-  uses: aquasecurity/trivy-action@0.28.0
-  with:
-    scan-type: 'fs'
-    scan-ref: ${{ inputs.workdir }}  # Scope scan to workdir
-    format: 'json'
-    output: 'trivy-report.json'      # Outputs to workspace root
+ uses: aquasecurity/trivy-action@0.28.0
+ with:
+ scan-type: 'fs'
+ scan-ref: ${{ inputs.workdir }} # Scope scan to workdir
+ format: 'json'
+ output: 'trivy-report.json' # Outputs to workspace root
 
 - name: Parse Trivy Results
-  run: |
-    # trivy-action outputs to workspace root, not working-directory
-    REPORT="${{ github.workspace }}/trivy-report.json"
-    if [ -f "$REPORT" ]; then
-      CRITICAL=$(jq '...' "$REPORT")
-    fi
+ run: |
+ # trivy-action outputs to workspace root, not working-directory
+ REPORT="${{ github.workspace }}/trivy-report.json"
+ if [ -f "$REPORT" ]; then
+ CRITICAL=$(jq '...' "$REPORT")
+ fi
 ```
 
 **Gotcha**: Without `scan-ref`, Trivy scans entire repo. Without `${{ github.workspace }}` path, parsing fails silently (reports 0 findings).
@@ -83,17 +83,17 @@ When multiple fixture jobs call the same reusable workflow, artifacts collide (4
 
 ```yaml
 jobs:
-  ci-passing:
-    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
-    with:
-      workdir: 'python-passing'
-      artifact_prefix: 'python-passing-'  # Prevents collision
+ ci-passing:
+ uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
+ with:
+ workdir: 'python-passing'
+ artifact_prefix: 'python-passing-' # Prevents collision
 
-  ci-failing:
-    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
-    with:
-      workdir: 'python-failing'
-      artifact_prefix: 'python-failing-'  # Different prefix
+ ci-failing:
+ uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
+ with:
+ workdir: 'python-failing'
+ artifact_prefix: 'python-failing-' # Different prefix
 ```
 
 ### Update History

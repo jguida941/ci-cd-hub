@@ -1,9 +1,9 @@
 # ADR-0015: Workflow Versioning & Release Policy
 
-**Status**: Accepted  
-**Date:** 2025-12-18  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-18
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -102,25 +102,25 @@ git push -f origin v1
 ```yaml
 name: Release
 on:
-  push:
-    tags: ['v*']
+ push:
+ tags: ['v*']
 jobs:
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Validate workflows
-        run: actionlint .github/workflows/*.yml
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          generate_release_notes: true
-      - name: Update floating tag
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          MAJOR=$(echo $VERSION | cut -d. -f1)
-          git tag -f $MAJOR
-          git push -f origin $MAJOR
+ release:
+ runs-on: ubuntu-latest
+ steps:
+ - uses: actions/checkout@v4
+ - name: Validate workflows
+ run: actionlint .github/workflows/*.yml
+ - name: Create Release
+ uses: softprops/action-gh-release@v1
+ with:
+ generate_release_notes: true
+ - name: Update floating tag
+ run: |
+ VERSION=${GITHUB_REF#refs/tags/}
+ MAJOR=$(echo $VERSION | cut -d. -f1)
+ git tag -f $MAJOR
+ git push -f origin $MAJOR
 ```
 
 ## Related ADRs

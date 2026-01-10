@@ -1,4 +1,4 @@
-> **⚠️ SUPERSEDED**: This document has been merged into [GETTING_STARTED.md](GETTING_STARTED.md).
+> **WARNING: SUPERSEDED**: This document has been merged into [GETTING_STARTED.md](GETTING_STARTED.md).
 > See the **Choosing Your Execution Mode** section there.
 > This file is kept for historical reference only.
 
@@ -12,17 +12,17 @@ The CI/CD Hub supports two execution modes. **Central mode is the default and re
 
 ## Quick Comparison
 
-| Aspect                   | Central Mode      | Distributed Mode                     |
+| Aspect | Central Mode | Distributed Mode |
 |--------------------------|-------------------|--------------------------------------|
-| **Default**              | Yes               | No (opt-in)                          |
-| **Workflow**             | `hub-run-all.yml` | `hub-orchestrator.yml`               |
-| **Where CI runs**        | In the hub repo   | In each target repo                  |
-| **Repos need workflows** | No                | Yes                                  |
-| **Permissions needed**   | `contents:read`   | `contents:read` + `actions:write`    |
-| **Tool availability**    | ALL tools         | Reusable workflow tools only         |
-| **Aggregation**          | Immediate         | Requires polling + artifact download |
-| **Complexity**           | Low               | High                                 |
-| **Reliability**          | High              | Medium (more failure modes)          |
+| **Default** | Yes | No (opt-in) |
+| **Workflow** | `hub-run-all.yml` | `hub-orchestrator.yml` |
+| **Where CI runs** | In the hub repo | In each target repo |
+| **Repos need workflows** | No | Yes |
+| **Permissions needed** | `contents:read` | `contents:read` + `actions:write` |
+| **Tool availability** | ALL tools | Reusable workflow tools only |
+| **Aggregation** | Immediate | Requires polling + artifact download |
+| **Complexity** | Low | High |
+| **Reliability** | High | Medium (more failure modes) |
 
 ---
 
@@ -34,31 +34,31 @@ The hub clones each configured repository and runs the CI pipeline directly with
 
 ```
 ┌─────────────────┐
-│   hub-release   │
-│                 │
-│  hub-run-all.yml│──┬── Clone repo-a ──► Run Java CI ──► Upload artifacts
-│                 │  │
-│                 │  ├── Clone repo-b ──► Run Python CI ──► Upload artifacts
-│                 │  │
-│                 │  └── Clone repo-c ──► Run Java CI ──► Upload artifacts
-│                 │
-│  Generate Summary ◄────────────────────────────────────┘
+│ hub-release │
+│ │
+│ hub-run-all.yml│──┬── Clone repo-a ──► Run Java CI ──► Upload artifacts
+│ │ │
+│ │ ├── Clone repo-b ──► Run Python CI ──► Upload artifacts
+│ │ │
+│ │ └── Clone repo-c ──► Run Java CI ──► Upload artifacts
+│ │
+│ Generate Summary ◄────────────────────────────────────┘
 └─────────────────┘
 ```
 
 ### Prerequisites
 
 1. **Hub Configuration:**
-   - `config/repos/<repo>.yaml` for each target repo
-   - Valid `repo.owner`, `repo.name`, `repo.language`
+ - `config/repos/<repo>.yaml` for each target repo
+ - Valid `repo.owner`, `repo.name`, `repo.language`
 
 2. **Permissions:**
-   - `contents: read` on target repos (to clone them)
-   - If repos are private, the `GITHUB_TOKEN` or a PAT must have access
+ - `contents: read` on target repos (to clone them)
+ - If repos are private, the `GITHUB_TOKEN` or a PAT must have access
 
 3. **Target Repos:**
-   - No workflow files required in target repos
-   - Must have standard build structure (pom.xml, build.gradle, requirements.txt, etc.)
+ - No workflow files required in target repos
+ - Must have standard build structure (pom.xml, build.gradle, requirements.txt, etc.)
 
 ### Tools Available
 
@@ -82,18 +82,18 @@ See [TOOLS.md](../reference/TOOLS.md) for the full availability matrix.
 ### Setup Instructions
 
 1. Create a config file for each repo:
-   ```yaml
-   # config/repos/my-app.yaml
-   repo:
-     owner: jguida941
-     name: my-app
-     language: java
-   ```
+ ```yaml
+ # config/repos/my-app.yaml
+ repo:
+ owner: jguida941
+ name: my-app
+ language: java
+ ```
 
 2. Run the workflow:
-   - Manually: Actions → `Hub Run All` → Run workflow
-   - On schedule: Runs nightly at 2 AM UTC
-   - On config changes: Automatic
+ - Manually: Actions → `Hub Run All` → Run workflow
+ - On schedule: Runs nightly at 2 AM UTC
+ - On config changes: Automatic
 
 ### Security Considerations
 
@@ -111,15 +111,15 @@ See [TOOLS.md](../reference/TOOLS.md) for the full availability matrix.
 The hub dispatches `workflow_dispatch` events to each target repo, triggering their CI workflows. The hub then polls for completion and downloads artifacts.
 
 ```
-┌─────────────────┐     workflow_dispatch     ┌─────────────┐
-│   hub-release   │ ────────────────────────► │   repo-a    │
-│                 │                           │  java-ci.yml│
-│  hub-orchestrator│                          └──────┬──────┘
-│     .yml        │                                  │
-│                 │ ◄────── poll status ─────────────┤
-│                 │                                  │
-│                 │ ◄────── download artifacts ──────┘
-│                 │
+┌─────────────────┐ workflow_dispatch ┌─────────────┐
+│ hub-release │ ────────────────────────► │ repo-a │
+│ │ │ java-ci.yml│
+│ hub-orchestrator│ └──────┬──────┘
+│ .yml │ │
+│ │ ◄────── poll status ─────────────┤
+│ │ │
+│ │ ◄────── download artifacts ──────┘
+│ │
 │ Generate Report │
 └─────────────────┘
 ```
@@ -127,34 +127,34 @@ The hub dispatches `workflow_dispatch` events to each target repo, triggering th
 ### Prerequisites
 
 1. **Hub Configuration:**
-   - Same as central mode
-   - `repo.default_branch` must be accurate
+ - Same as central mode
+ - `repo.default_branch` must be accurate
 
 2. **Permissions:**
-   - `contents: read` on target repos
-   - `actions: write` on target repos (to dispatch workflows)
-   - Token must be a PAT with repo scope, or fine-grained token with Actions permissions
+ - `contents: read` on target repos
+ - `actions: write` on target repos (to dispatch workflows)
+ - Token must be a PAT with repo scope, or fine-grained token with Actions permissions
 
 3. **Target Repos:**
-   - Must have a workflow file with `workflow_dispatch` trigger that accepts hub inputs
-   - **Option A (Recommended):** Use `python -m cihub init --repo . --apply` to generate `.ci-hub.yml` + `.github/workflows/hub-ci.yml`
-   - **Option B:** Create your own workflow calling hub's reusable workflows
-   - Workflow must produce `ci-report` artifact for aggregation
-   - Configure workflow filename via `repo.dispatch_workflow` (default when using CLI: `hub-ci.yml`)
+ - Must have a workflow file with `workflow_dispatch` trigger that accepts hub inputs
+ - **Option A (Recommended):** Use `python -m cihub init --repo . --apply` to generate `.ci-hub.yml` + `.github/workflows/hub-ci.yml`
+ - **Option B:** Create your own workflow calling hub's reusable workflows
+ - Workflow must produce `ci-report` artifact for aggregation
+ - Configure workflow filename via `repo.dispatch_workflow` (default when using CLI: `hub-ci.yml`)
 
 4. **Hub Workflow:**
-   - `hub-orchestrator.yml` permissions block:
-     ```yaml
-     permissions:
-       contents: read
-       actions: write
-     ```
+ - `hub-orchestrator.yml` permissions block:
+ ```yaml
+ permissions:
+ contents: read
+ actions: write
+ ```
 
 ### Tools Available
 
 Distributed mode uses the same reusable workflows as central mode and supports the full toolset:
 
-**Java:** JaCoCo, Checkstyle, SpotBugs, PMD, OWASP DC, PITest, jqwik, Semgrep, Trivy, CodeQL  
+**Java:** JaCoCo, Checkstyle, SpotBugs, PMD, OWASP DC, PITest, jqwik, Semgrep, Trivy, CodeQL
 **Python:** pytest, Ruff, Black, isort, mypy, Bandit, pip-audit, mutmut, Hypothesis, Semgrep, Trivy, CodeQL
 
 **Limitation:** Docker inputs are not exposed in the standard caller due to GitHub’s 25‑input limit. Use central mode or a docker‑specific caller when needed.
@@ -171,60 +171,60 @@ Distributed mode uses the same reusable workflows as central mode and supports t
 
 1. **In each target repo**, add a caller workflow:
 
-   **Option A (Recommended):** Generate with the CLI:
-   ```bash
-   cd /path/to/repo
-   python -m cihub init --repo . --apply
-   git add .ci-hub.yml .github/workflows/hub-ci.yml
-   git commit -m "Add hub CI caller"
-   git push
-   ```
+ **Option A (Recommended):** Generate with the CLI:
+ ```bash
+ cd /path/to/repo
+ python -m cihub init --repo . --apply
+ git add .ci-hub.yml .github/workflows/hub-ci.yml
+ git commit -m "Add hub CI caller"
+ git push
+ ```
 
-   **Option B:** Copy the caller template and rename it:
-   ```bash
-   # Java
-   cp templates/repo/hub-java-ci.yml /path/to/repo/.github/workflows/hub-ci.yml
-   # Python
-   cp templates/repo/hub-python-ci.yml /path/to/repo/.github/workflows/hub-ci.yml
-   ```
+ **Option B:** Copy the caller template and rename it:
+ ```bash
+ # Java
+ cp templates/repo/hub-java-ci.yml /path/to/repo/.github/workflows/hub-ci.yml
+ # Python
+ cp templates/repo/hub-python-ci.yml /path/to/repo/.github/workflows/hub-ci.yml
+ ```
 
-   **Option C:** Create your own workflow calling hub's reusable workflows:
-   ```yaml
-   # .github/workflows/hub-ci.yml
-   name: Hub CI
-   on:
-     workflow_dispatch:
-       inputs:
-         # ... (see templates/repo/hub-java-ci.yml or hub-python-ci.yml for full inputs)
+ **Option C:** Create your own workflow calling hub's reusable workflows:
+ ```yaml
+ # .github/workflows/hub-ci.yml
+ name: Hub CI
+ on:
+ workflow_dispatch:
+ inputs:
+ # ... (see templates/repo/hub-java-ci.yml or hub-python-ci.yml for full inputs)
 
-   jobs:
-     ci:
-       uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@v1
-       with:
-         java_version: ${{ inputs.java_version || '21' }}
-         # ...
-       secrets: inherit
-   ```
+ jobs:
+ ci:
+ uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@v1
+ with:
+ java_version: ${{ inputs.java_version || '21' }}
+ # ...
+ secrets: inherit
+ ```
 
 2. **In the hub**, configure the repo:
-   ```yaml
-   # config/repos/my-app.yaml
-   repo:
-     owner: jguida941
-     name: my-app
-     language: java
-     default_branch: main  # IMPORTANT: must be correct
-     dispatch_enabled: true
-     dispatch_workflow: hub-ci.yml
-   ```
+ ```yaml
+ # config/repos/my-app.yaml
+ repo:
+ owner: jguida941
+ name: my-app
+ language: java
+ default_branch: main # IMPORTANT: must be correct
+ dispatch_enabled: true
+ dispatch_workflow: hub-ci.yml
+ ```
 
 3. **Set up permissions:**
-   - Create a PAT with `repo` and `workflow` scopes
-   - Set `HUB_DISPATCH_TOKEN` via `python -m cihub setup-secrets --all` (recommended) or add manually
+ - Create a PAT with `repo` and `workflow` scopes
+ - Set `HUB_DISPATCH_TOKEN` via `python -m cihub setup-secrets --all` (recommended) or add manually
 
 4. **Run the orchestrator:**
-   - Manually: Actions → `Hub Orchestrator` → Run workflow
-   - On schedule or config changes
+ - Manually: Actions → `Hub Orchestrator` → Run workflow
+ - On schedule or config changes
 
 ### Security Considerations
 
@@ -247,26 +247,26 @@ Distributed mode uses the same reusable workflows as central mode and supports t
 
 ```
 Start
-  │
-  ▼
+ │
+ ▼
 Do target repos NEED to run CI in their own environment?
-  │
-  ├─ NO ──► Use CENTRAL MODE (recommended)
-  │
-  ▼ YES
-  │
+ │
+ ├─ NO ──► Use CENTRAL MODE (recommended)
+ │
+ ▼ YES
+ │
 Do you have actions:write on target repos?
-  │
-  ├─ NO ──► Use CENTRAL MODE (can't dispatch)
-  │
-  ▼ YES
-  │
+ │
+ ├─ NO ──► Use CENTRAL MODE (can't dispatch)
+ │
+ ▼ YES
+ │
 Are target repos set up with workflow_dispatch workflows?
-  │
-  ├─ NO ──► Set them up, or use CENTRAL MODE
-  │
-  ▼ YES
-  │
+ │
+ ├─ NO ──► Set them up, or use CENTRAL MODE
+ │
+ ▼ YES
+ │
 Use DISTRIBUTED MODE
 ```
 
@@ -283,9 +283,9 @@ Configure which mode each repo uses in `config/repos/<repo>.yaml` with `repo.use
 
 ```yaml
 repo:
-  owner: your-org
-  name: special-repo
-  use_central_runner: false  # false = distributed, true = central (default)
+ owner: your-org
+ name: special-repo
+ use_central_runner: false # false = distributed, true = central (default)
 ```
 
 > **Note:** Hybrid mode configuration is planned but not yet implemented.

@@ -1,4 +1,4 @@
-> **⚠️ SUPERSEDED**: This document has been merged into [GETTING_STARTED.md](GETTING_STARTED.md).
+> **WARNING: SUPERSEDED**: This document has been merged into [GETTING_STARTED.md](GETTING_STARTED.md).
 > See the **Central Mode** and **Distributed Mode** sections there.
 > This file is kept for historical reference only.
 
@@ -34,10 +34,10 @@ Edit `config/repos/my-repo.yaml` to add your repo details:
 
 ```yaml
 repo:
-  owner: your-github-handle
-  name: your-repo-name
-  language: java  # or python
-  default_branch: main
+ owner: your-github-handle
+ name: your-repo-name
+ language: java # or python
+ default_branch: main
 
 # Profile settings are already included from the template
 # Only change what you need to customize
@@ -80,11 +80,11 @@ Configure hub to dispatch to this repo (if you are not relying on repo-local con
 ```yaml
 # config/repos/my-repo.yaml
 repo:
-  owner: your-github-handle
-  name: your-repo-name
-  language: java
-  dispatch_enabled: true
-  dispatch_workflow: hub-ci.yml
+ owner: your-github-handle
+ name: your-repo-name
+ language: java
+ dispatch_enabled: true
+ dispatch_workflow: hub-ci.yml
 ```
 
 **Benefits:** The generated caller accepts all hub inputs, stays in sync with the hub templates, and produces consistent artifacts for aggregation.
@@ -107,25 +107,25 @@ Create `.github/workflows/ci.yml` in your repository:
 name: CI
 
 on:
-  push:
-    branches: [main, master, develop]
-  pull_request:
-    branches: [main, master]
-  workflow_dispatch:
+ push:
+ branches: [main, master, develop]
+ pull_request:
+ branches: [main, master]
+ workflow_dispatch:
 
 jobs:
-  ci:
-    uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@v1
-    with:
-      java_version: '21'
-      run_jacoco: true
-      run_checkstyle: true
-      run_spotbugs: true
-      run_owasp: true
-      run_pitest: false      # Expensive - enable when needed
-      run_codeql: false      # Expensive - enable when needed
-      coverage_min: 70
-    secrets: inherit
+ ci:
+ uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@v1
+ with:
+ java_version: '21'
+ run_jacoco: true
+ run_checkstyle: true
+ run_spotbugs: true
+ run_owasp: true
+ run_pitest: false # Expensive - enable when needed
+ run_codeql: false # Expensive - enable when needed
+ coverage_min: 70
+ secrets: inherit
 ```
 
 #### Python Projects
@@ -134,25 +134,25 @@ jobs:
 name: CI
 
 on:
-  push:
-    branches: [main, master, develop]
-  pull_request:
-    branches: [main, master]
-  workflow_dispatch:
+ push:
+ branches: [main, master, develop]
+ pull_request:
+ branches: [main, master]
+ workflow_dispatch:
 
 jobs:
-  ci:
-    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
-    with:
-      python_version: '3.12'
-      run_pytest: true
-      run_ruff: true
-      run_bandit: true
-      run_pip_audit: true
-      run_mutmut: false      # Expensive - enable when needed
-      run_codeql: false      # Expensive - enable when needed
-      coverage_min: 70
-    secrets: inherit
+ ci:
+ uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
+ with:
+ python_version: '3.12'
+ run_pytest: true
+ run_ruff: true
+ run_bandit: true
+ run_pip_audit: true
+ run_mutmut: false # Expensive - enable when needed
+ run_codeql: false # Expensive - enable when needed
+ coverage_min: 70
+ secrets: inherit
 ```
 
 ### Step 3: (Optional) Add Local Overrides
@@ -164,13 +164,13 @@ version: "1.0"
 language: java
 
 java:
-  tools:
-    pitest:
-      enabled: false
-    jacoco:
-      min_coverage: 80
-    docker:
-      enabled: true
+ tools:
+ pitest:
+ enabled: false
+ jacoco:
+ min_coverage: 80
+ docker:
+ enabled: true
 ```
 
 ---
@@ -246,15 +246,15 @@ The hub itself runs through `hub-production-ci.yml`, which validates hub infrast
 
 ```yaml
 hub_ci:
-  enabled: true
-  tools:
-    actionlint: true
-    zizmor: true
-    ruff: true
-    # ... all hub CI tools
-  thresholds:
-    coverage_min: 70
-    mutation_score_min: 70
+ enabled: true
+ tools:
+ actionlint: true
+ zizmor: true
+ ruff: true
+ # ... all hub CI tools
+ thresholds:
+ coverage_min: 70
+ mutation_score_min: 70
 ```
 
 See [CONFIG.md](../reference/CONFIG.md#hub-ci-configuration) for the full `hub_ci` reference.

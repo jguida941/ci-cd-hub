@@ -11,10 +11,10 @@ This directory contains YAML configurations for repositories managed by the CI H
 **Threshold Pattern:** Intentionally permissive
 ```yaml
 thresholds:
-  coverage_min: 50        # Low - fixture code is minimal
-  mutation_score_min: 0   # Disabled - not the focus
-  max_critical_vulns: 100 # High - fixtures may have old deps
-  max_high_vulns: 100     # High - not production code
+ coverage_min: 50 # Low - fixture code is minimal
+ mutation_score_min: 0 # Disabled - not the focus
+ max_critical_vulns: 100 # High - fixtures may have old deps
+ max_high_vulns: 100 # High - not production code
 ```
 
 **Why permissive?**
@@ -30,10 +30,10 @@ thresholds:
 **Threshold Pattern:** Strict
 ```yaml
 thresholds:
-  coverage_min: 70         # Production-grade
-  mutation_score_min: 70   # Production-grade
-  max_critical_vulns: 0    # Zero tolerance
-  max_high_vulns: 0        # Zero tolerance
+ coverage_min: 70 # Production-grade
+ mutation_score_min: 70 # Production-grade
+ max_critical_vulns: 0 # Zero tolerance
+ max_high_vulns: 0 # Zero tolerance
 ```
 
 **Why strict?**
@@ -48,10 +48,10 @@ thresholds:
 **Threshold Pattern:** Permissive (like fixtures)
 ```yaml
 thresholds:
-  coverage_min: 50
-  mutation_score_min: 0
-  max_critical_vulns: 100
-  max_high_vulns: 100
+ coverage_min: 50
+ mutation_score_min: 0
+ max_critical_vulns: 100
+ max_high_vulns: 100
 ```
 
 **Why permissive?**
@@ -66,16 +66,16 @@ thresholds:
 For fixtures, many tools have `fail_on_error: false` to prevent false positives:
 ```yaml
 ruff:
-  enabled: true
-  fail_on_error: false  # Report issues but don't fail CI
+ enabled: true
+ fail_on_error: false # Report issues but don't fail CI
 ```
 
 For canaries, tools may be strict but with appropriate thresholds:
 ```yaml
 ruff:
-  enabled: true
-  fail_on_error: true
-  max_errors: 0
+ enabled: true
+ fail_on_error: true
+ max_errors: 0
 ```
 
 ### Heavy Tools

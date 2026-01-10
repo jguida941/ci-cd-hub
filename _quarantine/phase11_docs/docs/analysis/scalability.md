@@ -16,31 +16,31 @@
 ```yaml
 # config/repositories.yaml
 repositories:
-  - name: learn-caesar-cipher
-    owner: jguida941
-    settings:
-      build_timeout: 30m
-      resource_limit: 2GB
-      allowed_egress:
-        - github.com
-        - registry.npmjs.org
-      secret_scope: caesar-cipher
-  - name: vector-space
-    owner: jguida941
-    settings:
-      build_timeout: 45m
-      resource_limit: 4GB
-      allowed_egress:
-        - github.com
-        - pypi.org
-      secret_scope: vector-space
+ - name: learn-caesar-cipher
+ owner: jguida941
+ settings:
+ build_timeout: 30m
+ resource_limit: 2GB
+ allowed_egress:
+ - github.com
+ - registry.npmjs.org
+ secret_scope: caesar-cipher
+ - name: vector-space
+ owner: jguida941
+ settings:
+ build_timeout: 45m
+ resource_limit: 4GB
+ allowed_egress:
+ - github.com
+ - pypi.org
+ secret_scope: vector-space
 ```
 
 ### Implementation in Workflow
 ```yaml
 strategy:
-  matrix:
-    repository: ${{ fromJson(needs.load-repos.outputs.repositories) }}
+ matrix:
+ repository: ${{ fromJson(needs.load-repos.outputs.repositories) }}
 ```
 
 ## 2. Per-Repository Isolation
@@ -48,30 +48,30 @@ strategy:
 ### Secret Scoping
 ```yaml
 - name: Load repo-specific secrets
-  uses: actions/secrets@v2
-  with:
-    scope: ${{ matrix.repository.secret_scope }}
-    vault_path: ci-cd-hub/repos/${{ matrix.repository.name }}
+ uses: actions/secrets@v2
+ with:
+ scope: ${{ matrix.repository.secret_scope }}
+ vault_path: ci-cd-hub/repos/${{ matrix.repository.name }}
 ```
 
 ### Resource Limits
 ```yaml
 - name: Apply resource limits
-  run: |
-    # Set memory limits
-    ulimit -v ${{ matrix.repository.settings.resource_limit }}
-    # Set CPU limits
-    taskset -c 0-${{ matrix.repository.settings.cpu_cores }} $$
+ run: |
+ # Set memory limits
+ ulimit -v ${{ matrix.repository.settings.resource_limit }}
+ # Set CPU limits
+ taskset -c 0-${{ matrix.repository.settings.cpu_cores }} $$
 ```
 
 ### Network Isolation
 ```yaml
 - name: Configure egress for ${{ matrix.repository.name }}
-  run: |
-    # Apply repo-specific egress rules
-    ./scripts/enforce_egress_control.sh \
-      --allowed-hosts "${{ join(matrix.repository.settings.allowed_egress, ',') }}" \
-      --repo "${{ matrix.repository.name }}"
+ run: |
+ # Apply repo-specific egress rules
+ ./scripts/enforce_egress_control.sh \
+ --allowed-hosts "${{ join(matrix.repository.settings.allowed_egress, ',') }}" \
+ --repo "${{ matrix.repository.name }}"
 ```
 
 ## 3. Fair Scheduling & Rate Limiting
@@ -80,19 +80,19 @@ strategy:
 ```python
 # tools/rate_limiter.py
 class RepoRateLimiter:
-    def __init__(self, repo_name, tokens_per_hour=10):
-        self.repo = repo_name
-        self.bucket = TokenBucket(tokens_per_hour)
+ def __init__(self, repo_name, tokens_per_hour=10):
+ self.repo = repo_name
+ self.bucket = TokenBucket(tokens_per_hour)
 
-    def can_run(self):
-        return self.bucket.consume(1)
+ def can_run(self):
+ return self.bucket.consume(1)
 ```
 
 ### Concurrency Control
 ```yaml
 concurrency:
-  group: ci-cd-hub-${{ matrix.repository.name }}
-  max-parallel: ${{ matrix.repository.settings.max_parallel || 2 }}
+ group: ci-cd-hub-${{ matrix.repository.name }}
+ max-parallel: ${{ matrix.repository.settings.max_parallel || 2 }}
 ```
 
 ## 4. Observability Per Repository
@@ -100,12 +100,12 @@ concurrency:
 ### Metrics Collection
 ```yaml
 - name: Record metrics for ${{ matrix.repository.name }}
-  run: |
-    python3 tools/record_metrics.py \
-      --repo "${{ matrix.repository.name }}" \
-      --duration "${{ steps.build.outputs.duration }}" \
-      --status "${{ steps.build.outputs.status }}" \
-      --cost "${{ steps.build.outputs.estimated_cost }}"
+ run: |
+ python3 tools/record_metrics.py \
+ --repo "${{ matrix.repository.name }}" \
+ --duration "${{ steps.build.outputs.duration }}" \
+ --status "${{ steps.build.outputs.status }}" \
+ --cost "${{ steps.build.outputs.estimated_cost }}"
 ```
 
 ### Dashboard Generation
@@ -113,12 +113,12 @@ concurrency:
 -- BigQuery view for per-repo metrics
 CREATE VIEW repo_metrics AS
 SELECT
-  repository_name,
-  DATE(timestamp) as date,
-  AVG(build_duration) as avg_duration,
-  SUM(estimated_cost) as daily_cost,
-  COUNT(*) as build_count,
-  SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failures
+ repository_name,
+ DATE(timestamp) as date,
+ AVG(build_duration) as avg_duration,
+ SUM(estimated_cost) as daily_cost,
+ COUNT(*) as build_count,
+ SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failures
 FROM ci_hub.pipeline_runs
 GROUP BY repository_name, date
 ```
@@ -134,39 +134,39 @@ Since we're staying within GitHub Actions (no self-hosted runners), we need to i
 
 # Use iptables in user namespace (no sudo required)
 unshare --net --map-root-user bash -c '
-  # Create new network namespace
-  ip link add veth0 type veth peer name veth1
+ # Create new network namespace
+ ip link add veth0 type veth peer name veth1
 
-  # Apply egress rules
-  iptables -A OUTPUT -d 10.0.0.0/8 -j REJECT
-  iptables -A OUTPUT -d 192.168.0.0/16 -j REJECT
+ # Apply egress rules
+ iptables -A OUTPUT -d 10.0.0.0/8 -j REJECT
+ iptables -A OUTPUT -d 192.168.0.0/16 -j REJECT
 
-  # Allow only approved destinations
-  for host in $ALLOWED_HOSTS; do
-    ip=$(dig +short $host | head -1)
-    iptables -A OUTPUT -d $ip -j ACCEPT
-  done
+ # Allow only approved destinations
+ for host in $ALLOWED_HOSTS; do
+ ip=$(dig +short $host | head -1)
+ iptables -A OUTPUT -d $ip -j ACCEPT
+ done
 
-  # Default deny
-  iptables -P OUTPUT DROP
+ # Default deny
+ iptables -P OUTPUT DROP
 
-  # Run build in restricted namespace
-  exec "$@"
+ # Run build in restricted namespace
+ exec "$@"
 ' -- make build
 ```
 
 ### GitHub App for Per-Repo Tokens
 ```yaml
 - name: Get repo-specific token
-  id: token
-  uses: tibdex/github-app-token@v2
-  with:
-    app_id: ${{ secrets.CI_HUB_APP_ID }}
-    private_key: ${{ secrets.CI_HUB_APP_KEY }}
-    repository: ${{ matrix.repository.owner }}/${{ matrix.repository.name }}
-    permissions: |
-      contents: read
-      packages: write
+ id: token
+ uses: tibdex/github-app-token@v2
+ with:
+ app_id: ${{ secrets.CI_HUB_APP_ID }}
+ private_key: ${{ secrets.CI_HUB_APP_KEY }}
+ repository: ${{ matrix.repository.owner }}/${{ matrix.repository.name }}
+ permissions: |
+ contents: read
+ packages: write
 ```
 
 ## 6. Implementation Roadmap
@@ -216,15 +216,15 @@ unshare --net --map-root-user bash -c '
 ### Audit Trail
 ```json
 {
-  "repository": "learn-caesar-cipher",
-  "build_id": "12345",
-  "triggered_by": "push",
-  "security_checks": {
-    "secret_scan": "passed",
-    "dependency_scan": "passed",
-    "egress_validation": "passed"
-  },
-  "attestation": "sha256:abc123..."
+ "repository": "learn-caesar-cipher",
+ "build_id": "12345",
+ "triggered_by": "push",
+ "security_checks": {
+ "secret_scan": "passed",
+ "dependency_scan": "passed",
+ "egress_validation": "passed"
+ },
+ "attestation": "sha256:abc123..."
 }
 ```
 
@@ -251,32 +251,32 @@ unshare --net --map-root-user bash -c '
 ```yaml
 # If ArgoCD/Flux is deployed
 - name: Sync to GitOps
-  run: |
-    ./scripts/update_gitops_manifest.sh \
-      --repo "${{ matrix.repository.name }}" \
-      --image "${{ steps.build.outputs.image }}" \
-      --digest "${{ steps.build.outputs.digest }}"
+ run: |
+ ./scripts/update_gitops_manifest.sh \
+ --repo "${{ matrix.repository.name }}" \
+ --image "${{ steps.build.outputs.image }}" \
+ --digest "${{ steps.build.outputs.digest }}"
 ```
 
 ### Service Mesh (Optional)
 ```yaml
 # If Istio/Linkerd is available
 - name: Deploy to mesh
-  run: |
-    ./scripts/deploy_to_mesh.sh \
-      --service "${{ matrix.repository.name }}" \
-      --traffic-policy "canary" \
-      --weight "10"
+ run: |
+ ./scripts/deploy_to_mesh.sh \
+ --service "${{ matrix.repository.name }}" \
+ --traffic-policy "canary" \
+ --weight "10"
 ```
 
 ## Summary
 
 This multi-repository CI/CD hub design provides:
-- ✅ **Dynamic scaling** to hundreds of repositories
-- ✅ **Per-repo isolation** for security
-- ✅ **Fair resource allocation**
-- ✅ **Complete observability**
-- ✅ **GitHub Actions compatible** (no self-hosted runners needed)
-- ✅ **Production-grade security** controls
+- [x] **Dynamic scaling** to hundreds of repositories
+- [x] **Per-repo isolation** for security
+- [x] **Fair resource allocation**
+- [x] **Complete observability**
+- [x] **GitHub Actions compatible** (no self-hosted runners needed)
+- [x] **Production-grade security** controls
 
 The system can start with 2 repos and scale to 100+ without architectural changes.

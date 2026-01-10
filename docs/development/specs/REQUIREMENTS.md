@@ -84,28 +84,28 @@
 ## Non-Functional Targets
 
 ### Performance
-| Metric                         | Target   | Current | Status |
+| Metric | Target | Current | Status |
 |--------------------------------|----------|---------|--------|
-| Single repo CI (no mutation)   | < 15 min | Unknown | [ ]    |
-| Single repo CI (with mutation) | < 30 min | Unknown | [ ]    |
-| Config validation              | < 5 sec  | Unknown | [ ]    |
-| Hub summary generation         | < 30 sec | Unknown | [ ]    |
-| Dashboard page load            | < 3 sec  | Unknown | [ ]    |
+| Single repo CI (no mutation) | < 15 min | Unknown | [ ] |
+| Single repo CI (with mutation) | < 30 min | Unknown | [ ] |
+| Config validation | < 5 sec | Unknown | [ ] |
+| Hub summary generation | < 30 sec | Unknown | [ ] |
+| Dashboard page load | < 3 sec | Unknown | [ ] |
 
 ### Reliability
-| Metric                     | Target | Current | Status |
+| Metric | Target | Current | Status |
 |----------------------------|--------|---------|--------|
-| Config validation accuracy | 100%   | Unknown | [ ]    |
-| Artifact upload success    | 99%+   | Unknown | [ ]    |
-| Dispatch failure detection | 100%   | Unknown | [ ]    |
+| Config validation accuracy | 100% | Unknown | [ ] |
+| Artifact upload success | 99%+ | Unknown | [ ] |
+| Dispatch failure detection | 100% | Unknown | [ ] |
 
 ### Documentation Coverage
-| Metric               | Target | Current | Status |
+| Metric | Target | Current | Status |
 |----------------------|--------|---------|--------|
-| Tools documented     | 100%   | Manual  | [~]    |
-| Toggles documented   | 100%   | Manual  | [~]    |
-| Workflows documented | 100%   | Manual  | [~]    |
-| Templates commented  | 100%   | Manual  | [~]    |
+| Tools documented | 100% | Manual | [~] |
+| Toggles documented | 100% | Manual | [~] |
+| Workflows documented | 100% | Manual | [~] |
+| Templates commented | 100% | Manual | [~] |
 
 ---
 

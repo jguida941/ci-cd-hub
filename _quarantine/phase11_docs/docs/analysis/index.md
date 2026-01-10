@@ -7,11 +7,11 @@ Purpose: navigation hub for deeper analysis docs. Mirrors the current readiness 
 - Multi-repo hub: ~70 % ready; proxy allowlists and per-repo timeouts exist, while per-repo secrets, fair scheduling, and cost/observability remain open.
 
 ## Primary Analysis Docs
-- [Multi-repo architecture deep dive](multi-repo-analysis.md) — gaps/controls for hub-scale use.
-- [Scalability notes](scalability.md) — queueing models, budgets, and scale limits.
-- [Plan](../STATUS.md) — strategic roadmap and phased outcomes.
-- [Start here](../start-here.md) — day-one actions and critical fixes.
-- [Status (SoT)](../status/honest-status.md) — authoritative readiness snapshot.
+- [Multi-repo architecture deep dive](multi-repo-analysis.md) - gaps/controls for hub-scale use.
+- [Scalability notes](scalability.md) - queueing models, budgets, and scale limits.
+- [Plan](../STATUS.md) - strategic roadmap and phased outcomes.
+- [Start here](../start-here.md) - day-one actions and critical fixes.
+- [Status (SoT)](../status/honest-status.md) - authoritative readiness snapshot.
 
 ## Open Analysis Questions
 - Per-repo isolation hardening (secrets, runners, fair scheduling).

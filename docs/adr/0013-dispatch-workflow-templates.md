@@ -31,10 +31,10 @@ Create standardized templates that users copy to target repos:
 
 ```
 templates/
-  java/
-    java-ci-dispatch.yml    # Java dispatch workflow template
-  python/
-    python-ci-dispatch.yml  # Python dispatch workflow template
+ java/
+ java-ci-dispatch.yml # Java dispatch workflow template
+ python/
+ python-ci-dispatch.yml # Python dispatch workflow template
 ```
 
 These templates:
@@ -49,10 +49,10 @@ Add `dispatch_workflow` to the repo config schema:
 
 ```yaml
 repo:
-  owner: jguida941
-  name: my-repo
-  dispatch_enabled: true
-  dispatch_workflow: java-ci-dispatch.yml  # Configurable per repo
+ owner: jguida941
+ name: my-repo
+ dispatch_enabled: true
+ dispatch_workflow: java-ci-dispatch.yml # Configurable per repo
 ```
 
 The orchestrator reads this field instead of hardcoding workflow names. Default values:
@@ -65,9 +65,9 @@ The dispatch workflow is a NEW file, not a modification to existing workflows:
 
 ```
 target-repo/
-  .github/workflows/
-    ci.yml                  # Existing workflow (untouched)
-    java-ci-dispatch.yml    # NEW - only for hub dispatch
+ .github/workflows/
+ ci.yml # Existing workflow (untouched)
+ java-ci-dispatch.yml # NEW - only for hub dispatch
 ```
 
 This ensures:
@@ -113,17 +113,17 @@ This ensures:
 ### User Workflow
 
 1. Copy template to target repo:
-   ```bash
-   cp templates/java/java-ci-dispatch.yml /path/to/repo/.github/workflows/
-   ```
+ ```bash
+ cp templates/java/java-ci-dispatch.yml /path/to/repo/.github/workflows/
+ ```
 
 2. Push to target repo
 
 3. Configure hub (optional - defaults work):
-   ```yaml
-   repo:
-     dispatch_workflow: java-ci-dispatch.yml
-   ```
+ ```yaml
+ repo:
+ dispatch_workflow: java-ci-dispatch.yml
+ ```
 
 4. Run orchestrator - it will dispatch to the new workflow
 
@@ -135,46 +135,46 @@ The dispatch templates generate a comprehensive `report.json` artifact that the 
 
 ```json
 {
-  "repo": "owner/repo-name",
-  "branch": "main",
-  "run_id": "12345678",
-  "language": "java|python",
-  "timestamp": "2025-12-15T14:00:00Z",
-  "results": {
-    // Common quality metrics
-    "coverage": <number|null>,
-    "mutation_score": <number|null>,
+ "repo": "owner/repo-name",
+ "branch": "main",
+ "run_id": "12345678",
+ "language": "java|python",
+ "timestamp": "2025-12-15T14:00:00Z",
+ "results": {
+ // Common quality metrics
+ "coverage": <number|null>,
+ "mutation_score": <number|null>,
 
-    // Java-specific tools
-    "checkstyle_violations": <number|null>,
-    "spotbugs_bugs": <number|null>,
-    "pmd_violations": <number|null>,
-    "owasp_critical": <number|null>,
-    "owasp_high": <number|null>,
-    "owasp_medium": <number|null>,
+ // Java-specific tools
+ "checkstyle_violations": <number|null>,
+ "spotbugs_bugs": <number|null>,
+ "pmd_violations": <number|null>,
+ "owasp_critical": <number|null>,
+ "owasp_high": <number|null>,
+ "owasp_medium": <number|null>,
 
-    // Python-specific tools
-    "tests_passed": <number|null>,
-    "tests_failed": <number|null>,
-    "ruff_errors": <number|null>,
-    "black_issues": <number|null>,
-    "isort_issues": <number|null>,
-    "mypy_errors": <number|null>,
-    "bandit_high": <number|null>,
-    "bandit_medium": <number|null>,
-    "pip_audit_vulns": <number|null>,
+ // Python-specific tools
+ "tests_passed": <number|null>,
+ "tests_failed": <number|null>,
+ "ruff_errors": <number|null>,
+ "black_issues": <number|null>,
+ "isort_issues": <number|null>,
+ "mypy_errors": <number|null>,
+ "bandit_high": <number|null>,
+ "bandit_medium": <number|null>,
+ "pip_audit_vulns": <number|null>,
 
-    // Cross-language security tools
-    "semgrep_findings": <number|null>,
-    "trivy_critical": <number|null>,
-    "trivy_high": <number|null>
-  },
-  "tools_ran": {
-    // Booleans indicating which tools executed
-    "jacoco": true,
-    "checkstyle": false,
-    // ... etc
-  }
+ // Cross-language security tools
+ "semgrep_findings": <number|null>,
+ "trivy_critical": <number|null>,
+ "trivy_high": <number|null>
+ },
+ "tools_ran": {
+ // Booleans indicating which tools executed
+ "jacoco": true,
+ "checkstyle": false,
+ // ... etc
+ }
 }
 ```
 

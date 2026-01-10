@@ -1,9 +1,9 @@
 # ADR-0004: Aggregation and Reporting
 
-**Status**: Accepted  
-**Date:** 2025-12-14  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-14
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -21,40 +21,40 @@ The hub runs CI for multiple repositories. We need a consolidated view of result
 
 ```json
 {
-  "hub_run_id": "12345678",
-  "timestamp": "2025-12-14T02:00:00Z",
-  "triggered_by": "schedule",
-  "total_repos": 3,
-  "dispatched_repos": 3,
-  "missing_dispatch_metadata": 0,
-  "runs": [
-    {
-      "repo": "owner/repo-a",
-      "language": "java",
-      "branch": "main",
-      "workflow": "hub-java-ci.yml",
-      "run_id": "123456",
-      "correlation_id": "12345678-1-repo-a",
-      "status": "completed",
-      "conclusion": "success",
-      "coverage": 85,
-      "mutation_score": 72
-    },
-    {
-      "repo": "owner/repo-b",
-      "language": "python",
-      "branch": "main",
-      "workflow": "hub-python-ci.yml",
-      "run_id": "123457",
-      "correlation_id": "12345678-1-repo-b",
-      "status": "completed",
-      "conclusion": "success",
-      "coverage": 78,
-      "mutation_score": null
-    }
-  ],
-  "coverage_average": 81.5,
-  "mutation_average": 72.0
+ "hub_run_id": "12345678",
+ "timestamp": "2025-12-14T02:00:00Z",
+ "triggered_by": "schedule",
+ "total_repos": 3,
+ "dispatched_repos": 3,
+ "missing_dispatch_metadata": 0,
+ "runs": [
+ {
+ "repo": "owner/repo-a",
+ "language": "java",
+ "branch": "main",
+ "workflow": "hub-java-ci.yml",
+ "run_id": "123456",
+ "correlation_id": "12345678-1-repo-a",
+ "status": "completed",
+ "conclusion": "success",
+ "coverage": 85,
+ "mutation_score": 72
+ },
+ {
+ "repo": "owner/repo-b",
+ "language": "python",
+ "branch": "main",
+ "workflow": "hub-python-ci.yml",
+ "run_id": "123457",
+ "correlation_id": "12345678-1-repo-b",
+ "status": "completed",
+ "conclusion": "success",
+ "coverage": 78,
+ "mutation_score": null
+ }
+ ],
+ "coverage_average": 81.5,
+ "mutation_average": 72.0
 }
 ```
 
@@ -79,16 +79,16 @@ Each entry contains exactly these fields:
 - `run_id` (string or empty): GitHub Actions run ID (empty string if missing)
 - `correlation_id` (string): Hub correlation ID for deterministic matching (format: `{hub_run_id}-{run_attempt}-{config_basename}`)
 - `status` (string): Run status - one of:
-  - `"completed"` - run finished
-  - `"in_progress"`, `"queued"`, `"waiting"`, `"pending"` - run still active
-  - `"missing_run_id"` - no run_id in metadata
-  - `"fetch_failed"` - API error retrieving run
-  - `"timed_out"` - polling exceeded 30 minutes
-  - `"unknown"` - default/fallback
+ - `"completed"` - run finished
+ - `"in_progress"`, `"queued"`, `"waiting"`, `"pending"` - run still active
+ - `"missing_run_id"` - no run_id in metadata
+ - `"fetch_failed"` - API error retrieving run
+ - `"timed_out"` - polling exceeded 30 minutes
+ - `"unknown"` - default/fallback
 - `conclusion` (string): Run conclusion - one of:
-  - `"success"`, `"failure"`, `"cancelled"`, etc. (GitHub API values)
-  - `"unknown"` - default/fallback
-  - `"timed_out"` - if polling timed out
+ - `"success"`, `"failure"`, `"cancelled"`, etc. (GitHub API values)
+ - `"unknown"` - default/fallback
+ - `"timed_out"` - if polling timed out
 - `coverage` (number or null): Coverage percentage from `report.json` `results.coverage`
 - `mutation_score` (number or null): Mutation score from `report.json` `results.mutation_score`
 
@@ -127,18 +127,18 @@ Each entry contains exactly these fields:
 **Current Limitations:**
 
 1. **Vulnerability rollup NOT YET IMPLEMENTED:**
-   - The schema does NOT include vulnerability counts
-   - No `vulnerabilities`, `critical_vulns`, `high_vulns`, or similar fields exist in the output
-   - Config defines `thresholds.max_critical_vulns` and `thresholds.max_high_vulns`, but aggregation does NOT collect these
-   - OWASP Dependency-Check, pip-audit, and Trivy findings are NOT aggregated in `hub-report.json`
-   - Vulnerability data exists in per-repo `report.json` artifacts but is NOT rolled up to hub level
-   - This is a TODO for future work
+ - The schema does NOT include vulnerability counts
+ - No `vulnerabilities`, `critical_vulns`, `high_vulns`, or similar fields exist in the output
+ - Config defines `thresholds.max_critical_vulns` and `thresholds.max_high_vulns`, but aggregation does NOT collect these
+ - OWASP Dependency-Check, pip-audit, and Trivy findings are NOT aggregated in `hub-report.json`
+ - Vulnerability data exists in per-repo `report.json` artifacts but is NOT rolled up to hub level
+ - This is a TODO for future work
 
 2. **Polling implemented but may timeout:**
-   - Aggregation polls each dispatched run for up to 30 minutes (lines 484, 517-532)
-   - Polls every 10-60 seconds with exponential backoff
-   - If run doesn't complete within 30 minutes, `status` set to `"timed_out"`
-   - Successful completed runs have artifacts downloaded and metrics extracted (lines 540-564)
+ - Aggregation polls each dispatched run for up to 30 minutes (lines 484, 517-532)
+ - Polls every 10-60 seconds with exponential backoff
+ - If run doesn't complete within 30 minutes, `status` set to `"timed_out"`
+ - Successful completed runs have artifacts downloaded and metrics extracted (lines 540-564)
 
 ## Implementation References
 

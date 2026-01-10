@@ -57,33 +57,33 @@ Single source of truth for all repo configurations (see `schema/registry.schema.
 
 ```json
 {
-  "$schema": "../schema/registry.schema.json",
-  "schema_version": "cihub-registry-v1",
-  "tiers": {
-    "strict": {
-      "description": "High-quality production code with strict gates",
-      "coverage_min": 90, "mutation_score_min": 90, "max_critical_vulns": 0, "max_high_vulns": 0
-    },
-    "standard": {
-      "description": "Default tier for most repos",
-      "coverage_min": 70, "mutation_score_min": 70, "max_critical_vulns": 0, "max_high_vulns": 0
-    },
-    "relaxed": {
-      "description": "Legacy or experimental code with relaxed gates",
-      "coverage_min": 50, "mutation_score_min": 0, "max_critical_vulns": 5, "max_high_vulns": 5
-    }
-  },
-  "repos": {
-    "canary-python": {
-      "tier": "standard",
-      "description": "Python test fixture repo"
-    },
-    "canary-java": {
-      "tier": "standard",
-      "description": "Java test fixture repo",
-      "overrides": {"mutation_score_min": 50}
-    }
-  }
+ "$schema": "../schema/registry.schema.json",
+ "schema_version": "cihub-registry-v1",
+ "tiers": {
+ "strict": {
+ "description": "High-quality production code with strict gates",
+ "coverage_min": 90, "mutation_score_min": 90, "max_critical_vulns": 0, "max_high_vulns": 0
+ },
+ "standard": {
+ "description": "Default tier for most repos",
+ "coverage_min": 70, "mutation_score_min": 70, "max_critical_vulns": 0, "max_high_vulns": 0
+ },
+ "relaxed": {
+ "description": "Legacy or experimental code with relaxed gates",
+ "coverage_min": 50, "mutation_score_min": 0, "max_critical_vulns": 5, "max_high_vulns": 5
+ }
+ },
+ "repos": {
+ "canary-python": {
+ "tier": "standard",
+ "description": "Python test fixture repo"
+ },
+ "canary-java": {
+ "tier": "standard",
+ "description": "Java test fixture repo",
+ "overrides": {"mutation_score_min": 50}
+ }
+ }
 }
 ```
 
@@ -93,66 +93,66 @@ Structured output from every CI run (see `schema/triage.schema.json` for full sc
 
 ```json
 {
-  "schema_version": "cihub-triage-v1",
-  "generated_at": "2025-12-31T08:00:00Z",
-  "run": {
-    "correlation_id": "abc123-def456",
-    "repo": "jguida941/ci-cd-hub-canary-python",
-    "commit_sha": "abc123",
-    "branch": "main",
-    "run_id": "12345678"
-  },
-  "summary": {
-    "overall_status": "failed",
-    "failure_count": 3,
-    "warning_count": 2,
-    "by_severity": {"blocker": 1, "high": 1, "medium": 1}
-  },
-  "failures": [
-    {
-      "gate": "gitleaks",
-      "category": "secrets",
-      "severity": "blocker",
-      "message": "2 secrets detected",
-      "details": {}
-    },
-    {
-      "gate": "ruff",
-      "category": "lint",
-      "severity": "medium",
-      "message": "12 lint errors",
-      "details": {}
-    }
-  ],
-  "warnings": []
+ "schema_version": "cihub-triage-v1",
+ "generated_at": "2025-12-31T08:00:00Z",
+ "run": {
+ "correlation_id": "abc123-def456",
+ "repo": "jguida941/ci-cd-hub-canary-python",
+ "commit_sha": "abc123",
+ "branch": "main",
+ "run_id": "12345678"
+ },
+ "summary": {
+ "overall_status": "failed",
+ "failure_count": 3,
+ "warning_count": 2,
+ "by_severity": {"blocker": 1, "high": 1, "medium": 1}
+ },
+ "failures": [
+ {
+ "gate": "gitleaks",
+ "category": "secrets",
+ "severity": "blocker",
+ "message": "2 secrets detected",
+ "details": {}
+ },
+ {
+ "gate": "ruff",
+ "category": "lint",
+ "severity": "medium",
+ "message": "12 lint errors",
+ "details": {}
+ }
+ ],
+ "warnings": []
 }
 ```
 
 ### 3. Severity Mapping (Built into CLI)
 
-| Severity | Category      | Examples                        |
+| Severity | Category | Examples |
 |----------|---------------|---------------------------------|
-| 10       | Secrets       | gitleaks, credential exposure   |
-| 9        | Supply Chain  | zizmor HIGH, workflow injection |
-| 8        | Security HIGH | bandit high, pip-audit critical |
-| 7        | Build/Test    | pytest failures, build errors   |
-| 6        | Types         | mypy errors                     |
-| 5        | Coverage      | Below threshold                 |
-| 4        | Mutation      | Below threshold                 |
-| 3        | Lint          | ruff errors                     |
-| 2        | Format        | black, isort issues             |
-| 1        | Docs          | Link check, docs drift          |
-| 0        | Optional      | Missing optional tools          |
+| 10 | Secrets | gitleaks, credential exposure |
+| 9 | Supply Chain | zizmor HIGH, workflow injection |
+| 8 | Security HIGH | bandit high, pip-audit critical |
+| 7 | Build/Test | pytest failures, build errors |
+| 6 | Types | mypy errors |
+| 5 | Coverage | Below threshold |
+| 4 | Mutation | Below threshold |
+| 3 | Lint | ruff errors |
+| 2 | Format | black, isort issues |
+| 1 | Docs | Link check, docs drift |
+| 0 | Optional | Missing optional tools |
 
 ### 4. Standard Report Formats
 
-| Report Type      | Format             | Tools                                        |
+| Report Type | Format | Tools |
 |------------------|--------------------|----------------------------------------------|
-| Static Analysis  | SARIF 2.1.0        | ruff, bandit, semgrep, trivy, CodeQL, zizmor |
-| Mutation Testing | Stryker Schema     | mutmut (via adapter), pitest                 |
-| Test Results     | pytest-json-report | pytest                                       |
-| Coverage         | Cobertura XML      | pytest-cov, jacoco                           |
-| Dependencies     | CycloneDX SBOM     | pip-audit, OWASP                             |
+| Static Analysis | SARIF 2.1.0 | ruff, bandit, semgrep, trivy, CodeQL, zizmor |
+| Mutation Testing | Stryker Schema | mutmut (via adapter), pitest |
+| Test Results | pytest-json-report | pytest |
+| Coverage | Cobertura XML | pytest-cov, jacoco |
+| Dependencies | CycloneDX SBOM | pip-audit, OWASP |
 
 ### 5. LLM Prompt Pack (`.cihub/triage.md`)
 
@@ -194,75 +194,75 @@ isort .
 
 ```bash
 # Registry management
-cihub registry list                    # Show all repos with tiers
-cihub registry show <repo>             # Show repo config + effective settings
-cihub registry set <repo> --tier X     # Update tier
+cihub registry list # Show all repos with tiers
+cihub registry show <repo> # Show repo config + effective settings
+cihub registry set <repo> --tier X # Update tier
 cihub registry set <repo> --coverage X # Override threshold
-cihub registry add <repo> --tier X     # Add new repo
-cihub registry diff                    # Show drift vs repo configs
-cihub registry sync --dry-run          # Preview sync
-cihub registry sync --yes              # Apply to repo configs
+cihub registry add <repo> --tier X # Add new repo
+cihub registry diff # Show drift vs repo configs
+cihub registry sync --dry-run # Preview sync
+cihub registry sync --yes # Apply to repo configs
 
 # Triage - Local mode
-cihub triage                           # Generate triage from local .cihub/report.json
-cihub triage --output-dir ./out        # Custom output directory
-cihub triage --report path/to/report.json  # Custom report path
-cihub triage --json                    # JSON output only
+cihub triage # Generate triage from local .cihub/report.json
+cihub triage --output-dir ./out # Custom output directory
+cihub triage --report path/to/report.json # Custom report path
+cihub triage --json # JSON output only
 
 # Triage - Filtering
-cihub triage --min-severity high       # Only failures >= severity (blocker/high/medium/low)
-cihub triage --category security       # Only failures in category
+cihub triage --min-severity high # Only failures >= severity (blocker/high/medium/low)
+cihub triage --category security # Only failures in category
 
 # Triage - Remote mode (from GitHub workflow runs)
-cihub triage --run <RUN_ID>            # Analyze specific workflow run
-cihub triage --latest                  # Auto-find and triage most recent failed run
-cihub triage --watch                   # Watch for new failures (background daemon)
-cihub triage --watch --interval 60     # Custom polling interval (default: 30s)
-cihub triage --repo owner/repo         # Target different repository
+cihub triage --run <RUN_ID> # Analyze specific workflow run
+cihub triage --latest # Auto-find and triage most recent failed run
+cihub triage --watch # Watch for new failures (background daemon)
+cihub triage --watch --interval 60 # Custom polling interval (default: 30s)
+cihub triage --repo owner/repo # Target different repository
 
 # Triage - Workflow/branch filtering
-cihub triage --latest --workflow hub-ci.yml   # Filter by workflow
-cihub triage --latest --branch main           # Filter by branch
-cihub triage --watch --workflow hub-ci.yml --branch main  # Combined filters
+cihub triage --latest --workflow hub-ci.yml # Filter by workflow
+cihub triage --latest --branch main # Filter by branch
+cihub triage --watch --workflow hub-ci.yml --branch main # Combined filters
 
 # Triage - Multi-report mode (for orchestrator runs)
-cihub triage --run <ID> --aggregate    # Combine multiple reports into one bundle
-cihub triage --run <ID> --per-repo     # Separate bundles with index file
-cihub triage --multi --reports-dir ./  # Process local directory of reports
+cihub triage --run <ID> --aggregate # Combine multiple reports into one bundle
+cihub triage --run <ID> --per-repo # Separate bundles with index file
+cihub triage --multi --reports-dir ./ # Process local directory of reports
 
 # Triage - Historical analysis
-cihub triage --gate-history            # Analyze gate status changes over time
-cihub triage --detect-flaky            # Identify flaky test patterns from history
+cihub triage --gate-history # Analyze gate status changes over time
+cihub triage --detect-flaky # Identify flaky test patterns from history
 
 # Fix command
-cihub fix --safe                       # Auto-fix: ruff, black, isort / spotless
-cihub fix --safe --dry-run             # Preview what would be fixed
-cihub fix --report                     # Run all analyzers, report issues
-cihub fix --report --json              # JSON output for tooling
-cihub fix --report --ai                # Generate AI-consumable report (.cihub/fix-report.md)
+cihub fix --safe # Auto-fix: ruff, black, isort / spotless
+cihub fix --safe --dry-run # Preview what would be fixed
+cihub fix --report # Run all analyzers, report issues
+cihub fix --report --json # JSON output for tooling
+cihub fix --report --ai # Generate AI-consumable report (.cihub/fix-report.md)
 
 # AI/LLM output modes
-cihub docs stale --ai                  # AI-consumable markdown for stale doc analysis
+cihub docs stale --ai # AI-consumable markdown for stale doc analysis
 # Note: triage.md is auto-generated as LLM prompt pack (no flag needed)
 
 # Schema validation
-cihub hub-ci validate-triage           # Validate triage.json against schema
+cihub hub-ci validate-triage # Validate triage.json against schema
 ```
 
 ### 7. Output Paths
 
 ```
 .cihub/
-├── triage.json           # Full structured bundle
-├── triage.md             # LLM prompt pack
-├── priority.json         # Sorted failures only
-├── history.jsonl         # Append-only run log
+├── triage.json # Full structured bundle
+├── triage.md # LLM prompt pack
+├── priority.json # Sorted failures only
+├── history.jsonl # Append-only run log
 └── artifacts/
-    ├── ruff.sarif
-    ├── bandit.json
-    ├── pytest.json
-    ├── mutation.json
-    └── coverage.xml
+ ├── ruff.sarif
+ ├── bandit.json
+ ├── pytest.json
+ ├── mutation.json
+ └── coverage.xml
 ```
 
 ### 8. Validation and Lifecycle
@@ -270,8 +270,8 @@ cihub hub-ci validate-triage           # Validate triage.json against schema
 **Schema validation** ensures the triage bundle stays stable for LLMs and downstream tools:
 
 ```bash
-cihub hub-ci validate-triage                   # Validate .cihub/triage.json
-cihub hub-ci validate-triage --triage-file X   # Validate specific file
+cihub hub-ci validate-triage # Validate .cihub/triage.json
+cihub hub-ci validate-triage --triage-file X # Validate specific file
 ```
 
 Schema files (v1):
@@ -288,10 +288,10 @@ Allow composite pass/fail logic over triage output:
 
 ```json
 {
-  "pass_rules": {
-    "require": "avg_severity < 5 AND no_blockers",
-    "warn": "any_severity >= 3"
-  }
+ "pass_rules": {
+ "require": "avg_severity < 5 AND no_blockers",
+ "warn": "any_severity >= 3"
+ }
 }
 ```
 
@@ -301,11 +301,11 @@ Capture root-cause notes alongside drift events (in `history.jsonl`):
 
 ```json
 {
-  "postmortem": {
-    "why": "threshold raised without backfilling tests",
-    "owner": "jguida941",
-    "link": "docs/adr/00xx-incident.md"
-  }
+ "postmortem": {
+ "why": "threshold raised without backfilling tests",
+ "owner": "jguida941",
+ "link": "docs/adr/00xx-incident.md"
+ }
 }
 ```
 
@@ -315,9 +315,9 @@ GitOps-style drift correction (not yet implemented):
 
 **Current implementation:**
 ```bash
-cihub registry diff                  # Show drift from tier defaults
-cihub registry sync --dry-run        # Preview what would change
-cihub registry sync --yes            # Apply changes
+cihub registry diff # Show drift from tier defaults
+cihub registry sync --dry-run # Preview what would change
+cihub registry sync --yes # Apply changes
 ```
 
 **Planned enhancements:**
@@ -335,12 +335,12 @@ Derived from `history.jsonl` for trend tracking:
 
 ```json
 {
-  "dora": {
-    "deploy_frequency": 3.2,
-    "lead_time_hours": 1.5,
-    "change_failure_rate": 0.08,
-    "mttr_hours": 0.5
-  }
+ "dora": {
+ "deploy_frequency": 3.2,
+ "lead_time_hours": 1.5,
+ "change_failure_rate": 0.08,
+ "mttr_hours": 0.5
+ }
 }
 ```
 

@@ -1,9 +1,9 @@
 # ADR-0027: Hub Production CI Policy
 
-**Status**: Accepted  
-**Date:** 2025-12-25  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-25
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -22,16 +22,16 @@ critical check and enforce security/supply-chain standards.
 ### Policy Requirements
 
 1. **Pinned actions only**
-   - All `uses:` references must be pinned to a commit SHA.
+ - All `uses:` references must be pinned to a commit SHA.
 2. **Explicit pass/fail reporting**
-   - CI summary must show pass/fail (or skipped) for all gates.
+ - CI summary must show pass/fail (or skipped) for all gates.
 3. **Hard gates for critical checks**
-   - Workflow/security checks must fail the run on error.
-   - Dependency review and scorecard must fail when they run and report errors.
+ - Workflow/security checks must fail the run on error.
+ - Dependency review and scorecard must fail when they run and report errors.
 4. **Mutation testing required**
-   - Mutation testing runs on `cihub/` with a minimum threshold.
+ - Mutation testing runs on `cihub/` with a minimum threshold.
 5. **Artifacted reports**
-   - Security and test outputs must be uploaded for review.
+ - Security and test outputs must be uploaded for review.
 
 ## Consequences
 

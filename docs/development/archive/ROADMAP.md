@@ -1,6 +1,6 @@
 # CI/CD Hub Release Roadmap
 
-> ⚠️ **Historical Reference** - Phases 0-3 context only.
+> WARNING: **Historical Reference** - Phases 0-3 context only.
 >
 > **Active Execution Plan:** See `docs/development/MASTER_PLAN.md` for current work.
 >
@@ -150,7 +150,7 @@ A **user-friendly CI/CD template repository** that can run pipelines for **any l
 ```
 1. Repo's .ci-hub.yml (if exists) ← Highest
 2. Hub's config/repos/<repo>.yaml
-3. Hub's config/defaults.yaml      ← Lowest
+3. Hub's config/defaults.yaml ← Lowest
 ```
 
 ---
@@ -244,7 +244,7 @@ A **user-friendly CI/CD template repository** that can run pipelines for **any l
 | Honor `default_branch` per repo | P0 | Branch hardcoded |
 | Add permissions block | P0 | Missing permissions |
 | Fail on dispatch errors | P1 | Failures swallowed |
-| Implement or remove `force_all_tools` | ✅ | Implemented via `repo.force_all_tools` |
+| Implement or remove `force_all_tools` | [x] | Implemented via `repo.force_all_tools` |
 | Add config schema validation | P1 | No validation |
 
 **Deliverables:**
@@ -480,33 +480,33 @@ Security is integrated throughout:
 ```
 hub-release/
 ├── .github/workflows/
-│   ├── hub-run-all.yml
-│   ├── hub-orchestrator.yml
-│   ├── hub-security.yml
-│   ├── java-ci.yml
-│   └── python-ci.yml
+│ ├── hub-run-all.yml
+│ ├── hub-orchestrator.yml
+│ ├── hub-security.yml
+│ ├── java-ci.yml
+│ └── python-ci.yml
 ├── config/
-│   ├── defaults.yaml
-│   ├── repos/
-│   └── optional/
+│ ├── defaults.yaml
+│ ├── repos/
+│ └── optional/
 ├── docs/
-│   ├── ONBOARDING.md
-│   ├── WORKFLOWS.md
-│   ├── CONFIG_REFERENCE.md
-│   ├── TOOLS.md
-│   ├── MODES.md
-│   ├── TROUBLESHOOTING.md
-│   ├── RESEARCH_LOG.md
-│   ├── ROADMAP.md
-│   └── adr/
-│       ├── 0001-central-vs-distributed.md
-│       ├── 0002-config-precedence.md
-│       └── ...
+│ ├── ONBOARDING.md
+│ ├── WORKFLOWS.md
+│ ├── CONFIG_REFERENCE.md
+│ ├── TOOLS.md
+│ ├── MODES.md
+│ ├── TROUBLESHOOTING.md
+│ ├── RESEARCH_LOG.md
+│ ├── ROADMAP.md
+│ └── adr/
+│ ├── 0001-central-vs-distributed.md
+│ ├── 0002-config-precedence.md
+│ └── ...
 ├── templates/
-│   ├── repo/.ci-hub.yml
-│   ├── hub/config/repos/repo-template.yaml
-│   ├── profiles/
-│   └── repo-agent/
+│ ├── repo/.ci-hub.yml
+│ ├── hub/config/repos/repo-template.yaml
+│ ├── profiles/
+│ └── repo-agent/
 ├── scripts/
 ├── schema/
 ├── dashboards/

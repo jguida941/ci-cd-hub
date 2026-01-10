@@ -6,13 +6,13 @@ Vault for credentials, and hands out cache provenance signatures.
 
 ## 1. Networking & Security
 
-| Resource                    | Example Value              | Notes                                             |
+| Resource | Example Value | Notes |
 |-----------------------------|----------------------------|---------------------------------------------------|
-| VPC CIDR                    | `10.42.0.0/16`             | Dedicated CI network                              |
-| Runner subnet               | `10.42.10.0/24`            | Only runners live here                            |
-| Security group ingress      | `0.0.0.0/0 -> tcp/22`      | Optional for maintenance; otherwise disable SSH   |
-| Security group egress       | Allow HTTPS to registry, artifact store, Vault, NTP | Matches `policies/egress-allowlist.md` |
-| IAM role                    | `ci-intel-runner-role`     | Grants SSM + CloudWatch + restricted ECR pull/push |
+| VPC CIDR | `10.42.0.0/16` | Dedicated CI network |
+| Runner subnet | `10.42.10.0/24` | Only runners live here |
+| Security group ingress | `0.0.0.0/0 -> tcp/22` | Optional for maintenance; otherwise disable SSH |
+| Security group egress | Allow HTTPS to registry, artifact store, Vault, NTP | Matches `policies/egress-allowlist.md` |
+| IAM role | `ci-intel-runner-role` | Grants SSM + CloudWatch + restricted ECR pull/push |
 
 ## 2. Vault Roles & Policies
 
@@ -21,11 +21,11 @@ Create a policy that issues short-lived GitHub tokens:
 ```hcl
 # vault/policies/ci-runner.hcl
 path "github/token" {
-  capabilities = ["update"]
+ capabilities = ["update"]
 }
 
 path "kv/data/ci/intel/*" {
-  capabilities = ["read"]
+ capabilities = ["read"]
 }
 ```
 
@@ -33,11 +33,11 @@ Enable the role:
 
 ```bash
 vault write auth/approle/role/ci-intel-runner \
-  secret_id_ttl=15m \
-  secret_id_num_uses=1 \
-  token_ttl=15m \
-  token_max_ttl=30m \
-  policies=ci-runner
+ secret_id_ttl=15m \
+ secret_id_num_uses=1 \
+ token_ttl=15m \
+ token_max_ttl=30m \
+ policies=ci-runner
 ```
 
 Record the `role_id` and ship it to the hosts via AWS SSM Parameter Store:
@@ -61,18 +61,18 @@ Example Packer snippet:
 
 ```json
 {
-  "builders": [
-    {
-      "type": "amazon-ebs",
-      "source_ami": "ami-0c55b159cbfafe1f0",
-      "instance_type": "c5.large",
-      "ssh_username": "ubuntu",
-      "ami_name": "ci-intel-runner-{{timestamp}}"
-    }
-  ],
-  "provisioners": [
-    {"type": "shell", "script": "scripts/install-runner.sh"}
-  ]
+ "builders": [
+ {
+ "type": "amazon-ebs",
+ "source_ami": "ami-0c55b159cbfafe1f0",
+ "instance_type": "c5.large",
+ "ssh_username": "ubuntu",
+ "ami_name": "ci-intel-runner-{{timestamp}}"
+ }
+ ],
+ "provisioners": [
+ {"type": "shell", "script": "scripts/install-runner.sh"}
+ ]
 }
 ```
 
@@ -87,23 +87,23 @@ The `install-runner.sh` script should:
 
 ```hcl
 resource "aws_launch_template" "ci_runner" {
-  name_prefix   = "ci-intel-runner-"
-  image_id      = data.aws_ami.ci_runner.id
-  instance_type = "c5.xlarge"
+ name_prefix = "ci-intel-runner-"
+ image_id = data.aws_ami.ci_runner.id
+ instance_type = "c5.xlarge"
 
-  iam_instance_profile {
-    name = aws_iam_instance_profile.ci_runner.name
-  }
+ iam_instance_profile {
+ name = aws_iam_instance_profile.ci_runner.name
+ }
 
-  network_interfaces {
-    subnet_id       = aws_subnet.runner.id
-    security_groups = [aws_security_group.runner.id]
-  }
+ network_interfaces {
+ subnet_id = aws_subnet.runner.id
+ security_groups = [aws_security_group.runner.id]
+ }
 
-  user_data = base64encode(templatefile("user-data.sh", {
-    github_token_ssm = "/ci-intel/github/registration-token",
-    vault_role_ssm   = "/ci-intel/runner/role-id"
-  }))
+ user_data = base64encode(templatefile("user-data.sh", {
+ github_token_ssm = "/ci-intel/github/registration-token",
+ vault_role_ssm = "/ci-intel/runner/role-id"
+ }))
 }
 ```
 

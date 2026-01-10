@@ -1,9 +1,9 @@
 # ADR-0018: Fixtures & Testing Strategy
 
-**Status**: Accepted  
-**Date:** 2025-12-18  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-30  
+**Status**: Accepted
+**Date:** 2025-12-18
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-30
 
 ## Context
 
@@ -22,14 +22,14 @@ The fixtures live in a separate repository (`ci-cd-hub-fixtures`) and are tested
 ```
 ci-cd-hub-fixtures/
 ├── .github/workflows/
-│   ├── hub-python-ci.yml    # Caller for Python fixtures
-│   └── hub-java-ci.yml      # Caller for Java fixtures
-├── python-passing/          # Clean Python code, all tests pass
-├── python-failing/          # Python with intentional issues
-├── python-with-docker/      # Python + Dockerfile for Trivy/Docker
-├── java-passing/            # Clean Java code, all tests pass
-├── java-failing/            # Java with intentional issues
-└── java-with-docker/        # Java + Dockerfile for Trivy/Docker
+│ ├── hub-python-ci.yml # Caller for Python fixtures
+│ └── hub-java-ci.yml # Caller for Java fixtures
+├── python-passing/ # Clean Python code, all tests pass
+├── python-failing/ # Python with intentional issues
+├── python-with-docker/ # Python + Dockerfile for Trivy/Docker
+├── java-passing/ # Clean Java code, all tests pass
+├── java-failing/ # Java with intentional issues
+└── java-with-docker/ # Java + Dockerfile for Trivy/Docker
 ```
 
 ### 2. Fixture Intent
@@ -55,8 +55,8 @@ Rationale:
 ```bash
 # Trigger fixture run
 gh workflow run hub-python-ci.yml \
-  --repo jguida941/ci-cd-hub-fixtures \
-  --ref test-phase1b-schema
+ --repo jguida941/ci-cd-hub-fixtures \
+ --ref test-phase1b-schema
 ```
 
 ### 4. Caller Configuration
@@ -65,38 +65,38 @@ Each caller workflow tests multiple fixtures with appropriate configurations:
 
 ```yaml
 jobs:
-  ci-passing:
-    name: "Python Passing"
-    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
-    with:
-      workdir: 'python-passing'
-      artifact_prefix: 'python-passing-'
-      # Default thresholds
-    secrets: inherit
+ ci-passing:
+ name: "Python Passing"
+ uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
+ with:
+ workdir: 'python-passing'
+ artifact_prefix: 'python-passing-'
+ # Default thresholds
+ secrets: inherit
 
-  ci-failing:
-    name: "Python Failing"
-    uses: ...
-    with:
-      workdir: 'python-failing'
-      artifact_prefix: 'python-failing-'
-      # Relaxed thresholds to allow findings
-      coverage_min: 0
-      mutation_score_min: 0
-      max_high_vulns: 999
-      max_semgrep_findings: 999
+ ci-failing:
+ name: "Python Failing"
+ uses: ...
+ with:
+ workdir: 'python-failing'
+ artifact_prefix: 'python-failing-'
+ # Relaxed thresholds to allow findings
+ coverage_min: 0
+ mutation_score_min: 0
+ max_high_vulns: 999
+ max_semgrep_findings: 999
 
-  ci-docker:
-    name: "Python Docker"
-    uses: ...
-    with:
-      workdir: 'python-with-docker'
-      artifact_prefix: 'python-docker-'
-      run_trivy: true
-      run_docker: true
-      # Relaxed code quality (focus is Docker/Trivy)
-      max_high_vulns: 10
-      max_semgrep_findings: 10
+ ci-docker:
+ name: "Python Docker"
+ uses: ...
+ with:
+ workdir: 'python-with-docker'
+ artifact_prefix: 'python-docker-'
+ run_trivy: true
+ run_docker: true
+ # Relaxed code quality (focus is Docker/Trivy)
+ max_high_vulns: 10
+ max_semgrep_findings: 10
 ```
 
 ### 5. Docker Fixture Scope
@@ -166,24 +166,24 @@ Process:
 
 **python-passing:**
 ```yaml
-mutation_score_min: 0  # mutmut config detection being fixed
+mutation_score_min: 0 # mutmut config detection being fixed
 # All other thresholds at default (coverage_min: 70, etc.)
 ```
 
 **python-failing:**
 ```yaml
-coverage_min: 0           # Intentional low coverage
-mutation_score_min: 0     # Expected to have low score
-max_critical_vulns: 999   # Allow findings to be captured
-max_high_vulns: 999       # Allow findings to be captured
+coverage_min: 0 # Intentional low coverage
+mutation_score_min: 0 # Expected to have low score
+max_critical_vulns: 999 # Allow findings to be captured
+max_high_vulns: 999 # Allow findings to be captured
 max_semgrep_findings: 999 # Semgrep finds issues - we want to see them, not fail
 ```
 
 **python-with-docker:**
 ```yaml
-max_high_vulns: 10        # Focus is Docker/Trivy, not code quality
-max_semgrep_findings: 10  # Focus is Docker/Trivy, not code quality
-# run_mutmut: false       # Skip mutation testing for speed
+max_high_vulns: 10 # Focus is Docker/Trivy, not code quality
+max_semgrep_findings: 10 # Focus is Docker/Trivy, not code quality
+# run_mutmut: false # Skip mutation testing for speed
 ```
 
 ### Java Fixtures
@@ -196,21 +196,21 @@ max_semgrep_findings: 10  # Focus is Docker/Trivy, not code quality
 
 **java-failing:**
 ```yaml
-coverage_min: 0           # Intentional low coverage
-mutation_score_min: 0     # Expected to have low score
-owasp_cvss_fail: 11       # 11 > max CVSS (10), so never fails - allows capturing
-trivy_cvss_fail: 11       # 11 > max CVSS (10), so never fails - allows capturing
-max_critical_vulns: 999   # Allow findings to be captured
-max_high_vulns: 999       # Allow findings to be captured
+coverage_min: 0 # Intentional low coverage
+mutation_score_min: 0 # Expected to have low score
+owasp_cvss_fail: 11 # 11 > max CVSS (10), so never fails - allows capturing
+trivy_cvss_fail: 11 # 11 > max CVSS (10), so never fails - allows capturing
+max_critical_vulns: 999 # Allow findings to be captured
+max_high_vulns: 999 # Allow findings to be captured
 max_semgrep_findings: 999 # Semgrep finds issues - we want to see them, not fail
-max_pmd_violations: 999   # PMD finds violations - we want to see them, not fail
+max_pmd_violations: 999 # PMD finds violations - we want to see them, not fail
 ```
 
 **java-with-docker:**
 ```yaml
-max_high_vulns: 10        # Focus is Docker/Trivy, not code quality
-max_semgrep_findings: 10  # Focus is Docker/Trivy, not code quality
-# run_pitest: false       # Skip mutation testing for speed
+max_high_vulns: 10 # Focus is Docker/Trivy, not code quality
+max_semgrep_findings: 10 # Focus is Docker/Trivy, not code quality
+# run_pitest: false # Skip mutation testing for speed
 ```
 
 ### Summary Table

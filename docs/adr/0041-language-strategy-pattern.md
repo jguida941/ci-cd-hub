@@ -11,9 +11,9 @@ The CI engine had 46+ conditional branches like:
 
 ```python
 if language == "python":
-    # Python-specific tool running
+ # Python-specific tool running
 elif language == "java":
-    # Java-specific tool running
+ # Java-specific tool running
 ```
 
 This created several problems:
@@ -31,68 +31,68 @@ Extract a **Language Strategy Pattern** that encapsulates all language-specific 
 
 ```
 cihub/core/languages/
-    __init__.py     # Exports get_strategy(), LanguageStrategy
-    base.py         # LanguageStrategy ABC
-    python.py       # PythonStrategy
-    java.py         # JavaStrategy
-    registry.py     # LANGUAGE_STRATEGIES dict + get_strategy()
+ __init__.py # Exports get_strategy(), LanguageStrategy
+ base.py # LanguageStrategy ABC
+ python.py # PythonStrategy
+ java.py # JavaStrategy
+ registry.py # LANGUAGE_STRATEGIES dict + get_strategy()
 ```
 
 ### 2. LanguageStrategy ABC
 
 ```python
 class LanguageStrategy(ABC):
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Language identifier (e.g., 'python', 'java')."""
-        ...
+ @property
+ @abstractmethod
+ def name(self) -> str:
+ """Language identifier (e.g., 'python', 'java')."""
+ ...
 
-    @abstractmethod
-    def get_runners(self) -> dict[str, Callable]:
-        """Return tool_key -> runner function mapping."""
-        ...
+ @abstractmethod
+ def get_runners(self) -> dict[str, Callable]:
+ """Return tool_key -> runner function mapping."""
+ ...
 
-    @abstractmethod
-    def get_default_tools(self) -> list[str]:
-        """Return default enabled tools for this language."""
-        ...
+ @abstractmethod
+ def get_default_tools(self) -> list[str]:
+ """Return default enabled tools for this language."""
+ ...
 
-    @abstractmethod
-    def run_tools(
-        self,
-        config: dict,
-        repo_path: Path,
-        workdir: Path,
-        output_dir: Path,
-        problems: dict,
-        **kwargs,
-    ) -> dict[str, ToolResult]:
-        """Run all enabled tools and return results."""
-        ...
+ @abstractmethod
+ def run_tools(
+ self,
+ config: dict,
+ repo_path: Path,
+ workdir: Path,
+ output_dir: Path,
+ problems: dict,
+ **kwargs,
+ ) -> dict[str, ToolResult]:
+ """Run all enabled tools and return results."""
+ ...
 
-    @abstractmethod
-    def evaluate_gates(
-        self,
-        report: dict,
-        thresholds: dict,
-        tools_configured: dict,
-        config: dict,
-    ) -> list[str]:
-        """Evaluate quality gates and return list of failures."""
-        ...
+ @abstractmethod
+ def evaluate_gates(
+ self,
+ report: dict,
+ thresholds: dict,
+ tools_configured: dict,
+ config: dict,
+ ) -> list[str]:
+ """Evaluate quality gates and return list of failures."""
+ ...
 
-    def detect(self, repo_path: Path) -> float:
-        """Return confidence score (0-1) that this language applies."""
-        return 0.0
+ def detect(self, repo_path: Path) -> float:
+ """Return confidence score (0-1) that this language applies."""
+ return 0.0
 
-    def get_virtual_tools(self) -> list[str]:
-        """Return tools that run via other tools (e.g., hypothesis via pytest)."""
-        return []
+ def get_virtual_tools(self) -> list[str]:
+ """Return tools that run via other tools (e.g., hypothesis via pytest)."""
+ return []
 
-    def get_docker_config(self, config: dict) -> dict:
-        """Extract Docker configuration for this language."""
-        return {}
+ def get_docker_config(self, config: dict) -> dict:
+ """Extract Docker configuration for this language."""
+ return {}
 ```
 
 ### 3. Registry Pattern
@@ -103,16 +103,16 @@ from cihub.core.languages.python import PythonStrategy
 from cihub.core.languages.java import JavaStrategy
 
 LANGUAGE_STRATEGIES: dict[str, LanguageStrategy] = {
-    "python": PythonStrategy(),
-    "java": JavaStrategy(),
+ "python": PythonStrategy(),
+ "java": JavaStrategy(),
 }
 
 def get_strategy(language: str) -> LanguageStrategy:
-    """Get strategy for language, raising ValueError if unknown."""
-    strategy = LANGUAGE_STRATEGIES.get(language)
-    if not strategy:
-        raise ValueError(f"Unsupported language: {language}")
-    return strategy
+ """Get strategy for language, raising ValueError if unknown."""
+ strategy = LANGUAGE_STRATEGIES.get(language)
+ if not strategy:
+ raise ValueError(f"Unsupported language: {language}")
+ return strategy
 ```
 
 ### 4. Usage in CI Engine
@@ -182,21 +182,21 @@ To add Go support:
 ```python
 # cihub/core/languages/go.py
 class GoStrategy(LanguageStrategy):
-    @property
-    def name(self) -> str:
-        return "go"
+ @property
+ def name(self) -> str:
+ return "go"
 
-    def get_runners(self) -> dict[str, Callable]:
-        return {
-            "go_test": run_go_test,
-            "golangci_lint": run_golangci_lint,
-            "govulncheck": run_govulncheck,
-        }
+ def get_runners(self) -> dict[str, Callable]:
+ return {
+ "go_test": run_go_test,
+ "golangci_lint": run_golangci_lint,
+ "govulncheck": run_govulncheck,
+ }
 
-    def get_default_tools(self) -> list[str]:
-        return ["go_test", "golangci_lint"]
+ def get_default_tools(self) -> list[str]:
+ return ["go_test", "golangci_lint"]
 
-    # ... implement remaining methods
+ # ... implement remaining methods
 ```
 
 Then register:

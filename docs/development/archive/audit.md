@@ -28,22 +28,22 @@ ChatGPT exceeded the original 5-step plan. Beyond docs reorganization, it also:
 
 | Step | Status | Notes |
 |------|--------|-------|
-| 1. Create docs files | ✅ DONE | 6 docs + adr/README.md |
-| 2. Fix P0.md typo | ✅ N/A | Typo not found |
-| 3. Update ROADMAP.md | ✅ DONE | Links to docs/development/specs/ |
-| 5. Trim STATUS.md | ✅ DONE | 30 lines, execution checklist |
+| 1. Create docs files | [x] DONE | 6 docs + adr/README.md |
+| 2. Fix P0.md typo | [x] N/A | Typo not found |
+| 3. Update ROADMAP.md | [x] DONE | Links to docs/development/specs/ |
+| 5. Trim STATUS.md | [x] DONE | 30 lines, execution checklist |
 
 ### Bonus Work (Not in Original Plan)
 
 | Item | Status | Value |
 |------|--------|-------|
-| ADR-0001 written | ✅ DONE | First real ADR |
-| CHANGELOG.md created | ✅ DONE | Tracks all changes |
-| pyproject.toml created | ✅ DONE | Package setup |
-| config-validate.yml workflow | ✅ DONE | Schema validation |
-| templates/repo/.ci-hub.yml | ✅ DONE | Copy-paste ready |
-| templates/hub/config/repos/repo-template.yaml | ✅ DONE | Copy-paste ready |
-| hub-orchestrator.yml hardened | ✅ DONE | Real aggregation |
+| ADR-0001 written | [x] DONE | First real ADR |
+| CHANGELOG.md created | [x] DONE | Tracks all changes |
+| pyproject.toml created | [x] DONE | Package setup |
+| config-validate.yml workflow | [x] DONE | Schema validation |
+| templates/repo/.ci-hub.yml | [x] DONE | Copy-paste ready |
+| templates/hub/config/repos/repo-template.yaml | [x] DONE | Copy-paste ready |
+| hub-orchestrator.yml hardened | [x] DONE | Real aggregation |
 
 ---
 
@@ -83,9 +83,9 @@ Strengths:
 Issues Found:
 - Line 104: Indentation error - `validate_config()` call is outside the `if config and "repo" in config:` block
 ```python
-              if config and "repo" in config:
-                  repo_info = config["repo"]
-              validate_config(config, schema, str(config_file))  # BUG: should be inside if block
+ if config and "repo" in config:
+ repo_info = config["repo"]
+ validate_config(config, schema, str(config_file)) # BUG: should be inside if block
 ```
 - Line 443: Bare `except Exception` should use more specific exceptions
 - Line 261: `asBool` helper returns boolean but GitHub Actions inputs need string comparison
@@ -217,7 +217,7 @@ Strengths:
 - Follows MADR format (Context, Decision, Consequences)
 - Clear decision rationale
 - Considers security implications
-- ✅ Status updated to "Accepted"
+- [x] Status updated to "Accepted"
 
 ### docs/adr/0002-0006 (ADRs now complete)
 **Quality: A**
@@ -250,23 +250,23 @@ Not fully reviewed, but:
 
 | Requirement | Actual Status | Notes |
 |-------------|---------------|-------|
-| §1.1 hub-run-all clones repos | ✅ VERIFIED | Lines 115-121 |
-| §1.1 runs Java CI | ✅ VERIFIED | Lines 127-284 |
-| §1.1 runs Python CI | ✅ VERIFIED | Lines 286-455 |
-| §1.1 step summary | ✅ VERIFIED | Lines 541-642 |
-| §1.1 artifacts uploaded | ✅ VERIFIED | Lines 647-663 |
-| §1.2 defaults.yaml exists | ✅ VERIFIED | 206 lines |
-| §1.2 repo overrides work | ✅ VERIFIED | hierarchy implemented |
-| §1.2 schema validation | ✅ VERIFIED | config-validate.yml |
-| §2.1 dispatch passes inputs | ✅ VERIFIED | orchestrator lines 267-293 |
-| §2.1 honors default_branch | ✅ VERIFIED | line 258 |
-| §2.1 permissions block | ✅ VERIFIED | lines 38-40 |
-| §2.1 fails on dispatch error | ⚠️ PARTIAL | warns but continues |
-| §2.2 real hub-report.json | ✅ VERIFIED | aggregation implemented |
-| §2.2 downloads artifacts | ✅ VERIFIED | lines 425-520 |
-| §3.1 docs exist | ✅ VERIFIED | 6 doc files |
-| §3.2 templates exist | ✅ VERIFIED | 2 template files |
-| §4 smoke test | ✅ VERIFIED | run: https://github.com/jguida941/ci-cd-hub/actions/runs/20424144678 |
+| §1.1 hub-run-all clones repos | [x] VERIFIED | Lines 115-121 |
+| §1.1 runs Java CI | [x] VERIFIED | Lines 127-284 |
+| §1.1 runs Python CI | [x] VERIFIED | Lines 286-455 |
+| §1.1 step summary | [x] VERIFIED | Lines 541-642 |
+| §1.1 artifacts uploaded | [x] VERIFIED | Lines 647-663 |
+| §1.2 defaults.yaml exists | [x] VERIFIED | 206 lines |
+| §1.2 repo overrides work | [x] VERIFIED | hierarchy implemented |
+| §1.2 schema validation | [x] VERIFIED | config-validate.yml |
+| §2.1 dispatch passes inputs | [x] VERIFIED | orchestrator lines 267-293 |
+| §2.1 honors default_branch | [x] VERIFIED | line 258 |
+| §2.1 permissions block | [x] VERIFIED | lines 38-40 |
+| §2.1 fails on dispatch error | WARNING: PARTIAL | warns but continues |
+| §2.2 real hub-report.json | [x] VERIFIED | aggregation implemented |
+| §2.2 downloads artifacts | [x] VERIFIED | lines 425-520 |
+| §3.1 docs exist | [x] VERIFIED | 6 doc files |
+| §3.2 templates exist | [x] VERIFIED | 2 template files |
+| §4 smoke test | [x] VERIFIED | run: https://github.com/jguida941/ci-cd-hub/actions/runs/20424144678 |
 
 ---
 
@@ -274,7 +274,7 @@ Not fully reviewed, but:
 
 ### ADR Status Update (2025-12-14)
 
-**✅ ADRs 0001-0006 are now complete and accurate:**
+**[x] ADRs 0001-0006 are now complete and accurate:**
 - **ADR-0001:** Central vs Distributed (accepted) - Documents decision to use central mode
 - **ADR-0002:** Config Precedence (accepted) - Documents merge hierarchy
 - **ADR-0003:** Dispatch/Orchestration (accepted) - Uses github-script, best-effort run-id capture, no poll-to-completion yet
@@ -301,26 +301,26 @@ All ADRs follow MADR format and document key architectural decisions. Status ref
 ### Fixed Issues
 
 The following issues from initial review have been confirmed resolved:
-- ✅ Tool verification: PMD, Black, isort, mutmut, Hypothesis, Semgrep, Trivy ARE properly wired in hub-run-all.yml
-- ✅ ADRs 0002-0006 have been created and properly documented
-- ✅ CHANGELOG.md is tracking all changes
-- ✅ Templates are copy-paste ready with proper comments
-- ✅ Config validation framework is in place with config-validate.yml workflow
+- [x] Tool verification: PMD, Black, isort, mutmut, Hypothesis, Semgrep, Trivy ARE properly wired in hub-run-all.yml
+- [x] ADRs 0002-0006 have been created and properly documented
+- [x] CHANGELOG.md is tracking all changes
+- [x] Templates are copy-paste ready with proper comments
+- [x] Config validation framework is in place with config-validate.yml workflow
 
 ### Critical (Bugs)
 
 1. **hub-orchestrator.yml:104** - Indentation bug causes `validate_config()` to run on empty configs
-   ```python
-   # Current (BUG):
-               if config and "repo" in config:
-                   repo_info = config["repo"]
-               validate_config(config, schema, str(config_file))
+ ```python
+ # Current (BUG):
+ if config and "repo" in config:
+ repo_info = config["repo"]
+ validate_config(config, schema, str(config_file))
 
-   # Should be:
-               if config and "repo" in config:
-                   repo_info = config["repo"]
-                   validate_config(config, schema, str(config_file))
-   ```
+ # Should be:
+ if config and "repo" in config:
+ repo_info = config["repo"]
+ validate_config(config, schema, str(config_file))
+ ```
 
 ### High Priority
 
@@ -382,11 +382,11 @@ The following issues from initial review have been confirmed resolved:
 - Smoke test not yet performed
 
 **Status as of 2025-12-14:**
-- ✅ ADRs 0001-0006 are complete and accurate
-- ✅ All core workflows implemented
-- ✅ Documentation framework established
-- ⚠️ Thin docs still need expansion
-- 🔧 One critical bug in orchestrator.yml:104 needs fixing
+- [x] ADRs 0001-0006 are complete and accurate
+- [x] All core workflows implemented
+- [x] Documentation framework established
+- WARNING: Thin docs still need expansion
+- One critical bug in orchestrator.yml:104 needs fixing
 
 **Recommendation:** Fix the indentation bug, expand thin docs, then run smoke test.
 

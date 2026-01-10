@@ -8,9 +8,9 @@ Simulate chaos experiments defined in a JSON config and emit deterministic JSON 
 
 ```bash
 python tools/run_chaos.py \
-  --config chaos/config.json \
-  --output artifacts/chaos/report.json \
-  --ndjson artifacts/chaos/events.ndjson
+ --config chaos/config.json \
+ --output artifacts/chaos/report.json \
+ --ndjson artifacts/chaos/events.ndjson
 ```
 
 ## Configuration
@@ -19,11 +19,11 @@ Minimal example (`chaos/config.json`):
 
 ```json
 {
-  "run_id": "chaos-dev-001",
-  "experiments": [
-    { "fault": "kill_pod", "target": "worker", "rate": 0.07 },
-    { "fault": "latency_inject", "target": "api", "rate": 0.02 }
-  ]
+ "run_id": "chaos-dev-001",
+ "experiments": [
+ { "fault": "kill_pod", "target": "worker", "rate": 0.07 },
+ { "fault": "latency_inject", "target": "api", "rate": 0.02 }
+ ]
 }
 ```
 

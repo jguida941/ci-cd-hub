@@ -10,11 +10,11 @@ Normalize Grype scan results (and optional VEX evidence) into OPA-friendly JSON 
 
 ```bash
 python tools/build_vuln_input.py \
-  --grype-report policy-inputs/grype-report.json \
-  --output policy-inputs/vulnerabilities.json \
-  --cvss-threshold 7.0 \
-  --epss-threshold 0.75 \
-  --vex artifacts/sbom/app.vex.json
+ --grype-report policy-inputs/grype-report.json \
+ --output policy-inputs/vulnerabilities.json \
+ --cvss-threshold 7.0 \
+ --epss-threshold 0.75 \
+ --vex artifacts/sbom/app.vex.json
 ```
 
 ## Configuration

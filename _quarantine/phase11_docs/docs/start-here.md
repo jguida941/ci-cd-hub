@@ -3,25 +3,25 @@
 _Last updated: 2025-11-02 (v1.0.10 snapshot)_
 
 ## Current Status Summary
-- **Single-repository readiness**: ~85 % — supply-chain controls enforced, proxy-based egress allowlists configured, cross-time determinism monitored post-release. Pending: CI validation of proxy enforcement and gating on determinism failures.
-- **Multi-repository hub**: ~70 % — dynamic registry + per-repo timeouts in place; per-repo secrets, rate limiting, and cost tracking scheduled for Phase 2.
-- **Supply-chain security**: ✔️ Mandatory checksums, signed evidence bundle, Rekor/SLSA proofs captured.
+- **Single-repository readiness**: ~85 % - supply-chain controls enforced, proxy-based egress allowlists configured, cross-time determinism monitored post-release. Pending: CI validation of proxy enforcement and gating on determinism failures.
+- **Multi-repository hub**: ~70 % - dynamic registry + per-repo timeouts in place; per-repo secrets, rate limiting, and cost tracking scheduled for Phase 2.
+- **Supply-chain security**: Mandatory checksums, signed evidence bundle, Rekor/SLSA proofs captured.
 - **Known gaps**: Proxy enforcement unvalidated, no per-repo credentials, cross-time determinism remains advisory, Kyverno policies not deployed to target cluster.
 
 ## Immediate Actions (Week 0–1)
 
 1. **Validate proxy-based egress controls in CI**
-   - Trigger the release workflow (tag build) and confirm an intentional call to a blocked domain fails.
-   - Capture evidence under `artifacts/security/egress-report.json`.
+ - Trigger the release workflow (tag build) and confirm an intentional call to a blocked domain fails.
+ - Capture evidence under `artifacts/security/egress-report.json`.
 
 2. **Promote cross-time determinism to a gate**
-   - Consume the result of `.github/workflows/cross-time-determinism.yml` in branch protection or block the next release until the previous delayed rebuild passes.
+ - Consume the result of `.github/workflows/cross-time-determinism.yml` in branch protection or block the next release until the previous delayed rebuild passes.
 
 3. **Document actual enforcement posture**
-   - Update `HONEST_STATUS.md` after the first successful CI run to include observed egress behaviour and determinism outcome.
+ - Update `HONEST_STATUS.md` after the first successful CI run to include observed egress behaviour and determinism outcome.
 
 4. **Plan per-repo secret delivery**
-   - Select GitHub App or Vault approach (see Phase 2 below) and capture design decisions in GitHub Issues (multi-repo/secret labels) + `docs/backlog.md`.
+ - Select GitHub App or Vault approach (see Phase 2 below) and capture design decisions in GitHub Issues (multi-repo/secret labels) + `docs/backlog.md`.
 
 ## Near-Term Roadmap
 
@@ -68,22 +68,22 @@ See `STATUS.md:1778-1856` for complete 10-week roadmap including:
 ## Documentation Structure
 
 ```
-STATUS.md                            - Strategic architecture & roadmap
+STATUS.md - Strategic architecture & roadmap
 ├── GitHub Issues (security label) - Security audit tracker
 ├── docs/analysis/multi-repo-analysis.md - Multi-tenancy gaps (6 categories)
-├── docs/analysis/index.md         - Quick reference tables
-└── docs/start-here.md             - This file (action plan)
+├── docs/analysis/index.md - Quick reference tables
+└── docs/start-here.md - This file (action plan)
 ```
 
 ## Decision Points
 
 ### Must Have for v1.0 (In Current Plan)
-✅ Already excellent:
+[x] Already excellent:
 - SLSA, Cosign, SBOM/VEX, Rekor
 - Cache integrity with signatures
 - Telemetry schema (100+ fields)
 
-🔴 Critical gaps:
+ Critical gaps:
 - Security vulnerabilities (13 found)
 - Per-repo secrets/isolation
 - Fair scheduling/rate limiting

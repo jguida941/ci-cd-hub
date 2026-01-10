@@ -1,6 +1,6 @@
-> Reference only — the canonical execution plan lives in `docs/development/MASTER_PLAN.md`.
+> Reference only - the canonical execution plan lives in `docs/development/MASTER_PLAN.md`.
 
-**Priority:** ⚪ **#5 - DEFERRED** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
+**Priority:** **#5 - DEFERRED** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
 **Status:** Concept only
 **Depends On:** CLEAN_CODE.md, TEST_REORGANIZATION.md, TYPESCRIPT_CLI_DESIGN.md (all complete)
 
@@ -8,9 +8,9 @@
 
 ## Plan for Simplified Workflow + PyQt6 GUI
 
-  - Wrapper uses embedded defaults and fromJson() when passing values (so booleans/numbers behave correctly).
-  - Update tests/docs so CI doesn’t fail.
-  - Orchestrator dispatches only minimal inputs.
+ - Wrapper uses embedded defaults and fromJson() when passing values (so booleans/numbers behave correctly).
+ - Update tests/docs so CI doesn’t fail.
+ - Orchestrator dispatches only minimal inputs.
 
 Additions to include (automation + zero-code setup):
 - Support two modes in GUI/CLI: Central (no workflow files, hub-run-all) and Distributed (thin caller).
@@ -26,11 +26,11 @@ Explicit scope + constraints (must be in plan):
 - Thin workflows only: caller ~5-10 lines; reusable workflows small and consistent.
 - No inline parsing/scraping in YAML. Parsing, gating, and summaries live in `cihub`.
 - `cihub ci` (or `cihub run <tool>`) reads `.ci-hub.yml`, runs tools, applies thresholds,
-  produces `report.json`, and renders the unified summary.
+ produces `report.json`, and renders the unified summary.
 - No `config_override` workflow inputs (avoid extra config layers). `.ci-hub.yml` is the only source of truth.
 - PyQt6 GUI is a strict wrapper around CLI (QProcess + JSON output). No logic duplication.
 - Full automation: create repo, set secrets, branch protection, write configs/workflows,
-  push changes (default PR flow; direct push only if user opts in).
+ push changes (default PR flow; direct push only if user opts in).
 - Must support monorepos, multi-language repos, custom test commands, self-hosted runners.
 - If capability missing, add a CLI command/script and expose it in GUI (no manual steps).
 
@@ -74,15 +74,15 @@ Dependency strategy:
 - Add optional extras: cihub[ci] for tool runners.
 - Workflows install cihub[ci] (or cihub ci --install-tools).
 - Java uses Maven/Gradle wrappers; Python tools come from extras
-  (e.g., pytest/pytest-cov, ruff, black, isort, mypy, bandit, pip-audit,
-  mutmut, hypothesis).
+ (e.g., pytest/pytest-cov, ruff, black, isort, mypy, bandit, pip-audit,
+ mutmut, hypothesis).
 
 Versioning strategy (dev workflow):
 - Use `v0-dev` tag for development testing. Fixtures point to `@v0-dev`.
 - After each push to `simplify-workflows`, update the tag:
-  ```bash
-  git tag -f v0-dev && git push origin v0-dev --force
-  ```
+ ```bash
+ git tag -f v0-dev && git push origin v0-dev --force
+ ```
 - This avoids updating SHA in every fixture workflow on each commit.
 - For production: use semantic version tags (v1.0.0, v1.1.0, etc.)
 - Release workflow creates immutable tags; `v0-dev` is mutable for dev only.
@@ -103,21 +103,21 @@ Composite actions (optional, post-CLI parity):
 - Goal: reduce reusable workflow YAML to ~50 lines without adding new config layers.
 - Keep composite actions in hub repo only; target repos still use 5–10 line callers.
 - Example action sketch:
-  - `.github/actions/setup-python-env/action.yml`
-    - uses: actions/setup-python@v5
-    - run: python -m pip install --upgrade pip
-    - run: pip install cihub[ci]
-  - `.github/actions/upload-ci-report/action.yml`
-    - uses: actions/upload-artifact@v4
-    - path: .cihub/report.json + .cihub/summary.md
+ - `.github/actions/setup-python-env/action.yml`
+ - uses: actions/setup-python@v5
+ - run: python -m pip install --upgrade pip
+ - run: pip install cihub[ci]
+ - `.github/actions/upload-ci-report/action.yml`
+ - uses: actions/upload-artifact@v4
+ - path: .cihub/report.json + .cihub/summary.md
 - Decision: optional phase; do not implement until CLI outputs are stable.
 
 Makefile integration (CLI-first):
 - Add `cihub preflight --use-makefile` and `cihub ci --preflight` to run make targets first.
 - Config opt-in:
-  python:
-    tools:
-      makefile: { enabled: true, targets: ["lint", "test"] }
+ python:
+ tools:
+ makefile: { enabled: true, targets: ["lint", "test"] }
 - GUI should expose a toggle + target list; defaults remain off.
 
 Execution order (avoid rework):
@@ -126,25 +126,25 @@ Execution order (avoid rework):
 - Port java-ci and hub-run-all only after CLI outputs match.
 - Do not spend time polishing inline YAML parsing that will be removed.
 
-  Phase A (10 steps):
-  - A1: Create simplify-workflows branch
-  - A2: Create hub-ci.yml wrapper (with embedded defaults, fromJson() for types)
-  - A3: Simplify python-ci.yml
-  - A4: Simplify java-ci.yml
-  - A5: Update templates (5-line callers)
-  - A6: Update hub-orchestrator.yml (minimal dispatch)
-  - A7: Remove threshold_overrides_yaml everywhere
-  - A8: Handle hub-run-all.yml (deprecate for now)
-  - A9: Update tests and docs
-  - A10: Test workflows
+ Phase A (10 steps):
+ - A1: Create simplify-workflows branch
+ - A2: Create hub-ci.yml wrapper (with embedded defaults, fromJson() for types)
+ - A3: Simplify python-ci.yml
+ - A4: Simplify java-ci.yml
+ - A5: Update templates (5-line callers)
+ - A6: Update hub-orchestrator.yml (minimal dispatch)
+ - A7: Remove threshold_overrides_yaml everywhere
+ - A8: Handle hub-run-all.yml (deprecate for now)
+ - A9: Update tests and docs
+ - A10: Test workflows
 
-  Files to modify (11 files):
-  - Workflows: hub-ci.yml (create), python-ci.yml, java-ci.yml, hub-orchestrator.yml, hub-run-all.yml
-  - Templates: hub-python-ci.yml, hub-java-ci.yml, .ci-hub.yml
-  - Tests: test_contract_consistency.py, test_config_pipeline.py
-  - Scripts: load_config.py
+ Files to modify (11 files):
+ - Workflows: hub-ci.yml (create), python-ci.yml, java-ci.yml, hub-orchestrator.yml, hub-run-all.yml
+ - Templates: hub-python-ci.yml, hub-java-ci.yml, .ci-hub.yml
+ - Tests: test_contract_consistency.py, test_config_pipeline.py
+ - Scripts: load_config.py
 
-  Ready to execute Phase A on simplify-workflows branch.
+ Ready to execute Phase A on simplify-workflows branch.
 
  Plan: Simplified Workflow + PyQt6 GUI
 
@@ -161,30 +161,30 @@ Execution order (avoid rework):
  on: [push, pull_request, workflow_dispatch]
 
  jobs:
-   ci:
-     uses: jguida941/ci-cd-hub/.github/workflows/hub-ci.yml@main
-     secrets: inherit
+ ci:
+ uses: jguida941/ci-cd-hub/.github/workflows/hub-ci.yml@main
+ secrets: inherit
 
  2. .ci-hub.yml (simple booleans + thresholds):
  version: "1.0"
  repo:
-   owner: myorg
-   name: my-service
-   language: python
+ owner: myorg
+ name: my-service
+ language: python
  language: python
 
  python:
-   version: "3.12"
-   tools:
-     pytest:   { enabled: true, min_coverage: 80 }
-     ruff:     { enabled: true, max_errors: 0 }
-     black:    { enabled: true }
-     mypy:     { enabled: false }
-     mutmut:   { enabled: true, min_mutation_score: 70 }
+ version: "3.12"
+ tools:
+ pytest: { enabled: true, min_coverage: 80 }
+ ruff: { enabled: true, max_errors: 0 }
+ black: { enabled: true }
+ mypy: { enabled: false }
+ mutmut: { enabled: true, min_mutation_score: 70 }
 
  thresholds:
-   max_critical_vulns: 0
-   max_high_vulns: 0
+ max_critical_vulns: 0
+ max_high_vulns: 0
 
  Hub Workflow (NEW: hub-ci.yml wrapper)
 
@@ -201,14 +201,14 @@ Execution order (avoid rework):
  ---
  DECISIONS MADE
 
- | Decision                 | Choice                                                                                          |
+ | Decision | Choice |
  |--------------------------|-------------------------------------------------------------------------------------------------|
- | Source of truth          | .ci-hub.yml is authoritative; hub config (config/repos/*.yaml) used only for repo list/metadata |
- | Shorthand booleans       | Defer to Phase B (requires schema + validation updates)                                         |
- | Caller filename          | hub-ci.yml (keeps orchestrator working)                                                         |
- | Branch                   | simplify-workflows                                                                              |
- | CLI changes              | NOT needed in Phase A - updating templates is enough (CLI "just works")                         |
- | threshold_overrides_yaml | REMOVE everywhere - single source of truth is .ci-hub.yml                                       |
+ | Source of truth | .ci-hub.yml is authoritative; hub config (config/repos/*.yaml) used only for repo list/metadata |
+ | Shorthand booleans | Defer to Phase B (requires schema + validation updates) |
+ | Caller filename | hub-ci.yml (keeps orchestrator working) |
+ | Branch | simplify-workflows |
+ | CLI changes | NOT needed in Phase A - updating templates is enough (CLI "just works") |
+ | threshold_overrides_yaml | REMOVE everywhere - single source of truth is .ci-hub.yml |
 
  ---
  Implementation Plan (Ordered by Priority)
@@ -233,10 +233,10 @@ Execution order (avoid rework):
  - Defaults source: Embed defaults in wrapper (copied from config/defaults.yaml), comment that they must stay in sync. OR require
  .ci-hub.yml to be fully explicit.
  - Type parsing: Outputs are strings in GitHub Actions. Use fromJson() when passing into python-ci.yml/java-ci.yml so booleans and
-  numbers work correctly.
+ numbers work correctly.
  with:
-   run_pytest: ${{ fromJson(needs.config.outputs.run_pytest) }}
-   coverage_min: ${{ fromJson(needs.config.outputs.coverage_min) }}
+ run_pytest: ${{ fromJson(needs.config.outputs.run_pytest) }}
+ coverage_min: ${{ fromJson(needs.config.outputs.coverage_min) }}
 
  Step A3: Simplify python-ci.yml
 
@@ -289,35 +289,35 @@ Execution order (avoid rework):
  - Test with fixture repos
 
  ---
- PHASE B: Shorthand Booleans + Schema Updates ✅ COMPLETE (2026-01-03)
+ PHASE B: Shorthand Booleans + Schema Updates [x] COMPLETE (2026-01-03)
 
  Goal: Support cleaner config syntax with shorthand booleans.
 
- Step B1: Update JSON schema ✅
+ Step B1: Update JSON schema [x]
 
  - Added oneOf pattern to allow both pytest: true AND pytest: { enabled: true }
  - Updated all Python tools (14) and Java tools (12)
  - File: schema/ci-hub-config.schema.json
 
- Step B2: Add config normalization ✅
+ Step B2: Add config normalization [x]
 
  - Added normalize_tool_configs() in cihub/config/normalize.py
  - Normalize each config layer before merges (defaults, hub override, repo local)
  - Apply normalization at load boundaries (ci_config, loader, load_effective_config)
  - Keeps defaults intact when shorthand booleans are used
 
- Step B3: Update validation ✅
+ Step B3: Update validation [x]
 
  - Added shorthand tests in tests/test_config_pipeline.py:
-   - test_normalize_tool_configs_python
-   - test_normalize_tool_configs_java
-   - test_normalize_tool_configs_preserves_other_keys
-   - test_generate_workflow_inputs_with_shorthand_booleans
-   - test_generate_workflow_inputs_java_with_shorthand
-   - test_load_config_with_shorthand_booleans
+ - test_normalize_tool_configs_python
+ - test_normalize_tool_configs_java
+ - test_normalize_tool_configs_preserves_other_keys
+ - test_generate_workflow_inputs_with_shorthand_booleans
+ - test_generate_workflow_inputs_java_with_shorthand
+ - test_load_config_with_shorthand_booleans
  - Added default-preservation test in tests/test_ci_config.py
 
- Step B4: Update documentation ✅
+ Step B4: Update documentation [x]
 
  - Added "Tool Configuration Syntax" section to docs/guides/GETTING_STARTED.md
  - Shows shorthand, full, and mixed examples
@@ -342,62 +342,62 @@ Execution order (avoid rework):
 
  Core Features (everything CLI does, no terminal needed):
  1. Repo Onboarding
-   - Enter repo URL or browse local folder
-   - Auto-detect language (Java/Python)
-   - Configure tools with checkboxes
-   - Set thresholds with spinboxes
-   - Generate all files (.ci-hub.yml, hub-ci.yml)
-   - Push to repo with one button
+ - Enter repo URL or browse local folder
+ - Auto-detect language (Java/Python)
+ - Configure tools with checkboxes
+ - Set thresholds with spinboxes
+ - Generate all files (.ci-hub.yml, hub-ci.yml)
+ - Push to repo with one button
  2. Repo Management
-   - List all configured repos
-   - Edit existing configs
-   - Enable/disable tools
-   - View status
+ - List all configured repos
+ - Edit existing configs
+ - Enable/disable tools
+ - View status
  3. Secret Setup
-   - Set HUB_DISPATCH_TOKEN
-   - Set NVD_API_KEY
-   - GitHub API integration
+ - Set HUB_DISPATCH_TOKEN
+ - Set NVD_API_KEY
+ - GitHub API integration
  4. Java POM Management
-   - Load pom.xml
-   - Show missing plugins
-   - Add plugins with one click
-   - Add dependencies
+ - Load pom.xml
+ - Show missing plugins
+ - Add plugins with one click
+ - Add dependencies
  5. Sync & Push
-   - Sync templates to repos
-   - Push changes
-   - View diffs before pushing
+ - Sync templates to repos
+ - Push changes
+ - View diffs before pushing
  6. Validation
-   - Validate configs
-   - Show errors inline
-   - Fix suggestions
+ - Validate configs
+ - Show errors inline
+ - Fix suggestions
 
  UI Layout:
 ```
  ┌──────────────────────────────────────────────────────────────────┐
- │  CI/CD Hub Manager                                    [_][□][X]  │
+ │ CI/CD Hub Manager [_][□][X] │
  ├──────────────────────────────────────────────────────────────────┤
- │  [Repos] [Onboard] [Secrets] [Settings]                          │
+ │ [Repos] [Onboard] [Secrets] [Settings] │
  ├──────────────────────────────────────────────────────────────────┤
- │  ┌────────────┐ ┌──────────────────────────────────────────────┐ │
- │  │ REPOS      │ │  REPO: myorg/my-service                      │ │
- │  │            │ │  ┌────────────────────────────────────────── │ │
- │  │ ▸ myorg/   │ │  │ Language: [Python ▼]  Version: [3.12]    ││ │
- │  │   my-svc   │ │  │ Branch: [main    ]    Monorepo: [ ]      ││ │
- │  │   other    │ │  └──────────────────────────────────────────┘│ │
- │  │ ▸ fixtures │ │  ┌──────────────────────────────────────────┐│ │
- │  │   java-pass│ │  │ TOOLS                                    ││ │
- │  │   py-pass  │ │  │ [x] pytest  [x] ruff   [x] bandit        ││ │
- │  │            │ │  │ [x] black   [ ] mypy   [ ] mutmut        ││ │
- │  │            │ │  └──────────────────────────────────────────┘│ │
- │  │            │ │  ┌──────────────────────────────────────────┐│ │
- │  │            │ │  │ THRESHOLDS                               ││ │
- │  │            │ │  │ Coverage: [80]%  Mutation: [70]%         ││ │
- │  │            │ │  └──────────────────────────────────────────┘│ │
- │  │            │ │                                              │ │
- │  │ [+ Add]    │ │  [Save] [Push to Repo] [Validate] [Delete]   │ │
- │  └────────────┘ └──────────────────────────────────────────────┘ │
+ │ ┌────────────┐ ┌──────────────────────────────────────────────┐ │
+ │ │ REPOS │ │ REPO: myorg/my-service │ │
+ │ │ │ │ ┌────────────────────────────────────────── │ │
+ │ │ ▸ myorg/ │ │ │ Language: [Python ▼] Version: [3.12] ││ │
+ │ │ my-svc │ │ │ Branch: [main ] Monorepo: [ ] ││ │
+ │ │ other │ │ └──────────────────────────────────────────┘│ │
+ │ │ ▸ fixtures │ │ ┌──────────────────────────────────────────┐│ │
+ │ │ java-pass│ │ │ TOOLS ││ │
+ │ │ py-pass │ │ │ [x] pytest [x] ruff [x] bandit ││ │
+ │ │ │ │ │ [x] black [ ] mypy [ ] mutmut ││ │
+ │ │ │ │ └──────────────────────────────────────────┘│ │
+ │ │ │ │ ┌──────────────────────────────────────────┐│ │
+ │ │ │ │ │ THRESHOLDS ││ │
+ │ │ │ │ │ Coverage: [80]% Mutation: [70]% ││ │
+ │ │ │ │ └──────────────────────────────────────────┘│ │
+ │ │ │ │ │ │
+ │ │ [+ Add] │ │ [Save] [Push to Repo] [Validate] [Delete] │ │
+ │ └────────────┘ └──────────────────────────────────────────────┘ │
  ├──────────────────────────────────────────────────────────────────┤
- │  Status: Ready                                                   │
+ │ Status: Ready │
  └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -411,19 +411,19 @@ Execution order (avoid rework):
  ---
  Files to Modify (Phase A)
 
- | File                                   | Action                                                                        |
+ | File | Action |
  |----------------------------------------|-------------------------------------------------------------------------------|
- | .github/workflows/hub-ci.yml           | CREATE - new wrapper workflow (with embedded defaults, fromJson() for types)  |
- | .github/workflows/python-ci.yml        | SIMPLIFY - remove threshold resolution, remove threshold_overrides_yaml input |
- | .github/workflows/java-ci.yml          | SIMPLIFY - remove threshold resolution, remove threshold_overrides_yaml input |
- | .github/workflows/hub-orchestrator.yml | SIMPLIFY - dispatch only hub_correlation_id, not full input list              |
- | .github/workflows/hub-run-all.yml      | DEPRECATE - add comment, remove threshold_overrides_yaml, or align later      |
- | templates/repo/hub-python-ci.yml       | UPDATE - simple 5-line caller                                                 |
- | templates/repo/hub-java-ci.yml         | UPDATE - simple 5-line caller                                                 |
- | templates/repo/.ci-hub.yml             | UPDATE - new format example                                                   |
- | tests/test_contract_consistency.py     | UPDATE - remove threshold_overrides_yaml from WORKFLOW_ONLY_INPUTS            |
- | tests/test_config_pipeline.py          | UPDATE - adapt to new flow                                                    |
- | scripts/load_config.py                 | UPDATE - remove threshold_overrides_yaml output if present                    |
+ | .github/workflows/hub-ci.yml | CREATE - new wrapper workflow (with embedded defaults, fromJson() for types) |
+ | .github/workflows/python-ci.yml | SIMPLIFY - remove threshold resolution, remove threshold_overrides_yaml input |
+ | .github/workflows/java-ci.yml | SIMPLIFY - remove threshold resolution, remove threshold_overrides_yaml input |
+ | .github/workflows/hub-orchestrator.yml | SIMPLIFY - dispatch only hub_correlation_id, not full input list |
+ | .github/workflows/hub-run-all.yml | DEPRECATE - add comment, remove threshold_overrides_yaml, or align later |
+ | templates/repo/hub-python-ci.yml | UPDATE - simple 5-line caller |
+ | templates/repo/hub-java-ci.yml | UPDATE - simple 5-line caller |
+ | templates/repo/.ci-hub.yml | UPDATE - new format example |
+ | tests/test_contract_consistency.py | UPDATE - remove threshold_overrides_yaml from WORKFLOW_ONLY_INPUTS |
+ | tests/test_config_pipeline.py | UPDATE - adapt to new flow |
+ | scripts/load_config.py | UPDATE - remove threshold_overrides_yaml output if present |
 
  NOT modified in Phase A:
  - cihub/cli.py - CLI uses templates, so updating templates = CLI "just works"
@@ -433,36 +433,36 @@ Execution order (avoid rework):
 
 ```
  workflow-generator/
- ├── main.py                    # Entry point
- ├── requirements.txt           # PyQt6, PyYAML, PyGithub, GitPython
+ ├── main.py # Entry point
+ ├── requirements.txt # PyQt6, PyYAML, PyGithub, GitPython
  ├── pyproject.toml
  ├── src/
- │   ├── __init__.py
- │   ├── app.py                 # QApplication setup
- │   ├── windows/
- │   │   ├── main_window.py     # Main window with tabs
- │   │   ├── onboard_dialog.py  # New repo onboarding wizard
- │   │   └── secrets_dialog.py  # Secret setup dialog
- │   ├── widgets/
- │   │   ├── repo_list.py       # Left sidebar repo tree
- │   │   ├── repo_editor.py     # Right side editor panel
- │   │   ├── tool_toggles.py    # Checkboxes for tools
- │   │   ├── threshold_form.py  # Spinboxes for thresholds
- │   │   └── pom_editor.py      # POM plugin manager
- │   ├── services/
- │   │   ├── config_manager.py  # Load/save configs
- │   │   ├── github_api.py      # GitHub API integration
- │   │   ├── git_ops.py         # Git clone/push operations
- │   │   └── validator.py       # Config validation
- │   ├── generator/
- │   │   ├── yaml_writer.py     # Generate YAML files
- │   │   └── workflow_writer.py # Generate workflow files
- │   └── models/
- │       ├── config.py          # Config dataclasses
- │       └── repo.py            # Repo model
+ │ ├── __init__.py
+ │ ├── app.py # QApplication setup
+ │ ├── windows/
+ │ │ ├── main_window.py # Main window with tabs
+ │ │ ├── onboard_dialog.py # New repo onboarding wizard
+ │ │ └── secrets_dialog.py # Secret setup dialog
+ │ ├── widgets/
+ │ │ ├── repo_list.py # Left sidebar repo tree
+ │ │ ├── repo_editor.py # Right side editor panel
+ │ │ ├── tool_toggles.py # Checkboxes for tools
+ │ │ ├── threshold_form.py # Spinboxes for thresholds
+ │ │ └── pom_editor.py # POM plugin manager
+ │ ├── services/
+ │ │ ├── config_manager.py # Load/save configs
+ │ │ ├── github_api.py # GitHub API integration
+ │ │ ├── git_ops.py # Git clone/push operations
+ │ │ └── validator.py # Config validation
+ │ ├── generator/
+ │ │ ├── yaml_writer.py # Generate YAML files
+ │ │ └── workflow_writer.py # Generate workflow files
+ │ └── models/
+ │ ├── config.py # Config dataclasses
+ │ └── repo.py # Repo model
  ├── resources/
- │   ├── icons/
- │   └── styles.qss
+ │ ├── icons/
+ │ └── styles.qss
  └── tests/
 ```
  ---
@@ -485,16 +485,16 @@ Execution order (avoid rework):
 
  Reusable Components (GUI-friendly):
 
- | Component                | Location               | Purpose                |
+ | Component | Location | Purpose |
  |--------------------------|------------------------|------------------------|
- | PathConfig               | cihub/config/paths.py  | Path management        |
- | load_defaults()          | cihub/config/io.py     | Load defaults.yaml     |
- | load_repo_config()       | cihub/config/io.py     | Load repo config       |
- | deep_merge()             | cihub/config/merge.py  | Merge config layers    |
- | validate_config()        | cihub/config/schema.py | JSON schema validation |
- | build_repo_config()      | cihub/cli.py:648       | Generate config dict   |
- | render_caller_workflow() | cihub/cli.py:679       | Generate workflow YAML |
- | CommandResult            | cihub/cli.py:44        | Structured output      |
+ | PathConfig | cihub/config/paths.py | Path management |
+ | load_defaults() | cihub/config/io.py | Load defaults.yaml |
+ | load_repo_config() | cihub/config/io.py | Load repo config |
+ | deep_merge() | cihub/config/merge.py | Merge config layers |
+ | validate_config() | cihub/config/schema.py | JSON schema validation |
+ | build_repo_config() | cihub/cli.py:648 | Generate config dict |
+ | render_caller_workflow() | cihub/cli.py:679 | Generate workflow YAML |
+ | CommandResult | cihub/cli.py:44 | Structured output |
 
  Existing Wizard System:
  - Location: cihub/wizard/
@@ -517,14 +517,14 @@ Execution order (avoid rework):
  language: python
  version: "3.12"
  python:
-   tools:
-     pytest:
-       enabled: true
-       min_coverage: 80
-     ruff:
-       enabled: true
-     mypy:
-       enabled: false
+ tools:
+ pytest:
+ enabled: true
+ min_coverage: 80
+ ruff:
+ enabled: true
+ mypy:
+ enabled: false
 
  ---
  PyQt6 GUI Plan
@@ -545,31 +545,31 @@ Execution order (avoid rework):
 ```
  New repo structure:
  cihub-desktop/
- ├── main.py                    # Entry point
- ├── requirements.txt           # PyQt6, PyYAML, PyInstaller
- ├── pyproject.toml            # Project config
+ ├── main.py # Entry point
+ ├── requirements.txt # PyQt6, PyYAML, PyInstaller
+ ├── pyproject.toml # Project config
  ├── src/
- │   ├── __init__.py
- │   ├── app.py                # QApplication setup
- │   ├── windows/
- │   │   ├── __init__.py
- │   │   └── main_window.py    # Main QMainWindow
- │   ├── widgets/
- │   │   ├── __init__.py
- │   │   ├── repo_form.py      # Repo settings form
- │   │   ├── tool_toggles.py   # Tool checkboxes
- │   │   └── threshold_form.py # Threshold spinboxes
- │   ├── generator/
- │   │   ├── __init__.py
- │   │   ├── config_builder.py # Build config dict
- │   │   ├── yaml_writer.py    # Generate YAML strings
- │   │   └── workflow_writer.py # Generate workflow files
- │   └── models/
- │       ├── __init__.py
- │       └── config.py         # Config dataclasses
+ │ ├── __init__.py
+ │ ├── app.py # QApplication setup
+ │ ├── windows/
+ │ │ ├── __init__.py
+ │ │ └── main_window.py # Main QMainWindow
+ │ ├── widgets/
+ │ │ ├── __init__.py
+ │ │ ├── repo_form.py # Repo settings form
+ │ │ ├── tool_toggles.py # Tool checkboxes
+ │ │ └── threshold_form.py # Threshold spinboxes
+ │ ├── generator/
+ │ │ ├── __init__.py
+ │ │ ├── config_builder.py # Build config dict
+ │ │ ├── yaml_writer.py # Generate YAML strings
+ │ │ └── workflow_writer.py # Generate workflow files
+ │ └── models/
+ │ ├── __init__.py
+ │ └── config.py # Config dataclasses
  ├── resources/
- │   ├── icons/
- │   └── styles/
+ │ ├── icons/
+ │ └── styles/
  └── tests/
 ```
 
@@ -652,44 +652,44 @@ Execution order (avoid rework):
  UI Layout (Final Vision)
 
  ┌─────────────────────────────────────────────────────────────────┐
- │  CI/CD Hub - Config Generator                          [_][□][X]│
+ │ CI/CD Hub - Config Generator [_][□][X]│
  ├─────────────────────────────────────────────────────────────────┤
- │  ┌─────────────────────────────────────────────────────────────┐│
- │  │ REPO SETTINGS                                               ││
- │  │ Owner: [____________]  Name: [____________]                 ││
- │  │ Branch: [main     ▼]   Language: [Python ▼]                 ││
- │  │ [ ] Monorepo   Subdir: [____________]                       ││
- │  │ Run Group: [full ▼]    Mode: [Central ▼]                    ││
- │  └─────────────────────────────────────────────────────────────┘│
- │  ┌─────────────────────────────────────────────────────────────┐│
- │  │ TOOLS                          Profile: [quality ▼]         ││
- │  │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐             ││
- │  │ │ [x] pytest  │ │ [x] ruff    │ │ [x] bandit  │             ││
- │  │ │ [x] black   │ │ [x] isort   │ │ [ ] mypy    │             ││
- │  │ │ [ ] mutmut  │ │ [ ] semgrep │ │ [ ] trivy   │             ││
- │  │ └─────────────┘ └─────────────┘ └─────────────┘             ││
- │  └─────────────────────────────────────────────────────────────┘│
- │  ┌─────────────────────────────────────────────────────────────┐│
- │  │ THRESHOLDS                                                  ││
- │  │ Min Coverage: [80]%  Min Mutation: [70]%  Max Vulns: [0]    ││
- │  └─────────────────────────────────────────────────────────────┘│
- │  ┌─────────────────────────────────────────────────────────────┐│
- │  │ [.ci-hub.yml] [workflow] [hub config]                       ││
- │  │ ┌───────────────────────────────────────────────────────┐   ││
- │  │ │ language: python                                      │   ││
- │  │ │ version: "3.12"                                       │   ││
- │  │ │ python:                                               │   ││
- │  │ │   tools:                                              │   ││
- │  │ │     pytest:                                           │   ││
- │  │ │       enabled: true                                   │   ││
- │  │ │       min_coverage: 80                                │   ││
- │  │ └───────────────────────────────────────────────────────┘   ││
- │  └─────────────────────────────────────────────────────────────┘│
- │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
- │  │  Generate   │  │ Save Files  │  │ Open Folder │              │
- │  └─────────────┘  └─────────────┘  └─────────────┘              │
+ │ ┌─────────────────────────────────────────────────────────────┐│
+ │ │ REPO SETTINGS ││
+ │ │ Owner: [____________] Name: [____________] ││
+ │ │ Branch: [main ▼] Language: [Python ▼] ││
+ │ │ [ ] Monorepo Subdir: [____________] ││
+ │ │ Run Group: [full ▼] Mode: [Central ▼] ││
+ │ └─────────────────────────────────────────────────────────────┘│
+ │ ┌─────────────────────────────────────────────────────────────┐│
+ │ │ TOOLS Profile: [quality ▼] ││
+ │ │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ││
+ │ │ │ [x] pytest │ │ [x] ruff │ │ [x] bandit │ ││
+ │ │ │ [x] black │ │ [x] isort │ │ [ ] mypy │ ││
+ │ │ │ [ ] mutmut │ │ [ ] semgrep │ │ [ ] trivy │ ││
+ │ │ └─────────────┘ └─────────────┘ └─────────────┘ ││
+ │ └─────────────────────────────────────────────────────────────┘│
+ │ ┌─────────────────────────────────────────────────────────────┐│
+ │ │ THRESHOLDS ││
+ │ │ Min Coverage: [80]% Min Mutation: [70]% Max Vulns: [0] ││
+ │ └─────────────────────────────────────────────────────────────┘│
+ │ ┌─────────────────────────────────────────────────────────────┐│
+ │ │ [.ci-hub.yml] [workflow] [hub config] ││
+ │ │ ┌───────────────────────────────────────────────────────┐ ││
+ │ │ │ language: python │ ││
+ │ │ │ version: "3.12" │ ││
+ │ │ │ python: │ ││
+ │ │ │ tools: │ ││
+ │ │ │ pytest: │ ││
+ │ │ │ enabled: true │ ││
+ │ │ │ min_coverage: 80 │ ││
+ │ │ └───────────────────────────────────────────────────────┘ ││
+ │ └─────────────────────────────────────────────────────────────┘│
+ │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
+ │ │ Generate │ │ Save Files │ │ Open Folder │ │
+ │ └─────────────┘ └─────────────┘ └─────────────┘ │
  └─────────────────────────────────────────────────────────────────┘
-```ignored? sults ar saiyng thsi isnt accuarete 
+```ignored? sults ar saiyng thsi isnt accuarete
 
  ---
  Phase 1 Implementation Steps
@@ -704,37 +704,37 @@ Execution order (avoid rework):
  pip install PyQt6 PyYAML
  3. Create file structure:
  workflow-generator/
- ├── main.py              # Entry point
- ├── requirements.txt     # PyQt6, PyYAML
+ ├── main.py # Entry point
+ ├── requirements.txt # PyQt6, PyYAML
  ├── src/
- │   ├── __init__.py
- │   ├── main_window.py   # Main QMainWindow
- │   └── generator.py     # YAML generation
- └── .gitignore           # Ignore .venv
+ │ ├── __init__.py
+ │ ├── main_window.py # Main QMainWindow
+ │ └── generator.py # YAML generation
+ └── .gitignore # Ignore .venv
  4. Build MainWindow with:
-   - Language dropdown (Python/Java)
-   - 5 checkboxes: pytest, ruff, bandit, black, mypy
-   - Generate button
-   - QTextEdit output area
+ - Language dropdown (Python/Java)
+ - 5 checkboxes: pytest, ruff, bandit, black, mypy
+ - Generate button
+ - QTextEdit output area
  5. Create generator.py:
-   - Takes dict of form values
-   - Returns valid .ci-hub.yml string
+ - Takes dict of form values
+ - Returns valid .ci-hub.yml string
  6. Test: Run python main.py, click generate, verify valid YAML
  7. Add to .gitignore (optional - can exclude from hub-release commits initially)
 
  ---
  Critical Files to Reference (from hub-release)
 
- | File                                   | Purpose                           |
+ | File | Purpose |
  |----------------------------------------|-----------------------------------|
- | config/defaults.yaml                   | Default tool settings & structure |
- | schema/ci-hub-config.schema.json       | Valid config structure            |
- | templates/repo/hub-python-ci.yml       | Workflow template format          |
- | templates/repo/hub-java-ci.yml         | Java workflow template            |
- | templates/profiles/python-quality.yaml | Profile example                   |
- | cihub/config/merge.py                  | Deep merge logic to copy          |
- | cihub/cli.py:648                       | build_repo_config() function      |
- | cihub/cli.py:679                       | render_caller_workflow() function |
+ | config/defaults.yaml | Default tool settings & structure |
+ | schema/ci-hub-config.schema.json | Valid config structure |
+ | templates/repo/hub-python-ci.yml | Workflow template format |
+ | templates/repo/hub-java-ci.yml | Java workflow template |
+ | templates/profiles/python-quality.yaml | Profile example |
+ | cihub/config/merge.py | Deep merge logic to copy |
+ | cihub/cli.py:648 | build_repo_config() function |
+ | cihub/cli.py:679 | render_caller_workflow() function |
 
  ---
  Next Steps After Phase 1

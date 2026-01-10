@@ -3,12 +3,12 @@
 **Date:** 2026-01-04
 **Last Updated:** 2026-01-06 (Hub Operational Settings: config-file-first architecture for hub workflows)
 **Branch:** feat/modularization
-**Priority:** 🔴 **#1 - CURRENT** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
+**Priority:** **#1 - CURRENT** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
 **Status:** ~90% complete
 **Blocks:** TEST_REORGANIZATION.md, TYPESCRIPT_CLI_DESIGN.md, DOC_AUTOMATION_AUDIT.md
 **Purpose:** Identify opportunities for polymorphism, encapsulation, and better modular boundaries to make the codebase more scalable.
 
-> ⚠️ **IMPORTANT:** When ALL phases in this document are complete, perform a full audit of
+> WARNING: **IMPORTANT:** When ALL phases in this document are complete, perform a full audit of
 > `MASTER_PLAN.md` to ensure it accurately reflects the new architecture and code locations.
 > Architecture changes in this refactoring affect paths, module boundaries, and patterns
 > referenced throughout MASTER_PLAN.md.
@@ -49,22 +49,22 @@ Precedence: workflow_dispatch inputs → config/hub-settings.yaml → built-in d
 ### CLI Commands Added
 
 ```bash
-cihub hub config show                      # View current settings
-cihub hub config set debug.enabled true    # Change a setting
-cihub hub config load --github-output      # Export for GitHub Actions
+cihub hub config show # View current settings
+cihub hub config set debug.enabled true # Change a setting
+cihub hub config load --github-output # Export for GitHub Actions
 ```
 
 ### Config Hierarchy (Now Two-Layered)
 
 ```
 Hub Operational Settings (ADR-0049):
-  config/hub-settings.yaml → controls HOW hub runs
+ config/hub-settings.yaml → controls HOW hub runs
 
 Per-Repo Tool Configs (ADR-0002, ADR-0024):
-  1. .ci-hub.yml (repo-local)
-  2. config/repos/<repo>.yaml (hub-side)
-  3. config/defaults.yaml (global)
-  → controls WHAT runs on each repo
+ 1. .ci-hub.yml (repo-local)
+ 2. config/repos/<repo>.yaml (hub-side)
+ 3. config/defaults.yaml (global)
+ → controls WHAT runs on each repo
 ```
 
 ---
@@ -73,7 +73,7 @@ Per-Repo Tool Configs (ADR-0002, ADR-0024):
 
 Use this checklist to track overall progress. Detailed implementation notes are in the referenced sections.
 
-### Completed ✅
+### Completed [x]
 
 - [x] **Part 1.5:** Triage Package Modularization (Reference Pattern)
 - [x] **Part 1.6:** Gate Specs Infrastructure (26 thresholds wired)
@@ -84,50 +84,50 @@ Use this checklist to track overall progress. Detailed implementation notes are 
 - [x] **Phase 1:** Foundation (Language strategies extracted)
 - [x] **Part 10 Phase T1-T3:** Testing foundation, parameterization, property-based
 
-### High Priority (In Progress) 🔄
+### High Priority (In Progress)
 
-- [x] **Part 2.1:** Extract Language Strategies ✅ **DONE** (cihub/core/languages/ exists with base.py, python.py, java.py, registry.py)
-- [x] **Part 2.2:** Centralize Command Output ✅ **DONE** (45→7 prints, 84% reduction - remaining 7 are intentional helpers/progress)
-- [x] **Part 2.7:** Consolidate ToolResult ✅ **DONE** (unified in `cihub/types.py`, re-exported for backward compat)
-- [x] **Part 7.1:** CLI Layer Consolidation ✅ **DONE** (common.py factory exists, 7.1.2/7.1.3 done in Part 2.2/5.2)
-- [x] **Part 7.2:** Hub-CI Subcommand Helpers ✅ **DONE** (write_github_outputs, run_tool_with_json_report, ensure_executable exist)
-- [x] **Part 7.3:** Utilities Consolidation ✅ **DONE** (7.3.1 ✅ project.py, 7.3.2 ✅ github_context.py, 7.3.3 ✅ safe_run() wrapper + 34 migrations)
-- [x] **Part 9.3:** Schema Consolidation ✅ **DONE** (sbom/semgrep → sharedTools, toolStatusMap extracted)
+- [x] **Part 2.1:** Extract Language Strategies [x] **DONE** (cihub/core/languages/ exists with base.py, python.py, java.py, registry.py)
+- [x] **Part 2.2:** Centralize Command Output [x] **DONE** (45→7 prints, 84% reduction - remaining 7 are intentional helpers/progress)
+- [x] **Part 2.7:** Consolidate ToolResult [x] **DONE** (unified in `cihub/types.py`, re-exported for backward compat)
+- [x] **Part 7.1:** CLI Layer Consolidation [x] **DONE** (common.py factory exists, 7.1.2/7.1.3 done in Part 2.2/5.2)
+- [x] **Part 7.2:** Hub-CI Subcommand Helpers [x] **DONE** (write_github_outputs, run_tool_with_json_report, ensure_executable exist)
+- [x] **Part 7.3:** Utilities Consolidation [x] **DONE** (7.3.1 [x] project.py, 7.3.2 [x] github_context.py, 7.3.3 [x] safe_run() wrapper + 34 migrations)
+- [x] **Part 9.3:** Schema Consolidation [x] **DONE** (sbom/semgrep → sharedTools, toolStatusMap extracted)
 
-### 🟢 7-Agent Audit Fixes (COMPLETE - 2026-01-06)
+### 7-Agent Audit Fixes (COMPLETE - 2026-01-06)
 
 > **Source:** 7-agent comprehensive code review. **All 5 critical fixes applied, 2263 tests pass.**
 
-- [x] **fix.py JSON parsing:** Silent failure → log warning + add to problems (lines 174-175, 192-193) ✅
-- [x] **triage.py None propagation:** Add explicit None check after `_find_report_in_artifacts()` (lines 792-799) ✅
-- [x] **triage.py repo validation:** Add regex validation for `owner/repo` format (lines 842-851) ✅
-- [x] **release.py urllib timeout:** Add `timeout=60` parameter (line 81, ADR-0045) ✅
-- [x] **templates.py token validation:** Validate token format before env var set (lines 52-71) ✅
+- [x] **fix.py JSON parsing:** Silent failure → log warning + add to problems (lines 174-175, 192-193) [x]
+- [x] **triage.py None propagation:** Add explicit None check after `_find_report_in_artifacts()` (lines 792-799) [x]
+- [x] **triage.py repo validation:** Add regex validation for `owner/repo` format (lines 842-851) [x]
+- [x] **release.py urllib timeout:** Add `timeout=60` parameter (line 81, ADR-0045) [x]
+- [x] **templates.py token validation:** Validate token format before env var set (lines 52-71) [x]
 
-### Medium Priority (Pending) ⏳
+### Medium Priority (Pending)
 
-- [x] **Part 2.5:** Expand CI Engine Tests ✅ **DONE** (131+ tests: test_ci_engine.py 124 tests, test_ci_env_overrides.py 5 tests, test_services_ci.py 2 tests)
-- [x] **Part 2.6:** Gate Evaluation Refactor ✅ **DONE** (gate_specs.py with 26 thresholds wired to evaluate_threshold)
-- [x] **Part 3.1:** Centralize GitHub Environment Access ✅ **DONE** (unified GitHubContext: 11 env vars + output/summary writing, 59 tests)
-- [x] **Part 3.2:** Consolidate RunCI Parameters ✅
-- [x] **Part 5.1:** CLI re-exports cleanup ✅ **DONE** (removed 50+ re-exports, fixed imports directly)
-- [x] **Part 5.2:** Mixed Return Types ✅ **DONE** (all 47 commands → pure CommandResult)
-- [ ] **Part 5.3:** Special-Case Handling ⚠️ **CONSIDER SKIPPING** (2026-01-06: Low impact, over-refactoring risk)
+- [x] **Part 2.5:** Expand CI Engine Tests [x] **DONE** (131+ tests: test_ci_engine.py 124 tests, test_ci_env_overrides.py 5 tests, test_services_ci.py 2 tests)
+- [x] **Part 2.6:** Gate Evaluation Refactor [x] **DONE** (gate_specs.py with 26 thresholds wired to evaluate_threshold)
+- [x] **Part 3.1:** Centralize GitHub Environment Access [x] **DONE** (unified GitHubContext: 11 env vars + output/summary writing, 59 tests)
+- [x] **Part 3.2:** Consolidate RunCI Parameters [x]
+- [x] **Part 5.1:** CLI re-exports cleanup [x] **DONE** (removed 50+ re-exports, fixed imports directly)
+- [x] **Part 5.2:** Mixed Return Types [x] **DONE** (all 47 commands → pure CommandResult)
+- [ ] **Part 5.3:** Special-Case Handling WARNING: **CONSIDER SKIPPING** (2026-01-06: Low impact, over-refactoring risk)
 - [ ] **Part 7.4:** Core Module Refactoring (High impact - 90% shared code in build reports)
-- [x] **Part 7.5:** Config/Schema Consistency ✅ **DONE** (schema validation bypass fixed in hub_ci/__init__.py)
+- [x] **Part 7.5:** Config/Schema Consistency [x] **DONE** (schema validation bypass fixed in hub_ci/__init__.py)
 - [ ] **Part 7.6:** Services Layer (High impact - 300+ line `run_ci()` god method)
-- [x] **Part 9.1:** Scripts & Build System ✅ **DONE** (deprecation warnings added, docs updated, pre-commit JSON schema validation added; Black/isort skipped - Ruff is intentional replacement)
-- [x] **Part 9.2:** GitHub Workflows Security ✅ **DONE** (harden-runner added as configurable toggle: schema `harden_runner.policy`, workflow input `harden_runner_policy` with values audit/block/disabled)
+- [x] **Part 9.1:** Scripts & Build System [x] **DONE** (deprecation warnings added, docs updated, pre-commit JSON schema validation added; Black/isort skipped - Ruff is intentional replacement)
+- [x] **Part 9.2:** GitHub Workflows Security [x] **DONE** (harden-runner added as configurable toggle: schema `harden_runner.policy`, workflow input `harden_runner_policy` with values audit/block/disabled)
 
-### Low Priority / Deferred ⏸️
+### Low Priority / Deferred
 
 - [ ] **Part 2.3:** Extract Tool Adapters (DEFERRED)
 - [ ] **Part 3.3:** Tighten CommandResult Contract (DEFERRED)
-- [x] **Part 4.1:** Output Renderer Abstraction ✅ (implemented 2026-01-05)
+- [x] **Part 4.1:** Output Renderer Abstraction [x] (implemented 2026-01-05)
 - [ ] **Part 4.2:** Filesystem/Git Abstractions for Testing
 - [ ] **Part 10 Phase T4:** Integration testing (Ongoing)
 
-### Final Validation 🎯
+### Final Validation
 
 - [ ] All CI tests pass
 - [ ] Mutation testing score maintained
@@ -142,13 +142,13 @@ Use this checklist to track overall progress. Detailed implementation notes are 
 
 Multi-agent audit validated this document remains **~85% accurate**. Key updates:
 
-| Finding               | Original      | Updated                                                 | Status           |
+| Finding | Original | Updated | Status |
 |-----------------------|---------------|---------------------------------------------------------|------------------|
-| Language branches     | 38+           | **46 found**                                            | ✅ Still accurate |
-| gate_specs.py         | Not mentioned | **COMPLETE: 26 thresholds wired to evaluate_threshold** | ✅ Fixed          |
-| Print in commands     | "scattered"   | **37 files, 46 hub-ci bare int**                        | ⚠️ Under-scoped  |
-| _tool_enabled()       | 5 places      | **COMPLETE: 1 canonical + 4 delegates**                 | ✅ Fixed          |
-| Triage modularization | N/A           | **COMPLETED - Reference pattern**                       | 🎉 New example   |
+| Language branches | 38+ | **46 found** | [x] Still accurate |
+| gate_specs.py | Not mentioned | **COMPLETE: 26 thresholds wired to evaluate_threshold** | [x] Fixed |
+| Print in commands | "scattered" | **37 files, 46 hub-ci bare int** | WARNING: Under-scoped |
+| _tool_enabled() | 5 places | **COMPLETE: 1 canonical + 4 delegates** | [x] Fixed |
+| Triage modularization | N/A | **COMPLETED - Reference pattern** | New example |
 
 **New Reference Pattern:** `cihub/services/triage/` demonstrates the modularization approach. See Part 1.5 below.
 
@@ -196,16 +196,16 @@ Comprehensive security audit identified and fixed multiple issues:
 
 | Severity | Issue | File:Lines | Fix |
 |----------|-------|-----------|-----|
-| 🔴 Critical | JSON parsing silently fails | `fix.py:174-175, 192-193` | `except json.JSONDecodeError: pass` → log warning + add to CommandResult.problems |
-| 🔴 Critical | Triage None propagation | `triage.py:789-806` | Add explicit None check after `_find_report_in_artifacts()` → return EXIT_FAILURE |
+| Critical | JSON parsing silently fails | `fix.py:174-175, 192-193` | `except json.JSONDecodeError: pass` → log warning + add to CommandResult.problems |
+| Critical | Triage None propagation | `triage.py:789-806` | Add explicit None check after `_find_report_in_artifacts()` → return EXIT_FAILURE |
 
 ### High (Security Validation)
 
 | Severity | Issue | File:Lines | Fix |
 |----------|-------|-----------|-----|
-| 🟠 High | Repo name not validated | `triage.py:293-295` | Add regex validation for `owner/repo` format before use |
-| 🟠 High | Missing urllib timeout | `release.py:78-81` | Add `timeout=60` parameter (ADR-0045 compliance) |
-| 🟠 High | Token pollution | `templates.py:52-53` | Validate token format before setting environment variable |
+| High | Repo name not validated | `triage.py:293-295` | Add regex validation for `owner/repo` format before use |
+| High | Missing urllib timeout | `release.py:78-81` | Add `timeout=60` parameter (ADR-0045 compliance) |
+| High | Token pollution | `templates.py:52-53` | Validate token format before setting environment variable |
 
 ### Related Coverage
 
@@ -217,19 +217,19 @@ Comprehensive security audit identified and fixed multiple issues:
 
 ## Executive Summary
 
-| Aspect             | Current Score | Key Issue                                                                       |
+| Aspect | Current Score | Key Issue |
 |--------------------|---------------|---------------------------------------------------------------------------------|
-| CLI Layer          | 8/10          | Thin adapter ✅, but output handling inconsistent                                |
-| **CLI UX**         | 8/10          | 28 commands ✅ BY DESIGN (API endpoints for TS/GUI - see Part 5.4)              |
-| Command Contracts  | 9/10          | ✅ **DONE:** 45→7 prints (84% reduction), remaining 7 are intentional helpers/progress |
-| Language Branching | 3/10          | **46 if-language checks** - major polymorphism opportunity                      |
-| Tool Runners       | 7/10          | Unified ToolResult, but manual dispatch logic                                   |
-| Config Loading     | 9/10          | Excellent - centralized facade with schema validation                           |
-| Context/State      | 7/10          | Context exists but `run_ci()` has 9 keyword params                              |
-| Output Formatting  | 9/10          | **COMPLETE: All 46 hub-ci functions return CommandResult**                      |
-| Env Toggles        | 7/10          | Helpers exist, GitHub env reads scattered                                       |
-| **Gate Specs**     | 9/10          | **COMPLETE: 26 threshold checks wired to evaluate_threshold**                   |
-| **Triage Package** | 9/10          | **Excellent modularization - reference pattern**                                |
+| CLI Layer | 8/10 | Thin adapter [x], but output handling inconsistent |
+| **CLI UX** | 8/10 | 28 commands [x] BY DESIGN (API endpoints for TS/GUI - see Part 5.4) |
+| Command Contracts | 9/10 | [x] **DONE:** 45→7 prints (84% reduction), remaining 7 are intentional helpers/progress |
+| Language Branching | 3/10 | **46 if-language checks** - major polymorphism opportunity |
+| Tool Runners | 7/10 | Unified ToolResult, but manual dispatch logic |
+| Config Loading | 9/10 | Excellent - centralized facade with schema validation |
+| Context/State | 7/10 | Context exists but `run_ci()` has 9 keyword params |
+| Output Formatting | 9/10 | **COMPLETE: All 46 hub-ci functions return CommandResult** |
+| Env Toggles | 7/10 | Helpers exist, GitHub env reads scattered |
+| **Gate Specs** | 9/10 | **COMPLETE: 26 threshold checks wired to evaluate_threshold** |
+| **Triage Package** | 9/10 | **Excellent modularization - reference pattern** |
 
 **Biggest Win:** Extract Language Strategies to eliminate 46 conditional branches.
 
@@ -237,15 +237,15 @@ Comprehensive security audit identified and fixed multiple issues:
 
 ## Part 1: What's Working Well
 
-### 1.1 CLI as Thin Adapter ✅
+### 1.1 CLI as Thin Adapter [x]
 
 `cihub/cli.py` follows best practices:
 
 ```python
 # Lines 108-112: Lazy import pattern - excellent
 def cmd_detect(args: argparse.Namespace) -> int | CommandResult:
-    from cihub.commands.detect import cmd_detect as handler
-    return handler(args)
+ from cihub.commands.detect import cmd_detect as handler
+ return handler(args)
 ```
 
 - Parser construction isolated (lines 285-316)
@@ -253,66 +253,66 @@ def cmd_detect(args: argparse.Namespace) -> int | CommandResult:
 - JSON output formatting in one place (lines 395-402)
 - No business logic in CLI layer
 
-### 1.2 Config Loading ✅
+### 1.2 Config Loading [x]
 
 Single canonical path with proper facade:
 
 ```
 cihub/ci_config.py (entry point)
-    └── cihub/config/loader/core.py (schema validation + merge)
-        └── cihub/config/loader/__init__.py (clean re-exports)
+ └── cihub/config/loader/core.py (schema validation + merge)
+ └── cihub/config/loader/__init__.py (clean re-exports)
 ```
 
 All 10+ files that load config use the same path. Deep merge maintains precedence. Schema validation catches errors early.
 
-### 1.3 Tool Runner Interface ✅
+### 1.3 Tool Runner Interface [x]
 
 `cihub/core/ci_runner/base.py:11-42` defines `ToolResult`:
 
 ```python
 @dataclass
 class ToolResult:
-    tool: str
-    passed: bool
-    exit_code: int
-    stdout: str
-    stderr: str
-    duration_ms: int
-    artifacts: dict[str, Path]
+ tool: str
+ passed: bool
+ exit_code: int
+ stdout: str
+ stderr: str
+ duration_ms: int
+ artifacts: dict[str, Path]
 ```
 
 All runners return this. Subprocess calls centralized in `shared.py`.
 
-### 1.4 CommandResult Contract ✅
+### 1.4 CommandResult Contract [x]
 
 `cihub/types.py:12-40` provides structured output:
 
 ```python
 @dataclass
 class CommandResult:
-    exit_code: int
-    summary: str = ""
-    problems: list[dict] = field(default_factory=list)
-    suggestions: list[dict] = field(default_factory=list)
-    files_generated: list[str] = field(default_factory=list)
-    files_modified: list[str] = field(default_factory=list)
-    data: dict = field(default_factory=dict)
+ exit_code: int
+ summary: str = ""
+ problems: list[dict] = field(default_factory=list)
+ suggestions: list[dict] = field(default_factory=list)
+ files_generated: list[str] = field(default_factory=list)
+ files_modified: list[str] = field(default_factory=list)
+ data: dict = field(default_factory=dict)
 ```
 
 CLI layer decides how to render based on `--json` flag.
 
-### 1.5 Triage Package Modularization ✅ (Reference Pattern)
+### 1.5 Triage Package Modularization [x] (Reference Pattern)
 
 **Completed:** 2026-01-05
 
 `cihub/services/triage/` demonstrates the recommended modularization approach:
 
 ```
-cihub/services/triage/           # 711 lines across 4 files
-├── __init__.py (68 lines)       # Clean facade/re-exports
-├── types.py (135 lines)         # Data models (ToolStatus, ToolEvidence, TriageBundle)
-├── evidence.py (339 lines)      # Tool evidence building
-└── detection.py (169 lines)     # Flaky test/regression detection
+cihub/services/triage/ # 711 lines across 4 files
+├── __init__.py (68 lines) # Clean facade/re-exports
+├── types.py (135 lines) # Data models (ToolStatus, ToolEvidence, TriageBundle)
+├── evidence.py (339 lines) # Tool evidence building
+└── detection.py (169 lines) # Flaky test/regression detection
 ```
 
 **Key characteristics (follow this pattern):**
@@ -340,34 +340,34 @@ def write_triage_bundle(...): ...
 
 **Result:** Reduced `triage_service.py` from **1134 lines → 565 lines** (50% reduction).
 
-### 1.6 Gate Specs Infrastructure ✅ COMPLETE
+### 1.6 Gate Specs Infrastructure [x] COMPLETE
 
 `cihub/core/gate_specs.py` defines declarative gate specifications, now **fully wired** into gates.py.
 
 ```python
 @dataclass(frozen=True)
 class ThresholdSpec:
-    label: str          # "Min Coverage"
-    key: str            # "coverage_min"
-    comparator: Comparator  # GTE/LTE/CVSS
-    metric_key: str     # "coverage"
-    failure_template: str  # "coverage {value}% < {threshold}%"
+ label: str # "Min Coverage"
+ key: str # "coverage_min"
+ comparator: Comparator # GTE/LTE/CVSS
+ metric_key: str # "coverage"
+ failure_template: str # "coverage {value}% < {threshold}%"
 
 PYTHON_THRESHOLDS: tuple[ThresholdSpec, ...] = (...)
 JAVA_THRESHOLDS: tuple[ThresholdSpec, ...] = (...)
 ```
 
 **What's now used:**
-- `gates.py` imports `get_tool_keys()`, `evaluate_threshold`, `get_threshold_spec_by_key` ✅
-- `reporting.py` imports `threshold_rows`/`tool_rows` for summary rendering ✅
-- **NEW:** `_check_threshold()` helper wires 26 threshold checks to `evaluate_threshold` ✅
+- `gates.py` imports `get_tool_keys()`, `evaluate_threshold`, `get_threshold_spec_by_key` [x]
+- `reporting.py` imports `threshold_rows`/`tool_rows` for summary rendering [x]
+- **NEW:** `_check_threshold()` helper wires 26 threshold checks to `evaluate_threshold` [x]
 
 **Implementation (2026-01-05):**
 - Added `_check_threshold()` helper to `gates.py`
 - Defined 27 ThresholdSpecs in gate_specs.py (Python: 15, Java: 12)
 - Refactored Python gates (14 checks): coverage, mutation, ruff, black, isort, mypy, bandit (high/medium/low), pip_audit, semgrep, trivy (critical/high/cvss)
 - Refactored Java gates (12 checks): coverage, mutation, checkstyle, spotbugs, pmd, owasp (critical/high/cvss), trivy (critical/high/cvss), semgrep
-- All 155 gate-related tests pass — no behavior changes, consistent failure messages
+- All 155 gate-related tests pass - no behavior changes, consistent failure messages
 
 **Remaining non-threshold gates (state machine checks):**
 - CodeQL: ran/success state machine (not a numeric threshold)
@@ -392,15 +392,15 @@ JAVA_THRESHOLDS: tuple[ThresholdSpec, ...] = (...)
 ```python
 # cihub/services/ci_engine/__init__.py:179-289
 if language == "python":
-    # 50+ lines of Python-specific setup
-    runners = PYTHON_RUNNERS
-    tool_outputs = _run_python_tools(config, repo_path, workdir, ...)
-    gates = _evaluate_python_gates(tool_outputs, config, ...)
+ # 50+ lines of Python-specific setup
+ runners = PYTHON_RUNNERS
+ tool_outputs = _run_python_tools(config, repo_path, workdir, ...)
+ gates = _evaluate_python_gates(tool_outputs, config, ...)
 elif language == "java":
-    # 50+ lines of Java-specific setup
-    runners = JAVA_RUNNERS
-    tool_outputs = _run_java_tools(config, repo_path, workdir, ...)
-    gates = _evaluate_java_gates(tool_outputs, config, ...)
+ # 50+ lines of Java-specific setup
+ runners = JAVA_RUNNERS
+ tool_outputs = _run_java_tools(config, repo_path, workdir, ...)
+ gates = _evaluate_java_gates(tool_outputs, config, ...)
 ```
 
 **Proposed: Language Strategy Pattern**
@@ -410,84 +410,84 @@ elif language == "java":
 from abc import ABC, abstractmethod
 
 class LanguageStrategy(ABC):
-    """Base class for language-specific CI behavior."""
+ """Base class for language-specific CI behavior."""
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Language identifier (e.g., 'python', 'java')."""
+ @property
+ @abstractmethod
+ def name(self) -> str:
+ """Language identifier (e.g., 'python', 'java')."""
 
-    @abstractmethod
-    def get_runners(self) -> dict[str, Callable]:
-        """Return tool name -> runner function mapping."""
+ @abstractmethod
+ def get_runners(self) -> dict[str, Callable]:
+ """Return tool name -> runner function mapping."""
 
-    @abstractmethod
-    def get_default_tools(self) -> list[str]:
-        """Return default tool execution order."""
+ @abstractmethod
+ def get_default_tools(self) -> list[str]:
+ """Return default tool execution order."""
 
-    @abstractmethod
-    def run_tools(self, ctx: RunContext) -> dict[str, ToolResult]:
-        """Execute all enabled tools, return results."""
+ @abstractmethod
+ def run_tools(self, ctx: RunContext) -> dict[str, ToolResult]:
+ """Execute all enabled tools, return results."""
 
-    @abstractmethod
-    def evaluate_gates(self, results: dict[str, ToolResult], config: dict) -> list[str]:
-        """Evaluate quality gates, return list of failed gate names."""
+ @abstractmethod
+ def evaluate_gates(self, results: dict[str, ToolResult], config: dict) -> list[str]:
+ """Evaluate quality gates, return list of failed gate names."""
 
-    def detect(self, repo_path: Path) -> float:
-        """Return confidence 0.0-1.0 that this language applies."""
-        return 0.0
+ def detect(self, repo_path: Path) -> float:
+ """Return confidence 0.0-1.0 that this language applies."""
+ return 0.0
 ```
 
 ```python
 # cihub/core/languages/python.py
 class PythonStrategy(LanguageStrategy):
-    name = "python"
+ name = "python"
 
-    def get_runners(self) -> dict[str, Callable]:
-        return {
-            "pytest": run_pytest,
-            "ruff": run_ruff,
-            "bandit": run_bandit,
-            # ...
-        }
+ def get_runners(self) -> dict[str, Callable]:
+ return {
+ "pytest": run_pytest,
+ "ruff": run_ruff,
+ "bandit": run_bandit,
+ # ...
+ }
 
-    def detect(self, repo_path: Path) -> float:
-        if (repo_path / "pyproject.toml").exists():
-            return 0.9
-        if (repo_path / "setup.py").exists():
-            return 0.8
-        return 0.0
+ def detect(self, repo_path: Path) -> float:
+ if (repo_path / "pyproject.toml").exists():
+ return 0.9
+ if (repo_path / "setup.py").exists():
+ return 0.8
+ return 0.0
 ```
 
 ```python
 # cihub/core/languages/registry.py
 LANGUAGE_STRATEGIES: dict[str, LanguageStrategy] = {
-    "python": PythonStrategy(),
-    "java": JavaStrategy(),
+ "python": PythonStrategy(),
+ "java": JavaStrategy(),
 }
 
 def get_strategy(language: str) -> LanguageStrategy:
-    if language not in LANGUAGE_STRATEGIES:
-        raise ValueError(f"Unsupported language: {language}")
-    return LANGUAGE_STRATEGIES[language]
+ if language not in LANGUAGE_STRATEGIES:
+ raise ValueError(f"Unsupported language: {language}")
+ return LANGUAGE_STRATEGIES[language]
 
 def detect_language(repo_path: Path) -> str:
-    """Auto-detect language with highest confidence."""
-    best = max(LANGUAGE_STRATEGIES.values(), key=lambda s: s.detect(repo_path))
-    if best.detect(repo_path) < 0.5:
-        raise ValueError("Could not detect language")
-    return best.name
+ """Auto-detect language with highest confidence."""
+ best = max(LANGUAGE_STRATEGIES.values(), key=lambda s: s.detect(repo_path))
+ if best.detect(repo_path) < 0.5:
+ raise ValueError("Could not detect language")
+ return best.name
 ```
 
 ```python
 # cihub/services/ci_engine/__init__.py - AFTER refactor
 def run_ci(language: str, repo_path: Path, ctx: RunContext) -> CIReport:
-    strategy = get_strategy(language)
+ strategy = get_strategy(language)
 
-    tool_results = strategy.run_tools(ctx)
-    failed_gates = strategy.evaluate_gates(tool_results, ctx.config)
+ tool_results = strategy.run_tools(ctx)
+ failed_gates = strategy.evaluate_gates(tool_results, ctx.config)
 
-    return build_report(tool_results, failed_gates, ctx)
+ return build_report(tool_results, failed_gates, ctx)
 ```
 
 **Files to create:**
@@ -498,8 +498,8 @@ def run_ci(language: str, repo_path: Path, ctx: RunContext) -> CIReport:
 - `cihub/core/languages/registry.py`
 
 **Files to modify:**
-- ✅ `cihub/services/ci_engine/__init__.py` - Uses strategy for tool execution, report building, gate evaluation
-- ✅ `cihub/services/ci_engine/helpers.py` - `_apply_force_all_tools()` uses `strategy.get_default_tools()`
+- [x] `cihub/services/ci_engine/__init__.py` - Uses strategy for tool execution, report building, gate evaluation
+- [x] `cihub/services/ci_engine/helpers.py` - `_apply_force_all_tools()` uses `strategy.get_default_tools()`
 - `cihub/services/ci_engine/gates.py` - Gate logic remains, strategies delegate to it (by design)
 - `cihub/commands/hub_ci/validation.py` - N/A (file patterns, not tool lists)
 
@@ -510,57 +510,57 @@ def run_ci(language: str, repo_path: Path, ctx: RunContext) -> CIReport:
 
 ---
 
-### 2.2 Centralize Command Output (HIGH) — In Progress
+### 2.2 Centralize Command Output (HIGH) - In Progress
 
 **Problem:** Commands print directly instead of returning structured results.
 
 **2026-01-05 Progress Update:** Significant progress made on migration:
 - ~~**37 files**~~ → **~16 files** in `cihub/commands/` contain direct `print()` calls
 - ~~**263+ print() calls**~~ → **~65 print() calls** remaining (~198 migrated)
-- **46 hub-ci functions** return CommandResult ✅ (complete)
+- **46 hub-ci functions** return CommandResult [x] (complete)
 - **13 major command files migrated:** adr.py (16), triage.py (34), secrets.py (32), templates.py (22), pom.py (21), dispatch.py (10), config_cmd.py (9), update.py (8), smoke.py (8), discover.py (8), docs.py (10), new.py (10), init.py (10)
 - Contract enforcement test prevents regression on migrated files
 
 **Remaining violations (top offenders):**
 
-| File                          | Print Calls | Issue                   |
+| File | Print Calls | Issue |
 |-------------------------------|-------------|-------------------------|
-| `commands/validate.py`        | 7           | Validation output       |
-| `commands/run.py`             | 6           | CI run output           |
-| `commands/scaffold.py`        | 5           | Scaffolding output      |
-| `commands/check.py`           | 5           | Check output            |
-| `commands/ci.py`              | 4           | CI info output          |
-| `commands/preflight.py`       | 3           | Preflight checks        |
-| `commands/detect.py`          | 3           | Detection output        |
-| `commands/verify.py`          | 2           | Verification output     |
-| `commands/config_outputs.py`  | 2           | Config output           |
-| `commands/report/` subpkg     | ~8 files    | Various report outputs  |
+| `commands/validate.py` | 7 | Validation output |
+| `commands/run.py` | 6 | CI run output |
+| `commands/scaffold.py` | 5 | Scaffolding output |
+| `commands/check.py` | 5 | Check output |
+| `commands/ci.py` | 4 | CI info output |
+| `commands/preflight.py` | 3 | Preflight checks |
+| `commands/detect.py` | 3 | Detection output |
+| `commands/verify.py` | 2 | Verification output |
+| `commands/config_outputs.py` | 2 | Config output |
+| `commands/report/` subpkg | ~8 files | Various report outputs |
 
 **Migrated (no longer in allowlist):**
-- ~~`commands/pom.py`~~ (21 prints) ✅
-- ~~`commands/secrets.py`~~ (32 prints) ✅
-- ~~`commands/templates.py`~~ (22 prints) ✅
-- ~~`commands/triage.py`~~ (34 prints) ✅
-- ~~`commands/adr.py`~~ (16 prints) ✅
-- ~~`commands/dispatch.py`~~ (10 prints) ✅
-- ~~`commands/config_cmd.py`~~ (9 prints) ✅
-- ~~`commands/update.py`~~ (8 prints) ✅
-- ~~`commands/docs.py`~~ (10 prints) ✅
-- ~~`commands/new.py`~~ (10 prints) ✅
-- ~~`commands/init.py`~~ (10 prints) ✅
-- ~~`commands/smoke.py`~~ (8 prints) ✅ **NEW 2026-01-05**
-- ~~`commands/discover.py`~~ (8 prints) ✅ **NEW 2026-01-05**
-- **All hub-ci subcommands** → ✅ **46 functions return CommandResult**
+- ~~`commands/pom.py`~~ (21 prints) [x]
+- ~~`commands/secrets.py`~~ (32 prints) [x]
+- ~~`commands/templates.py`~~ (22 prints) [x]
+- ~~`commands/triage.py`~~ (34 prints) [x]
+- ~~`commands/adr.py`~~ (16 prints) [x]
+- ~~`commands/dispatch.py`~~ (10 prints) [x]
+- ~~`commands/config_cmd.py`~~ (9 prints) [x]
+- ~~`commands/update.py`~~ (8 prints) [x]
+- ~~`commands/docs.py`~~ (10 prints) [x]
+- ~~`commands/new.py`~~ (10 prints) [x]
+- ~~`commands/init.py`~~ (10 prints) [x]
+- ~~`commands/smoke.py`~~ (8 prints) [x] **NEW 2026-01-05**
+- ~~`commands/discover.py`~~ (8 prints) [x] **NEW 2026-01-05**
+- **All hub-ci subcommands** → [x] **46 functions return CommandResult**
 
 **Current anti-pattern:**
 ```python
 # commands/run.py:67-71
 def cmd_run(args):
-    # ...
-    if json_mode:
-        return CommandResult(exit_code=EXIT_FAILURE, summary=message)
-    print(message)  # <-- Layer violation!
-    return EXIT_FAILURE
+ # ...
+ if json_mode:
+ return CommandResult(exit_code=EXIT_FAILURE, summary=message)
+ print(message) # <-- Layer violation!
+ return EXIT_FAILURE
 ```
 
 **Proposed: Commands Always Return CommandResult**
@@ -568,34 +568,34 @@ def cmd_run(args):
 ```python
 # commands/run.py - AFTER refactor
 def cmd_run(args) -> CommandResult:
-    # ...
-    return CommandResult(
-        exit_code=EXIT_FAILURE,
-        summary=message,
-        details=traceback_if_debug,  # Human-readable details
-    )
+ # ...
+ return CommandResult(
+ exit_code=EXIT_FAILURE,
+ summary=message,
+ details=traceback_if_debug, # Human-readable details
+ )
 ```
 
 ```python
 # cli.py main() - Handle all output
 def main(argv: list[str] | None = None) -> int:
-    result = args.func(args)
+ result = args.func(args)
 
-    if isinstance(result, int):
-        result = CommandResult(exit_code=result)
+ if isinstance(result, int):
+ result = CommandResult(exit_code=result)
 
-    if json_mode:
-        print(json.dumps(result.to_payload(...)))
-    else:
-        # Human output
-        if result.summary:
-            print(result.summary)
-        if result.details:
-            print(result.details)
-        for problem in result.problems:
-            print(f"  {problem['message']}", file=sys.stderr)
+ if json_mode:
+ print(json.dumps(result.to_payload(...)))
+ else:
+ # Human output
+ if result.summary:
+ print(result.summary)
+ if result.details:
+ print(result.details)
+ for problem in result.problems:
+ print(f" {problem['message']}", file=sys.stderr)
 
-    return result.exit_code
+ return result.exit_code
 ```
 
 **Payoff:**
@@ -605,7 +605,7 @@ def main(argv: list[str] | None = None) -> int:
 
 ---
 
-### 2.2a Hub-CI CommandResult Gap ✅ COMPLETE
+### 2.2a Hub-CI CommandResult Gap [x] COMPLETE
 
 **Problem:** All 46 hub-ci subcommands returned bare `int`, breaking `--json` support.
 
@@ -614,13 +614,13 @@ def main(argv: list[str] | None = None) -> int:
 **Migration Progress (2026-01-05):**
 | File | Functions | Status |
 |------|-----------|--------|
-| `cihub/commands/hub_ci/validation.py` | 8 functions | ✅ Complete |
-| `cihub/commands/hub_ci/security.py` | 6 functions | ✅ Complete |
-| `cihub/commands/hub_ci/smoke.py` | 4 functions | ✅ Complete |
-| `cihub/commands/hub_ci/python_tools.py` | 3 functions | ✅ Complete |
-| `cihub/commands/hub_ci/java_tools.py` | 6 functions | ✅ Complete |
-| `cihub/commands/hub_ci/release.py` | 16 functions | ✅ Complete |
-| `cihub/commands/hub_ci/badges.py` | 3 functions | ✅ Complete |
+| `cihub/commands/hub_ci/validation.py` | 8 functions | [x] Complete |
+| `cihub/commands/hub_ci/security.py` | 6 functions | [x] Complete |
+| `cihub/commands/hub_ci/smoke.py` | 4 functions | [x] Complete |
+| `cihub/commands/hub_ci/python_tools.py` | 3 functions | [x] Complete |
+| `cihub/commands/hub_ci/java_tools.py` | 6 functions | [x] Complete |
+| `cihub/commands/hub_ci/release.py` | 16 functions | [x] Complete |
+| `cihub/commands/hub_ci/badges.py` | 3 functions | [x] Complete |
 | **Total** | **46/46** | **100% done** |
 
 **Implementation Details:**
@@ -628,28 +628,28 @@ def main(argv: list[str] | None = None) -> int:
 1. **CommandResult Helpers Added** (`hub_ci/__init__.py`):
 ```python
 def result_ok(summary: str, *, data=None, problems=None) -> CommandResult:
-    """Create successful CommandResult - reduces boilerplate."""
+ """Create successful CommandResult - reduces boilerplate."""
 
 def result_fail(summary: str, *, problems=None, data=None) -> CommandResult:
-    """Create failed CommandResult - auto-creates problem from summary."""
+ """Create failed CommandResult - auto-creates problem from summary."""
 
 def run_and_capture(cmd, cwd, *, tool_name="") -> dict:
-    """Run command and capture output for structured results."""
+ """Run command and capture output for structured results."""
 ```
 
 2. **Router Pattern Works** (`router.py` lines 120-136):
-   - Passes through CommandResult directly
-   - Wraps legacy int returns for `--json` mode
+ - Passes through CommandResult directly
+ - Wraps legacy int returns for `--json` mode
 
 3. **Strategy Enhancements Added**:
-   - `get_allowed_kwargs()` - Filters kwargs to prevent unexpected parameters
-   - `get_virtual_tools()` - Documents tools without runners (hypothesis, jqwik, codeql)
-   - `get_docker_config()` - Encapsulates language-specific docker config access
+ - `get_allowed_kwargs()` - Filters kwargs to prevent unexpected parameters
+ - `get_virtual_tools()` - Documents tools without runners (hypothesis, jqwik, codeql)
+ - `get_docker_config()` - Encapsulates language-specific docker config access
 
 **Payoff:**
-- Full `--json` support for automation ✅
-- Consistent testing via CommandResult assertions ✅
-- Triage can consume structured hub-ci results ✅
+- Full `--json` support for automation [x]
+- Consistent testing via CommandResult assertions [x]
+- Triage can consume structured hub-ci results [x]
 
 ---
 
@@ -671,19 +671,19 @@ ToolSpec/ToolAdapter when you actually have 3+ tools that need special handling.
 **Current pattern:** `cihub/services/ci_engine/python_tools.py:176-198`
 ```python
 def _run_python_tools(config, repo_path, workdir, output_dir, problems, runners):
-    for tool in tool_order:
-        if tool == "pytest":
-            result = runners["pytest"](repo_path, output_dir, fail_fast=config.get("fail_fast"))
-        elif tool == "mutmut":
-            timeout = config.get("mutmut", {}).get("timeout_minutes", 10)
-            result = runners["mutmut"](repo_path, output_dir, timeout_minutes=timeout)
-        elif tool == "sbom":
-            fmt = config.get("sbom", {}).get("format", "json")
-            result = runners["sbom"](repo_path, output_dir, format=fmt)
-        elif tool == "docker":
-            # 8 lines of config extraction
-            result = runners["docker"](repo_path, output_dir, **docker_config)
-        # ... 10 more tools
+ for tool in tool_order:
+ if tool == "pytest":
+ result = runners["pytest"](repo_path, output_dir, fail_fast=config.get("fail_fast"))
+ elif tool == "mutmut":
+ timeout = config.get("mutmut", {}).get("timeout_minutes", 10)
+ result = runners["mutmut"](repo_path, output_dir, timeout_minutes=timeout)
+ elif tool == "sbom":
+ fmt = config.get("sbom", {}).get("format", "json")
+ result = runners["sbom"](repo_path, output_dir, format=fmt)
+ elif tool == "docker":
+ # 8 lines of config extraction
+ result = runners["docker"](repo_path, output_dir, **docker_config)
+ # ... 10 more tools
 ```
 
 **Proposed: Tool Adapter Pattern**
@@ -692,76 +692,76 @@ def _run_python_tools(config, repo_path, workdir, output_dir, problems, runners)
 # cihub/core/tools/base.py
 @dataclass
 class ToolSpec:
-    """Everything needed to run a tool."""
-    name: str
-    command: list[str]
-    cwd: Path
-    env: dict[str, str]
-    timeout_seconds: int
-    expected_outputs: list[str]
+ """Everything needed to run a tool."""
+ name: str
+ command: list[str]
+ cwd: Path
+ env: dict[str, str]
+ timeout_seconds: int
+ expected_outputs: list[str]
 
 @dataclass
 class ToolAdapter(ABC):
-    """Extracts tool-specific config and builds ToolSpec."""
+ """Extracts tool-specific config and builds ToolSpec."""
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        pass
+ @property
+ @abstractmethod
+ def name(self) -> str:
+ pass
 
-    @abstractmethod
-    def build_spec(self, config: dict, ctx: RunContext) -> ToolSpec:
-        """Extract config and build executable spec."""
-        pass
+ @abstractmethod
+ def build_spec(self, config: dict, ctx: RunContext) -> ToolSpec:
+ """Extract config and build executable spec."""
+ pass
 
-    def post_process(self, result: ToolResult) -> ToolResult:
-        """Optional: transform result (e.g., parse coverage)."""
-        return result
+ def post_process(self, result: ToolResult) -> ToolResult:
+ """Optional: transform result (e.g., parse coverage)."""
+ return result
 ```
 
 ```python
 # cihub/core/tools/python/pytest.py
 class PytestAdapter(ToolAdapter):
-    name = "pytest"
+ name = "pytest"
 
-    def build_spec(self, config: dict, ctx: RunContext) -> ToolSpec:
-        pytest_config = config.get("python", {}).get("pytest", {})
-        args = ["pytest", "-v"]
+ def build_spec(self, config: dict, ctx: RunContext) -> ToolSpec:
+ pytest_config = config.get("python", {}).get("pytest", {})
+ args = ["pytest", "-v"]
 
-        if pytest_config.get("fail_fast"):
-            args.append("-x")
-        if pytest_config.get("coverage"):
-            args.extend(["--cov", ctx.repo_path])
+ if pytest_config.get("fail_fast"):
+ args.append("-x")
+ if pytest_config.get("coverage"):
+ args.extend(["--cov", ctx.repo_path])
 
-        return ToolSpec(
-            name=self.name,
-            command=args,
-            cwd=ctx.workdir,
-            env=ctx.env,
-            timeout_seconds=pytest_config.get("timeout", 300),
-            expected_outputs=["pytest.xml", "coverage.xml"],
-        )
+ return ToolSpec(
+ name=self.name,
+ command=args,
+ cwd=ctx.workdir,
+ env=ctx.env,
+ timeout_seconds=pytest_config.get("timeout", 300),
+ expected_outputs=["pytest.xml", "coverage.xml"],
+ )
 ```
 
 ```python
 # cihub/core/tools/registry.py
 PYTHON_ADAPTERS = [
-    PytestAdapter(),
-    RuffAdapter(),
-    BanditAdapter(),
-    # ...
+ PytestAdapter(),
+ RuffAdapter(),
+ BanditAdapter(),
+ # ...
 ]
 
 def run_tools(adapters: list[ToolAdapter], config: dict, ctx: RunContext) -> dict[str, ToolResult]:
-    results = {}
-    for adapter in adapters:
-        if not is_tool_enabled(adapter.name, config):
-            continue
-        spec = adapter.build_spec(config, ctx)
-        result = execute_spec(spec)  # Centralized subprocess handling
-        result = adapter.post_process(result)
-        results[adapter.name] = result
-    return results
+ results = {}
+ for adapter in adapters:
+ if not is_tool_enabled(adapter.name, config):
+ continue
+ spec = adapter.build_spec(config, ctx)
+ result = execute_spec(spec) # Centralized subprocess handling
+ result = adapter.post_process(result)
+ results[adapter.name] = result
+ return results
 ```
 
 **Payoff:**
@@ -770,7 +770,7 @@ def run_tools(adapters: list[ToolAdapter], config: dict, ctx: RunContext) -> dic
 - Subprocess calls fully centralized
 
 ---
-### 2.4 Consolidate `_tool_enabled()` ✅ COMPLETE
+### 2.4 Consolidate `_tool_enabled()` [x] COMPLETE
 
 **Problem:** `_tool_enabled()` (or variants) existed in five places. Any bug fix or semantic change had to be replicated everywhere.
 
@@ -778,16 +778,16 @@ def run_tools(adapters: list[ToolAdapter], config: dict, ctx: RunContext) -> dic
 - Added canonical `tool_enabled(config, tool, language, *, default=False)` to `cihub/config/normalize.py`
 - Exported via `cihub/config/__init__.py` for clean imports
 - Updated 4 call sites to delegate to canonical function:
-  - `cihub/services/ci_engine/helpers.py`
-  - `cihub/commands/report/helpers.py`
-  - `cihub/commands/config_outputs.py`
-  - `cihub/commands/run.py`
+ - `cihub/services/ci_engine/helpers.py`
+ - `cihub/commands/report/helpers.py`
+ - `cihub/commands/config_outputs.py`
+ - `cihub/commands/run.py`
 - All 1804 tests pass
 
 **Benefit:** One source of truth for tool toggles, simpler reasoning about flags, easier to extend.
 
 ---
-### 2.5 Expand CI Engine Tests (HIGH) ✅ COMPLETE
+### 2.5 Expand CI Engine Tests (HIGH) [x] COMPLETE
 
 **Status:** DONE (2026-01-06)
 
@@ -803,10 +803,10 @@ def run_tools(adapters: list[ToolAdapter], config: dict, ctx: RunContext) -> dic
 | **Total** | **131+** | All requirements satisfied |
 
 **All original requirements now covered:**
-- ✅ Mock adapters simulating tool outcomes (TestToolEnabled, TestToolGateEnabled)
-- ✅ Gate evaluation for coverage/mutation/security (TestEvaluatePythonGates, TestEvaluateJavaGates)
-- ✅ Env overrides (test_ci_env_overrides.py + test_summary_commands.py)
-- ✅ Both Python and Java strategies covered
+- [x] Mock adapters simulating tool outcomes (TestToolEnabled, TestToolGateEnabled)
+- [x] Gate evaluation for coverage/mutation/security (TestEvaluatePythonGates, TestEvaluateJavaGates)
+- [x] Env overrides (test_ci_env_overrides.py + test_summary_commands.py)
+- [x] Both Python and Java strategies covered
 
 **Benefit:** High confidence in gate/runner changes; comprehensive regression coverage.
 
@@ -824,7 +824,7 @@ def run_tools(adapters: list[ToolAdapter], config: dict, ctx: RunContext) -> dic
 
 ---
 
-### 2.7 Consolidate ToolResult ✅ DONE
+### 2.7 Consolidate ToolResult [x] DONE
 
 **Status:** COMPLETE (2026-01-05)
 
@@ -843,28 +843,28 @@ when you merge reports or feed AI. Pick one canonical ToolResult type and re-exp
 ```python
 @dataclass
 class ToolResult:
-    """Unified tool execution result."""
-    tool: str
-    success: bool
-    returncode: int
-    stdout: str
-    stderr: str
-    # From metrics-focused definition
-    ran: bool = True
-    metrics: dict[str, Any] = field(default_factory=dict)
-    artifacts: dict[str, str] = field(default_factory=dict)
-    # From execution-focused definition
-    json_data: Any = None
-    json_error: str | None = None
-    report_path: Path | None = None
+ """Unified tool execution result."""
+ tool: str
+ success: bool
+ returncode: int
+ stdout: str
+ stderr: str
+ # From metrics-focused definition
+ ran: bool = True
+ metrics: dict[str, Any] = field(default_factory=dict)
+ artifacts: dict[str, str] = field(default_factory=dict)
+ # From execution-focused definition
+ json_data: Any = None
+ json_error: str | None = None
+ report_path: Path | None = None
 ```
 
 **Migration (COMPLETED):**
-1. ✅ Created canonical `ToolResult` in `cihub/types.py` (11 fields: tool, success, returncode, stdout, stderr, ran, metrics, artifacts, json_data, json_error, report_path)
-2. ✅ Updated `core/ci_runner/base.py` to import from `types.py` and re-export
-3. ✅ Updated `commands/hub_ci/__init__.py` to import from `types.py` and re-export
-4. ✅ Updated `run_tool_with_json_report()` to use unified type with `tool_name` parameter
-5. ✅ All 2104 tests pass
+1. [x] Created canonical `ToolResult` in `cihub/types.py` (11 fields: tool, success, returncode, stdout, stderr, ran, metrics, artifacts, json_data, json_error, report_path)
+2. [x] Updated `core/ci_runner/base.py` to import from `types.py` and re-export
+3. [x] Updated `commands/hub_ci/__init__.py` to import from `types.py` and re-export
+4. [x] Updated `run_tool_with_json_report()` to use unified type with `tool_name` parameter
+5. [x] All 2104 tests pass
 
 **Benefit:** One source of truth, easier report merging, AI-consumable outputs.
 
@@ -872,7 +872,7 @@ class ToolResult:
 
 ## Part 3: Medium-Priority Improvements
 
-### 3.1 Centralize GitHub Environment Access ✅ COMPLETE
+### 3.1 Centralize GitHub Environment Access [x] COMPLETE
 
 **Status:** DONE (2026-01-06)
 
@@ -894,7 +894,7 @@ class ToolResult:
 
 **Note:** Scattered env reads can be migrated incrementally as code is touched. The unified `GitHubContext` provides the foundation.
 
-### 3.2 Consolidate RunCI Parameters ✅
+### 3.2 Consolidate RunCI Parameters [x]
 
 **Status:** COMPLETE (2026-01-06)
 
@@ -905,32 +905,32 @@ class ToolResult:
 ```python
 @dataclass(frozen=True)
 class RunCIOptions:
-    """Configuration options for run_ci()."""
-    output_dir: Path | None = None
-    report_path: Path | None = None
-    summary_path: Path | None = None
-    workdir: str | None = None
-    install_deps: bool = False
-    no_summary: bool = False
-    write_github_summary: bool | None = None
-    correlation_id: str | None = None
-    config_from_hub: str | None = None
-    env: Mapping[str, str] | None = None
+ """Configuration options for run_ci()."""
+ output_dir: Path | None = None
+ report_path: Path | None = None
+ summary_path: Path | None = None
+ workdir: str | None = None
+ install_deps: bool = False
+ no_summary: bool = False
+ write_github_summary: bool | None = None
+ correlation_id: str | None = None
+ config_from_hub: str | None = None
+ env: Mapping[str, str] | None = None
 
-    @classmethod
-    def from_args(cls, args: Any) -> "RunCIOptions":
-        """Create options from argparse namespace."""
-        ...
+ @classmethod
+ def from_args(cls, args: Any) -> "RunCIOptions":
+ """Create options from argparse namespace."""
+ ...
 ```
 
 **Updated `run_ci()` signature** (`cihub/services/ci_engine/__init__.py`):
 ```python
 def run_ci(
-    repo_path: Path,
-    *,
-    options: RunCIOptions | None = None,  # New: pass options object
-    output_dir: Path | None = None,       # Still works: backward compat kwargs
-    # ... other kwargs still accepted for backward compatibility
+ repo_path: Path,
+ *,
+ options: RunCIOptions | None = None, # New: pass options object
+ output_dir: Path | None = None, # Still works: backward compat kwargs
+ # ... other kwargs still accepted for backward compatibility
 ) -> CiRunResult:
 ```
 
@@ -967,21 +967,21 @@ return ints, you'll slow the migration and create churn."
 ```python
 # cihub/types.py
 class CommandCategory(Enum):
-    CHECK = "check"      # Must have: problems
-    GENERATE = "generate"  # Must have: files_generated or files_modified
-    REPORT = "report"    # Must have: data
-    ACTION = "action"    # Must have: summary
+ CHECK = "check" # Must have: problems
+ GENERATE = "generate" # Must have: files_generated or files_modified
+ REPORT = "report" # Must have: data
+ ACTION = "action" # Must have: summary
 
 @dataclass
 class CommandResult:
-    exit_code: int
-    category: CommandCategory
-    summary: str  # Now required
-    # ... rest same
+ exit_code: int
+ category: CommandCategory
+ summary: str # Now required
+ # ... rest same
 
-    def __post_init__(self):
-        if self.category == CommandCategory.CHECK and not self.problems:
-            warnings.warn("CHECK commands should populate problems list")
+ def __post_init__(self):
+ if self.category == CommandCategory.CHECK and not self.problems:
+ warnings.warn("CHECK commands should populate problems list")
 ```
 
 ---
@@ -994,25 +994,25 @@ Separate rendering from logic entirely:
 
 ```python
 class OutputRenderer(ABC):
-    @abstractmethod
-    def render(self, result: CommandResult) -> str:
-        pass
+ @abstractmethod
+ def render(self, result: CommandResult) -> str:
+ pass
 
 class HumanRenderer(OutputRenderer):
-    def render(self, result: CommandResult) -> str:
-        lines = [result.summary]
-        for problem in result.problems:
-            lines.append(f"  - {problem['message']}")
-        return "\n".join(lines)
+ def render(self, result: CommandResult) -> str:
+ lines = [result.summary]
+ for problem in result.problems:
+ lines.append(f" - {problem['message']}")
+ return "\n".join(lines)
 
 class JsonRenderer(OutputRenderer):
-    def render(self, result: CommandResult) -> str:
-        return json.dumps(result.to_payload(), indent=2)
+ def render(self, result: CommandResult) -> str:
+ return json.dumps(result.to_payload(), indent=2)
 
 class AiRenderer(OutputRenderer):
-    def render(self, result: CommandResult) -> str:
-        # Markdown format for LLM consumption
-        ...
+ def render(self, result: CommandResult) -> str:
+ # Markdown format for LLM consumption
+ ...
 ```
 
 ### 4.2 Filesystem/Git Abstractions for Testing
@@ -1020,30 +1020,30 @@ class AiRenderer(OutputRenderer):
 ```python
 # cihub/utils/filesystem.py
 class FileSystem(ABC):
-    @abstractmethod
-    def read_text(self, path: Path) -> str: ...
-    @abstractmethod
-    def write_text(self, path: Path, content: str) -> None: ...
-    @abstractmethod
-    def exists(self, path: Path) -> bool: ...
+ @abstractmethod
+ def read_text(self, path: Path) -> str: ...
+ @abstractmethod
+ def write_text(self, path: Path, content: str) -> None: ...
+ @abstractmethod
+ def exists(self, path: Path) -> bool: ...
 
 class RealFileSystem(FileSystem):
-    def read_text(self, path: Path) -> str:
-        return path.read_text()
-    # ...
+ def read_text(self, path: Path) -> str:
+ return path.read_text()
+ # ...
 
 class MemoryFileSystem(FileSystem):
-    """For testing without touching disk."""
-    def __init__(self):
-        self._files: dict[Path, str] = {}
-    # ...
+ """For testing without touching disk."""
+ def __init__(self):
+ self._files: dict[Path, str] = {}
+ # ...
 ```
 
 ---
 
 ## Part 5: Anti-Patterns to Eliminate
 
-### 5.1 CLI Re-exporting Helpers ✅ COMPLETE (2026-01-06)
+### 5.1 CLI Re-exporting Helpers [x] COMPLETE (2026-01-06)
 
 **Status:** COMPLETE - Fixed directly instead of phased deprecation.
 
@@ -1053,38 +1053,38 @@ class MemoryFileSystem(FileSystem):
 
 **Changes:**
 1. Updated ~20 test files to import from canonical locations:
-   - `CommandResult` → `from cihub.types import CommandResult`
-   - `hub_root`, `get_git_branch`, etc. → `from cihub.utils import ...`
-   - `render_dispatch_workflow` → `from cihub.services.templates import ...`
-   - POM utilities → `from cihub.utils import ...`
+ - `CommandResult` → `from cihub.types import CommandResult`
+ - `hub_root`, `get_git_branch`, etc. → `from cihub.utils import ...`
+ - `render_dispatch_workflow` → `from cihub.services.templates import ...`
+ - POM utilities → `from cihub.utils import ...`
 2. Removed 50+ re-export lines from `cihub/cli.py`
 3. Updated `tests/test_module_structure.py` to verify utilities are NOT exported from cli.py
 
 **Result:** `cli.py` now only exports actual CLI functions (`main`, `build_parser`). All 2234 tests pass.
 
-### 5.2 Mixed Return Types ✅ DONE
+### 5.2 Mixed Return Types [x] DONE
 
 **Status:** COMPLETE (2026-01-05)
 
 **Problem (SOLVED):** Some commands returned `int`, others `CommandResult`, requiring CLI to handle both.
 
 **Migration (COMPLETED):**
-1. ✅ Audited all 47 commands with `-> int | CommandResult:` return type
-2. ✅ Changed all return types to `-> CommandResult:`
-3. ✅ Updated `report/__init__.py` summary subcommands to return `CommandResult` instead of `EXIT_SUCCESS`
-4. ✅ Updated type annotations in: `hub_ci/validation.py` (8), `hub_ci/release.py` (17), `hub_ci/python_tools.py` (3), `hub_ci/security.py` (6), `hub_ci/smoke.py` (4), `hub_ci/java_tools.py` (6), `hub_ci/router.py` (1), `check.py` (1)
-5. ✅ Fixed test assertions expecting `int` → check `result.exit_code` instead
-6. ✅ All 2104 tests pass
+1. [x] Audited all 47 commands with `-> int | CommandResult:` return type
+2. [x] Changed all return types to `-> CommandResult:`
+3. [x] Updated `report/__init__.py` summary subcommands to return `CommandResult` instead of `EXIT_SUCCESS`
+4. [x] Updated type annotations in: `hub_ci/validation.py` (8), `hub_ci/release.py` (17), `hub_ci/python_tools.py` (3), `hub_ci/security.py` (6), `hub_ci/smoke.py` (4), `hub_ci/java_tools.py` (6), `hub_ci/router.py` (1), `check.py` (1)
+5. [x] Fixed test assertions expecting `int` → check `result.exit_code` instead
+6. [x] All 2104 tests pass
 
 **Benefit:** CLI now has consistent return types, simpler testing, guaranteed `--json` support.
 
-### 5.3 Special-Case Handling ⚠️ CONSIDER SKIPPING (2026-01-06 Investigation)
+### 5.3 Special-Case Handling WARNING: CONSIDER SKIPPING (2026-01-06 Investigation)
 
 `cihub/services/ci_engine/python_tools.py:183-188`:
 ```python
 if tool == "codeql":
-    # Special handling for CodeQL
-    ...
+ # Special handling for CodeQL
+ ...
 ```
 
 **Issue:** Special cases scattered, hard to find.
@@ -1121,13 +1121,13 @@ if tool == "codeql":
 - **Part 7.5** (Config/Schema Consistency) - Has a REAL BUG: schema validation bypass
 - **Part 7.6** (Services Layer) - 300+ line `run_ci()` god method needs breaking up
 
-### 5.4 CLI Command Sprawl ✅ BY DESIGN (Audited 2026-01-05)
+### 5.4 CLI Command Sprawl [x] BY DESIGN (Audited 2026-01-05)
 
 **External Review Finding (Gemini Code Review - Grade B+):**
 
 > "This CLI is functional and comprehensive, but it suffers from 'Command Sprawl.' It feels like a Swiss Army Knife where every new blade was bolted onto the handle wherever it fit, rather than being organized into a neat toolbox."
 
-**⚠️ POST-AUDIT UPDATE: The reviewer also identified that this is INTENTIONAL:**
+**WARNING: POST-AUDIT UPDATE: The reviewer also identified that this is INTENTIONAL:**
 
 > "These aren't for humans to type; they are RPC endpoints for the future TypeScript UI to call. This explains the obsession with `--json` output and `CommandResult` objects."
 
@@ -1153,13 +1153,13 @@ The "Command Sprawl" is an intentional API design choice:
 **What CAN be improved (Low Risk):**
 
 1. **Phase CLI-1 (Low risk):** Swap `doctor`/`preflight` help text
-   - ✅ Safe: Neither is referenced in workflows or UI designs
-   - Change: "doctor" → "Check environment readiness"
-   - Change: "preflight" → "Alias for doctor (deprecated)"
+ - [x] Safe: Neither is referenced in workflows or UI designs
+ - Change: "doctor" → "Check environment readiness"
+ - Change: "preflight" → "Alias for doctor (deprecated)"
 
 2. **Phase CLI-2 (Low risk):** Add argparse help groups for better `--help` output
-   - ✅ Safe: Only affects `--help` display, not command names
-   - Groups: "Daily Use", "Admin/Setup", "Hub Operations"
+ - [x] Safe: Only affects `--help` display, not command names
+ - Groups: "Daily Use", "Admin/Setup", "Hub Operations"
 
 **What should NOT be changed:**
 
@@ -1181,10 +1181,10 @@ Re-evaluate command restructuring ONLY when:
 
 ## Part 6: Implementation Roadmap
 
-### Phase 1: Foundation (Current Sprint) ✅
+### Phase 1: Foundation (Current Sprint) [x]
 - [x] Create `cihub/core/languages/` structure
 - [x] Extract `PythonStrategy` and `JavaStrategy` (delegation pattern)
-- [x] Update `run_ci()` to use strategy pattern ✅
+- [x] Update `run_ci()` to use strategy pattern [x]
 - [x] Add tests for strategy selection (33 tests)
 
 ### Phase 2: Output Consistency
@@ -1210,27 +1210,27 @@ Re-evaluate command restructuring ONLY when:
 ## Appendix: Files by Refactoring Priority
 
 ### Must Touch (High Impact)
-| File                                 | Lines   | Issue                 | Status                               |
+| File | Lines | Issue | Status |
 |--------------------------------------|---------|-----------------------|--------------------------------------|
-| `services/ci_engine/__init__.py`     | 179-289 | Language branching    | ✅ Refactored to use strategy pattern |
-| `services/ci_engine/python_tools.py` | 176-198 | Tool dispatch         | Strategy delegates here              |
-| `services/ci_engine/java_tools.py`   | 80-103  | Tool dispatch         | Strategy delegates here              |
-| `services/ci_engine/helpers.py`      | 104-134 | Duplicate gate config | ✅ Uses strategy.get_default_tools()  |
+| `services/ci_engine/__init__.py` | 179-289 | Language branching | [x] Refactored to use strategy pattern |
+| `services/ci_engine/python_tools.py` | 176-198 | Tool dispatch | Strategy delegates here |
+| `services/ci_engine/java_tools.py` | 80-103 | Tool dispatch | Strategy delegates here |
+| `services/ci_engine/helpers.py` | 104-134 | Duplicate gate config | [x] Uses strategy.get_default_tools() |
 
 ### Should Touch (Medium Impact)
-| File                          | Lines  | Issue                |
+| File | Lines | Issue |
 |-------------------------------|--------|----------------------|
-| `commands/run.py`             | 67-89  | Direct printing      |
-| `commands/detect.py`          | 37-48  | Direct printing      |
+| `commands/run.py` | 67-89 | Direct printing |
+| `commands/detect.py` | 37-48 | Direct printing |
 | `commands/hub_ci/__init__.py` | 91-140 | 15+ print statements |
-| `services/ci_engine/gates.py` | 26-33  | Scattered env reads  |
+| `services/ci_engine/gates.py` | 26-33 | Scattered env reads |
 
 ### Nice to Touch (Low Impact)
-| File           | Lines | Issue                     |
+| File | Lines | Issue |
 |----------------|-------|---------------------------|
-| `cli.py`       | 13-61 | Re-exports (keep for now) |
-| `types.py`     | 12-40 | Loose contract            |
-| `utils/env.py` | -     | Add GitHub context        |
+| `cli.py` | 13-61 | Re-exports (keep for now) |
+| `types.py` | 12-40 | Loose contract |
+| `utils/env.py` | - | Add GitHub context |
 
 ---
 
@@ -1259,14 +1259,14 @@ hub_ci_source_check.add_argument("--output", help="Write outputs to file")
 ```python
 # cihub/cli_parsers/common.py
 def add_output_args(parser: argparse.ArgumentParser) -> None:
-    """Add standard --output and --github-output args."""
-    parser.add_argument("--output", help="Write outputs to file")
-    parser.add_argument("--github-output", action="store_true", help="Use GITHUB_OUTPUT")
+ """Add standard --output and --github-output args."""
+ parser.add_argument("--output", help="Write outputs to file")
+ parser.add_argument("--github-output", action="store_true", help="Use GITHUB_OUTPUT")
 
 def add_summary_args(parser: argparse.ArgumentParser) -> None:
-    """Add standard --summary and --github-summary args."""
-    parser.add_argument("--summary", help="Write summary to file")
-    parser.add_argument("--github-summary", action="store_true", help="Use GITHUB_STEP_SUMMARY")
+ """Add standard --summary and --github-summary args."""
+ parser.add_argument("--summary", help="Write summary to file")
+ parser.add_argument("--github-summary", action="store_true", help="Use GITHUB_STEP_SUMMARY")
 ```
 
 **Payoff:** Eliminates 60+ lines of repeated argument definitions.
@@ -1290,18 +1290,18 @@ def add_summary_args(parser: argparse.ArgumentParser) -> None:
 ```python
 # BEFORE (anti-pattern)
 def cmd_example(args):
-    print(f"Processing: {args.file}")
-    if error:
-        print(f"Error: {message}", file=sys.stderr)
-    return EXIT_FAILURE
+ print(f"Processing: {args.file}")
+ if error:
+ print(f"Error: {message}", file=sys.stderr)
+ return EXIT_FAILURE
 
 # AFTER (correct)
 def cmd_example(args) -> CommandResult:
-    return CommandResult(
-        exit_code=EXIT_FAILURE,
-        summary=f"Processing: {args.file}",
-        problems=[{"severity": "error", "message": message}],
-    )
+ return CommandResult(
+ exit_code=EXIT_FAILURE,
+ summary=f"Processing: {args.file}",
+ problems=[{"severity": "error", "message": message}],
+ )
 ```
 
 ---
@@ -1312,7 +1312,7 @@ def cmd_example(args) -> CommandResult:
 **Evidence:** `cihub/cli.py:383-388` wraps bare ints only in non-JSON mode.
 
 **Files affected:**
-- Returns `int`: ~46 hub-ci functions (now migrated ✅)
+- Returns `int`: ~46 hub-ci functions (now migrated [x])
 - Returns `CommandResult`: validate.py, check.py, smoke.py
 - Returns both: discover.py, run.py (depending on code path)
 
@@ -1336,9 +1336,9 @@ _write_outputs({"key": "value"}, output_path)
 ```python
 # cihub/commands/hub_ci/__init__.py
 def write_github_outputs(values: dict[str, str], args: argparse.Namespace) -> None:
-    """Write outputs to GitHub or file, resolving paths from args."""
-    output_path = _resolve_output_path(args.output, args.github_output)
-    _write_outputs(values, output_path)
+ """Write outputs to GitHub or file, resolving paths from args."""
+ output_path = _resolve_output_path(args.output, args.github_output)
+ _write_outputs(values, output_path)
 ```
 
 ---
@@ -1358,12 +1358,12 @@ def write_github_outputs(values: dict[str, str], args: argparse.Namespace) -> No
 **Proposed: Generic helper**
 ```python
 def run_tool_with_json_report(
-    cmd: list[str],
-    repo_path: Path,
-    report_path: Path,
-    tool_name: str,
+ cmd: list[str],
+ repo_path: Path,
+ report_path: Path,
+ tool_name: str,
 ) -> tuple[str, list[dict], dict]:
-    """Run tool and parse JSON report. Returns (status, problems, data)."""
+ """Run tool and parse JSON report. Returns (status, problems, data)."""
 ```
 
 ---
@@ -1377,14 +1377,14 @@ def run_tool_with_json_report(
 ```python
 mvnw = repo_path / "mvnw"
 if mvnw.exists():
-    mvnw.chmod(mvnw.stat().st_mode | stat.S_IEXEC)
-    _run_command(["./mvnw", ...], repo_path)
+ mvnw.chmod(mvnw.stat().st_mode | stat.S_IEXEC)
+ _run_command(["./mvnw", ...], repo_path)
 ```
 
 **Proposed: Helper function**
 ```python
 def ensure_executable_and_run(repo_path: Path, wrapper: str, cmd: list[str]) -> CompletedProcess:
-    """Make wrapper executable and run command."""
+ """Make wrapper executable and run command."""
 ```
 
 ---
@@ -1394,10 +1394,10 @@ def ensure_executable_and_run(repo_path: Path, wrapper: str, cmd: list[str]) -> 
 #### Finding 7.3.1: Duplicate Functions
 **Problem:** Identical functions in multiple files.
 
-| Function                      | Location 1                | Location 2                   | Lines |
+| Function | Location 1 | Location 2 | Lines |
 |-------------------------------|---------------------------|------------------------------|-------|
-| `_get_repo_name()`            | `report/helpers.py:22-36` | `ci_engine/helpers.py:23-37` | 14    |
-| `_detect_java_project_type()` | `report/helpers.py:69-87` | `ci_engine/helpers.py:69-87` | 18    |
+| `_get_repo_name()` | `report/helpers.py:22-36` | `ci_engine/helpers.py:23-37` | 14 |
+| `_detect_java_project_type()` | `report/helpers.py:69-87` | `ci_engine/helpers.py:69-87` | 18 |
 
 **Action:** Move both to `cihub/utils/git.py` or new `cihub/utils/repo.py`.
 
@@ -1420,24 +1420,24 @@ def ensure_executable_and_run(repo_path: Path, wrapper: str, cmd: list[str]) -> 
 # cihub/utils/github_env.py
 @dataclass
 class GitHubEnv:
-    repository: str | None
-    ref_name: str | None
-    run_id: str | None
-    sha: str | None
-    step_summary: Path | None
+ repository: str | None
+ ref_name: str | None
+ run_id: str | None
+ sha: str | None
+ step_summary: Path | None
 
-    @classmethod
-    def from_env(cls) -> "GitHubEnv":
-        return cls(
-            repository=env_str("GITHUB_REPOSITORY"),
-            ref_name=env_str("GITHUB_REF_NAME"),
-            # ...
-        )
+ @classmethod
+ def from_env(cls) -> "GitHubEnv":
+ return cls(
+ repository=env_str("GITHUB_REPOSITORY"),
+ ref_name=env_str("GITHUB_REF_NAME"),
+ # ...
+ )
 ```
 
 ---
 
-#### Finding 7.3.3: Ad-hoc Subprocess Calls ✅ **DONE**
+#### Finding 7.3.3: Ad-hoc Subprocess Calls [x] **DONE**
 **Problem:** 30 subprocess.run() calls scattered without consistent patterns.
 
 **Issues:**
@@ -1478,13 +1478,13 @@ Implemented `safe_run()` wrapper in `cihub/utils/exec_utils.py` with:
 **Proposed: Template method**
 ```python
 def _build_report(
-    language: str,
-    config: dict,
-    tool_results: dict,
-    context: RunContext,
-    metric_extractors: dict[str, Callable],
+ language: str,
+ config: dict,
+ tool_results: dict,
+ context: RunContext,
+ metric_extractors: dict[str, Callable],
 ) -> dict:
-    """Generic report builder - language strategies provide extractors."""
+ """Generic report builder - language strategies provide extractors."""
 ```
 
 ---
@@ -1519,7 +1519,7 @@ Or better: Move into `LanguageStrategy.resolve_thresholds()` method.
 **File:** `commands/hub_ci/__init__.py:90-97`
 ```python
 def _load_config(path: Path | None) -> dict[str, Any]:
-    return normalize_config(load_yaml_file(path))  # NO validate_config()!
+ return normalize_config(load_yaml_file(path)) # NO validate_config()!
 ```
 
 **Risk:** Invalid configs silently proceed.
@@ -1531,11 +1531,11 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 #### Finding 7.5.2: Defaults Defined in 4 Places
 **Problem:** `fail_on_cvss=7` default in multiple files.
 
-| Location                           | Line     | Value                     |
+| Location | Line | Value |
 |------------------------------------|----------|---------------------------|
-| `schema/ci-hub-config.schema.json` | 249, 342 | `"default": 7`            |
-| `cihub/config/fallbacks.py`        | 15, 47   | `"fail_on_cvss": 7`       |
-| `cihub/config/loader/inputs.py`    | 59, 95   | `.get("fail_on_cvss", 7)` |
+| `schema/ci-hub-config.schema.json` | 249, 342 | `"default": 7` |
+| `cihub/config/fallbacks.py` | 15, 47 | `"fail_on_cvss": 7` |
+| `cihub/config/loader/inputs.py` | 59, 95 | `.get("fail_on_cvss", 7)` |
 | `cihub/commands/config_outputs.py` | 107, 118 | `.get("fail_on_cvss", 7)` |
 
 **Risk:** Changing default requires 4-file update.
@@ -1563,12 +1563,12 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 **Proposed: Extract orchestrator functions**
 ```python
 def run_ci(...) -> CiRunResult:
-    config = _load_and_validate_config(...)
-    strategy = _select_strategy(config)
-    results = _execute_tools(strategy, config)
-    report = _build_and_validate_report(results, config)
-    _dispatch_notifications(report, config)
-    return CiRunResult(...)
+ config = _load_and_validate_config(...)
+ strategy = _select_strategy(config)
+ results = _execute_tools(strategy, config)
+ report = _build_and_validate_report(results, config)
+ _dispatch_notifications(report, config)
+ return CiRunResult(...)
 ```
 
 ---
@@ -1579,25 +1579,25 @@ def run_ci(...) -> CiRunResult:
 **File:** `services/ci_engine/__init__.py:17-36`
 ```python
 from cihub.ci_runner import (
-    run_bandit,
-    run_black,
-    run_checkstyle,
-    run_docker,
-    run_isort,
-    run_jacoco,
-    run_java_build,
-    run_mutmut,
-    run_mypy,
-    run_owasp,
-    run_pip_audit,
-    run_pitest,
-    run_pmd,
-    run_pytest,
-    run_ruff,
-    run_sbom,
-    run_semgrep,
-    run_spotbugs,
-    run_trivy,
+ run_bandit,
+ run_black,
+ run_checkstyle,
+ run_docker,
+ run_isort,
+ run_jacoco,
+ run_java_build,
+ run_mutmut,
+ run_mypy,
+ run_owasp,
+ run_pip_audit,
+ run_pitest,
+ run_pmd,
+ run_pytest,
+ run_ruff,
+ run_sbom,
+ run_semgrep,
+ run_spotbugs,
+ run_trivy,
 )
 ```
 
@@ -1608,18 +1608,18 @@ from cihub.ci_runner import (
 from cihub.tools.registry import get_runner
 
 def _execute_tools(strategy, config):
-    for tool in strategy.get_default_tools():
-        runner = get_runner(tool)  # Dynamic lookup
-        results[tool] = runner(...)
+ for tool in strategy.get_default_tools():
+ runner = get_runner(tool) # Dynamic lookup
+ results[tool] = runner(...)
 ```
 
 ---
 
 ## Part 8: Updated Implementation Roadmap
 
-### Phase 1: Foundation ✅ COMPLETE
+### Phase 1: Foundation [x] COMPLETE
 - [x] Language strategies (Python/Java)
-- [x] Hub-CI CommandResult migration (**46/46 functions**) ✅
+- [x] Hub-CI CommandResult migration (**46/46 functions**) [x]
 - [x] Gate spec wiring (26 thresholds)
 - [x] Triage modularization (reference pattern)
 - [x] CommandResult helpers (`result_ok`, `result_fail`, `run_and_capture`)
@@ -1628,68 +1628,68 @@ def _execute_tools(strategy, config):
 - [x] Strategy docker config encapsulation (`get_docker_config()`)
 
 ### Phase 2: Consolidation Helpers (HIGH PRIORITY)
-- [x] Create `cli_parsers/common.py` with `add_output_args()`, `add_summary_args()` ✅ (2026-01-05)
-  - 8 factory functions: `add_output_args`, `add_summary_args`, `add_repo_args`, `add_report_args`, `add_path_args`, `add_output_dir_args`, `add_ci_output_args`, `add_tool_runner_args`
-  - `hub_ci.py`: 628 → 535 lines (93 lines saved)
-  - `report.py` and `core.py` also refactored
-  - 30 parameterized tests in `test_cli_common.py`
-- [x] Create `cihub/utils/github_context.py` with `OutputContext` dataclass and **migrate all 32 call sites** ✅ (2026-01-05)
-  ```python
-  @dataclass
-  class OutputContext:
-      output_path: str | None = None
-      github_output: bool = False
-      summary_path: str | None = None
-      github_summary: bool = False
+- [x] Create `cli_parsers/common.py` with `add_output_args()`, `add_summary_args()` [x] (2026-01-05)
+ - 8 factory functions: `add_output_args`, `add_summary_args`, `add_repo_args`, `add_report_args`, `add_path_args`, `add_output_dir_args`, `add_ci_output_args`, `add_tool_runner_args`
+ - `hub_ci.py`: 628 → 535 lines (93 lines saved)
+ - `report.py` and `core.py` also refactored
+ - 30 parameterized tests in `test_cli_common.py`
+- [x] Create `cihub/utils/github_context.py` with `OutputContext` dataclass and **migrate all 32 call sites** [x] (2026-01-05)
+ ```python
+ @dataclass
+ class OutputContext:
+ output_path: str | None = None
+ github_output: bool = False
+ summary_path: str | None = None
+ github_summary: bool = False
 
-      def write_outputs(self, values: dict[str, str]) -> None: ...
-      def write_summary(self, text: str) -> None: ...
-      def has_output(self) -> bool: ...
-      def has_summary(self) -> bool: ...
+ def write_outputs(self, values: dict[str, str]) -> None: ...
+ def write_summary(self, text: str) -> None: ...
+ def has_output(self) -> bool: ...
+ def has_summary(self) -> bool: ...
 
-      @classmethod
-      def from_args(cls, args) -> "OutputContext": ...
-  ```
-  - Old pattern: `output_path = _resolve_output_path(...); _write_outputs(values, output_path)`
-  - New pattern: `ctx = OutputContext.from_args(args); ctx.write_outputs(values)`
-  - Files migrated: `validation.py` (3), `smoke.py` (4), `security.py` (6), `java_tools.py` (4), `python_tools.py` (4), `release.py` (10), `badges.py` (1) = **32 total**
-  - Added to `hub_ci/__init__.py` exports (re-exported from utils)
-  - 38 tests in `tests/test_output_context.py` (parameterized + Hypothesis property-based)
-  - Old 4 helper functions kept for backward compatibility (deprecated)
-  - **NOTE:** This replaces Phase 4's `GitHubEnv dataclass` - can extend with env vars later
-- [x] Add `hub_ci/__init__.py` tool execution helpers ✅ (2026-01-05)
-  - `ToolResult` dataclass: structured result from tool execution
-  - `ensure_executable(path)`: consolidates 6 chmod patterns
-  - `load_json_report(path, default)`: consolidates 15+ JSON parse patterns
-  - `run_tool_with_json_report(cmd, cwd, report_path)`: full tool execution + JSON parsing
-  - 39 tests in `tests/test_tool_helpers.py` (parameterized + Hypothesis property-based)
-- [x] Consolidate `_get_repo_name()`, `_detect_java_project_type()` to `cihub/utils/project.py` ✅ (2026-01-05)
-  - Created `cihub/utils/project.py` with `get_repo_name()` and `detect_java_project_type()`
-  - Added underscore aliases for backward compatibility (`_get_repo_name`, `_detect_java_project_type`)
-  - Exported via `cihub/utils/__init__.py`
-  - Updated import chains:
-    - `ci_engine/__init__.py` imports from `cihub.utils`
-    - `ci_engine/gates.py` imports `_get_repo_name` from `cihub.utils`
-    - `ci_engine/helpers.py` no longer defines these (cleaned up unused `os`, `re` imports)
-    - `commands/report/__init__.py` imports from `cihub.utils`
-    - `commands/report/helpers.py` imports `_get_repo_name` from `cihub.utils`
-    - `commands/report/build.py` imports `_detect_java_project_type` from `cihub.utils`
-    - `core/languages/java.py` imports `_detect_java_project_type` from `cihub.utils`
-  - 37 tests in `tests/test_utils_project.py` (parameterized edge cases + integration + 6 Hypothesis property-based)
-  - Updated 4 test files to patch `cihub.utils.project` instead of old locations
+ @classmethod
+ def from_args(cls, args) -> "OutputContext": ...
+ ```
+ - Old pattern: `output_path = _resolve_output_path(...); _write_outputs(values, output_path)`
+ - New pattern: `ctx = OutputContext.from_args(args); ctx.write_outputs(values)`
+ - Files migrated: `validation.py` (3), `smoke.py` (4), `security.py` (6), `java_tools.py` (4), `python_tools.py` (4), `release.py` (10), `badges.py` (1) = **32 total**
+ - Added to `hub_ci/__init__.py` exports (re-exported from utils)
+ - 38 tests in `tests/test_output_context.py` (parameterized + Hypothesis property-based)
+ - Old 4 helper functions kept for backward compatibility (deprecated)
+ - **NOTE:** This replaces Phase 4's `GitHubEnv dataclass` - can extend with env vars later
+- [x] Add `hub_ci/__init__.py` tool execution helpers [x] (2026-01-05)
+ - `ToolResult` dataclass: structured result from tool execution
+ - `ensure_executable(path)`: consolidates 6 chmod patterns
+ - `load_json_report(path, default)`: consolidates 15+ JSON parse patterns
+ - `run_tool_with_json_report(cmd, cwd, report_path)`: full tool execution + JSON parsing
+ - 39 tests in `tests/test_tool_helpers.py` (parameterized + Hypothesis property-based)
+- [x] Consolidate `_get_repo_name()`, `_detect_java_project_type()` to `cihub/utils/project.py` [x] (2026-01-05)
+ - Created `cihub/utils/project.py` with `get_repo_name()` and `detect_java_project_type()`
+ - Added underscore aliases for backward compatibility (`_get_repo_name`, `_detect_java_project_type`)
+ - Exported via `cihub/utils/__init__.py`
+ - Updated import chains:
+ - `ci_engine/__init__.py` imports from `cihub.utils`
+ - `ci_engine/gates.py` imports `_get_repo_name` from `cihub.utils`
+ - `ci_engine/helpers.py` no longer defines these (cleaned up unused `os`, `re` imports)
+ - `commands/report/__init__.py` imports from `cihub.utils`
+ - `commands/report/helpers.py` imports `_get_repo_name` from `cihub.utils`
+ - `commands/report/build.py` imports `_detect_java_project_type` from `cihub.utils`
+ - `core/languages/java.py` imports `_detect_java_project_type` from `cihub.utils`
+ - 37 tests in `tests/test_utils_project.py` (parameterized edge cases + integration + 6 Hypothesis property-based)
+ - Updated 4 test files to patch `cihub.utils.project` instead of old locations
 
-### Phase 3: Output Consistency — Infrastructure Complete, Migration In Progress
-- [x] Audit 263+ print() calls in 37 command files ✅ (audit completed 2026-01-05)
-- [x] Implement OutputRenderer abstraction (Part 4.1 approach - smarter than utils/output.py) ✅ (2026-01-05)
-  - Created `cihub/output/` package with:
-    - `__init__.py` - Clean exports
-    - `renderers.py` - OutputRenderer ABC, HumanRenderer, JsonRenderer
-  - HumanRenderer contains ALL formatting logic (tables, lists, key-values, problems)
-  - JsonRenderer uses CommandResult.to_payload() for consistent JSON
-  - `get_renderer(json_mode)` factory function
-- [x] Centralize output rendering in `cli.py` ✅
-  - cli.py now uses `get_renderer()` at lines 394-400
-  - Single point of output: `renderer.render(result, command, duration_ms)`
+### Phase 3: Output Consistency - Infrastructure Complete, Migration In Progress
+- [x] Audit 263+ print() calls in 37 command files [x] (audit completed 2026-01-05)
+- [x] Implement OutputRenderer abstraction (Part 4.1 approach - smarter than utils/output.py) [x] (2026-01-05)
+ - Created `cihub/output/` package with:
+ - `__init__.py` - Clean exports
+ - `renderers.py` - OutputRenderer ABC, HumanRenderer, JsonRenderer
+ - HumanRenderer contains ALL formatting logic (tables, lists, key-values, problems)
+ - JsonRenderer uses CommandResult.to_payload() for consistent JSON
+ - `get_renderer(json_mode)` factory function
+- [x] Centralize output rendering in `cli.py` [x]
+ - cli.py now uses `get_renderer()` at lines 394-400
+ - Single point of output: `renderer.render(result, command, duration_ms)`
 - [x] 35 tests in `tests/test_output_renderers.py` (parameterized + 5 Hypothesis property-based)
 - [x] Contract enforcement test (`test_command_output_contract.py`) - prevents regression
 - **Architecture:** Commands return CommandResult with data, renderers decide how to display
@@ -1697,21 +1697,21 @@ def _execute_tools(strategy, config):
 **Command Migration Progress (2026-01-05):**
 | File | Prints Removed | Status |
 |------|---------------|--------|
-| adr.py | 16 | ✅ Migrated |
-| triage.py | 34 | ✅ Migrated |
-| secrets.py | 32 | ✅ Migrated |
-| templates.py | 22 | ✅ Migrated |
-| pom.py | 21 | ✅ Migrated |
-| dispatch.py | 10 | ✅ Migrated |
-| config_cmd.py | 9 | ✅ Migrated |
-| update.py | 8 | ✅ Migrated |
-| docs.py | 10 | ✅ Migrated |
-| new.py | 10 | ✅ Migrated |
-| init.py | 10 | ✅ Migrated |
-| smoke.py | 8 | ✅ Migrated |
-| discover.py | 8 | ✅ Migrated |
-| validate.py | 7 | ✅ Migrated **NEW** |
-| detect.py | 3 | ✅ Migrated **NEW** |
+| adr.py | 16 | [x] Migrated |
+| triage.py | 34 | [x] Migrated |
+| secrets.py | 32 | [x] Migrated |
+| templates.py | 22 | [x] Migrated |
+| pom.py | 21 | [x] Migrated |
+| dispatch.py | 10 | [x] Migrated |
+| config_cmd.py | 9 | [x] Migrated |
+| update.py | 8 | [x] Migrated |
+| docs.py | 10 | [x] Migrated |
+| new.py | 10 | [x] Migrated |
+| init.py | 10 | [x] Migrated |
+| smoke.py | 8 | [x] Migrated |
+| discover.py | 8 | [x] Migrated |
+| validate.py | 7 | [x] Migrated **NEW** |
+| detect.py | 3 | [x] Migrated **NEW** |
 | **Total migrated** | **~208** | **15 files** |
 | **Remaining** | **~55** | **~7 files + report/ subpkg** |
 
@@ -1744,14 +1744,14 @@ def _execute_tools(strategy, config):
 
 | File | Purpose | Priority |
 |------|---------|----------|
-| `cli_parsers/common.py` | **CREATED** ✅ - 8 argument factories | High |
-| `utils/github_context.py` | **CREATED** ✅ - OutputContext dataclass (32 call sites migrated) | High |
+| `cli_parsers/common.py` | **CREATED** [x] - 8 argument factories | High |
+| `utils/github_context.py` | **CREATED** [x] - OutputContext dataclass (32 call sites migrated) | High |
 | `utils/github_env.py` | GitHub env dataclass (extend github_context.py instead) | Medium |
 | `utils/exec_utils.py` | **EXISTS** - add `safe_run()` | High |
 | `utils/json_io.py` | JSON file operations | Medium |
 | `utils/severity.py` | Severity counting | Medium |
-| `output/__init__.py` | **CREATED** ✅ - OutputRenderer exports | High |
-| `output/renderers.py` | **CREATED** ✅ - HumanRenderer, JsonRenderer (35 tests) | High |
+| `output/__init__.py` | **CREATED** [x] - OutputRenderer exports | High |
+| `output/renderers.py` | **CREATED** [x] - HumanRenderer, JsonRenderer (35 tests) | High |
 | `config/constants.py` | Shared default values | Medium |
 | `tools/registry.py` | Tool runner registry | Medium |
 
@@ -1759,7 +1759,7 @@ def _execute_tools(strategy, config):
 
 ## Appendix C: Quick Wins (< 1 hour each)
 
-1. ~~**Create `add_output_args()`**~~ ✅ DONE - Eliminated 36+ duplicate arg definitions
+1. ~~**Create `add_output_args()`**~~ [x] DONE - Eliminated 36+ duplicate arg definitions
 2. **Create `write_github_outputs()`** - Consolidates 15+ output writing patterns
 3. **Move `_get_repo_name()`** - Removes exact duplicate
 4. **Add `validate_config()`** to hub_ci._load_config() - Fixes validation gap
@@ -1814,11 +1814,11 @@ The other improvements (output consistency, tool adapters, GitHub context) are i
 #### Finding 9.1.2: Add Black/isort to Local Tooling (Parity Gap)
 **Problem:** Black and isort run in CI but NOT locally.
 
-| Environment   | Black/isort Status                                   |
+| Environment | Black/isort Status |
 |---------------|------------------------------------------------------|
-| CI workflows  | ✅ `run_black`, `run_isort` toggles work              |
-| `cihub check` | ❌ Line 328: "Black removed - using Ruff format only" |
-| Makefile      | ❌ Only `ruff format`, no black/isort targets         |
+| CI workflows | [x] `run_black`, `run_isort` toggles work |
+| `cihub check` | [ ] Line 328: "Black removed - using Ruff format only" |
+| Makefile | [ ] Only `ruff format`, no black/isort targets |
 
 **Solution:** Add black/isort to local tooling to match CI behavior.
 
@@ -1851,11 +1851,11 @@ format-all: format format-black format-isort ## Run all formatters
 **Add to `.pre-commit-config.yaml`:**
 ```yaml
 - repo: https://github.com/python-jsonschema/check-jsonschema
-  rev: 0.29.1
-  hooks:
-    - id: check-jsonschema
-      files: '^config/.*\\.yaml$'
-      args: ['--schemafile=schema/ci-hub-config.schema.json']
+ rev: 0.29.1
+ hooks:
+ - id: check-jsonschema
+ files: '^config/.*\\.yaml$'
+ args: ['--schemafile=schema/ci-hub-config.schema.json']
 ```
 
 ---
@@ -1875,20 +1875,20 @@ format-all: format format-black format-isort ## Run all formatters
 
 ---
 
-### 9.3 Schema Consolidation ✅ DONE
+### 9.3 Schema Consolidation [x] DONE
 
 **Status:** COMPLETE (2026-01-05)
 
 **Problem (SOLVED):** Schema duplication causing ~150 lines of redundant definitions.
 
 **Migration (COMPLETED):**
-1. ✅ Added `sharedSbomTool` and `sharedSemgrepTool` to `#/definitions` in ci-hub-config.schema.json
-2. ✅ Updated `javaTools.sbom` and `javaTools.semgrep` to use `$ref`
-3. ✅ Updated `pythonTools.sbom` and `pythonTools.semgrep` to use `$ref`
-4. ✅ Added `toolStatusMap` definition to ci-report.v2.json
-5. ✅ Updated `tools_ran`, `tools_configured`, `tools_success`, `tools_require_run` to use `$ref`
-6. ✅ Fixed `test_tools_ran_schema_covers_all_tools` to follow `$ref`
-7. ✅ All 2104 tests pass
+1. [x] Added `sharedSbomTool` and `sharedSemgrepTool` to `#/definitions` in ci-hub-config.schema.json
+2. [x] Updated `javaTools.sbom` and `javaTools.semgrep` to use `$ref`
+3. [x] Updated `pythonTools.sbom` and `pythonTools.semgrep` to use `$ref`
+4. [x] Added `toolStatusMap` definition to ci-report.v2.json
+5. [x] Updated `tools_ran`, `tools_configured`, `tools_success`, `tools_require_run` to use `$ref`
+6. [x] Fixed `test_tools_ran_schema_covers_all_tools` to follow `$ref`
+7. [x] All 2104 tests pass
 
 **Benefit:** ~100 lines removed, single source of truth for tool definitions, easier maintenance.
 
@@ -1897,13 +1897,13 @@ format-all: format format-black format-isort ## Run all formatters
 #### Finding 9.3.1: Shared Tools Duplicated (RESOLVED)
 **Problem:** 5 tools defined identically in javaTools AND pythonTools.
 
-| Tool    | Duplicate Lines | Status |
+| Tool | Duplicate Lines | Status |
 |---------|-----------------|--------|
-| docker  | 34              | ⚠️ Different defaults (has `dockerfile` in Java) |
-| trivy   | 30              | ⚠️ Different defaults (Java has `fail_on_cvss`) |
-| codeql  | 28              | ⚠️ Different defaults (`languages` differs) |
-| sbom    | 26              | ✅ EXTRACTED to `sharedSbomTool` |
-| semgrep | 28              | ✅ EXTRACTED to `sharedSemgrepTool` |
+| docker | 34 | WARNING: Different defaults (has `dockerfile` in Java) |
+| trivy | 30 | WARNING: Different defaults (Java has `fail_on_cvss`) |
+| codeql | 28 | WARNING: Different defaults (`languages` differs) |
+| sbom | 26 | [x] EXTRACTED to `sharedSbomTool` |
+| semgrep | 28 | [x] EXTRACTED to `sharedSemgrepTool` |
 
 **Fix:** Extracted identical tools (sbom, semgrep) to `#/definitions/sharedTools` (~54 lines removed)
 
@@ -1912,11 +1912,11 @@ format-all: format format-black format-isort ## Run all formatters
 #### Finding 9.3.2: Triple Default Definition
 **Problem:** Same defaults in 3 places.
 
-| Source | File                               |
+| Source | File |
 |--------|------------------------------------|
 | Schema | `schema/ci-hub-config.schema.json` |
-| YAML   | `config/defaults.yaml`             |
-| Python | `cihub/config/fallbacks.py`        |
+| YAML | `config/defaults.yaml` |
+| Python | `cihub/config/fallbacks.py` |
 
 **Fix:** Generate YAML and Python FROM schema (single source of truth).
 
@@ -1925,7 +1925,7 @@ format-all: format format-black format-isort ## Run all formatters
 #### Finding 9.3.3: Report Schema Tool Lists (RESOLVED)
 **Problem:** 4 identical 22-tool lists in `ci-report.v2.json`.
 
-**Fix:** ✅ Extracted to `#/definitions/toolStatusMap`, referenced 4x (~66 lines removed).
+**Fix:** [x] Extracted to `#/definitions/toolStatusMap`, referenced 4x (~66 lines removed).
 
 ---
 
@@ -1939,17 +1939,17 @@ format-all: format format-black format-isort ## Run all formatters
 ### 9.4 Implementation Phases
 
 #### Phase 1: Scripts & Tooling (Immediate)
-- [x] Remove deprecated script entry points from pyproject.toml ✅ 2026-01-05
-- [x] Set removal date for 11 script shims ✅ 2026-01-05 (removal: 2026-02-01)
-- [x] Add black/isort to `cihub check` (match CI parity) ✅ 2026-01-05
-- [x] Add `format-black`, `format-isort`, `format-all` Makefile targets ✅ 2026-01-05
-- [x] Add JSON schema validation to pre-commit ✅ 2026-01-06 (check-jsonschema hook)
+- [x] Remove deprecated script entry points from pyproject.toml [x] 2026-01-05
+- [x] Set removal date for 11 script shims [x] 2026-01-05 (removal: 2026-02-01)
+- [x] Add black/isort to `cihub check` (match CI parity) [x] 2026-01-05
+- [x] Add `format-black`, `format-isort`, `format-all` Makefile targets [x] 2026-01-05
+- [x] Add JSON schema validation to pre-commit [x] 2026-01-06 (check-jsonschema hook)
 
-#### Phase 2: Workflow Security ✅ COMPLETE (2026-01-06)
-- [x] Add harden-runner to 14 workflows ✅ 2026-01-06 (configurable via `harden_runner_policy` input)
-- [x] Verify action pinning is consistent ✅ (all pinned to SHAs)
+#### Phase 2: Workflow Security [x] COMPLETE (2026-01-06)
+- [x] Add harden-runner to 14 workflows [x] 2026-01-06 (configurable via `harden_runner_policy` input)
+- [x] Verify action pinning is consistent [x] (all pinned to SHAs)
 
-#### Phase 3: Schema Consolidation ✅ COMPLETE (2026-01-05)
+#### Phase 3: Schema Consolidation [x] COMPLETE (2026-01-05)
 - [x] Extract `sharedTools` definition (sbom, semgrep)
 - [x] Extract `toolStatusMap` definition (22-tool boolean map)
 - [ ] Add full schemas for optional features (DEFERRED - low priority)
@@ -1963,24 +1963,24 @@ format-all: format format-black format-isort ## Run all formatters
 
 ### 9.5 Industry Best Practices Checklist
 
-| Practice                   | Status | Action                                      |
+| Practice | Status | Action |
 |----------------------------|--------|---------------------------------------------|
-| Trunk-based development    | ✅      | Already using                               |
-| Multiple formatter support | ✅      | CI has black/isort; local tooling updated ✅ |
-| Action pinning             | ✅      | All pinned to SHAs                          |
-| Pre-commit automation      | ✅      | JSON schema validation added (2026-01-06)   |
-| Explicit workflows         | ✅      | Boolean-toggle architecture preserved       |
-| Single source of truth     | ❌      | Schema → generate configs                   |
-| Pydantic validation        | ❌      | Consider for config types                   |
-| Security hardening         | ✅      | harden-runner added to 14 workflows (2026-01-06) |
+| Trunk-based development | [x] | Already using |
+| Multiple formatter support | [x] | CI has black/isort; local tooling updated [x] |
+| Action pinning | [x] | All pinned to SHAs |
+| Pre-commit automation | [x] | JSON schema validation added (2026-01-06) |
+| Explicit workflows | [x] | Boolean-toggle architecture preserved |
+| Single source of truth | [ ] | Schema → generate configs |
+| Pydantic validation | [ ] | Consider for config types |
+| Security hardening | [x] | harden-runner added to 14 workflows (2026-01-06) |
 
 **2026-01-06 Automation Audit Summary (UPDATED):**
-- **14 workflows** ✅ security hardened with harden-runner (configurable toggle)
+- **14 workflows** [x] security hardened with harden-runner (configurable toggle)
 - **11 deprecated scripts** ready for removal (deprecation warnings added)
 - **~400 lines** of schema duplication (partial: sharedTools extracted)
 - **Triple default definition** problem (partial: working toward single source)
-- **Local/CI parity** ✅ black/isort added to `cihub check` and Makefile
-- **Pre-commit** ✅ JSON schema validation added
+- **Local/CI parity** [x] black/isort added to `cihub check` and Makefile
+- **Pre-commit** [x] JSON schema validation added
 
 ---
 
@@ -1991,15 +1991,15 @@ format-all: format format-black format-isort ## Run all formatters
 
 ### 10.1 Current Testing State
 
-| Metric                           | Current             | Opportunity               |
+| Metric | Current | Opportunity |
 |----------------------------------|---------------------|---------------------------|
-| Test files                       | 70                  | -                         |
-| `@pytest.mark.parametrize` usage | 25 uses in 6 files  | Expand to 30+ files       |
-| `@pytest.fixture` usage          | 68 uses in 18 files | Centralize in conftest.py |
-| Hypothesis (property-based)      | 25 uses in 5 files  | Expand to critical paths  |
-| Mutmut (mutation testing)        | ✅ Configured        | Already integrated        |
-| conftest.py                      | ❌ Missing           | Create shared fixtures    |
-| pytest-xdist (parallel)          | ❌ Missing           | Add for faster CI         |
+| Test files | 70 | - |
+| `@pytest.mark.parametrize` usage | 25 uses in 6 files | Expand to 30+ files |
+| `@pytest.fixture` usage | 68 uses in 18 files | Centralize in conftest.py |
+| Hypothesis (property-based) | 25 uses in 5 files | Expand to critical paths |
+| Mutmut (mutation testing) | [x] Configured | Already integrated |
+| conftest.py | [ ] Missing | Create shared fixtures |
+| pytest-xdist (parallel) | [ ] Missing | Add for faster CI |
 
 ### 10.2 Missing Testing Patterns
 
@@ -2014,26 +2014,26 @@ from pathlib import Path
 
 @pytest.fixture
 def tmp_repo(tmp_path: Path) -> Path:
-    """Create a temporary repository structure."""
-    (tmp_path / ".git").mkdir()
-    (tmp_path / "pyproject.toml").write_text("[project]\nname = 'test'\n")
-    return tmp_path
+ """Create a temporary repository structure."""
+ (tmp_path / ".git").mkdir()
+ (tmp_path / "pyproject.toml").write_text("[project]\nname = 'test'\n")
+ return tmp_path
 
 @pytest.fixture
 def sample_config() -> dict:
-    """Return a minimal valid config."""
-    return {
-        "python": {"tools": {"pytest": {"enabled": True}}},
-        "thresholds": {"coverage_min": 70},
-    }
+ """Return a minimal valid config."""
+ return {
+ "python": {"tools": {"pytest": {"enabled": True}}},
+ "thresholds": {"coverage_min": 70},
+ }
 
 @pytest.fixture
 def mock_env(monkeypatch):
-    """Factory for mocking environment variables."""
-    def _mock(**env_vars):
-        for key, value in env_vars.items():
-            monkeypatch.setenv(key, value)
-    return _mock
+ """Factory for mocking environment variables."""
+ def _mock(**env_vars):
+ for key, value in env_vars.items():
+ monkeypatch.setenv(key, value)
+ return _mock
 ```
 
 ---
@@ -2043,13 +2043,13 @@ def mock_env(monkeypatch):
 
 **High-value candidates for parameterization:**
 
-| Test File               | Current Tests         | Parameterize Opportunity |
+| Test File | Current Tests | Parameterize Opportunity |
 |-------------------------|-----------------------|--------------------------|
-| `test_config_module.py` | Individual tool tests | All tool configs         |
-| `test_ci_report.py`     | Python/Java separate  | Language matrix          |
-| `test_services_ci.py`   | Individual services   | Service operations       |
-| `test_hub_ci.py`        | Per-command tests     | Command matrix           |
-| `test_cli_commands.py`  | Per-command tests     | CLI subcommands          |
+| `test_config_module.py` | Individual tool tests | All tool configs |
+| `test_ci_report.py` | Python/Java separate | Language matrix |
+| `test_services_ci.py` | Individual services | Service operations |
+| `test_hub_ci.py` | Per-command tests | Command matrix |
+| `test_cli_commands.py` | Per-command tests | CLI subcommands |
 
 **Example refactor:**
 ```python
@@ -2061,7 +2061,7 @@ def test_bandit_config(): ...
 # After: 1 parameterized test
 @pytest.mark.parametrize("tool", ["pytest", "ruff", "bandit", "mypy", "black"])
 def test_tool_config(tool, sample_config):
-    assert tool in sample_config["python"]["tools"]
+ assert tool in sample_config["python"]["tools"]
 ```
 
 ---
@@ -2071,13 +2071,13 @@ def test_tool_config(tool, sample_config):
 
 **High-value Hypothesis candidates:**
 
-| Module                         | Property to Test                                |
+| Module | Property to Test |
 |--------------------------------|-------------------------------------------------|
-| `config/normalize.py`          | Threshold profiles always produce valid configs |
-| `config/schema.py`             | Any valid config passes validation              |
-| `core/ci_report.py`            | Report builder handles any tool combination     |
-| `core/gate_specs.py`           | Gates evaluate consistently for boundary values |
-| `services/report_validator.py` | Validator catches all invalid reports           |
+| `config/normalize.py` | Threshold profiles always produce valid configs |
+| `config/schema.py` | Any valid config passes validation |
+| `core/ci_report.py` | Report builder handles any tool combination |
+| `core/gate_specs.py` | Gates evaluate consistently for boundary values |
+| `services/report_validator.py` | Validator catches all invalid reports |
 
 **Example:**
 ```python
@@ -2085,10 +2085,10 @@ from hypothesis import given, strategies as st
 
 @given(coverage=st.integers(min_value=0, max_value=100))
 def test_coverage_threshold_boundary(coverage):
-    """Property: coverage_min must be 0-100."""
-    config = {"thresholds": {"coverage_min": coverage}}
-    result = validate_thresholds(config)
-    assert result.success == (0 <= coverage <= 100)
+ """Property: coverage_min must be 0-100."""
+ config = {"thresholds": {"coverage_min": coverage}}
+ result = validate_thresholds(config)
+ assert result.success == (0 <= coverage <= 100)
 ```
 
 ---
@@ -2100,12 +2100,12 @@ def test_coverage_threshold_boundary(coverage):
 ```toml
 [project.optional-dependencies]
 dev = [
-    # ... existing ...
-    "pytest-xdist>=3.0",  # Parallel test execution
+ # ... existing ...
+ "pytest-xdist>=3.0", # Parallel test execution
 ]
 
 [tool.pytest.ini_options]
-addopts = "-n auto"  # Auto-detect CPU cores
+addopts = "-n auto" # Auto-detect CPU cores
 ```
 
 **Expected improvement:** 30-50% faster test runs on multi-core CI runners.
@@ -2124,24 +2124,24 @@ addopts = "-n auto"  # Auto-detect CPU cores
 ### 10.3 Testing Implementation Phases
 
 #### Phase T1: Foundation (Immediate)
-- [x] Create `tests/conftest.py` with shared fixtures ✅ 2026-01-05
-- [x] Add `pytest-xdist` for parallel execution ✅ 2026-01-05
-- [x] Add `hypothesis` to dev dependencies ✅ 2026-01-05
-- [x] Identify 10 test files for parameterization ✅ 2026-01-05
+- [x] Create `tests/conftest.py` with shared fixtures [x] 2026-01-05
+- [x] Add `pytest-xdist` for parallel execution [x] 2026-01-05
+- [x] Add `hypothesis` to dev dependencies [x] 2026-01-05
+- [x] Identify 10 test files for parameterization [x] 2026-01-05
 
 #### Phase T2: Parameterization (1-2 days)
-- [x] Refactor `test_config_module.py` with PathConfig matrix ✅ 2026-01-05
-- [x] Refactor `test_ci_engine.py` with Java project type matrix ✅ 2026-01-05
-- [x] Refactor `test_hub_ci.py` with command matrix ✅ 2026-01-05
-- [x] Refactor `test_language_strategies.py` with strategy matrix ✅ 2026-01-05
-- [x] Refactor `test_cihub_cli.py` with subcommand matrix ✅ 2026-01-05
+- [x] Refactor `test_config_module.py` with PathConfig matrix [x] 2026-01-05
+- [x] Refactor `test_ci_engine.py` with Java project type matrix [x] 2026-01-05
+- [x] Refactor `test_hub_ci.py` with command matrix [x] 2026-01-05
+- [x] Refactor `test_language_strategies.py` with strategy matrix [x] 2026-01-05
+- [x] Refactor `test_cihub_cli.py` with subcommand matrix [x] 2026-01-05
 
 #### Phase T3: Property-Based Testing (1-2 days)
-- [x] Create `tests/test_property_based.py` with Hypothesis ✅ 2026-01-05
-- [x] Add Hypothesis tests for deep_merge properties ✅ 2026-01-05
-- [x] Add Hypothesis tests for threshold boundaries ✅ 2026-01-05
-- [x] Add Hypothesis tests for tool config properties ✅ 2026-01-05
-- [x] Add Hypothesis tests for report structure invariants ✅ 2026-01-05
+- [x] Create `tests/test_property_based.py` with Hypothesis [x] 2026-01-05
+- [x] Add Hypothesis tests for deep_merge properties [x] 2026-01-05
+- [x] Add Hypothesis tests for threshold boundaries [x] 2026-01-05
+- [x] Add Hypothesis tests for tool config properties [x] 2026-01-05
+- [x] Add Hypothesis tests for report structure invariants [x] 2026-01-05
 
 #### Phase T4: Integration (Ongoing)
 - [ ] Run parameterized tests with each PR
@@ -2152,22 +2152,22 @@ addopts = "-n auto"  # Auto-detect CPU cores
 
 ### 10.4 Testing Best Practices Checklist
 
-| Practice                      | Status | Action                        |
+| Practice | Status | Action |
 |-------------------------------|--------|-------------------------------|
-| Shared fixtures (conftest.py) | ✅      | Created `tests/conftest.py` ✅ |
-| Parameterized tests           | ⚠️     | Expand from 6 to 30+ files    |
-| Property-based (Hypothesis)   | ⚠️     | Expand from 5 to 15+ files    |
-| Mutation testing (mutmut)     | ✅      | Already configured            |
-| Parallel execution (xdist)    | ✅      | Added `pytest-xdist>=3.0` ✅   |
-| Coverage gates                | ✅      | 70% minimum enforced          |
-| Snapshot testing              | ⚠️     | Have some, could expand       |
+| Shared fixtures (conftest.py) | [x] | Created `tests/conftest.py` [x] |
+| Parameterized tests | WARNING: | Expand from 6 to 30+ files |
+| Property-based (Hypothesis) | WARNING: | Expand from 5 to 15+ files |
+| Mutation testing (mutmut) | [x] | Already configured |
+| Parallel execution (xdist) | [x] | Added `pytest-xdist>=3.0` [x] |
+| Coverage gates | [x] | 70% minimum enforced |
+| Snapshot testing | WARNING: | Have some, could expand |
 
 **2026-01-05 Testing Audit Summary:**
 - **70 test files** with room for consolidation
-- ~~Parameterized testing underutilized (6/70 files)~~ → Now 10+ files with parameterized tests ✅
-- ~~Hypothesis underutilized (5/70 files)~~ → Added `test_property_based.py` with 12 tests ✅
-- ~~No conftest.py~~ → Created `tests/conftest.py` ✅
-- ~~pytest-xdist missing~~ → Added to dev dependencies ✅
+- ~~Parameterized testing underutilized (6/70 files)~~ → Now 10+ files with parameterized tests [x]
+- ~~Hypothesis underutilized (5/70 files)~~ → Added `test_property_based.py` with 12 tests [x]
+- ~~No conftest.py~~ → Created `tests/conftest.py` [x]
+- ~~pytest-xdist missing~~ → Added to dev dependencies [x]
 
 **Refactored Test Files (2026-01-05):**
 - `test_config_module.py`: PathConfig matrix (8 tests → 2 parameterized)

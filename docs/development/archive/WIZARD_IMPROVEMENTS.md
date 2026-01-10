@@ -1,6 +1,6 @@
 # Wizard Improvements Plan
 
-> **⚠️ SUPERSEDED:** This document has been consolidated into `docs/development/active/SYSTEM_INTEGRATION_PLAN.md` (2026-01-08)
+> **WARNING: SUPERSEDED:** This document has been consolidated into `docs/development/active/SYSTEM_INTEGRATION_PLAN.md` (2026-01-08)
 
 **Status:** ARCHIVED
 **Owner:** Development Team
@@ -53,19 +53,19 @@ These profiles already include sensible settings like:
 **Before:**
 ```
 Step 3: Configure CI Tools
-  Enable pytest? [Y/n]
-  Enable ruff? [Y/n]
-  Enable black? [Y/n]
-  ... (13 more tools)
+ Enable pytest? [Y/n]
+ Enable ruff? [Y/n]
+ Enable black? [Y/n]
+ ... (13 more tools)
 ```
 
 **After:**
 ```
 Step 3: Select Profile
-  ○ Fast (Recommended) - pytest, ruff, black, bandit, pip-audit (~5 min)
-  ○ Quality - Fast + mypy, mutmut (~20 min)
-  ○ Strict - Quality + semgrep, trivy, codeql (~30 min)
-  ○ Custom - Configure each tool individually
+ ○ Fast (Recommended) - pytest, ruff, black, bandit, pip-audit (~5 min)
+ ○ Quality - Fast + mypy, mutmut (~20 min)
+ ○ Strict - Quality + semgrep, trivy, codeql (~30 min)
+ ○ Custom - Configure each tool individually
 ```
 
 Then if "Custom" is selected, show the individual tool prompts.
@@ -80,15 +80,15 @@ Then if "Custom" is selected, show the individual tool prompts.
 Add to profile/tool config:
 ```yaml
 black:
-  enabled: true
-  mode: check  # or "fix"
+ enabled: true
+ mode: check # or "fix"
 ```
 
 **Wizard prompt:**
 ```
 Black formatting:
-  ○ Check only - Fail CI if code not formatted
-  ○ Auto-format - Fix formatting automatically (Recommended)
+ ○ Check only - Fail CI if code not formatted
+ ○ Auto-format - Fix formatting automatically (Recommended)
 ```
 
 ### Priority 3: Sane Bandit Defaults (High Impact, Low Effort)
@@ -96,10 +96,10 @@ Black formatting:
 Current profiles already have `fail_on_high: true`. Add:
 ```yaml
 bandit:
-  enabled: true
-  fail_on_high: true
-  exclude: [".venv", "tests", "build", "dist"]
-  summary_only: true  # Don't dump all findings, just counts
+ enabled: true
+ fail_on_high: true
+ exclude: [".venv", "tests", "build", "dist"]
+ summary_only: true # Don't dump all findings, just counts
 ```
 
 ### Priority 4: Plain English Gates (Medium Impact, Low Effort)
@@ -107,9 +107,9 @@ bandit:
 After threshold configuration, show:
 ```
 Summary of your gates:
-  ✓ CI will fail if coverage < 70%
-  ✓ CI will fail if any critical/high vulnerability is found
-  ✓ CI will warn (not fail) if formatting issues exist
+ [x] CI will fail if coverage < 70%
+ [x] CI will fail if any critical/high vulnerability is found
+ [x] CI will warn (not fail) if formatting issues exist
 ```
 
 ### Priority 5: Config Preview (Medium Impact, Medium Effort)
@@ -117,19 +117,19 @@ Summary of your gates:
 Before writing files, show:
 ```
 Files to be created:
-  .ci-hub.yml (new)
-  .github/workflows/hub-ci.yml (new)
+ .ci-hub.yml (new)
+ .github/workflows/hub-ci.yml (new)
 
 Preview .ci-hub.yml:
 ┌──────────────────────────────────────────┐
-│ language: python                          │
-│ python:                                   │
-│   version: "3.12"                         │
-│   tools:                                  │
-│     pytest:                               │
-│       enabled: true                       │
-│       min_coverage: 70                    │
-│ ...                                       │
+│ language: python │
+│ python: │
+│ version: "3.12" │
+│ tools: │
+│ pytest: │
+│ enabled: true │
+│ min_coverage: 70 │
+│ ... │
 └──────────────────────────────────────────┘
 
 Write these files? [Y/n]

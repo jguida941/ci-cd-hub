@@ -1,6 +1,6 @@
 # CI/CD Intelligence Hub – Agent Guide
 
-The hub orchestrates release, security, and reliability automation across multiple downstream repositories (e.g., `learn-caesar-cipher`, `vector_space`). It packages every signal—from cache integrity to Rekor inclusion proofs—into a single promotion gate. This document gives the AI agents the context and intent behind the workflows defined in `STATUS.md`, and catalogs each automation component they will interact with.
+The hub orchestrates release, security, and reliability automation across multiple downstream repositories (e.g., `learn-caesar-cipher`, `vector_space`). It packages every signal-from cache integrity to Rekor inclusion proofs-into a single promotion gate. This document gives the AI agents the context and intent behind the workflows defined in `STATUS.md`, and catalogs each automation component they will interact with.
 
 ## Operating Model & Scope
 
@@ -13,7 +13,7 @@ The hub orchestrates release, security, and reliability automation across multip
 
 | Phase | Focus | Highlights |
 |-------|-------|------------|
-| Phase 0 – Gate Integrity | Cache integrity, provenance verification, runtime secret sweeps, egress allowlists, Kyverno enforcement, Bandit gating | Cache manifest integrity ✅. Remaining blockers tracked in `issues.md` and `STATUS.md:60-90`. |
+| Phase 0 – Gate Integrity | Cache integrity, provenance verification, runtime secret sweeps, egress allowlists, Kyverno enforcement, Bandit gating | Cache manifest integrity [x]. Remaining blockers tracked in `issues.md` and `STATUS.md:60-90`. |
 | Phase 1 – Hardening & Evidence | Evidence bundle attestation, DR freshness guard, SBOM parity, SARIF hygiene, LLM governance | Work in progress (`STATUS.md:88-120`). |
 | Phase 2 – Extended Controls | KEV/EPSS SBOM diff, fairness budgets, cost/carbon telemetry, Dependabot automation, analytics tamper resistance | Backlog priorities (`STATUS.md:320+`). |
 

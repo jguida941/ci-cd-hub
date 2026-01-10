@@ -15,13 +15,13 @@ This is the master index for all CI/CD Hub documentation. All documents should b
 
 ## Documentation by Category
 
-### 📊 Status & Implementation
+### Status & Implementation
 
 | Document | Title | Status | Last Reviewed |
 |----------|-------|--------|---------------|
 | [CI/CD Hub – Honest Status Assessment](status/honest-status.md) | CI/CD Hub – Honest Status Assessment | Active | 2025-11-21 |
 
-### 🔍 Analysis & Architecture
+### Analysis & Architecture
 
 | Document | Title | Status | Last Reviewed |
 |----------|-------|--------|---------------|
@@ -29,7 +29,7 @@ This is the master index for all CI/CD Hub documentation. All documents should b
 | [CI/CD Hub Multi-Repository Service Architecture Analysis](analysis/multi-repo-analysis.md) | CI/CD Hub Multi-Repository Service Architecture Analysis | Active | 2025-11-02 |
 | [Multi-Repository CI/CD Hub Scalability Design](analysis/scalability.md) | Multi-Repository CI/CD Hub Scalability Design | Active | 2025-11-02 |
 
-### 🔧 Operations
+### Operations
 
 | Document | Title | Status | Last Reviewed |
 |----------|-------|--------|---------------|
@@ -48,7 +48,7 @@ This is the master index for all CI/CD Hub documentation. All documents should b
 | [Metrics Dictionary](metrics.md) | Metrics Dictionary | Active | 2025-10-26 |
 | [CI/CD Hub - Prioritized Action Plan](start-here.md) | CI/CD Hub - Prioritized Action Plan | Active | 2025-11-02 |
 
-### 📦 Module Documentation
+### Module Documentation
 
 | Module | Description |
 |--------|-------------|
@@ -59,7 +59,7 @@ This is the master index for all CI/CD Hub documentation. All documents should b
 | [generate vex](modules/generate_vex.md) | Generate VEX |
 | [mutation ouservatory](modules/mutation_observatory.md) | Mutation Observatory |
 
-### 📝 Architecture Decision Records
+### Architecture Decision Records
 
 - [ADR-0001: Supply-Chain Trust Boundary & Evidence Bundle](adr/0001-supply-chain-trust-boundary.md)
 - [ADR-0002: Multi-Repo Isolation & Fairness Posture](adr/0002-multi-repo-isolation.md)
@@ -79,7 +79,7 @@ All documentation in this repository follows these standards:
 To add a new document:
 1. Place it in the appropriate docs/ subdirectory
 2. Add a link from this index or from STATUS.md
-3. Run ✅ No orphan documents found in docs/ to verify linkage
+3. Run [x] No orphan documents found in docs/ to verify linkage
 4. Submit PR for review
 
 ---

@@ -16,7 +16,7 @@ you track ratios, adjust the SELECT accordingly. Example PromQL equivalent:
 
 ```promql
 max_over_time(
-  sum(rate(http_requests_total{service="payments-api",environment="canary"}[1m]))
+ sum(rate(http_requests_total{service="payments-api",environment="canary"}[1m]))
 )[10m:1m]
 ```
 
@@ -25,7 +25,7 @@ You can embed PromQL directly if you wrap it in a shell script:
 ```bash
 cat <<'PROM' > fixtures/canary/payments.promql
 max_over_time(
-  sum(rate(http_requests_total{service="payments-api", environment="canary"}[1m]))
+ sum(rate(http_requests_total{service="payments-api", environment="canary"}[1m]))
 )[10m:1m]
 PROM
 ```

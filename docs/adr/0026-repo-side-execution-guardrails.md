@@ -1,9 +1,9 @@
 # ADR-0026: Repo-Side Execution Guardrails
 
-**Status:** proposed  
-**Date:** 2025-12-25  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status:** proposed
+**Date:** 2025-12-25
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -38,10 +38,10 @@ When `repo_side_execution: true`, the hub may write files to target repos via `c
 ```yaml
 # In config/repos/<repo>.yaml
 repo:
-  owner: jguida941
-  name: my-repo
-  use_central_runner: false     # Using distributed mode
-  repo_side_execution: true     # Opt-in to workflow generation
+ owner: jguida941
+ name: my-repo
+ use_central_runner: false # Using distributed mode
+ repo_side_execution: true # Opt-in to workflow generation
 ```
 
 ### Command Interface
@@ -63,13 +63,13 @@ cihub generate-workflow --repo my-repo --validate
 ## Alternatives Considered
 
 1. **No repo writes ever:**
-   Rejected: Too restrictive for valid use cases.
+ Rejected: Too restrictive for valid use cases.
 
 2. **Automatic workflow generation on config change:**
-   Rejected: Implicit writes violate "no surprises" principle.
+ Rejected: Implicit writes violate "no surprises" principle.
 
 3. **Single toggle for both central/distributed and repo writes:**
-   Rejected: These are orthogonal concerns. Distributed mode doesn't require repo writes.
+ Rejected: These are orthogonal concerns. Distributed mode doesn't require repo writes.
 
 ## Consequences
 

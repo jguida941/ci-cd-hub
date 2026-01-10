@@ -1,9 +1,9 @@
 # ADR-0012: Kyverno Policies for Kubernetes Admission Control
 
-**Status**: Accepted  
-**Date:** 2025-12-15  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-15
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -39,11 +39,11 @@ External repos can call the Kyverno CI workflow:
 
 ```yaml
 jobs:
-  kyverno:
-    uses: jguida941/ci-cd-hub/.github/workflows/kyverno-ci.yml@v1
-    with:
-      policies_dir: 'policies/kyverno'
-      run_tests: true  # Test against fixtures
+ kyverno:
+ uses: jguida941/ci-cd-hub/.github/workflows/kyverno-ci.yml@v1
+ with:
+ policies_dir: 'policies/kyverno'
+ run_tests: true # Test against fixtures
 ```
 
 Available inputs:

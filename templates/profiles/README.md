@@ -98,12 +98,12 @@ Feel free to modify these profiles for your needs:
 ```yaml
 # Start with fast profile, add one expensive tool
 python:
-  tools:
-    # ... fast profile defaults ...
+ tools:
+ # ... fast profile defaults ...
 
-    # Add mypy for type checking
-    mypy:
-      enabled: true
+ # Add mypy for type checking
+ mypy:
+ enabled: true
 ```
 
 ## Profile Tool Matrix

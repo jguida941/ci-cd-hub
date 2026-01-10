@@ -1,9 +1,9 @@
 # ADR-0014: Reusable Workflow Migration
 
-**Status**: Accepted  
-**Date:** 2025-12-17  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-30  
+**Status**: Accepted
+**Date:** 2025-12-17
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-30
 
 - Supersedes: ADR-0013
 
@@ -30,13 +30,13 @@ Replace copy-paste dispatch templates with minimal "caller" workflows that invok
 # target-repo/.github/workflows/java-ci-dispatch.yml
 name: Java CI (Dispatch)
 on:
-  workflow_dispatch:
-    inputs:
-      java_version: ...
-      # 50+ lines of input definitions
+ workflow_dispatch:
+ inputs:
+ java_version: ...
+ # 50+ lines of input definitions
 jobs:
-  build:
-    # 250+ lines of job steps duplicating hub logic
+ build:
+ # 250+ lines of job steps duplicating hub logic
 ```
 
 **After (Caller - ~30 lines per repo):**
@@ -44,15 +44,15 @@ jobs:
 # target-repo/.github/workflows/hub-ci.yml
 name: Hub CI
 on:
-  workflow_dispatch:
-    inputs:
-      # All inputs forwarded
+ workflow_dispatch:
+ inputs:
+ # All inputs forwarded
 jobs:
-  ci:
-    uses: jguida941/ci-cd-hub/.github/workflows/hub-ci.yml@v1
-    with:
-      hub_correlation_id: ${{ inputs.hub_correlation_id || '' }}
-    secrets: inherit
+ ci:
+ uses: jguida941/ci-cd-hub/.github/workflows/hub-ci.yml@v1
+ with:
+ hub_correlation_id: ${{ inputs.hub_correlation_id || '' }}
+ secrets: inherit
 ```
 
 ### 2. Semantic Versioning for Workflows
@@ -68,21 +68,21 @@ All reusable workflows emit a standardized `report.json` with:
 
 ```json
 {
-  "schema_version": "2.0",
-  "metadata": {
-    "workflow_version": "v1.0.0",
-    "workflow_ref": "jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1"
-  },
-  "results": {
-    "coverage": 87,
-    "mutation_score": 72,
-    "tests_passed": 42,
-    "tests_failed": 0,
-    "ruff_errors": 0,
-    "bandit_high": 0,
-    "bandit_medium": 2,
-    // ... 12+ fields total
-  }
+ "schema_version": "2.0",
+ "metadata": {
+ "workflow_version": "v1.0.0",
+ "workflow_ref": "jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1"
+ },
+ "results": {
+ "coverage": 87,
+ "mutation_score": 72,
+ "tests_passed": 42,
+ "tests_failed": 0,
+ "ruff_errors": 0,
+ "bandit_high": 0,
+ "bandit_medium": 2,
+ // ... 12+ fields total
+ }
 }
 ```
 
@@ -146,7 +146,7 @@ cp hub-release/templates/repo/hub-java-ci.yml .github/workflows/hub-ci.yml
 
 # 3. Update config (optional - defaults work)
 # repo:
-#   dispatch_workflow: hub-ci.yml
+# dispatch_workflow: hub-ci.yml
 
 # 4. Push and test
 git add . && git commit -m "Migrate to reusable workflow caller"

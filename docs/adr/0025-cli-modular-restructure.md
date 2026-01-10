@@ -1,9 +1,9 @@
 # ADR-0025: CLI Modular Restructure with Interactive Wizard
 
-**Status**: Accepted  
-**Date:** 2025-12-25  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-25
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -21,22 +21,22 @@ Additionally, onboarding new repos requires manual YAML editing. Users need an i
 
 ```
 cihub/
-├── cli.py                    # Entry point + argparse (reduced to routing)
-├── config/                   # Config management
-│   ├── io.py                 # YAML I/O
-│   ├── merge.py              # Deep merge
-│   ├── schema.py             # JSON schema validation
-│   └── paths.py              # PathConfig (exists)
-├── commands/                 # Command implementations
-│   ├── new.py                # Create hub-side config for new repo
-│   ├── config_cmd.py         # Config management (show/set/enable/disable)
-│   └── ... (existing commands extracted)
-└── wizard/                   # Interactive prompts (optional dependency)
-    ├── core.py               # WizardRunner
-    ├── styles.py             # Centralized questionary+Rich theme
-    ├── validators.py         # Input validation
-    ├── summary.py            # Rich config summary display
-    └── questions/            # Per-category question modules
+├── cli.py # Entry point + argparse (reduced to routing)
+├── config/ # Config management
+│ ├── io.py # YAML I/O
+│ ├── merge.py # Deep merge
+│ ├── schema.py # JSON schema validation
+│ └── paths.py # PathConfig (exists)
+├── commands/ # Command implementations
+│ ├── new.py # Create hub-side config for new repo
+│ ├── config_cmd.py # Config management (show/set/enable/disable)
+│ └── ... (existing commands extracted)
+└── wizard/ # Interactive prompts (optional dependency)
+ ├── core.py # WizardRunner
+ ├── styles.py # Centralized questionary+Rich theme
+ ├── validators.py # Input validation
+ ├── summary.py # Rich config summary display
+ └── questions/ # Per-category question modules
 ```
 
 ### Soft Dependencies
@@ -76,16 +76,16 @@ All operations write to hub-side config only. No writes to target repos in MVP.
 ## Alternatives Considered
 
 1. **Typer/Click instead of argparse:**
-   Rejected: argparse works and is stdlib. No benefit to switching.
+ Rejected: argparse works and is stdlib. No benefit to switching.
 
 2. **Full scaffolding (create files in target repos):**
-   Deferred: Conflicts with "repos stay clean" principle. See ADR-0026 for opt-in workflow generation.
+ Deferred: Conflicts with "repos stay clean" principle. See ADR-0026 for opt-in workflow generation.
 
 3. **Single wizard library (only Rich or only questionary):**
-   Rejected: questionary excels at prompts, Rich at output. Separation of concerns.
+ Rejected: questionary excels at prompts, Rich at output. Separation of concerns.
 
 4. **Required wizard dependencies:**
-   Rejected: Forces installation for users who only want non-interactive CLI.
+ Rejected: Forces installation for users who only want non-interactive CLI.
 
 ## Consequences
 

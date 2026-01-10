@@ -1,6 +1,6 @@
 # Comprehensive System Audit Report
 
-> **⚠️ SUPERSEDED:** This document has been consolidated into `docs/development/active/SYSTEM_INTEGRATION_PLAN.md` (2026-01-08)
+> **WARNING: SUPERSEDED:** This document has been consolidated into `docs/development/active/SYSTEM_INTEGRATION_PLAN.md` (2026-01-08)
 
 **Status:** ARCHIVED
 **Date:** 2026-01-08
@@ -12,17 +12,17 @@ A comprehensive multi-agent audit of CLI, Schema, Wizard, Workflows, and User Jo
 
 | Component | Status | Score | Critical Issues |
 |-----------|--------|-------|-----------------|
-| CLI Commands | ✅ Excellent | 10/10 | None - 83 commands, 100% compliant |
-| Schema | ⚠️ Needs Work | 6/10 | 24% unused fields, field mismatches |
-| Wizard | ❌ Incomplete | 3/10 | Only 12% of CLI covered |
-| Workflows | ⚠️ Mostly Good | 8/10 | 3 hardcoded tools in hub-production-ci |
-| User Journeys | ⚠️ Mixed | 5/10 | Migration tooling missing |
+| CLI Commands | [x] Excellent | 10/10 | None - 83 commands, 100% compliant |
+| Schema | WARNING: Needs Work | 6/10 | 24% unused fields, field mismatches |
+| Wizard | [ ] Incomplete | 3/10 | Only 12% of CLI covered |
+| Workflows | WARNING: Mostly Good | 8/10 | 3 hardcoded tools in hub-production-ci |
+| User Journeys | WARNING: Mixed | 5/10 | Migration tooling missing |
 
 ---
 
 ## FINDINGS BY AGENT
 
-### Agent 1: CLI Commands Audit ✅
+### Agent 1: CLI Commands Audit [x]
 
 **Result:** FULLY COMPLIANT
 
@@ -37,7 +37,7 @@ A comprehensive multi-agent audit of CLI, Schema, Wizard, Workflows, and User Jo
 
 ---
 
-### Agent 2: Schema vs Config Audit ⚠️
+### Agent 2: Schema vs Config Audit WARNING:
 
 **Result:** 24% OF SCHEMA FIELDS ARE UNUSED
 
@@ -62,15 +62,15 @@ A comprehensive multi-agent audit of CLI, Schema, Wizard, Workflows, and User Jo
 
 ---
 
-### Agent 3: Wizard vs CLI Audit ❌
+### Agent 3: Wizard vs CLI Audit [ ]
 
 **Result:** ONLY 4/33 COMMANDS (12%) HAVE WIZARD SUPPORT
 
 #### Commands WITH Wizard
-- `cihub setup` ✅
-- `cihub init --wizard` ✅
-- `cihub new --interactive` ✅
-- `cihub config edit` ✅
+- `cihub setup` [x]
+- `cihub init --wizard` [x]
+- `cihub new --interactive` [x]
+- `cihub config edit` [x]
 
 #### Critical Gaps (Need Wizard)
 
@@ -91,14 +91,14 @@ A comprehensive multi-agent audit of CLI, Schema, Wizard, Workflows, and User Jo
 
 ---
 
-### Agent 4: Workflows vs CLI Audit ⚠️
+### Agent 4: Workflows vs CLI Audit WARNING:
 
 **Result:** 3/4 WORKFLOWS COMPLIANT, 1 PARTIALLY NON-COMPLIANT
 
 #### Compliant Workflows
-- `python-ci.yml` ✅
-- `java-ci.yml` ✅
-- `hub-ci.yml` ✅
+- `python-ci.yml` [x]
+- `java-ci.yml` [x]
+- `hub-ci.yml` [x]
 
 #### Non-Compliant: hub-production-ci.yml
 
@@ -116,7 +116,7 @@ A comprehensive multi-agent audit of CLI, Schema, Wizard, Workflows, and User Jo
 
 ---
 
-### Agent 5: User Journey Audit ⚠️
+### Agent 5: User Journey Audit WARNING:
 
 **Result:** MIXED - MIGRATION TOOLING WORST GAP
 

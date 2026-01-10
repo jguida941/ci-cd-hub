@@ -178,7 +178,7 @@ run: echo "${{ inputs.value }}"
 
 # After (safe):
 env:
-  VALUE: ${{ inputs.value }}
+ VALUE: ${{ inputs.value }}
 run: echo "$VALUE"
 ```
 
@@ -224,7 +224,7 @@ bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
 - POM utilities → `from cihub.utils import ...`
 
 ### Status
-- CLEAN_CODE.md: Part 5.1 ✅ COMPLETE
+- CLEAN_CODE.md: Part 5.1 [x] COMPLETE
 - All 2234 tests passing
 
 ---
@@ -252,7 +252,7 @@ bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
 - Added backward compatibility aliases across modules
 
 ### Status
-- CLEAN_CODE.md: Part 3.2 ✅ COMPLETE
+- CLEAN_CODE.md: Part 3.2 [x] COMPLETE
 - All 2233 tests passing
 
 ---
@@ -276,7 +276,7 @@ bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
 - Tests cover from_env, properties, with_output_config, backward compatibility
 
 ### Status
-- CLEAN_CODE.md: Part 3.1 ✅ COMPLETE
+- CLEAN_CODE.md: Part 3.1 [x] COMPLETE
 - All 2241 tests passing
 
 ---
@@ -288,10 +288,10 @@ bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
 **Implementation:**
 - Created `cihub/utils/exec_utils.py` with centralized subprocess handling
 - Added timeout constants per ADR-0045:
-  - `TIMEOUT_QUICK = 30` (simple commands)
-  - `TIMEOUT_NETWORK = 120` (network operations)
-  - `TIMEOUT_BUILD = 600` (build/test commands)
-  - `TIMEOUT_EXTENDED = 900` (long-running operations)
+ - `TIMEOUT_QUICK = 30` (simple commands)
+ - `TIMEOUT_NETWORK = 120` (network operations)
+ - `TIMEOUT_BUILD = 600` (build/test commands)
+ - `TIMEOUT_EXTENDED = 900` (long-running operations)
 - Custom exceptions: `CommandNotFoundError`, `CommandTimeoutError`
 - Consistent UTF-8 encoding and capture_output defaults
 
@@ -365,11 +365,11 @@ bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
 ### Code Review Fixes (CLEAN_CODE.md Phase 3)
 
 **Migration Quality Improvements:**
-- **detect.py** — Pure CommandResult return (no conditional JSON mode)
-- **validate.py** — Added YAML parse error handling (yaml.YAMLError, ValueError)
-- **smoke.py** — Fixed TemporaryDirectory resource leak with explicit cleanup
-- **discover.py** — Reordered empty check before GITHUB_OUTPUT write
-- **cli.py** — Error output now routes to stderr (CLI best practice)
+- **detect.py** - Pure CommandResult return (no conditional JSON mode)
+- **validate.py** - Added YAML parse error handling (yaml.YAMLError, ValueError)
+- **smoke.py** - Fixed TemporaryDirectory resource leak with explicit cleanup
+- **discover.py** - Reordered empty check before GITHUB_OUTPUT write
+- **cli.py** - Error output now routes to stderr (CLI best practice)
 
 **Test Updates:**
 - Updated test patterns: `result.exit_code` instead of comparing `result == int`
@@ -381,12 +381,12 @@ bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
 **New Design Doc:** `docs/development/active/TEST_REORGANIZATION.md`
 
 Comprehensive plan for restructuring 2100+ tests from flat `tests/` into organized hierarchy:
-- `tests/unit/` — Fast, isolated, no I/O
-- `tests/integration/` — Cross-module, may use filesystem
-- `tests/e2e/` — Full workflows, slow
-- `tests/contracts/` — Schema/API contract tests
-- `tests/property/` — Hypothesis property-based tests
-- `tests/regression/` — Bug reproduction tests
+- `tests/unit/` - Fast, isolated, no I/O
+- `tests/integration/` - Cross-module, may use filesystem
+- `tests/e2e/` - Full workflows, slow
+- `tests/contracts/` - Schema/API contract tests
+- `tests/property/` - Hypothesis property-based tests
+- `tests/regression/` - Bug reproduction tests
 
 **Living Metadata System:**
 - Uses existing `config/defaults.yaml` `hub_ci.thresholds` as single source of truth
@@ -419,11 +419,11 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 ### MASTER_PLAN.md Updates
 - Added **v1.0 Cutline** section with Quick Wins, Heavy Lifts, and Verification items.
 - Created **Post v1.0 Backlog** section for explicitly deferred items:
-  - Registry & Versioning (centralized registry CLI, versioning/rollback)
-  - Triage Enhancements (schema validation, DORA metrics)
-  - Governance (RBAC, approval workflows)
-  - Optional Tooling (act integration, Gradle, Docker multi-stage)
-  - PyQt6 GUI wrapper (deferred until CLI stabilizes)
+ - Registry & Versioning (centralized registry CLI, versioning/rollback)
+ - Triage Enhancements (schema validation, DORA metrics)
+ - Governance (RBAC, approval workflows)
+ - Optional Tooling (act integration, Gradle, Docker multi-stage)
+ - PyQt6 GUI wrapper (deferred until CLI stabilizes)
 - v1.0 Quick Wins: docs stale, docs audit, config validate, audit umbrella, --json everywhere, _tool_enabled consolidation, gate-spec refactor, CI-engine tests.
 - v1.0 Heavy Lifts: env/context wrapper, runner/adapter boundaries.
 
@@ -447,21 +447,21 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 
 ### Audit Findings
 - Multi-agent audit of CLI (87 commands), services, workflows, and automation plans.
-- Identified 5 implementations of `_tool_enabled()` (54 usages) — consolidation needed.
-- `test_services_ci.py` has only 2 tests — major coverage gap.
+- Identified 5 implementations of `_tool_enabled()` (54 usages) - consolidation needed.
+- `test_services_ci.py` has only 2 tests - major coverage gap.
 - `hub-ci` subcommands (47 commands) explicitly block `--json` flag.
 - 21 unpinned `step-security/harden-runner` uses in workflows.
-- 38+ `if language ==` branches — Language Strategies pattern needed.
+- 38+ `if language ==` branches - Language Strategies pattern needed.
 
 ### MASTER_PLAN.md Updates
 - Added Section 10 (Maintainability Improvements) with CLI-compatible action items.
-- All items follow ADR-0031 (CLI-first) — no composite actions or workflow logic.
+- All items follow ADR-0031 (CLI-first) - no composite actions or workflow logic.
 - Linked to `active/CLEAN_CODE.md` for Language Strategies design.
 - Added 4 new items from second audit pass:
-  - Env/context wrapper (`GitHubContext` centralizes 17 `GITHUB_*` reads)
-  - Runner/adapter boundaries (subprocess only in `ci_runner/`)
-  - Output normalization (forbid `print()` in commands)
-  - Performance guardrails + "no inline logic" workflow guard
+ - Env/context wrapper (`GitHubContext` centralizes 17 `GITHUB_*` reads)
+ - Runner/adapter boundaries (subprocess only in `ci_runner/`)
+ - Output normalization (forbid `print()` in commands)
+ - Performance guardrails + "no inline logic" workflow guard
 
 ### Dropped Recommendations
 - Composite actions (violates CLI-first architecture).
@@ -554,7 +554,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - Defaulted `hub-orchestrator.yml` `include_details` to true for manual runs.
 - Added workflow inputs/env passthrough for debug/verbose/triage toggles and triage/log artifacts in CI uploads.
 - `hub-run-all.yml` installs Trivy and runs CodeQL actions when toggles are enabled, and can emit `hub-report-details.md`.
- 
+
 ### Aggregation
 - Mark missing report artifacts as `missing_report` so summaries show `MISSING` instead of empty metrics.
 
@@ -718,9 +718,9 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 ### Security
 - **Fixed template-injection vulnerabilities in workflows** - Converted `${{ inputs.* }}` to environment variables in `python-ci.yml`, `java-ci.yml`, and `kyverno-ci.yml` to prevent potential command injection.
 - **Enhanced zizmor CLI handler** - Added `_run_zizmor()` function in `check.py` with:
-  - `--min-severity high` filtering (mirrors bandit pattern)
-  - Auto-fix detection with helpful 💡 suggestions
-  - Direct link to remediation docs
+ - `--min-severity high` filtering (mirrors bandit pattern)
+ - Auto-fix detection with helpful suggestions
+ - Direct link to remediation docs
 
 ### Bug Fixes
 - **Fixed smoke --full test failure** - Added `pythonpath = ["."]` to scaffold template `pyproject.toml` so pytest can find local modules.
@@ -728,7 +728,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - **Fixed broken docs links** - Updated sigstore URLs in `KYVERNO.md` and `ADR-0012` (old `/cosign/keyless/` → `/cosign/signing/overview/`).
 
 ### CLI Improvements
-- `cihub check` now displays suggestions with 💡 emoji for failed checks that have remediation guidance.
+- `cihub check` now displays suggestions with emoji for failed checks that have remediation guidance.
 
 ## 2025-12-31 - Pre-push Verify + Tool Installation
 
@@ -953,7 +953,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 
 ### Mutation Testing Fixes (Python)
 - **mutmut 3.x compatibility** - Fixed deprecated CLI options (`--paths-to-mutate`, `--runner`)
-- **Result parsing** - Parse emoji output (🎉 = killed, 🙁 = survived) instead of `mutmut results`
+- **Result parsing** - Parse emoji output ( = killed, = survived) instead of `mutmut results`
 - **Auto config** - Creates temp `setup.cfg` with mutmut config if not present
 
 ### New Java Inputs
@@ -1028,7 +1028,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 
 ### Fixture Enhancements
 - Added `requirements.txt` to Python fixtures for pip-audit scanning
-- Updated workflow summaries to show all 12 tools with status indicators (✅ Ran / ⏭️ Skipped)
+- Updated workflow summaries to show all 12 tools with status indicators ([x] Ran / [ ] Skipped)
 - Temporarily disabled contact-suite-spring config (900 tests, too slow for testing)
 
 ### Cross-Repo Authentication

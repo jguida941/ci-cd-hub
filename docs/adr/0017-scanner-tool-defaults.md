@@ -1,9 +1,9 @@
 # ADR-0017: Scanner Tool Defaults
 
-**Status**: Accepted  
-**Date:** 2025-12-18  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-30  
+**Status**: Accepted
+**Date:** 2025-12-18
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-30
 
 ## Context
 
@@ -51,42 +51,42 @@ These require explicit opt-in due to cost/time:
 
 **Python CI:**
 ```yaml
-run_pytest: true        # Core
-run_ruff: true          # Core
-run_black: true         # Core
-run_isort: true         # Core
-run_bandit: true        # Core
-run_pip_audit: true     # Core
-run_mypy: false         # Opt-in (strict typing)
-run_mutmut: true        # Enabled but non-blocking
-run_semgrep: false      # Expensive
-run_trivy: false        # Expensive + needs Dockerfile
-run_codeql: false       # Expensive
-run_docker: false       # Expensive + needs Dockerfile
+run_pytest: true # Core
+run_ruff: true # Core
+run_black: true # Core
+run_isort: true # Core
+run_bandit: true # Core
+run_pip_audit: true # Core
+run_mypy: false # Opt-in (strict typing)
+run_mutmut: true # Enabled but non-blocking
+run_semgrep: false # Expensive
+run_trivy: false # Expensive + needs Dockerfile
+run_codeql: false # Expensive
+run_docker: false # Expensive + needs Dockerfile
 ```
 
 **Bandit severity gates (Python):**
 ```yaml
 python:
-  tools:
-    bandit:
-      fail_on_high: true
-      fail_on_medium: false
-      fail_on_low: false
+ tools:
+ bandit:
+ fail_on_high: true
+ fail_on_medium: false
+ fail_on_low: false
 ```
 
 **Java CI:**
 ```yaml
-run_jacoco: true        # Core
-run_checkstyle: true    # Core
-run_spotbugs: true      # Core
-run_pmd: true           # Core
-run_owasp: true         # Core (but slower)
-run_pitest: true        # Enabled but non-blocking
-run_semgrep: false      # Expensive
-run_trivy: false        # Expensive + needs Dockerfile
-run_codeql: false       # Expensive
-run_docker: false       # Expensive + needs Dockerfile
+run_jacoco: true # Core
+run_checkstyle: true # Core
+run_spotbugs: true # Core
+run_pmd: true # Core
+run_owasp: true # Core (but slower)
+run_pitest: true # Enabled but non-blocking
+run_semgrep: false # Expensive
+run_trivy: false # Expensive + needs Dockerfile
+run_codeql: false # Expensive
+run_docker: false # Expensive + needs Dockerfile
 ```
 
 ### 3. Default Thresholds
@@ -158,28 +158,28 @@ To ensure CI pipelines are working correctly, fixture workflows include validati
 
 ```yaml
 validate-passing:
-  name: "Validate Passing Report"
-  runs-on: ubuntu-latest
-  needs: ci-passing
-  if: always()
-  steps:
-    - name: Download Report
-      uses: actions/download-artifact@v4
-      with:
-        name: python-passing-ci-report
-        path: ./report
+ name: "Validate Passing Report"
+ runs-on: ubuntu-latest
+ needs: ci-passing
+ if: always()
+ steps:
+ - name: Download Report
+ uses: actions/download-artifact@v4
+ with:
+ name: python-passing-ci-report
+ path: ./report
 
-    - name: Validate Report Structure
-      run: |
-        REPORT="./report/report.json"
-        ERRORS=0
-        # Assert schema_version == "2.0"
-        # Assert tests_passed > 0, tests_failed == 0
-        # Assert coverage >= 70%
-        # Assert ALL tools_ran.* == true for enabled tools
-        # Assert ALL tool_metrics.* are populated (not null)
-        # Assert lint/security issues == 0
-        if [ "$ERRORS" -gt 0 ]; then exit 1; fi
+ - name: Validate Report Structure
+ run: |
+ REPORT="./report/report.json"
+ ERRORS=0
+ # Assert schema_version == "2.0"
+ # Assert tests_passed > 0, tests_failed == 0
+ # Assert coverage >= 70%
+ # Assert ALL tools_ran.* == true for enabled tools
+ # Assert ALL tool_metrics.* are populated (not null)
+ # Assert lint/security issues == 0
+ if [ "$ERRORS" -gt 0 ]; then exit 1; fi
 ```
 
 **Validation checks by fixture type**:
@@ -212,12 +212,12 @@ To enable expensive tools, callers explicitly set flags:
 
 ```yaml
 jobs:
-  ci:
-    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
-    with:
-      run_semgrep: true      # Opt-in
-      run_trivy: true        # Opt-in (only if Dockerfile exists)
-      run_codeql: true       # Opt-in
+ ci:
+ uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
+ with:
+ run_semgrep: true # Opt-in
+ run_trivy: true # Opt-in (only if Dockerfile exists)
+ run_codeql: true # Opt-in
 ```
 
 ### 5. Tool Skip Behavior
@@ -275,14 +275,14 @@ mvn verify checkstyle:checkstyle spotbugs:spotbugs dependency-check:check
 
 ```yaml
 - name: Build and Test
-  continue-on-error: true  # Let workflow continue
-  run: |
-    # Phase 1: Run build lifecycle (may fail on tests)
-    mvn -B -ntp verify || echo "Build completed with errors"
+ continue-on-error: true # Let workflow continue
+ run: |
+ # Phase 1: Run build lifecycle (may fail on tests)
+ mvn -B -ntp verify || echo "Build completed with errors"
 
-    # Phase 2: Run analysis tools separately with -DskipTests
-    # This ensures they run even if tests failed above
-    mvn -B -ntp -DskipTests checkstyle:checkstyle spotbugs:spotbugs dependency-check:check
+ # Phase 2: Run analysis tools separately with -DskipTests
+ # This ensures they run even if tests failed above
+ mvn -B -ntp -DskipTests checkstyle:checkstyle spotbugs:spotbugs dependency-check:check
 ```
 
 **Why two phases?**
@@ -302,10 +302,10 @@ mvn verify checkstyle:checkstyle spotbugs:spotbugs dependency-check:check
 
 ```yaml
 mvn -B -ntp -DskipTests \
-  -DnvdApiDelay=2500 \
-  -DnvdMaxRetryCount=10 \
-  -Ddependencycheck.failOnError=false \
-  dependency-check:check
+ -DnvdApiDelay=2500 \
+ -DnvdMaxRetryCount=10 \
+ -Ddependencycheck.failOnError=false \
+ dependency-check:check
 ```
 
 **Flag explanations**:
@@ -363,10 +363,10 @@ Mutation testing requires a green suite.
 
 ```yaml
 mutation-test:
-  name: Mutation Testing
-  runs-on: ubuntu-latest
-  needs: build-test
-  if: always() && inputs.run_pitest  # Runs even if build-test fails
+ name: Mutation Testing
+ runs-on: ubuntu-latest
+ needs: build-test
+ if: always() && inputs.run_pitest # Runs even if build-test fails
 ```
 
 **Jobs requiring `if: always()`**:
@@ -407,7 +407,7 @@ All core tools, fast builds, essential coverage.
 **Security-Focused**:
 ```yaml
 run_semgrep: true
-run_trivy: true  # If Dockerfile exists
+run_trivy: true # If Dockerfile exists
 run_codeql: true
 ```
 
@@ -417,7 +417,7 @@ run_semgrep: true
 run_trivy: true
 run_codeql: true
 run_docker: true
-run_mypy: true  # Python
+run_mypy: true # Python
 ```
 
 ## TODO: User-Facing Documentation

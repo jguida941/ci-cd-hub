@@ -5,28 +5,28 @@ Thanks for helping improve CI/CD Hub. This project is production-grade; changes 
 ## Getting Started
 
 1. Create a virtual environment:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
+ ```bash
+ python3 -m venv .venv
+ source .venv/bin/activate
+ ```
 2. Install dependencies:
-   ```bash
-   pip install -r requirements/requirements-dev.txt
-   ```
+ ```bash
+ pip install -r requirements/requirements-dev.txt
+ ```
 
 ## Development Workflow
 
 - Run tests:
-  ```bash
-  cd "$(git rev-parse --show-toplevel)"
-  pytest tests/
-  ```
+ ```bash
+ cd "$(git rev-parse --show-toplevel)"
+ pytest tests/
+ ```
 - Lint and format:
-  ```bash
-  cd "$(git rev-parse --show-toplevel)"
-  ruff check .
-  ruff format .
-  ```
+ ```bash
+ cd "$(git rev-parse --show-toplevel)"
+ ruff check .
+ ruff format .
+ ```
 
 ## Command Matrix (What to Run and When)
 

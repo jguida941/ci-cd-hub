@@ -23,12 +23,12 @@ cd ci-cd-hub
 ```bash
 # Create virtual environment (Python 3.10+ required; 3.12 used in CI)
 python3 -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate # On Windows: .venv\Scripts\activate
 
 # Install dependencies
-pip install -e ".[dev]"      # Core + development
-pip install -e ".[ci]"       # CI tool runners (pytest, ruff, etc.)
-pip install -e ".[wizard]"   # Optional: interactive wizard
+pip install -e ".[dev]" # Core + development
+pip install -e ".[ci]" # CI tool runners (pytest, ruff, etc.)
+pip install -e ".[wizard]" # Optional: interactive wizard
 ```
 
 ### 3. Verify Installation
@@ -103,26 +103,26 @@ The hub supports two execution modes. **Central mode is the default and recommen
 
 ```
 Start
-  │
-  ▼
+ │
+ ▼
 Do target repos NEED to run CI in their own environment?
-  │
-  ├─ NO ──► Use CENTRAL MODE (recommended)
-  │
-  ▼ YES
-  │
+ │
+ ├─ NO ──► Use CENTRAL MODE (recommended)
+ │
+ ▼ YES
+ │
 Do you have actions:write on target repos?
-  │
-  ├─ NO ──► Use CENTRAL MODE (can't dispatch)
-  │
-  ▼ YES
-  │
+ │
+ ├─ NO ──► Use CENTRAL MODE (can't dispatch)
+ │
+ ▼ YES
+ │
 Are target repos set up with workflow_dispatch workflows?
-  │
-  ├─ NO ──► Set them up, or use CENTRAL MODE
-  │
-  ▼ YES
-  │
+ │
+ ├─ NO ──► Set them up, or use CENTRAL MODE
+ │
+ ▼ YES
+ │
 Use DISTRIBUTED MODE
 ```
 
@@ -152,10 +152,10 @@ Edit `config/repos/my-repo.yaml`:
 
 ```yaml
 repo:
-  owner: your-github-handle
-  name: your-repo-name
-  language: java  # or python
-  default_branch: main
+ owner: your-github-handle
+ name: your-repo-name
+ language: java # or python
+ default_branch: main
 
 # Profile settings are already included from the template
 ```
@@ -204,11 +204,11 @@ If you want the hub to track this repo:
 ```yaml
 # config/repos/my-repo.yaml
 repo:
-  owner: your-github-handle
-  name: your-repo-name
-  language: java
-  dispatch_enabled: true
-  dispatch_workflow: hub-ci.yml
+ owner: your-github-handle
+ name: your-repo-name
+ language: java
+ dispatch_enabled: true
+ dispatch_workflow: hub-ci.yml
 ```
 
 ---
@@ -281,18 +281,18 @@ Run `make verify` (or `cihub check --all` + `cihub verify --remote`) before push
 
 ```bash
 # Pre-push workflow (run these before pushing)
-make preflight    # Environment checks (cihub doctor)
-make lint         # Ruff lint
-make format       # Ruff + black + isort formatting
-make typecheck    # mypy
-make test         # pytest
-make actionlint   # workflow syntax
-make docs-check   # docs drift (cihub docs check)
-make links        # broken link check (cihub docs links)
-make smoke        # full smoke test on scaffold
-make check        # Runs cihub check (fast local validation)
-make verify       # Full pre-push gate (remote drift check)
-make verify-integration  # Clone repos and run cihub ci (slow)
+make preflight # Environment checks (cihub doctor)
+make lint # Ruff lint
+make format # Ruff + black + isort formatting
+make typecheck # mypy
+make test # pytest
+make actionlint # workflow syntax
+make docs-check # docs drift (cihub docs check)
+make links # broken link check (cihub docs links)
+make smoke # full smoke test on scaffold
+make check # Runs cihub check (fast local validation)
+make verify # Full pre-push gate (remote drift check)
+make verify-integration # Clone repos and run cihub ci (slow)
 
 # Run 'make help' for all available targets
 ```
@@ -325,7 +325,7 @@ python scripts/cli_command_matrix.py --run --include-remote --include-mutating -
 ### Config Precedence (highest wins)
 
 ```
-repo .ci-hub.yml  →  hub config/repos/<repo>.yaml  →  hub config/defaults.yaml
+repo .ci-hub.yml → hub config/repos/<repo>.yaml → hub config/defaults.yaml
 ```
 
 ### Tool Configuration Syntax
@@ -335,32 +335,32 @@ Tools can be configured in two ways - **shorthand** (simple) or **full** (with o
 ```yaml
 # Shorthand syntax - just enable/disable
 python:
-  tools:
-    pytest: true          # enabled with defaults
-    mutmut: false         # disabled
-    ruff: true
+ tools:
+ pytest: true # enabled with defaults
+ mutmut: false # disabled
+ ruff: true
 
 # Full syntax - with custom settings
 python:
-  tools:
-    pytest:
-      enabled: true
-      min_coverage: 80    # custom threshold
-    ruff:
-      enabled: true
-      max_errors: 5       # allow up to 5 errors
-    mutmut:
-      enabled: false
+ tools:
+ pytest:
+ enabled: true
+ min_coverage: 80 # custom threshold
+ ruff:
+ enabled: true
+ max_errors: 5 # allow up to 5 errors
+ mutmut:
+ enabled: false
 
 # Mixed - use shorthand for simple toggles, full for customization
 python:
-  tools:
-    pytest:
-      enabled: true
-      min_coverage: 85
-    ruff: true            # shorthand
-    bandit: true          # shorthand
-    mutmut: false         # shorthand
+ tools:
+ pytest:
+ enabled: true
+ min_coverage: 85
+ ruff: true # shorthand
+ bandit: true # shorthand
+ mutmut: false # shorthand
 ```
 
 The shorthand `tool: true` is equivalent to `tool: { enabled: true }`.
@@ -373,10 +373,10 @@ Other sections that are `enabled`-driven can also use shorthand booleans:
 
 ```yaml
 reports:
-  github_summary: false
-  codecov: true
+ github_summary: false
+ codecov: true
 notifications:
-  slack: true
+ slack: true
 kyverno: true
 chaos: false
 ```
@@ -388,7 +388,7 @@ Use a named preset, then override specific values if needed:
 ```yaml
 thresholds_profile: coverage-gate
 thresholds:
-  max_high_vulns: 2
+ max_high_vulns: 2
 ```
 
 ### Key Commands
@@ -507,12 +507,12 @@ Expected: `python`
 
 ```bash
 python -m cihub init \
-  --repo . \
-  --language python \
-  --owner your-github-handle \
-  --name your-repo-name \
-  --branch main \
-  --apply
+ --repo . \
+ --language python \
+ --owner your-github-handle \
+ --name your-repo-name \
+ --branch main \
+ --apply
 ```
 
 Expected:
@@ -560,12 +560,12 @@ cd "$WORKDIR/java-maven"
 
 ```bash
 python -m cihub init \
-  --repo . \
-  --language java \
-  --owner your-github-handle \
-  --name your-repo-name \
-  --branch main \
-  --apply
+ --repo . \
+ --language java \
+ --owner your-github-handle \
+ --name your-repo-name \
+ --branch main \
+ --apply
 ```
 
 ### Step 3: Fix POM (Add Missing Plugins)
@@ -617,13 +617,13 @@ cd "$WORKDIR/monorepo"
 
 # Initialize with --subdir pointing to the project
 python -m cihub init \
-  --repo . \
-  --language java \
-  --owner test \
-  --name test \
-  --branch main \
-  --subdir java \
-  --apply
+ --repo . \
+ --language java \
+ --owner test \
+ --name test \
+ --branch main \
+ --subdir java \
+ --apply
 
 # Validate
 python -m cihub validate --repo .
@@ -645,13 +645,13 @@ For distributed mode and OWASP scans, configure these secrets:
 1. Go to [GitHub Settings → Developer Settings → Personal Access Tokens → Fine-grained tokens](https://github.com/settings/tokens?type=beta)
 2. Click **Generate new token**
 3. Set:
-   - **Token name:** `ci-cd-hub-dispatch`
-   - **Expiration:** 90 days (or custom)
-   - **Repository access:** Select repositories (hub + target repos)
-   - **Permissions:**
-     - **Actions:** Read and write
-     - **Contents:** Read
-     - **Metadata:** Read
+ - **Token name:** `ci-cd-hub-dispatch`
+ - **Expiration:** 90 days (or custom)
+ - **Repository access:** Select repositories (hub + target repos)
+ - **Permissions:**
+ - **Actions:** Read and write
+ - **Contents:** Read
+ - **Metadata:** Read
 4. Click **Generate token** and copy it
 
 ### 2. Set Hub Dispatch Secret
@@ -711,8 +711,8 @@ Check `problems` array for specific errors.
 
 **Fix:**
 ```bash
-brew install gh  # macOS
-# or: sudo apt install gh  # Ubuntu
+brew install gh # macOS
+# or: sudo apt install gh # Ubuntu
 gh auth login
 ```
 
@@ -720,8 +720,8 @@ gh auth login
 
 **Fix:** Install the tool:
 ```bash
-brew install maven   # or gradle
-pip install -e ".[ci]"  # Python tools
+brew install maven # or gradle
+pip install -e ".[ci]" # Python tools
 ```
 
 ### `Permission denied` on GitHub Actions

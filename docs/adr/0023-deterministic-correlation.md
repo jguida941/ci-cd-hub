@@ -1,9 +1,9 @@
 # ADR-0023: Deterministic Run Correlation
 
-**Status**: Accepted  
-**Date:** 2025-12-24  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-30  
+**Status**: Accepted
+**Date:** 2025-12-24
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-30
 
 ## Context
 
@@ -12,8 +12,8 @@ The hub orchestrator dispatches workflows to target repositories and must correl
 ```javascript
 // Old approach: match runs created within 10 seconds of dispatch
 const recent = runs.data.workflow_runs.find((run) => {
-  const created = new Date(run.created_at).getTime();
-  return created >= startedAt - 10000;
+ const created = new Date(run.created_at).getTime();
+ return created >= startedAt - 10000;
 });
 ```
 
@@ -45,39 +45,39 @@ Components:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Hub Orchestrator                                                            │
-│                                                                             │
-│  1. Generate correlation ID                                                 │
-│     correlationId = `${runId}-${runAttempt}-${configBasename}`             │
-│                                                                             │
-│  2. Pass as workflow input                                                  │
-│     inputs.hub_correlation_id = correlationId                              │
-│                                                                             │
-│  3. Store in dispatch metadata artifact                                     │
-│     { "correlation_id": correlationId, "run_id": capturedRunId }           │
+│ Hub Orchestrator │
+│ │
+│ 1. Generate correlation ID │
+│ correlationId = `${runId}-${runAttempt}-${configBasename}` │
+│ │
+│ 2. Pass as workflow input │
+│ inputs.hub_correlation_id = correlationId │
+│ │
+│ 3. Store in dispatch metadata artifact │
+│ { "correlation_id": correlationId, "run_id": capturedRunId } │
 └─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
+ │
+ ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Target Workflow (hub-python-ci.yml / hub-java-ci.yml)                       │
-│                                                                             │
-│  1. Receive hub_correlation_id input                                        │
-│                                                                             │
-│  2. Embed in report.json artifact                                           │
-│     { "hub_correlation_id": inputs.hub_correlation_id, "results": {...} }  │
+│ Target Workflow (hub-python-ci.yml / hub-java-ci.yml) │
+│ │
+│ 1. Receive hub_correlation_id input │
+│ │
+│ 2. Embed in report.json artifact │
+│ { "hub_correlation_id": inputs.hub_correlation_id, "results": {...} } │
 └─────────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
+ │
+ ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ Aggregation Phase                                                           │
-│                                                                             │
-│  1. If run_id missing: search runs by correlation ID in artifacts          │
-│     find_run_by_correlation_id(owner, repo, workflow, correlationId)       │
-│                                                                             │
-│  2. If run_id present: validate correlation ID matches                      │
-│     if report.hub_correlation_id != expected: search for correct run       │
-│                                                                             │
-│  3. Extract metrics only from verified artifacts                            │
+│ Aggregation Phase │
+│ │
+│ 1. If run_id missing: search runs by correlation ID in artifacts │
+│ find_run_by_correlation_id(owner, repo, workflow, correlationId) │
+│ │
+│ 2. If run_id present: validate correlation ID matches │
+│ if report.hub_correlation_id != expected: search for correct run │
+│ │
+│ 3. Extract metrics only from verified artifacts │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -87,25 +87,25 @@ Correlation logic is extracted into a testable module: `scripts/correlation.py`
 
 ```python
 def find_run_by_correlation_id(owner, repo, workflow_id, correlation_id, token):
-    """Search recent runs and match by hub_correlation_id in artifact."""
-    runs = gh_get(f"/.../workflows/{workflow_id}/runs?per_page=20")
-    for run in runs["workflow_runs"]:
-        artifact = get_ci_report_artifact(run["id"])
-        if artifact:
-            report = download_and_parse(artifact)
-            if report.get("hub_correlation_id") == correlation_id:
-                return run["id"]
-    return None
+ """Search recent runs and match by hub_correlation_id in artifact."""
+ runs = gh_get(f"/.../workflows/{workflow_id}/runs?per_page=20")
+ for run in runs["workflow_runs"]:
+ artifact = get_ci_report_artifact(run["id"])
+ if artifact:
+ report = download_and_parse(artifact)
+ if report.get("hub_correlation_id") == correlation_id:
+ return run["id"]
+ return None
 
 def validate_correlation_id(expected, actual):
-    """Validate correlation ID matches, handling edge cases."""
-    if not expected:
-        return True  # No expected ID, skip validation
-    return expected == actual
+ """Validate correlation ID matches, handling edge cases."""
+ if not expected:
+ return True # No expected ID, skip validation
+ return expected == actual
 
 def generate_correlation_id(hub_run_id, run_attempt, config_basename):
-    """Generate deterministic correlation ID."""
-    return f"{hub_run_id}-{run_attempt}-{config_basename}"
+ """Generate deterministic correlation ID."""
+ return f"{hub_run_id}-{run_attempt}-{config_basename}"
 ```
 
 ### Schema Changes
@@ -114,12 +114,12 @@ Added `hub_correlation_id` to report schema (`schema/ci-report.v2.json`):
 
 ```json
 {
-  "properties": {
-    "hub_correlation_id": {
-      "type": "string",
-      "description": "Correlation ID from hub orchestrator for reliable run matching"
-    }
-  }
+ "properties": {
+ "hub_correlation_id": {
+ "type": "string",
+ "description": "Correlation ID from hub orchestrator for reliable run matching"
+ }
+ }
 }
 ```
 
@@ -139,11 +139,11 @@ Added `hub_correlation_id` to report schema (`schema/ci-report.v2.json`):
 
 **Positive:**
 
-- No race conditions — correlation is deterministic
-- Self-healing — finds correct run even if initial time-based capture failed
-- Retry-safe — `run_attempt` in ID handles re-runs
-- Auditable — correlation chain visible in artifacts
-- Testable — logic extracted to `scripts/correlation.py` with unit tests
+- No race conditions - correlation is deterministic
+- Self-healing - finds correct run even if initial time-based capture failed
+- Retry-safe - `run_attempt` in ID handles re-runs
+- Auditable - correlation chain visible in artifacts
+- Testable - logic extracted to `scripts/correlation.py` with unit tests
 
 **Negative:**
 
@@ -182,8 +182,8 @@ Integration testing via hub orchestrator runs against canary repos.
 
 ## Related ADRs
 
-- ADR-0003: Dispatch and Orchestration — updated with correlation flow
-- ADR-0004: Aggregation and Reporting — updated with correlation_id field
+- ADR-0003: Dispatch and Orchestration - updated with correlation flow
+- ADR-0004: Aggregation and Reporting - updated with correlation_id field
 
 ## Update (2025-12-30)
 

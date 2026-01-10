@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-05
 **Status:** PLANNED (10-12 day blockers)
-**Priority:** 🟡 **#3** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
+**Priority:** **#3** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
 **Depends On:** CLEAN_CODE.md Part 2.2 (CommandResult migration) + REGISTRY_AUDIT Part 6 (wizard integration)
 **Blocks:** Nothing (can run parallel with DOC_AUTOMATION after blockers resolved)
 
@@ -25,12 +25,12 @@
 
 | Service | Tests? | Priority |
 |---------|--------|----------|
-| `triage/detection.py` | ❌ None | **CRITICAL** |
-| `triage/evidence.py` | ❌ None | **CRITICAL** |
-| `ci_engine/gates.py` | ❌ None | HIGH |
-| `ci_engine/helpers.py` | ❌ None | HIGH |
-| `repo_config.py` | ❌ None | MEDIUM |
-| `registry_service.py` | ❌ None | **CRITICAL** (see REGISTRY_AUDIT Part 15) |
+| `triage/detection.py` | [ ] None | **CRITICAL** |
+| `triage/evidence.py` | [ ] None | **CRITICAL** |
+| `ci_engine/gates.py` | [ ] None | HIGH |
+| `ci_engine/helpers.py` | [ ] None | HIGH |
+| `repo_config.py` | [ ] None | MEDIUM |
+| `registry_service.py` | [ ] None | **CRITICAL** (see REGISTRY_AUDIT Part 15) |
 
 **Note:** Registry service testing is comprehensively covered in REGISTRY_AUDIT_AND_PLAN.md Part 15 with 6 test categories and ~1,350 lines of test code proposed.
 
@@ -64,56 +64,56 @@ The test suite has grown to **2100+ tests** across files with:
 
 ```
 tests/
-├── README.md                    # AUTO-GENERATED: Test catalog with metrics
-├── conftest.py                  # Shared fixtures, markers
-│   # NOTE: Targets live in config/defaults.yaml (hub_ci.thresholds)
+├── README.md # AUTO-GENERATED: Test catalog with metrics
+├── conftest.py # Shared fixtures, markers
+│ # NOTE: Targets live in config/defaults.yaml (hub_ci.thresholds)
 │
-├── unit/                        # Fast, isolated, no I/O
-│   ├── commands/                # One file per command module
-│   │   ├── test_detect.py
-│   │   ├── test_validate.py
-│   │   ├── test_init.py
-│   │   └── ...
-│   ├── services/
-│   │   ├── test_ci_engine.py
-│   │   ├── test_triage.py
-│   │   └── ...
-│   ├── core/
-│   │   ├── test_gate_specs.py
-│   │   ├── test_ci_report.py
-│   │   └── ...
-│   └── config/
-│       ├── test_schema.py
-│       ├── test_normalize.py
-│       └── ...
+├── unit/ # Fast, isolated, no I/O
+│ ├── commands/ # One file per command module
+│ │ ├── test_detect.py
+│ │ ├── test_validate.py
+│ │ ├── test_init.py
+│ │ └── ...
+│ ├── services/
+│ │ ├── test_ci_engine.py
+│ │ ├── test_triage.py
+│ │ └── ...
+│ ├── core/
+│ │ ├── test_gate_specs.py
+│ │ ├── test_ci_report.py
+│ │ └── ...
+│ └── config/
+│ ├── test_schema.py
+│ ├── test_normalize.py
+│ └── ...
 │
-├── integration/                 # Cross-module, may use filesystem
-│   ├── test_cli_commands.py     # CLI → command → service flow
-│   ├── test_config_loading.py   # Config cascade integration
-│   └── ...
+├── integration/ # Cross-module, may use filesystem
+│ ├── test_cli_commands.py # CLI → command → service flow
+│ ├── test_config_loading.py # Config cascade integration
+│ └── ...
 │
-├── e2e/                         # Full workflows, slow
-│   ├── test_python_workflow.py
-│   ├── test_java_workflow.py
-│   └── test_smoke_workflows.py
+├── e2e/ # Full workflows, slow
+│ ├── test_python_workflow.py
+│ ├── test_java_workflow.py
+│ └── test_smoke_workflows.py
 │
-├── contracts/                   # Schema/API contract tests
-│   ├── test_command_output_contract.py
-│   ├── test_schema_contract.py
-│   ├── test_cli_parser_contracts.py
-│   └── ...
+├── contracts/ # Schema/API contract tests
+│ ├── test_command_output_contract.py
+│ ├── test_schema_contract.py
+│ ├── test_cli_parser_contracts.py
+│ └── ...
 │
-├── property/                    # Hypothesis property-based tests
-│   ├── test_config_properties.py
-│   ├── test_parsing_properties.py
-│   └── ...
+├── property/ # Hypothesis property-based tests
+│ ├── test_config_properties.py
+│ ├── test_parsing_properties.py
+│ └── ...
 │
-├── regression/                  # Bug reproduction tests
-│   ├── test_issue_001_yaml_parse.py
-│   └── ...
+├── regression/ # Bug reproduction tests
+│ ├── test_issue_001_yaml_parse.py
+│ └── ...
 │
-└── snapshots/                   # Snapshot test data
-    └── ...
+└── snapshots/ # Snapshot test data
+ └── ...
 ```
 
 ---
@@ -125,7 +125,7 @@ tests/
 ```python
 # BAD: This will drift and become stale
 """
-Coverage Target: 90%  # <-- Who updates this? When?
+Coverage Target: 90% # <-- Who updates this? When?
 """
 ```
 
@@ -139,19 +139,19 @@ Coverage Target: 90%  # <-- Who updates this? When?
 **Single Source of Truth: `config/defaults.yaml` (lines 426-428):**
 ```yaml
 hub_ci:
-  thresholds:
-    coverage_min: 70
-    mutation_score_min: 70
+ thresholds:
+ coverage_min: 70
+ mutation_score_min: 70
 ```
 
 **Flow:**
 ```
 config/defaults.yaml
-    ↓
+ ↓
 cihub hub-ci outputs --github-output
-    ↓
+ ↓
 hub-production-ci.yml jobs read outputs
-    ↓
+ ↓
 pytest --cov-fail-under=${{ needs.hub-ci-config.outputs.coverage_min }}
 ```
 
@@ -174,16 +174,16 @@ cihub hub-ci thresholds --wizard
 For module-specific thresholds, extend `config/defaults.yaml`:
 ```yaml
 hub_ci:
-  thresholds:
-    coverage_min: 90
-    mutation_score_min: 75
+ thresholds:
+ coverage_min: 90
+ mutation_score_min: 75
 
-    # Per-module overrides
-    overrides:
-      services/triage:
-        coverage_min: 80
-        mutation_score_min: 60
-        note: "Legacy code - see CLEAN_CODE.md"
+ # Per-module overrides
+ overrides:
+ services/triage:
+ coverage_min: 80
+ mutation_score_min: 60
+ note: "Legacy code - see CLEAN_CODE.md"
 ```
 
 ### Auto-Generated Test File Headers
@@ -229,10 +229,10 @@ Test Categories: unit, contract
 
 | Test File | Module | Coverage | Target | Mutation | Target | Status |
 |-----------|--------|----------|--------|----------|--------|--------|
-| unit/commands/test_detect.py | commands/detect.py | 94.2% | 90% | 78.5% | 75% | ✅ |
-| unit/commands/test_validate.py | commands/validate.py | 91.0% | 90% | 82.1% | 75% | ✅ |
-| unit/services/test_triage.py | services/triage/ | 81.2% | 80% | 62.3% | 60% | ✅ |
-| unit/services/test_ci_engine.py | services/ci_engine/ | 87.5% | 90% | 71.2% | 75% | ⚠️ |
+| unit/commands/test_detect.py | commands/detect.py | 94.2% | 90% | 78.5% | 75% | [x] |
+| unit/commands/test_validate.py | commands/validate.py | 91.0% | 90% | 82.1% | 75% | [x] |
+| unit/services/test_triage.py | services/triage/ | 81.2% | 80% | 62.3% | 60% | [x] |
+| unit/services/test_ci_engine.py | services/ci_engine/ | 87.5% | 90% | 71.2% | 75% | WARNING: |
 
 ### Files Below Target
 
@@ -283,52 +283,52 @@ from cihub.commands.detect import cmd_detect
 
 
 class TestDetectSuccess:
-    """Happy path tests for detect command."""
+ """Happy path tests for detect command."""
 
-    @pytest.mark.parametrize(
-        "marker_file,expected_language",
-        [
-            ("pyproject.toml", "python"),
-            ("pom.xml", "java"),
-            ("build.gradle", "java"),
-        ],
-        ids=["python-pyproject", "java-maven", "java-gradle"],
-    )
-    def test_detect_identifies_language_from_marker(
-        self, tmp_path, marker_file, expected_language
-    ):
-        """Detect correctly identifies language from project markers."""
-        (tmp_path / marker_file).write_text("minimal content")
-        # ... test implementation
+ @pytest.mark.parametrize(
+ "marker_file,expected_language",
+ [
+ ("pyproject.toml", "python"),
+ ("pom.xml", "java"),
+ ("build.gradle", "java"),
+ ],
+ ids=["python-pyproject", "java-maven", "java-gradle"],
+ )
+ def test_detect_identifies_language_from_marker(
+ self, tmp_path, marker_file, expected_language
+ ):
+ """Detect correctly identifies language from project markers."""
+ (tmp_path / marker_file).write_text("minimal content")
+ # ... test implementation
 
 
 class TestDetectErrors:
-    """Error handling tests for detect command."""
+ """Error handling tests for detect command."""
 
-    def test_detect_empty_directory_returns_failure(self, tmp_path):
-        """Empty directory without markers returns EXIT_FAILURE."""
-        # ... test implementation
+ def test_detect_empty_directory_returns_failure(self, tmp_path):
+ """Empty directory without markers returns EXIT_FAILURE."""
+ # ... test implementation
 
-    def test_detect_nonexistent_path_returns_error(self, tmp_path):
-        """Non-existent path returns structured error."""
-        # ... test implementation
+ def test_detect_nonexistent_path_returns_error(self, tmp_path):
+ """Non-existent path returns structured error."""
+ # ... test implementation
 
 
 class TestDetectEdgeCases:
-    """Boundary condition tests for detect command."""
+ """Boundary condition tests for detect command."""
 
-    def test_detect_with_multiple_markers_prefers_pyproject(self, tmp_path):
-        """When multiple markers exist, pyproject.toml takes precedence."""
-        # ... test implementation
+ def test_detect_with_multiple_markers_prefers_pyproject(self, tmp_path):
+ """When multiple markers exist, pyproject.toml takes precedence."""
+ # ... test implementation
 
 
 class TestDetectProperties:
-    """Property-based tests for detect command."""
+ """Property-based tests for detect command."""
 
-    @given(st.text(min_size=1, max_size=50))
-    def test_detect_language_override_always_returned(self, language):
-        """Property: language override is always respected."""
-        # ... test implementation
+ @given(st.text(min_size=1, max_size=50))
+ def test_detect_language_override_always_returned(self, language):
+ """Property: language override is always respected."""
+ # ... test implementation
 ```
 
 ---
@@ -453,10 +453,10 @@ Checks:
 
 | Blocker | Status | Effort |
 |---------|--------|--------|
-| `cihub hub-ci thresholds` CLI command | ❌ NOT IMPLEMENTED | 2-3 days |
-| Schema per-module overrides | ❌ BLOCKED by `additionalProperties: false` | 1 day |
-| 3 automation scripts | ❌ NOT IMPLEMENTED | 4-5 days |
-| Only 2/15 thresholds in CI outputs | ⚠️ INCOMPLETE | 2 days |
+| `cihub hub-ci thresholds` CLI command | [ ] NOT IMPLEMENTED | 2-3 days |
+| Schema per-module overrides | [ ] BLOCKED by `additionalProperties: false` | 1 day |
+| 3 automation scripts | [ ] NOT IMPLEMENTED | 4-5 days |
+| Only 2/15 thresholds in CI outputs | WARNING: INCOMPLETE | 2 days |
 
 **Estimated effort before Phase 1: ~10-12 days**
 
@@ -470,14 +470,14 @@ Checks:
 
 Add to proposed structure:
 ```
-tests/unit/core/languages/      # POM parsing, badges, detection (5 files)
-tests/unit/core/output/         # Renderers, context (2 files)
-tests/unit/core/diagnostics/    # Diagnostics, correlation (3 files)
-tests/unit/utils/               # Helpers, shims (7 files)
-tests/unit/wizard/              # Form validation, questions (2 files)
-tests/unit/templates/           # Template rendering (1 file)
-tests/performance/              # Benchmark tests
-tests/validation/               # Module structure validation
+tests/unit/core/languages/ # POM parsing, badges, detection (5 files)
+tests/unit/core/output/ # Renderers, context (2 files)
+tests/unit/core/diagnostics/ # Diagnostics, correlation (3 files)
+tests/unit/utils/ # Helpers, shims (7 files)
+tests/unit/wizard/ # Form validation, questions (2 files)
+tests/unit/templates/ # Template rendering (1 file)
+tests/performance/ # Benchmark tests
+tests/validation/ # Module structure validation
 ```
 
 ### Drift Detection Gaps
@@ -512,15 +512,15 @@ Split before moving:
 ```json
 // schema/ci-hub-config.schema.json - Add to hub_ci.thresholds
 "overrides": {
-  "type": "object",
-  "additionalProperties": {
-    "type": "object",
-    "properties": {
-      "coverage_min": { "type": "integer" },
-      "mutation_score_min": { "type": "integer" },
-      "note": { "type": "string" }
-    }
-  }
+ "type": "object",
+ "additionalProperties": {
+ "type": "object",
+ "properties": {
+ "coverage_min": { "type": "integer" },
+ "mutation_score_min": { "type": "integer" },
+ "note": { "type": "string" }
+ }
+ }
 }
 ```
 

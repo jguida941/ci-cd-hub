@@ -96,21 +96,21 @@ Both repositories verified as:
 ### Quick Start
 
 1. **Via GitHub UI:**
-   - Go to Actions → Smoke Test → Run workflow
-   - Leave defaults (skip_mutation: true)
-   - Click "Run workflow"
+ - Go to Actions → Smoke Test → Run workflow
+ - Leave defaults (skip_mutation: true)
+ - Click "Run workflow"
 
 2. **Via GitHub CLI:**
-   ```bash
-   gh workflow run smoke-test.yml
-   ```
+ ```bash
+ gh workflow run smoke-test.yml
+ ```
 
 3. **Via Hub Run All (specific repos):**
-   ```bash
-   gh workflow run hub-run-all.yml \
-     --field repos="smoke-test-java,smoke-test-python" \
-     --field skip_mutation=true
-   ```
+ ```bash
+ gh workflow run hub-run-all.yml \
+ --field repos="smoke-test-java,smoke-test-python" \
+ --field skip_mutation=true
+ ```
 
 ---
 
@@ -135,15 +135,15 @@ After running smoke test:
 - [x] Workflow status shows "Success"
 - [x] Both test-repo jobs completed
 - [x] Java job shows:
-  - [x] Tests executed (count > 0)
-  - [x] Coverage calculated (% > 0)
-  - [x] Checkstyle ran
-  - [x] SpotBugs ran
+ - [x] Tests executed (count > 0)
+ - [x] Coverage calculated (% > 0)
+ - [x] Checkstyle ran
+ - [x] SpotBugs ran
 - [x] Python job shows:
-  - [x] pytest ran (count > 0)
-  - [x] Coverage calculated (% > 0)
-  - [x] Ruff linting ran
-  - [x] Black format check ran
+ - [x] pytest ran (count > 0)
+ - [x] Coverage calculated (% > 0)
+ - [x] Ruff linting ran
+ - [x] Black format check ran
 - [x] Artifacts uploaded for both repos
 - [x] Step summaries show metrics tables
 - [x] Summary job shows total repo count = 2
@@ -169,15 +169,15 @@ After running smoke test:
 ```
 hub-release/
 ├── .github/workflows/
-│   └── smoke-test.yml (NEW)
+│ └── smoke-test.yml (NEW)
 ├── config/repos/
-│   ├── smoke-test-java.yaml (EXISTING - verified)
-│   └── smoke-test-python.yaml (EXISTING - verified)
+│ ├── smoke-test-java.yaml (EXISTING - verified)
+│ └── smoke-test-python.yaml (EXISTING - verified)
 └── docs/
-    ├── README.md (index)
-    ├── guides/WORKFLOWS.md (UPDATED)
-    ├── development/execution/SMOKE_TEST.md
-    └── development/execution/SMOKE_TEST_REPOS.md
+ ├── README.md (index)
+ ├── guides/WORKFLOWS.md (UPDATED)
+ ├── development/execution/SMOKE_TEST.md
+ └── development/execution/SMOKE_TEST_REPOS.md
 ```
 
 ---
@@ -205,10 +205,10 @@ Historical excerpt from `docs/development/archive/P0.md` (superseded by `docs/de
 ```
 
 **Status:** Ready to test
-- ✅ Smoke test workflow created
-- ✅ 2 fixture repos configured (Java + Python)
-- ✅ Documentation complete
-- ⏳ Awaiting first successful run to mark complete
+- [x] Smoke test workflow created
+- [x] 2 fixture repos configured (Java + Python)
+- [x] Documentation complete
+- Awaiting first successful run to mark complete
 
 ---
 

@@ -1,9 +1,9 @@
 # ADR-0037: Shorthand Enabled Sections + Threshold Profiles
 
-**Status**: Accepted  
-**Date:** 2026-01-03  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2026-01-03  
+**Status**: Accepted
+**Date:** 2026-01-03
+**Developer:** Justin Guida
+**Last Reviewed:** 2026-01-03
 
 ## Context
 
@@ -23,7 +23,7 @@ Allow `boolean | object` for any section whose primary function is an
 - `notifications.email`, `notifications.slack`
 - `kyverno`
 - Optional features: `chaos`, `canary`, `dr_drill`, `egress_control`,
-  `cache_sentinel`, `runner_isolation`, `supply_chain`, `telemetry`
+ `cache_sentinel`, `runner_isolation`, `supply_chain`, `telemetry`
 - `hub_ci` (only toggles `enabled`; tools/thresholds remain in the object form)
 
 Shorthand `section: true` normalizes to `section: { enabled: true }` before
@@ -53,12 +53,12 @@ Explicit `thresholds.*` values override the preset.
 ## Alternatives Considered
 
 1. **Allow booleans for all objects (including thresholds and language):**
-   Rejected. It introduces ambiguity and conflicts with ADR-0006 (thresholds
-   are required quality gates, not on/off toggles).
+ Rejected. It introduces ambiguity and conflicts with ADR-0006 (thresholds
+ are required quality gates, not on/off toggles).
 
 2. **Only use templates/profiles:**
-   Rejected. Users still want a quick knob for thresholds without full profile
-   merges.
+ Rejected. Users still want a quick knob for thresholds without full profile
+ merges.
 
 ## References
 

@@ -1,9 +1,9 @@
 # ADR-0036: Service Layer APIs for GUI Integration
 
-**Status**: Accepted  
-**Date:** 2026-01-03  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2026-01-03  
+**Status**: Accepted
+**Date:** 2026-01-03
+**Developer:** Justin Guida
+**Last Reviewed:** 2026-01-03
 
 ## Context
 
@@ -22,7 +22,7 @@ workflows, while keeping the CLI as the primary adapter.
 - Services return dataclasses and do not print or exit.
 - CLI remains the integration surface and forwards to services when feasible.
 - The GUI may call services directly (in-process) or call the CLI when running
-  out-of-process; both paths must remain in sync.
+ out-of-process; both paths must remain in sync.
 
 ### Initial Service Coverage
 
@@ -48,11 +48,11 @@ workflows, while keeping the CLI as the primary adapter.
 ## Alternatives Considered
 
 1. **GUI shells out to CLI for all actions**
-   - Rejected as the only approach; subprocess-only integration is harder to
-     test and limits in-process workflows.
+ - Rejected as the only approach; subprocess-only integration is harder to
+ test and limits in-process workflows.
 
 2. **GUI reimplements business logic**
-   - Rejected; violates the single-source-of-truth rule.
+ - Rejected; violates the single-source-of-truth rule.
 
 ## References
 

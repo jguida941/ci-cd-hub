@@ -6,10 +6,10 @@
 **Last Reviewed:** 2026-01-05
 
 **Implementation Update (2026-01-05):**
-- ✅ Contract tests implemented (`tests/test_contract_consistency.py`)
-- ✅ Self-validation in `cihub ci` catches summary/report drift automatically
-- ✅ GateSpec registry ensures gates.py and reporting.py use identical definitions
-- ✅ 8 contract tests verify Python/Java gates match summary rendering  
+- [x] Contract tests implemented (`tests/test_contract_consistency.py`)
+- [x] Self-validation in `cihub ci` catches summary/report drift automatically
+- [x] GateSpec registry ensures gates.py and reporting.py use identical definitions
+- [x] 8 contract tests verify Python/Java gates match summary rendering
 
 ## Context
 
@@ -20,26 +20,26 @@ We need a repeatable way to validate that the summary matches the actual executi
 ## Decision
 
 1. **Make summaries authoritative**
-   - Remove fallback expressions that coerce false to true in `hub-run-all.yml`.
-   - Include `config_basename` and `run_group` in the summary environment table to identify which config produced the output.
+ - Remove fallback expressions that coerce false to true in `hub-run-all.yml`.
+ - Include `config_basename` and `run_group` in the summary environment table to identify which config produced the output.
 
 2. **Add a validation script**
-   - Introduce `scripts/validate_summary.py` to compare:
-     - Summary table entries vs `report.json` `tools_ran` booleans.
-     - Artifact presence vs `tools_ran` for tools that generate reports.
-   - Script returns non-zero in `--strict` mode.
+ - Introduce `scripts/validate_summary.py` to compare:
+ - Summary table entries vs `report.json` `tools_ran` booleans.
+ - Artifact presence vs `tools_ran` for tools that generate reports.
+ - Script returns non-zero in `--strict` mode.
 
 3. **Capture summaries and validate in CI**
-   - `hub-run-all.yml` stores `$GITHUB_STEP_SUMMARY` at `reports/<config_basename>/summary.md`.
-   - `hub-run-all.yml` runs `validate_summary.py --strict` per repo against summary + artifacts.
+ - `hub-run-all.yml` stores `$GITHUB_STEP_SUMMARY` at `reports/<config_basename>/summary.md`.
+ - `hub-run-all.yml` runs `validate_summary.py --strict` per repo against summary + artifacts.
 
 4. **Define the artifact contract**
-   - Python tools must upload outputs when enabled:
-     - `ruff-report.json`, `black-output.txt`, `isort-output.txt`, `mypy-output.txt`
-     - `mutmut-run.log`, `hypothesis-output.txt`, `test-results.xml`
+ - Python tools must upload outputs when enabled:
+ - `ruff-report.json`, `black-output.txt`, `isort-output.txt`, `mypy-output.txt`
+ - `mutmut-run.log`, `hypothesis-output.txt`, `test-results.xml`
 
 5. **Prevent regressions**
-   - Add a test that fails if `matrix.run_* || 'true'` style fallbacks appear in `hub-run-all.yml`.
+ - Add a test that fails if `matrix.run_* || 'true'` style fallbacks appear in `hub-run-all.yml`.
 
 ## Consequences
 
@@ -56,10 +56,10 @@ We need a repeatable way to validate that the summary matches the actual executi
 
 ```bash
 python scripts/validate_summary.py \
-  --report report.json \
-  --summary summary.md \
-  --reports-dir all-reports \
-  --strict
+ --report report.json \
+ --summary summary.md \
+ --reports-dir all-reports \
+ --strict
 ```
 
 ## Follow-ups

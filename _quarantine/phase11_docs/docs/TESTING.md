@@ -15,16 +15,16 @@
 All of the common local workflows are wired through the root `Makefile`. Examples:
 
 ```bash
-make help                 # discover available targets
-make setup                # install dev requirements (pytest, mkdocs, etc.)
-make all                  # lint + docs + pytest + simulators + sample policy data
-make run-chaos            # execute chaos simulator (artifacts/chaos/*)
-make run-dr               # run DR drill simulator (artifacts/dr/*)
-make run-mutation         # run Mutation Observatory with repo config
-make run-cache-sentinel   # record+verify sample cache manifest
-make build-vex            # emit CycloneDX VEX under artifacts/sbom/
-make build-vuln-input     # turn the sample Grype report into policy-inputs JSON
-REKOR_DIGEST=sha256:<..> make run-rekor-monitor  # download Rekor proof bundle
+make help # discover available targets
+make setup # install dev requirements (pytest, mkdocs, etc.)
+make all # lint + docs + pytest + simulators + sample policy data
+make run-chaos # execute chaos simulator (artifacts/chaos/*)
+make run-dr # run DR drill simulator (artifacts/dr/*)
+make run-mutation # run Mutation Observatory with repo config
+make run-cache-sentinel # record+verify sample cache manifest
+make build-vex # emit CycloneDX VEX under artifacts/sbom/
+make build-vuln-input # turn the sample Grype report into policy-inputs JSON
+REKOR_DIGEST=sha256:<..> make run-rekor-monitor # download Rekor proof bundle
 ```
 
 Targets are composable, so CI-equivalent flows (`lint`, `docs`, `test`, etc.) can be run individually without waiting on GitHub Actions.
@@ -41,26 +41,26 @@ python scripts/run_dbt.py build --select stg_pipeline_runs+ run_health
 # Optional: exercise cache provenance script with a scratch cache directory
 python scripts/cache_provenance.sh --stage test --cache-dir artifacts/cache --output artifacts/cache/provenance
 python ingest/chaos_dr_ingest.py \
-  --project demo --dataset ci_intel \
-  --chaos-ndjson artifacts/evidence/chaos/events.ndjson \
-  --dr-ndjson artifacts/evidence/dr/events.ndjson \
-  --dry-run
+ --project demo --dataset ci_intel \
+ --chaos-ndjson artifacts/evidence/chaos/events.ndjson \
+ --dr-ndjson artifacts/evidence/dr/events.ndjson \
+ --dry-run
 python scripts/emit_pipeline_run.py \
-  --output artifacts/pipeline_run.ndjson \
-  --status success \
-  --environment staging \
-  --autopsy-report fixtures/autopsy/sample.json
+ --output artifacts/pipeline_run.ndjson \
+ --status success \
+ --environment staging \
+ --autopsy-report fixtures/autopsy/sample.json
 python ingest/chaos_dr_ingest.py \
-  --project demo --dataset ci_intel \
-  --pipeline-run-ndjson artifacts/pipeline_run.ndjson \
-  --dry-run
+ --project demo --dataset ci_intel \
+ --pipeline-run-ndjson artifacts/pipeline_run.ndjson \
+ --dry-run
 opa test -v --ignore kyverno policies
 
 > **Tip**: Ensure `data/warehouse/pipeline_runs.ndjson` contains the autopsy payload (for example, copy `fixtures/pipeline_run_v1_2/sample.ndjson`) before running the dbt models so `stg_autopsy_findings` can materialize.
 
 > **Note**: The dbt `deps`/`build` steps require outbound access to `hub.getdbt.com`.
 > If they fail locally because of network restrictions, rerun them once connectivity is
-> available—CI executes the same commands inside `schema-ci.yml`.
+> available-CI executes the same commands inside `schema-ci.yml`.
 
 > **Tip**: `scripts/cache_provenance.sh` is safe to run locally; point `--cache-dir`
 > at a throwaway directory if you don’t want to hash your entire pip cache.

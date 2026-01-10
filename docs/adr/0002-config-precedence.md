@@ -1,9 +1,9 @@
 # ADR-0002: Config Precedence Hierarchy
 
-**Status**: Accepted  
-**Date:** 2025-12-14  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-14
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -22,9 +22,9 @@ Questions:
 Three-tier hierarchy (highest precedence wins):
 
 ```
-1. Repo-local .ci-hub.yml       (in target repo root)
+1. Repo-local .ci-hub.yml (in target repo root)
 2. Hub config/repos/<repo>.yaml (hub-side per-repo override)
-3. Hub config/defaults.yaml     (global defaults)
+3. Hub config/defaults.yaml (global defaults)
 ```
 
 **Merge strategy:** Deep merge. Nested objects merge recursively; scalar values are replaced.

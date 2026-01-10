@@ -22,15 +22,15 @@ This document describes the repositories used for smoke testing the CI/CD Hub.
 - SpotBugs static analysis
 
 **Tools Enabled:**
-- ✅ JaCoCo (min_coverage: 50%)
-- ✅ Checkstyle (non-blocking)
-- ✅ SpotBugs (non-blocking)
+- [x] JaCoCo (min_coverage: 50%)
+- [x] Checkstyle (non-blocking)
+- [x] SpotBugs (non-blocking)
 
 **Tools Disabled (for speed):**
-- ❌ OWASP Dependency Check
-- ❌ PITest (mutation testing)
-- ❌ CodeQL
-- ❌ Docker
+- [ ] OWASP Dependency Check
+- [ ] PITest (mutation testing)
+- [ ] CodeQL
+- [ ] Docker
 
 **Thresholds:**
 - Coverage minimum: 50% (relaxed from default 70%)
@@ -55,16 +55,16 @@ This document describes the repositories used for smoke testing the CI/CD Hub.
 - Black code formatting validation
 
 **Tools Enabled:**
-- ✅ pytest (min_coverage: 50%)
-- ✅ Ruff (non-blocking)
-- ✅ Black
+- [x] pytest (min_coverage: 50%)
+- [x] Ruff (non-blocking)
+- [x] Black
 
 **Tools Disabled (for speed):**
-- ❌ Bandit security scanner
-- ❌ pip-audit dependency scanner
-- ❌ mypy type checking
-- ❌ CodeQL
-- ❌ Docker
+- [ ] Bandit security scanner
+- [ ] pip-audit dependency scanner
+- [ ] mypy type checking
+- [ ] CodeQL
+- [ ] Docker
 
 **Thresholds:**
 - Coverage minimum: 50% (relaxed from default 70%)
@@ -77,9 +77,9 @@ This document describes the repositories used for smoke testing the CI/CD Hub.
 ## Repository Accessibility
 
 Both repositories are:
-- ✅ **Public** - No authentication required
-- ✅ **Actively maintained** - Part of jguida941's portfolio
-- ✅ **Accessible** - Can be cloned by GitHub Actions without special permissions
+- [x] **Public** - No authentication required
+- [x] **Actively maintained** - Part of jguida941's portfolio
+- [x] **Accessible** - Can be cloned by GitHub Actions without special permissions
 
 ---
 
@@ -127,12 +127,12 @@ If you want to use different repositories for smoke testing, they should meet th
 my-java-repo/
 ├── pom.xml (or build.gradle)
 ├── src/
-│   ├── main/java/
-│   │   └── com/example/
-│   │       └── MyClass.java
-│   └── test/java/
-│       └── com/example/
-│           └── MyClassTest.java
+│ ├── main/java/
+│ │ └── com/example/
+│ │ └── MyClass.java
+│ └── test/java/
+│ └── com/example/
+│ └── MyClassTest.java
 └── README.md
 ```
 
@@ -157,12 +157,12 @@ my-java-repo/
 my-python-repo/
 ├── pyproject.toml (or setup.py + requirements.txt)
 ├── src/
-│   └── mypackage/
-│       ├── __init__.py
-│       └── module.py
+│ └── mypackage/
+│ ├── __init__.py
+│ └── module.py
 ├── tests/
-│   ├── __init__.py
-│   └── test_module.py
+│ ├── __init__.py
+│ └── test_module.py
 └── README.md
 ```
 
@@ -216,76 +216,76 @@ If creating new smoke test repos, use this config template:
 
 ```yaml
 repo:
-  owner: YOUR_ORG
-  name: YOUR_REPO
-  language: java
-  default_branch: main
+ owner: YOUR_ORG
+ name: YOUR_REPO
+ language: java
+ default_branch: main
 
 java:
-  version: "21"
-  tools:
-    jacoco:
-      enabled: true
-      min_coverage: 50
-    checkstyle:
-      enabled: true
-      fail_on_violation: false
-    spotbugs:
-      enabled: true
-      fail_on_error: false
-    owasp:
-      enabled: false  # Disabled for smoke test speed
-    pitest:
-      enabled: false  # Disabled for smoke test speed
-    codeql:
-      enabled: false
-    docker:
-      enabled: false
+ version: "21"
+ tools:
+ jacoco:
+ enabled: true
+ min_coverage: 50
+ checkstyle:
+ enabled: true
+ fail_on_violation: false
+ spotbugs:
+ enabled: true
+ fail_on_error: false
+ owasp:
+ enabled: false # Disabled for smoke test speed
+ pitest:
+ enabled: false # Disabled for smoke test speed
+ codeql:
+ enabled: false
+ docker:
+ enabled: false
 
 thresholds:
-  coverage_min: 50
-  mutation_score_min: 0
-  max_critical_vulns: 100
-  max_high_vulns: 100
+ coverage_min: 50
+ mutation_score_min: 0
+ max_critical_vulns: 100
+ max_high_vulns: 100
 ```
 
 ### Python Config Template
 
 ```yaml
 repo:
-  owner: YOUR_ORG
-  name: YOUR_REPO
-  language: python
-  default_branch: main
+ owner: YOUR_ORG
+ name: YOUR_REPO
+ language: python
+ default_branch: main
 
 python:
-  version: "3.12"
-  tools:
-    pytest:
-      enabled: true
-      min_coverage: 50
-      fail_fast: false
-    ruff:
-      enabled: true
-      fail_on_error: false
-    black:
-      enabled: true
-    bandit:
-      enabled: false  # Disabled for smoke test speed
-    pip_audit:
-      enabled: false  # Disabled for smoke test speed
-    mypy:
-      enabled: false
-    codeql:
-      enabled: false
-    docker:
-      enabled: false
+ version: "3.12"
+ tools:
+ pytest:
+ enabled: true
+ min_coverage: 50
+ fail_fast: false
+ ruff:
+ enabled: true
+ fail_on_error: false
+ black:
+ enabled: true
+ bandit:
+ enabled: false # Disabled for smoke test speed
+ pip_audit:
+ enabled: false # Disabled for smoke test speed
+ mypy:
+ enabled: false
+ codeql:
+ enabled: false
+ docker:
+ enabled: false
 
 thresholds:
-  coverage_min: 50
-  mutation_score_min: 0
-  max_critical_vulns: 100
-  max_high_vulns: 100
+ coverage_min: 50
+ mutation_score_min: 0
+ max_critical_vulns: 100
+ max_high_vulns: 100
 ```
 
 ---
@@ -335,7 +335,7 @@ Clone the repository locally and verify:
 ```bash
 git clone https://github.com/OWNER/REPO
 cd REPO
-./mvnw test  # or: mvn test
+./mvnw test # or: mvn test
 ```
 
 **Python:**
@@ -388,9 +388,9 @@ pytest
 
 ## Next Steps
 
-1. ✅ Verify current smoke test repos are accessible
-2. ✅ Run smoke test workflow: `gh workflow run smoke-test.yml`
-3. ✅ Check smoke test results and artifacts
+1. [x] Verify current smoke test repos are accessible
+2. [x] Run smoke test workflow: `gh workflow run smoke-test.yml`
+3. [x] Check smoke test results and artifacts
 4. Consider creating purpose-built fixture repos for predictable results
 5. Update smoke test configs as repos evolve
 

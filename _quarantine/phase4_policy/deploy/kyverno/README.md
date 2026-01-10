@@ -10,9 +10,9 @@ clusters, and production environments.
 
 - `kubectl` with access to the target cluster / kube-context
 - Optional but recommended: `helm` or `kustomize` if you prefer to manage
-  the Kyverno installation outside the provided script
+ the Kyverno installation outside the provided script
 - Network access to fetch the pinned Kyverno release manifests (defaults
-  to `v1.12.5`); override the URL when running in air-gapped environments
+ to `v1.12.5`); override the URL when running in air-gapped environments
 
 ## Quick start
 
@@ -48,7 +48,7 @@ policies deny violations by:
 1. Spinning up a kind cluster
 2. Installing Kyverno (if needed) with `scripts/deploy_kyverno.sh --context kind-kyverno-ci`
 3. Running `scripts/verify_kyverno_enforcement.sh --cluster --context kind-kyverno-ci`
-   to demonstrate deny/allow behaviour
+ to demonstrate deny/allow behaviour
 
 The workflow triggers automatically when Kyverno policies or deployment scripts
 change. Use it as a template if you want to run the same validation in your own
@@ -57,13 +57,13 @@ CI/CD system.
 ## Production rollout checklist
 
 1. Export `KUBECTL_CONTEXT=<prod-context>` and run `make kyverno/deploy` from an operator
-   workstation to install/update Kyverno and apply the policies.
+ workstation to install/update Kyverno and apply the policies.
 2. Confirm all Kyverno deployments are Ready:
-   ```bash
-   kubectl --context <prod-context> -n kyverno get deploy
-   ```
+ ```bash
+ kubectl --context <prod-context> -n kyverno get deploy
+ ```
 3. Execute `make kyverno/verify` (optionally override `KYVERNO_VERIFY_NAMESPACE`
-   and `KYVERNO_EVIDENCE_DIR`) to demonstrate deny/allow behaviour on the live cluster.
+ and `KYVERNO_EVIDENCE_DIR`) to demonstrate deny/allow behaviour on the live cluster.
 4. Capture the resulting evidence under `artifacts/evidence/` for audit trails
 5. Add observability (alerts, dashboards) to monitor Kyverno health in production
 

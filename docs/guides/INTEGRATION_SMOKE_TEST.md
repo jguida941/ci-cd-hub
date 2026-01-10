@@ -13,8 +13,8 @@ verifying releases and ensuring all CLI commands remain functional.
 
 ```bash
 python -m pip install -e ".[dev]"
-python -m pip install -e ".[ci]"       # Needed for `cihub ci` / `cihub run`
-python -m pip install -e ".[wizard]"   # Needed for `cihub config edit`
+python -m pip install -e ".[ci]" # Needed for `cihub ci` / `cihub run`
+python -m pip install -e ".[wizard]" # Needed for `cihub config edit`
 
 python -m cihub preflight --full
 ```
@@ -36,7 +36,7 @@ python -m cihub smoke --all --full --keep
 
 Notes:
 - `--full` runs `cihub ci`; it requires toolchains (pytest, ruff, black, isort,
-  and for Java: mvn/gradle/java).
+ and for Java: mvn/gradle/java).
 - Generated fixtures are stored in a temp directory unless `--keep` is set.
 
 ## Optional: Scaffold a Single Fixture
@@ -72,11 +72,11 @@ Quick check:
 ```bash
 FIXTURES=/path/to/ci-cd-hub-fixtures
 REQUIRED=(java-maven-pass java-maven-fail java-gradle-pass java-gradle-fail \
-  java-multi-module-pass python-pyproject-pass python-pyproject-fail \
-  python-setup-pass python-setup-fail python-src-layout-pass monorepo-pass monorepo-fail)
+ java-multi-module-pass python-pyproject-pass python-pyproject-fail \
+ python-setup-pass python-setup-fail python-src-layout-pass monorepo-pass monorepo-fail)
 
 for name in "${REQUIRED[@]}"; do
-  test -d "$FIXTURES/$name" || echo "Missing fixture: $name"
+ test -d "$FIXTURES/$name" || echo "Missing fixture: $name"
 done
 ```
 
@@ -84,16 +84,16 @@ done
 
 ```bash
 python scripts/run_cli_integration.py \
-  --fixtures-path /path/to/ci-cd-hub-fixtures
+ --fixtures-path /path/to/ci-cd-hub-fixtures
 ```
 
 Run a subset:
 
 ```bash
 python scripts/run_cli_integration.py \
-  --fixtures-path /path/to/ci-cd-hub-fixtures \
-  --only java-maven-pass \
-  --only python-pyproject-pass
+ --fixtures-path /path/to/ci-cd-hub-fixtures \
+ --only java-maven-pass \
+ --only python-pyproject-pass
 ```
 
 ## Manual Single-Case Debug (Local)
@@ -119,21 +119,21 @@ Expected: `java`.
 
 ```bash
 python -m cihub init \
-  --repo ./smoke-java \
-  --language java \
-  --owner fixtures \
-  --name smoke-java \
-  --branch main \
-  --apply
+ --repo ./smoke-java \
+ --language java \
+ --owner fixtures \
+ --name smoke-java \
+ --branch main \
+ --apply
 
 python -m cihub update \
-  --repo ./smoke-java \
-  --language java \
-  --owner fixtures \
-  --name smoke-java \
-  --branch main \
-  --apply \
-  --force
+ --repo ./smoke-java \
+ --language java \
+ --owner fixtures \
+ --name smoke-java \
+ --branch main \
+ --apply \
+ --force
 ```
 
 Expected:
@@ -170,19 +170,19 @@ For Python fixtures, add `--install-deps`.
 python -m cihub scaffold python-pyproject ./smoke-python
 
 python -m cihub init \
-  --repo ./smoke-python \
-  --language python \
-  --owner fixtures \
-  --name smoke-python \
-  --branch main \
-  --apply
+ --repo ./smoke-python \
+ --language python \
+ --owner fixtures \
+ --name smoke-python \
+ --branch main \
+ --apply
 
 python -m cihub run ruff --repo ./smoke-python --output-dir ./smoke-python/.cihub
 python -m cihub report build --repo ./smoke-python --output-dir ./smoke-python/.cihub
 python -m cihub report summary --report ./smoke-python/.cihub/report.json
 python -m cihub report outputs \
-  --report ./smoke-python/.cihub/report.json \
-  --output ./smoke-python/.cihub/report.outputs
+ --report ./smoke-python/.cihub/report.json \
+ --output ./smoke-python/.cihub/report.outputs
 python -m cihub config-outputs --repo ./smoke-python
 ```
 

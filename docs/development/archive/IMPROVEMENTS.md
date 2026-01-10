@@ -39,36 +39,36 @@ This document identifies architectural improvements to make the CIHub CLI more *
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        CLI Layer                             │
-│  cli.py: Parser + main() + thin cmd_* wrappers (~100 lines) │
+│ CLI Layer │
+│ cli.py: Parser + main() + thin cmd_* wrappers (~100 lines) │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+ │
+ ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      Commands Layer                          │
-│  commands/*.py: Parse args, call services, format output     │
-│  (No business logic - only orchestration + output)           │
+│ Commands Layer │
+│ commands/*.py: Parse args, call services, format output │
+│ (No business logic - only orchestration + output) │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+ │
+ ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                      Services Layer                          │
-│  services/*.py: Business logic, workflows, orchestration     │
-│  (Pure functions, testable, no I/O concerns)                 │
+│ Services Layer │
+│ services/*.py: Business logic, workflows, orchestration │
+│ (Pure functions, testable, no I/O concerns) │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+ │
+ ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                        Core Layer                            │
-│  core/*.py: Domain entities, tool runners, report types      │
-│  (Low-level, stable abstractions)                            │
+│ Core Layer │
+│ core/*.py: Domain entities, tool runners, report types │
+│ (Low-level, stable abstractions) │
 └─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
+ │
+ ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                       Utils Layer                            │
-│  utils/*.py: Pure utilities (I/O, HTTP, env, git, etc.)      │
-│  (No business logic, reusable across all layers)             │
+│ Utils Layer │
+│ utils/*.py: Pure utilities (I/O, HTTP, env, git, etc.) │
+│ (No business logic, reusable across all layers) │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -140,40 +140,40 @@ Based on research from leading sources:
 ### Service Layer Pattern
 
 > "The Service Layer acts as an intermediate layer between the application interface (e.g., API, UI) and the domain or persistence layers... improving modularity, scalability, and testability."
-> — [Enterprise Design Pattern: Service Layer in Python](https://dev.to/ronal_daniellupacamaman/enterprise-design-pattern-implementing-the-service-layer-pattern-in-python-57mh)
+> - [Enterprise Design Pattern: Service Layer in Python](https://dev.to/ronal_daniellupacamaman/enterprise-design-pattern-implementing-the-service-layer-pattern-in-python-57mh)
 
 **Key principle**: Services coordinate domain objects to perform business operations. Commands should call services, not implement business logic.
 
 ### Clean Architecture
 
 > "The objective of Clean Architecture is to separate the main codebase of the application from parts of the code that deal with external libraries and systems."
-> — [Clean Architecture in Python](https://www.linkedin.com/pulse/implementation-clean-architecture-python-part-1-cli-watanabe)
+> - [Clean Architecture in Python](https://www.linkedin.com/pulse/implementation-clean-architecture-python-part-1-cli-watanabe)
 
 **Key principle**: The CLI layer (commands, parsers) should depend on services, which depend on core. Never the reverse.
 
 ### Dependency Injection
 
 > "Dependency injection allows for very flexible and easy unit-testing, enabling an architecture where you can change data storing on-the-fly."
-> — [Python Design Patterns for Clean Architecture](https://www.glukhov.org/post/2025/11/python-design-patterns-for-clean-architecture/)
+> - [Python Design Patterns for Clean Architecture](https://www.glukhov.org/post/2025/11/python-design-patterns-for-clean-architecture/)
 
 **Key principle**: Services should receive dependencies (config, clients) rather than creating them.
 
 ### Single Responsibility
 
 > "Each module should have a single, well-defined responsibility. This principle helps create more focused and manageable code."
-> — [How to Design Modular Python Projects](https://labex.io/tutorials/python-how-to-design-modular-python-projects-420186)
+> - [How to Design Modular Python Projects](https://labex.io/tutorials/python-how-to-design-modular-python-projects-420186)
 
 **Key principle**: A module should have one reason to change. cli.py currently has 12+ reasons.
 
 ### Layered Architecture for CLI
 
 > "Layered architecture is appropriate for complex business logic when your application requires clear separation of concerns... when your application needs to handle different types of requests (API, CLI, background jobs) while maintaining consistent business logic."
-> — [Best Practices for Structuring a Python CLI Application](https://medium.com/@ernestwinata/best-practices-for-structuring-a-python-cli-application-1bc8f8a57369)
+> - [Best Practices for Structuring a Python CLI Application](https://medium.com/@ernestwinata/best-practices-for-structuring-a-python-cli-application-1bc8f8a57369)
 
 ### Command Pattern for Scalability
 
 > "The Command design pattern encapsulates a request as an object, which allows you to parameterize clients with various requests, schedule or queue a request's execution."
-> — [Python Command Design Pattern Tutorial](https://arjancodes.com/blog/python-command-design-pattern-tutorial-for-scalable-applications/)
+> - [Python Command Design Pattern Tutorial](https://arjancodes.com/blog/python-command-design-pattern-tutorial-for-scalable-applications/)
 
 ---
 
@@ -188,14 +188,14 @@ These changes are safe and provide immediate wins:
 ```python
 # In utils/github_api.py - add this function
 def delete_remote_file(repo: str, path: str, branch: str, sha: str, message: str) -> None:
-    """Delete a file from a GitHub repo via the GitHub API."""
-    payload = {"message": message, "sha": sha, "branch": branch}
-    gh_api_json(f"/repos/{repo}/contents/{path}", method="DELETE", payload=payload)
+ """Delete a file from a GitHub repo via the GitHub API."""
+ payload = {"message": message, "sha": sha, "branch": branch}
+ gh_api_json(f"/repos/{repo}/contents/{path}", method="DELETE", payload=payload)
 ```
 
 ```python
 # In cli.py - add re-export
-from cihub.utils.github_api import delete_remote_file  # noqa: F401
+from cihub.utils.github_api import delete_remote_file # noqa: F401
 ```
 
 #### 1.2 Move `is_debug_enabled()` to `utils/env.py`
@@ -203,8 +203,8 @@ from cihub.utils.github_api import delete_remote_file  # noqa: F401
 ```python
 # In utils/env.py - add this function
 def is_debug_enabled(env: Mapping[str, str] | None = None) -> bool:
-    """Check if debug mode is enabled via CIHUB_DEBUG env var."""
-    return env_bool("CIHUB_DEBUG", default=False, env=env)
+ """Check if debug mode is enabled via CIHUB_DEBUG env var."""
+ return env_bool("CIHUB_DEBUG", default=False, env=env)
 ```
 
 #### 1.3 Create `utils/io.py` with `write_text()`
@@ -214,14 +214,14 @@ def is_debug_enabled(env: Mapping[str, str] | None = None) -> bool:
 from pathlib import Path
 
 def write_text(path: Path, content: str, dry_run: bool, emit: bool = True) -> None:
-    """Write text to a file, with dry-run support."""
-    if dry_run:
-        if emit:
-            print(f"# Would write: {path}")
-            print(content)
-        return
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content, encoding="utf-8")
+ """Write text to a file, with dry-run support."""
+ if dry_run:
+ if emit:
+ print(f"# Would write: {path}")
+ print(content)
+ return
+ path.parent.mkdir(parents=True, exist_ok=True)
+ path.write_text(content, encoding="utf-8")
 ```
 
 #### 1.4 Move repo discovery functions to `services/discovery.py`
@@ -229,12 +229,12 @@ def write_text(path: Path, content: str, dry_run: bool, emit: bool = True) -> No
 ```python
 # In services/discovery.py - add these functions
 def get_connected_repos(only_dispatch_enabled: bool = True, language_filter: str | None = None) -> list[str]:
-    """Get unique repos from hub config/repos/*.yaml."""
-    # ... existing code from cli.py
+ """Get unique repos from hub config/repos/*.yaml."""
+ # ... existing code from cli.py
 
 def get_repo_entries(only_dispatch_enabled: bool = True) -> list[dict[str, str]]:
-    """Return repo metadata from config/repos/*.yaml."""
-    # ... existing code from cli.py
+ """Return repo metadata from config/repos/*.yaml."""
+ # ... existing code from cli.py
 ```
 
 ### Phase 2: Create Missing Services (MEDIUM Priority)
@@ -246,22 +246,22 @@ def get_repo_entries(only_dispatch_enabled: bool = True) -> list[dict[str, str]]
 from pathlib import Path
 
 def detect_language(repo_path: Path) -> tuple[str | None, list[str]]:
-    """Detect repository language from file markers."""
-    checks = {
-        "java": ["pom.xml", "build.gradle", "build.gradle.kts"],
-        "python": ["pyproject.toml", "requirements.txt", "setup.py"],
-    }
-    # ... rest of logic
+ """Detect repository language from file markers."""
+ checks = {
+ "java": ["pom.xml", "build.gradle", "build.gradle.kts"],
+ "python": ["pyproject.toml", "requirements.txt", "setup.py"],
+ }
+ # ... rest of logic
 
 def resolve_language(repo_path: Path, override: str | None) -> tuple[str, list[str]]:
-    """Resolve language with optional override."""
-    if override:
-        return override, []
-    detected, reasons = detect_language(repo_path)
-    if not detected:
-        reason_text = ", ".join(reasons) if reasons else "no language markers found"
-        raise ValueError(f"Unable to detect language ({reason_text}); use --language.")
-    return detected, reasons
+ """Resolve language with optional override."""
+ if override:
+ return override, []
+ detected, reasons = detect_language(repo_path)
+ if not detected:
+ reason_text = ", ".join(reasons) if reasons else "no language markers found"
+ raise ValueError(f"Unable to detect language ({reason_text}); use --language.")
+ return detected, reasons
 ```
 
 #### 2.2 Create `services/templates.py`
@@ -272,13 +272,13 @@ from pathlib import Path
 from cihub.utils import hub_root
 
 def render_caller_workflow(language: str) -> str:
-    """Render a caller workflow for the given language."""
-    templates_dir = hub_root() / "templates" / "repo"
-    # ... rest of logic
+ """Render a caller workflow for the given language."""
+ templates_dir = hub_root() / "templates" / "repo"
+ # ... rest of logic
 
 def render_dispatch_workflow(language: str, dispatch_workflow: str) -> str:
-    """Render a dispatch workflow."""
-    # ... rest of logic
+ """Render a dispatch workflow."""
+ # ... rest of logic
 ```
 
 #### 2.3 Create `services/config_builder.py`
@@ -291,9 +291,9 @@ from cihub.config.io import load_yaml_file
 from cihub.utils import hub_root
 
 def build_repo_config(language: str, owner: str, name: str, branch: str, subdir: str | None = None) -> dict[str, Any]:
-    """Build a repo config from template."""
-    template_path = hub_root() / "templates" / "repo" / ".ci-hub.yml"
-    # ... rest of logic
+ """Build a repo config from template."""
+ template_path = hub_root() / "templates" / "repo" / ".ci-hub.yml"
+ # ... rest of logic
 ```
 
 ### Phase 3: Create Shared Helpers (MEDIUM Priority)
@@ -307,37 +307,37 @@ from typing import Any, TypeVar
 T = TypeVar("T")
 
 def get_nested(data: dict, *keys: str, default: T = None) -> T:
-    """Safely get a nested dictionary value."""
-    current = data
-    for key in keys:
-        if not isinstance(current, dict):
-            return default
-        current = current.get(key)
-        if current is None:
-            return default
-    return current
+ """Safely get a nested dictionary value."""
+ current = data
+ for key in keys:
+ if not isinstance(current, dict):
+ return default
+ current = current.get(key)
+ if current is None:
+ return default
+ return current
 
 def get_str(data: dict, *keys: str, default: str = "") -> str:
-    """Get a nested string value."""
-    value = get_nested(data, *keys, default=default)
-    return str(value) if value is not None else default
+ """Get a nested string value."""
+ value = get_nested(data, *keys, default=default)
+ return str(value) if value is not None else default
 
 def get_int(data: dict, *keys: str, default: int = 0) -> int:
-    """Get a nested int value."""
-    value = get_nested(data, *keys, default=default)
-    try:
-        return int(value)
-    except (TypeError, ValueError):
-        return default
+ """Get a nested int value."""
+ value = get_nested(data, *keys, default=default)
+ try:
+ return int(value)
+ except (TypeError, ValueError):
+ return default
 
 def get_bool(data: dict, *keys: str, default: bool = False) -> bool:
-    """Get a nested bool value."""
-    value = get_nested(data, *keys, default=default)
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        return value.lower() in ("true", "1", "yes", "on")
-    return default
+ """Get a nested bool value."""
+ value = get_nested(data, *keys, default=default)
+ if isinstance(value, bool):
+ return value
+ if isinstance(value, str):
+ return value.lower() in ("true", "1", "yes", "on")
+ return default
 ```
 
 #### 3.2 Create `utils/output.py`
@@ -349,26 +349,26 @@ import sys
 from typing import Any
 
 def is_json_mode(args) -> bool:
-    """Check if JSON output mode is enabled."""
-    return getattr(args, "json", False)
+ """Check if JSON output mode is enabled."""
+ return getattr(args, "json", False)
 
 def format_result(result: Any, json_mode: bool) -> str:
-    """Format a result for output."""
-    if json_mode:
-        return json.dumps(result, indent=2)
-    # Human-readable formatting
-    return str(result)
+ """Format a result for output."""
+ if json_mode:
+ return json.dumps(result, indent=2)
+ # Human-readable formatting
+ return str(result)
 
 def emit_result(result: Any, json_mode: bool) -> None:
-    """Emit a result to stdout."""
-    print(format_result(result, json_mode))
+ """Emit a result to stdout."""
+ print(format_result(result, json_mode))
 
 def emit_error(message: str, json_mode: bool) -> None:
-    """Emit an error message."""
-    if json_mode:
-        print(json.dumps({"error": message}), file=sys.stderr)
-    else:
-        print(f"Error: {message}", file=sys.stderr)
+ """Emit an error message."""
+ if json_mode:
+ print(json.dumps({"error": message}), file=sys.stderr)
+ else:
+ print(f"Error: {message}", file=sys.stderr)
 ```
 
 ### Phase 4: Add Polymorphism (LOW Priority)
@@ -384,49 +384,49 @@ from typing import Protocol
 
 @dataclass
 class ToolResult:
-    success: bool
-    exit_code: int
-    stdout: str
-    stderr: str
-    artifacts: list[Path]
+ success: bool
+ exit_code: int
+ stdout: str
+ stderr: str
+ artifacts: list[Path]
 
 class ToolRunner(Protocol):
-    """Protocol for tool runners."""
+ """Protocol for tool runners."""
 
-    @property
-    def name(self) -> str:
-        """Tool name."""
-        ...
+ @property
+ def name(self) -> str:
+ """Tool name."""
+ ...
 
-    def is_available(self) -> bool:
-        """Check if tool is available."""
-        ...
+ def is_available(self) -> bool:
+ """Check if tool is available."""
+ ...
 
-    def run(self, workdir: Path, output_dir: Path) -> ToolResult:
-        """Run the tool."""
-        ...
+ def run(self, workdir: Path, output_dir: Path) -> ToolResult:
+ """Run the tool."""
+ ...
 
 class BaseToolRunner(ABC):
-    """Base class for tool runners with common functionality."""
+ """Base class for tool runners with common functionality."""
 
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        pass
+ @property
+ @abstractmethod
+ def name(self) -> str:
+ pass
 
-    @abstractmethod
-    def is_available(self) -> bool:
-        pass
+ @abstractmethod
+ def is_available(self) -> bool:
+ pass
 
-    @abstractmethod
-    def run(self, workdir: Path, output_dir: Path) -> ToolResult:
-        pass
+ @abstractmethod
+ def run(self, workdir: Path, output_dir: Path) -> ToolResult:
+ pass
 
-    def _run_subprocess(self, cmd: list[str], workdir: Path) -> tuple[int, str, str]:
-        """Common subprocess execution."""
-        import subprocess
-        result = subprocess.run(cmd, cwd=workdir, capture_output=True, text=True)
-        return result.returncode, result.stdout, result.stderr
+ def _run_subprocess(self, cmd: list[str], workdir: Path) -> tuple[int, str, str]:
+ """Common subprocess execution."""
+ import subprocess
+ result = subprocess.run(cmd, cwd=workdir, capture_output=True, text=True)
+ return result.returncode, result.stdout, result.stderr
 ```
 
 ---
@@ -540,16 +540,16 @@ Each step should be:
 # Step 1: Create new location with function
 # utils/io.py
 def write_text(path: Path, content: str, dry_run: bool, emit: bool = True) -> None:
-    ...
+ ...
 
 # Step 2: Update cli.py to import and re-export
 # cli.py
-from cihub.utils.io import write_text  # noqa: F401 - re-export for backward compat
+from cihub.utils.io import write_text # noqa: F401 - re-export for backward compat
 
 # Step 3: Remove old implementation from cli.py (the function body)
 
 # Step 4: Existing code continues to work:
-from cihub.cli import write_text  # Still works!
+from cihub.cli import write_text # Still works!
 ```
 
 ### Deprecation Strategy (Future)

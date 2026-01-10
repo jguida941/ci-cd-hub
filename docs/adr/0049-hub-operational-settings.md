@@ -28,19 +28,19 @@ Adopt a **config-file-first** pattern for hub operational settings:
 
 ```yaml
 execution:
-  skip_mutation: false
-  write_github_summary: true
-  include_details: true
+ skip_mutation: false
+ write_github_summary: true
+ include_details: true
 
 debug:
-  enabled: false
-  verbose: false
-  debug_context: false
-  emit_triage: false
+ enabled: false
+ verbose: false
+ debug_context: false
+ emit_triage: false
 
 security:
-  harden_runner:
-    policy: audit  # audit | block | disabled
+ harden_runner:
+ policy: audit # audit | block | disabled
 ```
 
 ### 2. CLI Commands: `cihub hub config`
@@ -63,11 +63,11 @@ Hub-internal workflows use a `load-settings` job that calls the CLI with overrid
 ```yaml
 # Single CLI call - no inline scripting (per AGENTS.md: "Never write inline scripts in YAML")
 - name: Load Hub Settings
-  id: resolve
-  run: cihub hub config load --github-output \
-    --override-skip-mutation "${{ inputs.skip_mutation }}" \
-    --override-debug "${{ inputs.cihub_debug }}" \
-    --override-harden-runner-policy "${{ inputs.harden_runner_policy }}"
+ id: resolve
+ run: cihub hub config load --github-output \
+ --override-skip-mutation "${{ inputs.skip_mutation }}" \
+ --override-debug "${{ inputs.cihub_debug }}" \
+ --override-harden-runner-policy "${{ inputs.harden_runner_policy }}"
 ```
 
 The CLI:
@@ -87,14 +87,14 @@ Inputs change from boolean with defaults to string with empty default:
 ```yaml
 # Before (boolean with default)
 skip_mutation:
-  type: boolean
-  default: false
+ type: boolean
+ default: false
 
 # After (override input)
 skip_mutation:
-  description: 'Override: Skip mutation testing'
-  type: string
-  default: ''  # Empty = use config file value
+ description: 'Override: Skip mutation testing'
+ type: string
+ default: '' # Empty = use config file value
 ```
 
 This makes the dispatch UI cleaner - inputs only appear when you want to override.
@@ -102,16 +102,16 @@ This makes the dispatch UI cleaner - inputs only appear when you want to overrid
 ## Alternatives Considered
 
 1. **Keep all settings as workflow inputs:**
-   Rejected. No persistent state; requires editing YAML for default changes.
+ Rejected. No persistent state; requires editing YAML for default changes.
 
 2. **Use GitHub repository variables:**
-   Rejected. Requires GitHub UI or API for changes; not version-controlled.
+ Rejected. Requires GitHub UI or API for changes; not version-controlled.
 
 3. **Merge with per-repo config files:**
-   Rejected. Hub operational settings are fundamentally different from per-repo tool configs.
+ Rejected. Hub operational settings are fundamentally different from per-repo tool configs.
 
 4. **Environment file (.env):**
-   Rejected. Not YAML; harder to validate; different pattern from repo configs.
+ Rejected. Not YAML; harder to validate; different pattern from repo configs.
 
 ## Consequences
 
@@ -148,13 +148,13 @@ This makes the dispatch UI cleaner - inputs only appear when you want to overrid
 
 ```
 Hub Operational Settings (this ADR):
-  config/hub-settings.yaml → controls HOW hub runs
+ config/hub-settings.yaml → controls HOW hub runs
 
 Per-Repo Tool Configs (ADR-0002, ADR-0024):
-  1. .ci-hub.yml (repo-local)
-  2. config/repos/<repo>.yaml (hub-side)
-  3. config/defaults.yaml (global)
-  → controls WHAT runs on each repo
+ 1. .ci-hub.yml (repo-local)
+ 2. config/repos/<repo>.yaml (hub-side)
+ 3. config/defaults.yaml (global)
+ → controls WHAT runs on each repo
 ```
 
 ## Migration

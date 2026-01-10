@@ -31,31 +31,31 @@ Implement a suite of automated documentation quality tools under the `cihub docs
 
 | Command | Purpose | Status |
 |---------|---------|--------|
-| `docs generate` | Generate CLI and config reference docs from code | ✅ Implemented |
-| `docs check` | Verify generated docs are up-to-date | ✅ Implemented |
-| `docs links` | Check for broken internal/external links | ✅ Implemented |
-| `docs stale` | Detect references to removed/renamed code | ✅ Implemented |
-| `docs audit` | Validate lifecycle, ADR metadata, and doc references | ✅ Implemented |
+| `docs generate` | Generate CLI and config reference docs from code | [x] Implemented |
+| `docs check` | Verify generated docs are up-to-date | [x] Implemented |
+| `docs links` | Check for broken internal/external links | [x] Implemented |
+| `docs stale` | Detect references to removed/renamed code | [x] Implemented |
+| `docs audit` | Validate lifecycle, ADR metadata, and doc references | [x] Implemented |
 
 ### Architecture
 
 ```
 cihub/commands/
-├── docs.py              # generate, check, links handlers
-├── docs_stale/          # Modular package (reference pattern)
-│   ├── __init__.py      # Main handler
-│   ├── types.py         # CodeSymbol, DocReference, StaleReport
-│   ├── extraction.py    # Symbol/reference extraction
-│   ├── git.py           # Git operations (compare, file status)
-│   ├── comparison.py    # Stale reference detection
-│   └── output.py        # Output formatting (JSON, markdown, GitHub)
-├── docs_audit/          # Modular package (Part 12.J)
-│   ├── __init__.py      # Main handler
-│   ├── types.py         # AuditFinding, AuditReport, ADRMetadata
-│   ├── lifecycle.py     # STATUS.md ↔ active/ sync validation
-│   ├── adr.py           # ADR metadata linting
-│   ├── references.py    # Plain-text docs/ path scanning
-│   └── output.py        # Output formatting (JSON, markdown, GitHub)
+├── docs.py # generate, check, links handlers
+├── docs_stale/ # Modular package (reference pattern)
+│ ├── __init__.py # Main handler
+│ ├── types.py # CodeSymbol, DocReference, StaleReport
+│ ├── extraction.py # Symbol/reference extraction
+│ ├── git.py # Git operations (compare, file status)
+│ ├── comparison.py # Stale reference detection
+│ └── output.py # Output formatting (JSON, markdown, GitHub)
+├── docs_audit/ # Modular package (Part 12.J)
+│ ├── __init__.py # Main handler
+│ ├── types.py # AuditFinding, AuditReport, ADRMetadata
+│ ├── lifecycle.py # STATUS.md ↔ active/ sync validation
+│ ├── adr.py # ADR metadata linting
+│ ├── references.py # Plain-text docs/ path scanning
+│ └── output.py # Output formatting (JSON, markdown, GitHub)
 ```
 
 ### Design Principles
@@ -134,9 +134,9 @@ cihub docs audit --github-summary
 ```yaml
 # In .github/workflows/docs.yml
 - name: Check documentation freshness
-  run: |
-    cihub docs stale --fail-on-stale --github-summary
-    cihub docs audit --github-summary
+ run: |
+ cihub docs stale --fail-on-stale --github-summary
+ cihub docs audit --github-summary
 ```
 
 ## Consequences

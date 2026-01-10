@@ -6,12 +6,12 @@
 **Last Reviewed:** 2026-01-05
 
 **Implementation Update (2026-01-05):**
-- ✅ `cihub report validate --schema` validates against JSON schema
-- ✅ `cihub report validate --strict` enforces clean-build invariants
-- ✅ Wired into `cihub check --audit` and `cihub smoke --full`
-- ✅ **Self-validation** added to `cihub ci` (runs after report generation)
-- ✅ `ValidationRules.consistency_only` mode for structural checks without clean-build assumptions
-- ✅ Schema/consistency errors fail CI in GITHUB_ACTIONS, warn locally  
+- [x] `cihub report validate --schema` validates against JSON schema
+- [x] `cihub report validate --strict` enforces clean-build invariants
+- [x] Wired into `cihub check --audit` and `cihub smoke --full`
+- [x] **Self-validation** added to `cihub ci` (runs after report generation)
+- [x] `ValidationRules.consistency_only` mode for structural checks without clean-build assumptions
+- [x] Schema/consistency errors fail CI in GITHUB_ACTIONS, warn locally
 
 ## Context
 
@@ -39,16 +39,16 @@ Create `scripts/validate_report.sh` that:
 ```bash
 # Passing fixture - strict validation (zero issues)
 ./scripts/validate_report.sh \
-  --report ./report/report.json \
-  --stack python \
-  --expect-clean
+ --report ./report/report.json \
+ --stack python \
+ --expect-clean
 
 # Failing fixture - must detect issues
 ./scripts/validate_report.sh \
-  --report ./report/report.json \
-  --stack java \
-  --expect-issues \
-  --verbose
+ --report ./report/report.json \
+ --stack java \
+ --expect-issues \
+ --verbose
 ```
 
 ### 3. Validation Rules
@@ -117,58 +117,58 @@ Replace inline validation blocks with script calls:
 
 ```yaml
 validate-passing:
-  name: "Validate Passing Report"
-  runs-on: ubuntu-latest
-  needs: ci-passing
-  if: always()
-  steps:
-    - name: Checkout Hub (for scripts)
-      uses: actions/checkout@v4
-      with:
-        repository: jguida941/ci-cd-hub
-        ref: main
-        path: hub
+ name: "Validate Passing Report"
+ runs-on: ubuntu-latest
+ needs: ci-passing
+ if: always()
+ steps:
+ - name: Checkout Hub (for scripts)
+ uses: actions/checkout@v4
+ with:
+ repository: jguida941/ci-cd-hub
+ ref: main
+ path: hub
 
-    - name: Download Report
-      uses: actions/download-artifact@v4
-      with:
-        name: python-passing-ci-report
-        path: ./report
+ - name: Download Report
+ uses: actions/download-artifact@v4
+ with:
+ name: python-passing-ci-report
+ path: ./report
 
-    - name: Validate Report
-      run: |
-        hub/scripts/validate_report.sh \
-          --report ./report/report.json \
-          --stack python \
-          --expect-clean \
-          --verbose
+ - name: Validate Report
+ run: |
+ hub/scripts/validate_report.sh \
+ --report ./report/report.json \
+ --stack python \
+ --expect-clean \
+ --verbose
 
 validate-failing:
-  name: "Validate Failing Report"
-  runs-on: ubuntu-latest
-  needs: ci-failing
-  if: always()
-  steps:
-    - name: Checkout Hub
-      uses: actions/checkout@v4
-      with:
-        repository: jguida941/ci-cd-hub
-        ref: main
-        path: hub
+ name: "Validate Failing Report"
+ runs-on: ubuntu-latest
+ needs: ci-failing
+ if: always()
+ steps:
+ - name: Checkout Hub
+ uses: actions/checkout@v4
+ with:
+ repository: jguida941/ci-cd-hub
+ ref: main
+ path: hub
 
-    - name: Download Report
-      uses: actions/download-artifact@v4
-      with:
-        name: python-failing-ci-report
-        path: ./report
+ - name: Download Report
+ uses: actions/download-artifact@v4
+ with:
+ name: python-failing-ci-report
+ path: ./report
 
-    - name: Validate Report
-      run: |
-        hub/scripts/validate_report.sh \
-          --report ./report/report.json \
-          --stack python \
-          --expect-issues \
-          --verbose
+ - name: Validate Report
+ run: |
+ hub/scripts/validate_report.sh \
+ --report ./report/report.json \
+ --stack python \
+ --expect-issues \
+ --verbose
 ```
 
 ### 6. Output Format
@@ -180,40 +180,40 @@ Script uses GitHub Actions annotation format for CI integration:
 Report Validation: python (clean)
 ========================================
 Report: ./report/report.json
-Stack:  python
-Mode:   --expect-clean
+Stack: python
+Mode: --expect-clean
 
 --- Schema Version ---
-  [PASS] schema_version: 2.0
+ [PASS] schema_version: 2.0
 
 --- Test Results ---
-  [PASS] tests_passed: 15
-  [PASS] tests_failed: 0
+ [PASS] tests_passed: 15
+ [PASS] tests_failed: 0
 
 --- Coverage ---
-  [PASS] coverage: 87% (threshold: 70%)
+ [PASS] coverage: 87% (threshold: 70%)
 
 --- Tools Ran ---
-  [PASS] tools_ran has 8 tools recorded
+ [PASS] tools_ran has 8 tools recorded
 
 --- Tool Metrics (populated check) ---
-  [PASS] tool_metrics.ruff_errors: 0
-  [PASS] tool_metrics.black_issues: 0
-  ...
+ [PASS] tool_metrics.ruff_errors: 0
+ [PASS] tool_metrics.black_issues: 0
+ ...
 
 --- Clean Build Checks (zero issues expected) ---
-  Lint checks:
-  [PASS] ruff_errors: 0
-  [PASS] black_issues: 0
-  [PASS] isort_issues: 0
-  Security checks:
-  [PASS] bandit_high: 0
-  [PASS] pip_audit_vulns: 0
+ Lint checks:
+ [PASS] ruff_errors: 0
+ [PASS] black_issues: 0
+ [PASS] isort_issues: 0
+ Security checks:
+ [PASS] bandit_high: 0
+ [PASS] pip_audit_vulns: 0
 
 ========================================
 Summary
 ========================================
-Errors:   0
+Errors: 0
 Warnings: 0
 
 Validation PASSED
@@ -226,7 +226,7 @@ Failures show `::error::` annotations visible in GitHub Actions UI.
 ```
 hub-release/
 └── scripts/
-    └── validate_report.sh    # Reusable validation script
+ └── validate_report.sh # Reusable validation script
 ```
 
 Future scripts can follow the same pattern with simple boolean flags.
@@ -262,10 +262,10 @@ After `cihub ci` writes `report.json` and `summary.md`, it runs self-validation:
 ```python
 # In cihub/services/ci_engine/__init__.py
 validation = validate_report(
-    report,
-    ValidationRules(consistency_only=True, strict=False, validate_schema=False),
-    summary_text=summary_text,
-    reports_dir=output_dir,
+ report,
+ ValidationRules(consistency_only=True, strict=False, validate_schema=False),
+ summary_text=summary_text,
+ reports_dir=output_dir,
 )
 ```
 

@@ -1,9 +1,9 @@
 # Registry System Audit and Implementation Plan
 
-> **⚠️ SUPERSEDED:** This document has been consolidated into `docs/development/active/SYSTEM_INTEGRATION_PLAN.md` (2026-01-08)
+> **WARNING: SUPERSEDED:** This document has been consolidated into `docs/development/active/SYSTEM_INTEGRATION_PLAN.md` (2026-01-08)
 
 **Date:** 2026-01-06
-**Priority:** 🟠 **#2** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
+**Priority:** **#2** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
 **Status:** ARCHIVED
 **Depends On:** CLEAN_CODE.md (~90% complete)
 **Blocks:** TEST_REORGANIZATION.md (validates registry integration)
@@ -19,13 +19,13 @@ The registry system exists but is **disconnected and incomplete**. This document
 
 | System | Status | Details |
 |--------|--------|---------|
-| Config Loading | ✅ WORKING | 3-tier merge chain functions correctly |
-| Boolean Normalization | ✅ WORKING | `tool: true` → `tool: {enabled: true}` works |
-| Wizard | ✅ WORKING | Creates configs, 3 entry points |
-| Registry CLI | ⚠️ PARTIAL | Commands exist but only track 3 values |
-| Wizard ↔ Registry | ❌ BROKEN | Not connected at all |
-| Registry → YAML Sync | ⚠️ PARTIAL | Only syncs 3 values, ignores 40+ others |
-| Profiles | ⚠️ UNUSED | 12 profiles exist but rarely used |
+| Config Loading | [x] WORKING | 3-tier merge chain functions correctly |
+| Boolean Normalization | [x] WORKING | `tool: true` → `tool: {enabled: true}` works |
+| Wizard | [x] WORKING | Creates configs, 3 entry points |
+| Registry CLI | WARNING: PARTIAL | Commands exist but only track 3 values |
+| Wizard ↔ Registry | [ ] BROKEN | Not connected at all |
+| Registry → YAML Sync | WARNING: PARTIAL | Only syncs 3 values, ignores 40+ others |
+| Profiles | WARNING: UNUSED | 12 profiles exist but rarely used |
 
 ### Critical Corrections from Original Plan
 
@@ -46,36 +46,36 @@ The registry system exists but is **disconnected and incomplete**. This document
 **Config Loading Chain** (`cihub/config/loader/core.py`):
 ```
 defaults.yaml (LOWEST)
-    ↓ deep_merge + normalize
+ ↓ deep_merge + normalize
 config/repos/<name>.yaml (HUB OVERRIDE)
-    ↓ deep_merge + normalize
+ ↓ deep_merge + normalize
 .ci-hub.yml (REPO LOCAL - HIGHEST)
-    ↓ validate against schema
+ ↓ validate against schema
 EFFECTIVE CONFIG
 ```
 
 **Boolean Shorthand Handling** (`cihub/config/normalize.py`):
-- `pytest: true` → `pytest: {enabled: true}` ✓
-- `chaos: true` → `chaos: {enabled: true}` ✓
-- Applied at each merge layer ✓
+- `pytest: true` → `pytest: {enabled: true}` [x]
+- `chaos: true` → `chaos: {enabled: true}` [x]
+- Applied at each merge layer [x]
 
 **Wizard System** (`cihub/wizard/`):
 - `cihub new --interactive` → Creates hub-side config
 - `cihub init --wizard` → Creates repo-side .ci-hub.yml + workflow
 - `cihub config edit` → Modifies existing config
-- All three entry points functional ✓
+- All three entry points functional [x]
 
 **Registry CLI Commands** (`cihub/commands/registry_cmd.py`):
-- `list`, `show`, `set`, `diff`, `sync`, `add` all implemented ✓
+- `list`, `show`, `set`, `diff`, `sync`, `add` all implemented [x]
 
 ### 1.2 What's Broken/Incomplete
 
 **Registry Only Tracks 3 Values** (`registry_service.py:69-72`):
 ```python
 effective = {
-    "coverage": overrides.get("coverage", tier_defaults.get("coverage", 70)),
-    "mutation": overrides.get("mutation", tier_defaults.get("mutation", 70)),
-    "vulns_max": overrides.get("vulns_max", tier_defaults.get("vulns_max", 0)),
+ "coverage": overrides.get("coverage", tier_defaults.get("coverage", 70)),
+ "mutation": overrides.get("mutation", tier_defaults.get("mutation", 70)),
+ "vulns_max": overrides.get("vulns_max", tier_defaults.get("vulns_max", 0)),
 }
 ```
 - Ignores all 26 tool settings
@@ -90,10 +90,10 @@ effective = {
 **Tier Definitions Are Empty** (`config/registry.json`):
 ```json
 "tiers": {
-  "strict": {
-    "description": "Maximum quality gates",
-    "profile": "tier-strict"  // References non-existent file
-  }
+ "strict": {
+ "description": "Maximum quality gates",
+ "profile": "tier-strict" // References non-existent file
+ }
 }
 ```
 - No actual thresholds or tool settings
@@ -114,51 +114,51 @@ effective = {
 **Registry is the CLI's database. YAML files are generated output.**
 
 ```
-USER ACTION                  CLI COMMAND              RESULT
+USER ACTION CLI COMMAND RESULT
 ─────────────────────────────────────────────────────────────────────
-Onboard new repo      →   cihub new --interactive   → registry.json updated
-                                                     → config/repos/*.yaml generated
+Onboard new repo → cihub new --interactive → registry.json updated
+ → config/repos/*.yaml generated
 
-Change settings       →   cihub registry set        → registry.json updated
-                                                     → config/repos/*.yaml regenerated
+Change settings → cihub registry set → registry.json updated
+ → config/repos/*.yaml regenerated
 
-View config           →   cihub registry show       → Displays effective config
+View config → cihub registry show → Displays effective config
 
-Check drift           →   cihub registry diff       → Shows registry vs YAML differences
+Check drift → cihub registry diff → Shows registry vs YAML differences
 
-Apply changes         →   cihub registry sync       → Regenerates all config/repos/*.yaml
+Apply changes → cihub registry sync → Regenerates all config/repos/*.yaml
 
-Run CI                →   cihub ci (hub-run-all)    → Reads config/repos/*.yaml
-                                                     → Runs tools per config
+Run CI → cihub ci (hub-run-all) → Reads config/repos/*.yaml
+ → Runs tools per config
 
-Init target repo      →   cihub init                → Creates .ci-hub.yml in repo
-                                                     → Creates .github/workflows/hub-ci.yml
+Init target repo → cihub init → Creates .ci-hub.yml in repo
+ → Creates .github/workflows/hub-ci.yml
 ```
 
 ### 2.2 Data Flow (Corrected)
 
 ```
 CURRENT (BROKEN):
-┌─────────────┐     ┌─────────────┐     ┌──────────────────┐
-│   Wizard    │────▶│ config/     │     │  registry.json   │
-│ (cihub new) │     │ repos/*.yaml│     │  (3 values only) │
-└─────────────┘     └─────────────┘     └──────────────────┘
-      │                    │                     │
-      ▼                    ▼                     ▼
-   WRITES              USED BY CI            NOT CONNECTED
-   directly            engine                TO ANYTHING
+┌─────────────┐ ┌─────────────┐ ┌──────────────────┐
+│ Wizard │────▶│ config/ │ │ registry.json │
+│ (cihub new) │ │ repos/*.yaml│ │ (3 values only) │
+└─────────────┘ └─────────────┘ └──────────────────┘
+ │ │ │
+ ▼ ▼ ▼
+ WRITES USED BY CI NOT CONNECTED
+ directly engine TO ANYTHING
 
 
 CORRECT (CLI-FIRST):
-┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│   Wizard    │────▶│  registry.json   │────▶│ config/repos/    │
-│ (cihub new) │     │  (ALL settings)  │     │ *.yaml           │
-└─────────────┘     └──────────────────┘     └──────────────────┘
-      │                     │                        │
-      ▼                     ▼                        ▼
-   CREATES             SOURCE OF                 GENERATED
-   entry in            TRUTH                     BY CLI
-   registry                                      (cihub registry sync)
+┌─────────────┐ ┌──────────────────┐ ┌──────────────────┐
+│ Wizard │────▶│ registry.json │────▶│ config/repos/ │
+│ (cihub new) │ │ (ALL settings) │ │ *.yaml │
+└─────────────┘ └──────────────────┘ └──────────────────┘
+ │ │ │
+ ▼ ▼ ▼
+ CREATES SOURCE OF GENERATED
+ entry in TRUTH BY CLI
+ registry (cihub registry sync)
 ```
 
 ---
@@ -179,60 +179,60 @@ CORRECT (CLI-FIRST):
 
 ```json
 {
-  "$schema": "../schema/registry.schema.json",
-  "schema_version": "cihub-registry-v2",
-  "repos": {
-    "canary-python": {
-      "language": "python",
-      "owner": "jguida941",
-      "description": "Python canary repo for CI validation",
-      "profile": "python-quality",
-      "dispatch_enabled": true,
-      "thresholds": {
-        "coverage_min": 80
-      },
-      "python": {
-        "tools": {
-          "mypy": { "enabled": true },
-          "mutmut": { "enabled": false }
-        }
-      }
-    },
-    "production-api": {
-      "language": "python",
-      "owner": "myorg",
-      "description": "Production API - strict settings",
-      "thresholds": {
-        "coverage_min": 90,
-        "mutation_score_min": 85,
-        "max_critical_vulns": 0,
-        "max_high_vulns": 0
-      },
-      "python": {
-        "tools": {
-          "semgrep": { "enabled": true, "fail_on_findings": true },
-          "trivy": { "enabled": true, "fail_on_critical": true },
-          "codeql": { "enabled": true }
-        }
-      }
-    },
-    "legacy-service": {
-      "language": "java",
-      "owner": "myorg",
-      "description": "Legacy service - relaxed settings",
-      "thresholds": {
-        "coverage_min": 50,
-        "mutation_score_min": 0,
-        "max_high_vulns": 5
-      },
-      "java": {
-        "tools": {
-          "pitest": { "enabled": false },
-          "checkstyle": { "enabled": false }
-        }
-      }
-    }
-  }
+ "$schema": "../schema/registry.schema.json",
+ "schema_version": "cihub-registry-v2",
+ "repos": {
+ "canary-python": {
+ "language": "python",
+ "owner": "jguida941",
+ "description": "Python canary repo for CI validation",
+ "profile": "python-quality",
+ "dispatch_enabled": true,
+ "thresholds": {
+ "coverage_min": 80
+ },
+ "python": {
+ "tools": {
+ "mypy": { "enabled": true },
+ "mutmut": { "enabled": false }
+ }
+ }
+ },
+ "production-api": {
+ "language": "python",
+ "owner": "myorg",
+ "description": "Production API - strict settings",
+ "thresholds": {
+ "coverage_min": 90,
+ "mutation_score_min": 85,
+ "max_critical_vulns": 0,
+ "max_high_vulns": 0
+ },
+ "python": {
+ "tools": {
+ "semgrep": { "enabled": true, "fail_on_findings": true },
+ "trivy": { "enabled": true, "fail_on_critical": true },
+ "codeql": { "enabled": true }
+ }
+ }
+ },
+ "legacy-service": {
+ "language": "java",
+ "owner": "myorg",
+ "description": "Legacy service - relaxed settings",
+ "thresholds": {
+ "coverage_min": 50,
+ "mutation_score_min": 0,
+ "max_high_vulns": 5
+ },
+ "java": {
+ "tools": {
+ "pitest": { "enabled": false },
+ "checkstyle": { "enabled": false }
+ }
+ }
+ }
+ }
 }
 ```
 
@@ -246,40 +246,40 @@ CORRECT (CLI-FIRST):
 
 ```json
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "CIHub Registry",
-  "type": "object",
-  "required": ["schema_version", "repos"],
-  "properties": {
-    "schema_version": {
-      "type": "string",
-      "pattern": "^cihub-registry-v\\d+$"
-    },
-    "repos": {
-      "type": "object",
-      "additionalProperties": { "$ref": "#/$defs/repo" }
-    }
-  },
-  "$defs": {
-    "repo": {
-      "type": "object",
-      "required": ["language"],
-      "properties": {
-        "language": { "enum": ["python", "java"] },
-        "owner": { "type": "string" },
-        "description": { "type": "string" },
-        "profile": {
-          "type": "string",
-          "description": "Optional profile from templates/profiles/ (without .yaml)"
-        },
-        "dispatch_enabled": { "type": "boolean", "default": true },
-        "default_branch": { "type": "string", "default": "main" },
-        "thresholds": { "$ref": "ci-hub-config.schema.json#/definitions/thresholds" },
-        "python": { "$ref": "ci-hub-config.schema.json#/properties/python" },
-        "java": { "$ref": "ci-hub-config.schema.json#/properties/java" }
-      }
-    }
-  }
+ "$schema": "http://json-schema.org/draft-07/schema#",
+ "title": "CIHub Registry",
+ "type": "object",
+ "required": ["schema_version", "repos"],
+ "properties": {
+ "schema_version": {
+ "type": "string",
+ "pattern": "^cihub-registry-v\\d+$"
+ },
+ "repos": {
+ "type": "object",
+ "additionalProperties": { "$ref": "#/$defs/repo" }
+ }
+ },
+ "$defs": {
+ "repo": {
+ "type": "object",
+ "required": ["language"],
+ "properties": {
+ "language": { "enum": ["python", "java"] },
+ "owner": { "type": "string" },
+ "description": { "type": "string" },
+ "profile": {
+ "type": "string",
+ "description": "Optional profile from templates/profiles/ (without .yaml)"
+ },
+ "dispatch_enabled": { "type": "boolean", "default": true },
+ "default_branch": { "type": "string", "default": "main" },
+ "thresholds": { "$ref": "ci-hub-config.schema.json#/definitions/thresholds" },
+ "python": { "$ref": "ci-hub-config.schema.json#/properties/python" },
+ "java": { "$ref": "ci-hub-config.schema.json#/properties/java" }
+ }
+ }
+ }
 }
 ```
 
@@ -314,7 +314,7 @@ cihub registry list
 
 # View effective config for a repo
 cihub registry show my-repo
-cihub registry show my-repo --effective  # Shows merged defaults + profile + overrides
+cihub registry show my-repo --effective # Shows merged defaults + profile + overrides
 
 # Set threshold overrides
 cihub registry set my-repo --coverage 90
@@ -345,9 +345,9 @@ cihub registry diff
 cihub registry diff my-repo
 
 # Sync registry to YAML (regenerate all configs)
-cihub registry sync --dry-run    # Preview changes
-cihub registry sync --yes        # Apply changes
-cihub registry sync my-repo      # Single repo
+cihub registry sync --dry-run # Preview changes
+cihub registry sync --yes # Apply changes
+cihub registry sync my-repo # Single repo
 ```
 
 ### 4.4 Profile Management (Optional)
@@ -434,8 +434,8 @@ cihub profile create my-team-standard --from-repo production-api
 
 | Workflow Type | Limit | Your Workflows | Status |
 |---------------|-------|----------------|--------|
-| `workflow_call` (reusable) | **UNLIMITED** | python-ci.yml, java-ci.yml | ✅ No constraints |
-| `workflow_dispatch` (manual) | **25 inputs** | hub-orchestrator, hub-run-all, hub-security, smoke-test | ✅ Plenty of headroom |
+| `workflow_call` (reusable) | **UNLIMITED** | python-ci.yml, java-ci.yml | [x] No constraints |
+| `workflow_dispatch` (manual) | **25 inputs** | hub-orchestrator, hub-run-all, hub-security, smoke-test | [x] Plenty of headroom |
 
 **Sources:**
 - [GitHub Changelog: workflow_dispatch now supports 25 inputs](https://github.blog/changelog/2025-12-04-actions-workflow-dispatch-workflows-now-support-25-inputs/) (Dec 4, 2025)
@@ -463,17 +463,17 @@ Move all operational toggles from workflow inputs to a simple config file. Workf
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                   Config-File-First Architecture                     │
+│ Config-File-First Architecture │
 ├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  config/hub-settings.yaml     ← ALL toggles (simple YAML)           │
-│           │                                                          │
-│           ↓                                                          │
-│  cihub hub config load        ← CLI reads file, outputs to workflow │
-│           │                                                          │
-│           ↓                                                          │
-│  workflow_dispatch inputs     ← Only: repos, run_group (2-3 inputs) │
-│                                                                      │
+│ │
+│ config/hub-settings.yaml ← ALL toggles (simple YAML) │
+│ │ │
+│ ↓ │
+│ cihub hub config load ← CLI reads file, outputs to workflow │
+│ │ │
+│ ↓ │
+│ workflow_dispatch inputs ← Only: repos, run_group (2-3 inputs) │
+│ │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -484,53 +484,53 @@ Move all operational toggles from workflow inputs to a simple config file. Workf
 # Edit directly OR use: cihub hub config set <key> <value>
 
 execution:
-  skip_mutation: false
-  write_github_summary: true
-  include_details: true
+ skip_mutation: false
+ write_github_summary: true
+ include_details: true
 
 debug:
-  enabled: false
-  verbose: false
+ enabled: false
+ verbose: false
 
 security:
-  harden_runner:
-    policy: audit  # audit | block | disabled
+ harden_runner:
+ policy: audit # audit | block | disabled
 ```
 
 **The Simplified Workflow:**
 ```yaml
 # hub-run-all.yml - BEFORE: 10 inputs, AFTER: 2 inputs
 on:
-  workflow_dispatch:
-    inputs:
-      repos:
-        description: 'Specific repos (comma-separated)'
-        type: string
-      run_group:
-        description: 'Run group filter'
-        type: string
-        default: 'full'
+ workflow_dispatch:
+ inputs:
+ repos:
+ description: 'Specific repos (comma-separated)'
+ type: string
+ run_group:
+ description: 'Run group filter'
+ type: string
+ default: 'full'
 
 jobs:
-  run:
-    steps:
-      - uses: actions/checkout@v4
+ run:
+ steps:
+ - uses: actions/checkout@v4
 
-      - name: Load Hub Settings
-        id: cfg
-        run: cihub hub config load --github-output
+ - name: Load Hub Settings
+ id: cfg
+ run: cihub hub config load --github-output
 
-      - name: Harden Runner
-        if: ${{ steps.cfg.outputs.harden_runner_policy != 'disabled' }}
-        uses: step-security/harden-runner@v2
-        with:
-          egress-policy: ${{ steps.cfg.outputs.harden_runner_policy }}
+ - name: Harden Runner
+ if: ${{ steps.cfg.outputs.harden_runner_policy != 'disabled' }}
+ uses: step-security/harden-runner@v2
+ with:
+ egress-policy: ${{ steps.cfg.outputs.harden_runner_policy }}
 
-      - name: Run CI
-        env:
-          CIHUB_DEBUG: ${{ steps.cfg.outputs.debug_enabled }}
-          SKIP_MUTATION: ${{ steps.cfg.outputs.skip_mutation }}
-        run: cihub ci --repos "${{ inputs.repos }}" --run-group "${{ inputs.run_group }}"
+ - name: Run CI
+ env:
+ CIHUB_DEBUG: ${{ steps.cfg.outputs.debug_enabled }}
+ SKIP_MUTATION: ${{ steps.cfg.outputs.skip_mutation }}
+ run: cihub ci --repos "${{ inputs.repos }}" --run-group "${{ inputs.run_group }}"
 ```
 
 **Comparison:**
@@ -544,12 +544,12 @@ jobs:
 | Scalability | 25 max | **Unlimited** |
 
 **Benefits:**
-- ✅ Unlimited toggles
-- ✅ Simple YAML for manual editing (no workflow knowledge needed)
-- ✅ Same pattern as `.ci-hub.yml` in target repos
-- ✅ Git-trackable settings changes
-- ✅ CLI/wizard can modify easily
-- ✅ Schema validation via JSON schema
+- [x] Unlimited toggles
+- [x] Simple YAML for manual editing (no workflow knowledge needed)
+- [x] Same pattern as `.ci-hub.yml` in target repos
+- [x] Git-trackable settings changes
+- [x] CLI/wizard can modify easily
+- [x] Schema validation via JSON schema
 
 **Implementation Status:** PLANNED (not yet implemented)
 
@@ -566,61 +566,61 @@ jobs:
 ### 6.1 Phase 1: Schema & Registry Structure
 
 1. **Update `schema/registry.schema.json`**
-   - Remove `tiers` block
-   - Add full `repo` definition with `$ref` to ci-hub-config.schema.json
-   - Add `profile` as optional string reference
+ - Remove `tiers` block
+ - Add full `repo` definition with `$ref` to ci-hub-config.schema.json
+ - Add `profile` as optional string reference
 
 2. **Migrate `config/registry.json`**
-   - Remove `tiers` block
-   - Convert existing repos to new structure
-   - Add missing fields (thresholds, tool overrides)
+ - Remove `tiers` block
+ - Convert existing repos to new structure
+ - Add missing fields (thresholds, tool overrides)
 
 ### 6.2 Phase 2: Service Layer
 
 3. **Rewrite `registry_service.py`**
-   - `build_effective_config(repo_name)` - merges defaults → profile → repo settings
-   - `sync_repo_to_yaml(repo_name)` - generates complete config/repos/*.yaml
-   - `set_tool_override(repo, tool, setting, value)` - stores tool override
-   - `set_threshold(repo, field, value)` - stores threshold override
-   - `apply_profile(repo, profile_name)` - applies profile preset
-   - `clear_override(repo, field)` - removes specific override
+ - `build_effective_config(repo_name)` - merges defaults → profile → repo settings
+ - `sync_repo_to_yaml(repo_name)` - generates complete config/repos/*.yaml
+ - `set_tool_override(repo, tool, setting, value)` - stores tool override
+ - `set_threshold(repo, field, value)` - stores threshold override
+ - `apply_profile(repo, profile_name)` - applies profile preset
+ - `clear_override(repo, field)` - removes specific override
 
 ### 6.3 Phase 3: CLI Enhancement
 
 4. **Update `cli_parsers/registry_cmd.py`**
-   - Add `--tool <name>` with `--enabled`, `--fail-on-*`, `--min-*`, `--max-*`
-   - Add `--profile` to apply presets
-   - Add `--clear` to remove overrides
-   - Add `remove` subcommand
+ - Add `--tool <name>` with `--enabled`, `--fail-on-*`, `--min-*`, `--max-*`
+ - Add `--profile` to apply presets
+ - Add `--clear` to remove overrides
+ - Add `remove` subcommand
 
 5. **Update `commands/registry_cmd.py`**
-   - Implement new handlers
-   - Add validation
-   - Ensure all changes trigger YAML regeneration
+ - Implement new handlers
+ - Add validation
+ - Ensure all changes trigger YAML regeneration
 
 ### 6.4 Phase 4: Wizard Integration
 
 6. **Connect wizard to registry** (`wizard/core.py`)
-   - `run_new_wizard()` creates registry entry
-   - Wizard reads existing profiles as optional presets
-   - Wizard stores choices in registry, not directly to YAML
+ - `run_new_wizard()` creates registry entry
+ - Wizard reads existing profiles as optional presets
+ - Wizard stores choices in registry, not directly to YAML
 
 7. **Update `commands/new.py`**
-   - `cihub new` creates registry entry first
-   - Then calls `registry sync` to generate YAML
+ - `cihub new` creates registry entry first
+ - Then calls `registry sync` to generate YAML
 
 ### 6.5 Phase 5: Testing
 
 8. **Contract tests**
-   - `test_schema_consistency.py` - registry schema matches ci-hub-config schema
-   - `test_wizard_registry_integration.py` - wizard creates registry entries
-   - `test_sync_roundtrip.py` - sync generates valid, loadable YAML
-   - `test_cli_registry_contracts.py` - CLI commands modify registry correctly
+ - `test_schema_consistency.py` - registry schema matches ci-hub-config schema
+ - `test_wizard_registry_integration.py` - wizard creates registry entries
+ - `test_sync_roundtrip.py` - sync generates valid, loadable YAML
+ - `test_cli_registry_contracts.py` - CLI commands modify registry correctly
 
 9. **Property tests (Hypothesis)**
-   - Any repo config in registry validates against schema
-   - Effective config (defaults + profile + overrides) is valid
-   - Sync output matches effective config
+ - Any repo config in registry validates against schema
+ - Effective config (defaults + profile + overrides) is valid
+ - Sync output matches effective config
 
 ---
 
@@ -740,23 +740,23 @@ This section documents everything users **CANNOT do** with the current system th
 
 | Gap Category | Severity | Impact |
 |-------------|----------|--------|
-| Cannot create profiles via CLI | 🔴 CRITICAL | Users forced to manually edit YAML files |
-| Cannot add custom tools | 🔴 CRITICAL | Locked to 26 hardcoded tools |
-| Cannot add new languages | 🔴 CRITICAL | Only Python and Java supported |
-| Registry only tracks 3 values | 🔴 CRITICAL | 40+ settings ignored |
-| Missing 41 CLI commands | 🟠 HIGH | Incomplete CRUD operations |
-| Schema blocks extensibility | 🟠 HIGH | additionalProperties: false everywhere |
-| 50+ hardcoded magic numbers | 🟡 MEDIUM | Users can't adjust behavior |
+| Cannot create profiles via CLI | CRITICAL | Users forced to manually edit YAML files |
+| Cannot add custom tools | CRITICAL | Locked to 26 hardcoded tools |
+| Cannot add new languages | CRITICAL | Only Python and Java supported |
+| Registry only tracks 3 values | CRITICAL | 40+ settings ignored |
+| Missing 41 CLI commands | HIGH | Incomplete CRUD operations |
+| Schema blocks extensibility | HIGH | additionalProperties: false everywhere |
+| 50+ hardcoded magic numbers | MEDIUM | Users can't adjust behavior |
 
 ### 10.2 Profile Creation - COMPLETELY MISSING
 
 **User Story:** "I want to create a custom profile for my team"
 
 **Current State:**
-- ❌ NO `cihub profile create` command
-- ❌ NO `cihub profile list` command
-- ❌ NO `cihub profile edit` command
-- ❌ NO `cihub profile delete` command
+- [ ] NO `cihub profile create` command
+- [ ] NO `cihub profile list` command
+- [ ] NO `cihub profile edit` command
+- [ ] NO `cihub profile delete` command
 - Profiles are READ-ONLY static files in `templates/profiles/`
 - Only 12 predefined profiles exist
 - Users must manually create YAML files to add profiles
@@ -777,15 +777,15 @@ cihub profile delete my-team-standard
 **User Story:** "I want to add pylint (or any custom tool) to my CI pipeline"
 
 **Current State:**
-- ❌ Tools are HARDCODED in `cihub/tools/registry.py`:
-  ```python
-  PYTHON_TOOLS = ["pytest", "ruff", "black", "isort", "mypy", "bandit", ...]
-  JAVA_TOOLS = ["jacoco", "pitest", "checkstyle", "spotbugs", ...]
-  ```
-- ❌ Schema uses `additionalProperties: false` - rejects unknown tools
-- ❌ Tool runners are hardcoded dictionaries
-- ❌ No plugin system
-- ❌ `extra_tests` feature defined in schema but NOT implemented
+- [ ] Tools are HARDCODED in `cihub/tools/registry.py`:
+ ```python
+ PYTHON_TOOLS = ["pytest", "ruff", "black", "isort", "mypy", "bandit", ...]
+ JAVA_TOOLS = ["jacoco", "pitest", "checkstyle", "spotbugs", ...]
+ ```
+- [ ] Schema uses `additionalProperties: false` - rejects unknown tools
+- [ ] Tool runners are hardcoded dictionaries
+- [ ] No plugin system
+- [ ] `extra_tests` feature defined in schema but NOT implemented
 
 **What Users Need:**
 - Plugin system for custom tools
@@ -800,16 +800,16 @@ cihub profile delete my-team-standard
 **User Story:** "I want to add Go/Rust/Node.js support"
 
 **Current State:**
-- ❌ Languages hardcoded as enum: `["python", "java"]`
-- ❌ Tool definitions are per-language and hardcoded
-- ❌ No language plugin architecture
-- ❌ Adding a language requires modifying:
-  - Schema files
-  - Tool registry
-  - CI engine
-  - Workflow templates
-  - Wizard questions
-  - 10+ files total
+- [ ] Languages hardcoded as enum: `["python", "java"]`
+- [ ] Tool definitions are per-language and hardcoded
+- [ ] No language plugin architecture
+- [ ] Adding a language requires modifying:
+ - Schema files
+ - Tool registry
+ - CI engine
+ - Workflow templates
+ - Wizard questions
+ - 10+ files total
 
 **Impact:** Cannot use this tool for polyglot organizations.
 
@@ -845,12 +845,12 @@ cihub profile delete my-team-standard
 
 | Entity | Create | Read | Update | Delete | Gap? |
 |--------|--------|------|--------|--------|------|
-| Repos | ✓ | ✓ | ✓ | ❌ | **MISSING DELETE** |
-| Profiles | ❌ | ✓ | ❌ | ❌ | **MISSING C, U, D** |
-| Tiers | ❌ | ✓ | ❌ | ❌ | **MISSING C, U, D** |
-| Tools | ❌ | ✓ | ✓ | ❌ | **MISSING C, D** |
-| Thresholds | ❌ | ✓ | ✓ | ❌ | **MISSING C, D** |
-| Workflows | ✓ | ✓ | ✓ | ❌ | **MISSING DELETE** |
+| Repos | [x] | [x] | [x] | [ ] | **MISSING DELETE** |
+| Profiles | [ ] | [x] | [ ] | [ ] | **MISSING C, U, D** |
+| Tiers | [ ] | [x] | [ ] | [ ] | **MISSING C, U, D** |
+| Tools | [ ] | [x] | [x] | [ ] | **MISSING C, D** |
+| Thresholds | [ ] | [x] | [x] | [ ] | **MISSING C, D** |
+| Workflows | [x] | [x] | [x] | [ ] | **MISSING DELETE** |
 
 ### 10.7 Hardcoded Values (50+ Magic Numbers)
 
@@ -894,37 +894,37 @@ cihub profile delete my-team-standard
 ### 10.8 Schema Extensibility Issues
 
 **ci-hub-config.schema.json:**
-- 🔴 `additionalProperties: false` at root level
-- 🔴 `additionalProperties: false` on ALL nested objects
-- 🔴 Users CANNOT add custom fields
-- 🔴 Users CANNOT add custom tools
-- 🔴 Language enum is fixed: `["java", "python"]`
+- `additionalProperties: false` at root level
+- `additionalProperties: false` on ALL nested objects
+- Users CANNOT add custom fields
+- Users CANNOT add custom tools
+- Language enum is fixed: `["java", "python"]`
 - **Extensibility Score: 0/10**
 
 **registry.schema.json:**
-- 🟡 Allows custom fields in repos (additionalProperties not specified)
-- 🟡 But NOT validated in production code
+- Allows custom fields in repos (additionalProperties not specified)
+- But NOT validated in production code
 - **Extensibility Score: 6/10**
 
 **triage.schema.json:**
-- 🟡 Allows additional fields
-- 🔴 Status/severity/category enums are fixed
+- Allows additional fields
+- Status/severity/category enums are fixed
 - **Extensibility Score: 7/10**
 
 ### 10.9 User Stories - Blocked vs Working
 
 | User Story | Status | Blocker |
 |------------|--------|---------|
-| Add new repo to registry | ✅ YES | - |
-| Create custom profile | ❌ NO | No profile create command |
-| Use tool not in defaults (pylint) | ❌ NO | Tools hardcoded in schema |
-| Set custom threshold | ⚠️ PARTIAL | Only if threshold in schema |
-| Edit existing profile | ❌ NO | No profile edit command |
-| Delete profile | ❌ NO | No profile delete command |
-| Add new language (Go, Rust) | ❌ NO | Languages hardcoded as enum |
-| Customize workflow templates | ❌ NO | No customization system |
-| Bulk update all repos | ⚠️ PARTIAL | No filtering/bulk-set commands |
-| Export/import configuration | ❌ NO | No export/import commands |
+| Add new repo to registry | [x] YES | - |
+| Create custom profile | [ ] NO | No profile create command |
+| Use tool not in defaults (pylint) | [ ] NO | Tools hardcoded in schema |
+| Set custom threshold | WARNING: PARTIAL | Only if threshold in schema |
+| Edit existing profile | [ ] NO | No profile edit command |
+| Delete profile | [ ] NO | No profile delete command |
+| Add new language (Go, Rust) | [ ] NO | Languages hardcoded as enum |
+| Customize workflow templates | [ ] NO | No customization system |
+| Bulk update all repos | WARNING: PARTIAL | No filtering/bulk-set commands |
+| Export/import configuration | [ ] NO | No export/import commands |
 
 ---
 
@@ -1093,66 +1093,66 @@ cihub audit compliance [--standard soc2]
 
 | Priority | Category | Commands/Features | User Impact |
 |----------|----------|-------------------|-------------|
-| 🔴 P0 | Profile CRUD | 7 commands | Users can't create reusable configs |
-| 🔴 P0 | Registry full tracking | 40+ fields | Central management broken |
-| 🔴 P0 | Repo delete | 1 command | Can't clean up repos |
-| 🟠 P1 | Tool management | 6 commands | Users edit YAML manually |
-| 🟠 P1 | Threshold management | 5 commands | Users edit YAML manually |
-| 🟠 P1 | Import/Export | 5 commands | No backup/migration |
-| 🟡 P2 | Schema extensibility | Remove additionalProperties:false | Custom tools blocked |
-| 🟡 P2 | Additional validation | 4 commands | No fine-grained validation |
-| 🟢 P3 | Audit/compliance | 3 commands | Governance teams |
+| P0 | Profile CRUD | 7 commands | Users can't create reusable configs |
+| P0 | Registry full tracking | 40+ fields | Central management broken |
+| P0 | Repo delete | 1 command | Can't clean up repos |
+| P1 | Tool management | 6 commands | Users edit YAML manually |
+| P1 | Threshold management | 5 commands | Users edit YAML manually |
+| P1 | Import/Export | 5 commands | No backup/migration |
+| P2 | Schema extensibility | Remove additionalProperties:false | Custom tools blocked |
+| P2 | Additional validation | 4 commands | No fine-grained validation |
+| P3 | Audit/compliance | 3 commands | Governance teams |
 
 ### 12.2 Revised Phase 1 (CRITICAL - Must Fix First)
 
 1. **Profile Management System**
-   - Create `cihub/cli_parsers/profile.py`
-   - Create `cihub/commands/profile.py`
-   - Implement: create, list, show, edit, delete
-   - Store custom profiles in `templates/profiles/custom/`
+ - Create `cihub/cli_parsers/profile.py`
+ - Create `cihub/commands/profile.py`
+ - Implement: create, list, show, edit, delete
+ - Store custom profiles in `templates/profiles/custom/`
 
 2. **Registry Full Config Tracking**
-   - Rewrite `registry_service.py` to track ALL 40+ settings
-   - Update registry.schema.json to match ci-hub-config schema via $ref
-   - Fix `sync_to_configs()` to generate complete configs
+ - Rewrite `registry_service.py` to track ALL 40+ settings
+ - Update registry.schema.json to match ci-hub-config schema via $ref
+ - Fix `sync_to_configs()` to generate complete configs
 
 3. **Repo Delete Command**
-   - Add `cihub registry remove <name>`
-   - Remove from registry.json
-   - Optionally delete config/repos/*.yaml
+ - Add `cihub registry remove <name>`
+ - Remove from registry.json
+ - Optionally delete config/repos/*.yaml
 
 ### 12.3 Revised Phase 2 (HIGH - User Experience)
 
 4. **Tool & Threshold CLI**
-   - Add all 11 tool/threshold commands
-   - Enable granular control without YAML editing
+ - Add all 11 tool/threshold commands
+ - Enable granular control without YAML editing
 
 5. **Import/Export System**
-   - Backup and restore capability
-   - Migration between environments
+ - Backup and restore capability
+ - Migration between environments
 
 6. **Wizard ↔ Registry Connection**
-   - Wizard writes to registry, not YAML directly
-   - Sync generates YAML from registry
+ - Wizard writes to registry, not YAML directly
+ - Sync generates YAML from registry
 
 ### 12.4 Revised Phase 3 (MEDIUM - Extensibility)
 
 7. **Schema Extensibility**
-   - Add `custom` or `extensions` section to schemas
-   - Allow `x-*` prefixed custom fields
-   - Consider removing `additionalProperties: false` from root
+ - Add `custom` or `extensions` section to schemas
+ - Allow `x-*` prefixed custom fields
+ - Consider removing `additionalProperties: false` from root
 
 8. **Language Plugin System**
-   - Abstract language-specific logic
-   - Allow custom language registration
-   - Define language plugin interface
+ - Abstract language-specific logic
+ - Allow custom language registration
+ - Define language plugin interface
 
 ### 12.5 Revised Phase 4 (LOW - Nice to Have)
 
 9. **Audit & Compliance**
-   - Change tracking
-   - Drift detection
-   - Compliance reporting
+ - Change tracking
+ - Drift detection
+ - Compliance reporting
 
 ---
 
@@ -1168,10 +1168,10 @@ cihub audit compliance [--standard soc2]
 ### 13.2 New Principles (Added from Gap Analysis)
 
 5. **Full CRUD for All Entities** - Users can create, read, update, delete:
-   - Profiles
-   - Repos
-   - Tools (enable/disable)
-   - Thresholds
+ - Profiles
+ - Repos
+ - Tools (enable/disable)
+ - Thresholds
 
 6. **No Hardcoded Limits** - All thresholds, timeouts, and behavior configurable
 
@@ -1227,9 +1227,9 @@ cihub audit compliance [--standard soc2]
 
 ### Agent 6: User Story Analysis
 - 10 user stories evaluated
-- 4 fully blocked (❌)
-- 4 partially working (⚠️)
-- 2 fully working (✅)
+- 4 fully blocked ([ ])
+- 4 partially working (WARNING:)
+- 2 fully working ([x])
 - Major blockers: profiles, tools, languages, export/import
 
 ### Agent 7: Schema Extensibility
@@ -1258,15 +1258,15 @@ cihub audit compliance [--standard soc2]
 
 | Sync Point | Verification Exists? | Gap Severity |
 |------------|---------------------|--------------|
-| Wizard → Registry | ❌ NO | 🔴 CRITICAL |
-| Registry → YAML | ⚠️ PARTIAL (3 fields) | 🔴 CRITICAL |
-| YAML → Workflow | ❌ NO | 🟠 HIGH |
-| Schema ↔ Code | ⚠️ PARTIAL | 🟠 HIGH |
-| Profile ↔ Registry | ❌ NO | 🟠 HIGH |
-| Registry ↔ GitHub | ❌ NO | 🟡 MEDIUM |
-| Thresholds ↔ Gates | ❌ NO | 🟠 HIGH |
-| Templates ↔ Deployed | ✅ YES (template-sync) | ✅ OK |
-| Schema ↔ Defaults | ⚠️ PARTIAL | 🟡 MEDIUM |
+| Wizard → Registry | [ ] NO | CRITICAL |
+| Registry → YAML | WARNING: PARTIAL (3 fields) | CRITICAL |
+| YAML → Workflow | [ ] NO | HIGH |
+| Schema ↔ Code | WARNING: PARTIAL | HIGH |
+| Profile ↔ Registry | [ ] NO | HIGH |
+| Registry ↔ GitHub | [ ] NO | MEDIUM |
+| Thresholds ↔ Gates | [ ] NO | HIGH |
+| Templates ↔ Deployed | [x] YES (template-sync) | [x] OK |
+| Schema ↔ Defaults | WARNING: PARTIAL | MEDIUM |
 
 ### 14.2 Gap Details
 
@@ -1322,13 +1322,13 @@ cihub audit compliance [--standard soc2]
 cihub verify --all
 
 # Step-by-step verification
-cihub verify --step wizard-registry    # Wizard created registry entry?
-cihub verify --step registry-yaml      # Registry matches generated YAML?
-cihub verify --step yaml-workflow      # YAML settings work with workflow?
-cihub verify --step profile-exists     # All referenced profiles exist?
-cihub verify --step schema-code        # Schema fields have handlers?
-cihub verify --step github-access      # GitHub repos accessible?
-cihub verify --step threshold-gates    # Thresholds match gate logic?
+cihub verify --step wizard-registry # Wizard created registry entry?
+cihub verify --step registry-yaml # Registry matches generated YAML?
+cihub verify --step yaml-workflow # YAML settings work with workflow?
+cihub verify --step profile-exists # All referenced profiles exist?
+cihub verify --step schema-code # Schema fields have handlers?
+cihub verify --step github-access # GitHub repos accessible?
+cihub verify --step threshold-gates # Thresholds match gate logic?
 ```
 
 ---
@@ -1342,12 +1342,12 @@ cihub verify --step threshold-gates    # Thresholds match gate logic?
 
 | Test Category | Files | Coverage |
 |--------------|-------|----------|
-| Unit tests | 80+ | ⚠️ registry_service untested |
-| Integration | 20+ | ⚠️ No wizard→registry tests |
-| Contract | 5 | ⚠️ Incomplete schema coverage |
-| E2E | 8 | ⚠️ No full pipeline tests |
-| Property-based | 3 | ⚠️ Limited scope |
-| Mutation | 0 | ❌ Not configured |
+| Unit tests | 80+ | WARNING: registry_service untested |
+| Integration | 20+ | WARNING: No wizard→registry tests |
+| Contract | 5 | WARNING: Incomplete schema coverage |
+| E2E | 8 | WARNING: No full pipeline tests |
+| Property-based | 3 | WARNING: Limited scope |
+| Mutation | 0 | [ ] Not configured |
 
 ### 15.2 Required Test Categories
 
@@ -1356,28 +1356,28 @@ cihub verify --step threshold-gates    # Thresholds match gate logic?
 ```python
 # tests/test_registry_service_unit.py
 class TestRegistryService:
-    # Load/Save
-    def test_load_registry_empty_file(self): ...
-    def test_load_registry_valid_json(self): ...
-    def test_save_registry_writes_json(self): ...
+ # Load/Save
+ def test_load_registry_empty_file(self): ...
+ def test_load_registry_valid_json(self): ...
+ def test_save_registry_writes_json(self): ...
 
-    # List/Show
-    def test_list_repos_returns_all(self): ...
-    def test_list_repos_computes_effective(self): ...
-    def test_get_repo_config_not_found(self): ...
-    def test_get_repo_config_with_overrides(self): ...
+ # List/Show
+ def test_list_repos_returns_all(self): ...
+ def test_list_repos_computes_effective(self): ...
+ def test_get_repo_config_not_found(self): ...
+ def test_get_repo_config_with_overrides(self): ...
 
-    # Set Operations
-    def test_set_repo_tier_valid(self): ...
-    def test_set_repo_tier_invalid(self): ...
-    def test_set_repo_override_valid_key(self): ...
-    def test_set_repo_override_invalid_key(self): ...
+ # Set Operations
+ def test_set_repo_tier_valid(self): ...
+ def test_set_repo_tier_invalid(self): ...
+ def test_set_repo_override_valid_key(self): ...
+ def test_set_repo_override_invalid_key(self): ...
 
-    # Diff/Sync
-    def test_compute_diff_finds_differences(self): ...
-    def test_compute_diff_missing_config(self): ...
-    def test_sync_to_configs_dry_run(self): ...
-    def test_sync_to_configs_applies_changes(self): ...
+ # Diff/Sync
+ def test_compute_diff_finds_differences(self): ...
+ def test_compute_diff_missing_config(self): ...
+ def test_sync_to_configs_dry_run(self): ...
+ def test_sync_to_configs_applies_changes(self): ...
 ```
 
 #### Category 2: Integration Tests (~300 lines)
@@ -1385,20 +1385,20 @@ class TestRegistryService:
 ```python
 # tests/test_registry_integration.py
 class TestRegistryIntegration:
-    # Registry → Config Pipeline
-    def test_registry_set_generates_valid_yaml(self): ...
-    def test_registry_sync_updates_all_repos(self): ...
-    def test_registry_diff_detects_all_fields(self): ...
+ # Registry → Config Pipeline
+ def test_registry_set_generates_valid_yaml(self): ...
+ def test_registry_sync_updates_all_repos(self): ...
+ def test_registry_diff_detects_all_fields(self): ...
 
-    # Wizard → Registry Pipeline
-    def test_wizard_creates_registry_entry(self): ...
-    def test_wizard_respects_existing_registry(self): ...
-    def test_wizard_profile_selection_updates_registry(self): ...
+ # Wizard → Registry Pipeline
+ def test_wizard_creates_registry_entry(self): ...
+ def test_wizard_respects_existing_registry(self): ...
+ def test_wizard_profile_selection_updates_registry(self): ...
 
-    # CLI → Registry Pipeline
-    def test_cli_set_modifies_registry(self): ...
-    def test_cli_show_reads_effective_config(self): ...
-    def test_cli_remove_deletes_entry(self): ...
+ # CLI → Registry Pipeline
+ def test_cli_set_modifies_registry(self): ...
+ def test_cli_show_reads_effective_config(self): ...
+ def test_cli_remove_deletes_entry(self): ...
 ```
 
 #### Category 3: Contract Tests (~250 lines)
@@ -1406,18 +1406,18 @@ class TestRegistryIntegration:
 ```python
 # tests/test_registry_contracts.py
 class TestSchemaContracts:
-    # Schema Consistency
-    def test_registry_schema_refs_ci_hub_config(self): ...
-    def test_all_thresholds_in_registry_schema(self): ...
-    def test_all_tools_in_registry_schema(self): ...
+ # Schema Consistency
+ def test_registry_schema_refs_ci_hub_config(self): ...
+ def test_all_thresholds_in_registry_schema(self): ...
+ def test_all_tools_in_registry_schema(self): ...
 
-    # Field Mapping
-    def test_registry_field_names_match_yaml(self): ...
-    def test_threshold_names_consistent(self): ...
+ # Field Mapping
+ def test_registry_field_names_match_yaml(self): ...
+ def test_threshold_names_consistent(self): ...
 
-    # Default Values
-    def test_registry_defaults_match_yaml_defaults(self): ...
-    def test_code_defaults_match_schema_defaults(self): ...
+ # Default Values
+ def test_registry_defaults_match_yaml_defaults(self): ...
+ def test_code_defaults_match_schema_defaults(self): ...
 ```
 
 #### Category 4: Property-Based Tests with Hypothesis (~200 lines)
@@ -1427,17 +1427,17 @@ class TestSchemaContracts:
 from hypothesis import given, strategies as st
 
 class TestRegistryProperties:
-    @given(st.integers(0, 100))
-    def test_coverage_roundtrip(self, value): ...
+ @given(st.integers(0, 100))
+ def test_coverage_roundtrip(self, value): ...
 
-    @given(st.dictionaries(st.text(), st.integers()))
-    def test_overrides_preserved(self, overrides): ...
+ @given(st.dictionaries(st.text(), st.integers()))
+ def test_overrides_preserved(self, overrides): ...
 
-    @given(st.lists(st.text()))
-    def test_list_repos_idempotent(self, repos): ...
+ @given(st.lists(st.text()))
+ def test_list_repos_idempotent(self, repos): ...
 
-    @given(st.sampled_from(["strict", "standard", "relaxed"]))
-    def test_tier_always_valid(self, tier): ...
+ @given(st.sampled_from(["strict", "standard", "relaxed"]))
+ def test_tier_always_valid(self, tier): ...
 ```
 
 #### Category 5: Snapshot Tests (~100 lines)
@@ -1445,10 +1445,10 @@ class TestRegistryProperties:
 ```python
 # tests/test_registry_snapshots.py
 class TestRegistryCLISnapshots:
-    def test_registry_list_output(self, snapshot): ...
-    def test_registry_show_output(self, snapshot): ...
-    def test_registry_diff_output(self, snapshot): ...
-    def test_registry_help_output(self, snapshot): ...
+ def test_registry_list_output(self, snapshot): ...
+ def test_registry_show_output(self, snapshot): ...
+ def test_registry_diff_output(self, snapshot): ...
+ def test_registry_help_output(self, snapshot): ...
 ```
 
 #### Category 6: E2E Pipeline Tests (~300 lines)
@@ -1456,19 +1456,19 @@ class TestRegistryCLISnapshots:
 ```python
 # tests/test_registry_e2e.py
 class TestRegistryE2E:
-    def test_full_pipeline_new_repo(self):
-        """Wizard → Registry → YAML → Workflow → CI Run"""
-        # 1. Run wizard
-        # 2. Verify registry entry created
-        # 3. Verify YAML generated
-        # 4. Verify workflow can read config
-        # 5. Verify CI gates match thresholds
+ def test_full_pipeline_new_repo(self):
+ """Wizard → Registry → YAML → Workflow → CI Run"""
+ # 1. Run wizard
+ # 2. Verify registry entry created
+ # 3. Verify YAML generated
+ # 4. Verify workflow can read config
+ # 5. Verify CI gates match thresholds
 
-    def test_full_pipeline_modify_threshold(self):
-        """CLI set → Registry → YAML → Gates"""
+ def test_full_pipeline_modify_threshold(self):
+ """CLI set → Registry → YAML → Gates"""
 
-    def test_full_pipeline_apply_profile(self):
-        """Profile create → Apply → Verify effective config"""
+ def test_full_pipeline_apply_profile(self):
+ """Profile create → Apply → Verify effective config"""
 ```
 
 ### 15.3 Mutation Testing Configuration
@@ -1505,68 +1505,68 @@ tests_dir = "tests/"
 
 | Edge Case | Risk | Handling Strategy |
 |-----------|------|-------------------|
-| User cancels mid-wizard | 🟡 | Cleanup partial state |
-| Duplicate repo name | 🟠 | Prompt for overwrite/rename |
-| Invalid characters in repo name | 🟠 | Sanitize or reject |
-| Network failure during wizard | 🟡 | Local-only mode |
-| Empty required field | 🟢 | Validation prompt |
-| Profile reference doesn't exist | 🟠 | Warn and continue without |
+| User cancels mid-wizard | | Cleanup partial state |
+| Duplicate repo name | | Prompt for overwrite/rename |
+| Invalid characters in repo name | | Sanitize or reject |
+| Network failure during wizard | | Local-only mode |
+| Empty required field | | Validation prompt |
+| Profile reference doesn't exist | | Warn and continue without |
 
 ### 16.2 Registry → YAML Edge Cases
 
 | Edge Case | Risk | Handling Strategy |
 |-----------|------|-------------------|
-| Config file exists with different content | 🟠 | Prompt or --force flag |
-| Orphaned YAML (no registry entry) | 🟡 | `cihub cleanup` command |
-| Registry has invalid JSON | 🔴 | Graceful error + backup |
-| Schema version mismatch | 🟠 | Migration or error |
-| Circular profile references | 🟡 | Detect and error |
-| Profile file deleted | 🟠 | Warn, use defaults |
+| Config file exists with different content | | Prompt or --force flag |
+| Orphaned YAML (no registry entry) | | `cihub cleanup` command |
+| Registry has invalid JSON | | Graceful error + backup |
+| Schema version mismatch | | Migration or error |
+| Circular profile references | | Detect and error |
+| Profile file deleted | | Warn, use defaults |
 
 ### 16.3 YAML → Workflow Edge Cases
 
 | Edge Case | Risk | Handling Strategy |
 |-----------|------|-------------------|
-| Tool enabled but not installed | 🟠 | CI fails with clear message |
-| Threshold for disabled tool | 🟡 | Ignore silently |
-| Invalid YAML syntax | 🔴 | Schema validation |
-| Missing required fields | 🟠 | Use defaults |
-| Extra unknown fields | 🟡 | Ignore (if additionalProperties: true) |
-| Workflow template out of date | 🟠 | template-sync check |
+| Tool enabled but not installed | | CI fails with clear message |
+| Threshold for disabled tool | | Ignore silently |
+| Invalid YAML syntax | | Schema validation |
+| Missing required fields | | Use defaults |
+| Extra unknown fields | | Ignore (if additionalProperties: true) |
+| Workflow template out of date | | template-sync check |
 
 ### 16.4 CI Engine Edge Cases
 
 | Edge Case | Risk | Handling Strategy |
 |-----------|------|-------------------|
-| Tool timeout | 🟠 | Configurable timeouts |
-| Tool not found | 🟠 | Clear error message |
-| Partial tool failure | 🟡 | Continue or fail-fast option |
-| Coverage report missing | 🟠 | Fail gate or warn |
-| Memory exhaustion | 🔴 | Resource limits |
-| Flaky test detection | 🟡 | Re-run logic |
+| Tool timeout | | Configurable timeouts |
+| Tool not found | | Clear error message |
+| Partial tool failure | | Continue or fail-fast option |
+| Coverage report missing | | Fail gate or warn |
+| Memory exhaustion | | Resource limits |
+| Flaky test detection | | Re-run logic |
 
 ### 16.5 Cross-Cutting Edge Cases
 
 | Edge Case | Risk | Handling Strategy |
 |-----------|------|-------------------|
-| Version upgrade mid-run | 🟠 | Lock file mechanism |
-| Concurrent modifications | 🟠 | File locking |
-| Environment variable injection | 🔴 | Sanitize inputs |
-| Unicode in repo names | 🟡 | Normalize to ASCII |
-| Very long repo names | 🟡 | Truncate with hash |
-| Symlink in config path | 🟡 | Resolve or reject |
-| Read-only filesystem | 🟠 | Graceful error |
-| Partial registry update | 🔴 | Atomic writes |
+| Version upgrade mid-run | | Lock file mechanism |
+| Concurrent modifications | | File locking |
+| Environment variable injection | | Sanitize inputs |
+| Unicode in repo names | | Normalize to ASCII |
+| Very long repo names | | Truncate with hash |
+| Symlink in config path | | Resolve or reject |
+| Read-only filesystem | | Graceful error |
+| Partial registry update | | Atomic writes |
 
 ### 16.6 Multi-Repo Edge Cases
 
 | Edge Case | Risk | Handling Strategy |
 |-----------|------|-------------------|
-| Bulk update with some failures | 🟠 | Report partial success |
-| Profile used by multiple repos deleted | 🟠 | Warn, don't delete |
-| Registry corruption | 🔴 | Backup mechanism |
-| 100+ repos in registry | 🟡 | Performance testing |
-| Circular dependencies | 🟡 | Detect and error |
+| Bulk update with some failures | | Report partial success |
+| Profile used by multiple repos deleted | | Warn, don't delete |
+| Registry corruption | | Backup mechanism |
+| 100+ repos in registry | | Performance testing |
+| Circular dependencies | | Detect and error |
 
 ### 16.7 Recommended Edge Case Tests
 
@@ -1574,18 +1574,18 @@ tests_dir = "tests/"
 # tests/test_edge_cases.py
 
 class TestWizardEdgeCases:
-    def test_cancel_mid_wizard_cleans_up(self): ...
-    def test_duplicate_repo_prompts_user(self): ...
-    def test_network_failure_continues_locally(self): ...
+ def test_cancel_mid_wizard_cleans_up(self): ...
+ def test_duplicate_repo_prompts_user(self): ...
+ def test_network_failure_continues_locally(self): ...
 
 class TestRegistryEdgeCases:
-    def test_orphaned_yaml_detected(self): ...
-    def test_invalid_json_graceful_error(self): ...
-    def test_schema_version_mismatch_migrates(self): ...
+ def test_orphaned_yaml_detected(self): ...
+ def test_invalid_json_graceful_error(self): ...
+ def test_schema_version_mismatch_migrates(self): ...
 
 class TestConcurrencyEdgeCases:
-    def test_concurrent_registry_updates_safe(self): ...
-    def test_atomic_write_on_failure(self): ...
+ def test_concurrent_registry_updates_safe(self): ...
+ def test_atomic_write_on_failure(self): ...
 ```
 
 ---
@@ -1602,9 +1602,9 @@ class TestConcurrencyEdgeCases:
 
 | Question | Answer |
 |----------|--------|
-| Can users add languages via CLI wizard? | ✅ YES (with AI assistance) |
-| Can users add languages via YAML? | ❌ NO (code generation required) |
-| Is there a plugin system? | ✅ YES (LanguageStrategy ABC) |
+| Can users add languages via CLI wizard? | [x] YES (with AI assistance) |
+| Can users add languages via YAML? | [ ] NO (code generation required) |
+| Is there a plugin system? | [x] YES (LanguageStrategy ABC) |
 | Effort to add JavaScript | ~8 core files, ~500-800 lines |
 | Recommended approach | **AI-assisted with human review** |
 
@@ -1614,11 +1614,11 @@ The codebase has an abstract base class that encapsulates all language-specific 
 
 ```
 cihub/core/languages/
-├── base.py          # LanguageStrategy ABC (8 required methods)
-├── python.py        # PythonStrategy
-├── java.py          # JavaStrategy
-├── javascript.py    # JavaScriptStrategy (AI can generate this!)
-└── registry.py      # Single-line registration
+├── base.py # LanguageStrategy ABC (8 required methods)
+├── python.py # PythonStrategy
+├── java.py # JavaStrategy
+├── javascript.py # JavaScriptStrategy (AI can generate this!)
+└── registry.py # Single-line registration
 ```
 
 **Key Insight:** The CI engine is language-agnostic. It just calls `get_strategy(language)` and delegates all work to the strategy. Adding a new language does NOT require modifying the CI engine at all!
@@ -1658,14 +1658,14 @@ cihub language add javascript
 
 | Tier | Files | Action | AI Can Generate? |
 |------|-------|--------|-----------------|
-| **Core Strategy** | `cihub/core/languages/javascript.py` | CREATE | ✅ YES |
-| **Registration** | `cihub/core/languages/registry.py` | ADD 1 LINE | ✅ YES |
-| **Tool List** | `cihub/tools/registry.py` | ADD LIST | ✅ YES |
-| **Tool Runners** | `cihub/services/ci_engine/javascript_tools.py` | CREATE | ⚠️ STUBS |
-| **Gates** | `cihub/services/ci_engine/gates.py` | ADD FUNCTION | ✅ YES |
-| **Schema** | `schema/ci-hub-config.schema.json` | ADD SECTION | ✅ YES |
-| **Defaults** | `config/defaults.yaml` | ADD SECTION | ✅ YES |
-| **Tests** | `tests/test_javascript_strategy.py` | CREATE | ✅ YES |
+| **Core Strategy** | `cihub/core/languages/javascript.py` | CREATE | [x] YES |
+| **Registration** | `cihub/core/languages/registry.py` | ADD 1 LINE | [x] YES |
+| **Tool List** | `cihub/tools/registry.py` | ADD LIST | [x] YES |
+| **Tool Runners** | `cihub/services/ci_engine/javascript_tools.py` | CREATE | WARNING: STUBS |
+| **Gates** | `cihub/services/ci_engine/gates.py` | ADD FUNCTION | [x] YES |
+| **Schema** | `schema/ci-hub-config.schema.json` | ADD SECTION | [x] YES |
+| **Defaults** | `config/defaults.yaml` | ADD SECTION | [x] YES |
+| **Tests** | `tests/test_javascript_strategy.py` | CREATE | [x] YES |
 
 **Key Insight:** The CI engine (`cihub/services/ci_engine/__init__.py`) does NOT need modification. It just calls `get_strategy(language)` and the strategy handles everything.
 
@@ -1675,31 +1675,31 @@ AI generates code implementing this interface:
 
 ```python
 class JavaScriptStrategy(LanguageStrategy):
-    @property
-    def name(self) -> str:
-        return "javascript"
+ @property
+ def name(self) -> str:
+ return "javascript"
 
-    def detect(self, repo_path: Path) -> float:
-        """Detect JavaScript projects."""
-        if (repo_path / "package.json").exists(): return 0.9
-        if (repo_path / "tsconfig.json").exists(): return 0.85
-        return 0.0
+ def detect(self, repo_path: Path) -> float:
+ """Detect JavaScript projects."""
+ if (repo_path / "package.json").exists(): return 0.9
+ if (repo_path / "tsconfig.json").exists(): return 0.85
+ return 0.0
 
-    def get_runners(self) -> dict[str, Callable]:
-        return {"jest": run_jest, "eslint": run_eslint, ...}
+ def get_runners(self) -> dict[str, Callable]:
+ return {"jest": run_jest, "eslint": run_eslint, ...}
 
-    def get_default_tools(self) -> list[str]:
-        return ["jest", "eslint", "prettier", "tsc", "npm_audit", ...]
+ def get_default_tools(self) -> list[str]:
+ return ["jest", "eslint", "prettier", "tsc", "npm_audit", ...]
 
-    def get_thresholds(self) -> tuple[ThresholdSpec, ...]:
-        return (ThresholdSpec("Min Coverage", "coverage_min", "%", ...),)
+ def get_thresholds(self) -> tuple[ThresholdSpec, ...]:
+ return (ThresholdSpec("Min Coverage", "coverage_min", "%", ...),)
 
-    # ... 4 more required methods
+ # ... 4 more required methods
 ```
 
 ### 17.6 Recommended Implementation Plan
 
-**Phase 1: Create Architecture Manifest** ✅ DONE
+**Phase 1: Create Architecture Manifest** [x] DONE
 - `docs/architecture/LANGUAGE_PLUGIN_MANIFEST.md` created
 - Documents all patterns, files, and templates
 
@@ -1734,13 +1734,13 @@ cihub language test javascript --dry-run
 
 | Action | Supported? | How? |
 |--------|------------|------|
-| Configure existing languages | ✅ YES | CLI / YAML |
-| Enable/disable tools | ✅ YES | CLI / YAML |
-| Set thresholds | ✅ YES | CLI / YAML |
-| Apply profiles | ✅ YES | CLI |
-| Request new language via wizard | ✅ YES (NEW) | AI-assisted |
-| Add custom tools | ⚠️ PARTIAL | x- prefix |
-| Full language implementation | ❌ DEV ONLY | AI assists dev |
+| Configure existing languages | [x] YES | CLI / YAML |
+| Enable/disable tools | [x] YES | CLI / YAML |
+| Set thresholds | [x] YES | CLI / YAML |
+| Apply profiles | [x] YES | CLI |
+| Request new language via wizard | [x] YES (NEW) | AI-assisted |
+| Add custom tools | WARNING: PARTIAL | x- prefix |
+| Full language implementation | [ ] DEV ONLY | AI assists dev |
 
 ### 17.8 AI Integration for Language Addition
 
@@ -1757,22 +1757,22 @@ Our `LANGUAGE_PLUGIN_MANIFEST.md` serves this purpose:
 **AI Workflow:**
 
 ```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   User Request  │────▶│  AI Reads       │────▶│  AI Generates   │
-│   "add golang"  │     │  Manifest +     │     │  Strategy +     │
-│                 │     │  Research Tools │     │  Tools + Tests  │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                                                        │
-                        ┌─────────────────┐             │
-                        │  Human Reviews  │◀────────────┘
-                        │  Implements     │
-                        │  Tool Runners   │
-                        └─────────────────┘
-                                │
-                        ┌─────────────────┐
-                        │  Tests Pass     │
-                        │  Language Ready │
-                        └─────────────────┘
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│ User Request │────▶│ AI Reads │────▶│ AI Generates │
+│ "add golang" │ │ Manifest + │ │ Strategy + │
+│ │ │ Research Tools │ │ Tools + Tests │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
+ │
+ ┌─────────────────┐ │
+ │ Human Reviews │◀────────────┘
+ │ Implements │
+ │ Tool Runners │
+ └─────────────────┘
+ │
+ ┌─────────────────┐
+ │ Tests Pass │
+ │ Language Ready │
+ └─────────────────┘
 ```
 
 ### 17.9 Testing Strategy for New Languages
@@ -1781,44 +1781,44 @@ Our `LANGUAGE_PLUGIN_MANIFEST.md` serves this purpose:
 # tests/test_language_addition.py
 
 class TestLanguageAddition:
-    """Tests to verify a new language was added correctly."""
+ """Tests to verify a new language was added correctly."""
 
-    def test_strategy_registered(self):
-        """New language appears in registry."""
-        assert "javascript" in get_supported_languages()
+ def test_strategy_registered(self):
+ """New language appears in registry."""
+ assert "javascript" in get_supported_languages()
 
-    def test_strategy_implements_all_methods(self):
-        """All 8 required methods implemented."""
-        strategy = get_strategy("javascript")
-        assert hasattr(strategy, "name")
-        assert hasattr(strategy, "get_runners")
-        # ... verify all 8 methods
+ def test_strategy_implements_all_methods(self):
+ """All 8 required methods implemented."""
+ strategy = get_strategy("javascript")
+ assert hasattr(strategy, "name")
+ assert hasattr(strategy, "get_runners")
+ # ... verify all 8 methods
 
-    def test_detection_works(self):
-        """Language detection finds package.json."""
-        strategy = get_strategy("javascript")
-        confidence = strategy.detect(Path("/path/to/js-project"))
-        assert confidence > 0.5
+ def test_detection_works(self):
+ """Language detection finds package.json."""
+ strategy = get_strategy("javascript")
+ confidence = strategy.detect(Path("/path/to/js-project"))
+ assert confidence > 0.5
 
-    def test_schema_includes_language(self):
-        """Schema has javascript section."""
-        schema = load_schema("ci-hub-config.schema.json")
-        assert "javascript" in schema["properties"]["language"]["enum"]
-        assert "javascript" in schema["properties"]
+ def test_schema_includes_language(self):
+ """Schema has javascript section."""
+ schema = load_schema("ci-hub-config.schema.json")
+ assert "javascript" in schema["properties"]["language"]["enum"]
+ assert "javascript" in schema["properties"]
 
-    def test_defaults_include_language(self):
-        """defaults.yaml has javascript section."""
-        defaults = load_yaml("config/defaults.yaml")
-        assert "javascript" in defaults
-        assert "tools" in defaults["javascript"]
+ def test_defaults_include_language(self):
+ """defaults.yaml has javascript section."""
+ defaults = load_yaml("config/defaults.yaml")
+ assert "javascript" in defaults
+ assert "tools" in defaults["javascript"]
 
-    def test_tools_all_have_runners(self):
-        """Every tool in get_default_tools() has a runner."""
-        strategy = get_strategy("javascript")
-        runners = strategy.get_runners()
-        for tool in strategy.get_default_tools():
-            if tool not in strategy.get_virtual_tools():
-                assert tool in runners, f"Missing runner for {tool}"
+ def test_tools_all_have_runners(self):
+ """Every tool in get_default_tools() has a runner."""
+ strategy = get_strategy("javascript")
+ runners = strategy.get_runners()
+ for tool in strategy.get_default_tools():
+ if tool not in strategy.get_virtual_tools():
+ assert tool in runners, f"Missing runner for {tool}"
 ```
 
 ### 17.10 Conclusion: AI + Human Collaboration
@@ -1851,30 +1851,30 @@ class TestLanguageAddition:
 ```yaml
 # User writes:
 python:
-  tools:
-    pytest: true
-    mypy: false
+ tools:
+ pytest: true
+ mypy: false
 
 # normalize.py converts to:
 python:
-  tools:
-    pytest: { enabled: true }
-    mypy: { enabled: false }
+ tools:
+ pytest: { enabled: true }
+ mypy: { enabled: false }
 ```
 
 **Code in `cihub/config/normalize.py:37-46`:**
 ```python
 def _normalize_tool_configs_inplace(config: dict[str, Any]) -> None:
-    for lang in ("python", "java"):  # ← HARDCODED
-        lang_config = config.get(lang)
-        if not isinstance(lang_config, dict):
-            continue
-        tools = lang_config.get("tools")
-        if not isinstance(tools, dict):
-            continue
-        for tool_name, tool_value in list(tools.items()):
-            if isinstance(tool_value, bool):
-                tools[tool_name] = {"enabled": tool_value}
+ for lang in ("python", "java"): # ← HARDCODED
+ lang_config = config.get(lang)
+ if not isinstance(lang_config, dict):
+ continue
+ tools = lang_config.get("tools")
+ if not isinstance(tools, dict):
+ continue
+ for tool_name, tool_value in list(tools.items()):
+ if isinstance(tool_value, bool):
+ tools[tool_name] = {"enabled": tool_value}
 ```
 
 ### 18.2 Problems with Current Design
@@ -1891,38 +1891,38 @@ def _normalize_tool_configs_inplace(config: dict[str, Any]) -> None:
 # cihub/config/normalize.py (UPDATED)
 
 def _normalize_tool_configs_inplace(config: dict[str, Any]) -> None:
-    """Normalize tool configs for all registered languages."""
-    from cihub.core.languages import get_registered_languages
+ """Normalize tool configs for all registered languages."""
+ from cihub.core.languages import get_registered_languages
 
-    for lang in get_registered_languages():  # Dynamic, not hardcoded
-        lang_config = config.get(lang)
-        if not isinstance(lang_config, dict):
-            continue
-        tools = lang_config.get("tools")
-        if not isinstance(tools, dict):
-            continue
-        for tool_name, tool_value in list(tools.items()):
-            if isinstance(tool_value, bool):
-                tools[tool_name] = {"enabled": tool_value}
+ for lang in get_registered_languages(): # Dynamic, not hardcoded
+ lang_config = config.get(lang)
+ if not isinstance(lang_config, dict):
+ continue
+ tools = lang_config.get("tools")
+ if not isinstance(tools, dict):
+ continue
+ for tool_name, tool_value in list(tools.items()):
+ if isinstance(tool_value, bool):
+ tools[tool_name] = {"enabled": tool_value}
 ```
 
 **Schema Changes:**
 ```json
 {
-  "python": {
-    "type": "object",
-    "properties": {
-      "tools": {
-        "type": "object",
-        "additionalProperties": {
-          "oneOf": [
-            { "type": "boolean" },
-            { "$ref": "#/$defs/tool_config" }
-          ]
-        }
-      }
-    }
-  }
+ "python": {
+ "type": "object",
+ "properties": {
+ "tools": {
+ "type": "object",
+ "additionalProperties": {
+ "oneOf": [
+ { "type": "boolean" },
+ { "$ref": "#/$defs/tool_config" }
+ ]
+ }
+ }
+ }
+ }
 }
 ```
 
@@ -1933,7 +1933,7 @@ def _normalize_tool_configs_inplace(config: dict[str, Any]) -> None:
 ```yaml
 # config/defaults.yaml
 validation:
-  mode: strict  # Options: strict, standard, permissive
+ mode: strict # Options: strict, standard, permissive
 
 # strict: Only known tools, all fields validated
 # standard: Known tools + x-custom fields allowed
@@ -1945,23 +1945,23 @@ validation:
 ```yaml
 # User's .ci-hub.yml with custom tool
 python:
-  tools:
-    pytest: true
-    mypy: { enabled: true }
-    x-custom-linter:  # x- prefix for custom tools
-      enabled: true
-      command: "./run-custom-lint.sh"
-      fail_on_error: true
+ tools:
+ pytest: true
+ mypy: { enabled: true }
+ x-custom-linter: # x- prefix for custom tools
+ enabled: true
+ command: "./run-custom-lint.sh"
+ fail_on_error: true
 ```
 
 **Schema with x- prefix:**
 ```json
 {
-  "patternProperties": {
-    "^x-": {
-      "$ref": "#/$defs/custom_tool_config"
-    }
-  }
+ "patternProperties": {
+ "^x-": {
+ "$ref": "#/$defs/custom_tool_config"
+ }
+ }
 }
 ```
 
@@ -1976,12 +1976,12 @@ python:
 
 | Use Case | Feasibility | Value |
 |----------|------------|-------|
-| Repo analysis & detection | ✅ HIGH | Suggest language/tools |
-| Config optimization | ✅ HIGH | Suggest better thresholds |
-| Error explanation | ✅ HIGH | Explain why gate failed |
-| Migration assistance | 🟡 MEDIUM | Help migrate from other CI |
-| Language template generation | 🟡 MEDIUM | Accelerate new language support |
-| Dynamic tool generation | ❌ LOW | Too risky, not maintainable |
+| Repo analysis & detection | [x] HIGH | Suggest language/tools |
+| Config optimization | [x] HIGH | Suggest better thresholds |
+| Error explanation | [x] HIGH | Explain why gate failed |
+| Migration assistance | MEDIUM | Help migrate from other CI |
+| Language template generation | MEDIUM | Accelerate new language support |
+| Dynamic tool generation | [ ] LOW | Too risky, not maintainable |
 
 ### 19.2 Recommended AI Integration Points
 
@@ -1992,9 +1992,9 @@ cihub analyze https://github.com/user/repo
 # AI output:
 Detected: JavaScript/TypeScript project
 Recommended tools:
-  - jest (testing)
-  - eslint (linting)
-  - npm-audit (security)
+ - jest (testing)
+ - eslint (linting)
+ - npm-audit (security)
 Suggested profile: javascript-quality
 ```
 
@@ -2005,8 +2005,8 @@ cihub explain --last-run
 # AI output:
 Coverage gate failed (78% < 80%)
 Uncovered files:
-  - src/utils/parser.js (45% coverage)
-  - src/handlers/auth.js (62% coverage)
+ - src/utils/parser.js (45% coverage)
+ - src/handlers/auth.js (62% coverage)
 Suggestion: Add tests for parser.js error handling
 ```
 
@@ -2017,9 +2017,9 @@ cihub suggest-config --from-repo production-api
 # AI output:
 Based on your production-api config and best practices:
 Recommended changes:
-  - Enable semgrep for security scanning
-  - Increase coverage threshold to 85% (you're at 92%)
-  - Add trivy for container scanning
+ - Enable semgrep for security scanning
+ - Increase coverage threshold to 85% (you're at 92%)
+ - Add trivy for container scanning
 ```
 
 ### 19.3 What AI Should NOT Do

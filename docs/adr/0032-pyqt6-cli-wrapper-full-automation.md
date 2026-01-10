@@ -1,9 +1,9 @@
 # ADR-0032: PyQt6 GUI Wrapper for Full Automation
 
-**Status**: Accepted  
-**Date:** 2025-12-26  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2026-01-03  
+**Status**: Accepted
+**Date:** 2025-12-26
+**Developer:** Justin Guida
+**Last Reviewed:** 2026-01-03
 
 ## Context
 
@@ -30,7 +30,7 @@ out-of-process use.
 - One source of truth for behavior (CLI) avoids drift and duplication.
 - The GUI should be a presentation layer, not a second implementation.
 - Full automation requires authenticated GitHub actions; the CLI already
-  integrates with `gh` and git.
+ integrates with `gh` and git.
 
 ### Required Capabilities (Must Support)
 
@@ -43,11 +43,11 @@ out-of-process use.
 **Config + workflow generation**
 - Generate `.ci-hub.yml` and thin caller workflow (`.github/workflows/ci.yml`).
 - Central vs Distributed mode toggle:
-  - Central: no workflow files, hub-run-all executes.
-  - Distributed: thin caller + reusable workflow.
+ - Central: no workflow files, hub-run-all executes.
+ - Distributed: thin caller + reusable workflow.
 - Basic/Advanced modes:
-  - Basic: boolean toggles + profile defaults.
-  - Advanced: numeric threshold overrides and custom commands.
+ - Basic: boolean toggles + profile defaults.
+ - Advanced: numeric threshold overrides and custom commands.
 - Import and merge existing `.ci-hub.yml` with diff preview.
 
 **GitHub automation**
@@ -63,7 +63,7 @@ out-of-process use.
 
 **Extensibility**
 - If a required capability is missing, implement it in `cihub` as a new command
-  or script and expose it in the GUI. The GUI must not bypass the CLI.
+ or script and expose it in the GUI. The GUI must not bypass the CLI.
 
 ### CLI Command Map (GUI Uses)
 
@@ -98,9 +98,9 @@ out-of-process use.
 - Base install is minimal (`pyyaml`, `jsonschema`, `defusedxml`).
 - Optional extras provide tool runners: `cihub[ci]`.
 - Python tool extras include pytest/pytest-cov, ruff, black, isort, mypy,
-  bandit, pip-audit, mutmut, hypothesis.
+ bandit, pip-audit, mutmut, hypothesis.
 - Custom commands (e.g., Makefile targets) are supported via config and
-  captured in `report.json`.
+ captured in `report.json`.
 
 ### CLI Contract (Non-Negotiable)
 
@@ -122,13 +122,13 @@ to parse logs for state.
 ## Alternatives Considered
 
 1. **GUI implements business logic directly**
-   - Rejected: duplicates logic, breaks consistency, harder to test.
+ - Rejected: duplicates logic, breaks consistency, harder to test.
 
 2. **Manual setup steps remain**
-   - Rejected: violates the zero-manual goal.
+ - Rejected: violates the zero-manual goal.
 
 3. **Web app instead of desktop GUI**
-   - Rejected for now: higher operational overhead and auth complexity.
+ - Rejected for now: higher operational overhead and auth complexity.
 
 ## References
 

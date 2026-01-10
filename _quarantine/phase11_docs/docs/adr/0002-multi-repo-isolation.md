@@ -9,9 +9,9 @@ The hub now discovers repositories dynamically (`config/repositories.yaml`) and 
 ## Decision
 - Treat current multi-repo support as pilot: logical segmentation only (matrix + proxy allowlists + per-repo timeout).
 - To graduate to production, the following controls are mandatory:
-  - Per-repo secret brokerage (GitHub App + Vault or equivalent) replacing the shared `GITHUB_TOKEN`.
-  - Fair scheduling/token-bucket rate limiting with queue telemetry.
-  - Optional but preferred: runner isolation (self-hosted with cgroups/Firecracker) for memory/CPU guarantees.
+ - Per-repo secret brokerage (GitHub App + Vault or equivalent) replacing the shared `GITHUB_TOKEN`.
+ - Fair scheduling/token-bucket rate limiting with queue telemetry.
+ - Optional but preferred: runner isolation (self-hosted with cgroups/Firecracker) for memory/CPU guarantees.
 - CI orchestration is manifest-driven: `project-ci.yml` and `mutation.yml` pull from `config/repositories.yaml` to fan out python/java runs in parallel, emit artifacts per repo, and publish a consolidated summary (tests, line coverage, SpotBugs, bandit/ruff counts) to the run summary plus `project-ci-summary` artifact. These summaries are the source of truth for “what ran” across repos.
 - Status reporting must align across README and `docs/status/honest-status.md`; deprecate redundant status narratives once aligned.
 

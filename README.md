@@ -14,7 +14,7 @@
 Centralized CI/CD for Java and Python repos with config-driven toggles, reusable workflows, and a single hub that runs pipelines across many repositories.
 
 > [!NOTE]
-> **Refactor In Progress** — We're aligning CLI/registry integration and doc automation.
+> **Refactor In Progress** - We're aligning CLI/registry integration and doc automation.
 > Some commands may be incomplete. See [STATUS.md](docs/development/status/STATUS.md) for current state.
 
 ---
@@ -101,16 +101,16 @@ gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub
 gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub -f run_group=fixtures
 ```
 
-### Distributed mode 
+### Distributed mode
 1) Create a PAT with `repo` + `workflow` scopes.
 2) Set `HUB_DISPATCH_TOKEN` via CLI:
-   ```bash
-   python -m cihub setup-secrets --all
-   ```
+ ```bash
+ python -m cihub setup-secrets --all
+ ```
 3) In each target repo:
-   ```bash
-   python -m cihub init --repo . --apply
-   ```
+ ```bash
+ python -m cihub init --repo . --apply
+ ```
 4) Set `dispatch_enabled: true` in `config/repos/<repo>.yaml`.
 
 ## Prerequisites

@@ -1,9 +1,9 @@
 # ADR-0033: CLI Distribution and Automation Enhancements
 
-**Status**: Accepted  
-**Date:** 2025-12-26  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-26
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -35,15 +35,15 @@ Support three parsing modes for custom commands:
 Example config:
 ```yaml
 python:
-  tools:
-    custom:
-      - name: "make-test"
-        command: "make test"
-        parser: "exit_code"
-      - name: "coverage-json"
-        command: "coverage json -o coverage.json"
-        parser: "json"
-        metric_path: "totals.percent_covered"
+ tools:
+ custom:
+ - name: "make-test"
+ command: "make test"
+ parser: "exit_code"
+ - name: "coverage-json"
+ command: "coverage json -o coverage.json"
+ parser: "json"
+ metric_path: "totals.percent_covered"
 ```
 
 ### Private Dependency Auth
@@ -91,13 +91,13 @@ maintainability becomes a blocker.
 ## Alternatives Considered
 
 1. **Install from GitHub URLs only**
-   - Rejected: less stable, requires PATs for private repos.
+ - Rejected: less stable, requires PATs for private repos.
 
 2. **Keep parsing inside workflows**
-   - Rejected: inline scripts remain large and hard to test.
+ - Rejected: inline scripts remain large and hard to test.
 
 3. **Use Click/Typer immediately**
-   - Rejected: adds dependency; `argparse` is sufficient for now.
+ - Rejected: adds dependency; `argparse` is sufficient for now.
 
 ## References
 

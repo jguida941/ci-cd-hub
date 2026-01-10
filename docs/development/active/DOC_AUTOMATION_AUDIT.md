@@ -2,7 +2,7 @@
 
 **Date:** 2026-01-04
 **Last Updated:** 2026-01-09 (`docs audit` Part 13 checks + 22 tests)
-**Priority:** 🟢 **#4** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
+**Priority:** **#4** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
 **Status:** ~80% implemented (`docs stale` complete, `docs audit` with Part 13 checks)
 **Depends On:** Stable CLI surface (CLEAN_CODE.md)
 **Can Parallel:** TEST_REORGANIZATION.md (both need stable CLI)
@@ -14,55 +14,55 @@
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| `cihub docs generate` | ✅ **IMPLEMENTED** | Generates CLI.md, CONFIG.md |
-| `cihub docs check` | ✅ **IMPLEMENTED** | Drift detection for generated docs |
-| `cihub docs links` | ✅ **IMPLEMENTED** | Internal link validation |
-| `cihub docs stale` | ✅ **IMPLEMENTED** | Modularized package (957→1489 lines across 6 modules), 63 tests |
-| `cihub docs audit` | ⚠️ **MOSTLY COMPLETE** | Core checks (J/L/N) + Part 13.S/T/V; missing universal headers (Q), specs hygiene |
-| `.cihub/tool-outputs/` for docs | ✅ **IMPLEMENTED** | `docs audit --output-dir` wired into `check --audit` |
-| AI prompt pack output | ⚠️ **OPTIONAL SUPPORT** | `docs stale --ai` or `--ai-output PATH` implemented |
-| Metrics drift detection | ❌ **NOT IMPLEMENTED** | Part 13.R — detect stale counts (for `docs stale`) |
-| Duplicate task detection | ✅ **IMPLEMENTED** | Part 13.S — fuzzy matching across planning docs |
-| Timestamp freshness | ✅ **IMPLEMENTED** | Part 13.T — "Last Updated" header staleness |
-| Placeholder detection | ✅ **IMPLEMENTED** | Part 13.V — markers (YOUR_*, TODO:), local paths (GitHub usernames disabled - too noisy) |
-| Checklist-reality sync | ❌ **NOT IMPLEMENTED** | Part 13.U — verify [ ] items against code |
-| Cross-doc consistency | ❌ **NOT IMPLEMENTED** | Part 13.W — ensure same facts across docs |
-| CHANGELOG validation | ❌ **NOT IMPLEMENTED** | Part 13.X — format and ordering checks |
-| Guide command validation | ❌ **NOT IMPLEMENTED** | Validate `cihub <command>` mentions in guides against CLI |
+| `cihub docs generate` | [x] **IMPLEMENTED** | Generates CLI.md, CONFIG.md |
+| `cihub docs check` | [x] **IMPLEMENTED** | Drift detection for generated docs |
+| `cihub docs links` | [x] **IMPLEMENTED** | Internal link validation |
+| `cihub docs stale` | [x] **IMPLEMENTED** | Modularized package (957→1489 lines across 6 modules), 63 tests |
+| `cihub docs audit` | WARNING: **MOSTLY COMPLETE** | Core checks (J/L/N) + Part 13.S/T/V; missing universal headers (Q), specs hygiene |
+| `.cihub/tool-outputs/` for docs | [x] **IMPLEMENTED** | `docs audit --output-dir` wired into `check --audit` |
+| AI prompt pack output | WARNING: **OPTIONAL SUPPORT** | `docs stale --ai` or `--ai-output PATH` implemented |
+| Metrics drift detection | [ ] **NOT IMPLEMENTED** | Part 13.R - detect stale counts (for `docs stale`) |
+| Duplicate task detection | [x] **IMPLEMENTED** | Part 13.S - fuzzy matching across planning docs |
+| Timestamp freshness | [x] **IMPLEMENTED** | Part 13.T - "Last Updated" header staleness |
+| Placeholder detection | [x] **IMPLEMENTED** | Part 13.V - markers (YOUR_*, TODO:), local paths (GitHub usernames disabled - too noisy) |
+| Checklist-reality sync | [ ] **NOT IMPLEMENTED** | Part 13.U - verify [ ] items against code |
+| Cross-doc consistency | [ ] **NOT IMPLEMENTED** | Part 13.W - ensure same facts across docs |
+| CHANGELOG validation | [ ] **NOT IMPLEMENTED** | Part 13.X - format and ordering checks |
+| Guide command validation | [ ] **NOT IMPLEMENTED** | Validate `cihub <command>` mentions in guides against CLI |
 
 **Overall:** ~80% implemented. `docs stale` complete; `docs audit` mostly complete (J/L/N + Part 13.S/T/V). Remaining: universal headers (Q), specs hygiene, Part 13.R/U/W/X (~1-2 days).
 
 **Implemented in `docs audit` (2026-01-09):**
-- ✅ active/ ↔ STATUS.md sync (Part 12.J partial)
-- ✅ Archive superseded header check (Part 12.J partial)
-- ✅ ADR metadata lint: Status/Date/Superseded-by (Part 12.L)
-- ✅ Plain-text docs/ reference scanning (Part 12.N)
-- ✅ --output-dir wired in check --audit → writes .cihub/tool-outputs/docs_audit.json
-- ✅ Duplicate task detection with fuzzy matching (Part 13.S)
-- ✅ Timestamp freshness validation (Part 13.T)
-- ✅ Placeholder detection: markers (YOUR_*, TODO:), local paths (Part 13.V) — GitHub usernames disabled (too noisy)
+- [x] active/ ↔ STATUS.md sync (Part 12.J partial)
+- [x] Archive superseded header check (Part 12.J partial)
+- [x] ADR metadata lint: Status/Date/Superseded-by (Part 12.L)
+- [x] Plain-text docs/ reference scanning (Part 12.N)
+- [x] --output-dir wired in check --audit → writes .cihub/tool-outputs/docs_audit.json
+- [x] Duplicate task detection with fuzzy matching (Part 13.S)
+- [x] Timestamp freshness validation (Part 13.T)
+- [x] Placeholder detection: markers (YOUR_*, TODO:), local paths (Part 13.V) - GitHub usernames disabled (too noisy)
 
 **NOT yet implemented in `docs audit`:**
-- ❌ Specs hygiene: REQUIREMENTS.md validation (Part 12.J)
-- ❌ Path-change update rules (Part 12.J)
-- ❌ Universal doc header enforcement (Part 12.Q)
-- ❌ Doc inventory/counts (Part 12.M)
-- ❌ Docs index consistency: `docs/README.md` active doc list must match STATUS.md + active/ (Part 13.W)
-- ❌ Guide command validation: verify `cihub <command>` references in `docs/guides/` against CLI (new)
-- ❌ Checklist-reality sync (Part 13.U)
+- [ ] Specs hygiene: REQUIREMENTS.md validation (Part 12.J)
+- [ ] Path-change update rules (Part 12.J)
+- [ ] Universal doc header enforcement (Part 12.Q)
+- [ ] Doc inventory/counts (Part 12.M)
+- [ ] Docs index consistency: `docs/README.md` active doc list must match STATUS.md + active/ (Part 13.W)
+- [ ] Guide command validation: verify `cihub <command>` references in `docs/guides/` against CLI (new)
+- [ ] Checklist-reality sync (Part 13.U)
 
 **Tests:** 22 tests in `tests/test_docs_audit.py` (types, lifecycle, ADR, references, consistency)
 
 **Module structure:**
 ```
 cihub/commands/docs_audit/
-├── __init__.py     # Main cmd_docs_audit entry point
-├── types.py        # Data models (AuditFinding, AuditReport, TaskEntry, etc.)
-├── lifecycle.py    # STATUS.md ↔ active/ sync validation
-├── adr.py          # ADR metadata linting
-├── references.py   # Plain-text docs/ path scanning
-├── consistency.py  # Part 13: duplicates, timestamps, placeholders
-└── output.py       # Output formatters (human, JSON, GitHub summary)
+├── __init__.py # Main cmd_docs_audit entry point
+├── types.py # Data models (AuditFinding, AuditReport, TaskEntry, etc.)
+├── lifecycle.py # STATUS.md ↔ active/ sync validation
+├── adr.py # ADR metadata linting
+├── references.py # Plain-text docs/ path scanning
+├── consistency.py # Part 13: duplicates, timestamps, placeholders
+└── output.py # Output formatters (human, JSON, GitHub summary)
 ```
 
 **Next Priority:** Complete remaining Part 12 checks (Q universal headers, specs hygiene).
@@ -104,14 +104,14 @@ cihub/commands/docs_audit/
 
 ### By Category
 
-| Category                | Files | Lines  | Can Auto-Generate?                           |
+| Category | Files | Lines | Can Auto-Generate? |
 |-------------------------|-------|--------|----------------------------------------------|
-| ADRs                    | 37    | ~3,700 | ❌ No (architectural decisions require human) |
-| Reference (CLI, Config) | 3     | ~2,600 | ✅ Yes (your `cihub docs generate` does this) |
-| Guides                  | 8     | ~2,300 | ⚠️ Partially (examples can be validated)     |
-| Development/Status      | 10+   | ~3,500 | ⚠️ Partially (status can track code)         |
-| Archive                 | 15+   | ~5,000 | ❌ No (historical, shouldn't change)          |
-| Research                | 1     | ~1,600 | ❌ No (notes, not synced to code)             |
+| ADRs | 37 | ~3,700 | [ ] No (architectural decisions require human) |
+| Reference (CLI, Config) | 3 | ~2,600 | [x] Yes (your `cihub docs generate` does this) |
+| Guides | 8 | ~2,300 | WARNING: Partially (examples can be validated) |
+| Development/Status | 10+ | ~3,500 | WARNING: Partially (status can track code) |
+| Archive | 15+ | ~5,000 | [ ] No (historical, shouldn't change) |
+| Research | 1 | ~1,600 | [ ] No (notes, not synced to code) |
 
 ### Total: ~28,000 lines across 70+ files
 
@@ -119,25 +119,25 @@ cihub/commands/docs_audit/
 
 ## Part 2: How Your Current Automation Works
 
-### 1. `cihub docs generate` (works well ✅)
+### 1. `cihub docs generate` (works well [x])
 
 **Location:** `cihub/commands/docs.py`
 
 **How it works:**
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────┐
-│ argparse parser │────▶│ _render_parser() │────▶│ CLI.md      │
-└─────────────────┘     └──────────────────┘     └─────────────┘
+┌─────────────────┐ ┌──────────────────┐ ┌─────────────┐
+│ argparse parser │────▶│ _render_parser() │────▶│ CLI.md │
+└─────────────────┘ └──────────────────┘ └─────────────┘
 
-┌─────────────────────────┐     ┌────────────────────┐     ┌─────────────┐
-│ schema/ci-hub-config.   │────▶│ _schema_entries()  │────▶│ CONFIG.md   │
-│ schema.json             │     └────────────────────┘     └─────────────┘
+┌─────────────────────────┐ ┌────────────────────┐ ┌─────────────┐
+│ schema/ci-hub-config. │────▶│ _schema_entries() │────▶│ CONFIG.md │
+│ schema.json │ └────────────────────┘ └─────────────┘
 └─────────────────────────┘
 ```
 
 **Key insight:** This works because it extracts from **structured sources** (argparse, JSON schema). The schema defines the shape; the generator reads it and outputs markdown.
 
-### 2. `cihub adr new` (works well ✅)
+### 2. `cihub adr new` (works well [x])
 
 **Location:** `cihub/commands/adr.py`
 
@@ -146,9 +146,9 @@ cihub/commands/docs_audit/
 - Creates from hardcoded template with auto-filled date
 - Updates `docs/adr/README.md` index automatically
 
-**Limitation:** The *content* of ADRs must be written by humans. The decision, context, and consequences are architectural judgment—no tool can generate those.
+**Limitation:** The *content* of ADRs must be written by humans. The decision, context, and consequences are architectural judgment-no tool can generate those.
 
-### 3. `cihub docs check` (detects drift ✅)
+### 3. `cihub docs check` (detects drift [x])
 
 **How it works:**
 - Regenerates CLI.md and CONFIG.md in memory
@@ -183,23 +183,23 @@ When code changes:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                        DOC FRESHNESS PIPELINE                    │
+│ DOC FRESHNESS PIPELINE │
 ├──────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  1. EXTRACT         2. INDEX           3. DIFF        4. ALERT   │
-│  ─────────────────────────────────────────────────────────────   │
-│                                                                  │
-│  ┌─────────┐       ┌─────────────┐    ┌─────────┐   ┌─────────┐  │
-│  │ Code    │──────▶│ References  │───▶│ Compare │──▶│ Stale   │  │
-│  │ Symbols │       │ Index       │    │ to Git  │   │ Report  │  │
-│  └─────────┘       └─────────────┘    │ Diff    │   └─────────┘  │
-│       │                  ▲            └─────────┘        │       │
-│       │                  │                               ▼       │
-│  ┌─────────┐       ┌─────────────┐              ┌─────────────┐  │
-│  │ Docs    │──────▶│ Doc         │              │ AI Update   │  │
-│  │ (.md)   │       │ References  │              │ (Optional)  │  │
-│  └─────────┘       └─────────────┘              └─────────────┘  │
-│                                                                  │
+│ │
+│ 1. EXTRACT 2. INDEX 3. DIFF 4. ALERT │
+│ ───────────────────────────────────────────────────────────── │
+│ │
+│ ┌─────────┐ ┌─────────────┐ ┌─────────┐ ┌─────────┐ │
+│ │ Code │──────▶│ References │───▶│ Compare │──▶│ Stale │ │
+│ │ Symbols │ │ Index │ │ to Git │ │ Report │ │
+│ └─────────┘ └─────────────┘ │ Diff │ └─────────┘ │
+│ │ ▲ └─────────┘ │ │
+│ │ │ ▼ │
+│ ┌─────────┐ ┌─────────────┐ ┌─────────────┐ │
+│ │ Docs │──────▶│ Doc │ │ AI Update │ │
+│ │ (.md) │ │ References │ │ (Optional) │ │
+│ └─────────┘ └─────────────┘ └─────────────┘ │
+│ │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -216,14 +216,14 @@ Parse Python files for:
 ```python
 # Pseudocode
 def extract_symbols(file: Path) -> set[str]:
-    tree = ast.parse(file.read_text())
-    symbols = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.FunctionDef):
-            symbols.add(node.name)
-        if isinstance(node, ast.ClassDef):
-            symbols.add(node.name)
-    return symbols
+ tree = ast.parse(file.read_text())
+ symbols = set()
+ for node in ast.walk(tree):
+ if isinstance(node, ast.FunctionDef):
+ symbols.add(node.name)
+ if isinstance(node, ast.ClassDef):
+ symbols.add(node.name)
+ return symbols
 ```
 
 #### Step 2: Extract Doc References
@@ -235,13 +235,13 @@ Scan markdown for code references:
 
 ```python
 def extract_doc_references(md_file: Path) -> dict[str, list[int]]:
-    """Returns {reference: [line_numbers]}"""
-    content = md_file.read_text()
-    refs = {}
-    for i, line in enumerate(content.splitlines(), 1):
-        for match in re.findall(r'`([a-z_][a-z0-9_]*)`', line, re.I):
-            refs.setdefault(match, []).append(i)
-    return refs
+ """Returns {reference: [line_numbers]}"""
+ content = md_file.read_text()
+ refs = {}
+ for i, line in enumerate(content.splitlines(), 1):
+ for match in re.findall(r'`([a-z_][a-z0-9_]*)`', line, re.I):
+ refs.setdefault(match, []).append(i)
+ return refs
 ```
 
 #### Step 3: Compare to Git Diff
@@ -258,18 +258,18 @@ git diff HEAD~1 -- cihub/ | grep "^[-+]def \|^[-+]class "
 
 ```python
 def find_stale_docs(changed_symbols: set[str]) -> list[dict]:
-    stale = []
-    for md_file in Path("docs").rglob("*.md"):
-        refs = extract_doc_references(md_file)
-        for symbol, lines in refs.items():
-            if symbol in changed_symbols:
-                stale.append({
-                    "file": str(md_file),
-                    "symbol": symbol,
-                    "lines": lines,
-                    "action": "REVIEW - symbol changed in code"
-                })
-    return stale
+ stale = []
+ for md_file in Path("docs").rglob("*.md"):
+ refs = extract_doc_references(md_file)
+ for symbol, lines in refs.items():
+ if symbol in changed_symbols:
+ stale.append({
+ "file": str(md_file),
+ "symbol": symbol,
+ "lines": lines,
+ "action": "REVIEW - symbol changed in code"
+ })
+ return stale
 ```
 
 #### Step 5: AI Update (Optional)
@@ -297,19 +297,19 @@ A schema defines **the shape of data**. Your `ci-hub-config.schema.json`:
 
 ```json
 {
-  "properties": {
-    "repo": {
-      "properties": {
-        "owner": { "type": "string" },
-        "name": { "type": "string" }
-      },
-      "required": ["owner", "name"]
-    },
-    "language": {
-      "enum": ["java", "python"]
-    }
-  },
-  "required": ["repo", "language"]
+ "properties": {
+ "repo": {
+ "properties": {
+ "owner": { "type": "string" },
+ "name": { "type": "string" }
+ },
+ "required": ["owner", "name"]
+ },
+ "language": {
+ "enum": ["java", "python"]
+ }
+ },
+ "required": ["repo", "language"]
 }
 ```
 
@@ -325,13 +325,13 @@ This says: "A valid config MUST have `repo.owner`, `repo.name`, and `language`."
 
 ```
 Schema (source of truth)
-    ↓
+ ↓
 cihub docs generate
-    ↓
+ ↓
 CONFIG.md (generated, never hand-edit)
-    ↓
+ ↓
 cihub docs check (CI gate)
-    ↓
+ ↓
 Fail build if stale
 ```
 
@@ -356,11 +356,11 @@ Stale Documentation Report
 Changed symbols: load_ci_config → load_config, cmd_scaffold (removed)
 
 docs/guides/GETTING_STARTED.md:
-  Line 45: references `load_ci_config` (renamed)
-  Line 123: references `cmd_scaffold` (removed)
+ Line 45: references `load_ci_config` (renamed)
+ Line 123: references `cmd_scaffold` (removed)
 
 docs/development/ARCHITECTURE.md:
-  Line 67: references `load_ci_config` (renamed)
+ Line 67: references `load_ci_config` (renamed)
 
 Run with --json for machine-readable output.
 ```
@@ -369,10 +369,10 @@ Run with --json for machine-readable output.
 
 Add more generated docs:
 - `cihub docs generate --all`:
-  - CLI.md (exists)
-  - CONFIG.md (exists)
-  - EXIT_CODES.md (new - from exit_codes.py)
-  - COMMANDS.md (new - from command registry)
+ - CLI.md (exists)
+ - CONFIG.md (exists)
+ - EXIT_CODES.md (new - from exit_codes.py)
+ - COMMANDS.md (new - from command registry)
 
 ### Phase 3: AI Integration (2-3 days)
 
@@ -383,8 +383,8 @@ $ cihub docs stale --since HEAD~1 --json > stale.json
 $ cihub docs update --ai --input stale.json --dry-run
 
 Would update:
-  docs/guides/GETTING_STARTED.md (3 changes)
-  docs/development/ARCHITECTURE.md (1 change)
+ docs/guides/GETTING_STARTED.md (3 changes)
+ docs/development/ARCHITECTURE.md (1 change)
 
 Preview changes? [y/N]
 ```
@@ -402,9 +402,9 @@ Add to `.github/workflows/hub-production-ci.yml`:
 
 ```yaml
 - name: Check docs freshness
-  run: |
-    cihub docs check
-    cihub docs stale --since ${{ github.event.before }} --fail-on-stale
+ run: |
+ cihub docs check
+ cihub docs stale --since ${{ github.event.before }} --fail-on-stale
 ```
 
 ---
@@ -428,8 +428,8 @@ Add to `.github/workflows/hub-production-ci.yml`:
 ## Part 8: Immediate Actions
 
 ### Today
-1. ✅ Run `cihub docs check` in CI (already possible)
-2. ✅ Run `cihub docs generate` before commits
+1. [x] Run `cihub docs check` in CI (already possible)
+2. [x] Run `cihub docs generate` before commits
 
 ### This Week
 3. Create `cihub docs stale` command
@@ -470,16 +470,16 @@ Add to `.github/workflows/hub-production-ci.yml`:
 - Work is driven by `--since` flag (defaults to `HEAD~10`): only symbols that changed in that git range are checked
 
 **Not In Scope (v1):**
-- **Semantic drift** — behavior changes where names remain the same (needs different techniques)
-- **Metrics drift** — stale numeric claims like "80 tests" (see Part 13.R for future `docs audit` feature)
-- **Cross-document consistency** — same fact appearing differently across docs (see Part 13.W)
-- **Checklist-reality sync** — unchecked items that are actually done (see Part 13.U)
+- **Semantic drift** - behavior changes where names remain the same (needs different techniques)
+- **Metrics drift** - stale numeric claims like "80 tests" (see Part 13.R for future `docs audit` feature)
+- **Cross-document consistency** - same fact appearing differently across docs (see Part 13.W)
+- **Checklist-reality sync** - unchecked items that are actually done (see Part 13.U)
 
 **Output Artifacts (optional, implemented):**
 - `--output-dir DIR` → writes `docs_stale.json` + `docs_stale.prompt.md` to specified directory
 - `--tool-output PATH` → writes JSON to explicit path (for triage integration)
 - `--ai-output PATH` → writes AI prompt pack to explicit path
-- These are **not wired into `cihub check --audit` by default** — that integration is a Phase 2 task
+- These are **not wired into `cihub check --audit` by default** - that integration is a Phase 2 task
 
 ---
 
@@ -503,37 +503,37 @@ cihub docs stale --since HEAD~5 --all
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    cihub docs stale                          │
+│ cihub docs stale │
 ├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  1. EXTRACT SYMBOLS          2. EXTRACT DOC REFS            │
-│  ────────────────────       ────────────────────            │
-│  cihub/**/*.py              docs/**/*.md                    │
-│       │                           │                          │
-│       ▼                           ▼                          │
-│  ast.parse()                 regex backticks                │
-│  - functions                 - `symbol_name`                │
-│  - classes                   - skip code blocks             │
-│  - constants                 - skip archive/                │
-│       │                           │                          │
-│       ▼                           ▼                          │
-│  {name: CodeSymbol}          [DocReference]                 │
-│                                                              │
-│  3. GIT DIFF                 4. CORRELATE                   │
-│  ────────────────────       ────────────────────            │
-│  git diff --since           match refs to changes           │
-│  git diff --name-status     detect moved/deleted files      │
-│       │                           │                          │
-│       ▼                           ▼                          │
-│  changed_symbols             stale_references               │
-│  moved_deleted_files                                        │
-│                                                              │
-│  5. OUTPUT                                                   │
-│  ────────────────────                                       │
-│  --json  → CommandResult.data                               │
-│  --ai    → Markdown prompt for LLM                          │
-│  default → Human-readable summary                           │
-│                                                              │
+│ │
+│ 1. EXTRACT SYMBOLS 2. EXTRACT DOC REFS │
+│ ──────────────────── ──────────────────── │
+│ cihub/**/*.py docs/**/*.md │
+│ │ │ │
+│ ▼ ▼ │
+│ ast.parse() regex backticks │
+│ - functions - `symbol_name` │
+│ - classes - skip code blocks │
+│ - constants - skip archive/ │
+│ │ │ │
+│ ▼ ▼ │
+│ {name: CodeSymbol} [DocReference] │
+│ │
+│ 3. GIT DIFF 4. CORRELATE │
+│ ──────────────────── ──────────────────── │
+│ git diff --since match refs to changes │
+│ git diff --name-status detect moved/deleted files │
+│ │ │ │
+│ ▼ ▼ │
+│ changed_symbols stale_references │
+│ moved_deleted_files │
+│ │
+│ 5. OUTPUT │
+│ ──────────────────── │
+│ --json → CommandResult.data │
+│ --ai → Markdown prompt for LLM │
+│ default → Human-readable summary │
+│ │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -543,23 +543,23 @@ cihub docs stale --since HEAD~5 --all
 # cihub/commands/docs_stale.py
 
 def extract_python_symbols(file: Path) -> list[CodeSymbol]
-    # Uses ast.parse(), extracts def/class/CONSTANTS
+ # Uses ast.parse(), extracts def/class/CONSTANTS
 
 def extract_doc_references(file: Path) -> list[DocReference]
-    # Regex for `backtick_refs` and file paths, skips code blocks
+ # Regex for `backtick_refs` and file paths, skips code blocks
 
 def get_git_changed_symbols(root: Path, since: str) -> set[str]
-    # git diff --name-only, then parse changed lines
+ # git diff --name-only, then parse changed lines
 
 def get_git_moved_deleted_files(root: Path, since: str) -> dict[str, str]
-    # git diff --name-status to detect R(ename), D(elete)
+ # git diff --name-status to detect R(ename), D(elete)
 
 def find_stale_references(...) -> list[StaleReference]
-    # Correlate: doc refs that mention changed symbols OR moved/deleted files
+ # Correlate: doc refs that mention changed symbols OR moved/deleted files
 
 def cmd_docs_stale(args) -> int | CommandResult
-    # Main handler with --json, --ai, human modes
-    # Supports: --since, --all, --json, --ai
+ # Main handler with --json, --ai, human modes
+ # Supports: --since, --all, --json, --ai
 ```
 
 ### Files to Create/Modify
@@ -591,42 +591,42 @@ We will NOT touch any real docs until the tool is proven to work.
 
 ```python
 class TestSymbolExtraction:
-    def test_extracts_functions(self):
-        # Create temp .py file with known functions
-        # Assert symbols extracted match
+ def test_extracts_functions(self):
+ # Create temp .py file with known functions
+ # Assert symbols extracted match
 
-    def test_extracts_classes(self):
-        # Same pattern
+ def test_extracts_classes(self):
+ # Same pattern
 
-    def test_extracts_constants(self):
-        # UPPER_CASE names
+ def test_extracts_constants(self):
+ # UPPER_CASE names
 
 class TestDocReferenceExtraction:
-    def test_finds_backtick_refs(self):
-        # Markdown with `symbol_name`
+ def test_finds_backtick_refs(self):
+ # Markdown with `symbol_name`
 
-    def test_skips_code_blocks(self):
-        # References inside ``` blocks should be skipped
+ def test_skips_code_blocks(self):
+ # References inside ``` blocks should be skipped
 
-    def test_finds_file_paths(self):
-        # cihub/commands/docs.py references
+ def test_finds_file_paths(self):
+ # cihub/commands/docs.py references
 
 class TestGitDiffParsing:
-    def test_detects_renamed_function(self, mock_subprocess):
-        # Mock git diff output with -def old_name / +def new_name
+ def test_detects_renamed_function(self, mock_subprocess):
+ # Mock git diff output with -def old_name / +def new_name
 
-    def test_detects_deleted_file(self, mock_subprocess):
-        # Mock git diff --name-status with D prefix
+ def test_detects_deleted_file(self, mock_subprocess):
+ # Mock git diff --name-status with D prefix
 
 class TestStaleCorrelation:
-    def test_flags_changed_symbol_reference(self):
-        # Symbol in changed_symbols + doc references it = stale
+ def test_flags_changed_symbol_reference(self):
+ # Symbol in changed_symbols + doc references it = stale
 
-    def test_flags_deleted_file_reference(self):
-        # File deleted + doc references it = stale
+ def test_flags_deleted_file_reference(self):
+ # File deleted + doc references it = stale
 
-    def test_ignores_unchanged_symbols(self):
-        # Symbol NOT in changed_symbols = not stale
+ def test_ignores_unchanged_symbols(self):
+ # Symbol NOT in changed_symbols = not stale
 ```
 
 ### Phase 2: Integration Test (Isolated Directory)
@@ -636,12 +636,12 @@ Create a test fixture in `tests/fixtures/doc_stale_test/`:
 ```
 tests/fixtures/doc_stale_test/
 ├── code/
-│   ├── module_a.py      # Has: def old_function(), class OldClass
-│   └── module_b.py      # Has: def stable_function()
+│ ├── module_a.py # Has: def old_function(), class OldClass
+│ └── module_b.py # Has: def stable_function()
 ├── docs/
-│   ├── guide.md         # References: `old_function`, `stable_function`
-│   └── readme.md        # References: `OldClass`, `module_a.py`
-└── .git/                # Fake git history
+│ ├── guide.md # References: `old_function`, `stable_function`
+│ └── readme.md # References: `OldClass`, `module_a.py`
+└── .git/ # Fake git history
 ```
 
 ### Phase 3: Manual Smoke Test
@@ -684,11 +684,11 @@ cat /tmp/stale-report.json | jq '.stale_references | length'
 
 ### Success Criteria
 
-1. ✅ Unit tests pass for all extraction functions
-2. ✅ Integration test catches known stale references
-3. ✅ Manual smoke test works in isolated directory
-4. ✅ Dry run on real codebase produces sensible output
-5. ✅ No false positives for common patterns (e.g., `true`, `false`, file extensions)
+1. [x] Unit tests pass for all extraction functions
+2. [x] Integration test catches known stale references
+3. [x] Manual smoke test works in isolated directory
+4. [x] Dry run on real codebase produces sensible output
+5. [x] No false positives for common patterns (e.g., `true`, `false`, file extensions)
 
 ---
 
@@ -719,16 +719,16 @@ cat /tmp/stale-report.json | jq '.stale_references | length'
 **Rationale:**
 - Existing `docs.py` and `adr.py` use `_strip_fenced_blocks()` to avoid false positives in link checking
 - BUT the primary use case for `docs stale` is catching CLI drift in examples like:
-  ```bash
-  cihub scaffold python-pyproject /tmp/test  # This could be stale
-  ```
+ ```bash
+ cihub scaffold python-pyproject /tmp/test # This could be stale
+ ```
 - CLI examples are almost always in bash/shell fences
 - Python code examples in fences (like the pseudocode in Part 4) should be skipped - they're illustrative, not executable
 
 **Implementation:**
 ```python
 # Parse these fence types for CLI references:
-PARSED_FENCE_TYPES = {"bash", "shell", "console", "sh", "zsh", ""}  # "" = untagged fences
+PARSED_FENCE_TYPES = {"bash", "shell", "console", "sh", "zsh", ""} # "" = untagged fences
 
 # Skip these fence types entirely:
 SKIPPED_FENCE_TYPES = {"python", "json", "yaml", "xml", "java", ...}
@@ -751,8 +751,8 @@ SKIPPED_FENCE_TYPES = {"python", "json", "yaml", "xml", "java", ...}
 **Implementation:**
 ```python
 DEFAULT_EXCLUDE_PATTERNS = [
-    "docs/reference/**",  # Generated docs - use `cihub docs check` instead
-    "docs/development/archive/**",  # Archived docs - historical, shouldn't change
+ "docs/reference/**", # Generated docs - use `cihub docs check` instead
+ "docs/development/archive/**", # Archived docs - historical, shouldn't change
 ]
 
 # Root README.md is INCLUDED by default (handwritten, can become stale)
@@ -780,14 +780,14 @@ DEFAULT_SINCE = "HEAD~10"
 
 # In cmd_docs_stale:
 try:
-    # Verify git ref resolves
-    subprocess.run(["git", "rev-parse", since], check=True, capture_output=True)
+ # Verify git ref resolves
+ subprocess.run(["git", "rev-parse", since], check=True, capture_output=True)
 except subprocess.CalledProcessError:
-    message = f"Invalid git reference: {since}"
-    if json_mode:
-        return CommandResult(exit_code=EXIT_USAGE, summary=message)
-    print(message, file=sys.stderr)
-    return EXIT_USAGE
+ message = f"Invalid git reference: {since}"
+ if json_mode:
+ return CommandResult(exit_code=EXIT_USAGE, summary=message)
+ print(message, file=sys.stderr)
+ return EXIT_USAGE
 ```
 
 **Error cases:**
@@ -803,24 +803,24 @@ except subprocess.CalledProcessError:
 **Rationale:**
 - Codebase makes NO network calls from CLI commands (except `gh` which is user-initiated external tool)
 - The `--ai` flag produces AI-consumable markdown that can be:
-  1. Piped to a file: `cihub docs stale --ai > stale-report.md`
-  2. Fed to Claude/GPT externally (user's choice of tool/model)
-  3. Used in automation pipelines
+ 1. Piped to a file: `cihub docs stale --ai > stale-report.md`
+ 2. Fed to Claude/GPT externally (user's choice of tool/model)
+ 3. Used in automation pipelines
 - Network-calling AI integration would be a significant architectural change requiring:
-  - API key management
-  - Rate limiting
-  - Error handling for network failures
-  - User consent for data transmission
+ - API key management
+ - Rate limiting
+ - Error handling for network failures
+ - User consent for data transmission
 
 **Implementation:**
 ```python
 def _format_ai_output(report: StaleReport) -> str:
-    """Format report as AI-consumable markdown.
+ """Format report as AI-consumable markdown.
 
-    Output is designed to be fed to Claude/GPT externally.
-    NO network calls are made by this command.
-    """
-    # ... generate markdown with context, diffs, instructions
+ Output is designed to be fed to Claude/GPT externally.
+ NO network calls are made by this command.
+ """
+ # ... generate markdown with context, diffs, instructions
 ```
 
 **Future Phase (if needed):**
@@ -839,81 +839,81 @@ def _format_ai_output(report: StaleReport) -> str:
 #### Unit Tests for Reference Extraction
 ```python
 class TestDocReferenceExtraction:
-    # EXISTING (from Part 10)
-    def test_finds_backtick_refs(self): ...
-    def test_skips_code_blocks(self): ...
-    def test_finds_file_paths(self): ...
+ # EXISTING (from Part 10)
+ def test_finds_backtick_refs(self): ...
+ def test_skips_code_blocks(self): ...
+ def test_finds_file_paths(self): ...
 
-    # NEW - expanded coverage
-    def test_finds_cli_commands_in_prose(self):
-        # e.g., "Run `cihub docs stale`" in paragraph
+ # NEW - expanded coverage
+ def test_finds_cli_commands_in_prose(self):
+ # e.g., "Run `cihub docs stale`" in paragraph
 
-    def test_finds_cli_flags(self):
-        # e.g., `--since`, `--json`, `--fail-on-stale`
+ def test_finds_cli_flags(self):
+ # e.g., `--since`, `--json`, `--fail-on-stale`
 
-    def test_finds_dotted_config_keys(self):
-        # e.g., `repo.owner`, `python.pytest.enabled`
+ def test_finds_dotted_config_keys(self):
+ # e.g., `repo.owner`, `python.pytest.enabled`
 
-    def test_finds_env_vars(self):
-        # e.g., `CIHUB_DEBUG`, `CI_HUB_TOKEN`
+ def test_finds_env_vars(self):
+ # e.g., `CIHUB_DEBUG`, `CI_HUB_TOKEN`
 
-    def test_filters_common_false_positives(self):
-        # e.g., `true`, `false`, `None`, `http://`, file extensions
+ def test_filters_common_false_positives(self):
+ # e.g., `true`, `false`, `None`, `http://`, file extensions
 ```
 
 #### Unit Tests for Baseline Comparison (Replace Diff-Hunk Parsing)
 ```python
 class TestBaselineDetection:
-    def test_compares_ast_sets_base_vs_head(self):
-        # For a changed .py file:
-        # - base symbols from `git show <base>:path.py` (AST parse)
-        # - head symbols from working tree `path.py` (AST parse)
-        # Assert: removed = base - head; added = head - base
+ def test_compares_ast_sets_base_vs_head(self):
+ # For a changed .py file:
+ # - base symbols from `git show <base>:path.py` (AST parse)
+ # - head symbols from working tree `path.py` (AST parse)
+ # Assert: removed = base - head; added = head - base
 
-    def test_never_flags_added_symbols_as_stale(self):
-        # Added-only symbols must not generate stale refs
+ def test_never_flags_added_symbols_as_stale(self):
+ # Added-only symbols must not generate stale refs
 
-    def test_handles_unparseable_python_gracefully(self):
-        # If ast.parse fails for base or head, emit a clear problem entry and continue
+ def test_handles_unparseable_python_gracefully(self):
+ # If ast.parse fails for base or head, emit a clear problem entry and continue
 
-    def test_handles_invalid_since_gracefully(self):
-        # e.g., --since nonexistent_ref -> EXIT_USAGE
+ def test_handles_invalid_since_gracefully(self):
+ # e.g., --since nonexistent_ref -> EXIT_USAGE
 
-    def test_handles_missing_git_gracefully(self):
-        # Running in non-git directory -> EXIT_USAGE
+ def test_handles_missing_git_gracefully(self):
+ # Running in non-git directory -> EXIT_USAGE
 
 
 class TestStructuredSources:
-    def test_schema_key_diff_base_vs_head(self):
-        # Compare schema keys derived from schema JSON (base vs head)
-        # Assert: removed keys are detected; added keys do not trigger staleness
+ def test_schema_key_diff_base_vs_head(self):
+ # Compare schema keys derived from schema JSON (base vs head)
+ # Assert: removed keys are detected; added keys do not trigger staleness
 
-    def test_cli_surface_diff_base_vs_head(self):
-        # Compare CLI help surface (base vs head) for removed commands/flags
-        # Suggestion source can be tests/snapshots/cli_help.txt (versioned)
+ def test_cli_surface_diff_base_vs_head(self):
+ # Compare CLI help surface (base vs head) for removed commands/flags
+ # Suggestion source can be tests/snapshots/cli_help.txt (versioned)
 
 
 class TestFileMoves:
-    def test_detects_deleted_and_renamed_files(self):
-        # Use `git diff --name-status --find-renames <base>..HEAD` output parsing
-        # Assert: docs referencing deleted paths are flagged
+ def test_detects_deleted_and_renamed_files(self):
+ # Use `git diff --name-status --find-renames <base>..HEAD` output parsing
+ # Assert: docs referencing deleted paths are flagged
 ```
 
 #### Integration Test
 ```python
 class TestDocsStaleIntegration:
-    def test_full_flow_with_temp_repo(self, tmp_path):
-        # 1. Create temp git repo
-        # 2. Add code + docs
-        # 3. Rename a function
-        # 4. Run cihub docs stale --since HEAD~1
-        # 5. Verify stale reference detected
+ def test_full_flow_with_temp_repo(self, tmp_path):
+ # 1. Create temp git repo
+ # 2. Add code + docs
+ # 3. Rename a function
+ # 4. Run cihub docs stale --since HEAD~1
+ # 5. Verify stale reference detected
 
-    def test_fail_on_stale_exit_code(self, tmp_path):
-        # Verify --fail-on-stale returns non-zero when stale found
+ def test_fail_on_stale_exit_code(self, tmp_path):
+ # Verify --fail-on-stale returns non-zero when stale found
 
-    def test_json_output_schema(self, tmp_path):
-        # Verify JSON output has expected structure
+ def test_json_output_schema(self, tmp_path):
+ # Verify JSON output has expected structure
 ```
 
 ### Revised Files to Create/Modify
@@ -934,18 +934,18 @@ class TestDocsStaleIntegration:
 cihub docs stale [OPTIONS]
 
 Options:
-  --since REF           Git revision range (default: HEAD~10)
-  --all                 Include archived docs (docs/development/archive/)
-  --include-generated   Include generated docs (docs/reference/) - rarely needed
-  --json                JSON output for scripts/CI
-  --ai                  AI-consumable markdown output (no network calls)
-  --fail-on-stale       Exit non-zero if stale refs found (for CI)
-  --code PATH           Code directory (default: cihub/)
-  --docs PATH           Docs directory (default: docs/)
-  --skip-fences         Skip bash/shell code fences (default: parse them)
-  --output-dir DIR      Optional output dir for CIHub-style artifacts (e.g., .cihub/)
-  --tool-output PATH    Optional path to write tool-style JSON (for triage/tool-outputs)
-  --ai-output PATH      Optional path to write the AI prompt pack (markdown)
+ --since REF Git revision range (default: HEAD~10)
+ --all Include archived docs (docs/development/archive/)
+ --include-generated Include generated docs (docs/reference/) - rarely needed
+ --json JSON output for scripts/CI
+ --ai AI-consumable markdown output (no network calls)
+ --fail-on-stale Exit non-zero if stale refs found (for CI)
+ --code PATH Code directory (default: cihub/)
+ --docs PATH Docs directory (default: docs/)
+ --skip-fences Skip bash/shell code fences (default: parse them)
+ --output-dir DIR Optional output dir for CIHub-style artifacts (e.g., .cihub/)
+ --tool-output PATH Optional path to write tool-style JSON (for triage/tool-outputs)
+ --ai-output PATH Optional path to write the AI prompt pack (markdown)
 ```
 
 **Exit Codes:**
@@ -956,39 +956,39 @@ Options:
 **JSON Output Schema:**
 ```json
 {
-  "git_range": "HEAD~10",
-  "stats": {
-    "changed_symbols": 12,
-    "removed_symbols": 3,
-    "added_symbols": 9,
-    "renamed_symbols": 2,
-    "deleted_files": 1,
-    "renamed_files": 0,
-    "stale_refs": 7
-  },
-  "changed_symbols": [...],
-  "stale_references": [
-    {
-      "doc_file": "docs/guides/GETTING_STARTED.md",
-      "doc_line": 45,
-      "reference": "load_ci_config",
-      "reason": "Symbol was removed",
-      "suggestion": "Check if renamed to load_config",
-      "context": "Use `load_ci_config(path)` to load..."
-    }
-  ]
+ "git_range": "HEAD~10",
+ "stats": {
+ "changed_symbols": 12,
+ "removed_symbols": 3,
+ "added_symbols": 9,
+ "renamed_symbols": 2,
+ "deleted_files": 1,
+ "renamed_files": 0,
+ "stale_refs": 7
+ },
+ "changed_symbols": [...],
+ "stale_references": [
+ {
+ "doc_file": "docs/guides/GETTING_STARTED.md",
+ "doc_line": 45,
+ "reference": "load_ci_config",
+ "reason": "Symbol was removed",
+ "suggestion": "Check if renamed to load_config",
+ "context": "Use `load_ci_config(path)` to load..."
+ }
+ ]
 }
 ```
 
 ### Implementation Order
 
-1. ✅ **Architectural decisions finalized** (Part 11)
+1. [x] **Architectural decisions finalized** (Part 11)
 2. ⬜ **Create `cihub/commands/docs_stale.py`** with:
-   - Symbol extraction (AST-based, classifies added/removed/renamed)
-   - Reference extraction (backticks + bash fences + file paths)
-   - Baseline compare (base vs head) via `git show` for code/schemas/CLI surface + file move/delete detection
-   - Correlation logic (only flag REMOVED/RENAMED, not ADDED)
-   - Three output modes (human, JSON, AI markdown)
+ - Symbol extraction (AST-based, classifies added/removed/renamed)
+ - Reference extraction (backticks + bash fences + file paths)
+ - Baseline compare (base vs head) via `git show` for code/schemas/CLI surface + file move/delete detection
+ - Correlation logic (only flag REMOVED/RENAMED, not ADDED)
+ - Three output modes (human, JSON, AI markdown)
 3. ⬜ **Wire CLI** - Update `cli_parsers/docs.py`, `cli_parsers/types.py`, `cli.py`
 4. ⬜ **Create tests** - `tests/test_docs_stale.py` with unit + integration tests
 5. ⬜ **Update snapshots** - Regenerate `tests/snapshots/cli_help.txt`
@@ -1021,9 +1021,9 @@ Parsing `git diff` hunks for `def`/`class` lines is fragile and a major source o
 Prefer:
 - Resolve `--since` into a single **base commit** (for ranges, use merge-base)
 - For each changed file, compare **base vs head**:
-  - Python: `ast.parse(git show <base>:path.py)` vs `ast.parse(path.py)` and compute set diffs
-  - Schema: load `schema/ci-hub-config.schema.json` at base and head and diff key paths (reuse schema traversal approach from `cihub/commands/docs.py`)
-  - CLI surface: diff a **versioned help snapshot** at base vs head (see `tests/snapshots/cli_help.txt`) to detect removed commands/flags
+ - Python: `ast.parse(git show <base>:path.py)` vs `ast.parse(path.py)` and compute set diffs
+ - Schema: load `schema/ci-hub-config.schema.json` at base and head and diff key paths (reuse schema traversal approach from `cihub/commands/docs.py`)
+ - CLI surface: diff a **versioned help snapshot** at base vs head (see `tests/snapshots/cli_help.txt`) to detect removed commands/flags
 
 This matches the repo’s existing “single source → deterministic output → drift gate” strategy.
 
@@ -1048,14 +1048,14 @@ You already have an LLM-ready prompt pack pattern (`cihub triage` → `triage.md
 Required `--ai` characteristics:
 - **Structured** and **bounded** output (add `--max-files`, `--max-items`, `--context-lines`)
 - **Per-file packets** with:
-  - file path + category (docs/README/guide/dev)
-  - each stale item: line, reference, reason (removed/renamed/deleted), small context window
-  - optional relevant diff snippet *filtered to the reference*
+ - file path + category (docs/README/guide/dev)
+ - each stale item: line, reference, reason (removed/renamed/deleted), small context window
+ - optional relevant diff snippet *filtered to the reference*
 - **Explicit constraints** up front:
-  - do not edit generated docs under `docs/reference/**`
-  - do not change ADRs
-  - keep code fences intact except for CLI examples
-  - use “CLI” terminology (never internal nicknames)
+ - do not edit generated docs under `docs/reference/**`
+ - do not change ADRs
+ - keep code fences intact except for CLI examples
+ - use “CLI” terminology (never internal nicknames)
 
 #### D1. AI Execution Mode (Claude / Local LLM CLI; No Direct API Calls)
 
@@ -1075,10 +1075,10 @@ Required `--ai` characteristics:
 - Default to **`--dry-run`** and emit a patch; never auto-apply by default.
 - Support `--patch-output` (unified diff) so changes are reviewable and applyable with `git apply --3way`.
 - Capture reproducibility metadata into `.cihub/tool-outputs/`:
-  - runner name + version (if available)
-  - command line used (redact secrets)
-  - prompt pack path used
-  - patch output path and apply status (if applied)
+ - runner name + version (if available)
+ - command line used (redact secrets)
+ - prompt pack path used
+ - patch output path and apply status (if applied)
 
 ### E. Integrate with Existing Tooling (CLI-First, No Workflow Logic)
 
@@ -1093,16 +1093,16 @@ Avoid:
 
 Beyond unit tests:
 - **Snapshot tests** (syrupy):
-  - `--json` payload schema + stability
-  - `--ai` markdown prompt pack stability
+ - `--json` payload schema + stability
+ - `--ai` markdown prompt pack stability
 - **Git-shape integration tests**:
-  - `--since HEAD~N`
-  - `--since A..B` (merge-base handling)
-  - file delete/rename/move
+ - `--since HEAD~N`
+ - `--since A..B` (merge-base handling)
+ - file delete/rename/move
 - **Property / fuzz tests** (Hypothesis already present in CI extras):
-  - random markdown with mixed backticks/fences/links to ensure no crashes and no region “leakage”
+ - random markdown with mixed backticks/fences/links to ensure no crashes and no region “leakage”
 - **Performance budget**:
-  - benchmark scanning ~28k doc lines so `cihub check --audit` stays fast enough to run routinely
+ - benchmark scanning ~28k doc lines so `cihub check --audit` stays fast enough to run routinely
 
 ### G. Use Git More Aggressively (Correctness + Safety)
 
@@ -1134,8 +1134,8 @@ Recommended “guardrails” for AI-driven patches:
 Recommended CI pattern:
 - Run `cihub docs check` (already deterministic drift gate for generated docs).
 - Run `cihub docs stale` in **report-only** mode and emit artifacts:
-  - `.cihub/tool-outputs/docs_stale.json`
-  - `.cihub/tool-outputs/docs_stale.prompt.md`
+ - `.cihub/tool-outputs/docs_stale.json`
+ - `.cihub/tool-outputs/docs_stale.prompt.md`
 - Let humans (or a separate, opt-in bot) review/apply patches.
 
 Optional integration improvement (Phase 2+):
@@ -1144,38 +1144,38 @@ Optional integration improvement (Phase 2+):
 ### J. `cihub docs audit` (Lifecycle + Structure Enforcement)
 
 - **Command contract:** `cihub docs audit [--output-dir .cihub] [--json]`
-  - Validates the doc lifecycle:
-    - All design docs in progress live under `docs/development/active/`
-    - Every file in `docs/development/active/` must be listed in `docs/development/status/STATUS.md`
-    - Moves to `docs/development/archive/` must include a “Superseded” header pointing to the replacement/ADR
-    - Any path change for docs in `active/` or `archive/` must update `docs/README.md`, `docs/development/MASTER_PLAN.md`, and `docs/development/status/STATUS.md` in the same change
-    - Specs hygiene: only `docs/development/specs/REQUIREMENTS.md` is active; it must include `Status` and `Last Updated`
-  - Checks ADR metadata (Status/Date/Superseded-by), universal headers, and broken references (see Section N)
-  - Emits `docs_audit.json` under `.cihub/tool-outputs/`
+ - Validates the doc lifecycle:
+ - All design docs in progress live under `docs/development/active/`
+ - Every file in `docs/development/active/` must be listed in `docs/development/status/STATUS.md`
+ - Moves to `docs/development/archive/` must include a “Superseded” header pointing to the replacement/ADR
+ - Any path change for docs in `active/` or `archive/` must update `docs/README.md`, `docs/development/MASTER_PLAN.md`, and `docs/development/status/STATUS.md` in the same change
+ - Specs hygiene: only `docs/development/specs/REQUIREMENTS.md` is active; it must include `Status` and `Last Updated`
+ - Checks ADR metadata (Status/Date/Superseded-by), universal headers, and broken references (see Section N)
+ - Emits `docs_audit.json` under `.cihub/tool-outputs/`
 - **Integration:** run automatically inside `cihub check --audit` so local runs and CI share the same gate.
 
 ### K. Generated References Expansion
 
 - Extend `cihub docs generate` / `cihub docs check` to cover:
-  - `docs/reference/TOOLS.md` generated from `cihub/tools/registry.py`
-  - `docs/reference/WORKFLOWS.md` generated from `.github/workflows/*.yml` (triggers + inputs table)
+ - `docs/reference/TOOLS.md` generated from `cihub/tools/registry.py`
+ - `docs/reference/WORKFLOWS.md` generated from `.github/workflows/*.yml` (triggers + inputs table)
 - `docs/guides/WORKFLOWS.md` stays narrative-only and links to the generated reference for detailed tables.
 
 ### L. ADR Metadata Lint + Index Automation
 
 - Reuse CLI output (e.g., `cihub adr list --json`) to regenerate `docs/adr/README.md` so there is only one source of truth.
 - Lint for required metadata (phased in warn → fail):
-  - `Status: accepted|proposed|superseded`
-  - `Date: YYYY-MM-DD`
-  - Optional `Superseded-by: ADR-xxxx`
-  - Optional `Implementation:` note pointing to relevant code/services
+ - `Status: accepted|proposed|superseded`
+ - `Date: YYYY-MM-DD`
+ - Optional `Superseded-by: ADR-xxxx`
+ - Optional `Implementation:` note pointing to relevant code/services
 - Add these checks to `cihub docs audit` so ADR coverage rides the same automation.
 
 ### M. Doc Inventory + Counts
 
 - `docs/development/status/STATUS.md` currently lists counts that drift. Decide between:
-  1. Drop counts entirely (preferred to avoid churn), or
-  2. Auto-generate counts via `cihub docs audit --inventory --json` and surface them in STATUS.md
+ 1. Drop counts entirely (preferred to avoid churn), or
+ 2. Auto-generate counts via `cihub docs audit --inventory --json` and surface them in STATUS.md
 - Capture the decision in this plan; until then, note that counts are informational and may be removed.
 
 ### N. Plain-Text Reference Scan
@@ -1186,27 +1186,27 @@ Optional integration improvement (Phase 2+):
 ### O. Doc-Automation Artifacts
 
 - Both `cihub docs stale` and `cihub docs audit` must emit structured outputs under `.cihub/tool-outputs/`:
-  - `docs_stale.json`, `docs_stale.prompt.md`, optional `docs_stale.patch`
-  - `docs_audit.json` (lifecycle + reference findings)
+ - `docs_stale.json`, `docs_stale.prompt.md`, optional `docs_stale.patch`
+ - `docs_audit.json` (lifecycle + reference findings)
 - Triage bundles (`cihub triage`) can then include these artifacts (category `docs`) for CI visibility.
 
 ### P. LLM Readiness Inputs
 
 - For reliable LLM handoff:
-  - Produce a doc manifest (`docs_manifest.json`) with path, category (guide/reference/active/archived), generated/manual flag, last-reviewed date
-  - Include the stale-reference report (symbol-level, line context) and a diff summary snippet in `docs_stale.json`
-  - `cihub docs stale --ai` should bundle manifest + stale report + diff summary into the prompt pack so downstream tools have deterministic context
+ - Produce a doc manifest (`docs_manifest.json`) with path, category (guide/reference/active/archived), generated/manual flag, last-reviewed date
+ - Include the stale-reference report (symbol-level, line context) and a diff summary snippet in `docs_stale.json`
+ - `cihub docs stale --ai` should bundle manifest + stale report + diff summary into the prompt pack so downstream tools have deterministic context
 
 ### Q. Universal Doc Header Template (Manual Docs)
 
 - Manual docs adopt a lightweight header block (generated docs keep their “Generated by …” banner):
-  ```
-  Status: active | archived | reference
-  Owner: <team or person>
-  Source-of-truth: CLI | schema | workflow | manual
-  Last-reviewed: YYYY-MM-DD
-  Superseded-by: <path or ADR>  # optional
-  ```
+ ```
+ Status: active | archived | reference
+ Owner: <team or person>
+ Source-of-truth: CLI | schema | workflow | manual
+ Last-reviewed: YYYY-MM-DD
+ Superseded-by: <path or ADR> # optional
+ ```
 - `cihub docs audit` enforces presence/format; headers provide structured metadata for humans, tooling, and LLMs.
 
 ## Part 13: Cross-Document Consistency & Metrics Validation (Audit Addendum 2026-01-06)
@@ -1226,38 +1226,38 @@ This section captures additional gaps discovered during an 8-agent documentation
 
 ```python
 METRICS_PATTERNS = [
-    (r'(\d+)\s*(?:CLI\s+)?commands?', 'command_count'),
-    (r'(\d+)\s*tests?', 'test_count'),
-    (r'(\d+)\s*ADRs?', 'adr_count'),
-    (r'(\d+)\s*(?:doc(?:ument)?s?|files?)', 'doc_count'),
+ (r'(\d+)\s*(?:CLI\s+)?commands?', 'command_count'),
+ (r'(\d+)\s*tests?', 'test_count'),
+ (r'(\d+)\s*ADRs?', 'adr_count'),
+ (r'(\d+)\s*(?:doc(?:ument)?s?|files?)', 'doc_count'),
 ]
 
 def get_actual_metrics() -> dict[str, int]:
-    """Get current metrics from authoritative sources."""
-    return {
-        'command_count': _count_cli_commands(),  # from cihub --help
-        'test_count': _count_pytest_tests(),      # from pytest --collect-only
-        'adr_count': len(list(Path('docs/adr').glob('0*.md'))),
-        'doc_count': len(list(Path('docs').rglob('*.md'))),
-    }
+ """Get current metrics from authoritative sources."""
+ return {
+ 'command_count': _count_cli_commands(), # from cihub --help
+ 'test_count': _count_pytest_tests(), # from pytest --collect-only
+ 'adr_count': len(list(Path('docs/adr').glob('0*.md'))),
+ 'doc_count': len(list(Path('docs').rglob('*.md'))),
+ }
 
 def find_stale_metrics(doc_file: Path) -> list[MetricsDrift]:
-    """Find numeric claims that don't match reality."""
-    actual = get_actual_metrics()
-    stale = []
-    for line_num, line in enumerate(doc_file.read_text().splitlines(), 1):
-        for pattern, metric_key in METRICS_PATTERNS:
-            match = re.search(pattern, line, re.IGNORECASE)
-            if match:
-                claimed = int(match.group(1))
-                actual_val = actual.get(metric_key)
-                if actual_val and abs(claimed - actual_val) / actual_val > 0.1:  # >10% drift
-                    stale.append(MetricsDrift(
-                        file=doc_file, line=line_num,
-                        claimed=claimed, actual=actual_val,
-                        metric=metric_key
-                    ))
-    return stale
+ """Find numeric claims that don't match reality."""
+ actual = get_actual_metrics()
+ stale = []
+ for line_num, line in enumerate(doc_file.read_text().splitlines(), 1):
+ for pattern, metric_key in METRICS_PATTERNS:
+ match = re.search(pattern, line, re.IGNORECASE)
+ if match:
+ claimed = int(match.group(1))
+ actual_val = actual.get(metric_key)
+ if actual_val and abs(claimed - actual_val) / actual_val > 0.1: # >10% drift
+ stale.append(MetricsDrift(
+ file=doc_file, line=line_num,
+ claimed=claimed, actual=actual_val,
+ metric=metric_key
+ ))
+ return stale
 ```
 
 **Thresholds:**
@@ -1280,38 +1280,38 @@ def find_stale_metrics(doc_file: Path) -> list[MetricsDrift]:
 
 ```python
 def find_duplicate_tasks(planning_docs: list[Path]) -> list[DuplicateTask]:
-    """Detect duplicate checklist items across planning docs."""
-    all_tasks = []
-    for doc in planning_docs:
-        for line_num, line in enumerate(doc.read_text().splitlines(), 1):
-            # Match checklist items: - [ ] Task or - [x] Task
-            match = re.match(r'^[-*]\s*\[([ x])\]\s*(.+)$', line.strip())
-            if match:
-                status, task_text = match.groups()
-                # Normalize: lowercase, strip backticks, collapse whitespace
-                normalized = re.sub(r'`[^`]+`', '', task_text.lower())
-                normalized = ' '.join(normalized.split())
-                all_tasks.append(TaskEntry(
-                    file=doc, line=line_num,
-                    text=task_text, normalized=normalized,
-                    completed=(status == 'x')
-                ))
+ """Detect duplicate checklist items across planning docs."""
+ all_tasks = []
+ for doc in planning_docs:
+ for line_num, line in enumerate(doc.read_text().splitlines(), 1):
+ # Match checklist items: - [ ] Task or - [x] Task
+ match = re.match(r'^[-*]\s*\[([ x])\]\s*(.+)$', line.strip())
+ if match:
+ status, task_text = match.groups()
+ # Normalize: lowercase, strip backticks, collapse whitespace
+ normalized = re.sub(r'`[^`]+`', '', task_text.lower())
+ normalized = ' '.join(normalized.split())
+ all_tasks.append(TaskEntry(
+ file=doc, line=line_num,
+ text=task_text, normalized=normalized,
+ completed=(status == 'x')
+ ))
 
-    # Group by normalized text (fuzzy match with 80% similarity)
-    duplicates = []
-    seen = {}
-    for task in all_tasks:
-        for existing_norm, existing_entries in seen.items():
-            if _similarity(task.normalized, existing_norm) > 0.8:
-                duplicates.append(DuplicateTask(
-                    task=task.text,
-                    locations=existing_entries + [task]
-                ))
-                break
-        else:
-            seen.setdefault(task.normalized, []).append(task)
+ # Group by normalized text (fuzzy match with 80% similarity)
+ duplicates = []
+ seen = {}
+ for task in all_tasks:
+ for existing_norm, existing_entries in seen.items():
+ if _similarity(task.normalized, existing_norm) > 0.8:
+ duplicates.append(DuplicateTask(
+ task=task.text,
+ locations=existing_entries + [task]
+ ))
+ break
+ else:
+ seen.setdefault(task.normalized, []).append(task)
 
-    return duplicates
+ return duplicates
 ```
 
 **Consolidation suggestions:**
@@ -1333,45 +1333,45 @@ def find_duplicate_tasks(planning_docs: list[Path]) -> list[DuplicateTask]:
 
 ```python
 HEADER_PATTERNS = [
-    r'\*\*Last Updated:\*\*\s*(\d{4}-\d{2}-\d{2})',
-    r'\*\*Last Verified:\*\*\s*(\d{4}-\d{2}-\d{2})',
-    r'\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})',
-    r'Last-reviewed:\s*(\d{4}-\d{2}-\d{2})',
+ r'\*\*Last Updated:\*\*\s*(\d{4}-\d{2}-\d{2})',
+ r'\*\*Last Verified:\*\*\s*(\d{4}-\d{2}-\d{2})',
+ r'\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})',
+ r'Last-reviewed:\s*(\d{4}-\d{2}-\d{2})',
 ]
 
 def check_timestamp_freshness(
-    doc_file: Path,
-    warn_days: int = 7,
-    error_days: int = 30,
+ doc_file: Path,
+ warn_days: int = 7,
+ error_days: int = 30,
 ) -> list[TimestampIssue]:
-    """Validate timestamp headers are fresh."""
-    issues = []
-    content = doc_file.read_text()
-    today = date.today()
+ """Validate timestamp headers are fresh."""
+ issues = []
+ content = doc_file.read_text()
+ today = date.today()
 
-    for pattern in HEADER_PATTERNS:
-        match = re.search(pattern, content)
-        if match:
-            header_date = date.fromisoformat(match.group(1))
-            days_old = (today - header_date).days
+ for pattern in HEADER_PATTERNS:
+ match = re.search(pattern, content)
+ if match:
+ header_date = date.fromisoformat(match.group(1))
+ days_old = (today - header_date).days
 
-            if header_date > today:
-                issues.append(TimestampIssue(
-                    file=doc_file, severity='error',
-                    message=f"Future date in header: {header_date}"
-                ))
-            elif days_old > error_days:
-                issues.append(TimestampIssue(
-                    file=doc_file, severity='error',
-                    message=f"Header date {days_old} days old (> {error_days})"
-                ))
-            elif days_old > warn_days:
-                issues.append(TimestampIssue(
-                    file=doc_file, severity='warn',
-                    message=f"Header date {days_old} days old (> {warn_days})"
-                ))
+ if header_date > today:
+ issues.append(TimestampIssue(
+ file=doc_file, severity='error',
+ message=f"Future date in header: {header_date}"
+ ))
+ elif days_old > error_days:
+ issues.append(TimestampIssue(
+ file=doc_file, severity='error',
+ message=f"Header date {days_old} days old (> {error_days})"
+ ))
+ elif days_old > warn_days:
+ issues.append(TimestampIssue(
+ file=doc_file, severity='warn',
+ message=f"Header date {days_old} days old (> {warn_days})"
+ ))
 
-    return issues
+ return issues
 ```
 
 **Configuration:**
@@ -1395,41 +1395,41 @@ def check_timestamp_freshness(
 ```python
 # Map checklist items to verification checks
 CHECKLIST_VERIFICATIONS = {
-    'extract language strategies': lambda: Path('cihub/core/languages/').exists(),
-    'implement cihub docs stale': lambda: 'stale' in _get_cli_subcommands('docs'),
-    'implement gatespec registry': lambda: Path('cihub/core/gate_specs.py').exists(),
-    'move legacy docs to archive': lambda: _archive_has_superseded_headers(),
-    'commit cli helpers': lambda: all(
-        Path(f'cihub/commands/{cmd}.py').exists()
-        for cmd in ['preflight', 'scaffold', 'smoke']
-    ),
+ 'extract language strategies': lambda: Path('cihub/core/languages/').exists(),
+ 'implement cihub docs stale': lambda: 'stale' in _get_cli_subcommands('docs'),
+ 'implement gatespec registry': lambda: Path('cihub/core/gate_specs.py').exists(),
+ 'move legacy docs to archive': lambda: _archive_has_superseded_headers(),
+ 'commit cli helpers': lambda: all(
+ Path(f'cihub/commands/{cmd}.py').exists()
+ for cmd in ['preflight', 'scaffold', 'smoke']
+ ),
 }
 
 def verify_checklists(design_docs: list[Path]) -> list[ChecklistMismatch]:
-    """Cross-reference checklist items against code reality."""
-    mismatches = []
-    for doc in design_docs:
-        for line_num, line in enumerate(doc.read_text().splitlines(), 1):
-            match = re.match(r'^[-*]\s*\[([ ])\]\s*(.+)$', line.strip())
-            if match:  # Unchecked item
-                task_text = match.group(2).lower()
-                for pattern, verifier in CHECKLIST_VERIFICATIONS.items():
-                    if pattern in task_text:
-                        if verifier():
-                            mismatches.append(ChecklistMismatch(
-                                file=doc, line=line_num,
-                                task=match.group(2),
-                                issue="Marked incomplete but implementation exists"
-                            ))
-    return mismatches
+ """Cross-reference checklist items against code reality."""
+ mismatches = []
+ for doc in design_docs:
+ for line_num, line in enumerate(doc.read_text().splitlines(), 1):
+ match = re.match(r'^[-*]\s*\[([ ])\]\s*(.+)$', line.strip())
+ if match: # Unchecked item
+ task_text = match.group(2).lower()
+ for pattern, verifier in CHECKLIST_VERIFICATIONS.items():
+ if pattern in task_text:
+ if verifier():
+ mismatches.append(ChecklistMismatch(
+ file=doc, line=line_num,
+ task=match.group(2),
+ issue="Marked incomplete but implementation exists"
+ ))
+ return mismatches
 ```
 
 **Report format:**
 ```
 CLEAN_CODE.md:35 - Task "Extract Language Strategies" marked [ ] but:
-  ✓ cihub/core/languages/ directory exists
-  ✓ Contains: base.py, python.py, java.py, registry.py
-  Suggestion: Mark as [x] or clarify remaining work
+ [x] cihub/core/languages/ directory exists
+ [x] Contains: base.py, python.py, java.py, registry.py
+ Suggestion: Mark as [x] or clarify remaining work
 ```
 
 ---
@@ -1446,39 +1446,39 @@ CLEAN_CODE.md:35 - Task "Extract Language Strategies" marked [ ] but:
 
 ```python
 PLACEHOLDER_PATTERNS = [
-    # GitHub usernames in URLs (not matching CODEOWNERS)
-    (r'github\.com/([a-zA-Z0-9_-]+)/', 'github_username'),
-    # Common placeholder markers
-    (r'\b(YOUR_[A-Z_]+|CHANGE_ME|TODO:|FIXME:|XXX:)\b', 'placeholder_marker'),
-    # Hardcoded local paths
-    (r'(/Users/[^/\s]+|/home/[^/\s]+|C:\\Users\\[^\\]+)', 'local_path'),
-    # Hardcoded IPs (except localhost)
-    (r'\b(?!127\.0\.0\.1)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b', 'ip_address'),
+ # GitHub usernames in URLs (not matching CODEOWNERS)
+ (r'github\.com/([a-zA-Z0-9_-]+)/', 'github_username'),
+ # Common placeholder markers
+ (r'\b(YOUR_[A-Z_]+|CHANGE_ME|TODO:|FIXME:|XXX:)\b', 'placeholder_marker'),
+ # Hardcoded local paths
+ (r'(/Users/[^/\s]+|/home/[^/\s]+|C:\\Users\\[^\\]+)', 'local_path'),
+ # Hardcoded IPs (except localhost)
+ (r'\b(?!127\.0\.0\.1)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b', 'ip_address'),
 ]
 
 def find_placeholders(
-    doc_file: Path,
-    expected_usernames: set[str] | None = None,
+ doc_file: Path,
+ expected_usernames: set[str] | None = None,
 ) -> list[PlaceholderIssue]:
-    """Detect hardcoded placeholders that may need updating."""
-    if expected_usernames is None:
-        expected_usernames = _get_codeowners_usernames()
+ """Detect hardcoded placeholders that may need updating."""
+ if expected_usernames is None:
+ expected_usernames = _get_codeowners_usernames()
 
-    issues = []
-    for line_num, line in enumerate(doc_file.read_text().splitlines(), 1):
-        for pattern, issue_type in PLACEHOLDER_PATTERNS:
-            for match in re.finditer(pattern, line):
-                value = match.group(1)
-                # Skip if it's an expected value
-                if issue_type == 'github_username' and value in expected_usernames:
-                    continue
-                issues.append(PlaceholderIssue(
-                    file=doc_file, line=line_num,
-                    value=value, issue_type=issue_type,
-                    severity='warn',  # May be intentional examples
-                    message=f"Possible placeholder: {value}"
-                ))
-    return issues
+ issues = []
+ for line_num, line in enumerate(doc_file.read_text().splitlines(), 1):
+ for pattern, issue_type in PLACEHOLDER_PATTERNS:
+ for match in re.finditer(pattern, line):
+ value = match.group(1)
+ # Skip if it's an expected value
+ if issue_type == 'github_username' and value in expected_usernames:
+ continue
+ issues.append(PlaceholderIssue(
+ file=doc_file, line=line_num,
+ value=value, issue_type=issue_type,
+ severity='warn', # May be intentional examples
+ message=f"Possible placeholder: {value}"
+ ))
+ return issues
 ```
 
 **Severity:**
@@ -1503,60 +1503,60 @@ def find_placeholders(
 ```python
 # Define canonical sources for each metric
 CANONICAL_SOURCES = {
-    'test_count': ('pytest --collect-only', r'(\d+) items?'),
-    'command_count': ('cihub --help', lambda output: len(_parse_commands(output))),
-    'adr_count': ('glob', lambda: len(list(Path('docs/adr').glob('0*.md')))),
+ 'test_count': ('pytest --collect-only', r'(\d+) items?'),
+ 'command_count': ('cihub --help', lambda output: len(_parse_commands(output))),
+ 'adr_count': ('glob', lambda: len(list(Path('docs/adr').glob('0*.md')))),
 }
 
 # Define docs that claim these metrics
 DOCS_WITH_METRICS = {
-    'test_count': [
-        'docs/development/status/STATUS.md',
-        'docs/development/MASTER_PLAN.md',
-        'docs/development/DEVELOPMENT.md',
-    ],
-    'command_count': [
-        'docs/development/DEVELOPMENT.md',
-        'AGENTS.md',
-    ],
-    'adr_count': [
-        'docs/development/status/STATUS.md',
-        'docs/adr/README.md',
-    ],
+ 'test_count': [
+ 'docs/development/status/STATUS.md',
+ 'docs/development/MASTER_PLAN.md',
+ 'docs/development/DEVELOPMENT.md',
+ ],
+ 'command_count': [
+ 'docs/development/DEVELOPMENT.md',
+ 'AGENTS.md',
+ ],
+ 'adr_count': [
+ 'docs/development/status/STATUS.md',
+ 'docs/adr/README.md',
+ ],
 }
 
 # Non-metric consistency checks
 DOCS_WITH_LISTS = {
-    'active_docs': {
-        'source_dir': 'docs/development/active',
-        'index_doc': 'docs/README.md',
-        'status_doc': 'docs/development/status/STATUS.md',
-    },
+ 'active_docs': {
+ 'source_dir': 'docs/development/active',
+ 'index_doc': 'docs/README.md',
+ 'status_doc': 'docs/development/status/STATUS.md',
+ },
 }
 
 def validate_cross_doc_consistency() -> list[ConsistencyIssue]:
-    """Validate same facts appear identically across docs."""
-    issues = []
+ """Validate same facts appear identically across docs."""
+ issues = []
 
-    for metric, doc_paths in DOCS_WITH_METRICS.items():
-        canonical = _get_canonical_value(metric)
+ for metric, doc_paths in DOCS_WITH_METRICS.items():
+ canonical = _get_canonical_value(metric)
 
-        for doc_path in doc_paths:
-            doc = Path(doc_path)
-            if not doc.exists():
-                continue
+ for doc_path in doc_paths:
+ doc = Path(doc_path)
+ if not doc.exists():
+ continue
 
-            claimed = _extract_metric_from_doc(doc, metric)
-            if claimed and claimed != canonical:
-                issues.append(ConsistencyIssue(
-                    metric=metric,
-                    file=doc,
-                    claimed=claimed,
-                    canonical=canonical,
-                    message=f"{doc.name} claims {metric}={claimed} but canonical is {canonical}"
-                ))
+ claimed = _extract_metric_from_doc(doc, metric)
+ if claimed and claimed != canonical:
+ issues.append(ConsistencyIssue(
+ metric=metric,
+ file=doc,
+ claimed=claimed,
+ canonical=canonical,
+ message=f"{doc.name} claims {metric}={claimed} but canonical is {canonical}"
+ ))
 
-    return issues
+ return issues
 ```
 
 **Output format:**
@@ -1564,9 +1564,9 @@ def validate_cross_doc_consistency() -> list[ConsistencyIssue]:
 Cross-Document Consistency Report
 =================================
 test_count (canonical: 2120 from pytest):
-  ✓ STATUS.md: 2120 (matches)
-  ✗ MASTER_PLAN.md: 2104 (drift: -16)
-  ✗ DEVELOPMENT.md: 80 (drift: -2040)
+ [x] STATUS.md: 2120 (matches)
+ [ ] MASTER_PLAN.md: 2104 (drift: -16)
+ [ ] DEVELOPMENT.md: 80 (drift: -2040)
 
 Suggestion: Update MASTER_PLAN.md line 4 and DEVELOPMENT.md lines 169, 337, 338
 ```
@@ -1586,42 +1586,42 @@ Suggestion: Update MASTER_PLAN.md line 4 and DEVELOPMENT.md lines 169, 337, 338
 
 ```python
 def validate_changelog(changelog_path: Path) -> list[ChangelogIssue]:
-    """Validate CHANGELOG format and ordering."""
-    issues = []
-    content = changelog_path.read_text()
+ """Validate CHANGELOG format and ordering."""
+ issues = []
+ content = changelog_path.read_text()
 
-    # Extract date headers
-    date_pattern = r'^## (\d{4}-\d{2}-\d{2})'
-    dates_found = []
-    for line_num, line in enumerate(content.splitlines(), 1):
-        match = re.match(date_pattern, line)
-        if match:
-            dates_found.append((line_num, match.group(1)))
+ # Extract date headers
+ date_pattern = r'^## (\d{4}-\d{2}-\d{2})'
+ dates_found = []
+ for line_num, line in enumerate(content.splitlines(), 1):
+ match = re.match(date_pattern, line)
+ if match:
+ dates_found.append((line_num, match.group(1)))
 
-    # Check chronological order (most recent first)
-    for i in range(len(dates_found) - 1):
-        curr_line, curr_date = dates_found[i]
-        next_line, next_date = dates_found[i + 1]
-        if curr_date < next_date:
-            issues.append(ChangelogIssue(
-                line=curr_line,
-                severity='error',
-                message=f"Out of order: {curr_date} appears before {next_date}"
-            ))
+ # Check chronological order (most recent first)
+ for i in range(len(dates_found) - 1):
+ curr_line, curr_date = dates_found[i]
+ next_line, next_date = dates_found[i + 1]
+ if curr_date < next_date:
+ issues.append(ChangelogIssue(
+ line=curr_line,
+ severity='error',
+ message=f"Out of order: {curr_date} appears before {next_date}"
+ ))
 
-    # Check for duplicate dates (may be intentional but flag)
-    date_counts = Counter(d for _, d in dates_found)
-    for date, count in date_counts.items():
-        if count > 1:
-            issues.append(ChangelogIssue(
-                severity='warn',
-                message=f"Date {date} appears {count} times - consider merging"
-            ))
+ # Check for duplicate dates (may be intentional but flag)
+ date_counts = Counter(d for _, d in dates_found)
+ for date, count in date_counts.items():
+ if count > 1:
+ issues.append(ChangelogIssue(
+ severity='warn',
+ message=f"Date {date} appears {count} times - consider merging"
+ ))
 
-    # Check separator consistency
-    # ... additional format checks
+ # Check separator consistency
+ # ... additional format checks
 
-    return issues
+ return issues
 ```
 
 **Checks performed:**
@@ -1643,22 +1643,22 @@ def validate_changelog(changelog_path: Path) -> list[ChangelogIssue]:
 
 | Feature | Priority | Effort | Value | Dependency |
 |---------|----------|--------|-------|------------|
-| Cross-doc consistency (W) | 🔴 High | Medium | High | None |
-| Metrics drift (R) | 🔴 High | Low | High | CLI introspection |
-| Checklist-reality (U) | 🟡 Medium | Medium | Medium | File system checks |
-| Timestamp freshness (T) | 🟡 Medium | Low | Medium | None |
-| Duplicate detection (S) | 🟡 Medium | Medium | Medium | None |
-| CHANGELOG validation (X) | 🟢 Low | Low | Low | None |
-| Placeholder detection (V) | 🟢 Low | Low | Low | CODEOWNERS parsing |
+| Cross-doc consistency (W) | High | Medium | High | None |
+| Metrics drift (R) | High | Low | High | CLI introspection |
+| Checklist-reality (U) | Medium | Medium | Medium | File system checks |
+| Timestamp freshness (T) | Medium | Low | Medium | None |
+| Duplicate detection (S) | Medium | Medium | Medium | None |
+| CHANGELOG validation (X) | Low | Low | Low | None |
+| Placeholder detection (V) | Low | Low | Low | CODEOWNERS parsing |
 
 **Recommended implementation order:**
-1. Metrics drift (R) — Quick win, high value
-2. Cross-doc consistency (W) — Catches most audit findings
-3. Timestamp freshness (T) — Simple, prevents stale headers
-4. Checklist-reality (U) — Useful for design doc hygiene
-5. Duplicate detection (S) — Helps consolidate MASTER_PLAN
-6. CHANGELOG validation (X) — Polish
-7. Placeholder detection (V) — Nice-to-have
+1. Metrics drift (R) - Quick win, high value
+2. Cross-doc consistency (W) - Catches most audit findings
+3. Timestamp freshness (T) - Simple, prevents stale headers
+4. Checklist-reality (U) - Useful for design doc hygiene
+5. Duplicate detection (S) - Helps consolidate MASTER_PLAN
+6. CHANGELOG validation (X) - Polish
+7. Placeholder detection (V) - Nice-to-have
 
 ---
 

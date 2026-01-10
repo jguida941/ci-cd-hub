@@ -32,13 +32,13 @@ Create a **GateSpec Registry** (`cihub/core/gate_specs.py`) as the single source
 ```python
 @dataclass
 class ThresholdSpec:
-    """Specification for a threshold-based quality gate."""
-    label: str           # Display name (e.g., "Code Coverage")
-    key: str             # Config key (e.g., "coverage_min")
-    unit: str            # Display unit (e.g., "%")
-    comparator: str      # "ge" (>=) or "le" (<=)
-    metric_key: str      # Report metric key (e.g., "coverage")
-    failure_template: str  # Message template for failures
+ """Specification for a threshold-based quality gate."""
+ label: str # Display name (e.g., "Code Coverage")
+ key: str # Config key (e.g., "coverage_min")
+ unit: str # Display unit (e.g., "%")
+ comparator: str # "ge" (>=) or "le" (<=)
+ metric_key: str # Report metric key (e.g., "coverage")
+ failure_template: str # Message template for failures
 ```
 
 ### 2. ToolSpec Dataclass
@@ -46,25 +46,25 @@ class ThresholdSpec:
 ```python
 @dataclass
 class ToolSpec:
-    """Specification for a tool-based quality gate."""
-    category: str  # "testing", "security", "lint", "build"
-    label: str     # Display name (e.g., "Unit Tests")
-    key: str       # Tool key (e.g., "pytest")
+ """Specification for a tool-based quality gate."""
+ category: str # "testing", "security", "lint", "build"
+ label: str # Display name (e.g., "Unit Tests")
+ key: str # Tool key (e.g., "pytest")
 ```
 
 ### 3. Language-Specific Registries
 
 ```python
 PYTHON_THRESHOLDS: list[ThresholdSpec] = [
-    ThresholdSpec("Code Coverage", "coverage_min", "%", "ge", "coverage", ...),
-    ThresholdSpec("Max Ruff Errors", "max_ruff_errors", "", "le", "ruff_errors", ...),
-    # ... more thresholds
+ ThresholdSpec("Code Coverage", "coverage_min", "%", "ge", "coverage", ...),
+ ThresholdSpec("Max Ruff Errors", "max_ruff_errors", "", "le", "ruff_errors", ...),
+ # ... more thresholds
 ]
 
 PYTHON_TOOLS: list[ToolSpec] = [
-    ToolSpec("testing", "Unit Tests", "pytest"),
-    ToolSpec("security", "Bandit", "bandit"),
-    # ... more tools
+ ToolSpec("testing", "Unit Tests", "pytest"),
+ ToolSpec("security", "Bandit", "bandit"),
+ # ... more tools
 ]
 
 PYTHON_TOOL_KEYS = frozenset(t.key for t in PYTHON_TOOLS)
@@ -74,16 +74,16 @@ PYTHON_TOOL_KEYS = frozenset(t.key for t in PYTHON_TOOLS)
 
 ```python
 def threshold_rows(language: str) -> list[ThresholdSpec]:
-    """Get threshold specs for a language."""
+ """Get threshold specs for a language."""
 
 def tool_rows(language: str) -> list[ToolSpec]:
-    """Get tool specs for a language."""
+ """Get tool specs for a language."""
 
 def get_tool_keys(language: str) -> frozenset[str]:
-    """Get tool keys for require_run_or_fail evaluation."""
+ """Get tool keys for require_run_or_fail evaluation."""
 
 def evaluate_threshold(spec: ThresholdSpec, value: float, threshold: float) -> bool:
-    """Evaluate a threshold spec. Returns True if passed."""
+ """Evaluate a threshold spec. Returns True if passed."""
 ```
 
 ### 5. Usage in gates.py
@@ -93,8 +93,8 @@ from cihub.core.gate_specs import get_tool_keys
 
 # In require_run_or_fail loop:
 for tool_key in get_tool_keys(language):
-    if _tool_requires_run_or_fail(tool_key, merged_config):
-        # Check if tool ran...
+ if _tool_requires_run_or_fail(tool_key, merged_config):
+ # Check if tool ran...
 ```
 
 ### 6. Usage in reporting.py
@@ -104,10 +104,10 @@ from cihub.core.gate_specs import tool_rows, threshold_rows
 
 # In build_quality_gates():
 for spec in tool_rows(language):
-    # Render tool status row...
+ # Render tool status row...
 
 for spec in threshold_rows(language):
-    # Render threshold row...
+ # Render threshold row...
 ```
 
 ## Consequences
@@ -129,10 +129,10 @@ for spec in threshold_rows(language):
 ## Test Coverage
 
 - `tests/test_gate_specs.py` - 35 tests covering:
-  - Registry consistency (Python and Java specs)
-  - Threshold evaluation logic
-  - Tool key extraction
-  - Helper function behavior
+ - Registry consistency (Python and Java specs)
+ - Threshold evaluation logic
+ - Tool key extraction
+ - Helper function behavior
 
 ## Related ADRs
 

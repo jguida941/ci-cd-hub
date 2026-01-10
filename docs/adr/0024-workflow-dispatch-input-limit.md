@@ -1,9 +1,9 @@
 # ADR-0024: Workflow Dispatch Input Limit
 
-**Status**: Accepted  
-**Date:** 2025-12-24  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Accepted
+**Date:** 2025-12-24
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 **Update:** Simplify-workflows removed `threshold_overrides_yaml`; thresholds and tool toggles are now config-only and resolved by the CLI at runtime. Caller workflows only dispatch minimal metadata (for example, `hub_correlation_id`).
 
@@ -46,19 +46,19 @@ Thresholds are read at workflow execution time (not dispatch time):
 ## Alternatives Considered
 
 1. **Combine thresholds into JSON/YAML object input:**
-   ```yaml
-   thresholds: '{"coverage_min": 70, "max_critical_vulns": 0}'
-   ```
-   Initially rejected for complexity. A limited YAML escape hatch was briefly adopted, then removed in simplify-workflows to keep dispatch inputs minimal.
+ ```yaml
+ thresholds: '{"coverage_min": 70, "max_critical_vulns": 0}'
+ ```
+ Initially rejected for complexity. A limited YAML escape hatch was briefly adopted, then removed in simplify-workflows to keep dispatch inputs minimal.
 
 2. **Remove some tool toggles:**
-   Rejected: Limits flexibility. Tool toggles are the primary customization point.
+ Rejected: Limits flexibility. Tool toggles are the primary customization point.
 
 3. **Use environment variables instead of inputs:**
-   Rejected: Less visible in dispatch UI. Harder to configure per-repo.
+ Rejected: Less visible in dispatch UI. Harder to configure per-repo.
 
 4. **Split into multiple workflows:**
-   Rejected: Adds complexity. Single caller workflow per language is cleaner.
+ Rejected: Adds complexity. Single caller workflow per language is cleaner.
 
 ## Consequences
 

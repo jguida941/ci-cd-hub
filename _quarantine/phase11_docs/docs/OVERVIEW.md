@@ -19,10 +19,10 @@ This documentation set covers the tooling and scripts under `/tools` as well as 
 ```mermaid
 
 flowchart TD
-  A[Build & Sign] --> B[SBOM/VEX Referrers]
-  B --> C[Policy Gates]
-  C --> D[Mutation Observatory]
-  D --> E[Cache Sentinel]
+ A[Build & Sign] --> B[SBOM/VEX Referrers]
+ B --> C[Policy Gates]
+ C --> D[Mutation Observatory]
+ D --> E[Cache Sentinel]
 
 ```bash
 

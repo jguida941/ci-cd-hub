@@ -2,9 +2,9 @@
 
 This directory houses the enforcement packs consumed by the CI Intelligence Hub.
 
-- `*.rego` — OPA policies invoked by the policy-gates workflow.
-- `kyverno/` — Cluster policies enforced server-side to guarantee admission control.
-- `tests/` — Unit tests for the Rego bundles (Kyverno policies rely on integration tests).
+- `*.rego` - OPA policies invoked by the policy-gates workflow.
+- `kyverno/` - Cluster policies enforced server-side to guarantee admission control.
+- `tests/` - Unit tests for the Rego bundles (Kyverno policies rely on integration tests).
 
 ## Kyverno policies
 

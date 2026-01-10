@@ -100,9 +100,9 @@ Chosen option: "Option X" because...
 **2. Repository Structure:**
 ```
 .github/workflows/
-├── reusable-build.yml      # workflow_call event
-├── reusable-test.yml       # workflow_call event
-├── reusable-deploy.yml     # workflow_call event
+├── reusable-build.yml # workflow_call event
+├── reusable-test.yml # workflow_call event
+├── reusable-deploy.yml # workflow_call event
 ```
 - Subdirectories NOT supported
 - Central repo must be public OR internal with sharing enabled
@@ -142,24 +142,24 @@ Chosen option: "Option X" because...
 ### The Four Documentation Types:
 
 1. **Tutorials** - Learning-oriented
-   - Take users through a series of steps
-   - Focus on learning, not accomplishing a task
-   - Example: "Getting Started with CI/CD Hub"
+ - Take users through a series of steps
+ - Focus on learning, not accomplishing a task
+ - Example: "Getting Started with CI/CD Hub"
 
 2. **How-To Guides** - Task-oriented
-   - Take users through steps to solve a problem
-   - Focus on accomplishing a specific task
-   - Example: "How to add a new repository"
+ - Take users through steps to solve a problem
+ - Focus on accomplishing a specific task
+ - Example: "How to add a new repository"
 
 3. **Technical Reference** - Information-oriented
-   - Describe the machinery and how to operate it
-   - Accurate, complete information
-   - Example: "Workflow Inputs Reference"
+ - Describe the machinery and how to operate it
+ - Accurate, complete information
+ - Example: "Workflow Inputs Reference"
 
 4. **Explanation** - Understanding-oriented
-   - Clarify and discuss a topic
-   - Provide context and background
-   - Example: "Why Central Execution is Default"
+ - Clarify and discuss a topic
+ - Provide context and background
+ - Example: "Why Central Execution is Default"
 
 ### Applied to CI/CD Hub:
 
@@ -191,7 +191,7 @@ Chosen option: "Option X" because...
 # Why we use temurin: Oracle licensing issues, temurin is free
 # and maintained by Eclipse Adoptium
 java:
-  distribution: "temurin"
+ distribution: "temurin"
 ```
 
 **3. Use Descriptive Key Names:**
@@ -200,7 +200,7 @@ java:
 mc: 70
 
 # GOOD
-min_coverage: 70  # Minimum code coverage percentage required
+min_coverage: 70 # Minimum code coverage percentage required
 ```
 
 **4. Add Section Headers:**
@@ -215,8 +215,8 @@ min_coverage: 70  # Minimum code coverage percentage required
 
 **5. Document Available Options:**
 ```yaml
-build_tool: "maven"  # Options: maven | gradle
-threshold: "medium"  # Options: low | medium | high
+build_tool: "maven" # Options: maven | gradle
+threshold: "medium" # Options: low | medium | high
 ```
 
 **6. Use TODO/TEMP Tags:**
@@ -246,17 +246,17 @@ threshold: "medium"  # Options: low | medium | high
 **1. Simple Boolean Toggle:**
 ```yaml
 tools:
-  jacoco:
-    enabled: true   # Set to false to disable coverage
-  pitest:
-    enabled: false  # Mutation testing (slow, enable per-repo)
+ jacoco:
+ enabled: true # Set to false to disable coverage
+ pitest:
+ enabled: false # Mutation testing (slow, enable per-repo)
 ```
 
 **2. Toggle with Threshold:**
 ```yaml
 jacoco:
-  enabled: true
-  min_coverage: 70  # Only applies when enabled: true
+ enabled: true
+ min_coverage: 70 # Only applies when enabled: true
 ```
 
 **3. Toggle Categories (from Martin Fowler):**
@@ -315,10 +315,10 @@ jacoco:
 **Pattern 3: Reusable + Caller (our current approach):**
 ```
 .github/workflows/
-├── hub-run-all.yml      # Orchestrator
-├── java-ci.yml          # Reusable (workflow_call)
-├── python-ci.yml        # Reusable (workflow_call)
-└── hub-security.yml     # Security scans
+├── hub-run-all.yml # Orchestrator
+├── java-ci.yml # Reusable (workflow_call)
+├── python-ci.yml # Reusable (workflow_call)
+└── hub-security.yml # Security scans
 ```
 
 ### Naming Convention:
@@ -440,7 +440,7 @@ jacoco:
 | Mutation Testing | **mutmut** | Python | Mutation testing for Python | Run in hub-run-all |
 | Mutation Testing | **cosmic-ray** | Python | Alternative Python mutation tester | Not implemented |
 | Property Testing | **Hypothesis** | Python | Generates randomized test cases from properties | Run in hub-run-all |
-| Property Testing | **jqwik** | Java | Property-based testing for JVM | ✅ Implemented (run_jqwik input) |
+| Property Testing | **jqwik** | Java | Property-based testing for JVM | [x] Implemented (run_jqwik input) |
 | Integration Tests | **Testcontainers** | Java/Python | Tests with real containers (DB, Redis, etc.) | Requires Docker |
 | Contract Tests | **Pact** | Java | Consumer-driven contract testing | Not implemented |
 | Contract Tests | **pact-python** | Python | Consumer-driven contract testing | Not implemented |
@@ -767,8 +767,8 @@ Chosen option: "{title of option 1}", because {justification}.
 ### Approach 1: Static JSON + GitHub Pages (Recommended for Hub)
 ```
 Hub Workflow → generates metrics.json → commits to gh-pages branch
-                                      → builds static HTML
-                                      → GitHub Pages serves it
+ → builds static HTML
+ → GitHub Pages serves it
 ```
 
 **Pros:**
@@ -829,23 +829,23 @@ Hub Workflow → generates metrics.json → commits to gh-pages branch
 ### GitHub Actions Implementation:
 ```yaml
 - uses: actions/attest-build-provenance@v1
-  with:
-    subject-path: 'dist/my-artifact'
+ with:
+ subject-path: 'dist/my-artifact'
 ```
 
 ### For Hub - Supply Chain Config:
 ```yaml
 supply_chain:
-  enabled: false  # opt-in
-  sbom:
-    enabled: true
-    format: spdx  # or cyclonedx
-  provenance:
-    enabled: true
-    slsa_level: 3
-  signing:
-    enabled: true
-    method: sigstore
+ enabled: false # opt-in
+ sbom:
+ enabled: true
+ format: spdx # or cyclonedx
+ provenance:
+ enabled: true
+ slsa_level: 3
+ signing:
+ enabled: true
+ method: sigstore
 ```
 
 ---
@@ -946,7 +946,7 @@ supply_chain:
 
 **1. Clear, Unambiguous Language:**
 ```
-BAD:  "The system should be fast"
+BAD: "The system should be fast"
 GOOD: "The system responds within 2 seconds for 95% of requests"
 ```
 
@@ -992,71 +992,71 @@ GOOD: "The system responds within 2 seconds for 95% of requests"
 ```
 hub-release/
 ├── .github/
-│   └── workflows/           # GitHub Actions workflows
-│       ├── hub-run-all.yml  # Central execution (default)
-│       ├── hub-orchestrator.yml  # Distributed execution
-│       ├── hub-security.yml
-│       ├── java-ci.yml      # Reusable workflow
-│       └── python-ci.yml    # Reusable workflow
+│ └── workflows/ # GitHub Actions workflows
+│ ├── hub-run-all.yml # Central execution (default)
+│ ├── hub-orchestrator.yml # Distributed execution
+│ ├── hub-security.yml
+│ ├── java-ci.yml # Reusable workflow
+│ └── python-ci.yml # Reusable workflow
 │
 ├── config/
-│   ├── defaults.yaml        # Global defaults
-│   ├── repos/               # Per-repo overrides
-│   │   └── <repo>.yaml
-│   └── optional/            # Optional feature configs
-│       ├── chaos.yaml
-│       ├── dr-drill.yaml
-│       └── supply-chain.yaml
+│ ├── defaults.yaml # Global defaults
+│ ├── repos/ # Per-repo overrides
+│ │ └── <repo>.yaml
+│ └── optional/ # Optional feature configs
+│ ├── chaos.yaml
+│ ├── dr-drill.yaml
+│ └── supply-chain.yaml
 │
 ├── docs/
-│   ├── ONBOARDING.md        # Tutorial
-│   ├── WORKFLOWS.md         # Reference
-│   ├── CONFIG.md  # Reference
-│   ├── TOOLS.md             # Reference
-│   ├── MODES.md             # Explanation
-│   ├── TROUBLESHOOTING.md   # How-To
-│   ├── RESEARCH_LOG.md          # Research log
-│   └── adr/                 # Architecture Decision Records
-│       ├── 0001-central-vs-distributed.md
-│       ├── 0002-config-precedence.md
-│       └── ...
+│ ├── ONBOARDING.md # Tutorial
+│ ├── WORKFLOWS.md # Reference
+│ ├── CONFIG.md # Reference
+│ ├── TOOLS.md # Reference
+│ ├── MODES.md # Explanation
+│ ├── TROUBLESHOOTING.md # How-To
+│ ├── RESEARCH_LOG.md # Research log
+│ └── adr/ # Architecture Decision Records
+│ ├── 0001-central-vs-distributed.md
+│ ├── 0002-config-precedence.md
+│ └── ...
 │
 ├── templates/
-│   ├── repo/                # For target repos
-│   │   └── .ci-hub.yml      # Master template
-│   ├── hub/                 # Hub-side templates
-│   │   └── config/repos/repo-template.yaml
-│   ├── profiles/            # Pre-configured profiles
-│   │   ├── java-quality.yml
-│   │   ├── java-security.yml
-│   │   ├── python-quality.yml
-│   │   └── python-security.yml
-│   └── repo-agent/          # Distributed mode only
-│       └── .github/workflows/hub-agent.yml
+│ ├── repo/ # For target repos
+│ │ └── .ci-hub.yml # Master template
+│ ├── hub/ # Hub-side templates
+│ │ └── config/repos/repo-template.yaml
+│ ├── profiles/ # Pre-configured profiles
+│ │ ├── java-quality.yml
+│ │ ├── java-security.yml
+│ │ ├── python-quality.yml
+│ │ └── python-security.yml
+│ └── repo-agent/ # Distributed mode only
+│ └── .github/workflows/hub-agent.yml
 │
 ├── scripts/
-│   ├── load_config.py       # Config merging
-│   ├── aggregate_reports.py # Report aggregation
-│   └── validate_config.py   # Schema validation
+│ ├── load_config.py # Config merging
+│ ├── aggregate_reports.py # Report aggregation
+│ └── validate_config.py # Schema validation
 │
 ├── schema/
-│   ├── ci-hub-config.schema.json
-│   └── pipeline-run.v1.json
+│ ├── ci-hub-config.schema.json
+│ └── pipeline-run.v1.json
 │
 ├── dashboards/
-│   ├── overview.json
-│   └── repo-detail.json
+│ ├── overview.json
+│ └── repo-detail.json
 │
-├── fixtures/                # Test repos for validation
-│   ├── java-passing/
-│   ├── java-failing/
-│   ├── python-passing/
-│   └── edge-cases/
+├── fixtures/ # Test repos for validation
+│ ├── java-passing/
+│ ├── java-failing/
+│ ├── python-passing/
+│ └── edge-cases/
 │
-├── policies/                # K8s/Kyverno policies
-│   └── kyverno/
+├── policies/ # K8s/Kyverno policies
+│ └── kyverno/
 │
-├── reports/                 # Generated (gitignored)
+├── reports/ # Generated (gitignored)
 │
 ├── README.md
 ├── docs/development/CHANGELOG.md
@@ -1117,11 +1117,11 @@ hub-release/
 ```python
 @app.command()
 def add_repo(
-    name: str = typer.Argument(..., help="Repository name"),
-    language: str = typer.Option("python", help="Language: java or python"),
-    branch: str = typer.Option("main", help="Default branch"),
+ name: str = typer.Argument(..., help="Repository name"),
+ language: str = typer.Option("python", help="Language: java or python"),
+ branch: str = typer.Option("main", help="Default branch"),
 ):
-    """Add a new repository to the hub configuration."""
+ """Add a new repository to the hub configuration."""
 ```
 
 **2. Consistent Naming:**
@@ -1132,8 +1132,8 @@ def add_repo(
 **3. Error Handling:**
 ```python
 if not config_path.exists():
-    typer.echo(f"Error: Config not found at {config_path}", err=True)
-    raise typer.Exit(code=1)
+ typer.echo(f"Error: Config not found at {config_path}", err=True)
+ raise typer.Exit(code=1)
 ```
 
 **4. Feedback:**
@@ -1145,17 +1145,17 @@ if not config_path.exists():
 ```
 hub-cli
 ├── repo
-│   ├── add
-│   ├── list
-│   ├── remove
-│   └── validate
+│ ├── add
+│ ├── list
+│ ├── remove
+│ └── validate
 ├── config
-│   ├── show
-│   ├── lint
-│   └── generate
+│ ├── show
+│ ├── lint
+│ └── generate
 └── run
-    ├── all
-    └── single
+ ├── all
+ └── single
 ```
 
 ---
@@ -1196,27 +1196,27 @@ hub-cli
 import questionary
 
 def interactive_add_repo():
-    answers = questionary.form(
-        name = questionary.text("Repository name:"),
-        language = questionary.select(
-            "Language:",
-            choices=["python", "java"]
-        ),
-        branch = questionary.text("Default branch:", default="main"),
-        profile = questionary.select(
-            "Apply profile:",
-            choices=["none", "quality", "security", "strict"]
-        ),
-        tools = questionary.checkbox(
-            "Enable tools:",
-            choices=[
-                "pytest", "ruff", "bandit", "mypy",
-                "pip-audit", "black", "isort"
-            ]
-        ),
-    ).ask()
+ answers = questionary.form(
+ name = questionary.text("Repository name:"),
+ language = questionary.select(
+ "Language:",
+ choices=["python", "java"]
+ ),
+ branch = questionary.text("Default branch:", default="main"),
+ profile = questionary.select(
+ "Apply profile:",
+ choices=["none", "quality", "security", "strict"]
+ ),
+ tools = questionary.checkbox(
+ "Enable tools:",
+ choices=[
+ "pytest", "ruff", "bandit", "mypy",
+ "pip-audit", "black", "isort"
+ ]
+ ),
+ ).ask()
 
-    return answers
+ return answers
 ```
 
 ---
@@ -1245,31 +1245,31 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 class ToolConfig(BaseModel):
-    enabled: bool = True
+ enabled: bool = True
 
 class JaCoCoConfig(ToolConfig):
-    min_coverage: int = Field(default=70, ge=0, le=100)
+ min_coverage: int = Field(default=70, ge=0, le=100)
 
 class PytestConfig(ToolConfig):
-    min_coverage: int = Field(default=70, ge=0, le=100)
-    fail_fast: bool = False
+ min_coverage: int = Field(default=70, ge=0, le=100)
+ fail_fast: bool = False
 
 class JavaConfig(BaseModel):
-    version: str = "21"
-    distribution: str = "temurin"
-    build_tool: str = Field(default="maven", pattern="^(maven|gradle)$")
-    tools: dict[str, ToolConfig] = {}
+ version: str = "21"
+ distribution: str = "temurin"
+ build_tool: str = Field(default="maven", pattern="^(maven|gradle)$")
+ tools: dict[str, ToolConfig] = {}
 
 class RepoConfig(BaseModel):
-    owner: str
-    name: str
-    language: str = Field(pattern="^(java|python)$")
-    default_branch: str = "main"
+ owner: str
+ name: str
+ language: str = Field(pattern="^(java|python)$")
+ default_branch: str = "main"
 
 class HubConfig(BaseModel):
-    repo: RepoConfig
-    java: Optional[JavaConfig] = None
-    python: Optional[PythonConfig] = None
+ repo: RepoConfig
+ java: Optional[JavaConfig] = None
+ python: Optional[PythonConfig] = None
 ```
 
 ### Validation in CLI:
@@ -1279,14 +1279,14 @@ from pydantic import ValidationError
 import yaml
 
 def validate_config(path: Path) -> bool:
-    try:
-        with open(path) as f:
-            data = yaml.safe_load(f)
-        HubConfig(**data)
-        return True
-    except ValidationError as e:
-        typer.echo(f"Validation error: {e}", err=True)
-        return False
+ try:
+ with open(path) as f:
+ data = yaml.safe_load(f)
+ HubConfig(**data)
+ return True
+ except ValidationError as e:
+ typer.echo(f"Validation error: {e}", err=True)
+ return False
 ```
 
 ---
@@ -1448,15 +1448,15 @@ User Experience > Developer Experience > Ease of Implementation
 ```bash
 # Good DX examples:
 $ hub-cli repo add my-repo --language python
-✓ Created config/repos/my-repo.yaml
-✓ Validated against schema
+[x] Created config/repos/my-repo.yaml
+[x] Validated against schema
 → Next: Run 'hub-cli run single my-repo' to test
 
 $ hub-cli config lint
-✓ config/defaults.yaml: valid
-✓ config/repos/repo-a.yaml: valid
-✗ config/repos/repo-b.yaml: invalid
-  └─ Line 12: 'langauge' is not a valid key (did you mean 'language'?)
+[x] config/defaults.yaml: valid
+[x] config/repos/repo-a.yaml: valid
+[ ] config/repos/repo-b.yaml: invalid
+ └─ Line 12: 'langauge' is not a valid key (did you mean 'language'?)
 ```
 
 ---
@@ -1468,26 +1468,26 @@ $ hub-cli config lint
 ```
 hub-cli
 ├── repo
-│   ├── add          # Interactive or flag-based repo addition
-│   ├── list         # List all configured repos
-│   ├── show <name>  # Show config for a repo
-│   ├── remove       # Remove repo config
-│   └── validate     # Validate a repo config
+│ ├── add # Interactive or flag-based repo addition
+│ ├── list # List all configured repos
+│ ├── show <name> # Show config for a repo
+│ ├── remove # Remove repo config
+│ └── validate # Validate a repo config
 ├── config
-│   ├── lint         # Validate all configs against schema
-│   ├── show         # Show merged config for a repo
-│   ├── generate     # Generate config from template
-│   └── diff         # Show diff between configs
+│ ├── lint # Validate all configs against schema
+│ ├── show # Show merged config for a repo
+│ ├── generate # Generate config from template
+│ └── diff # Show diff between configs
 ├── profile
-│   ├── list         # List available profiles
-│   ├── show <name>  # Show profile contents
-│   └── apply        # Apply profile to repo
+│ ├── list # List available profiles
+│ ├── show <name> # Show profile contents
+│ └── apply # Apply profile to repo
 ├── run
-│   ├── all          # Trigger hub-run-all workflow
-│   └── single       # Test single repo locally
+│ ├── all # Trigger hub-run-all workflow
+│ └── single # Test single repo locally
 └── docs
-    ├── render       # Generate docs from templates
-    └── serve        # Serve docs locally
+ ├── render # Generate docs from templates
+ └── serve # Serve docs locally
 ```
 
 ### Key Features:
@@ -1521,13 +1521,13 @@ $ hub-cli repo add
 ? Default branch: main
 ? Apply profile: security
 ? Enable additional tools: [x] mypy, [x] hypothesis
-✓ Created config/repos/my-new-repo.yaml
+[x] Created config/repos/my-new-repo.yaml
 
 # Flag mode
 $ hub-cli repo add my-repo --language java --profile quality --dry-run
 
 # Validation
-$ hub-cli config lint --fix  # Auto-fix simple issues
+$ hub-cli config lint --fix # Auto-fix simple issues
 ```
 
 ---

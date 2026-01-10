@@ -89,10 +89,10 @@ Comprehensive documentation for all quality, security, and testing tools support
 **Config (reusable workflow only):**
 ```yaml
 java:
-  tools:
-    jacoco:
-      enabled: true
-      min_coverage: 70  # Warn/fail if below this %
+ tools:
+ jacoco:
+ enabled: true
+ min_coverage: 70 # Warn/fail if below this %
 ```
 
 **Workflow inputs (java-ci.yml):**
@@ -106,19 +106,19 @@ java:
 **Example pom.xml plugin:**
 ```xml
 <plugin>
-  <groupId>org.jacoco</groupId>
-  <artifactId>jacoco-maven-plugin</artifactId>
-  <version>0.8.11</version>
-  <executions>
-    <execution>
-      <goals><goal>prepare-agent</goal></goals>
-    </execution>
-    <execution>
-      <id>report</id>
-      <phase>verify</phase>
-      <goals><goal>report</goal></goals>
-    </execution>
-  </executions>
+ <groupId>org.jacoco</groupId>
+ <artifactId>jacoco-maven-plugin</artifactId>
+ <version>0.8.11</version>
+ <executions>
+ <execution>
+ <goals><goal>prepare-agent</goal></goals>
+ </execution>
+ <execution>
+ <id>report</id>
+ <phase>verify</phase>
+ <goals><goal>report</goal></goals>
+ </execution>
+ </executions>
 </plugin>
 ```
 
@@ -137,10 +137,10 @@ java:
 **Config (reusable workflow only):**
 ```yaml
 java:
-  tools:
-    checkstyle:
-      enabled: true
-      fail_on_violation: true
+ tools:
+ checkstyle:
+ enabled: true
+ fail_on_violation: true
 ```
 
 **Workflow inputs (java-ci.yml):**
@@ -164,12 +164,12 @@ java:
 **Config (reusable workflow only):**
 ```yaml
 java:
-  tools:
-    spotbugs:
-      enabled: true
-      fail_on_error: true
-      effort: "max"      # min | default | max
-      threshold: "medium" # low | medium | high
+ tools:
+ spotbugs:
+ enabled: true
+ fail_on_error: true
+ effort: "max" # min | default | max
+ threshold: "medium" # low | medium | high
 ```
 
 **Workflow inputs (java-ci.yml):**
@@ -211,11 +211,11 @@ java:
 **Config (reusable workflow only):**
 ```yaml
 java:
-  tools:
-    owasp:
-      enabled: true
-      fail_on_cvss: 7  # Fail if any vuln has CVSS >= this
-      use_nvd_api_key: true
+ tools:
+ owasp:
+ enabled: true
+ fail_on_cvss: 7 # Fail if any vuln has CVSS >= this
+ use_nvd_api_key: true
 ```
 
 **Workflow inputs (java-ci.yml):**
@@ -245,12 +245,12 @@ java:
 **Config (reusable workflow only):**
 ```yaml
 java:
-  tools:
-    pitest:
-      enabled: true
-      min_mutation_score: 70
-      threads: 4
-      timeout_multiplier: 2
+ tools:
+ pitest:
+ enabled: true
+ min_mutation_score: 70
+ threads: 4
+ timeout_multiplier: 2
 ```
 
 **Workflow inputs:**
@@ -281,10 +281,10 @@ java:
 **Config:**
 ```yaml
 java:
-  tools:
-    codeql:
-      enabled: true
-      languages: ["java"]
+ tools:
+ codeql:
+ enabled: true
+ languages: ["java"]
 ```
 
 **Workflow inputs (java-ci.yml):**
@@ -310,11 +310,11 @@ java:
 **Config (reusable workflow only):**
 ```yaml
 python:
-  tools:
-    pytest:
-      enabled: true
-      min_coverage: 70
-      fail_fast: false
+ tools:
+ pytest:
+ enabled: true
+ min_coverage: 70
+ fail_fast: false
 ```
 
 **Workflow inputs (python-ci.yml):**
@@ -337,10 +337,10 @@ python:
 **Config (reusable workflow only):**
 ```yaml
 python:
-  tools:
-    ruff:
-      enabled: true
-      fail_on_error: true
+ tools:
+ ruff:
+ enabled: true
+ fail_on_error: true
 ```
 
 **Workflow inputs (python-ci.yml):**
@@ -366,10 +366,10 @@ python:
 **Config (reusable workflow only):**
 ```yaml
 python:
-  tools:
-    bandit:
-      enabled: true
-      fail_on_high: true
+ tools:
+ bandit:
+ enabled: true
+ fail_on_high: true
 ```
 
 **Workflow inputs (python-ci.yml):**
@@ -394,10 +394,10 @@ python:
 **Config (reusable workflow only):**
 ```yaml
 python:
-  tools:
-    pip_audit:
-      enabled: true
-      fail_on_vuln: true
+ tools:
+ pip_audit:
+ enabled: true
+ fail_on_vuln: true
 ```
 
 **Workflow inputs (python-ci.yml):**
@@ -451,9 +451,9 @@ python:
 **Config (reusable workflow only):**
 ```yaml
 python:
-  tools:
-    mypy:
-      enabled: false  # Opt-in
+ tools:
+ mypy:
+ enabled: false # Opt-in
 ```
 
 **Workflow inputs (python-ci.yml):**
@@ -508,10 +508,10 @@ python:
 **Config:**
 ```yaml
 python:
-  tools:
-    codeql:
-      enabled: true
-      languages: ["python"]
+ tools:
+ codeql:
+ enabled: true
+ languages: ["python"]
 ```
 
 **Workflow inputs (python-ci.yml):**
@@ -570,10 +570,10 @@ These thresholds are defined in `config/defaults.yaml` and apply to reusable wor
 **Global thresholds (in `thresholds` section):**
 ```yaml
 thresholds:
-  coverage_min: 70
-  mutation_score_min: 70
-  max_critical_vulns: 0
-  max_high_vulns: 0
+ coverage_min: 70
+ mutation_score_min: 70
+ max_critical_vulns: 0
+ max_high_vulns: 0
 ```
 
 > **Note:** Vulnerability rollup is now implemented in hub-report.json (as of 2025-12-15). The orchestrator aggregates critical/high/medium vuln counts across all repos and tools.
@@ -625,9 +625,9 @@ The orchestrator now aggregates ALL tool metrics:
 Most tools are enabled by default. Customize via `config/repos/<repo>.yaml`:
 ```yaml
 python:
-  tools:
-    mutmut: { enabled: false }  # Skip mutation testing
-    semgrep: { enabled: true }  # Enable SAST
+ tools:
+ mutmut: { enabled: false } # Skip mutation testing
+ semgrep: { enabled: true } # Enable SAST
 ```
 Use `skip_mutation: true` workflow input for faster runs.
 
@@ -636,34 +636,34 @@ Use `skip_mutation: true` workflow input for faster runs.
 **Minimal (fast CI):**
 ```yaml
 java:
-  tools:
-    jacoco: { enabled: true }
-    checkstyle: { enabled: true }
-    spotbugs: { enabled: false }
-    pitest: { enabled: false }
-    owasp: { enabled: false }
+ tools:
+ jacoco: { enabled: true }
+ checkstyle: { enabled: true }
+ spotbugs: { enabled: false }
+ pitest: { enabled: false }
+ owasp: { enabled: false }
 ```
 
 **Quality-focused:**
 ```yaml
 java:
-  tools:
-    jacoco: { enabled: true, min_coverage: 80 }
-    checkstyle: { enabled: true }
-    spotbugs: { enabled: true }
-    pitest: { enabled: true, min_mutation_score: 70 }
-    owasp: { enabled: false }  # Run separately
+ tools:
+ jacoco: { enabled: true, min_coverage: 80 }
+ checkstyle: { enabled: true }
+ spotbugs: { enabled: true }
+ pitest: { enabled: true, min_mutation_score: 70 }
+ owasp: { enabled: false } # Run separately
 ```
 
 **Security-focused:**
 ```yaml
 java:
-  tools:
-    jacoco: { enabled: false }
-    checkstyle: { enabled: false }
-    spotbugs: { enabled: true }
-    owasp: { enabled: true, fail_on_cvss: 5 }
-    codeql: { enabled: true }
+ tools:
+ jacoco: { enabled: false }
+ checkstyle: { enabled: false }
+ spotbugs: { enabled: true }
+ owasp: { enabled: true, fail_on_cvss: 5 }
+ codeql: { enabled: true }
 ```
 
 ---

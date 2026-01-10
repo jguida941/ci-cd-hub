@@ -1,6 +1,6 @@
 # Developer Commands
 
-> **⚠️ SUPERSEDED** — This document has been archived.
+> **WARNING: SUPERSEDED** - This document has been archived.
 > Make guidance is now in:
 > - [GETTING_STARTED.md](../../guides/GETTING_STARTED.md) (user shortcuts)
 > - [DEVELOPMENT.md](../DEVELOPMENT.md) (developer targets)

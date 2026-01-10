@@ -16,22 +16,22 @@
 
 ## Fixture Matrix
 
-| Fixture Subdir           | Language | Config File                                            | Purpose                     |
+| Fixture Subdir | Language | Config File | Purpose |
 |--------------------------|----------|--------------------------------------------------------|-----------------------------|
-| `java-maven-pass`        | Java     | `config/repos/fixtures-java-passing.yaml`              | Maven, all Java tools pass  |
-| `java-maven-fail`        | Java     | `config/repos/fixtures-java-failing.yaml`              | Maven, controlled failures  |
-| `java-gradle-pass`       | Java     | `config/repos/fixtures-java-gradle-passing.yaml`       | Gradle coverage             |
-| `java-gradle-fail`       | Java     | `config/repos/fixtures-java-gradle-failing.yaml`       | Gradle failure paths        |
-| `java-multi-module-pass` | Java     | `config/repos/fixtures-java-multi-module-passing.yaml` | Parent/child modules        |
-| `python-pyproject-pass`  | Python   | `config/repos/fixtures-python-passing.yaml`            | pyproject layout            |
-| `python-pyproject-fail`  | Python   | `config/repos/fixtures-python-failing.yaml`            | pyproject failures          |
-| `python-setup-pass`      | Python   | `config/repos/fixtures-python-setup-passing.yaml`      | setup.py layout             |
-| `python-setup-fail`      | Python   | `config/repos/fixtures-python-setup-failing.yaml`      | setup.py failures           |
-| `python-src-layout-pass` | Python   | `config/repos/fixtures-python-src-layout-passing.yaml` | src/ layout                 |
-| `monorepo-pass/java`     | Java     | `config/repos/fixtures-monorepo-java-passing.yaml`     | Mixed repo, Java subdir     |
-| `monorepo-fail/java`     | Java     | `config/repos/fixtures-monorepo-java-failing.yaml`     | Mixed repo, Java failures   |
-| `monorepo-pass/python`   | Python   | `config/repos/fixtures-monorepo-python-passing.yaml`   | Mixed repo, Python subdir   |
-| `monorepo-fail/python`   | Python   | `config/repos/fixtures-monorepo-python-failing.yaml`   | Mixed repo, Python failures |
+| `java-maven-pass` | Java | `config/repos/fixtures-java-passing.yaml` | Maven, all Java tools pass |
+| `java-maven-fail` | Java | `config/repos/fixtures-java-failing.yaml` | Maven, controlled failures |
+| `java-gradle-pass` | Java | `config/repos/fixtures-java-gradle-passing.yaml` | Gradle coverage |
+| `java-gradle-fail` | Java | `config/repos/fixtures-java-gradle-failing.yaml` | Gradle failure paths |
+| `java-multi-module-pass` | Java | `config/repos/fixtures-java-multi-module-passing.yaml` | Parent/child modules |
+| `python-pyproject-pass` | Python | `config/repos/fixtures-python-passing.yaml` | pyproject layout |
+| `python-pyproject-fail` | Python | `config/repos/fixtures-python-failing.yaml` | pyproject failures |
+| `python-setup-pass` | Python | `config/repos/fixtures-python-setup-passing.yaml` | setup.py layout |
+| `python-setup-fail` | Python | `config/repos/fixtures-python-setup-failing.yaml` | setup.py failures |
+| `python-src-layout-pass` | Python | `config/repos/fixtures-python-src-layout-passing.yaml` | src/ layout |
+| `monorepo-pass/java` | Java | `config/repos/fixtures-monorepo-java-passing.yaml` | Mixed repo, Java subdir |
+| `monorepo-fail/java` | Java | `config/repos/fixtures-monorepo-java-failing.yaml` | Mixed repo, Java failures |
+| `monorepo-pass/python` | Python | `config/repos/fixtures-monorepo-python-passing.yaml` | Mixed repo, Python subdir |
+| `monorepo-fail/python` | Python | `config/repos/fixtures-monorepo-python-failing.yaml` | Mixed repo, Python failures |
 
 ## Expectations
 
@@ -44,9 +44,9 @@
 
 Heavy tools (Trivy, CodeQL) are **off by default** for speed. For nightly/release validation:
 
-| Fixture Config               | Purpose                 | When to Run          |
+| Fixture Config | Purpose | When to Run |
 |------------------------------|-------------------------|----------------------|
-| `fixtures-java-heavy.yaml`   | Java + Trivy + CodeQL   | Nightly, pre-release |
+| `fixtures-java-heavy.yaml` | Java + Trivy + CodeQL | Nightly, pre-release |
 | `fixtures-python-heavy.yaml` | Python + Trivy + CodeQL | Nightly, pre-release |
 
 > **Note:** These fixtures are NOT part of the default smoke test. Run them intentionally when you need to verify heavy tool pipelines.
@@ -55,11 +55,11 @@ To create these configs:
 ```yaml
 # fixtures-java-heavy.yaml
 java:
-  tools:
-    trivy:
-      enabled: true
-    codeql:
-      enabled: true
+ tools:
+ trivy:
+ enabled: true
+ codeql:
+ enabled: true
 ```
 
 ## Naming Convention

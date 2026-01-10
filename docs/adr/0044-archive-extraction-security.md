@@ -23,14 +23,14 @@ All ZIP extraction uses a `_safe_extractall()` helper that:
 
 ```python
 def _safe_extractall(zf: zipfile.ZipFile, target_dir: Path) -> None:
-    resolved_target = target_dir.resolve()
-    for member in zf.namelist():
-        member_path = (target_dir / member).resolve()
-        try:
-            member_path.relative_to(resolved_target)
-        except ValueError:
-            raise ValueError(f"Path traversal detected in ZIP: {member}") from None
-    zf.extractall(target_dir)
+ resolved_target = target_dir.resolve()
+ for member in zf.namelist():
+ member_path = (target_dir / member).resolve()
+ try:
+ member_path.relative_to(resolved_target)
+ except ValueError:
+ raise ValueError(f"Path traversal detected in ZIP: {member}") from None
+ zf.extractall(target_dir)
 ```
 
 ### 2. Tarball Extraction Security
@@ -42,19 +42,19 @@ Tarball extraction adds additional checks for symlinks:
 
 ```python
 def _extract_tarball_member(tar_path: Path, member_name: str, dest_dir: Path) -> Path:
-    resolved_dest = dest_dir.resolve()
-    with tarfile.open(tar_path) as tf:
-        member = tf.getmember(member_name)
-        # Reject symlinks and hardlinks
-        if member.issym() or member.islnk():
-            raise ValueError(f"Symlink/hardlink rejected: {member_name}")
-        extracted = (dest_dir / member.name).resolve()
-        try:
-            extracted.relative_to(resolved_dest)
-        except ValueError:
-            raise ValueError(f"Path traversal detected: {member_name}") from None
-        tf.extract(member, dest_dir)
-    return extracted
+ resolved_dest = dest_dir.resolve()
+ with tarfile.open(tar_path) as tf:
+ member = tf.getmember(member_name)
+ # Reject symlinks and hardlinks
+ if member.issym() or member.islnk():
+ raise ValueError(f"Symlink/hardlink rejected: {member_name}")
+ extracted = (dest_dir / member.name).resolve()
+ try:
+ extracted.relative_to(resolved_dest)
+ except ValueError:
+ raise ValueError(f"Path traversal detected: {member_name}") from None
+ tf.extract(member, dest_dir)
+ return extracted
 ```
 
 ### 3. Consistent Pattern

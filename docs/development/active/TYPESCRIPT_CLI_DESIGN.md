@@ -2,14 +2,14 @@
 
 **Date:** 2026-01-05
 **Status:** Planning
-**Priority:** 🔵 **#5** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
+**Priority:** **#5** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
 **Depends On:** CLEAN_CODE.md (100% complete - explicit prerequisite)
 **Blocks:** PYQT_PLAN.md
 **Purpose:** Design document for a Claude Code / Codex-style interactive CLI built with TypeScript and Ink (React for terminals).
 
 ---
 
-## ⚠️ PREREQUISITE
+## WARNING: PREREQUISITE
 
 > **DO NOT START THIS UNTIL `CLEAN_CODE.md` IS COMPLETE.**
 >
@@ -192,14 +192,14 @@ Build an interactive TypeScript CLI that wraps the existing CIHub Python CLI wit
 
 **Source:** [How Claude Code is Built](https://newsletter.pragmaticengineer.com/p/how-claude-code-is-built)
 
-| Component     | Technology                            |
+| Component | Technology |
 |---------------|---------------------------------------|
-| Language      | TypeScript                            |
-| UI Framework  | **React + Ink** (renders to terminal) |
-| Layout Engine | Yoga (flexbox for terminal)           |
-| Runtime       | Bun / Node.js                         |
-| Distribution  | npm (`@anthropic-ai/claude-code`)     |
-| Bundle Size   | 10.5MB single file                    |
+| Language | TypeScript |
+| UI Framework | **React + Ink** (renders to terminal) |
+| Layout Engine | Yoga (flexbox for terminal) |
+| Runtime | Bun / Node.js |
+| Distribution | npm (`@anthropic-ai/claude-code`) |
+| Bundle Size | 10.5MB single file |
 
 **Key insight:** Claude Code is listed on the [official Ink repository](https://github.com/vadimdemedes/ink) as "an agentic coding tool made by Anthropic."
 
@@ -209,11 +209,11 @@ Anthropic wrote a **custom renderer** on top of Ink for fine-grained incremental
 
 **Source:** [Codex GitHub](https://github.com/openai/codex)
 
-| Component    | Technology                             |
+| Component | Technology |
 |--------------|----------------------------------------|
-| Language     | Rust (97.6%)                           |
+| Language | Rust (97.6%) |
 | Architecture | Submission Queue / Event Queue pattern |
-| Distribution | npm or Homebrew                        |
+| Distribution | npm or Homebrew |
 
 Originally Node.js, rewritten in Rust for zero-dependency install and native sandbox security.
 
@@ -229,46 +229,46 @@ Both run **directly in your terminal** - no separate window, no Electron, no Tau
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│                        YOUR TERMINAL                               │
-│   (iTerm, Terminal.app, Windows Terminal, etc.)                    │
+│ YOUR TERMINAL │
+│ (iTerm, Terminal.app, Windows Terminal, etc.) │
 ├────────────────────────────────────────────────────────────────────┤
-│                                                                    │
-│  ┌───────────────────────────────────────────────────────────────┐ │
-│  │                    CIHUB INTERACTIVE CLI                        │
-│  │                    (TypeScript + Ink)                         │ │
-│  ├───────────────────────────────────────────────────────────────┤ │
-│  │                                                               │ │
-│  │   ╭─────────────────────────────────────────────────────────╮ │ │
-│  │   │  CIHub v1.0.0                              ~/myproject  │ │ │
-│  │   ╰─────────────────────────────────────────────────────────╯ │ │
-│  │                                                               │ │
-│  │   Found Python project with 3 issues:                         │ │
-│  │                                                               │ │
-│  │   ⚠ Coverage below threshold (65% < 70%)                      │ │
-│  │   ⚠ 2 security vulnerabilities detected                       │ │
-│  │   ✗ Ruff check failed with 5 errors                           │ │
-│  │                                                               │ │
-│  │   Suggestions:                                                │ │
-│  │     • Run `/check --fix` to auto-fix linting issues           │ │
-│  │     • Run `/triage` for AI-assisted remediation               │ │
-│  │                                                               │ │
-│  │   ╭─────────────────────────────────────────────────────────╮ │ │
-│  │   │ > /triage --since HEAD~5                                │ │ │
-│  │   ╰─────────────────────────────────────────────────────────╯ │ │
-│  │                                                               │ │
-│  └───────────────────────────────────────────────────────────────┘ │
-│                                                                    │
+│ │
+│ ┌───────────────────────────────────────────────────────────────┐ │
+│ │ CIHUB INTERACTIVE CLI │
+│ │ (TypeScript + Ink) │ │
+│ ├───────────────────────────────────────────────────────────────┤ │
+│ │ │ │
+│ │ ╭─────────────────────────────────────────────────────────╮ │ │
+│ │ │ CIHub v1.0.0 ~/myproject │ │ │
+│ │ ╰─────────────────────────────────────────────────────────╯ │ │
+│ │ │ │
+│ │ Found Python project with 3 issues: │ │
+│ │ │ │
+│ │ Coverage below threshold (65% < 70%) │ │
+│ │ 2 security vulnerabilities detected │ │
+│ │ [ ] Ruff check failed with 5 errors │ │
+│ │ │ │
+│ │ Suggestions: │ │
+│ │ • Run `/check --fix` to auto-fix linting issues │ │
+│ │ • Run `/triage` for AI-assisted remediation │ │
+│ │ │ │
+│ │ ╭─────────────────────────────────────────────────────────╮ │ │
+│ │ │ > /triage --since HEAD~5 │ │ │
+│ │ ╰─────────────────────────────────────────────────────────╯ │ │
+│ │ │ │
+│ └───────────────────────────────────────────────────────────────┘ │
+│ │
 └────────────────────────────────────────────────────────────────────┘
-                              │
-                              │ subprocess (spawn)
-                              ▼
+ │
+ │ subprocess (spawn)
+ ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│                    PYTHON CLI (cihub)                              │
-│                                                                    │
-│   $ python -m cihub triage --since HEAD~5 --json                   │
-│                                                                    │
-│   Returns: CommandResult JSON                                      │
-│                                                                    │
+│ PYTHON CLI (cihub) │
+│ │
+│ $ python -m cihub triage --since HEAD~5 --json │
+│ │
+│ Returns: CommandResult JSON │
+│ │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -276,31 +276,31 @@ Both run **directly in your terminal** - no separate window, no Electron, no Tau
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     TypeScript CLI Package                      │
+│ TypeScript CLI Package │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
-│  │    App.tsx   │  │  Commands/   │  │      AI Bridge       │   │
-│  │  (Main UI)   │  │  (Handlers)  │  │  (Claude/Codex API)  │   │
-│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘   │
-│         │                 │                     │               │
-│         └────────┬────────┴─────────────────────┘               │
-│                  │                                              │
-│         ┌────────▼────────┐                                     │
-│         │   CLI Bridge    │                                     │
-│         │  (spawn cihub)  │                                     │
-│         └────────┬────────┘                                     │
-│                  │                                              │
+│ │
+│ ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
+│ │ App.tsx │ │ Commands/ │ │ AI Bridge │ │
+│ │ (Main UI) │ │ (Handlers) │ │ (Claude/Codex API) │ │
+│ └──────┬───────┘ └──────┬───────┘ └──────────┬───────────┘ │
+│ │ │ │ │
+│ └────────┬────────┴─────────────────────┘ │
+│ │ │
+│ ┌────────▼────────┐ │
+│ │ CLI Bridge │ │
+│ │ (spawn cihub) │ │
+│ └────────┬────────┘ │
+│ │ │
 └──────────────────┼──────────────────────────────────────────────┘
-                   │ subprocess
-                   ▼
+ │ subprocess
+ ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│              Python CLI (existing cihub package)                │
-│                                                                 │
-│   cihub discover --json                                         │
-│   cihub triage --json                                           │
-│   cihub check --json                                            │
-│                                                                 │
+│ Python CLI (existing cihub package) │
+│ │
+│ cihub discover --json │
+│ cihub triage --json │
+│ cihub check --json │
+│ │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -310,36 +310,36 @@ Both run **directly in your terminal** - no separate window, no Electron, no Tau
 
 ### Core Technologies
 
-| Layer           | Technology                 | Purpose              |
+| Layer | Technology | Purpose |
 |-----------------|----------------------------|----------------------|
-| Language        | **TypeScript 5.x**         | Type safety          |
-| UI Framework    | **React 19.x + Ink 5.x**   | Terminal UI          |
-| Layout          | **Yoga** (built into Ink)  | Flexbox for terminal |
-| Runtime         | **Node.js 20+** or **Bun** | JavaScript runtime   |
-| Build           | **tsup** or **esbuild**    | Fast bundling        |
-| Package Manager | **pnpm**                   | Fast, disk-efficient |
+| Language | **TypeScript 5.x** | Type safety |
+| UI Framework | **React 19.x + Ink 5.x** | Terminal UI |
+| Layout | **Yoga** (built into Ink) | Flexbox for terminal |
+| Runtime | **Node.js 20+** or **Bun** | JavaScript runtime |
+| Build | **tsup** or **esbuild** | Fast bundling |
+| Package Manager | **pnpm** | Fast, disk-efficient |
 
 ### Ink Ecosystem
 
-| Package                | Purpose                          |
+| Package | Purpose |
 |------------------------|----------------------------------|
-| `ink`                  | Core React renderer for terminal |
-| `ink-text-input`       | Text input component             |
-| `ink-select-input`     | Selection menus                  |
-| `ink-spinner`          | Loading spinners                 |
-| `ink-table`            | Table rendering                  |
-| `ink-syntax-highlight` | Code highlighting                |
-| `@inkjs/ui`            | Pre-built UI components          |
+| `ink` | Core React renderer for terminal |
+| `ink-text-input` | Text input component |
+| `ink-select-input` | Selection menus |
+| `ink-spinner` | Loading spinners |
+| `ink-table` | Table rendering |
+| `ink-syntax-highlight` | Code highlighting |
+| `@inkjs/ui` | Pre-built UI components |
 
 ### Additional Libraries
 
-| Package                | Purpose                               |
+| Package | Purpose |
 |------------------------|---------------------------------------|
-| `commander` or `yargs` | CLI argument parsing                  |
-| `execa`                | Subprocess execution (run Python CLI) |
-| `zod`                  | JSON schema validation                |
-| `chalk`                | Color output                          |
-| `figures`              | Unicode symbols (✓, ✗, ⚠)             |
+| `commander` or `yargs` | CLI argument parsing |
+| `execa` | Subprocess execution (run Python CLI) |
+| `zod` | JSON schema validation |
+| `chalk` | Color output |
+| `figures` | Unicode symbols ([x], [ ], ) |
 
 ---
 
@@ -349,36 +349,36 @@ Both run **directly in your terminal** - no separate window, no Electron, no Tau
 cihub-cli/
 ├── package.json
 ├── tsconfig.json
-├── tsup.config.ts           # Bundler config
+├── tsup.config.ts # Bundler config
 ├── bin/
-│   └── cihub.js             # Entry point (shebang)
+│ └── cihub.js # Entry point (shebang)
 ├── src/
-│   ├── index.tsx            # Main entry
-│   ├── cli.ts               # Argument parsing
-│   ├── app.tsx              # Root Ink component
-│   ├── components/
-│   │   ├── Header.tsx       # App header with cwd
-│   │   ├── Output.tsx       # Command output display
-│   │   ├── Input.tsx        # Command input with history
-│   │   ├── Problems.tsx     # Problem list with icons
-│   │   ├── Suggestions.tsx  # Suggestion list
-│   │   ├── Table.tsx        # Data tables
-│   │   └── Spinner.tsx      # Loading indicator
-│   ├── commands/
-│   │   ├── discover.ts      # /discover handler
-│   │   ├── triage.ts        # /triage handler
-│   │   ├── check.ts         # /check handler
-│   │   ├── ai.ts            # /ai handler
-│   │   └── index.ts         # Command registry
-│   ├── lib/
-│   │   ├── cihub.ts         # Python CLI bridge
-│   │   ├── parser.ts        # Slash command parser
-│   │   └── ai-client.ts     # AI API client
-│   └── types/
-│       ├── command-result.ts
-│       └── slash-command.ts
+│ ├── index.tsx # Main entry
+│ ├── cli.ts # Argument parsing
+│ ├── app.tsx # Root Ink component
+│ ├── components/
+│ │ ├── Header.tsx # App header with cwd
+│ │ ├── Output.tsx # Command output display
+│ │ ├── Input.tsx # Command input with history
+│ │ ├── Problems.tsx # Problem list with icons
+│ │ ├── Suggestions.tsx # Suggestion list
+│ │ ├── Table.tsx # Data tables
+│ │ └── Spinner.tsx # Loading indicator
+│ ├── commands/
+│ │ ├── discover.ts # /discover handler
+│ │ ├── triage.ts # /triage handler
+│ │ ├── check.ts # /check handler
+│ │ ├── ai.ts # /ai handler
+│ │ └── index.ts # Command registry
+│ ├── lib/
+│ │ ├── cihub.ts # Python CLI bridge
+│ │ ├── parser.ts # Slash command parser
+│ │ └── ai-client.ts # AI API client
+│ └── types/
+│ ├── command-result.ts
+│ └── slash-command.ts
 ├── test/
-│   └── commands.test.ts
+│ └── commands.test.ts
 └── README.md
 ```
 
@@ -386,35 +386,35 @@ cihub-cli/
 
 ```json
 {
-  "name": "@yourorg/cihub-cli",
-  "version": "1.0.0",
-  "description": "Interactive CLI for CIHub",
-  "type": "module",
-  "bin": {
-    "cihub-interactive": "./bin/cihub.js"
-  },
-  "scripts": {
-    "build": "tsup src/index.tsx --format esm --dts",
-    "dev": "tsup src/index.tsx --watch",
-    "start": "node bin/cihub.js"
-  },
-  "dependencies": {
-    "ink": "^5.0.0",
-    "ink-text-input": "^6.0.0",
-    "ink-spinner": "^5.0.0",
-    "react": "^19.0.0",
-    "execa": "^9.0.0",
-    "commander": "^12.0.0",
-    "chalk": "^5.3.0",
-    "figures": "^6.0.0",
-    "zod": "^3.23.0"
-  },
-  "devDependencies": {
-    "@types/react": "^19.0.0",
-    "typescript": "^5.5.0",
-    "tsup": "^8.0.0",
-    "vitest": "^2.0.0"
-  }
+ "name": "@yourorg/cihub-cli",
+ "version": "1.0.0",
+ "description": "Interactive CLI for CIHub",
+ "type": "module",
+ "bin": {
+ "cihub-interactive": "./bin/cihub.js"
+ },
+ "scripts": {
+ "build": "tsup src/index.tsx --format esm --dts",
+ "dev": "tsup src/index.tsx --watch",
+ "start": "node bin/cihub.js"
+ },
+ "dependencies": {
+ "ink": "^5.0.0",
+ "ink-text-input": "^6.0.0",
+ "ink-spinner": "^5.0.0",
+ "react": "^19.0.0",
+ "execa": "^9.0.0",
+ "commander": "^12.0.0",
+ "chalk": "^5.3.0",
+ "figures": "^6.0.0",
+ "zod": "^3.23.0"
+ },
+ "devDependencies": {
+ "@types/react": "^19.0.0",
+ "typescript": "^5.5.0",
+ "tsup": "^8.0.0",
+ "vitest": "^2.0.0"
+ }
 }
 ```
 
@@ -642,7 +642,7 @@ Commands that support interactive wizard mode:
 
 ## Part 6: AI Enhancement by Category
 
-This section defines **how AI adds value to every command category** — not just basic commands.
+This section defines **how AI adds value to every command category** - not just basic commands.
 
 ### 6.1 Triage Intelligence (HIGHEST ROI)
 
@@ -664,60 +664,60 @@ This section defines **how AI adds value to every command category** — not jus
 
 ```python
 # Already implemented in Python CLI - TypeScript wraps these
-detect_flaky_patterns(history_path, min_runs=5)     # Identifies pass/fail oscillation
-detect_test_count_regression(history_path, count)   # Finds test count drops > 20%
-detect_gate_changes(history_path, current_gates)    # Tracks threshold violations over time
+detect_flaky_patterns(history_path, min_runs=5) # Identifies pass/fail oscillation
+detect_test_count_regression(history_path, count) # Finds test count drops > 20%
+detect_gate_changes(history_path, current_gates) # Tracks threshold violations over time
 ```
 
 **Evidence Building (from `cihub/services/triage/evidence.py`):**
 
 ```python
 # Rich artifact parsing
-build_tool_evidence(tool, output_dir)    # Parses tool-specific outputs
-validate_artifact_evidence(evidence)      # Validates evidence structure
-_load_tool_outputs(output_dir, tool)      # Loads pytest, bandit, trivy, etc.
+build_tool_evidence(tool, output_dir) # Parses tool-specific outputs
+validate_artifact_evidence(evidence) # Validates evidence structure
+_load_tool_outputs(output_dir, tool) # Loads pytest, bandit, trivy, etc.
 ```
 
 **AI Tool Definition for Triage:**
 
 ```typescript
 const triageTools = [
-  {
-    name: "analyze_build_log",
-    description: "Parse and analyze a CI build log to identify failure patterns",
-    input_schema: {
-      type: "object",
-      properties: {
-        log_content: { type: "string", description: "Raw build log content" },
-        build_type: { type: "string", enum: ["maven", "gradle", "npm", "pip", "cargo"] }
-      },
-      required: ["log_content"]
-    }
-  },
-  {
-    name: "identify_flaky_tests",
-    description: "Analyze test history to identify flaky tests",
-    input_schema: {
-      type: "object",
-      properties: {
-        test_results: { type: "array", items: { type: "object" } },
-        history_depth: { type: "number", default: 10 }
-      },
-      required: ["test_results"]
-    }
-  },
-  {
-    name: "suggest_fix",
-    description: "Suggest a fix for a specific CI failure",
-    input_schema: {
-      type: "object",
-      properties: {
-        error_message: { type: "string" },
-        context: { type: "object" }
-      },
-      required: ["error_message"]
-    }
-  }
+ {
+ name: "analyze_build_log",
+ description: "Parse and analyze a CI build log to identify failure patterns",
+ input_schema: {
+ type: "object",
+ properties: {
+ log_content: { type: "string", description: "Raw build log content" },
+ build_type: { type: "string", enum: ["maven", "gradle", "npm", "pip", "cargo"] }
+ },
+ required: ["log_content"]
+ }
+ },
+ {
+ name: "identify_flaky_tests",
+ description: "Analyze test history to identify flaky tests",
+ input_schema: {
+ type: "object",
+ properties: {
+ test_results: { type: "array", items: { type: "object" } },
+ history_depth: { type: "number", default: 10 }
+ },
+ required: ["test_results"]
+ }
+ },
+ {
+ name: "suggest_fix",
+ description: "Suggest a fix for a specific CI failure",
+ input_schema: {
+ type: "object",
+ properties: {
+ error_message: { type: "string" },
+ context: { type: "object" }
+ },
+ required: ["error_message"]
+ }
+ }
 ];
 ```
 
@@ -737,20 +737,20 @@ const triageTools = [
 ```typescript
 // When user runs: /docs stale --ai
 async function docsStaleWithAI(cwd: string): Promise<void> {
-  // 1. Run Python CLI to get stale doc analysis
-  const result = await runCihub("docs", ["stale", "--ai"], cwd);
+ // 1. Run Python CLI to get stale doc analysis
+ const result = await runCihub("docs", ["stale", "--ai"], cwd);
 
-  // 2. Extract AI prompt pack from result
-  const promptPack = result.data?.ai_prompt_pack;
+ // 2. Extract AI prompt pack from result
+ const promptPack = result.data?.ai_prompt_pack;
 
-  // 3. Pass to AI for suggested updates
-  const suggestions = await runAI(promptPack, {
-    systemPrompt: `You are a documentation updater. Suggest specific edits
-                   to bring documentation in sync with code changes.`
-  });
+ // 3. Pass to AI for suggested updates
+ const suggestions = await runAI(promptPack, {
+ systemPrompt: `You are a documentation updater. Suggest specific edits
+ to bring documentation in sync with code changes.`
+ });
 
-  // 4. Display suggestions with apply option
-  displaySuggestions(suggestions);
+ // 4. Display suggestions with apply option
+ displaySuggestions(suggestions);
 }
 ```
 
@@ -769,21 +769,21 @@ async function docsStaleWithAI(cwd: string): Promise<void> {
 
 ```typescript
 async function explainReport(reportType: string, cwd: string): Promise<string> {
-  // Get raw report data
-  const report = await runCihub("report", [reportType], cwd);
+ // Get raw report data
+ const report = await runCihub("report", [reportType], cwd);
 
-  // AI interprets the data
-  const explanation = await runAI(`
-    Explain this CI report in plain English. Highlight:
-    1. Key findings
-    2. What needs attention
-    3. Recommended actions
+ // AI interprets the data
+ const explanation = await runAI(`
+ Explain this CI report in plain English. Highlight:
+ 1. Key findings
+ 2. What needs attention
+ 3. Recommended actions
 
-    Report data:
-    ${JSON.stringify(report, null, 2)}
-  `, { model: "claude-3-haiku-20240307" }); // Fast model for explanations
+ Report data:
+ ${JSON.stringify(report, null, 2)}
+ `, { model: "claude-3-haiku-20240307" }); // Fast model for explanations
 
-  return explanation;
+ return explanation;
 }
 ```
 
@@ -808,27 +808,27 @@ AI: [Analyzes last command result and any artifacts]
 
 Output:
 ┌─────────────────────────────────────────────────────────────┐
-│ Diagnosis: Maven Dependency Conflict                         │
+│ Diagnosis: Maven Dependency Conflict │
 ├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│ Problem: jackson-databind versions clash                    │
-│                                                             │
-│ spring-boot-starter: requires 2.15.2                        │
-│ aws-sdk-java: requires 2.12.0                               │
-│                                                             │
-│ Root Cause:                                                 │
-│ The aws-sdk brings an older jackson version that conflicts  │
-│ with Spring Boot's managed version.                         │
-│                                                             │
-│ Suggested Fix:                                              │
-│   Add to pom.xml <dependencyManagement>:                    │
-│   <dependency>                                              │
-│     <groupId>com.fasterxml.jackson.core</groupId>           │
-│     <artifactId>jackson-databind</artifactId>               │
-│     <version>2.15.2</version>                               │
-│   </dependency>                                             │
-│                                                             │
-│ Run `/fix --apply` to apply this suggestion.                │
+│ │
+│ Problem: jackson-databind versions clash │
+│ │
+│ spring-boot-starter: requires 2.15.2 │
+│ aws-sdk-java: requires 2.12.0 │
+│ │
+│ Root Cause: │
+│ The aws-sdk brings an older jackson version that conflicts │
+│ with Spring Boot's managed version. │
+│ │
+│ Suggested Fix: │
+│ Add to pom.xml <dependencyManagement>: │
+│ <dependency> │
+│ <groupId>com.fasterxml.jackson.core</groupId> │
+│ <artifactId>jackson-databind</artifactId> │
+│ <version>2.15.2</version> │
+│ </dependency> │
+│ │
+│ Run `/fix --apply` to apply this suggestion. │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -853,16 +853,16 @@ AI: [Analyzes current configuration]
 Based on your project, here are optimization suggestions:
 
 1. **Enable dependency caching** (saves ~2 min)
-   Your workflow doesn't cache Maven dependencies.
-   Run: /hub-ci add-cache maven
+ Your workflow doesn't cache Maven dependencies.
+ Run: /hub-ci add-cache maven
 
 2. **Parallelize test suites** (saves ~5 min)
-   You have 3 test modules running sequentially.
-   Run: /hub-ci matrix-tests
+ You have 3 test modules running sequentially.
+ Run: /hub-ci matrix-tests
 
 3. **Skip redundant steps** (saves ~1 min)
-   Coverage runs on every push; consider PR-only.
-   Run: /hub-ci optimize-triggers
+ Coverage runs on every push; consider PR-only.
+ Run: /hub-ci optimize-triggers
 
 Estimated time savings: 8 minutes per build
 Apply all? [Y/n]
@@ -900,16 +900,16 @@ The Python CLI uses a declarative **GateSpec** system for quality gates. The Typ
 ```typescript
 // AI can recommend thresholds based on project characteristics
 async function recommendThresholds(projectInfo: ProjectInfo): Promise<ThresholdRecommendation> {
-  const prompt = `
-    Project type: ${projectInfo.type}
-    Current coverage: ${projectInfo.currentCoverage}%
-    Security stance: ${projectInfo.securityLevel}
-    Team size: ${projectInfo.teamSize}
+ const prompt = `
+ Project type: ${projectInfo.type}
+ Current coverage: ${projectInfo.currentCoverage}%
+ Security stance: ${projectInfo.securityLevel}
+ Team size: ${projectInfo.teamSize}
 
-    Recommend appropriate CI quality gate thresholds.
-    Consider: project maturity, risk tolerance, industry standards.
-  `;
-  return await runAI(prompt);
+ Recommend appropriate CI quality gate thresholds.
+ Consider: project maturity, risk tolerance, industry standards.
+ `;
+ return await runAI(prompt);
 }
 ```
 
@@ -940,20 +940,20 @@ User: /init
 AI: I'll help you set up cihub for this project.
 
 Detected: Python project (pyproject.toml found)
-           Git repository (main branch)
-           GitHub remote (owner/repo)
+ Git repository (main branch)
+ GitHub remote (owner/repo)
 
 Recommended configuration:
 ┌───────────────────────────────────────────┐
-│ language: python                          │
-│ python:                                   │
-│   version: "3.11"                         │
-│   test_command: "pytest"                  │
-│   lint_command: "ruff check"              │
-│   coverage_threshold: 80                  │
-│ ci:                                       │
-│   provider: github                        │
-│   workflow: .github/workflows/ci.yml      │
+│ language: python │
+│ python: │
+│ version: "3.11" │
+│ test_command: "pytest" │
+│ lint_command: "ruff check" │
+│ coverage_threshold: 80 │
+│ ci: │
+│ provider: github │
+│ workflow: .github/workflows/ci.yml │
 └───────────────────────────────────────────┘
 
 Create this configuration? [Y/n]
@@ -1078,52 +1078,52 @@ The wizard guides users through:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ CIHub New Repo Wizard                                           │
+│ CIHub New Repo Wizard │
 ├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│ Step 1: Repository Details                                      │
-│ ─────────────────────────────────────────────────────           │
-│ ? Repo owner (org/user): jguida941                              │
-│ ? Repo name: my-awesome-app                                     │
-│ ? Use central runner? (Y/n): Y                                  │
-│ ? Enable repo-side execution? (y/N): N                          │
-│                                                                 │
-│ Step 2: Language Selection                                      │
-│ ─────────────────────────────────────────────────────           │
-│ ? Select language:                                              │
-│   ❯ java                                                        │
-│     python                                                      │
-│                                                                 │
-│ Step 3: Python Configuration (if python)                        │
-│ ─────────────────────────────────────────────────────           │
-│ ? Python version: 3.12                                          │
-│                                                                 │
-│ Step 4: Tool Selection (yes/no for each)                        │
-│ ─────────────────────────────────────────────────────           │
-│ ? Enable pytest? (Y/n): Y                                       │
-│ ? Enable ruff? (Y/n): Y                                         │
-│ ? Enable black? (Y/n): Y                                        │
-│ ? Enable isort? (y/N): N                                        │
-│ ? Enable mypy? (y/N): Y                                         │
-│ ? Enable bandit? (Y/n): Y                                       │
-│ ? Enable pip-audit? (Y/n): Y                                    │
-│ ? Enable mutmut? (y/N): N                                       │
-│ ? Enable hypothesis? (y/N): N                                   │
-│ ? Enable semgrep? (y/N): N                                      │
-│ ? Enable trivy? (Y/n): Y                                        │
-│ ? Enable codeql? (y/N): N                                       │
-│ ? Enable docker? (y/N): N                                       │
-│                                                                 │
-│ Step 5: Security Tools                                          │
-│ ─────────────────────────────────────────────────────           │
-│ ? Enable OWASP dependency check? (Y/n): Y                       │
-│ ? Enable gitleaks? (Y/n): Y                                     │
-│                                                                 │
-│ Step 6: Thresholds                                              │
-│ ─────────────────────────────────────────────────────           │
-│ ? Coverage threshold (%): 80                                    │
-│ ? Max allowed security vulnerabilities: 0                       │
-│                                                                 │
+│ │
+│ Step 1: Repository Details │
+│ ───────────────────────────────────────────────────── │
+│ ? Repo owner (org/user): jguida941 │
+│ ? Repo name: my-awesome-app │
+│ ? Use central runner? (Y/n): Y │
+│ ? Enable repo-side execution? (y/N): N │
+│ │
+│ Step 2: Language Selection │
+│ ───────────────────────────────────────────────────── │
+│ ? Select language: │
+│ java │
+│ python │
+│ │
+│ Step 3: Python Configuration (if python) │
+│ ───────────────────────────────────────────────────── │
+│ ? Python version: 3.12 │
+│ │
+│ Step 4: Tool Selection (yes/no for each) │
+│ ───────────────────────────────────────────────────── │
+│ ? Enable pytest? (Y/n): Y │
+│ ? Enable ruff? (Y/n): Y │
+│ ? Enable black? (Y/n): Y │
+│ ? Enable isort? (y/N): N │
+│ ? Enable mypy? (y/N): Y │
+│ ? Enable bandit? (Y/n): Y │
+│ ? Enable pip-audit? (Y/n): Y │
+│ ? Enable mutmut? (y/N): N │
+│ ? Enable hypothesis? (y/N): N │
+│ ? Enable semgrep? (y/N): N │
+│ ? Enable trivy? (Y/n): Y │
+│ ? Enable codeql? (y/N): N │
+│ ? Enable docker? (y/N): N │
+│ │
+│ Step 5: Security Tools │
+│ ───────────────────────────────────────────────────── │
+│ ? Enable OWASP dependency check? (Y/n): Y │
+│ ? Enable gitleaks? (Y/n): Y │
+│ │
+│ Step 6: Thresholds │
+│ ───────────────────────────────────────────────────── │
+│ ? Coverage threshold (%): 80 │
+│ ? Max allowed security vulnerabilities: 0 │
+│ │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1174,25 +1174,25 @@ Profiles allow pre-configured tool settings to be applied during setup:
 ```yaml
 language: python
 python:
-  version: "3.12"
-  tools:
-    pytest:
-      enabled: true
-    ruff:
-      enabled: true
-    black:
-      enabled: true
-    mypy:
-      enabled: true
-    bandit:
-      enabled: true
-    pip_audit:
-      enabled: true
-    mutmut:
-      enabled: true
+ version: "3.12"
+ tools:
+ pytest:
+ enabled: true
+ ruff:
+ enabled: true
+ black:
+ enabled: true
+ mypy:
+ enabled: true
+ bandit:
+ enabled: true
+ pip_audit:
+ enabled: true
+ mutmut:
+ enabled: true
 thresholds:
-  coverage_min: 90
-  mutation_score_min: 80
+ coverage_min: 90
+ mutation_score_min: 80
 ```
 
 **Profile Commands:**
@@ -1216,88 +1216,88 @@ import ConfirmInput from "@inkjs/ui/confirm-input";
 import TextInput from "ink-text-input";
 
 interface WizardStep {
-  type: "text" | "select" | "confirm";
-  question: string;
-  key: string;
-  default?: string | boolean;
-  choices?: string[];
+ type: "text" | "select" | "confirm";
+ question: string;
+ key: string;
+ default?: string | boolean;
+ choices?: string[];
 }
 
 const WIZARD_STEPS: WizardStep[] = [
-  // Step 1: Repo details
-  { type: "text", question: "Repo owner (org/user):", key: "repo.owner" },
-  { type: "text", question: "Repo name:", key: "repo.name" },
-  { type: "confirm", question: "Use central runner?", key: "repo.use_central_runner", default: true },
-  { type: "confirm", question: "Enable repo-side execution?", key: "repo.repo_side_execution", default: false },
+ // Step 1: Repo details
+ { type: "text", question: "Repo owner (org/user):", key: "repo.owner" },
+ { type: "text", question: "Repo name:", key: "repo.name" },
+ { type: "confirm", question: "Use central runner?", key: "repo.use_central_runner", default: true },
+ { type: "confirm", question: "Enable repo-side execution?", key: "repo.repo_side_execution", default: false },
 
-  // Step 2: Language
-  { type: "select", question: "Select language:", key: "language", choices: ["java", "python"] },
+ // Step 2: Language
+ { type: "select", question: "Select language:", key: "language", choices: ["java", "python"] },
 
-  // Python tools (shown if language === "python")
-  { type: "text", question: "Python version:", key: "python.version", default: "3.12" },
-  { type: "confirm", question: "Enable pytest?", key: "python.tools.pytest.enabled", default: true },
-  { type: "confirm", question: "Enable ruff?", key: "python.tools.ruff.enabled", default: true },
-  { type: "confirm", question: "Enable black?", key: "python.tools.black.enabled", default: true },
-  { type: "confirm", question: "Enable mypy?", key: "python.tools.mypy.enabled", default: false },
-  { type: "confirm", question: "Enable bandit?", key: "python.tools.bandit.enabled", default: true },
-  { type: "confirm", question: "Enable pip-audit?", key: "python.tools.pip_audit.enabled", default: true },
-  { type: "confirm", question: "Enable mutmut?", key: "python.tools.mutmut.enabled", default: false },
-  { type: "confirm", question: "Enable trivy?", key: "python.tools.trivy.enabled", default: true },
-  // ... more tools
+ // Python tools (shown if language === "python")
+ { type: "text", question: "Python version:", key: "python.version", default: "3.12" },
+ { type: "confirm", question: "Enable pytest?", key: "python.tools.pytest.enabled", default: true },
+ { type: "confirm", question: "Enable ruff?", key: "python.tools.ruff.enabled", default: true },
+ { type: "confirm", question: "Enable black?", key: "python.tools.black.enabled", default: true },
+ { type: "confirm", question: "Enable mypy?", key: "python.tools.mypy.enabled", default: false },
+ { type: "confirm", question: "Enable bandit?", key: "python.tools.bandit.enabled", default: true },
+ { type: "confirm", question: "Enable pip-audit?", key: "python.tools.pip_audit.enabled", default: true },
+ { type: "confirm", question: "Enable mutmut?", key: "python.tools.mutmut.enabled", default: false },
+ { type: "confirm", question: "Enable trivy?", key: "python.tools.trivy.enabled", default: true },
+ // ... more tools
 
-  // Thresholds
-  { type: "text", question: "Coverage threshold (%):", key: "thresholds.coverage", default: "80" },
+ // Thresholds
+ { type: "text", question: "Coverage threshold (%):", key: "thresholds.coverage", default: "80" },
 ];
 
 export function NewRepoWizard({ onComplete }: { onComplete: (config: object) => void }) {
-  const [step, setStep] = useState(0);
-  const [config, setConfig] = useState({});
+ const [step, setStep] = useState(0);
+ const [config, setConfig] = useState({});
 
-  const currentStep = WIZARD_STEPS[step];
+ const currentStep = WIZARD_STEPS[step];
 
-  const handleAnswer = (value: string | boolean) => {
-    // Update config using lodash.set or similar
-    const newConfig = { ...config };
-    setDeep(newConfig, currentStep.key, value);
-    setConfig(newConfig);
+ const handleAnswer = (value: string | boolean) => {
+ // Update config using lodash.set or similar
+ const newConfig = { ...config };
+ setDeep(newConfig, currentStep.key, value);
+ setConfig(newConfig);
 
-    if (step < WIZARD_STEPS.length - 1) {
-      setStep(step + 1);
-    } else {
-      onComplete(newConfig);
-    }
-  };
+ if (step < WIZARD_STEPS.length - 1) {
+ setStep(step + 1);
+ } else {
+ onComplete(newConfig);
+ }
+ };
 
-  return (
-    <Box flexDirection="column">
-      <Text bold>Step {step + 1} of {WIZARD_STEPS.length}</Text>
-      <Text>{currentStep.question}</Text>
+ return (
+ <Box flexDirection="column">
+ <Text bold>Step {step + 1} of {WIZARD_STEPS.length}</Text>
+ <Text>{currentStep.question}</Text>
 
-      {currentStep.type === "confirm" && (
-        <ConfirmInput
-          defaultChoice={currentStep.default as boolean}
-          onConfirm={() => handleAnswer(true)}
-          onCancel={() => handleAnswer(false)}
-        />
-      )}
+ {currentStep.type === "confirm" && (
+ <ConfirmInput
+ defaultChoice={currentStep.default as boolean}
+ onConfirm={() => handleAnswer(true)}
+ onCancel={() => handleAnswer(false)}
+ />
+ )}
 
-      {currentStep.type === "select" && (
-        <SelectInput
-          items={currentStep.choices!.map(c => ({ label: c, value: c }))}
-          onSelect={item => handleAnswer(item.value)}
-        />
-      )}
+ {currentStep.type === "select" && (
+ <SelectInput
+ items={currentStep.choices!.map(c => ({ label: c, value: c }))}
+ onSelect={item => handleAnswer(item.value)}
+ />
+ )}
 
-      {currentStep.type === "text" && (
-        <TextInput
-          value=""
-          onChange={() => {}}
-          onSubmit={handleAnswer}
-          placeholder={currentStep.default as string}
-        />
-      )}
-    </Box>
-  );
+ {currentStep.type === "text" && (
+ <TextInput
+ value=""
+ onChange={() => {}}
+ onSubmit={handleAnswer}
+ placeholder={currentStep.default as string}
+ />
+ )}
+ </Box>
+ );
 }
 ```
 
@@ -1308,18 +1308,18 @@ The TypeScript CLI can enhance the wizard with AI recommendations:
 ```typescript
 // AI provides recommendations during wizard
 async function getAIRecommendations(
-  detected: DetectedConfig,
-  step: string
+ detected: DetectedConfig,
+ step: string
 ): Promise<WizardSuggestion> {
-  const prompt = `
-    Given this detected project configuration:
-    ${JSON.stringify(detected, null, 2)}
+ const prompt = `
+ Given this detected project configuration:
+ ${JSON.stringify(detected, null, 2)}
 
-    What should the user enable for: ${step}?
-    Consider: project size, existing tools, best practices.
-  `;
+ What should the user enable for: ${step}?
+ Consider: project size, existing tools, best practices.
+ `;
 
-  return await runAI(prompt, { model: "claude-3-haiku-20240307" });
+ return await runAI(prompt, { model: "claude-3-haiku-20240307" });
 }
 
 // During wizard:
@@ -1336,17 +1336,17 @@ async function getAIRecommendations(
 
 ```
 cihub/
-├── ai/                          # NEW: Modular AI package
-│   ├── __init__.py              # Public API exports
-│   ├── claude_client.py         # Claude CLI subprocess wrapper
-│   ├── context.py               # Context builder for AI prompts
-│   ├── enhance.py               # Result enhancement logic
-│   └── providers/               # Future: Multiple AI providers
-│       ├── __init__.py
-│       ├── base.py              # Abstract provider interface
-│       └── claude.py            # Claude implementation
-├── commands/                    # Existing commands (unchanged)
-├── services/                    # Existing services (unchanged)
+├── ai/ # NEW: Modular AI package
+│ ├── __init__.py # Public API exports
+│ ├── claude_client.py # Claude CLI subprocess wrapper
+│ ├── context.py # Context builder for AI prompts
+│ ├── enhance.py # Result enhancement logic
+│ └── providers/ # Future: Multiple AI providers
+│ ├── __init__.py
+│ ├── base.py # Abstract provider interface
+│ └── claude.py # Claude implementation
+├── commands/ # Existing commands (unchanged)
+├── services/ # Existing services (unchanged)
 └── ...
 ```
 
@@ -1359,11 +1359,11 @@ This module provides optional AI enhancement for CLI commands.
 AI is NEVER required - commands work fully without it.
 
 Usage:
-    from cihub.ai import enhance_result, is_ai_available
+ from cihub.ai import enhance_result, is_ai_available
 
-    result = cmd_triage(args)
-    if args.ai and is_ai_available():
-        result = enhance_result(result, context)
+ result = cmd_triage(args)
+ if args.ai and is_ai_available():
+ result = enhance_result(result, context)
 """
 
 from cihub.ai.enhance import enhance_result
@@ -1371,10 +1371,10 @@ from cihub.ai.context import build_context
 from cihub.ai.claude_client import is_ai_available, invoke_claude
 
 __all__ = [
-    "enhance_result",
-    "build_context",
-    "is_ai_available",
-    "invoke_claude",
+ "enhance_result",
+ "build_context",
+ "is_ai_available",
+ "invoke_claude",
 ]
 ```
 
@@ -1399,46 +1399,46 @@ AI_TIMEOUT = 60
 
 
 def is_ai_available() -> bool:
-    """Check if Claude CLI is available."""
-    return shutil.which("claude") is not None
+ """Check if Claude CLI is available."""
+ return shutil.which("claude") is not None
 
 
 def invoke_claude(
-    prompt: str,
-    *,
-    output_format: str = "json",
-    timeout: int = AI_TIMEOUT,
+ prompt: str,
+ *,
+ output_format: str = "json",
+ timeout: int = AI_TIMEOUT,
 ) -> dict[str, Any] | None:
-    """Invoke Claude Code in headless mode.
+ """Invoke Claude Code in headless mode.
 
-    Args:
-        prompt: The prompt to send to Claude.
-        output_format: Output format ("json" or "text").
-        timeout: Timeout in seconds.
+ Args:
+ prompt: The prompt to send to Claude.
+ output_format: Output format ("json" or "text").
+ timeout: Timeout in seconds.
 
-    Returns:
-        Parsed JSON response, or None if failed.
-    """
-    if not is_ai_available():
-        return None
+ Returns:
+ Parsed JSON response, or None if failed.
+ """
+ if not is_ai_available():
+ return None
 
-    try:
-        result = subprocess.run(
-            ["claude", "-p", prompt, "--output-format", output_format],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
+ try:
+ result = subprocess.run(
+ ["claude", "-p", prompt, "--output-format", output_format],
+ capture_output=True,
+ text=True,
+ timeout=timeout,
+ )
 
-        if result.returncode != 0:
-            return None
+ if result.returncode != 0:
+ return None
 
-        if output_format == "json":
-            return json.loads(result.stdout)
-        return {"result": result.stdout}
+ if output_format == "json":
+ return json.loads(result.stdout)
+ return {"result": result.stdout}
 
-    except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
-        return None
+ except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
+ return None
 ```
 
 ### 9.4 Context Builder (`cihub/ai/context.py`)
@@ -1456,66 +1456,66 @@ import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from cihub.types import CommandResult
+ from cihub.types import CommandResult
 
 # Import existing registries (no duplication!)
 from cihub.services.triage.types import (
-    CATEGORY_BY_TOOL,
-    SEVERITY_BY_CATEGORY,
+ CATEGORY_BY_TOOL,
+ SEVERITY_BY_CATEGORY,
 )
 
 
 def build_context(
-    result: "CommandResult",
-    *,
-    include_tool_registry: bool = True,
-    include_suggestions: bool = True,
+ result: "CommandResult",
+ *,
+ include_tool_registry: bool = True,
+ include_suggestions: bool = True,
 ) -> str:
-    """Build structured context string for AI.
+ """Build structured context string for AI.
 
-    Args:
-        result: The CommandResult to analyze.
-        include_tool_registry: Include tool categorization info.
-        include_suggestions: Include existing suggestions.
+ Args:
+ result: The CommandResult to analyze.
+ include_tool_registry: Include tool categorization info.
+ include_suggestions: Include existing suggestions.
 
-    Returns:
-        Formatted context string for AI prompt.
-    """
-    sections = []
+ Returns:
+ Formatted context string for AI prompt.
+ """
+ sections = []
 
-    # Command result summary
-    sections.append(f"""## Command Result
+ # Command result summary
+ sections.append(f"""## Command Result
 - Command: {result.artifacts.get('command', 'unknown')}
 - Exit Code: {result.exit_code}
 - Summary: {result.summary}
 """)
 
-    # Problems (if any)
-    if result.problems:
-        problems_text = json.dumps(result.problems, indent=2)
-        sections.append(f"""## Problems Found
+ # Problems (if any)
+ if result.problems:
+ problems_text = json.dumps(result.problems, indent=2)
+ sections.append(f"""## Problems Found
 ```json
 {problems_text}
 ```
 """)
 
-    # Tool registry (helps AI understand categorization)
-    if include_tool_registry:
-        sections.append(f"""## Tool Categorization (Reference)
+ # Tool registry (helps AI understand categorization)
+ if include_tool_registry:
+ sections.append(f"""## Tool Categorization (Reference)
 Categories: {json.dumps(CATEGORY_BY_TOOL, indent=2)}
 Severity Mapping: {json.dumps(SEVERITY_BY_CATEGORY, indent=2)}
 """)
 
-    # Existing suggestions
-    if include_suggestions and result.suggestions:
-        suggestions_text = "\n".join(
-            f"- {s.get('message', '')}" for s in result.suggestions
-        )
-        sections.append(f"""## Existing Suggestions
+ # Existing suggestions
+ if include_suggestions and result.suggestions:
+ suggestions_text = "\n".join(
+ f"- {s.get('message', '')}" for s in result.suggestions
+ )
+ sections.append(f"""## Existing Suggestions
 {suggestions_text}
 """)
 
-    return "\n".join(sections)
+ return "\n".join(sections)
 ```
 
 ### 9.5 Result Enhancement (`cihub/ai/enhance.py`)
@@ -1534,36 +1534,36 @@ from cihub.ai.claude_client import invoke_claude, is_ai_available
 from cihub.ai.context import build_context
 
 if TYPE_CHECKING:
-    from cihub.types import CommandResult
+ from cihub.types import CommandResult
 
 
 def enhance_result(
-    result: "CommandResult",
-    *,
-    mode: str = "analyze",
+ result: "CommandResult",
+ *,
+ mode: str = "analyze",
 ) -> "CommandResult":
-    """Enhance a CommandResult with AI analysis.
+ """Enhance a CommandResult with AI analysis.
 
-    Args:
-        result: The CommandResult to enhance.
-        mode: Enhancement mode ("analyze", "fix", "explain").
+ Args:
+ result: The CommandResult to enhance.
+ mode: Enhancement mode ("analyze", "fix", "explain").
 
-    Returns:
-        Enhanced CommandResult with AI suggestions added.
-    """
-    if not is_ai_available():
-        result.suggestions.append({
-            "message": "AI enhancement unavailable (Claude CLI not found)",
-            "source": "cihub",
-        })
-        return result
+ Returns:
+ Enhanced CommandResult with AI suggestions added.
+ """
+ if not is_ai_available():
+ result.suggestions.append({
+ "message": "AI enhancement unavailable (Claude CLI not found)",
+ "source": "cihub",
+ })
+ return result
 
-    # Build context from result
-    context = build_context(result)
+ # Build context from result
+ context = build_context(result)
 
-    # Build prompt based on mode
-    if mode == "analyze":
-        prompt = f"""Analyze this CI/CD failure and suggest fixes.
+ # Build prompt based on mode
+ if mode == "analyze":
+ prompt = f"""Analyze this CI/CD failure and suggest fixes.
 
 {context}
 
@@ -1574,36 +1574,36 @@ Provide:
 
 Be concise and actionable."""
 
-    elif mode == "explain":
-        prompt = f"""Explain this CI/CD result in plain language.
+ elif mode == "explain":
+ prompt = f"""Explain this CI/CD result in plain language.
 
 {context}
 
 Explain what happened and what the user should do next.
 Use simple language, no jargon."""
 
-    elif mode == "fix":
-        prompt = f"""Suggest specific code/config fixes for these issues.
+ elif mode == "fix":
+ prompt = f"""Suggest specific code/config fixes for these issues.
 
 {context}
 
 For each problem, provide the exact fix (file path, line, change)."""
 
-    else:
-        prompt = f"Analyze: {context}"
+ else:
+ prompt = f"Analyze: {context}"
 
-    # Invoke Claude
-    response = invoke_claude(prompt)
+ # Invoke Claude
+ response = invoke_claude(prompt)
 
-    if response and "result" in response:
-        result.data["ai_analysis"] = response["result"]
-        result.suggestions.append({
-            "message": response["result"],
-            "source": "claude",
-            "mode": mode,
-        })
+ if response and "result" in response:
+ result.data["ai_analysis"] = response["result"]
+ result.suggestions.append({
+ "message": response["result"],
+ "source": "claude",
+ "mode": mode,
+ })
 
-    return result
+ return result
 ```
 
 ### 9.6 Integration with Commands
@@ -1614,15 +1614,15 @@ Commands opt-in to AI enhancement with minimal changes:
 # In cihub/commands/triage.py
 
 def cmd_triage(args: argparse.Namespace) -> int | CommandResult:
-    # ... existing triage logic (unchanged) ...
-    result = build_triage_result()
+ # ... existing triage logic (unchanged) ...
+ result = build_triage_result()
 
-    # NEW: Optional AI enhancement (3 lines added)
-    if getattr(args, "ai", False):
-        from cihub.ai import enhance_result
-        result = enhance_result(result, mode="analyze")
+ # NEW: Optional AI enhancement (3 lines added)
+ if getattr(args, "ai", False):
+ from cihub.ai import enhance_result
+ result = enhance_result(result, mode="analyze")
 
-    return result
+ return result
 ```
 
 ### 9.7 CLI Flag Addition
@@ -1633,19 +1633,19 @@ Add `--ai` flag to the argument parser:
 # In cihub/cli_parsers/builder.py
 
 def _add_common_flags(parser: argparse.ArgumentParser) -> None:
-    """Add flags common to multiple commands."""
-    parser.add_argument(
-        "--ai",
-        action="store_true",
-        default=False,
-        help="Enable AI-assisted analysis (requires Claude CLI)",
-    )
-    parser.add_argument(
-        "--no-ai",
-        action="store_false",
-        dest="ai",
-        help="Disable AI assistance",
-    )
+ """Add flags common to multiple commands."""
+ parser.add_argument(
+ "--ai",
+ action="store_true",
+ default=False,
+ help="Enable AI-assisted analysis (requires Claude CLI)",
+ )
+ parser.add_argument(
+ "--no-ai",
+ action="store_false",
+ dest="ai",
+ help="Disable AI assistance",
+ )
 ```
 
 ### 9.8 Dev Mode Environment Variable
@@ -1658,22 +1658,22 @@ For developers debugging the CLI itself:
 import os
 
 def main(argv: list[str] | None = None) -> int:
-    # ... existing code ...
+ # ... existing code ...
 
-    result = args.func(args)
+ result = args.func(args)
 
-    # Dev mode: auto-invoke AI on failures
-    if (
-        os.getenv("CIHUB_DEV_MODE")
-        and isinstance(result, CommandResult)
-        and result.exit_code != 0
-    ):
-        from cihub.ai import enhance_result, is_ai_available
-        if is_ai_available():
-            print("[DEV MODE] Invoking AI for debugging...", file=sys.stderr)
-            result = enhance_result(result, mode="analyze")
+ # Dev mode: auto-invoke AI on failures
+ if (
+ os.getenv("CIHUB_DEV_MODE")
+ and isinstance(result, CommandResult)
+ and result.exit_code != 0
+ ):
+ from cihub.ai import enhance_result, is_ai_available
+ if is_ai_available():
+ print("[DEV MODE] Invoking AI for debugging...", file=sys.stderr)
+ result = enhance_result(result, mode="analyze")
 
-    # ... rest of main() ...
+ # ... rest of main() ...
 ```
 
 ### 9.9 TypeScript CLI: AI Comes Free
@@ -1683,8 +1683,8 @@ Because AI runs at the Python level, TypeScript just passes flags:
 ```typescript
 // In TypeScript CLI - no AI-specific code needed!
 async function runCommand(cmd: string, args: string[], useAI: boolean): Promise<CommandResult> {
-  const finalArgs = useAI ? [...args, "--ai"] : args;
-  return runCihub(cmd, finalArgs, cwd);
+ const finalArgs = useAI ? [...args, "--ai"] : args;
+ return runCihub(cmd, finalArgs, cwd);
 }
 ```
 
@@ -1701,71 +1701,71 @@ from cihub.types import CommandResult
 
 
 class TestAIModule:
-    """Tests for the modular AI package."""
+ """Tests for the modular AI package."""
 
-    def test_is_ai_available_no_claude(self):
-        """AI unavailable when Claude not installed."""
-        with patch("shutil.which", return_value=None):
-            assert is_ai_available() is False
+ def test_is_ai_available_no_claude(self):
+ """AI unavailable when Claude not installed."""
+ with patch("shutil.which", return_value=None):
+ assert is_ai_available() is False
 
-    def test_is_ai_available_with_claude(self):
-        """AI available when Claude is installed."""
-        with patch("shutil.which", return_value="/usr/bin/claude"):
-            assert is_ai_available() is True
+ def test_is_ai_available_with_claude(self):
+ """AI available when Claude is installed."""
+ with patch("shutil.which", return_value="/usr/bin/claude"):
+ assert is_ai_available() is True
 
-    def test_build_context_includes_problems(self):
-        """Context includes problems from result."""
-        result = CommandResult(
-            exit_code=1,
-            summary="Check failed",
-            problems=[{"severity": "error", "message": "Ruff found 5 errors"}],
-        )
-        context = build_context(result)
-        assert "Ruff found 5 errors" in context
-        assert "error" in context
+ def test_build_context_includes_problems(self):
+ """Context includes problems from result."""
+ result = CommandResult(
+ exit_code=1,
+ summary="Check failed",
+ problems=[{"severity": "error", "message": "Ruff found 5 errors"}],
+ )
+ context = build_context(result)
+ assert "Ruff found 5 errors" in context
+ assert "error" in context
 
-    def test_enhance_result_without_claude(self):
-        """Enhancement gracefully handles missing Claude."""
-        result = CommandResult(exit_code=1, summary="Failed")
+ def test_enhance_result_without_claude(self):
+ """Enhancement gracefully handles missing Claude."""
+ result = CommandResult(exit_code=1, summary="Failed")
 
-        with patch("cihub.ai.enhance.is_ai_available", return_value=False):
-            enhanced = enhance_result(result)
+ with patch("cihub.ai.enhance.is_ai_available", return_value=False):
+ enhanced = enhance_result(result)
 
-        assert any("unavailable" in s.get("message", "") for s in enhanced.suggestions)
+ assert any("unavailable" in s.get("message", "") for s in enhanced.suggestions)
 
-    def test_enhance_result_with_claude(self):
-        """Enhancement adds AI suggestions when Claude available."""
-        result = CommandResult(exit_code=1, summary="Failed")
-        mock_response = {"result": "Try running ruff --fix"}
+ def test_enhance_result_with_claude(self):
+ """Enhancement adds AI suggestions when Claude available."""
+ result = CommandResult(exit_code=1, summary="Failed")
+ mock_response = {"result": "Try running ruff --fix"}
 
-        with patch("cihub.ai.enhance.is_ai_available", return_value=True):
-            with patch("cihub.ai.enhance.invoke_claude", return_value=mock_response):
-                enhanced = enhance_result(result)
+ with patch("cihub.ai.enhance.is_ai_available", return_value=True):
+ with patch("cihub.ai.enhance.invoke_claude", return_value=mock_response):
+ enhanced = enhance_result(result)
 
-        assert any("ruff --fix" in s.get("message", "") for s in enhanced.suggestions)
-        assert enhanced.data.get("ai_analysis") == "Try running ruff --fix"
+ assert any("ruff --fix" in s.get("message", "") for s in enhanced.suggestions)
+ assert enhanced.data.get("ai_analysis") == "Try running ruff --fix"
 
 
 class TestClaudeClient:
-    """Tests for Claude subprocess wrapper."""
+ """Tests for Claude subprocess wrapper."""
 
-    def test_invoke_claude_timeout(self):
-        """Handles timeout gracefully."""
-        from cihub.ai.claude_client import invoke_claude
+ def test_invoke_claude_timeout(self):
+ """Handles timeout gracefully."""
+ from cihub.ai.claude_client import invoke_claude
 
-        with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("claude", 60)):
-            result = invoke_claude("test prompt")
+ with patch("subprocess.run", side_effect=subprocess.TimeoutExpired("claude", 60)):
+ result = invoke_claude("test prompt")
 
-        assert result is None
+ assert result is None
 
-    def test_invoke_claude_not_installed(self):
-        """Handles missing Claude gracefully."""
-        from cihub.ai.claude_client import invoke_claude
+ def test_invoke_claude_not_installed(self):
+ """Handles missing Claude gracefully."""
+ from cihub.ai.claude_client import invoke_claude
 
-        with patch("shutil.which", return_value=None):
-            result = invoke_claude("test prompt")
+ with patch("shutil.which", return_value=None):
+ result = invoke_claude("test prompt")
 
-        assert result is None
+ assert result is None
 ```
 
 ### 9.11 Why This Architecture?
@@ -1789,27 +1789,27 @@ The `providers/` directory is ready for expansion:
 from abc import ABC, abstractmethod
 
 class AIProvider(ABC):
-    """Abstract base class for AI providers."""
+ """Abstract base class for AI providers."""
 
-    @abstractmethod
-    def is_available(self) -> bool:
-        """Check if provider is available."""
-        pass
+ @abstractmethod
+ def is_available(self) -> bool:
+ """Check if provider is available."""
+ pass
 
-    @abstractmethod
-    def invoke(self, prompt: str, **kwargs) -> dict | None:
-        """Invoke the AI provider."""
-        pass
+ @abstractmethod
+ def invoke(self, prompt: str, **kwargs) -> dict | None:
+ """Invoke the AI provider."""
+ pass
 
 # cihub/ai/providers/claude.py
 class ClaudeProvider(AIProvider):
-    """Claude CLI provider."""
-    # ... implementation ...
+ """Claude CLI provider."""
+ # ... implementation ...
 
 # cihub/ai/providers/openai.py (future)
 class OpenAIProvider(AIProvider):
-    """OpenAI API provider."""
-    # ... implementation ...
+ """OpenAI API provider."""
+ # ... implementation ...
 ```
 
 Select provider via environment variable:
@@ -1838,68 +1838,68 @@ The AI assistant has access to these tools for executing cihub commands:
 // src/lib/ai-tools.ts
 
 export const cihubTools = [
-  {
-    name: "run_cihub",
-    description: "Execute any CIHub CLI command and return structured results",
-    input_schema: {
-      type: "object",
-      properties: {
-        command: {
-          type: "string",
-          description: "The cihub command (e.g., 'discover', 'triage', 'hub-ci check-workflows')"
-        },
-        args: {
-          type: "array",
-          items: { type: "string" },
-          description: "Command arguments and flags"
-        }
-      },
-      required: ["command"]
-    }
-  },
-  {
-    name: "read_artifact",
-    description: "Read and analyze a CI artifact file (logs, test results, etc.)",
-    input_schema: {
-      type: "object",
-      properties: {
-        path: { type: "string", description: "Path to the artifact file" },
-        artifact_type: {
-          type: "string",
-          enum: ["build_log", "test_results", "coverage", "security_scan"],
-          description: "Type of artifact for specialized parsing"
-        }
-      },
-      required: ["path"]
-    }
-  },
-  {
-    name: "suggest_fix",
-    description: "Generate a fix suggestion for a specific issue",
-    input_schema: {
-      type: "object",
-      properties: {
-        issue_type: { type: "string" },
-        error_message: { type: "string" },
-        file_path: { type: "string" },
-        context: { type: "object" }
-      },
-      required: ["issue_type", "error_message"]
-    }
-  },
-  {
-    name: "apply_fix",
-    description: "Apply a suggested fix (requires user confirmation)",
-    input_schema: {
-      type: "object",
-      properties: {
-        fix_id: { type: "string" },
-        file_path: { type: "string" },
-        changes: { type: "array", items: { type: "object" } }
-      },
-      required: ["fix_id", "file_path", "changes"]
-    }
-  }
+ {
+ name: "run_cihub",
+ description: "Execute any CIHub CLI command and return structured results",
+ input_schema: {
+ type: "object",
+ properties: {
+ command: {
+ type: "string",
+ description: "The cihub command (e.g., 'discover', 'triage', 'hub-ci check-workflows')"
+ },
+ args: {
+ type: "array",
+ items: { type: "string" },
+ description: "Command arguments and flags"
+ }
+ },
+ required: ["command"]
+ }
+ },
+ {
+ name: "read_artifact",
+ description: "Read and analyze a CI artifact file (logs, test results, etc.)",
+ input_schema: {
+ type: "object",
+ properties: {
+ path: { type: "string", description: "Path to the artifact file" },
+ artifact_type: {
+ type: "string",
+ enum: ["build_log", "test_results", "coverage", "security_scan"],
+ description: "Type of artifact for specialized parsing"
+ }
+ },
+ required: ["path"]
+ }
+ },
+ {
+ name: "suggest_fix",
+ description: "Generate a fix suggestion for a specific issue",
+ input_schema: {
+ type: "object",
+ properties: {
+ issue_type: { type: "string" },
+ error_message: { type: "string" },
+ file_path: { type: "string" },
+ context: { type: "object" }
+ },
+ required: ["issue_type", "error_message"]
+ }
+ },
+ {
+ name: "apply_fix",
+ description: "Apply a suggested fix (requires user confirmation)",
+ input_schema: {
+ type: "object",
+ properties: {
+ fix_id: { type: "string" },
+ file_path: { type: "string" },
+ changes: { type: "array", items: { type: "object" } }
+ },
+ required: ["fix_id", "file_path", "changes"]
+ }
+ }
 ];
 ```
 
@@ -1912,20 +1912,20 @@ import { cihubTools } from "./ai-tools.js";
 import { runCihub } from "./cihub.js";
 
 interface AIContext {
-  cwd: string;
-  language: string;
-  lastResult?: CommandResult;
-  projectConfig?: object;
+ cwd: string;
+ language: string;
+ lastResult?: CommandResult;
+ projectConfig?: object;
 }
 
 export async function runAI(
-  prompt: string,
-  context: AIContext,
-  options: { stream?: boolean } = {}
+ prompt: string,
+ context: AIContext,
+ options: { stream?: boolean } = {}
 ): Promise<string> {
-  const client = new Anthropic();
+ const client = new Anthropic();
 
-  const systemPrompt = `You are a CI/CD assistant integrated into CIHub.
+ const systemPrompt = `You are a CI/CD assistant integrated into CIHub.
 You help users understand and fix CI/CD issues.
 
 Context:
@@ -1936,54 +1936,54 @@ Context:
 You can run cihub commands to gather information or fix issues.
 Always explain what you're doing and why.`;
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4096,
-    system: systemPrompt,
-    tools: cihubTools,
-    messages: [{ role: "user", content: prompt }],
-  });
+ const response = await client.messages.create({
+ model: "claude-sonnet-4-20250514",
+ max_tokens: 4096,
+ system: systemPrompt,
+ tools: cihubTools,
+ messages: [{ role: "user", content: prompt }],
+ });
 
-  // Handle tool calls in a loop
-  let messages = [{ role: "user", content: prompt }];
-  let currentResponse = response;
+ // Handle tool calls in a loop
+ let messages = [{ role: "user", content: prompt }];
+ let currentResponse = response;
 
-  while (currentResponse.stop_reason === "tool_use") {
-    const toolUse = currentResponse.content.find(c => c.type === "tool_use");
+ while (currentResponse.stop_reason === "tool_use") {
+ const toolUse = currentResponse.content.find(c => c.type === "tool_use");
 
-    // Execute the tool
-    let toolResult: string;
-    if (toolUse.name === "run_cihub") {
-      const result = await runCihub(
-        toolUse.input.command,
-        toolUse.input.args || [],
-        context.cwd
-      );
-      toolResult = JSON.stringify(result);
-    } else if (toolUse.name === "read_artifact") {
-      toolResult = await readArtifact(toolUse.input.path, toolUse.input.artifact_type);
-    } else {
-      toolResult = `Unknown tool: ${toolUse.name}`;
-    }
+ // Execute the tool
+ let toolResult: string;
+ if (toolUse.name === "run_cihub") {
+ const result = await runCihub(
+ toolUse.input.command,
+ toolUse.input.args || [],
+ context.cwd
+ );
+ toolResult = JSON.stringify(result);
+ } else if (toolUse.name === "read_artifact") {
+ toolResult = await readArtifact(toolUse.input.path, toolUse.input.artifact_type);
+ } else {
+ toolResult = `Unknown tool: ${toolUse.name}`;
+ }
 
-    // Continue conversation with tool result
-    messages.push(
-      { role: "assistant", content: currentResponse.content },
-      { role: "user", content: [{ type: "tool_result", tool_use_id: toolUse.id, content: toolResult }] }
-    );
+ // Continue conversation with tool result
+ messages.push(
+ { role: "assistant", content: currentResponse.content },
+ { role: "user", content: [{ type: "tool_result", tool_use_id: toolUse.id, content: toolResult }] }
+ );
 
-    currentResponse = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
-      system: systemPrompt,
-      tools: cihubTools,
-      messages,
-    });
-  }
+ currentResponse = await client.messages.create({
+ model: "claude-sonnet-4-20250514",
+ max_tokens: 4096,
+ system: systemPrompt,
+ tools: cihubTools,
+ messages,
+ });
+ }
 
-  // Extract text response
-  const textContent = currentResponse.content.find(c => c.type === "text");
-  return textContent?.text || "";
+ // Extract text response
+ const textContent = currentResponse.content.find(c => c.type === "text");
+ return textContent?.text || "";
 }
 ```
 
@@ -2005,23 +2005,23 @@ For long AI responses, stream to terminal in real-time:
 ```typescript
 // src/lib/ai-stream.ts
 export async function* streamAI(
-  prompt: string,
-  context: AIContext
+ prompt: string,
+ context: AIContext
 ): AsyncGenerator<string> {
-  const client = new Anthropic();
+ const client = new Anthropic();
 
-  const stream = await client.messages.stream({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 4096,
-    system: buildSystemPrompt(context),
-    messages: [{ role: "user", content: prompt }],
-  });
+ const stream = await client.messages.stream({
+ model: "claude-sonnet-4-20250514",
+ max_tokens: 4096,
+ system: buildSystemPrompt(context),
+ messages: [{ role: "user", content: prompt }],
+ });
 
-  for await (const event of stream) {
-    if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-      yield event.delta.text;
-    }
-  }
+ for await (const event of stream) {
+ if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+ yield event.delta.text;
+ }
+ }
 }
 ```
 
@@ -2045,18 +2045,18 @@ print("::warning::Something happened")
 
 # AFTER (clean JSON on stdout)
 if json_mode:
-    # Include in CommandResult.problems instead
-    problems.append({"severity": "warning", "message": "Something happened"})
+ # Include in CommandResult.problems instead
+ problems.append({"severity": "warning", "message": "Something happened"})
 else:
-    print("::warning::Something happened", file=sys.stderr)
+ print("::warning::Something happened", file=sys.stderr)
 ```
 
 **Contract Test:**
 ```typescript
 // test/json-purity.test.ts
 test.each(ALL_COMMANDS)("%s returns valid JSON", async (cmd) => {
-  const { stdout } = await execa("cihub", [cmd, "--json"]);
-  expect(() => JSON.parse(stdout)).not.toThrow();
+ const { stdout } = await execa("cihub", [cmd, "--json"]);
+ expect(() => JSON.parse(stdout)).not.toThrow();
 });
 ```
 
@@ -2069,13 +2069,13 @@ The TypeScript CLI spawns the Python CLI, so:
 ```typescript
 // src/lib/cihub.ts
 async function findCihub(): Promise<string> {
-  // Try PATH
-  const inPath = await which("cihub").catch(() => null);
-  if (inPath) return inPath;
+ // Try PATH
+ const inPath = await which("cihub").catch(() => null);
+ if (inPath) return inPath;
 
-  // Try Python module
-  const python = process.env.PYTHON_PATH || "python";
-  return `${python} -m cihub`;
+ // Try Python module
+ const python = process.env.PYTHON_PATH || "python";
+ return `${python} -m cihub`;
 }
 ```
 
@@ -2166,12 +2166,12 @@ import { program } from "commander";
 import { App } from "./app.js";
 
 program
-  .name("cihub")
-  .description("Interactive CIHub CLI")
-  .option("-d, --dir <path>", "Working directory", process.cwd())
-  .action((options) => {
-    render(<App cwd={options.dir} />);
-  });
+ .name("cihub")
+ .description("Interactive CIHub CLI")
+ .option("-d, --dir <path>", "Working directory", process.cwd())
+ .action((options) => {
+ render(<App cwd={options.dir} />);
+ });
 
 program.parse();
 ```
@@ -2190,74 +2190,74 @@ import { parseSlashCommand, executeCommand } from "./lib/commands.js";
 import type { CommandResult } from "./types/command-result.js";
 
 interface AppProps {
-  cwd: string;
+ cwd: string;
 }
 
 export function App({ cwd }: AppProps) {
-  const { exit } = useApp();
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<CommandResult | null>(null);
-  const [history, setHistory] = useState<string[]>([]);
+ const { exit } = useApp();
+ const [input, setInput] = useState("");
+ const [loading, setLoading] = useState(false);
+ const [result, setResult] = useState<CommandResult | null>(null);
+ const [history, setHistory] = useState<string[]>([]);
 
-  const handleSubmit = useCallback(async (value: string) => {
-    if (!value.trim()) return;
+ const handleSubmit = useCallback(async (value: string) => {
+ if (!value.trim()) return;
 
-    // Add to history
-    setHistory((h) => [...h, value]);
-    setInput("");
+ // Add to history
+ setHistory((h) => [...h, value]);
+ setInput("");
 
-    // Handle meta commands
-    if (value === "/exit") {
-      exit();
-      return;
-    }
-    if (value === "/clear") {
-      setResult(null);
-      return;
-    }
+ // Handle meta commands
+ if (value === "/exit") {
+ exit();
+ return;
+ }
+ if (value === "/clear") {
+ setResult(null);
+ return;
+ }
 
-    // Execute command
-    setLoading(true);
-    try {
-      const parsed = parseSlashCommand(value);
-      const output = await executeCommand(parsed, cwd);
-      setResult(output);
-    } catch (error) {
-      setResult({
-        exit_code: 1,
-        summary: `Error: ${error.message}`,
-        problems: [{ severity: "error", message: error.message }],
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [cwd, exit]);
+ // Execute command
+ setLoading(true);
+ try {
+ const parsed = parseSlashCommand(value);
+ const output = await executeCommand(parsed, cwd);
+ setResult(output);
+ } catch (error) {
+ setResult({
+ exit_code: 1,
+ summary: `Error: ${error.message}`,
+ problems: [{ severity: "error", message: error.message }],
+ });
+ } finally {
+ setLoading(false);
+ }
+ }, [cwd, exit]);
 
-  return (
-    <Box flexDirection="column" padding={1}>
-      <Header cwd={cwd} />
+ return (
+ <Box flexDirection="column" padding={1}>
+ <Header cwd={cwd} />
 
-      {loading ? (
-        <Box>
-          <Spinner type="dots" />
-          <Text> Running...</Text>
-        </Box>
-      ) : (
-        result && <Output result={result} />
-      )}
+ {loading ? (
+ <Box>
+ <Spinner type="dots" />
+ <Text> Running...</Text>
+ </Box>
+ ) : (
+ result && <Output result={result} />
+ )}
 
-      <Box marginTop={1}>
-        <Text color="green">❯ </Text>
-        <TextInput
-          value={input}
-          onChange={setInput}
-          onSubmit={handleSubmit}
-          placeholder="Type /help or enter a command..."
-        />
-      </Box>
-    </Box>
-  );
+ <Box marginTop={1}>
+ <Text color="green"> </Text>
+ <TextInput
+ value={input}
+ onChange={setInput}
+ onSubmit={handleSubmit}
+ placeholder="Type /help or enter a command..."
+ />
+ </Box>
+ </Box>
+ );
 }
 ```
 
@@ -2269,36 +2269,36 @@ import { execa, type ExecaReturnValue } from "execa";
 import type { CommandResult } from "../types/command-result.js";
 
 export async function runCihub(
-  command: string,
-  args: string[] = [],
-  cwd: string
+ command: string,
+ args: string[] = [],
+ cwd: string
 ): Promise<CommandResult> {
-  const fullArgs = [command, ...args, "--json"];
+ const fullArgs = [command, ...args, "--json"];
 
-  try {
-    const result = await execa("python", ["-m", "cihub", ...fullArgs], {
-      cwd,
-      reject: false, // Don't throw on non-zero exit
-    });
+ try {
+ const result = await execa("python", ["-m", "cihub", ...fullArgs], {
+ cwd,
+ reject: false, // Don't throw on non-zero exit
+ });
 
-    // Parse JSON from stdout
-    const json = JSON.parse(result.stdout);
-    return json as CommandResult;
-  } catch (error) {
-    // Handle JSON parse error or process error
-    return {
-      exit_code: 1,
-      command,
-      status: "error",
-      duration_ms: 0,
-      summary: `Failed to run cihub: ${error.message}`,
-      problems: [{ severity: "error", message: error.message }],
-      suggestions: [],
-      files_generated: [],
-      files_modified: [],
-      artifacts: {},
-    };
-  }
+ // Parse JSON from stdout
+ const json = JSON.parse(result.stdout);
+ return json as CommandResult;
+ } catch (error) {
+ // Handle JSON parse error or process error
+ return {
+ exit_code: 1,
+ command,
+ status: "error",
+ duration_ms: 0,
+ summary: `Failed to run cihub: ${error.message}`,
+ problems: [{ severity: "error", message: error.message }],
+ suggestions: [],
+ files_generated: [],
+ files_modified: [],
+ artifacts: {},
+ };
+ }
 }
 ```
 
@@ -2307,50 +2307,50 @@ export async function runCihub(
 ```typescript
 // src/lib/parser.ts
 export interface ParsedCommand {
-  type: "slash" | "raw" | "ai";
-  command: string;
-  args: string[];
+ type: "slash" | "raw" | "ai";
+ command: string;
+ args: string[];
 }
 
 export function parseSlashCommand(input: string): ParsedCommand {
-  const trimmed = input.trim();
+ const trimmed = input.trim();
 
-  // Slash command: /discover --json
-  if (trimmed.startsWith("/")) {
-    const [cmd, ...rest] = trimmed.slice(1).split(/\s+/);
+ // Slash command: /discover --json
+ if (trimmed.startsWith("/")) {
+ const [cmd, ...rest] = trimmed.slice(1).split(/\s+/);
 
-    // AI command
-    if (cmd === "ai") {
-      return {
-        type: "ai",
-        command: "ai",
-        args: [rest.join(" ")], // Entire prompt
-      };
-    }
+ // AI command
+ if (cmd === "ai") {
+ return {
+ type: "ai",
+ command: "ai",
+ args: [rest.join(" ")], // Entire prompt
+ };
+ }
 
-    return {
-      type: "slash",
-      command: cmd,
-      args: rest,
-    };
-  }
+ return {
+ type: "slash",
+ command: cmd,
+ args: rest,
+ };
+ }
 
-  // Raw command: cihub discover
-  if (trimmed.startsWith("cihub ")) {
-    const [, cmd, ...rest] = trimmed.split(/\s+/);
-    return {
-      type: "raw",
-      command: cmd,
-      args: rest,
-    };
-  }
+ // Raw command: cihub discover
+ if (trimmed.startsWith("cihub ")) {
+ const [, cmd, ...rest] = trimmed.split(/\s+/);
+ return {
+ type: "raw",
+ command: cmd,
+ args: rest,
+ };
+ }
 
-  // Default to AI prompt
-  return {
-    type: "ai",
-    command: "ai",
-    args: [trimmed],
-  };
+ // Default to AI prompt
+ return {
+ type: "ai",
+ command: "ai",
+ args: [trimmed],
+ };
 }
 ```
 
@@ -2363,60 +2363,60 @@ import { Box, Text } from "ink";
 import type { CommandResult } from "../types/command-result.js";
 
 const ICONS = {
-  error: "✗",
-  warning: "⚠",
-  info: "ℹ",
-  success: "✓",
-  critical: "☠",
+ error: "[ ]",
+ warning: "",
+ info: "ℹ",
+ success: "[x]",
+ critical: "",
 };
 
 const COLORS = {
-  error: "red",
-  warning: "yellow",
-  info: "blue",
-  success: "green",
-  critical: "magenta",
+ error: "red",
+ warning: "yellow",
+ info: "blue",
+ success: "green",
+ critical: "magenta",
 };
 
 interface OutputProps {
-  result: CommandResult;
+ result: CommandResult;
 }
 
 export function Output({ result }: OutputProps) {
-  return (
-    <Box flexDirection="column" marginY={1}>
-      {/* Summary */}
-      <Text bold>{result.summary}</Text>
+ return (
+ <Box flexDirection="column" marginY={1}>
+ {/* Summary */}
+ <Text bold>{result.summary}</Text>
 
-      {/* Problems */}
-      {result.problems.length > 0 && (
-        <Box flexDirection="column" marginTop={1}>
-          {result.problems.map((p, i) => (
-            <Text key={i} color={COLORS[p.severity] || "white"}>
-              {ICONS[p.severity] || "•"} {p.message}
-            </Text>
-          ))}
-        </Box>
-      )}
+ {/* Problems */}
+ {result.problems.length > 0 && (
+ <Box flexDirection="column" marginTop={1}>
+ {result.problems.map((p, i) => (
+ <Text key={i} color={COLORS[p.severity] || "white"}>
+ {ICONS[p.severity] || "•"} {p.message}
+ </Text>
+ ))}
+ </Box>
+ )}
 
-      {/* Suggestions */}
-      {result.suggestions.length > 0 && (
-        <Box flexDirection="column" marginTop={1}>
-          <Text bold>Suggestions:</Text>
-          {result.suggestions.map((s, i) => (
-            <Text key={i} color="cyan">• {s.message}</Text>
-          ))}
-        </Box>
-      )}
+ {/* Suggestions */}
+ {result.suggestions.length > 0 && (
+ <Box flexDirection="column" marginTop={1}>
+ <Text bold>Suggestions:</Text>
+ {result.suggestions.map((s, i) => (
+ <Text key={i} color="cyan">• {s.message}</Text>
+ ))}
+ </Box>
+ )}
 
-      {/* Files */}
-      {result.files_generated.length > 0 && (
-        <Text color="green" marginTop={1}>
-          Generated: {result.files_generated.join(", ")}
-        </Text>
-      )}
-    </Box>
-  );
+ {/* Files */}
+ {result.files_generated.length > 0 && (
+ <Text color="green" marginTop={1}>
+ Generated: {result.files_generated.join(", ")}
+ </Text>
+ )}
+ </Box>
+ );
 }
 ```
 
@@ -2449,13 +2449,13 @@ import "../dist/index.js";
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/index.tsx"],
-  format: ["esm"],
-  target: "node20",
-  clean: true,
-  minify: true,
-  bundle: true,
-  external: ["react", "ink"], // Don't bundle these
+ entry: ["src/index.tsx"],
+ format: ["esm"],
+ target: "node20",
+ clean: true,
+ minify: true,
+ bundle: true,
+ external: ["react", "ink"], // Don't bundle these
 });
 ```
 
@@ -2499,53 +2499,53 @@ export default defineConfig({
 **Hub-CI Subcommands (46):**
 ```
 Validation: actionlint-install, actionlint, syntax, repo-check, source-check
-            validate-configs, validate-profiles
+ validate-configs, validate-profiles
 
-Security:   security-pip-audit, security-bandit, security-ruff, security-owasp
-            docker-check, codeql-build, trivy-install, trivy-summary
-            gitleaks-summary, license-check, zizmor-run, zizmor-check
+Security: security-pip-audit, security-bandit, security-ruff, security-owasp
+ docker-check, codeql-build, trivy-install, trivy-summary
+ gitleaks-summary, license-check, zizmor-run, zizmor-check
 
-Kyverno:    kyverno-install, kyverno-validate, kyverno-test
+Kyverno: kyverno-install, kyverno-validate, kyverno-test
 
-Smoke:      smoke-java-build, smoke-java-tests, smoke-java-coverage
-            smoke-java-checkstyle, smoke-java-spotbugs
-            smoke-python-install, smoke-python-tests, smoke-python-ruff
-            smoke-python-black
+Smoke: smoke-java-build, smoke-java-tests, smoke-java-coverage
+ smoke-java-checkstyle, smoke-java-spotbugs
+ smoke-python-install, smoke-python-tests, smoke-python-ruff
+ smoke-python-black
 
-Python:     ruff, black, mutmut, bandit, pip-audit, pytest-summary
+Python: ruff, black, mutmut, bandit, pip-audit, pytest-summary
 
-Release:    release-parse, release-update, badges, badges-commit
+Release: release-parse, release-update, badges, badges-commit
 
-Hub:        summary, outputs, enforce, verify-matrix, quarantine
+Hub: summary, outputs, enforce, verify-matrix, quarantine
 ```
 
 ### Meta Commands (Interactive CLI Only)
 
 ```
-/help            - Show all commands
-/help <cmd>      - Show help for specific command
-/clear           - Clear screen
-/exit            - Exit CLI
-/cd <path>       - Change directory
-/pwd             - Show current directory
-/history         - Show command history
-/reload          - Reload configuration
-/status          - Show system status
+/help - Show all commands
+/help <cmd> - Show help for specific command
+/clear - Clear screen
+/exit - Exit CLI
+/cd <path> - Change directory
+/pwd - Show current directory
+/history - Show command history
+/reload - Reload configuration
+/status - Show system status
 ```
 
 ### AI Commands
 
 ```
-/ai <prompt>     - Free-form AI query
-/explain         - Explain current state/last result
-/explain <file>  - Explain a specific file
-/review          - AI review of recent changes
+/ai <prompt> - Free-form AI query
+/explain - Explain current state/last result
+/explain <file> - Explain a specific file
+/review - AI review of recent changes
 /review <commit> - Review specific commit
-/plan <task>     - Create implementation plan
-/fix             - Suggest fix for last error
-/fix <issue>     - Suggest fix for specific issue
-/suggest         - AI suggestions for current state
-/diagnose        - Deep diagnosis of failures
+/plan <task> - Create implementation plan
+/fix - Suggest fix for last error
+/fix <issue> - Suggest fix for specific issue
+/suggest - AI suggestions for current state
+/diagnose - Deep diagnosis of failures
 ```
 
 ---
@@ -2584,15 +2584,15 @@ The authoritative source is the Python `CommandResult` dataclass:
 ```python
 @dataclass
 class CommandResult:
-    """Structured command result for JSON output."""
-    exit_code: int = 0
-    summary: str = ""
-    problems: list[dict[str, Any]] = field(default_factory=list)
-    suggestions: list[dict[str, Any]] = field(default_factory=list)
-    files_generated: list[str] = field(default_factory=list)
-    files_modified: list[str] = field(default_factory=list)
-    artifacts: dict[str, Any] = field(default_factory=dict)
-    data: dict[str, Any] = field(default_factory=dict)
+ """Structured command result for JSON output."""
+ exit_code: int = 0
+ summary: str = ""
+ problems: list[dict[str, Any]] = field(default_factory=list)
+ suggestions: list[dict[str, Any]] = field(default_factory=list)
+ files_generated: list[str] = field(default_factory=list)
+ files_modified: list[str] = field(default_factory=list)
+ artifacts: dict[str, Any] = field(default_factory=dict)
+ data: dict[str, Any] = field(default_factory=dict)
 ```
 
 ### 14.2 TypeScript Schema (Zod)
@@ -2605,11 +2605,11 @@ import { z } from "zod";
  * Problem severity levels
  */
 export const SeveritySchema = z.enum([
-  "critical",
-  "error",
-  "warning",
-  "info",
-  "success"
+ "critical",
+ "error",
+ "warning",
+ "info",
+ "success"
 ]);
 export type Severity = z.infer<typeof SeveritySchema>;
 
@@ -2617,14 +2617,14 @@ export type Severity = z.infer<typeof SeveritySchema>;
  * A problem/issue found by a command
  */
 export const ProblemSchema = z.object({
-  severity: SeveritySchema,
-  message: z.string(),
-  code: z.string().optional(),        // e.g., "CIHUB-001", "CVE-2024-1234"
-  file: z.string().optional(),         // File path if applicable
-  line: z.number().optional(),         // Line number if applicable
-  column: z.number().optional(),       // Column if applicable
-  hint: z.string().optional(),         // Remediation hint
-  source: z.string().optional(),       // Tool that detected this (e.g., "ruff", "bandit")
+ severity: SeveritySchema,
+ message: z.string(),
+ code: z.string().optional(), // e.g., "CIHUB-001", "CVE-2024-1234"
+ file: z.string().optional(), // File path if applicable
+ line: z.number().optional(), // Line number if applicable
+ column: z.number().optional(), // Column if applicable
+ hint: z.string().optional(), // Remediation hint
+ source: z.string().optional(), // Tool that detected this (e.g., "ruff", "bandit")
 });
 export type Problem = z.infer<typeof ProblemSchema>;
 
@@ -2632,10 +2632,10 @@ export type Problem = z.infer<typeof ProblemSchema>;
  * A suggestion for the user
  */
 export const SuggestionSchema = z.object({
-  message: z.string(),
-  command: z.string().optional(),      // Suggested command to run
-  autofix: z.boolean().optional(),     // Can be auto-fixed
-  priority: z.number().optional(),     // 1 = highest priority
+ message: z.string(),
+ command: z.string().optional(), // Suggested command to run
+ autofix: z.boolean().optional(), // Can be auto-fixed
+ priority: z.number().optional(), // 1 = highest priority
 });
 export type Suggestion = z.infer<typeof SuggestionSchema>;
 
@@ -2643,39 +2643,39 @@ export type Suggestion = z.infer<typeof SuggestionSchema>;
  * Data rendering types (for HumanRenderer)
  */
 export const DataSchema = z.object({
-  items: z.array(z.string()).optional(),           // Bullet list
-  table: z.object({
-    headers: z.array(z.string()).optional(),
-    rows: z.array(z.record(z.unknown())).or(z.array(z.array(z.unknown()))),
-  }).optional(),
-  key_values: z.record(z.unknown()).optional(),    // Key-value pairs
-  raw_output: z.string().optional(),               // Preformatted text
-}).passthrough();  // Allow additional command-specific data
+ items: z.array(z.string()).optional(), // Bullet list
+ table: z.object({
+ headers: z.array(z.string()).optional(),
+ rows: z.array(z.record(z.unknown())).or(z.array(z.array(z.unknown()))),
+ }).optional(),
+ key_values: z.record(z.unknown()).optional(), // Key-value pairs
+ raw_output: z.string().optional(), // Preformatted text
+}).passthrough(); // Allow additional command-specific data
 
 /**
  * The full JSON payload returned by `cihub <command> --json`
  */
 export const CommandResultPayloadSchema = z.object({
-  // Metadata (added by cli.py main())
-  command: z.string(),                             // e.g., "triage", "hub-ci check-workflows"
-  status: z.enum(["success", "failure", "error"]),
-  exit_code: z.number().int().min(0).max(255),
-  duration_ms: z.number().int().min(0),
+ // Metadata (added by cli.py main())
+ command: z.string(), // e.g., "triage", "hub-ci check-workflows"
+ status: z.enum(["success", "failure", "error"]),
+ exit_code: z.number().int().min(0).max(255),
+ duration_ms: z.number().int().min(0),
 
-  // Core result fields
-  summary: z.string(),
-  problems: z.array(ProblemSchema).default([]),
-  suggestions: z.array(SuggestionSchema).default([]),
+ // Core result fields
+ summary: z.string(),
+ problems: z.array(ProblemSchema).default([]),
+ suggestions: z.array(SuggestionSchema).default([]),
 
-  // File operations
-  files_generated: z.array(z.string()).default([]),
-  files_modified: z.array(z.string()).default([]),
+ // File operations
+ files_generated: z.array(z.string()).default([]),
+ files_modified: z.array(z.string()).default([]),
 
-  // Artifacts (command-specific structured data)
-  artifacts: z.record(z.unknown()).default({}),
+ // Artifacts (command-specific structured data)
+ artifacts: z.record(z.unknown()).default({}),
 
-  // Structured data for rendering
-  data: DataSchema.optional(),
+ // Structured data for rendering
+ data: DataSchema.optional(),
 });
 export type CommandResultPayload = z.infer<typeof CommandResultPayloadSchema>;
 
@@ -2683,24 +2683,24 @@ export type CommandResultPayload = z.infer<typeof CommandResultPayloadSchema>;
  * Parse and validate JSON from Python CLI
  */
 export function parseCommandResult(json: string): CommandResultPayload {
-  const parsed = JSON.parse(json);
-  return CommandResultPayloadSchema.parse(parsed);
+ const parsed = JSON.parse(json);
+ return CommandResultPayloadSchema.parse(parsed);
 }
 
 /**
  * Check if result indicates success
  */
 export function isSuccess(result: CommandResultPayload): boolean {
-  return result.exit_code === 0 && result.status === "success";
+ return result.exit_code === 0 && result.status === "success";
 }
 
 /**
  * Get critical/error problems only
  */
 export function getCriticalProblems(result: CommandResultPayload): Problem[] {
-  return result.problems.filter(p =>
-    p.severity === "critical" || p.severity === "error"
-  );
+ return result.problems.filter(p =>
+ p.severity === "critical" || p.severity === "error"
+ );
 }
 ```
 
@@ -2734,18 +2734,18 @@ Different commands populate the `artifacts` field with command-specific data:
 ```typescript
 // Example: Triage-specific artifacts
 export const TriageBundleSchema = z.object({
-  overall_status: z.string(),
-  tests_passed: z.number(),
-  tests_failed: z.number(),
-  tests_total: z.number(),
-  coverage_pct: z.number().optional(),
-  gate_failures: z.array(z.string()),
-  warnings: z.array(z.object({
-    type: z.string(),
-    severity: z.string(),
-    message: z.string(),
-  })),
-  tool_results: z.record(z.unknown()),
+ overall_status: z.string(),
+ tests_passed: z.number(),
+ tests_failed: z.number(),
+ tests_total: z.number(),
+ coverage_pct: z.number().optional(),
+ gate_failures: z.array(z.string()),
+ warnings: z.array(z.object({
+ type: z.string(),
+ severity: z.string(),
+ message: z.string(),
+ })),
+ tool_results: z.record(z.unknown()),
 });
 ```
 
@@ -2782,19 +2782,19 @@ This section defines the **complete testing strategy** for the TypeScript CLI, e
 ### 15.1 Test Pyramid
 
 ```
-                    ┌─────────┐
-                    │   E2E   │  2-3 tests (full flows)
-                    │  Tests  │
-                   ┌┴─────────┴┐
-                   │Integration│  10-20 tests (CLI bridge)
-                   │   Tests   │
-                  ┌┴───────────┴┐
-                  │  Component  │  30-50 tests (React/Ink)
-                  │   Tests     │
-                 ┌┴─────────────┴┐
-                 │    Unit       │  100+ tests (logic, parsing)
-                 │    Tests      │
-                 └───────────────┘
+ ┌─────────┐
+ │ E2E │ 2-3 tests (full flows)
+ │ Tests │
+ ┌┴─────────┴┐
+ │Integration│ 10-20 tests (CLI bridge)
+ │ Tests │
+ ┌┴───────────┴┐
+ │ Component │ 30-50 tests (React/Ink)
+ │ Tests │
+ ┌┴─────────────┴┐
+ │ Unit │ 100+ tests (logic, parsing)
+ │ Tests │
+ └───────────────┘
 ```
 
 ### 15.2 Contract Tests (Critical)
@@ -2811,41 +2811,41 @@ import { CommandResultPayloadSchema } from "../src/types/command-result";
  * All commands that support --json flag
  */
 const JSON_COMMANDS = [
-  ["detect"],
-  ["preflight"],
-  ["discover"],
-  ["triage"],
-  ["check"],
-  ["verify"],
-  ["ci"],
-  ["report", "build"],
-  ["report", "summary"],
-  ["config", "show"],
-  ["hub-ci", "check-workflows"],
-  // ... all 100+ commands
+ ["detect"],
+ ["preflight"],
+ ["discover"],
+ ["triage"],
+ ["check"],
+ ["verify"],
+ ["ci"],
+ ["report", "build"],
+ ["report", "summary"],
+ ["config", "show"],
+ ["hub-ci", "check-workflows"],
+ // ... all 100+ commands
 ] as const;
 
 describe("JSON Output Contract", () => {
-  test.each(JSON_COMMANDS)(
-    "cihub %s --json returns valid JSON",
-    async (...args) => {
-      const { stdout, exitCode } = await execa(
-        "python", ["-m", "cihub", ...args, "--json"],
-        { reject: false }
-      );
+ test.each(JSON_COMMANDS)(
+ "cihub %s --json returns valid JSON",
+ async (...args) => {
+ const { stdout, exitCode } = await execa(
+ "python", ["-m", "cihub", ...args, "--json"],
+ { reject: false }
+ );
 
-      // Must parse as JSON
-      expect(() => JSON.parse(stdout)).not.toThrow();
+ // Must parse as JSON
+ expect(() => JSON.parse(stdout)).not.toThrow();
 
-      // Must match schema
-      const parsed = JSON.parse(stdout);
-      expect(() => CommandResultPayloadSchema.parse(parsed)).not.toThrow();
+ // Must match schema
+ const parsed = JSON.parse(stdout);
+ expect(() => CommandResultPayloadSchema.parse(parsed)).not.toThrow();
 
-      // exit_code in JSON must match process exit code
-      expect(parsed.exit_code).toBe(exitCode);
-    },
-    { timeout: 30000 }
-  );
+ // exit_code in JSON must match process exit code
+ expect(parsed.exit_code).toBe(exitCode);
+ },
+ { timeout: 30000 }
+ );
 });
 ```
 
@@ -2855,27 +2855,27 @@ import { describe, test, expect } from "vitest";
 import { execa } from "execa";
 
 describe("Schema Synchronization", () => {
-  test("Python CommandResult fields match TypeScript schema", async () => {
-    // Extract Python fields via introspection
-    const script = `
+ test("Python CommandResult fields match TypeScript schema", async () => {
+ // Extract Python fields via introspection
+ const script = `
 import json
 from dataclasses import fields
 from cihub.types import CommandResult
 print(json.dumps({f.name: str(f.type) for f in fields(CommandResult)}))
-    `;
-    const { stdout } = await execa("python", ["-c", script]);
-    const pythonFields = JSON.parse(stdout);
+ `;
+ const { stdout } = await execa("python", ["-c", script]);
+ const pythonFields = JSON.parse(stdout);
 
-    // Expected fields from TypeScript
-    const expectedFields = [
-      "exit_code", "summary", "problems", "suggestions",
-      "files_generated", "files_modified", "artifacts", "data"
-    ];
+ // Expected fields from TypeScript
+ const expectedFields = [
+ "exit_code", "summary", "problems", "suggestions",
+ "files_generated", "files_modified", "artifacts", "data"
+ ];
 
-    for (const field of expectedFields) {
-      expect(pythonFields).toHaveProperty(field);
-    }
-  });
+ for (const field of expectedFields) {
+ expect(pythonFields).toHaveProperty(field);
+ }
+ });
 });
 ```
 
@@ -2889,67 +2889,67 @@ import { describe, test, expect } from "vitest";
 import { Output } from "../src/components/Output";
 
 describe("Output Component", () => {
-  test("renders summary", () => {
-    const result = {
-      exit_code: 0,
-      summary: "Found 3 repos",
-      problems: [],
-      suggestions: [],
-      files_generated: [],
-      files_modified: [],
-      artifacts: {},
-      command: "discover",
-      status: "success" as const,
-      duration_ms: 100,
-    };
+ test("renders summary", () => {
+ const result = {
+ exit_code: 0,
+ summary: "Found 3 repos",
+ problems: [],
+ suggestions: [],
+ files_generated: [],
+ files_modified: [],
+ artifacts: {},
+ command: "discover",
+ status: "success" as const,
+ duration_ms: 100,
+ };
 
-    const { lastFrame } = render(<Output result={result} />);
-    expect(lastFrame()).toContain("Found 3 repos");
-  });
+ const { lastFrame } = render(<Output result={result} />);
+ expect(lastFrame()).toContain("Found 3 repos");
+ });
 
-  test("renders problems with severity icons", () => {
-    const result = {
-      exit_code: 1,
-      summary: "Check failed",
-      problems: [
-        { severity: "error" as const, message: "Ruff found 5 errors" },
-        { severity: "warning" as const, message: "Coverage below 80%" },
-      ],
-      suggestions: [],
-      files_generated: [],
-      files_modified: [],
-      artifacts: {},
-      command: "check",
-      status: "failure" as const,
-      duration_ms: 500,
-    };
+ test("renders problems with severity icons", () => {
+ const result = {
+ exit_code: 1,
+ summary: "Check failed",
+ problems: [
+ { severity: "error" as const, message: "Ruff found 5 errors" },
+ { severity: "warning" as const, message: "Coverage below 80%" },
+ ],
+ suggestions: [],
+ files_generated: [],
+ files_modified: [],
+ artifacts: {},
+ command: "check",
+ status: "failure" as const,
+ duration_ms: 500,
+ };
 
-    const { lastFrame } = render(<Output result={result} />);
-    expect(lastFrame()).toContain("✗");  // Error icon
-    expect(lastFrame()).toContain("⚠");  // Warning icon
-    expect(lastFrame()).toContain("Ruff found 5 errors");
-  });
+ const { lastFrame } = render(<Output result={result} />);
+ expect(lastFrame()).toContain("[ ]"); // Error icon
+ expect(lastFrame()).toContain(""); // Warning icon
+ expect(lastFrame()).toContain("Ruff found 5 errors");
+ });
 
-  test("renders suggestions", () => {
-    const result = {
-      exit_code: 1,
-      summary: "Issues found",
-      problems: [],
-      suggestions: [
-        { message: "Run /check --fix to auto-fix" },
-      ],
-      files_generated: [],
-      files_modified: [],
-      artifacts: {},
-      command: "check",
-      status: "failure" as const,
-      duration_ms: 200,
-    };
+ test("renders suggestions", () => {
+ const result = {
+ exit_code: 1,
+ summary: "Issues found",
+ problems: [],
+ suggestions: [
+ { message: "Run /check --fix to auto-fix" },
+ ],
+ files_generated: [],
+ files_modified: [],
+ artifacts: {},
+ command: "check",
+ status: "failure" as const,
+ duration_ms: 200,
+ };
 
-    const { lastFrame } = render(<Output result={result} />);
-    expect(lastFrame()).toContain("Suggestions:");
-    expect(lastFrame()).toContain("/check --fix");
-  });
+ const { lastFrame } = render(<Output result={result} />);
+ expect(lastFrame()).toContain("Suggestions:");
+ expect(lastFrame()).toContain("/check --fix");
+ });
 });
 ```
 
@@ -2964,43 +2964,43 @@ import { mkdtemp, writeFile, rm } from "fs/promises";
 import { join } from "path";
 
 describe("CIHub Bridge", () => {
-  let testDir: string;
+ let testDir: string;
 
-  beforeAll(async () => {
-    // Create temp directory with minimal Python project
-    testDir = await mkdtemp(join(tmpdir(), "cihub-test-"));
-    await writeFile(
-      join(testDir, "pyproject.toml"),
-      '[project]\nname = "test"\nversion = "0.1.0"'
-    );
-  });
+ beforeAll(async () => {
+ // Create temp directory with minimal Python project
+ testDir = await mkdtemp(join(tmpdir(), "cihub-test-"));
+ await writeFile(
+ join(testDir, "pyproject.toml"),
+ '[project]\nname = "test"\nversion = "0.1.0"'
+ );
+ });
 
-  afterAll(async () => {
-    await rm(testDir, { recursive: true, force: true });
-  });
+ afterAll(async () => {
+ await rm(testDir, { recursive: true, force: true });
+ });
 
-  test("discover returns valid CommandResult", async () => {
-    const result = await runCihub("discover", [], testDir);
+ test("discover returns valid CommandResult", async () => {
+ const result = await runCihub("discover", [], testDir);
 
-    expect(result.command).toBe("discover");
-    expect(typeof result.exit_code).toBe("number");
-    expect(typeof result.duration_ms).toBe("number");
-    expect(result.duration_ms).toBeGreaterThan(0);
-  });
+ expect(result.command).toBe("discover");
+ expect(typeof result.exit_code).toBe("number");
+ expect(typeof result.duration_ms).toBe("number");
+ expect(result.duration_ms).toBeGreaterThan(0);
+ });
 
-  test("handles missing command gracefully", async () => {
-    const result = await runCihub("nonexistent", [], testDir);
+ test("handles missing command gracefully", async () => {
+ const result = await runCihub("nonexistent", [], testDir);
 
-    expect(result.exit_code).not.toBe(0);
-    expect(result.problems.length).toBeGreaterThan(0);
-  });
+ expect(result.exit_code).not.toBe(0);
+ expect(result.problems.length).toBeGreaterThan(0);
+ });
 
-  test("passes arguments correctly", async () => {
-    const result = await runCihub("check", ["--verbose"], testDir);
+ test("passes arguments correctly", async () => {
+ const result = await runCihub("check", ["--verbose"], testDir);
 
-    // Command should receive the flag
-    expect(result.command).toBe("check");
-  });
+ // Command should receive the flag
+ expect(result.command).toBe("check");
+ });
 });
 ```
 
@@ -3013,38 +3013,38 @@ import { render } from "ink-testing-library";
 import { App } from "../src/app";
 
 describe("E2E Workflows", () => {
-  test("complete triage flow", async () => {
-    const { stdin, lastFrame, waitForFrame } = render(
-      <App cwd="/tmp/test-project" />
-    );
+ test("complete triage flow", async () => {
+ const { stdin, lastFrame, waitForFrame } = render(
+ <App cwd="/tmp/test-project" />
+ );
 
-    // Type /triage command
-    stdin.write("/triage\n");
+ // Type /triage command
+ stdin.write("/triage\n");
 
-    // Wait for loading to complete
-    await waitForFrame((frame) => !frame.includes("Running..."));
+ // Wait for loading to complete
+ await waitForFrame((frame) => !frame.includes("Running..."));
 
-    // Should show triage output
-    const output = lastFrame();
-    expect(output).toContain("triage");
-  });
+ // Should show triage output
+ const output = lastFrame();
+ expect(output).toContain("triage");
+ });
 
-  test("AI query flow", async () => {
-    const { stdin, lastFrame, waitForFrame } = render(
-      <App cwd="/tmp/test-project" />
-    );
+ test("AI query flow", async () => {
+ const { stdin, lastFrame, waitForFrame } = render(
+ <App cwd="/tmp/test-project" />
+ );
 
-    // Type AI query
-    stdin.write("/ai what is failing?\n");
+ // Type AI query
+ stdin.write("/ai what is failing?\n");
 
-    // Wait for AI response
-    await waitForFrame((frame) => !frame.includes("Running..."), {
-      timeout: 30000
-    });
+ // Wait for AI response
+ await waitForFrame((frame) => !frame.includes("Running..."), {
+ timeout: 30000
+ });
 
-    // Should show AI response
-    expect(lastFrame()).toBeTruthy();
-  });
+ // Should show AI response
+ expect(lastFrame()).toBeTruthy();
+ });
 });
 ```
 
@@ -3055,23 +3055,23 @@ describe("E2E Workflows", () => {
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  test: {
-    include: ["test/**/*.test.{ts,tsx}"],
-    globals: true,
-    environment: "node",
-    coverage: {
-      provider: "v8",
-      reporter: ["text", "json", "html"],
-      thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 70,
-        statements: 80,
-      },
-    },
-    testTimeout: 30000,  // 30s for CLI tests
-    hookTimeout: 10000,
-  },
+ test: {
+ include: ["test/**/*.test.{ts,tsx}"],
+ globals: true,
+ environment: "node",
+ coverage: {
+ provider: "v8",
+ reporter: ["text", "json", "html"],
+ thresholds: {
+ lines: 80,
+ functions: 80,
+ branches: 70,
+ statements: 80,
+ },
+ },
+ testTimeout: 30000, // 30s for CLI tests
+ hookTimeout: 10000,
+ },
 });
 ```
 
@@ -3083,33 +3083,33 @@ name: Test TypeScript CLI
 on: [push, pull_request]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+ test:
+ runs-on: ubuntu-latest
+ steps:
+ - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+ - uses: actions/setup-node@v4
+ with:
+ node-version: '20'
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+ - uses: actions/setup-python@v5
+ with:
+ python-version: '3.12'
 
-      - name: Install Python CLI
-        run: pip install -e .
+ - name: Install Python CLI
+ run: pip install -e .
 
-      - name: Install TypeScript dependencies
-        run: pnpm install
-        working-directory: cihub-cli
+ - name: Install TypeScript dependencies
+ run: pnpm install
+ working-directory: cihub-cli
 
-      - name: Run tests
-        run: pnpm test
-        working-directory: cihub-cli
+ - name: Run tests
+ run: pnpm test
+ working-directory: cihub-cli
 
-      - name: Contract tests
-        run: pnpm test:contracts
-        working-directory: cihub-cli
+ - name: Contract tests
+ run: pnpm test:contracts
+ working-directory: cihub-cli
 ```
 
 ---
@@ -3139,165 +3139,165 @@ import { CommandResultPayloadSchema, type CommandResultPayload } from "../types/
  * Configuration for CLI execution
  */
 interface CihubOptions {
-  timeout?: number;      // Default: 120000 (2 minutes)
-  maxRetries?: number;   // Default: 0 (no retry)
-  retryDelay?: number;   // Default: 1000ms
+ timeout?: number; // Default: 120000 (2 minutes)
+ maxRetries?: number; // Default: 0 (no retry)
+ retryDelay?: number; // Default: 1000ms
 }
 
 const DEFAULT_OPTIONS: Required<CihubOptions> = {
-  timeout: 120000,
-  maxRetries: 0,
-  retryDelay: 1000,
+ timeout: 120000,
+ maxRetries: 0,
+ retryDelay: 1000,
 };
 
 /**
  * Run cihub command with comprehensive error handling
  */
 export async function runCihub(
-  command: string,
-  args: string[] = [],
-  cwd: string,
-  options: CihubOptions = {}
+ command: string,
+ args: string[] = [],
+ cwd: string,
+ options: CihubOptions = {}
 ): Promise<CommandResultPayload> {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  const fullArgs = ["-m", "cihub", command, ...args, "--json"];
+ const opts = { ...DEFAULT_OPTIONS, ...options };
+ const fullArgs = ["-m", "cihub", command, ...args, "--json"];
 
-  let lastError: Error | null = null;
+ let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
-    try {
-      const result = await execa("python", fullArgs, {
-        cwd,
-        timeout: opts.timeout,
-        reject: false,  // Don't throw on non-zero exit
-        stripFinalNewline: true,
-      });
+ for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
+ try {
+ const result = await execa("python", fullArgs, {
+ cwd,
+ timeout: opts.timeout,
+ reject: false, // Don't throw on non-zero exit
+ stripFinalNewline: true,
+ });
 
-      // Try to parse JSON from stdout
-      return parseOutput(result.stdout, result.exitCode, command);
+ // Try to parse JSON from stdout
+ return parseOutput(result.stdout, result.exitCode, command);
 
-    } catch (error) {
-      lastError = error as Error;
+ } catch (error) {
+ lastError = error as Error;
 
-      if (isTimeoutError(error)) {
-        // Timeout - maybe retry
-        if (attempt < opts.maxRetries) {
-          await sleep(opts.retryDelay);
-          continue;
-        }
-        return createErrorResult(command, `Command timed out after ${opts.timeout}ms`);
-      }
+ if (isTimeoutError(error)) {
+ // Timeout - maybe retry
+ if (attempt < opts.maxRetries) {
+ await sleep(opts.retryDelay);
+ continue;
+ }
+ return createErrorResult(command, `Command timed out after ${opts.timeout}ms`);
+ }
 
-      if (isProcessError(error)) {
-        // Process crashed
-        return createErrorResult(command, `Process failed: ${(error as ExecaError).message}`);
-      }
+ if (isProcessError(error)) {
+ // Process crashed
+ return createErrorResult(command, `Process failed: ${(error as ExecaError).message}`);
+ }
 
-      // Unknown error
-      throw error;
-    }
-  }
+ // Unknown error
+ throw error;
+ }
+ }
 
-  return createErrorResult(command, lastError?.message || "Unknown error");
+ return createErrorResult(command, lastError?.message || "Unknown error");
 }
 
 /**
  * Parse stdout, with fallback for invalid JSON
  */
 function parseOutput(
-  stdout: string,
-  exitCode: number,
-  command: string
+ stdout: string,
+ exitCode: number,
+ command: string
 ): CommandResultPayload {
-  // Empty output
-  if (!stdout.trim()) {
-    return createErrorResult(command, "Command produced no output", exitCode);
-  }
+ // Empty output
+ if (!stdout.trim()) {
+ return createErrorResult(command, "Command produced no output", exitCode);
+ }
 
-  // Try JSON parse
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(stdout);
-  } catch (e) {
-    // JSON parse failed - output may contain non-JSON content
-    return {
-      command,
-      status: exitCode === 0 ? "success" : "failure",
-      exit_code: exitCode,
-      duration_ms: 0,
-      summary: "Command output was not valid JSON",
-      problems: [{
-        severity: "warning",
-        message: "Output contained non-JSON content",
-      }],
-      suggestions: [],
-      files_generated: [],
-      files_modified: [],
-      artifacts: {},
-      data: { raw_output: stdout },
-    };
-  }
+ // Try JSON parse
+ let parsed: unknown;
+ try {
+ parsed = JSON.parse(stdout);
+ } catch (e) {
+ // JSON parse failed - output may contain non-JSON content
+ return {
+ command,
+ status: exitCode === 0 ? "success" : "failure",
+ exit_code: exitCode,
+ duration_ms: 0,
+ summary: "Command output was not valid JSON",
+ problems: [{
+ severity: "warning",
+ message: "Output contained non-JSON content",
+ }],
+ suggestions: [],
+ files_generated: [],
+ files_modified: [],
+ artifacts: {},
+ data: { raw_output: stdout },
+ };
+ }
 
-  // Validate against schema
-  const validation = CommandResultPayloadSchema.safeParse(parsed);
-  if (!validation.success) {
-    return {
-      command,
-      status: exitCode === 0 ? "success" : "failure",
-      exit_code: exitCode,
-      duration_ms: 0,
-      summary: "Command output did not match expected schema",
-      problems: [{
-        severity: "warning",
-        message: `Schema validation: ${validation.error.message}`,
-      }],
-      suggestions: [],
-      files_generated: [],
-      files_modified: [],
-      artifacts: {},
-      data: parsed as Record<string, unknown>,
-    };
-  }
+ // Validate against schema
+ const validation = CommandResultPayloadSchema.safeParse(parsed);
+ if (!validation.success) {
+ return {
+ command,
+ status: exitCode === 0 ? "success" : "failure",
+ exit_code: exitCode,
+ duration_ms: 0,
+ summary: "Command output did not match expected schema",
+ problems: [{
+ severity: "warning",
+ message: `Schema validation: ${validation.error.message}`,
+ }],
+ suggestions: [],
+ files_generated: [],
+ files_modified: [],
+ artifacts: {},
+ data: parsed as Record<string, unknown>,
+ };
+ }
 
-  return validation.data;
+ return validation.data;
 }
 
 /**
  * Create an error CommandResult
  */
 function createErrorResult(
-  command: string,
-  message: string,
-  exitCode: number = 1
+ command: string,
+ message: string,
+ exitCode: number = 1
 ): CommandResultPayload {
-  return {
-    command,
-    status: "error",
-    exit_code: exitCode,
-    duration_ms: 0,
-    summary: message,
-    problems: [{
-      severity: "error",
-      message,
-      code: "CIHUB-CLI-ERROR",
-    }],
-    suggestions: [],
-    files_generated: [],
-    files_modified: [],
-    artifacts: {},
-  };
+ return {
+ command,
+ status: "error",
+ exit_code: exitCode,
+ duration_ms: 0,
+ summary: message,
+ problems: [{
+ severity: "error",
+ message,
+ code: "CIHUB-CLI-ERROR",
+ }],
+ suggestions: [],
+ files_generated: [],
+ files_modified: [],
+ artifacts: {},
+ };
 }
 
 function isTimeoutError(error: unknown): boolean {
-  return error instanceof Error && error.name === "TimeoutError";
+ return error instanceof Error && error.name === "TimeoutError";
 }
 
 function isProcessError(error: unknown): boolean {
-  return error instanceof Error && "exitCode" in error;
+ return error instanceof Error && "exitCode" in error;
 }
 
 function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+ return new Promise(resolve => setTimeout(resolve, ms));
 }
 ```
 
@@ -3309,46 +3309,46 @@ import React, { Component, type ReactNode } from "react";
 import { Box, Text } from "ink";
 
 interface Props {
-  children: ReactNode;
-  fallback?: ReactNode;
+ children: ReactNode;
+ fallback?: ReactNode;
 }
 
 interface State {
-  hasError: boolean;
-  error?: Error;
+ hasError: boolean;
+ error?: Error;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
-  }
+ constructor(props: Props) {
+ super(props);
+ this.state = { hasError: false };
+ }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
-  }
+ static getDerivedStateFromError(error: Error): State {
+ return { hasError: true, error };
+ }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("ErrorBoundary caught:", error, errorInfo);
-  }
+ componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+ console.error("ErrorBoundary caught:", error, errorInfo);
+ }
 
-  render() {
-    if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
+ render() {
+ if (this.state.hasError) {
+ if (this.props.fallback) {
+ return this.props.fallback;
+ }
 
-      return (
-        <Box flexDirection="column" padding={1}>
-          <Text color="red" bold>Something went wrong</Text>
-          <Text color="gray">{this.state.error?.message}</Text>
-          <Text color="cyan">Press Ctrl+C to exit, or try another command.</Text>
-        </Box>
-      );
-    }
+ return (
+ <Box flexDirection="column" padding={1}>
+ <Text color="red" bold>Something went wrong</Text>
+ <Text color="gray">{this.state.error?.message}</Text>
+ <Text color="cyan">Press Ctrl+C to exit, or try another command.</Text>
+ </Box>
+ );
+ }
 
-    return this.props.children;
-  }
+ return this.props.children;
+ }
 }
 ```
 
@@ -3368,17 +3368,17 @@ export class ErrorBoundary extends Component<Props, State> {
 ```typescript
 // src/lib/timeouts.ts
 export const COMMAND_TIMEOUTS: Record<string, number> = {
-  "detect": 5000,
-  "discover": 30000,
-  "triage": 120000,
-  "check": 60000,
-  "verify": 60000,
-  "report dashboard": 300000,
-  "report aggregate": 300000,
+ "detect": 5000,
+ "discover": 30000,
+ "triage": 120000,
+ "check": 60000,
+ "verify": 60000,
+ "report dashboard": 300000,
+ "report aggregate": 300000,
 };
 
 export function getTimeout(command: string): number {
-  return COMMAND_TIMEOUTS[command] ?? 120000;  // Default 2 minutes
+ return COMMAND_TIMEOUTS[command] ?? 120000; // Default 2 minutes
 }
 ```
 
@@ -3389,77 +3389,77 @@ export function getTimeout(command: string): number {
 import Anthropic from "@anthropic-ai/sdk";
 
 interface AIOptions {
-  timeout?: number;      // API timeout
-  maxRetries?: number;   // Retry on rate limit
+ timeout?: number; // API timeout
+ maxRetries?: number; // Retry on rate limit
 }
 
 export class AIError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public retryable: boolean
-  ) {
-    super(message);
-    this.name = "AIError";
-  }
+ constructor(
+ message: string,
+ public code: string,
+ public retryable: boolean
+ ) {
+ super(message);
+ this.name = "AIError";
+ }
 }
 
 export async function runAI(
-  prompt: string,
-  context: AIContext,
-  options: AIOptions = {}
+ prompt: string,
+ context: AIContext,
+ options: AIOptions = {}
 ): Promise<string> {
-  const client = new Anthropic({
-    timeout: options.timeout ?? 60000,
-    maxRetries: options.maxRetries ?? 2,
-  });
+ const client = new Anthropic({
+ timeout: options.timeout ?? 60000,
+ maxRetries: options.maxRetries ?? 2,
+ });
 
-  try {
-    const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4096,
-      messages: [{ role: "user", content: prompt }],
-    });
+ try {
+ const response = await client.messages.create({
+ model: "claude-sonnet-4-20250514",
+ max_tokens: 4096,
+ messages: [{ role: "user", content: prompt }],
+ });
 
-    const text = response.content.find(c => c.type === "text");
-    return text?.text ?? "";
+ const text = response.content.find(c => c.type === "text");
+ return text?.text ?? "";
 
-  } catch (error) {
-    if (error instanceof Anthropic.APIError) {
-      // Rate limit
-      if (error.status === 429) {
-        throw new AIError(
-          "Rate limit exceeded. Please wait a moment.",
-          "RATE_LIMIT",
-          true
-        );
-      }
+ } catch (error) {
+ if (error instanceof Anthropic.APIError) {
+ // Rate limit
+ if (error.status === 429) {
+ throw new AIError(
+ "Rate limit exceeded. Please wait a moment.",
+ "RATE_LIMIT",
+ true
+ );
+ }
 
-      // Auth error
-      if (error.status === 401) {
-        throw new AIError(
-          "Invalid API key. Run: export ANTHROPIC_API_KEY=your-key",
-          "AUTH_ERROR",
-          false
-        );
-      }
+ // Auth error
+ if (error.status === 401) {
+ throw new AIError(
+ "Invalid API key. Run: export ANTHROPIC_API_KEY=your-key",
+ "AUTH_ERROR",
+ false
+ );
+ }
 
-      // Server error
-      if (error.status >= 500) {
-        throw new AIError(
-          "AI service temporarily unavailable",
-          "SERVER_ERROR",
-          true
-        );
-      }
-    }
+ // Server error
+ if (error.status >= 500) {
+ throw new AIError(
+ "AI service temporarily unavailable",
+ "SERVER_ERROR",
+ true
+ );
+ }
+ }
 
-    throw new AIError(
-      `AI error: ${(error as Error).message}`,
-      "UNKNOWN",
-      false
-    );
-  }
+ throw new AIError(
+ `AI error: ${(error as Error).message}`,
+ "UNKNOWN",
+ false
+ );
+ }
 }
 ```
 
@@ -3468,27 +3468,27 @@ export async function runAI(
 ```typescript
 // src/lib/errors.ts
 export const ERROR_MESSAGES: Record<string, string> = {
-  // Python CLI errors
-  "ENOENT": "Python not found. Install Python 3.10+ and ensure it's in PATH.",
-  "CIHUB_NOT_FOUND": "cihub package not found. Run: pip install cihub",
-  "TIMEOUT": "Command timed out. Try running with --verbose for details.",
+ // Python CLI errors
+ "ENOENT": "Python not found. Install Python 3.10+ and ensure it's in PATH.",
+ "CIHUB_NOT_FOUND": "cihub package not found. Run: pip install cihub",
+ "TIMEOUT": "Command timed out. Try running with --verbose for details.",
 
-  // JSON errors
-  "JSON_PARSE": "Invalid JSON output. The Python CLI may have printed non-JSON content.",
-  "SCHEMA_MISMATCH": "Output schema mismatch. TypeScript CLI may need updating.",
+ // JSON errors
+ "JSON_PARSE": "Invalid JSON output. The Python CLI may have printed non-JSON content.",
+ "SCHEMA_MISMATCH": "Output schema mismatch. TypeScript CLI may need updating.",
 
-  // AI errors
-  "RATE_LIMIT": "AI rate limit reached. Wait a moment and try again.",
-  "AUTH_ERROR": "Missing API key. Set ANTHROPIC_API_KEY environment variable.",
-  "NO_AI": "AI features require an API key. Run without /ai commands, or configure API key.",
+ // AI errors
+ "RATE_LIMIT": "AI rate limit reached. Wait a moment and try again.",
+ "AUTH_ERROR": "Missing API key. Set ANTHROPIC_API_KEY environment variable.",
+ "NO_AI": "AI features require an API key. Run without /ai commands, or configure API key.",
 
-  // File errors
-  "FILE_NOT_FOUND": "File not found. Check the path and try again.",
-  "PERMISSION_DENIED": "Permission denied. Check file permissions.",
+ // File errors
+ "FILE_NOT_FOUND": "File not found. Check the path and try again.",
+ "PERMISSION_DENIED": "Permission denied. Check file permissions.",
 };
 
 export function getUserMessage(code: string): string {
-  return ERROR_MESSAGES[code] ?? "An unexpected error occurred.";
+ return ERROR_MESSAGES[code] ?? "An unexpected error occurred.";
 }
 ```
 
@@ -3515,73 +3515,73 @@ This section defines the **~/.cihubrc** configuration file format for user prefe
 
 # Python CLI settings
 cli:
-  # Path to Python executable (default: auto-detect)
-  python_path: "/usr/bin/python3"
+ # Path to Python executable (default: auto-detect)
+ python_path: "/usr/bin/python3"
 
-  # Default timeout for commands (ms)
-  default_timeout: 120000
+ # Default timeout for commands (ms)
+ default_timeout: 120000
 
-  # Enable verbose output by default
-  verbose: false
+ # Enable verbose output by default
+ verbose: false
 
 # AI settings
 ai:
-  # Enable AI features (default: true if API key present)
-  enabled: true
+ # Enable AI features (default: true if API key present)
+ enabled: true
 
-  # AI provider: "anthropic" | "openai" | "local"
-  provider: "anthropic"
+ # AI provider: "anthropic" | "openai" | "local"
+ provider: "anthropic"
 
-  # Model to use
-  model: "claude-sonnet-4-20250514"
+ # Model to use
+ model: "claude-sonnet-4-20250514"
 
-  # Max tokens for AI responses
-  max_tokens: 4096
+ # Max tokens for AI responses
+ max_tokens: 4096
 
-  # Temperature (0.0 - 1.0)
-  temperature: 0.3
+ # Temperature (0.0 - 1.0)
+ temperature: 0.3
 
-  # API key (prefer env var ANTHROPIC_API_KEY)
-  # api_key: "sk-..."  # NOT RECOMMENDED - use env var
+ # API key (prefer env var ANTHROPIC_API_KEY)
+ # api_key: "sk-..." # NOT RECOMMENDED - use env var
 
 # UI settings
 ui:
-  # Color theme: "auto" | "dark" | "light" | "none"
-  theme: "auto"
+ # Color theme: "auto" | "dark" | "light" | "none"
+ theme: "auto"
 
-  # Show command duration
-  show_duration: true
+ # Show command duration
+ show_duration: true
 
-  # Enable unicode icons (disable for basic terminals)
-  unicode_icons: true
+ # Enable unicode icons (disable for basic terminals)
+ unicode_icons: true
 
-  # Max width for output (0 = auto)
-  max_width: 0
+ # Max width for output (0 = auto)
+ max_width: 0
 
-  # Spinner style: "dots" | "line" | "simple"
-  spinner: "dots"
+ # Spinner style: "dots" | "line" | "simple"
+ spinner: "dots"
 
 # Command aliases
 aliases:
-  t: "triage"
-  d: "discover"
-  c: "check"
-  h: "hub-ci"
+ t: "triage"
+ d: "discover"
+ c: "check"
+ h: "hub-ci"
 
 # Default arguments for commands
 defaults:
-  triage:
-    - "--detect-flaky"
-  check:
-    - "--verbose"
-  discover:
-    - "--json"
+ triage:
+ - "--detect-flaky"
+ check:
+ - "--verbose"
+ discover:
+ - "--json"
 
 # Keyboard shortcuts (Ink key names)
 shortcuts:
-  ctrl+t: "/triage"
-  ctrl+d: "/discover"
-  ctrl+r: "/reload"
+ ctrl+t: "/triage"
+ ctrl+d: "/discover"
+ ctrl+r: "/reload"
 ```
 
 ### 17.3 TypeScript Configuration Loader
@@ -3598,32 +3598,32 @@ import { parse as parseYaml } from "yaml";
  * Configuration schema
  */
 const ConfigSchema = z.object({
-  cli: z.object({
-    python_path: z.string().optional(),
-    default_timeout: z.number().default(120000),
-    verbose: z.boolean().default(false),
-  }).default({}),
+ cli: z.object({
+ python_path: z.string().optional(),
+ default_timeout: z.number().default(120000),
+ verbose: z.boolean().default(false),
+ }).default({}),
 
-  ai: z.object({
-    enabled: z.boolean().default(true),
-    provider: z.enum(["anthropic", "openai", "local"]).default("anthropic"),
-    model: z.string().default("claude-sonnet-4-20250514"),
-    max_tokens: z.number().default(4096),
-    temperature: z.number().min(0).max(1).default(0.3),
-    api_key: z.string().optional(),
-  }).default({}),
+ ai: z.object({
+ enabled: z.boolean().default(true),
+ provider: z.enum(["anthropic", "openai", "local"]).default("anthropic"),
+ model: z.string().default("claude-sonnet-4-20250514"),
+ max_tokens: z.number().default(4096),
+ temperature: z.number().min(0).max(1).default(0.3),
+ api_key: z.string().optional(),
+ }).default({}),
 
-  ui: z.object({
-    theme: z.enum(["auto", "dark", "light", "none"]).default("auto"),
-    show_duration: z.boolean().default(true),
-    unicode_icons: z.boolean().default(true),
-    max_width: z.number().default(0),
-    spinner: z.enum(["dots", "line", "simple"]).default("dots"),
-  }).default({}),
+ ui: z.object({
+ theme: z.enum(["auto", "dark", "light", "none"]).default("auto"),
+ show_duration: z.boolean().default(true),
+ unicode_icons: z.boolean().default(true),
+ max_width: z.number().default(0),
+ spinner: z.enum(["dots", "line", "simple"]).default("dots"),
+ }).default({}),
 
-  aliases: z.record(z.string()).default({}),
-  defaults: z.record(z.array(z.string())).default({}),
-  shortcuts: z.record(z.string()).default({}),
+ aliases: z.record(z.string()).default({}),
+ defaults: z.record(z.array(z.string())).default({}),
+ shortcuts: z.record(z.string()).default({}),
 }).default({});
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -3632,63 +3632,63 @@ export type Config = z.infer<typeof ConfigSchema>;
  * Load configuration from all sources
  */
 export async function loadConfig(cwd: string): Promise<Config> {
-  const sources = [
-    join(homedir(), ".cihubrc"),
-    join(homedir(), ".config", "cihub", "config.yaml"),
-    join(cwd, ".cihubrc"),
-  ];
+ const sources = [
+ join(homedir(), ".cihubrc"),
+ join(homedir(), ".config", "cihub", "config.yaml"),
+ join(cwd, ".cihubrc"),
+ ];
 
-  let merged: Partial<Config> = {};
+ let merged: Partial<Config> = {};
 
-  for (const source of sources) {
-    try {
-      const content = await readFile(source, "utf-8");
-      const parsed = parseYaml(content);
-      merged = deepMerge(merged, parsed);
-    } catch {
-      // File doesn't exist or is invalid - skip
-    }
-  }
+ for (const source of sources) {
+ try {
+ const content = await readFile(source, "utf-8");
+ const parsed = parseYaml(content);
+ merged = deepMerge(merged, parsed);
+ } catch {
+ // File doesn't exist or is invalid - skip
+ }
+ }
 
-  // Apply environment variable overrides
-  if (process.env.ANTHROPIC_API_KEY) {
-    merged.ai = merged.ai ?? {};
-    merged.ai.api_key = process.env.ANTHROPIC_API_KEY;
-  }
+ // Apply environment variable overrides
+ if (process.env.ANTHROPIC_API_KEY) {
+ merged.ai = merged.ai ?? {};
+ merged.ai.api_key = process.env.ANTHROPIC_API_KEY;
+ }
 
-  if (process.env.CIHUB_PYTHON_PATH) {
-    merged.cli = merged.cli ?? {};
-    merged.cli.python_path = process.env.CIHUB_PYTHON_PATH;
-  }
+ if (process.env.CIHUB_PYTHON_PATH) {
+ merged.cli = merged.cli ?? {};
+ merged.cli.python_path = process.env.CIHUB_PYTHON_PATH;
+ }
 
-  return ConfigSchema.parse(merged);
+ return ConfigSchema.parse(merged);
 }
 
 /**
  * Deep merge objects
  */
 function deepMerge<T extends object>(target: T, source: Partial<T>): T {
-  const result = { ...target };
+ const result = { ...target };
 
-  for (const key in source) {
-    const sourceValue = source[key];
-    const targetValue = target[key];
+ for (const key in source) {
+ const sourceValue = source[key];
+ const targetValue = target[key];
 
-    if (isObject(sourceValue) && isObject(targetValue)) {
-      (result as Record<string, unknown>)[key] = deepMerge(
-        targetValue as object,
-        sourceValue as object
-      );
-    } else if (sourceValue !== undefined) {
-      (result as Record<string, unknown>)[key] = sourceValue;
-    }
-  }
+ if (isObject(sourceValue) && isObject(targetValue)) {
+ (result as Record<string, unknown>)[key] = deepMerge(
+ targetValue as object,
+ sourceValue as object
+ );
+ } else if (sourceValue !== undefined) {
+ (result as Record<string, unknown>)[key] = sourceValue;
+ }
+ }
 
-  return result;
+ return result;
 }
 
 function isObject(value: unknown): value is object {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+ return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 ```
 
@@ -3702,34 +3702,34 @@ import { loadConfig, type Config } from "../lib/config";
 const ConfigContext = createContext<Config | null>(null);
 
 interface ConfigProviderProps {
-  cwd: string;
-  children: React.ReactNode;
+ cwd: string;
+ children: React.ReactNode;
 }
 
 export function ConfigProvider({ cwd, children }: ConfigProviderProps) {
-  const [config, setConfig] = useState<Config | null>(null);
+ const [config, setConfig] = useState<Config | null>(null);
 
-  useEffect(() => {
-    loadConfig(cwd).then(setConfig);
-  }, [cwd]);
+ useEffect(() => {
+ loadConfig(cwd).then(setConfig);
+ }, [cwd]);
 
-  if (!config) {
-    return null;  // Or loading spinner
-  }
+ if (!config) {
+ return null; // Or loading spinner
+ }
 
-  return (
-    <ConfigContext.Provider value={config}>
-      {children}
-    </ConfigContext.Provider>
-  );
+ return (
+ <ConfigContext.Provider value={config}>
+ {children}
+ </ConfigContext.Provider>
+ );
 }
 
 export function useConfig(): Config {
-  const config = useContext(ConfigContext);
-  if (!config) {
-    throw new Error("useConfig must be used within ConfigProvider");
-  }
-  return config;
+ const config = useContext(ConfigContext);
+ if (!config) {
+ throw new Error("useConfig must be used within ConfigProvider");
+ }
+ return config;
 }
 ```
 
@@ -3760,33 +3760,33 @@ import { join } from "path";
 import { stringify as stringifyYaml } from "yaml";
 
 export function FirstRunSetup({ onComplete }: { onComplete: () => void }) {
-  const [step, setStep] = useState(0);
-  const [config, setConfig] = useState<Partial<Config>>({});
+ const [step, setStep] = useState(0);
+ const [config, setConfig] = useState<Partial<Config>>({});
 
-  const steps = [
-    {
-      question: "Enable AI features?",
-      type: "confirm",
-      key: "ai.enabled",
-      default: true,
-    },
-    {
-      question: "AI provider:",
-      type: "select",
-      key: "ai.provider",
-      choices: ["anthropic", "openai", "local"],
-      default: "anthropic",
-    },
-    // ... more steps
-  ];
+ const steps = [
+ {
+ question: "Enable AI features?",
+ type: "confirm",
+ key: "ai.enabled",
+ default: true,
+ },
+ {
+ question: "AI provider:",
+ type: "select",
+ key: "ai.provider",
+ choices: ["anthropic", "openai", "local"],
+ default: "anthropic",
+ },
+ // ... more steps
+ ];
 
-  const handleComplete = async () => {
-    const configPath = join(homedir(), ".cihubrc");
-    await writeFile(configPath, stringifyYaml(config));
-    onComplete();
-  };
+ const handleComplete = async () => {
+ const configPath = join(homedir(), ".cihubrc");
+ await writeFile(configPath, stringifyYaml(config));
+ onComplete();
+ };
 
-  // ... render steps
+ // ... render steps
 }
 ```
 
@@ -3805,65 +3805,65 @@ export function FirstRunSetup({ onComplete }: { onComplete: () => void }) {
  * Detect accessibility preferences from environment
  */
 export function getAccessibilitySettings(): AccessibilitySettings {
-  return {
-    // NO_COLOR: Disable all colors (https://no-color.org/)
-    noColor: Boolean(process.env.NO_COLOR),
+ return {
+ // NO_COLOR: Disable all colors (https://no-color.org/)
+ noColor: Boolean(process.env.NO_COLOR),
 
-    // TERM=dumb: Very basic terminal, disable all formatting
-    dumbTerminal: process.env.TERM === "dumb",
+ // TERM=dumb: Very basic terminal, disable all formatting
+ dumbTerminal: process.env.TERM === "dumb",
 
-    // CI: Running in CI pipeline, assume non-interactive
-    isCI: Boolean(process.env.CI),
+ // CI: Running in CI pipeline, assume non-interactive
+ isCI: Boolean(process.env.CI),
 
-    // Force colors even if not TTY (for tools that support it)
-    forceColor: Boolean(process.env.FORCE_COLOR),
+ // Force colors even if not TTY (for tools that support it)
+ forceColor: Boolean(process.env.FORCE_COLOR),
 
-    // Ink's screen reader mode
-    screenReader: Boolean(process.env.INK_SCREEN_READER),
+ // Ink's screen reader mode
+ screenReader: Boolean(process.env.INK_SCREEN_READER),
 
-    // Reduce motion for users with motion sensitivity
-    reduceMotion: Boolean(process.env.CIHUB_NO_ANIMATION),
-  };
+ // Reduce motion for users with motion sensitivity
+ reduceMotion: Boolean(process.env.CIHUB_NO_ANIMATION),
+ };
 }
 
 interface AccessibilitySettings {
-  noColor: boolean;
-  dumbTerminal: boolean;
-  isCI: boolean;
-  forceColor: boolean;
-  screenReader: boolean;
-  reduceMotion: boolean;
+ noColor: boolean;
+ dumbTerminal: boolean;
+ isCI: boolean;
+ forceColor: boolean;
+ screenReader: boolean;
+ reduceMotion: boolean;
 }
 
 /**
  * Should we use colors?
  */
 export function shouldUseColor(settings: AccessibilitySettings): boolean {
-  if (settings.noColor) return false;
-  if (settings.dumbTerminal) return false;
-  if (settings.forceColor) return true;
-  return process.stdout.isTTY ?? false;
+ if (settings.noColor) return false;
+ if (settings.dumbTerminal) return false;
+ if (settings.forceColor) return true;
+ return process.stdout.isTTY ?? false;
 }
 
 /**
  * Should we use animations (spinners, progress bars)?
  */
 export function shouldAnimate(settings: AccessibilitySettings): boolean {
-  if (settings.reduceMotion) return false;
-  if (settings.dumbTerminal) return false;
-  if (settings.isCI) return false;
-  if (settings.screenReader) return false;
-  return process.stdout.isTTY ?? false;
+ if (settings.reduceMotion) return false;
+ if (settings.dumbTerminal) return false;
+ if (settings.isCI) return false;
+ if (settings.screenReader) return false;
+ return process.stdout.isTTY ?? false;
 }
 
 /**
  * Should we use unicode characters?
  */
 export function shouldUseUnicode(settings: AccessibilitySettings): boolean {
-  if (settings.dumbTerminal) return false;
-  // Check locale for unicode support
-  const lang = process.env.LANG || "";
-  return lang.includes("UTF-8") || lang.includes("utf8");
+ if (settings.dumbTerminal) return false;
+ // Check locale for unicode support
+ const lang = process.env.LANG || "";
+ return lang.includes("UTF-8") || lang.includes("utf8");
 }
 ```
 
@@ -3872,20 +3872,20 @@ export function shouldUseUnicode(settings: AccessibilitySettings): boolean {
 ```typescript
 // In CLI argument parser
 const accessibilityFlags = {
-  "--no-color": "Disable all colors",
-  "--no-animation": "Disable spinners and animations",
-  "--plain": "Plain text output (no colors, no unicode, no formatting)",
-  "--static": "Static output mode (no dynamic updates)",
+ "--no-color": "Disable all colors",
+ "--no-animation": "Disable spinners and animations",
+ "--plain": "Plain text output (no colors, no unicode, no formatting)",
+ "--static": "Static output mode (no dynamic updates)",
 };
 
 // Usage
 function parseArgs(argv: string[]): CliOptions {
-  return {
-    // ... other options
-    noColor: argv.includes("--no-color") || argv.includes("--plain"),
-    noAnimation: argv.includes("--no-animation") || argv.includes("--plain"),
-    static: argv.includes("--static") || argv.includes("--plain"),
-  };
+ return {
+ // ... other options
+ noColor: argv.includes("--no-color") || argv.includes("--plain"),
+ noAnimation: argv.includes("--no-animation") || argv.includes("--plain"),
+ static: argv.includes("--static") || argv.includes("--plain"),
+ };
 }
 ```
 
@@ -3898,28 +3898,28 @@ function parseArgs(argv: string[]): CliOptions {
  * Icons with ASCII fallbacks
  */
 export function getIcons(useUnicode: boolean) {
-  if (useUnicode) {
-    return {
-      success: "✓",
-      error: "✗",
-      warning: "⚠",
-      info: "ℹ",
-      spinner: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
-      bullet: "•",
-      arrow: "→",
-    };
-  }
+ if (useUnicode) {
+ return {
+ success: "[x]",
+ error: "[ ]",
+ warning: "",
+ info: "ℹ",
+ spinner: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
+ bullet: "•",
+ arrow: "→",
+ };
+ }
 
-  // ASCII fallbacks
-  return {
-    success: "[OK]",
-    error: "[ERR]",
-    warning: "[WARN]",
-    info: "[INFO]",
-    spinner: ["-", "\\", "|", "/"],
-    bullet: "*",
-    arrow: "->",
-  };
+ // ASCII fallbacks
+ return {
+ success: "[OK]",
+ error: "[ERR]",
+ warning: "[WARN]",
+ info: "[INFO]",
+ spinner: ["-", "\\", "|", "/"],
+ bullet: "*",
+ arrow: "->",
+ };
 }
 ```
 
@@ -3932,24 +3932,24 @@ export function getIcons(useUnicode: boolean) {
  * Detect if running interactively or piped
  */
 export function isInteractive(): boolean {
-  return Boolean(
-    process.stdin.isTTY &&
-    process.stdout.isTTY &&
-    !process.env.CI
-  );
+ return Boolean(
+ process.stdin.isTTY &&
+ process.stdout.isTTY &&
+ !process.env.CI
+ );
 }
 
 /**
  * Render output appropriately for context
  */
 export function renderOutput(result: CommandResult): string {
-  if (isInteractive()) {
-    // Full interactive output with colors/formatting
-    return renderInteractive(result);
-  } else {
-    // Plain output for piping/CI
-    return renderPlain(result);
-  }
+ if (isInteractive()) {
+ // Full interactive output with colors/formatting
+ return renderInteractive(result);
+ } else {
+ // Plain output for piping/CI
+ return renderPlain(result);
+ }
 }
 ```
 
@@ -3961,33 +3961,33 @@ import React from "react";
 import { Box, Text, Static } from "ink";
 
 interface Props {
-  result: CommandResult;
-  screenReaderMode: boolean;
+ result: CommandResult;
+ screenReaderMode: boolean;
 }
 
 export function AccessibleOutput({ result, screenReaderMode }: Props) {
-  if (screenReaderMode) {
-    // Use Static to prevent screen reader from reading dynamic updates
-    return (
-      <Static items={[result]}>
-        {(item) => (
-          <Box key="result" flexDirection="column">
-            <Text>Command: {item.command}</Text>
-            <Text>Status: {item.status}</Text>
-            <Text>Summary: {item.summary}</Text>
-            {item.problems.map((p, i) => (
-              <Text key={i}>
-                {p.severity.toUpperCase()}: {p.message}
-              </Text>
-            ))}
-          </Box>
-        )}
-      </Static>
-    );
-  }
+ if (screenReaderMode) {
+ // Use Static to prevent screen reader from reading dynamic updates
+ return (
+ <Static items={[result]}>
+ {(item) => (
+ <Box key="result" flexDirection="column">
+ <Text>Command: {item.command}</Text>
+ <Text>Status: {item.status}</Text>
+ <Text>Summary: {item.summary}</Text>
+ {item.problems.map((p, i) => (
+ <Text key={i}>
+ {p.severity.toUpperCase()}: {p.message}
+ </Text>
+ ))}
+ </Box>
+ )}
+ </Static>
+ );
+ }
 
-  // Normal interactive output
-  return <Output result={result} />;
+ // Normal interactive output
+ return <Output result={result} />;
 }
 ```
 
@@ -3998,39 +3998,39 @@ export function AccessibleOutput({ result, screenReaderMode }: Props) {
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 
 describe("NO_COLOR support", () => {
-  const originalEnv = process.env;
+ const originalEnv = process.env;
 
-  beforeEach(() => {
-    process.env = { ...originalEnv };
-  });
+ beforeEach(() => {
+ process.env = { ...originalEnv };
+ });
 
-  afterEach(() => {
-    process.env = originalEnv;
-  });
+ afterEach(() => {
+ process.env = originalEnv;
+ });
 
-  test("disables colors when NO_COLOR is set", () => {
-    process.env.NO_COLOR = "1";
-    const settings = getAccessibilitySettings();
-    expect(shouldUseColor(settings)).toBe(false);
-  });
+ test("disables colors when NO_COLOR is set", () => {
+ process.env.NO_COLOR = "1";
+ const settings = getAccessibilitySettings();
+ expect(shouldUseColor(settings)).toBe(false);
+ });
 
-  test("disables colors when TERM=dumb", () => {
-    process.env.TERM = "dumb";
-    const settings = getAccessibilitySettings();
-    expect(shouldUseColor(settings)).toBe(false);
-  });
+ test("disables colors when TERM=dumb", () => {
+ process.env.TERM = "dumb";
+ const settings = getAccessibilitySettings();
+ expect(shouldUseColor(settings)).toBe(false);
+ });
 });
 
 // test/accessibility/screen-reader.test.ts
 describe("Screen reader mode", () => {
-  test("uses Static component to prevent re-reads", () => {
-    process.env.INK_SCREEN_READER = "true";
-    // Verify Static is used, no dynamic updates
-  });
+ test("uses Static component to prevent re-reads", () => {
+ process.env.INK_SCREEN_READER = "true";
+ // Verify Static is used, no dynamic updates
+ });
 
-  test("provides text alternatives to icons", () => {
-    // Verify [OK] instead of ✓ when unicode disabled
-  });
+ test("provides text alternatives to icons", () => {
+ // Verify [OK] instead of [x] when unicode disabled
+ });
 });
 ```
 
@@ -4053,61 +4053,61 @@ const activeChildren: Set<ChildProcess> = new Set();
  * Register a child process for cleanup
  */
 export function registerChild(child: ChildProcess): void {
-  activeChildren.add(child);
-  child.on("exit", () => activeChildren.delete(child));
+ activeChildren.add(child);
+ child.on("exit", () => activeChildren.delete(child));
 }
 
 /**
  * Setup signal handlers for graceful shutdown
  */
 export function setupSignalHandlers(onShutdown: () => Promise<void>): void {
-  let isShuttingDown = false;
+ let isShuttingDown = false;
 
-  async function handleSignal(signal: string): Promise<void> {
-    if (isShuttingDown) {
-      // Force exit on second signal
-      console.error("\nForce quitting...");
-      process.exit(1);
-    }
+ async function handleSignal(signal: string): Promise<void> {
+ if (isShuttingDown) {
+ // Force exit on second signal
+ console.error("\nForce quitting...");
+ process.exit(1);
+ }
 
-    isShuttingDown = true;
-    console.error(`\nReceived ${signal}, shutting down gracefully...`);
+ isShuttingDown = true;
+ console.error(`\nReceived ${signal}, shutting down gracefully...`);
 
-    // Kill child processes
-    for (const child of activeChildren) {
-      child.kill(signal as NodeJS.Signals);
-    }
+ // Kill child processes
+ for (const child of activeChildren) {
+ child.kill(signal as NodeJS.Signals);
+ }
 
-    // Give processes time to cleanup
-    const timeout = setTimeout(() => {
-      console.error("Shutdown timeout, forcing exit");
-      process.exit(1);
-    }, 5000);
+ // Give processes time to cleanup
+ const timeout = setTimeout(() => {
+ console.error("Shutdown timeout, forcing exit");
+ process.exit(1);
+ }, 5000);
 
-    try {
-      await onShutdown();
-      clearTimeout(timeout);
-      process.exit(0);
-    } catch (error) {
-      clearTimeout(timeout);
-      console.error("Error during shutdown:", error);
-      process.exit(1);
-    }
-  }
+ try {
+ await onShutdown();
+ clearTimeout(timeout);
+ process.exit(0);
+ } catch (error) {
+ clearTimeout(timeout);
+ console.error("Error during shutdown:", error);
+ process.exit(1);
+ }
+ }
 
-  process.on("SIGINT", () => handleSignal("SIGINT"));
-  process.on("SIGTERM", () => handleSignal("SIGTERM"));
+ process.on("SIGINT", () => handleSignal("SIGINT"));
+ process.on("SIGTERM", () => handleSignal("SIGTERM"));
 
-  // Handle uncaught errors
-  process.on("uncaughtException", (error) => {
-    console.error("Uncaught exception:", error);
-    handleSignal("uncaughtException");
-  });
+ // Handle uncaught errors
+ process.on("uncaughtException", (error) => {
+ console.error("Uncaught exception:", error);
+ handleSignal("uncaughtException");
+ });
 
-  process.on("unhandledRejection", (reason) => {
-    console.error("Unhandled rejection:", reason);
-    handleSignal("unhandledRejection");
-  });
+ process.on("unhandledRejection", (reason) => {
+ console.error("Unhandled rejection:", reason);
+ handleSignal("unhandledRejection");
+ });
 }
 ```
 
@@ -4120,18 +4120,18 @@ import { useApp } from "ink";
 import { setupSignalHandlers } from "./lib/signals";
 
 export function App() {
-  const { exit } = useApp();
+ const { exit } = useApp();
 
-  useEffect(() => {
-    setupSignalHandlers(async () => {
-      // Cleanup logic
-      await saveCommandHistory();
-      await flushLogs();
-      exit();
-    });
-  }, [exit]);
+ useEffect(() => {
+ setupSignalHandlers(async () => {
+ // Cleanup logic
+ await saveCommandHistory();
+ await flushLogs();
+ exit();
+ });
+ }, [exit]);
 
-  // ... rest of app
+ // ... rest of app
 }
 ```
 
@@ -4146,37 +4146,37 @@ import { registerChild } from "./signals";
  * Run cihub command with proper process management
  */
 export async function runCihub(
-  command: string,
-  args: string[],
-  cwd: string,
-  options: CihubOptions = {}
+ command: string,
+ args: string[],
+ cwd: string,
+ options: CihubOptions = {}
 ): Promise<CommandResultPayload> {
-  const subprocess = execa("python", ["-m", "cihub", command, ...args, "--json"], {
-    cwd,
-    timeout: options.timeout ?? 120000,
-    reject: false,
-    // Don't buffer - stream for large outputs
-    buffer: false,
-  });
+ const subprocess = execa("python", ["-m", "cihub", command, ...args, "--json"], {
+ cwd,
+ timeout: options.timeout ?? 120000,
+ reject: false,
+ // Don't buffer - stream for large outputs
+ buffer: false,
+ });
 
-  // Register for cleanup on shutdown
-  registerChild(subprocess as unknown as ChildProcess);
+ // Register for cleanup on shutdown
+ registerChild(subprocess as unknown as ChildProcess);
 
-  // Collect output
-  let stdout = "";
-  let stderr = "";
+ // Collect output
+ let stdout = "";
+ let stderr = "";
 
-  subprocess.stdout?.on("data", (data) => {
-    stdout += data.toString();
-  });
+ subprocess.stdout?.on("data", (data) => {
+ stdout += data.toString();
+ });
 
-  subprocess.stderr?.on("data", (data) => {
-    stderr += data.toString();
-  });
+ subprocess.stderr?.on("data", (data) => {
+ stderr += data.toString();
+ });
 
-  const result = await subprocess;
+ const result = await subprocess;
 
-  return parseOutput(stdout, result.exitCode ?? 1, command);
+ return parseOutput(stdout, result.exitCode ?? 1, command);
 }
 ```
 
@@ -4187,59 +4187,59 @@ export async function runCihub(
 import { execa } from "execa";
 
 interface VersionInfo {
-  typescript: string;
-  python: string;
-  compatible: boolean;
-  message?: string;
+ typescript: string;
+ python: string;
+ compatible: boolean;
+ message?: string;
 }
 
 /**
  * Check version compatibility between TypeScript and Python CLI
  */
 export async function checkVersions(): Promise<VersionInfo> {
-  const tsVersion = require("../../package.json").version;
+ const tsVersion = require("../../package.json").version;
 
-  try {
-    const { stdout } = await execa("python", ["-m", "cihub", "--version"]);
-    const pyVersion = stdout.trim().replace("cihub ", "");
+ try {
+ const { stdout } = await execa("python", ["-m", "cihub", "--version"]);
+ const pyVersion = stdout.trim().replace("cihub ", "");
 
-    // Semantic version compatibility check
-    const [tsMajor, tsMinor] = tsVersion.split(".").map(Number);
-    const [pyMajor, pyMinor] = pyVersion.split(".").map(Number);
+ // Semantic version compatibility check
+ const [tsMajor, tsMinor] = tsVersion.split(".").map(Number);
+ const [pyMajor, pyMinor] = pyVersion.split(".").map(Number);
 
-    const compatible = tsMajor === pyMajor && tsMinor >= pyMinor;
+ const compatible = tsMajor === pyMajor && tsMinor >= pyMinor;
 
-    return {
-      typescript: tsVersion,
-      python: pyVersion,
-      compatible,
-      message: compatible
-        ? undefined
-        : `Version mismatch: TypeScript CLI ${tsVersion} may not be compatible with Python CLI ${pyVersion}`,
-    };
-  } catch (error) {
-    return {
-      typescript: tsVersion,
-      python: "unknown",
-      compatible: false,
-      message: "Python CLI not found. Install with: pip install cihub",
-    };
-  }
+ return {
+ typescript: tsVersion,
+ python: pyVersion,
+ compatible,
+ message: compatible
+ ? undefined
+ : `Version mismatch: TypeScript CLI ${tsVersion} may not be compatible with Python CLI ${pyVersion}`,
+ };
+ } catch (error) {
+ return {
+ typescript: tsVersion,
+ python: "unknown",
+ compatible: false,
+ message: "Python CLI not found. Install with: pip install cihub",
+ };
+ }
 }
 
 /**
  * Health check for Python CLI
  */
 export async function healthCheck(): Promise<boolean> {
-  try {
-    const { exitCode } = await execa("python", ["-m", "cihub", "--help"], {
-      timeout: 5000,
-      reject: false,
-    });
-    return exitCode === 0;
-  } catch {
-    return false;
-  }
+ try {
+ const { exitCode } = await execa("python", ["-m", "cihub", "--help"], {
+ timeout: 5000,
+ reject: false,
+ });
+ return exitCode === 0;
+ } catch {
+ return false;
+ }
 }
 ```
 
@@ -4252,34 +4252,34 @@ import { Box, Text } from "ink";
 import React from "react";
 
 export async function runStartupChecks(): Promise<StartupResult> {
-  const errors: string[] = [];
-  const warnings: string[] = [];
+ const errors: string[] = [];
+ const warnings: string[] = [];
 
-  // Check Python CLI is available
-  const healthy = await healthCheck();
-  if (!healthy) {
-    errors.push("Python CLI (cihub) not found. Install with: pip install cihub");
-  }
+ // Check Python CLI is available
+ const healthy = await healthCheck();
+ if (!healthy) {
+ errors.push("Python CLI (cihub) not found. Install with: pip install cihub");
+ }
 
-  // Check version compatibility
-  const versions = await checkVersions();
-  if (!versions.compatible && versions.message) {
-    warnings.push(versions.message);
-  }
+ // Check version compatibility
+ const versions = await checkVersions();
+ if (!versions.compatible && versions.message) {
+ warnings.push(versions.message);
+ }
 
-  return {
-    ok: errors.length === 0,
-    errors,
-    warnings,
-    versions,
-  };
+ return {
+ ok: errors.length === 0,
+ errors,
+ warnings,
+ versions,
+ };
 }
 
 interface StartupResult {
-  ok: boolean;
-  errors: string[];
-  warnings: string[];
-  versions: VersionInfo;
+ ok: boolean;
+ errors: string[];
+ warnings: string[];
+ versions: VersionInfo;
 }
 ```
 
@@ -4295,255 +4295,255 @@ This appendix details the **conditional step logic** for the interactive wizard.
 // src/lib/wizard-steps.ts
 
 interface WizardStep {
-  id: string;
-  type: "text" | "select" | "confirm";
-  question: string;
-  key: string;
-  default?: string | boolean;
-  choices?: string[];
-  condition?: (config: WizardConfig) => boolean;  // Show step only if true
+ id: string;
+ type: "text" | "select" | "confirm";
+ question: string;
+ key: string;
+ default?: string | boolean;
+ choices?: string[];
+ condition?: (config: WizardConfig) => boolean; // Show step only if true
 }
 
 /**
  * All wizard steps with conditional logic
  */
 export const WIZARD_STEPS: WizardStep[] = [
-  // === Repository Details (always shown) ===
-  { id: "repo.owner", type: "text", question: "Repo owner (org/user):", key: "repo.owner" },
-  { id: "repo.name", type: "text", question: "Repo name:", key: "repo.name" },
-  { id: "repo.use_central", type: "confirm", question: "Use central runner?", key: "repo.use_central_runner", default: true },
-  { id: "repo.repo_side", type: "confirm", question: "Enable repo-side execution?", key: "repo.repo_side_execution", default: false },
+ // === Repository Details (always shown) ===
+ { id: "repo.owner", type: "text", question: "Repo owner (org/user):", key: "repo.owner" },
+ { id: "repo.name", type: "text", question: "Repo name:", key: "repo.name" },
+ { id: "repo.use_central", type: "confirm", question: "Use central runner?", key: "repo.use_central_runner", default: true },
+ { id: "repo.repo_side", type: "confirm", question: "Enable repo-side execution?", key: "repo.repo_side_execution", default: false },
 
-  // === Language Selection (always shown) ===
-  { id: "language", type: "select", question: "Select language:", key: "language", choices: ["java", "python"] },
+ // === Language Selection (always shown) ===
+ { id: "language", type: "select", question: "Select language:", key: "language", choices: ["java", "python"] },
 
-  // === Python Version (only if language === "python") ===
-  {
-    id: "python.version",
-    type: "select",
-    question: "Python version:",
-    key: "python.version",
-    choices: ["3.12", "3.11", "3.10", "3.9"],
-    default: "3.12",
-    condition: (c) => c.language === "python",
-  },
+ // === Python Version (only if language === "python") ===
+ {
+ id: "python.version",
+ type: "select",
+ question: "Python version:",
+ key: "python.version",
+ choices: ["3.12", "3.11", "3.10", "3.9"],
+ default: "3.12",
+ condition: (c) => c.language === "python",
+ },
 
-  // === Python Tools (only if language === "python") ===
-  {
-    id: "python.tools.pytest",
-    type: "confirm",
-    question: "Enable pytest?",
-    key: "python.tools.pytest.enabled",
-    default: true,
-    condition: (c) => c.language === "python",
-  },
-  {
-    id: "python.tools.ruff",
-    type: "confirm",
-    question: "Enable ruff (linter)?",
-    key: "python.tools.ruff.enabled",
-    default: true,
-    condition: (c) => c.language === "python",
-  },
-  {
-    id: "python.tools.black",
-    type: "confirm",
-    question: "Enable black (formatter)?",
-    key: "python.tools.black.enabled",
-    default: true,
-    condition: (c) => c.language === "python",
-  },
-  {
-    id: "python.tools.isort",
-    type: "confirm",
-    question: "Enable isort (import sorter)?",
-    key: "python.tools.isort.enabled",
-    default: false,
-    condition: (c) => c.language === "python",
-  },
-  {
-    id: "python.tools.mypy",
-    type: "confirm",
-    question: "Enable mypy (type checker)?",
-    key: "python.tools.mypy.enabled",
-    default: false,
-    condition: (c) => c.language === "python",
-  },
-  {
-    id: "python.tools.bandit",
-    type: "confirm",
-    question: "Enable bandit (security)?",
-    key: "python.tools.bandit.enabled",
-    default: true,
-    condition: (c) => c.language === "python",
-  },
-  {
-    id: "python.tools.pip_audit",
-    type: "confirm",
-    question: "Enable pip-audit (dependency audit)?",
-    key: "python.tools.pip_audit.enabled",
-    default: true,
-    condition: (c) => c.language === "python",
-  },
-  {
-    id: "python.tools.mutmut",
-    type: "confirm",
-    question: "Enable mutmut (mutation testing)?",
-    key: "python.tools.mutmut.enabled",
-    default: false,
-    condition: (c) => c.language === "python",
-  },
-  {
-    id: "python.tools.hypothesis",
-    type: "confirm",
-    question: "Enable hypothesis (property testing)?",
-    key: "python.tools.hypothesis.enabled",
-    default: false,
-    condition: (c) => c.language === "python",
-  },
-  {
-    id: "python.tools.semgrep",
-    type: "confirm",
-    question: "Enable semgrep (SAST)?",
-    key: "python.tools.semgrep.enabled",
-    default: false,
-    condition: (c) => c.language === "python",
-  },
-  {
-    id: "python.tools.trivy",
-    type: "confirm",
-    question: "Enable trivy (container scanner)?",
-    key: "python.tools.trivy.enabled",
-    default: true,
-    condition: (c) => c.language === "python",
-  },
-  {
-    id: "python.tools.codeql",
-    type: "confirm",
-    question: "Enable codeql (code analysis)?",
-    key: "python.tools.codeql.enabled",
-    default: false,
-    condition: (c) => c.language === "python",
-  },
-  {
-    id: "python.tools.docker",
-    type: "confirm",
-    question: "Enable docker builds?",
-    key: "python.tools.docker.enabled",
-    default: false,
-    condition: (c) => c.language === "python",
-  },
+ // === Python Tools (only if language === "python") ===
+ {
+ id: "python.tools.pytest",
+ type: "confirm",
+ question: "Enable pytest?",
+ key: "python.tools.pytest.enabled",
+ default: true,
+ condition: (c) => c.language === "python",
+ },
+ {
+ id: "python.tools.ruff",
+ type: "confirm",
+ question: "Enable ruff (linter)?",
+ key: "python.tools.ruff.enabled",
+ default: true,
+ condition: (c) => c.language === "python",
+ },
+ {
+ id: "python.tools.black",
+ type: "confirm",
+ question: "Enable black (formatter)?",
+ key: "python.tools.black.enabled",
+ default: true,
+ condition: (c) => c.language === "python",
+ },
+ {
+ id: "python.tools.isort",
+ type: "confirm",
+ question: "Enable isort (import sorter)?",
+ key: "python.tools.isort.enabled",
+ default: false,
+ condition: (c) => c.language === "python",
+ },
+ {
+ id: "python.tools.mypy",
+ type: "confirm",
+ question: "Enable mypy (type checker)?",
+ key: "python.tools.mypy.enabled",
+ default: false,
+ condition: (c) => c.language === "python",
+ },
+ {
+ id: "python.tools.bandit",
+ type: "confirm",
+ question: "Enable bandit (security)?",
+ key: "python.tools.bandit.enabled",
+ default: true,
+ condition: (c) => c.language === "python",
+ },
+ {
+ id: "python.tools.pip_audit",
+ type: "confirm",
+ question: "Enable pip-audit (dependency audit)?",
+ key: "python.tools.pip_audit.enabled",
+ default: true,
+ condition: (c) => c.language === "python",
+ },
+ {
+ id: "python.tools.mutmut",
+ type: "confirm",
+ question: "Enable mutmut (mutation testing)?",
+ key: "python.tools.mutmut.enabled",
+ default: false,
+ condition: (c) => c.language === "python",
+ },
+ {
+ id: "python.tools.hypothesis",
+ type: "confirm",
+ question: "Enable hypothesis (property testing)?",
+ key: "python.tools.hypothesis.enabled",
+ default: false,
+ condition: (c) => c.language === "python",
+ },
+ {
+ id: "python.tools.semgrep",
+ type: "confirm",
+ question: "Enable semgrep (SAST)?",
+ key: "python.tools.semgrep.enabled",
+ default: false,
+ condition: (c) => c.language === "python",
+ },
+ {
+ id: "python.tools.trivy",
+ type: "confirm",
+ question: "Enable trivy (container scanner)?",
+ key: "python.tools.trivy.enabled",
+ default: true,
+ condition: (c) => c.language === "python",
+ },
+ {
+ id: "python.tools.codeql",
+ type: "confirm",
+ question: "Enable codeql (code analysis)?",
+ key: "python.tools.codeql.enabled",
+ default: false,
+ condition: (c) => c.language === "python",
+ },
+ {
+ id: "python.tools.docker",
+ type: "confirm",
+ question: "Enable docker builds?",
+ key: "python.tools.docker.enabled",
+ default: false,
+ condition: (c) => c.language === "python",
+ },
 
-  // === Java Build Tool (only if language === "java") ===
-  {
-    id: "java.build_tool",
-    type: "select",
-    question: "Build tool:",
-    key: "java.build_tool",
-    choices: ["maven", "gradle"],
-    default: "maven",
-    condition: (c) => c.language === "java",
-  },
+ // === Java Build Tool (only if language === "java") ===
+ {
+ id: "java.build_tool",
+ type: "select",
+ question: "Build tool:",
+ key: "java.build_tool",
+ choices: ["maven", "gradle"],
+ default: "maven",
+ condition: (c) => c.language === "java",
+ },
 
-  // === Java Version (only if language === "java") ===
-  {
-    id: "java.version",
-    type: "select",
-    question: "Java version:",
-    key: "java.version",
-    choices: ["21", "17", "11", "8"],
-    default: "17",
-    condition: (c) => c.language === "java",
-  },
+ // === Java Version (only if language === "java") ===
+ {
+ id: "java.version",
+ type: "select",
+ question: "Java version:",
+ key: "java.version",
+ choices: ["21", "17", "11", "8"],
+ default: "17",
+ condition: (c) => c.language === "java",
+ },
 
-  // === Java Tools (only if language === "java") ===
-  {
-    id: "java.tools.junit",
-    type: "confirm",
-    question: "Enable JUnit tests?",
-    key: "java.tools.junit.enabled",
-    default: true,
-    condition: (c) => c.language === "java",
-  },
-  {
-    id: "java.tools.jacoco",
-    type: "confirm",
-    question: "Enable JaCoCo coverage?",
-    key: "java.tools.jacoco.enabled",
-    default: true,
-    condition: (c) => c.language === "java",
-  },
-  {
-    id: "java.tools.checkstyle",
-    type: "confirm",
-    question: "Enable Checkstyle?",
-    key: "java.tools.checkstyle.enabled",
-    default: true,
-    condition: (c) => c.language === "java",
-  },
-  {
-    id: "java.tools.spotbugs",
-    type: "confirm",
-    question: "Enable SpotBugs?",
-    key: "java.tools.spotbugs.enabled",
-    default: false,
-    condition: (c) => c.language === "java",
-  },
-  {
-    id: "java.tools.owasp",
-    type: "confirm",
-    question: "Enable OWASP dependency check?",
-    key: "java.tools.owasp.enabled",
-    default: true,
-    condition: (c) => c.language === "java",
-  },
+ // === Java Tools (only if language === "java") ===
+ {
+ id: "java.tools.junit",
+ type: "confirm",
+ question: "Enable JUnit tests?",
+ key: "java.tools.junit.enabled",
+ default: true,
+ condition: (c) => c.language === "java",
+ },
+ {
+ id: "java.tools.jacoco",
+ type: "confirm",
+ question: "Enable JaCoCo coverage?",
+ key: "java.tools.jacoco.enabled",
+ default: true,
+ condition: (c) => c.language === "java",
+ },
+ {
+ id: "java.tools.checkstyle",
+ type: "confirm",
+ question: "Enable Checkstyle?",
+ key: "java.tools.checkstyle.enabled",
+ default: true,
+ condition: (c) => c.language === "java",
+ },
+ {
+ id: "java.tools.spotbugs",
+ type: "confirm",
+ question: "Enable SpotBugs?",
+ key: "java.tools.spotbugs.enabled",
+ default: false,
+ condition: (c) => c.language === "java",
+ },
+ {
+ id: "java.tools.owasp",
+ type: "confirm",
+ question: "Enable OWASP dependency check?",
+ key: "java.tools.owasp.enabled",
+ default: true,
+ condition: (c) => c.language === "java",
+ },
 
-  // === Security Tools (always shown) ===
-  {
-    id: "security.gitleaks",
-    type: "confirm",
-    question: "Enable gitleaks (secret scanning)?",
-    key: "security.gitleaks.enabled",
-    default: true,
-  },
+ // === Security Tools (always shown) ===
+ {
+ id: "security.gitleaks",
+ type: "confirm",
+ question: "Enable gitleaks (secret scanning)?",
+ key: "security.gitleaks.enabled",
+ default: true,
+ },
 
-  // === Thresholds (always shown) ===
-  {
-    id: "thresholds.coverage",
-    type: "text",
-    question: "Coverage threshold (%):",
-    key: "thresholds.coverage_min",
-    default: "80",
-  },
-  {
-    id: "thresholds.max_critical",
-    type: "text",
-    question: "Max critical vulnerabilities allowed:",
-    key: "thresholds.max_critical_vulns",
-    default: "0",
-  },
+ // === Thresholds (always shown) ===
+ {
+ id: "thresholds.coverage",
+ type: "text",
+ question: "Coverage threshold (%):",
+ key: "thresholds.coverage_min",
+ default: "80",
+ },
+ {
+ id: "thresholds.max_critical",
+ type: "text",
+ question: "Max critical vulnerabilities allowed:",
+ key: "thresholds.max_critical_vulns",
+ default: "0",
+ },
 ];
 
 /**
  * Get filtered steps based on current config
  */
 export function getActiveSteps(config: WizardConfig): WizardStep[] {
-  return WIZARD_STEPS.filter(step => {
-    if (!step.condition) return true;
-    return step.condition(config);
-  });
+ return WIZARD_STEPS.filter(step => {
+ if (!step.condition) return true;
+ return step.condition(config);
+ });
 }
 
 /**
  * Get next step after current
  */
 export function getNextStep(currentId: string, config: WizardConfig): WizardStep | null {
-  const activeSteps = getActiveSteps(config);
-  const currentIndex = activeSteps.findIndex(s => s.id === currentId);
-  if (currentIndex === -1 || currentIndex >= activeSteps.length - 1) {
-    return null;
-  }
-  return activeSteps[currentIndex + 1];
+ const activeSteps = getActiveSteps(config);
+ const currentIndex = activeSteps.findIndex(s => s.id === currentId);
+ if (currentIndex === -1 || currentIndex >= activeSteps.length - 1) {
+ return null;
+ }
+ return activeSteps[currentIndex + 1];
 }
 ```
 
@@ -4555,90 +4555,90 @@ When a profile is selected, it pre-fills wizard answers:
 // src/lib/profiles.ts
 
 interface Profile {
-  name: string;
-  description: string;
-  answers: Partial<WizardConfig>;
+ name: string;
+ description: string;
+ answers: Partial<WizardConfig>;
 }
 
 export const PROFILES: Profile[] = [
-  {
-    name: "python-strict",
-    description: "Strict Python config: all linters, type checking, mutation testing",
-    answers: {
-      language: "python",
-      python: {
-        version: "3.12",
-        tools: {
-          pytest: { enabled: true },
-          ruff: { enabled: true },
-          black: { enabled: true },
-          isort: { enabled: true },
-          mypy: { enabled: true },
-          bandit: { enabled: true },
-          pip_audit: { enabled: true },
-          mutmut: { enabled: true },
-          trivy: { enabled: true },
-        },
-      },
-      thresholds: {
-        coverage_min: 90,
-        mutation_score_min: 80,
-      },
-    },
-  },
-  {
-    name: "python-minimal",
-    description: "Minimal Python config: basic tests and linting",
-    answers: {
-      language: "python",
-      python: {
-        version: "3.12",
-        tools: {
-          pytest: { enabled: true },
-          ruff: { enabled: true },
-        },
-      },
-      thresholds: {
-        coverage_min: 60,
-      },
-    },
-  },
-  {
-    name: "java-enterprise",
-    description: "Enterprise Java: full security suite, strict coverage",
-    answers: {
-      language: "java",
-      java: {
-        build_tool: "maven",
-        version: "17",
-        tools: {
-          junit: { enabled: true },
-          jacoco: { enabled: true },
-          checkstyle: { enabled: true },
-          spotbugs: { enabled: true },
-          owasp: { enabled: true },
-        },
-      },
-      security: {
-        gitleaks: { enabled: true },
-      },
-      thresholds: {
-        coverage_min: 85,
-        max_critical_vulns: 0,
-      },
-    },
-  },
+ {
+ name: "python-strict",
+ description: "Strict Python config: all linters, type checking, mutation testing",
+ answers: {
+ language: "python",
+ python: {
+ version: "3.12",
+ tools: {
+ pytest: { enabled: true },
+ ruff: { enabled: true },
+ black: { enabled: true },
+ isort: { enabled: true },
+ mypy: { enabled: true },
+ bandit: { enabled: true },
+ pip_audit: { enabled: true },
+ mutmut: { enabled: true },
+ trivy: { enabled: true },
+ },
+ },
+ thresholds: {
+ coverage_min: 90,
+ mutation_score_min: 80,
+ },
+ },
+ },
+ {
+ name: "python-minimal",
+ description: "Minimal Python config: basic tests and linting",
+ answers: {
+ language: "python",
+ python: {
+ version: "3.12",
+ tools: {
+ pytest: { enabled: true },
+ ruff: { enabled: true },
+ },
+ },
+ thresholds: {
+ coverage_min: 60,
+ },
+ },
+ },
+ {
+ name: "java-enterprise",
+ description: "Enterprise Java: full security suite, strict coverage",
+ answers: {
+ language: "java",
+ java: {
+ build_tool: "maven",
+ version: "17",
+ tools: {
+ junit: { enabled: true },
+ jacoco: { enabled: true },
+ checkstyle: { enabled: true },
+ spotbugs: { enabled: true },
+ owasp: { enabled: true },
+ },
+ },
+ security: {
+ gitleaks: { enabled: true },
+ },
+ thresholds: {
+ coverage_min: 85,
+ max_critical_vulns: 0,
+ },
+ },
+ },
 ];
 
 /**
  * Apply profile to wizard config
  */
 export function applyProfile(profileName: string, config: WizardConfig): WizardConfig {
-  const profile = PROFILES.find(p => p.name === profileName);
-  if (!profile) {
-    throw new Error(`Unknown profile: ${profileName}`);
-  }
-  return deepMerge(config, profile.answers);
+ const profile = PROFILES.find(p => p.name === profileName);
+ if (!profile) {
+ throw new Error(`Unknown profile: ${profileName}`);
+ }
+ return deepMerge(config, profile.answers);
 }
 ```
 
@@ -4646,16 +4646,16 @@ export function applyProfile(profileName: string, config: WizardConfig): WizardC
 
 ## Appendix E: AI Command Specifications (Legacy)
 
-> **⚠️ DEPRECATED:** This section is superseded by **Part 9: Modular AI Architecture**.
+> **WARNING: DEPRECATED:** This section is superseded by **Part 9: Modular AI Architecture**.
 >
 > The simpler approach puts AI in the Python CLI (`cihub/ai/` module) with a single `--ai` flag.
 > TypeScript just passes the flag through - no complex AI command implementations needed in TypeScript.
 >
 > **New approach:**
 > ```bash
-> cihub triage --ai              # AI enhances triage results
-> cihub check --ai               # AI explains check failures
-> CIHUB_DEV_MODE=1 cihub ...     # Auto-enable AI for debugging
+> cihub triage --ai # AI enhances triage results
+> cihub check --ai # AI explains check failures
+> CIHUB_DEV_MODE=1 cihub ... # Auto-enable AI for debugging
 > ```
 >
 > This section is kept for reference only.
@@ -4676,46 +4676,46 @@ import { runCihub } from "../lib/cihub";
 import type { CommandHandler } from "../types/commands";
 
 export const aiCommand: CommandHandler = {
-  name: "ai",
-  description: "Ask AI about your CI/CD",
-  usage: "/ai <prompt>",
-  examples: [
-    "/ai why is my build failing?",
-    "/ai how can I speed up my CI?",
-    "/ai explain the coverage report",
-  ],
+ name: "ai",
+ description: "Ask AI about your CI/CD",
+ usage: "/ai <prompt>",
+ examples: [
+ "/ai why is my build failing?",
+ "/ai how can I speed up my CI?",
+ "/ai explain the coverage report",
+ ],
 
-  async execute(args: string[], context: CommandContext): Promise<CommandResult> {
-    const prompt = args.join(" ");
-    if (!prompt) {
-      return {
-        exit_code: 1,
-        summary: "Usage: /ai <your question>",
-        problems: [{ severity: "error", message: "No prompt provided" }],
-      };
-    }
+ async execute(args: string[], context: CommandContext): Promise<CommandResult> {
+ const prompt = args.join(" ");
+ if (!prompt) {
+ return {
+ exit_code: 1,
+ summary: "Usage: /ai <your question>",
+ problems: [{ severity: "error", message: "No prompt provided" }],
+ };
+ }
 
-    // Build context from recent results
-    const systemPrompt = buildAISystemPrompt(context);
+ // Build context from recent results
+ const systemPrompt = buildAISystemPrompt(context);
 
-    // Run AI with tool access
-    const response = await runAI(prompt, {
-      systemPrompt,
-      tools: cihubTools,
-      cwd: context.cwd,
-      lastResult: context.lastResult,
-    });
+ // Run AI with tool access
+ const response = await runAI(prompt, {
+ systemPrompt,
+ tools: cihubTools,
+ cwd: context.cwd,
+ lastResult: context.lastResult,
+ });
 
-    return {
-      exit_code: 0,
-      summary: response,
-      data: { ai_response: response },
-    };
-  },
+ return {
+ exit_code: 0,
+ summary: response,
+ data: { ai_response: response },
+ };
+ },
 };
 
 function buildAISystemPrompt(context: CommandContext): string {
-  return `You are a CI/CD assistant integrated into CIHub.
+ return `You are a CI/CD assistant integrated into CIHub.
 
 Current context:
 - Working directory: ${context.cwd}
@@ -4737,44 +4737,44 @@ Be concise and actionable. Provide specific commands the user can run.`;
 ```typescript
 // src/commands/explain.ts
 export const explainCommand: CommandHandler = {
-  name: "explain",
-  description: "Explain the last result or a specific file",
-  usage: "/explain [file]",
-  examples: [
-    "/explain",
-    "/explain pom.xml",
-    "/explain .github/workflows/ci.yml",
-  ],
+ name: "explain",
+ description: "Explain the last result or a specific file",
+ usage: "/explain [file]",
+ examples: [
+ "/explain",
+ "/explain pom.xml",
+ "/explain .github/workflows/ci.yml",
+ ],
 
-  async execute(args: string[], context: CommandContext): Promise<CommandResult> {
-    const target = args[0];
+ async execute(args: string[], context: CommandContext): Promise<CommandResult> {
+ const target = args[0];
 
-    if (target) {
-      // Explain specific file
-      const fileContent = await readFile(join(context.cwd, target), "utf-8");
-      const response = await runAI(
-        `Explain this file in the context of CI/CD:\n\n${fileContent}`,
-        { cwd: context.cwd }
-      );
-      return { exit_code: 0, summary: response };
-    }
+ if (target) {
+ // Explain specific file
+ const fileContent = await readFile(join(context.cwd, target), "utf-8");
+ const response = await runAI(
+ `Explain this file in the context of CI/CD:\n\n${fileContent}`,
+ { cwd: context.cwd }
+ );
+ return { exit_code: 0, summary: response };
+ }
 
-    // Explain last result
-    if (!context.lastResult) {
-      return {
-        exit_code: 1,
-        summary: "No previous result to explain. Run a command first.",
-        problems: [{ severity: "info", message: "Run /triage or /check first" }],
-      };
-    }
+ // Explain last result
+ if (!context.lastResult) {
+ return {
+ exit_code: 1,
+ summary: "No previous result to explain. Run a command first.",
+ problems: [{ severity: "info", message: "Run /triage or /check first" }],
+ };
+ }
 
-    const response = await runAI(
-      `Explain this CI result in plain terms. What does it mean and what should the user do?\n\n${JSON.stringify(context.lastResult, null, 2)}`,
-      { cwd: context.cwd }
-    );
+ const response = await runAI(
+ `Explain this CI result in plain terms. What does it mean and what should the user do?\n\n${JSON.stringify(context.lastResult, null, 2)}`,
+ { cwd: context.cwd }
+ );
 
-    return { exit_code: 0, summary: response };
-  },
+ return { exit_code: 0, summary: response };
+ },
 };
 ```
 
@@ -4785,18 +4785,18 @@ export const explainCommand: CommandHandler = {
 ```typescript
 // src/commands/diagnose.ts
 export const diagnoseCommand: CommandHandler = {
-  name: "diagnose",
-  description: "Deep diagnosis of CI failures",
-  usage: "/diagnose",
+ name: "diagnose",
+ description: "Deep diagnosis of CI failures",
+ usage: "/diagnose",
 
-  async execute(args: string[], context: CommandContext): Promise<CommandResult> {
-    // Step 1: Gather all evidence
-    const triage = await runCihub("triage", ["--detect-flaky"], context.cwd);
-    const check = await runCihub("check", [], context.cwd);
+ async execute(args: string[], context: CommandContext): Promise<CommandResult> {
+ // Step 1: Gather all evidence
+ const triage = await runCihub("triage", ["--detect-flaky"], context.cwd);
+ const check = await runCihub("check", [], context.cwd);
 
-    // Step 2: Ask AI to synthesize
-    const response = await runAI(
-      `Diagnose these CI results. Identify:
+ // Step 2: Ask AI to synthesize
+ const response = await runAI(
+ `Diagnose these CI results. Identify:
 1. Root cause of failures
 2. Whether failures are flaky or deterministic
 3. Priority order for fixes
@@ -4807,19 +4807,19 @@ ${JSON.stringify(triage, null, 2)}
 
 Check result:
 ${JSON.stringify(check, null, 2)}`,
-      { cwd: context.cwd }
-    );
+ { cwd: context.cwd }
+ );
 
-    return {
-      exit_code: 0,
-      summary: response,
-      data: {
-        triage_summary: triage.summary,
-        check_summary: check.summary,
-        diagnosis: response,
-      },
-    };
-  },
+ return {
+ exit_code: 0,
+ summary: response,
+ data: {
+ triage_summary: triage.summary,
+ check_summary: check.summary,
+ diagnosis: response,
+ },
+ };
+ },
 };
 ```
 
@@ -4830,45 +4830,45 @@ ${JSON.stringify(check, null, 2)}`,
 ```typescript
 // src/commands/fix.ts
 export const fixCommand: CommandHandler = {
-  name: "fix",
-  description: "Suggest and apply fixes",
-  usage: "/fix [issue] [--apply]",
-  examples: [
-    "/fix",
-    "/fix CVE-2024-1234",
-    "/fix --apply",
-  ],
+ name: "fix",
+ description: "Suggest and apply fixes",
+ usage: "/fix [issue] [--apply]",
+ examples: [
+ "/fix",
+ "/fix CVE-2024-1234",
+ "/fix --apply",
+ ],
 
-  async execute(args: string[], context: CommandContext): Promise<CommandResult> {
-    const applyMode = args.includes("--apply");
-    const issue = args.filter(a => !a.startsWith("--"))[0];
+ async execute(args: string[], context: CommandContext): Promise<CommandResult> {
+ const applyMode = args.includes("--apply");
+ const issue = args.filter(a => !a.startsWith("--"))[0];
 
-    // Get fix suggestions from AI
-    const suggestions = await runAI(
-      issue
-        ? `Suggest a fix for this issue: ${issue}`
-        : `Suggest fixes for the problems in the last command result:\n${JSON.stringify(context.lastResult, null, 2)}`,
-      { cwd: context.cwd }
-    );
+ // Get fix suggestions from AI
+ const suggestions = await runAI(
+ issue
+ ? `Suggest a fix for this issue: ${issue}`
+ : `Suggest fixes for the problems in the last command result:\n${JSON.stringify(context.lastResult, null, 2)}`,
+ { cwd: context.cwd }
+ );
 
-    if (!applyMode) {
-      return {
-        exit_code: 0,
-        summary: suggestions,
-        suggestions: [{ message: "Run /fix --apply to apply these fixes" }],
-      };
-    }
+ if (!applyMode) {
+ return {
+ exit_code: 0,
+ summary: suggestions,
+ suggestions: [{ message: "Run /fix --apply to apply these fixes" }],
+ };
+ }
 
-    // Apply mode - confirm with user first
-    return {
-      exit_code: 0,
-      summary: suggestions,
-      data: {
-        fixes: suggestions,
-        awaiting_confirmation: true,
-      },
-    };
-  },
+ // Apply mode - confirm with user first
+ return {
+ exit_code: 0,
+ summary: suggestions,
+ data: {
+ fixes: suggestions,
+ awaiting_confirmation: true,
+ },
+ };
+ },
 };
 ```
 
@@ -4879,27 +4879,27 @@ export const fixCommand: CommandHandler = {
 ```typescript
 // src/commands/review.ts
 export const reviewCommand: CommandHandler = {
-  name: "review",
-  description: "AI review of recent changes",
-  usage: "/review [commit]",
-  examples: [
-    "/review",
-    "/review HEAD~3",
-    "/review abc123",
-  ],
+ name: "review",
+ description: "AI review of recent changes",
+ usage: "/review [commit]",
+ examples: [
+ "/review",
+ "/review HEAD~3",
+ "/review abc123",
+ ],
 
-  async execute(args: string[], context: CommandContext): Promise<CommandResult> {
-    const commit = args[0] || "HEAD";
+ async execute(args: string[], context: CommandContext): Promise<CommandResult> {
+ const commit = args[0] || "HEAD";
 
-    // Get diff
-    const diff = await execGit(["diff", `${commit}^`, commit], context.cwd);
+ // Get diff
+ const diff = await execGit(["diff", `${commit}^`, commit], context.cwd);
 
-    // Get commit message
-    const message = await execGit(["log", "-1", "--format=%B", commit], context.cwd);
+ // Get commit message
+ const message = await execGit(["log", "-1", "--format=%B", commit], context.cwd);
 
-    // AI review
-    const review = await runAI(
-      `Review this commit for:
+ // AI review
+ const review = await runAI(
+ `Review this commit for:
 1. Code quality issues
 2. Potential bugs
 3. Security concerns
@@ -4909,18 +4909,18 @@ Commit message: ${message}
 
 Diff:
 ${diff}`,
-      { cwd: context.cwd }
-    );
+ { cwd: context.cwd }
+ );
 
-    return {
-      exit_code: 0,
-      summary: review,
-      data: {
-        commit,
-        review,
-      },
-    };
-  },
+ return {
+ exit_code: 0,
+ summary: review,
+ data: {
+ commit,
+ review,
+ },
+ };
+ },
 };
 ```
 
@@ -4932,46 +4932,46 @@ All AI tool calls go through a safety layer:
 // src/lib/ai-safety.ts
 
 const ALLOWED_COMMANDS = [
-  "detect", "discover", "triage", "check", "verify",
-  "report", "docs", "adr", "config", "hub-ci",
+ "detect", "discover", "triage", "check", "verify",
+ "report", "docs", "adr", "config", "hub-ci",
 ];
 
 const DANGEROUS_FLAGS = [
-  "--apply",      // Applies changes
-  "--force",      // Forces operations
-  "--delete",     // Deletes files
+ "--apply", // Applies changes
+ "--force", // Forces operations
+ "--delete", // Deletes files
 ];
 
 export function validateToolCall(
-  toolName: string,
-  input: Record<string, unknown>
+ toolName: string,
+ input: Record<string, unknown>
 ): { allowed: boolean; reason?: string } {
-  if (toolName !== "run_cihub") {
-    return { allowed: true };
-  }
+ if (toolName !== "run_cihub") {
+ return { allowed: true };
+ }
 
-  const command = input.command as string;
-  const args = (input.args as string[]) || [];
+ const command = input.command as string;
+ const args = (input.args as string[]) || [];
 
-  // Check command is allowed
-  const baseCommand = command.split(" ")[0];
-  if (!ALLOWED_COMMANDS.includes(baseCommand)) {
-    return {
-      allowed: false,
-      reason: `Command '${baseCommand}' not in allowlist`
-    };
-  }
+ // Check command is allowed
+ const baseCommand = command.split(" ")[0];
+ if (!ALLOWED_COMMANDS.includes(baseCommand)) {
+ return {
+ allowed: false,
+ reason: `Command '${baseCommand}' not in allowlist`
+ };
+ }
 
-  // Check for dangerous flags
-  for (const flag of DANGEROUS_FLAGS) {
-    if (args.includes(flag)) {
-      return {
-        allowed: false,
-        reason: `Flag '${flag}' requires user confirmation`
-      };
-    }
-  }
+ // Check for dangerous flags
+ for (const flag of DANGEROUS_FLAGS) {
+ if (args.includes(flag)) {
+ return {
+ allowed: false,
+ reason: `Flag '${flag}' requires user confirmation`
+ };
+ }
+ }
 
-  return { allowed: true };
+ return { allowed: true };
 }
 ```

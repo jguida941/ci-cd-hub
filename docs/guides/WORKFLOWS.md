@@ -1,9 +1,9 @@
 # Workflows Reference
 
-**Verified against**: `.github/workflows/*.yml`.  
+**Verified against**: `.github/workflows/*.yml`.
 Update this doc when workflow triggers or inputs change.
 
-**Templates & Profiles:** For ready-made repo configs and tool profiles.  
+**Templates & Profiles:** For ready-made repo configs and tool profiles.
 See `templates/README.md` (apply via `python -m cihub config apply-profile ...`).
 
 ---

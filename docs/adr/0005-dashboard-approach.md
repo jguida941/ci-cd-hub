@@ -1,9 +1,9 @@
 # ADR-0005: Dashboard Approach
 
-**Status**: Proposed  
-**Date:** 2025-12-14  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
+**Status**: Proposed
+**Date:** 2025-12-14
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
@@ -25,50 +25,50 @@ The hub produces `hub-report.json` with metrics across all repos. We need a way 
 **Architecture:**
 ```
 hub-run-all / hub-orchestrator
-    ↓
+ ↓
 hub-report.json (artifact)
-    ↓
+ ↓
 publish-dashboard.yml (workflow)
-    ↓
+ ↓
 gh-pages branch: metrics.json, index.html
-    ↓
+ ↓
 https://user.github.io/ci-cd-hub/
 ```
 
 **Dashboard Views:**
 
 1. **Overview page:**
-   - All repos in a table/card layout
-   - Coverage and mutation scores with color coding
-   - Pass/fail status badges
-   - Last run timestamp
+ - All repos in a table/card layout
+ - Coverage and mutation scores with color coding
+ - Pass/fail status badges
+ - Last run timestamp
 
 2. **Drill-down per repo:**
-   - Historical trend (if we store multiple runs)
-   - Tool-specific results
-   - Links to GitHub Actions runs
+ - Historical trend (if we store multiple runs)
+ - Tool-specific results
+ - Links to GitHub Actions runs
 
 ## Alternatives Considered
 
 1. **Grafana + InfluxDB/Prometheus:**
-   - Pros: Rich visualization, alerting, historical data
-   - Cons: Requires infrastructure, overkill for current needs
-   - Decision: Rejected for MVP. Consider for v2 if historical trending needed.
+ - Pros: Rich visualization, alerting, historical data
+ - Cons: Requires infrastructure, overkill for current needs
+ - Decision: Rejected for MVP. Consider for v2 if historical trending needed.
 
 2. **Dedicated metrics service (DataDog, New Relic):**
-   - Pros: Professional tooling, integrations
-   - Cons: Cost, vendor lock-in, external dependency
-   - Decision: Rejected. Keep it simple and self-hosted.
+ - Pros: Professional tooling, integrations
+ - Cons: Cost, vendor lock-in, external dependency
+ - Decision: Rejected. Keep it simple and self-hosted.
 
 3. **GitHub Actions step summary only:**
-   - Pros: Zero infrastructure, already implemented
-   - Cons: No persistent view, requires navigating to specific runs
-   - Decision: Keep step summaries, but add dashboard for persistent overview.
+ - Pros: Zero infrastructure, already implemented
+ - Cons: No persistent view, requires navigating to specific runs
+ - Decision: Keep step summaries, but add dashboard for persistent overview.
 
 4. **GitHub README badges only:**
-   - Pros: Simple, visible on repo page
-   - Cons: Limited data, no drill-down, no historical view
-   - Decision: Add badges, but dashboard provides more detail.
+ - Pros: Simple, visible on repo page
+ - Cons: Limited data, no drill-down, no historical view
+ - Decision: Add badges, but dashboard provides more detail.
 
 ## Consequences
 
@@ -88,24 +88,24 @@ https://user.github.io/ci-cd-hub/
 **Implementation Notes:**
 
 1. **Dashboard files location:**
-   ```
-   dashboards/
-   ├── index.html      # Overview page
-   ├── repo.html       # Per-repo drill-down
-   ├── styles.css      # Styling
-   └── app.js          # Fetch and render logic
-   ```
+ ```
+ dashboards/
+ ├── index.html # Overview page
+ ├── repo.html # Per-repo drill-down
+ ├── styles.css # Styling
+ └── app.js # Fetch and render logic
+ ```
 
 2. **Data file on gh-pages:**
-   ```
-   metrics.json        # Latest hub-report.json
-   history/            # Optional: historical runs
-   ```
+ ```
+ metrics.json # Latest hub-report.json
+ history/ # Optional: historical runs
+ ```
 
 3. **Publish workflow triggers:**
-   - After hub-run-all completes
-   - After hub-orchestrator completes
-   - Commits to gh-pages branch
+ - After hub-run-all completes
+ - After hub-orchestrator completes
+ - Commits to gh-pages branch
 
 ## Future Work
 

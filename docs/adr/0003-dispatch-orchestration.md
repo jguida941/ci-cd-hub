@@ -1,9 +1,9 @@
 # ADR-0003: Dispatch and Orchestration
 
-**Status**: Accepted  
-**Date:** 2025-12-14  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-30  
+**Status**: Accepted
+**Date:** 2025-12-14
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-30
 
 ## Context
 
@@ -24,19 +24,19 @@ The orchestrator uses GitHub's REST API via `github-script` to trigger workflows
 ```javascript
 // Line 302-308
 await github.rest.actions.createWorkflowDispatch({
-  owner,
-  repo,
-  workflow_id: workflowId,  // 'hub-ci.yml' wrapper (line 297)
-  ref: branch,
-  inputs,
+ owner,
+ repo,
+ workflow_id: workflowId, // 'hub-ci.yml' wrapper (line 297)
+ ref: branch,
+ inputs,
 });
 ```
 
 **Error Handling:** Dispatch failures are caught and set job status to failed (lines 309-312):
 ```javascript
 catch (err) {
-  core.setFailed(`Dispatch failed for ${owner}/${repo}: ${err.message}`);
-  throw err;
+ core.setFailed(`Dispatch failed for ${owner}/${repo}: ${err.message}`);
+ throw err;
 }
 ```
 
@@ -53,25 +53,25 @@ Example: `12345678-1-smoke-test-python`
 **End-to-End Flow:**
 
 1. **Dispatch Phase:** Orchestrator generates correlation ID and passes it as `hub_correlation_id` input:
-   ```javascript
-   const correlationId = `${context.runId}-${context.runAttempt}-${matrix.config_basename}`;
-   inputs.hub_correlation_id = correlationId;
-   ```
+ ```javascript
+ const correlationId = `${context.runId}-${context.runAttempt}-${matrix.config_basename}`;
+ inputs.hub_correlation_id = correlationId;
+ ```
 
 2. **Target Workflow:** Receives `hub_correlation_id` input and embeds it in `report.json`:
-   ```json
-   {
-     "hub_correlation_id": "12345678-1-smoke-test-python",
-     "results": { ... },
-     "tool_metrics": { ... }
-   }
-   ```
+ ```json
+ {
+ "hub_correlation_id": "12345678-1-smoke-test-python",
+ "results": { ... },
+ "tool_metrics": { ... }
+ }
+ ```
 
 3. **Aggregation Phase:** Matches runs by correlation ID in artifacts, not by timestamp.
 
 ### Run ID Capture (Initial Hint)
 
-After dispatch, the orchestrator attempts to capture the run ID using time-based polling as an optimization hint. This is **not the authoritative match** — correlation ID is.
+After dispatch, the orchestrator attempts to capture the run ID using time-based polling as an optimization hint. This is **not the authoritative match** - correlation ID is.
 
 **Parameters:**
 - `MAX_POLL_MS`: 30 minutes (1,800,000 ms)
@@ -93,22 +93,22 @@ In the aggregation phase, the orchestrator uses `find_run_by_correlation_id()` t
 **Algorithm:**
 ```python
 def find_run_by_correlation_id(owner, repo, workflow_id, correlation_id):
-    """Search recent runs and match by hub_correlation_id in artifact."""
-    runs = gh_get(f"/.../workflows/{workflow_id}/runs?per_page=20")
-    for run in runs["workflow_runs"]:
-        artifact = get_ci_report_artifact(run["id"])
-        if artifact:
-            report = download_and_parse(artifact)
-            if report.get("hub_correlation_id") == correlation_id:
-                return run["id"]
-    return None
+ """Search recent runs and match by hub_correlation_id in artifact."""
+ runs = gh_get(f"/.../workflows/{workflow_id}/runs?per_page=20")
+ for run in runs["workflow_runs"]:
+ artifact = get_ci_report_artifact(run["id"])
+ if artifact:
+ report = download_and_parse(artifact)
+ if report.get("hub_correlation_id") == correlation_id:
+ return run["id"]
+ return None
 ```
 
 **Benefits:**
-- No race conditions — correlation is deterministic
-- Works with queued/delayed runs — no time window dependency
-- Self-healing — finds correct run even if initial capture was wrong
-- Survives retries — `run_attempt` in ID handles re-runs
+- No race conditions - correlation is deterministic
+- Works with queued/delayed runs - no time window dependency
+- Self-healing - finds correct run even if initial capture was wrong
+- Survives retries - `run_attempt` in ID handles re-runs
 
 ### Completion Polling
 
@@ -129,22 +129,22 @@ url = f"https://api.github.com/repos/{owner}/{repo}/actions/runs/{run_id}"
 start_poll = time.time()
 delay = 10
 while True:
-    run = gh_get(url)
-    status = run.get("status", "unknown")
-    conclusion = run.get("conclusion", "unknown")
-    run_status["status"] = status
-    run_status["conclusion"] = conclusion
+ run = gh_get(url)
+ status = run.get("status", "unknown")
+ conclusion = run.get("conclusion", "unknown")
+ run_status["status"] = status
+ run_status["conclusion"] = conclusion
 
-    if status not in pending_statuses:
-        break
+ if status not in pending_statuses:
+ break
 
-    if time.time() - start_poll > poll_timeout_sec:
-        run_status["status"] = "timed_out"
-        run_status["conclusion"] = "timed_out"
-        break
+ if time.time() - start_poll > poll_timeout_sec:
+ run_status["status"] = "timed_out"
+ run_status["conclusion"] = "timed_out"
+ break
 
-    time.sleep(delay)
-    delay = min(delay * 1.5, 60)
+ time.sleep(delay)
+ delay = min(delay * 1.5, 60)
 ```
 
 If a run times out or fails to fetch, it's recorded and the job ultimately fails (lines 622-626).
@@ -169,8 +169,8 @@ After run completion, if `status == "completed"` and `conclusion == "success"`, 
 **Hub orchestrator workflow (lines 38-40):**
 ```yaml
 permissions:
-  contents: read
-  actions: write
+ contents: read
+ actions: write
 ```
 
 **Authentication:**
@@ -254,4 +254,4 @@ permissions:
 - **Retry logic for dispatch:** Retry transient dispatch failures (network errors, rate limits) - currently any failure is terminal
 - **Graceful degradation:** Option to continue aggregation even if some runs fail (currently strict: any failure = hub failure)
 - **PAT documentation:** Document PAT setup for cross-repo private access
-- ~~**Unified polling:** Consider consolidating run ID capture and completion polling into single phase~~ — Addressed by deterministic correlation; time-based capture is now just an optimization hint
+- ~~**Unified polling:** Consider consolidating run ID capture and completion polling into single phase~~ - Addressed by deterministic correlation; time-based capture is now just an optimization hint

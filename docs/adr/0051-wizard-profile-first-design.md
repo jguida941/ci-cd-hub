@@ -32,20 +32,20 @@ The wizard presents profiles as a **starting point**, then ALWAYS shows individu
 
 ```
 Step 3: Select Starting Profile
-  ○ Fast (Recommended) - Quick PR feedback (~5 min)
-  ○ Quality - Thorough analysis with mutation testing (~20 min)
-  ○ Strict - Full security scanning and compliance (~30 min)
-  ○ Start from scratch
+ ○ Fast (Recommended) - Quick PR feedback (~5 min)
+ ○ Quality - Thorough analysis with mutation testing (~20 min)
+ ○ Strict - Full security scanning and compliance (~30 min)
+ ○ Start from scratch
 
 Step 4: Configure Tools (always shown, pre-filled by profile)
-  ☑ pytest       (enabled by Fast profile)
-  ☑ ruff         (enabled by Fast profile)
-  ☑ black        (enabled by Fast profile)
-  ☐ isort        (click to add)
-  ☐ mypy         (click to add)
-  ☑ bandit       (enabled by Fast profile)
-  ☑ pip_audit    (enabled by Fast profile)
-  ...
+ pytest (enabled by Fast profile)
+ ruff (enabled by Fast profile)
+ black (enabled by Fast profile)
+ isort (click to add)
+ mypy (click to add)
+ bandit (enabled by Fast profile)
+ pip_audit (enabled by Fast profile)
+ ...
 ```
 
 **Key principle:** Profiles are defaults/templates, not restrictions. Users ALWAYS have full control via checkboxes.
