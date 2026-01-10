@@ -675,18 +675,22 @@ def _get_managed_config_top_level_keys(*, hub_root_path: Path | None = None) -> 
     }
 
 
-def _get_config_schema_top_level_keys(*, hub_root_path: Path | None = None) -> set[str]:
-    """Return the config schema's allowed top-level keys (schema/ci-hub-config.schema.json properties)."""
+def _get_config_schema_top_level_keys(
+    *, hub_root_path: Path | None = None
+) -> tuple[set[str], str | None]:
+    """Return (schema_top_level_keys, error_message)."""
     root = hub_root_path or hub_root()
     schema_path = root / "schema" / "ci-hub-config.schema.json"
+    if not schema_path.exists():
+        return set(), f"Config schema not found: {schema_path}"
     try:
         raw = json.loads(schema_path.read_text(encoding="utf-8"))
-        props = raw.get("properties", {})
-        if isinstance(props, dict) and props:
-            return set(props.keys())
-    except Exception:  # noqa: BLE001
-        pass
-    return set()
+    except Exception as exc:  # noqa: BLE001
+        return set(), f"Failed to load config schema {schema_path}: {exc}"
+    props = raw.get("properties", {})
+    if not isinstance(props, dict) or not props:
+        return set(), f"Config schema has no top-level properties: {schema_path}"
+    return set(props.keys()), None
 
 
 def compute_diff(
@@ -720,7 +724,17 @@ def compute_diff(
     # Phase 2.4 (full drift): detect orphan config files and unmanaged top-level keys
     # in config/repos/*.yaml that are not in the registry-managed allowlist.
     managed_top_level_keys = _get_managed_config_top_level_keys(hub_root_path=hub_root_path)
-    config_schema_top_level_keys = _get_config_schema_top_level_keys(hub_root_path=hub_root_path)
+    config_schema_top_level_keys, schema_error = _get_config_schema_top_level_keys(hub_root_path=hub_root_path)
+    if schema_error:
+        diffs.append(
+            {
+                "repo": "<hub>",
+                "field": "schema",
+                "registry_value": "loaded",
+                "actual_value": schema_error,
+                "severity": "error",
+            }
+        )
     registry_repo_names = set(repos.keys())
     failed_load: set[str] = set()
     for config_path in sorted(configs_dir.rglob("*.yaml")):
@@ -756,7 +770,7 @@ def compute_diff(
         if not isinstance(actual, dict):
             continue
         for key in sorted(actual.keys()):
-            if config_schema_top_level_keys and key not in config_schema_top_level_keys:
+            if key not in config_schema_top_level_keys and not schema_error:
                 diffs.append(
                     {
                         "repo": repo_name,
@@ -783,7 +797,7 @@ def compute_diff(
         if change.get("action") == "skip":
             reason = change.get("reason", "skipped")
             repo_name = change.get("repo", "<unknown>")
-            if repo_name in failed_load and "failed to load" in str(reason):
+            if repo_name in failed_load:
                 # Avoid duplicate config_file drift entries; orphan scan already surfaced it.
                 continue
             severity = "error" if "failed to load" in str(reason) else "warning"

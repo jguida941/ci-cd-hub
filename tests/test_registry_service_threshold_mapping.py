@@ -309,6 +309,7 @@ def test_sync_to_configs_does_not_add_cvss_fallback_keys_from_fragments(tmp_path
     assert thresholds["owasp_cvss_fail"] == 9.0
     assert "trivy_cvss_fail" not in thresholds
 
+
 def test_compute_diff_uses_schema_threshold_keys(tmp_path: Path) -> None:
     from cihub.services.registry_service import compute_diff, load_registry
 
@@ -591,6 +592,38 @@ def test_compute_diff_flags_unknown_top_level_keys_as_errors(tmp_path: Path) -> 
     )
 
 
+def test_compute_diff_surfaces_schema_load_failure(tmp_path: Path) -> None:
+    """If config schema cannot be loaded, diff should surface an explicit error."""
+    from cihub.services.registry_service import compute_diff, load_registry
+
+    hub = tmp_path / "hub"
+    configs_dir = hub / "config" / "repos"
+    configs_dir.mkdir(parents=True)
+    # NOTE: intentionally do NOT create hub/schema/ci-hub-config.schema.json
+
+    repo_name = "demo-repo"
+    repo_path = configs_dir / f"{repo_name}.yaml"
+    _write_repo_config(
+        repo_path,
+        thresholds={
+            "coverage_min": 70,
+            "mutation_score_min": 70,
+            "max_critical_vulns": 0,
+            "max_high_vulns": 0,
+        },
+    )
+    # Add a schema-invalid key to show classification is degraded when schema missing.
+    data = yaml.safe_load(repo_path.read_text(encoding="utf-8"))
+    data["typo_field"] = True
+    repo_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
+    registry = load_registry(registry_path=None)
+    registry["tiers"] = {"standard": {"description": "Standard", "profile": None}}
+    registry["repos"] = {repo_name: {"tier": "standard"}}
+
+    diffs = compute_diff(registry, configs_dir, hub_root_path=hub)
+    assert any(d["repo"] == "<hub>" and d["field"] == "schema" and d["severity"] == "error" for d in diffs)
+
 def test_compute_diff_dedupes_unreadable_yaml_errors(tmp_path: Path) -> None:
     """Unreadable repo YAML should not produce duplicate config_file diffs."""
     from cihub.services.registry_service import compute_diff, load_registry
@@ -608,6 +641,7 @@ def test_compute_diff_dedupes_unreadable_yaml_errors(tmp_path: Path) -> None:
     diffs = compute_diff(registry, configs_dir)
     errors = [d for d in diffs if d["repo"] == repo_name and d["field"] == "config_file"]
     assert len(errors) == 1
+
 
 def test_compute_diff_reports_sparse_tier_config_values(tmp_path: Path) -> None:
     """Sparse audit should flag tier config values that match defaults."""

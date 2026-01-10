@@ -117,6 +117,24 @@ repo:
         assert result.entries[0].owner == "test-owner"
         assert result.entries[0].language == "python"
 
+    def test_discovers_nested_repo_configs(self, tmp_path: Path):
+        """Discovers repos from nested config/repos/**.yaml paths."""
+        repos_dir = tmp_path / "config" / "repos" / "owner"
+        repos_dir.mkdir(parents=True)
+
+        # Create a minimal config in a nested directory.
+        (repos_dir / "nested.yaml").write_text(
+            "repo:\n  owner: test-owner\n  name: nested\n  language: python\n"
+        )
+
+        result = discover_repositories(tmp_path)
+
+        assert result.success is True
+        assert result.count == 1
+        assert result.entries[0].config_basename == "owner/nested"
+        assert result.entries[0].name == "nested"
+        assert result.entries[0].owner == "test-owner"
+
     def test_applies_repo_filter(self, tmp_path: Path):
         """Filters by repo name."""
         repos_dir = tmp_path / "config" / "repos"

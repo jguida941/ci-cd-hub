@@ -189,7 +189,10 @@ def cmd_validate_configs(args: argparse.Namespace) -> CommandResult:
                 problems=[{"severity": "error", "message": f"Config not found: {config_path}"}],
             )
     else:
-        repos = [path.stem for path in sorted(configs_dir.glob("*.yaml"))]
+        repos = [
+            path.relative_to(configs_dir).with_suffix("").as_posix()
+            for path in sorted(configs_dir.rglob("*.yaml"))
+        ]
 
     validated: list[str] = []
     problems: list[dict[str, str]] = []

@@ -69,7 +69,11 @@ def _load_single_repo(config_file: Path, hub_root: Path) -> tuple[RepoEntry | No
         load_config,
     )
 
-    repo_basename = config_file.stem
+    repos_dir = hub_root / "config" / "repos"
+    try:
+        repo_basename = config_file.relative_to(repos_dir).with_suffix("").as_posix()
+    except Exception:  # noqa: BLE001
+        repo_basename = config_file.stem
     captured_warnings: list[str] = []
 
     # Capture any stderr output from loader
@@ -189,7 +193,7 @@ def discover_repositories(
     entries: list[RepoEntry] = []
     all_warnings: list[str] = []
 
-    for config_file in sorted(repos_dir.glob("*.yaml")):
+    for config_file in sorted(repos_dir.rglob("*.yaml")):
         entry, repo_warnings = _load_single_repo(config_file, hub_root)
 
         # Collect warnings from this repo

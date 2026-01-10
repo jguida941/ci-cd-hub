@@ -514,6 +514,16 @@ class TestListRepos:
         result = list_repos(paths)
         assert result == ["repo"]
 
+    def test_list_includes_nested_repo_configs(self, tmp_path: Path):
+        """list_repos includes nested owner/repo.yaml configs."""
+        paths = PathConfig(root=str(tmp_path))
+        repos_dir = Path(paths.repos_dir)
+        (repos_dir / "owner").mkdir(parents=True)
+        (repos_dir / "owner" / "nested.yaml").write_text("a: 1")
+
+        result = list_repos(paths)
+        assert result == ["owner/nested"]
+
 
 # =============================================================================
 # list_profiles Tests

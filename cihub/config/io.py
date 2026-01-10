@@ -161,7 +161,13 @@ def list_repos(paths: PathConfig) -> list[str]:
     repos_dir = Path(paths.repos_dir)
     if not repos_dir.exists():
         return []
-    return sorted(p.stem for p in repos_dir.glob("*.yaml") if p.is_file())
+    names: list[str] = []
+    for p in repos_dir.rglob("*.yaml"):
+        if not p.is_file():
+            continue
+        rel = p.relative_to(repos_dir).with_suffix("")
+        names.append(rel.as_posix())
+    return sorted(names)
 
 
 def list_profiles(paths: PathConfig) -> list[str]:

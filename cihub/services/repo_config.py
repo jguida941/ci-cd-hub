@@ -16,7 +16,7 @@ def get_connected_repos(
     repos_dir = hub_root() / "config" / "repos"
     seen: set[str] = set()
     repos: list[str] = []
-    for cfg_file in repos_dir.glob("*.yaml"):
+    for cfg_file in repos_dir.rglob("*.yaml"):
         if cfg_file.name.endswith(".disabled"):
             continue
         try:
@@ -47,7 +47,7 @@ def get_repo_entries(
     repos_dir = hub_root() / "config" / "repos"
     entries: list[dict[str, str]] = []
     seen: set[str] = set()
-    for cfg_file in repos_dir.glob("*.yaml"):
+    for cfg_file in repos_dir.rglob("*.yaml"):
         if cfg_file.name.endswith(".disabled"):
             continue
         try:
