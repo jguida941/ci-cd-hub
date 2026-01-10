@@ -1,38 +1,68 @@
 # Documentation Automation Audit & Design
 
 **Date:** 2026-01-04
-**Last Updated:** 2026-01-06 (docs_stale package modularization complete)
+**Last Updated:** 2026-01-09 (`docs audit` Part 13 checks + 22 tests)
 **Priority:** 🟢 **#4** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
-**Status:** ~60% implemented (core `docs stale` MVP complete)
+**Status:** ~80% implemented (`docs stale` complete, `docs audit` with Part 13 checks)
 **Depends On:** Stable CLI surface (CLEAN_CODE.md)
 **Can Parallel:** TEST_REORGANIZATION.md (both need stable CLI)
 **Problem:** Manual documentation updates take 4+ hours/day. With 50+ docs and 28,000 lines, keeping them in sync with code changes is unsustainable.
 
 ---
 
-## Implementation Status (2026-01-06)
+## Implementation Status (2026-01-09)
 
 | Component | Status | Notes |
 |-----------|--------|-------|
 | `cihub docs generate` | ✅ **IMPLEMENTED** | Generates CLI.md, CONFIG.md |
 | `cihub docs check` | ✅ **IMPLEMENTED** | Drift detection for generated docs |
 | `cihub docs links` | ✅ **IMPLEMENTED** | Internal link validation |
-| `cihub docs stale` | ✅ **IMPLEMENTED** | Modularized package (957→1489 lines across 6 modules), 63 tests including 15 Hypothesis property-based tests |
-| `cihub docs audit` | ❌ **NOT IMPLEMENTED** | Lifecycle enforcement — see Part 12 |
-| `.cihub/tool-outputs/` for docs | ❌ **NOT IMPLEMENTED** | No docs artifacts generated yet |
-| AI prompt pack output | ❌ **NOT IMPLEMENTED** | Design ready in Part 12.D |
-| Metrics drift detection | ❌ **NOT IMPLEMENTED** | Part 13.R — detect stale counts (tests, commands, ADRs) |
-| Duplicate task detection | ❌ **NOT IMPLEMENTED** | Part 13.S — find duplicate checklist items |
-| Timestamp freshness | ❌ **NOT IMPLEMENTED** | Part 13.T — validate "Last Updated" headers |
+| `cihub docs stale` | ✅ **IMPLEMENTED** | Modularized package (957→1489 lines across 6 modules), 63 tests |
+| `cihub docs audit` | ⚠️ **MOSTLY COMPLETE** | Core checks (J/L/N) + Part 13.S/T/V; missing universal headers (Q), specs hygiene |
+| `.cihub/tool-outputs/` for docs | ✅ **IMPLEMENTED** | `docs audit --output-dir` wired into `check --audit` |
+| AI prompt pack output | ⚠️ **OPTIONAL SUPPORT** | `docs stale --ai` or `--ai-output PATH` implemented |
+| Metrics drift detection | ❌ **NOT IMPLEMENTED** | Part 13.R — detect stale counts (for `docs stale`) |
+| Duplicate task detection | ✅ **IMPLEMENTED** | Part 13.S — fuzzy matching across planning docs |
+| Timestamp freshness | ✅ **IMPLEMENTED** | Part 13.T — "Last Updated" header staleness |
+| Placeholder detection | ✅ **IMPLEMENTED** | Part 13.V — personal usernames, local paths |
 | Checklist-reality sync | ❌ **NOT IMPLEMENTED** | Part 13.U — verify [ ] items against code |
 | Cross-doc consistency | ❌ **NOT IMPLEMENTED** | Part 13.W — ensure same facts across docs |
 | CHANGELOG validation | ❌ **NOT IMPLEMENTED** | Part 13.X — format and ordering checks |
 
-**Overall:** ~60% implemented. Core `docs stale` MVP complete (2026-01-06); remaining: `docs audit`, tool-outputs artifacts, Part 13 features (~3-4 days).
+**Overall:** ~80% implemented. `docs stale` complete; `docs audit` mostly complete (J/L/N + Part 13.S/T/V). Remaining: universal headers (Q), specs hygiene, Part 13.R/U/W/X (~1-2 days).
 
-**Completed 2026-01-06:** `cihub docs stale` modularized into package with 6 modules (types, extraction, git, comparison, output) + 63 tests including 15 Hypothesis property-based tests. Follows triage package pattern (Part 1.5 of CLEAN_CODE.md).
+**Implemented in `docs audit` (2026-01-09):**
+- ✅ active/ ↔ STATUS.md sync (Part 12.J partial)
+- ✅ Archive superseded header check (Part 12.J partial)
+- ✅ ADR metadata lint: Status/Date/Superseded-by (Part 12.L)
+- ✅ Plain-text docs/ reference scanning (Part 12.N)
+- ✅ --output-dir wired in check --audit → writes .cihub/tool-outputs/docs_audit.json
+- ✅ Duplicate task detection with fuzzy matching (Part 13.S)
+- ✅ Timestamp freshness validation (Part 13.T)
+- ✅ Placeholder detection: usernames, paths, markers (Part 13.V)
 
-**Next Priority:** Add Part 13 features (metrics drift, cross-doc consistency) and `docs audit` for lifecycle enforcement.
+**NOT yet implemented in `docs audit`:**
+- ❌ Specs hygiene: REQUIREMENTS.md validation (Part 12.J)
+- ❌ Path-change update rules (Part 12.J)
+- ❌ Universal doc header enforcement (Part 12.Q)
+- ❌ Doc inventory/counts (Part 12.M)
+- ❌ Checklist-reality sync (Part 13.U)
+
+**Tests:** 22 tests in `tests/test_docs_audit.py` (types, lifecycle, ADR, references, consistency)
+
+**Module structure:**
+```
+cihub/commands/docs_audit/
+├── __init__.py     # Main cmd_docs_audit entry point
+├── types.py        # Data models (AuditFinding, AuditReport, TaskEntry, etc.)
+├── lifecycle.py    # STATUS.md ↔ active/ sync validation
+├── adr.py          # ADR metadata linting
+├── references.py   # Plain-text docs/ path scanning
+├── consistency.py  # Part 13: duplicates, timestamps, placeholders
+└── output.py       # Output formatters (human, JSON, GitHub summary)
+```
+
+**Next Priority:** Complete remaining Part 12 checks (Q universal headers, specs hygiene).
 
 ---
 
@@ -424,6 +454,30 @@ Add to `.github/workflows/hub-production-ci.yml`:
 ---
 
 ## Part 9: Finalized Implementation (`cihub docs stale`)
+
+### Scope / Non-goals (Clarification 2026-01-09)
+
+> **Why this note exists:** The scope of `docs stale` has caused recurring confusion. This section clarifies exactly what the command does and does not do.
+
+**In Scope (v1):**
+- Detect **removed/renamed Python symbols** (functions, classes, constants) referenced in docs
+- Detect **deleted/renamed file paths** referenced in docs (e.g., `cihub/commands/foo.py`)
+- Detect **removed CLI commands/flags** (via CLI surface diff, not behavior changes)
+- Work is driven by `--since` flag (defaults to `HEAD~10`): only symbols that changed in that git range are checked
+
+**Not In Scope (v1):**
+- **Semantic drift** — behavior changes where names remain the same (needs different techniques)
+- **Metrics drift** — stale numeric claims like "80 tests" (see Part 13.R for future `docs audit` feature)
+- **Cross-document consistency** — same fact appearing differently across docs (see Part 13.W)
+- **Checklist-reality sync** — unchecked items that are actually done (see Part 13.U)
+
+**Output Artifacts (optional, implemented):**
+- `--output-dir DIR` → writes `docs_stale.json` + `docs_stale.prompt.md` to specified directory
+- `--tool-output PATH` → writes JSON to explicit path (for triage integration)
+- `--ai-output PATH` → writes AI prompt pack to explicit path
+- These are **not wired into `cihub check --audit` by default** — that integration is a Phase 2 task
+
+---
 
 ### Command Design
 

@@ -23,6 +23,7 @@ from typing import Any
 
 from cihub.commands.adr import cmd_adr
 from cihub.commands.docs import cmd_docs, cmd_docs_links
+from cihub.commands.docs_audit import cmd_docs_audit
 from cihub.commands.preflight import cmd_preflight
 from cihub.commands.smoke import cmd_smoke
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
@@ -413,6 +414,23 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
         # Docs links check
         links_args = argparse.Namespace(json=True, external=False)
         add_step("docs-links", cmd_docs_links(links_args))
+
+        # Docs audit (lifecycle + ADR metadata)
+        # NOTE: --skip-references and --skip-consistency are intentional for fast CI.
+        # The reference scan adds ~10s and consistency checks add ~5s with noise.
+        # For full audit:
+        #   cihub docs audit                  # Full scan (slower, all checks)
+        #   cihub docs audit --skip-references --skip-consistency  # Fast mode
+        # Write to .cihub/tool-outputs/ for triage integration
+        tool_outputs_dir = root / ".cihub" / "tool-outputs"
+        audit_args = argparse.Namespace(
+            json=True,
+            output_dir=str(tool_outputs_dir),
+            skip_references=True,  # Fast mode; run full audit separately if needed
+            skip_consistency=True,  # Part 13 checks can be noisy; run explicitly if needed
+            github_summary=False,
+        )
+        add_step("docs-audit", cmd_docs_audit(audit_args))
 
         # ADR check
         adr_args = argparse.Namespace(subcommand="check", json=True)

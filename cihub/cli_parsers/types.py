@@ -27,6 +27,7 @@ class CommandHandlers:
     cmd_docs: CommandHandler
     cmd_docs_links: CommandHandler
     cmd_docs_stale: CommandHandler
+    cmd_docs_audit: CommandHandler
     cmd_adr: CommandHandler
     cmd_config_outputs: CommandHandler
     cmd_discover: CommandHandler

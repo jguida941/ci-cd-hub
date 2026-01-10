@@ -113,3 +113,30 @@ def add_docs_commands(
         help="Write summary to GITHUB_STEP_SUMMARY",
     )
     docs_stale.set_defaults(func=handlers.cmd_docs_stale)
+
+    # docs audit - documentation lifecycle and metadata audit (DOC_AUTOMATION_AUDIT.md Part 12.J)
+    docs_audit = docs_sub.add_parser(
+        "audit",
+        help="Validate documentation lifecycle, ADR metadata, and references",
+    )
+    add_json_flag(docs_audit)
+    docs_audit.add_argument(
+        "--output-dir",
+        help="Output dir for CIHub-style artifacts (e.g., .cihub/tool-outputs)",
+    )
+    docs_audit.add_argument(
+        "--skip-references",
+        action="store_true",
+        help="Skip plain-text reference scanning (faster)",
+    )
+    docs_audit.add_argument(
+        "--skip-consistency",
+        action="store_true",
+        help="Skip Part 13 consistency checks (duplicates, timestamps, placeholders)",
+    )
+    docs_audit.add_argument(
+        "--github-summary",
+        action="store_true",
+        help="Write summary to GITHUB_STEP_SUMMARY",
+    )
+    docs_audit.set_defaults(func=handlers.cmd_docs_audit)

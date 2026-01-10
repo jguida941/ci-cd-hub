@@ -35,18 +35,27 @@ Implement a suite of automated documentation quality tools under the `cihub docs
 | `docs check` | Verify generated docs are up-to-date | ✅ Implemented |
 | `docs links` | Check for broken internal/external links | ✅ Implemented |
 | `docs stale` | Detect references to removed/renamed code | ✅ Implemented |
+| `docs audit` | Validate lifecycle, ADR metadata, and doc references | ✅ Implemented |
 
 ### Architecture
 
 ```
 cihub/commands/
-├── docs.py              # generate, check handlers
+├── docs.py              # generate, check, links handlers
 ├── docs_stale/          # Modular package (reference pattern)
 │   ├── __init__.py      # Main handler
-│   ├── detector.py      # Git diff + code symbol detection
-│   ├── scanner.py       # Markdown parsing and reference extraction
-│   ├── reporter.py      # Output formatting (JSON, markdown, GitHub)
-│   └── types.py         # StaleRef, ScanResult dataclasses
+│   ├── types.py         # CodeSymbol, DocReference, StaleReport
+│   ├── extraction.py    # Symbol/reference extraction
+│   ├── git.py           # Git operations (compare, file status)
+│   ├── comparison.py    # Stale reference detection
+│   └── output.py        # Output formatting (JSON, markdown, GitHub)
+├── docs_audit/          # Modular package (Part 12.J)
+│   ├── __init__.py      # Main handler
+│   ├── types.py         # AuditFinding, AuditReport, ADRMetadata
+│   ├── lifecycle.py     # STATUS.md ↔ active/ sync validation
+│   ├── adr.py           # ADR metadata linting
+│   ├── references.py    # Plain-text docs/ path scanning
+│   └── output.py        # Output formatting (JSON, markdown, GitHub)
 ```
 
 ### Design Principles
@@ -86,12 +95,48 @@ cihub docs stale --since=main --code=src --docs=documentation
 - AI markdown pack (`--ai`) for LLM-assisted fixes
 - GitHub Step Summary (`--github-summary`)
 
+### `docs audit` Implementation Details
+
+The `docs audit` command validates documentation structure and metadata:
+
+```bash
+# Basic usage - full audit
+cihub docs audit
+
+# Fast mode - skip reference scanning
+cihub docs audit --skip-references
+
+# Write artifacts for triage integration
+cihub docs audit --output-dir .cihub/tool-outputs
+
+# CI mode with GitHub summary
+cihub docs audit --github-summary
+```
+
+**Validation checks:**
+1. **Lifecycle**: Files in `active/` must be listed in STATUS.md, and vice versa
+2. **Archive headers**: Archived docs must have "Superseded" headers
+3. **ADR metadata**: Required fields (Status, Date), valid status values, Superseded-by for superseded ADRs
+4. **References**: Plain-text `docs/...` paths must point to existing files
+
+**Output formats:**
+- Human-readable summary (default)
+- JSON (`--json`) for programmatic consumption
+- Artifacts (`--output-dir`) writes `docs_audit.json`
+- GitHub Step Summary (`--github-summary`)
+
+**CI Integration:**
+- Wired into `cihub check --audit` tier
+- Runs with `--skip-references` for speed in CI
+
 ### CI Integration
 
 ```yaml
 # In .github/workflows/docs.yml
 - name: Check documentation freshness
-  run: cihub docs stale --fail-on-stale --github-summary
+  run: |
+    cihub docs stale --fail-on-stale --github-summary
+    cihub docs audit --github-summary
 ```
 
 ## Consequences
@@ -127,13 +172,16 @@ This ADR will be updated as new documentation automation commands are added:
 ## Test Coverage
 
 - `tests/test_commands_docs.py` - docs generate/check tests
-- `tests/test_docs_stale/` - 54 tests for stale detection (modular package)
+- `tests/test_docs_stale/` - 63 tests including 15 Hypothesis property-based tests
+- `tests/test_docs_audit/` - (planned) lifecycle, ADR, reference validation tests
 
 ## Files Changed
 
-- `cihub/cli_parsers/docs.py` - Parser definitions
+- `cihub/cli_parsers/docs.py` - Parser definitions for all docs subcommands
 - `cihub/commands/docs.py` - generate, check, links handlers
-- `cihub/commands/docs_stale/` - Modular package (5 files)
+- `cihub/commands/docs_stale/` - Modular package (6 files)
+- `cihub/commands/docs_audit/` - Modular package (5 files)
+- `cihub/commands/check.py` - Integration into `check --audit` tier
 
 ## Related ADRs
 

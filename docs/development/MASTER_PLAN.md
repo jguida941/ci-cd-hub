@@ -14,7 +14,7 @@
 | **#1 🔴** | CLEAN_CODE.md | ~90% | Part 5.3: Special-Case Handling |
 | **#2 🟠** | SYSTEM_INTEGRATION_PLAN.md | Active | Phase 2-6 (schema, wizard, registry parity) |
 | **#3 🟡** | TEST_REORGANIZATION.md | PLANNED | Resolve blockers first |
-| **#4 🟢** | DOC_AUTOMATION_AUDIT.md | ~60% | `docs audit`, Part 13 features |
+| **#4 🟢** | DOC_AUTOMATION_AUDIT.md | ~80% | Part 13.S/T/V done; remaining: Q headers, specs |
 | **#5 🔵** | TYPESCRIPT_CLI_DESIGN.md | Planning | Wait for CLEAN_CODE.md 100% |
 | **#6 ⚪** | PYQT_PLAN.md | DEFERRED | Wait for all above |
 
@@ -116,7 +116,7 @@ Blockers to resolve first:
 
 ### 🟢 Priority 4: DOC_AUTOMATION_AUDIT.md (Can parallel with TEST_REORGANIZATION)
 
-**Status:** ~60% implemented | **Depends on:** Stable CLI surface
+**Status:** ~65% implemented (optional artifact outputs now available) | **Depends on:** Stable CLI surface
 
 ```
 docs/development/active/DOC_AUTOMATION_AUDIT.md
@@ -124,8 +124,16 @@ docs/development/active/DOC_AUTOMATION_AUDIT.md
 
 Core MVP:
 - [x] `cihub docs stale` - ✅ **COMPLETE** (2026-01-06) - Modularized package (6 modules, 63 tests including 15 Hypothesis)
-- [ ] `cihub docs audit` - Lifecycle enforcement
-- [ ] Part 13 features - Metrics drift, cross-doc consistency
+  - [x] Optional `--output-dir`, `--tool-output`, `--ai-output` flags for artifact outputs ✅ (2026-01-09)
+- [x] `cihub docs audit` - ✅ **MOSTLY COMPLETE** (2026-01-09) - Modular package (7 modules, 22 tests)
+  - [x] Lifecycle validation (J/L/N): active/STATUS.md sync, ADR metadata, references ✅
+  - [x] Part 13.S: Duplicate task detection (fuzzy matching) ✅
+  - [x] Part 13.T: Timestamp freshness validation ✅
+  - [x] Part 13.V: Placeholder detection ✅
+  - [ ] Part 12.Q: Universal doc header enforcement
+  - [ ] Specs hygiene (Part 12.J remainder)
+- [x] Default wiring into `cihub check --audit` ✅ (with skip_references, skip_consistency for fast lane)
+- [ ] Part 13 remaining - Metrics drift (R), checklist-reality (U), cross-doc (W), CHANGELOG (X)
 
 **Why fourth:** Documentation automation needs stable command signatures.
 
@@ -193,7 +201,7 @@ docs/development/active/PYQT_PLAN.md
 
 **CLI Commands:**
 - [x] `cihub docs stale` — ✅ **COMPLETE** (2026-01-06) Modularized package, 63 tests
-- [ ] `cihub docs audit` — Doc lifecycle consistency checks
+- [x] `cihub docs audit` — ✅ **MOSTLY COMPLETE** (2026-01-09) Lifecycle + Part 13.S/T/V, 22 tests
 - [ ] `cihub config validate` — Validate hub configs
 - [ ] `cihub audit` — Umbrella command (docs check + links + adr check + config validate)
 - [ ] `--json` flag for all commands including hub-ci subcommands
@@ -203,7 +211,7 @@ docs/development/active/PYQT_PLAN.md
 - [ ] Generate `docs/reference/WORKFLOWS.md` from `.github/workflows/*.yml`
 - [ ] Plain-text reference scan for stale `docs/...` strings
 - [ ] Universal header enforcement for manual docs
-- [ ] `.cihub/tool-outputs/` artifacts for doc automation
+- [x] `.cihub/tool-outputs/` artifacts for doc automation ✅ (optional via `--output-dir`, `--tool-output`, `--ai-output`)
 - [ ] Tooling integration checklist: toggle -> CLI runner (no inline workflow logic) -> tool-outputs -> report summaries/dashboards -> templates/profiles -> docs refs -> template sync tests
 
 **Clean Code:** *(See `active/CLEAN_CODE.md` for details — audit updated 2026-01-05)*
@@ -486,13 +494,16 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 - [ ] `cihub audit` — Umbrella: docs check + links + adr check + config validate
 - [x] `cihub docs stale` — ✅ **COMPLETE** (2026-01-06) Modularized package, 63 tests. Design: `active/DOC_AUTOMATION_AUDIT.md`
 - [ ] `cihub docs workflows` — Generate workflow tables from `.github/workflows/*.yml` (replaces manual guides/WORKFLOWS.md)
-- [ ] `cihub docs audit` — Doc lifecycle consistency checks (wire into `cihub check --audit`):
-  - [ ] Every doc in `status/STATUS.md` Active Design Docs table must exist under `development/active/`
-  - [ ] Every file under `development/active/` must be listed in STATUS.md
-  - [ ] Files under `development/archive/` must have a superseded header
-  - [ ] Path changes in `active/` or `archive/` require `docs/README.md` + `status/STATUS.md` updates in same diff
-  - [ ] Validate MASTER_PLAN.md references only real paths (no active/ vs non-active mismatches)
-  - [ ] Make targets referenced in docs exist in Makefile (CLI is the product; Make is a wrapper)
+- [x] `cihub docs audit` — ✅ **MOSTLY COMPLETE** (2026-01-09) Wired into `cihub check --audit`:
+  - [x] Every doc in `status/STATUS.md` Active Design Docs table must exist under `development/active/` ✅
+  - [x] Every file under `development/active/` must be listed in STATUS.md ✅
+  - [x] Files under `development/archive/` must have a superseded header ✅
+  - [x] Plain-text reference scan for `docs/...` strings ✅
+  - [x] Part 13.S: Duplicate task detection ✅
+  - [x] Part 13.T: Timestamp freshness validation ✅
+  - [x] Part 13.V: Placeholder detection ✅
+  - [ ] Path changes require docs/README.md + status/STATUS.md updates (not enforced yet)
+  - [ ] Universal doc header enforcement (Part 12.Q)
 - [x] Add `make links` target
 - [ ] Add `make audit` target
 - [x] Add a "triage bundle" output for failures (machine-readable: command, env, tool output, file snippet, workflow/job/step). *(Implemented via `CIHUB_EMIT_TRIAGE`)*
@@ -506,7 +517,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 ### 6b) Documentation Automation (Design: `active/DOC_AUTOMATION_AUDIT.md`)
 
 > **Design doc:** Full requirements and architecture in `docs/development/active/DOC_AUTOMATION_AUDIT.md`
-> **Status:** ~60% complete (Priority #4)
+> **Status:** ~80% complete (Priority #4)
 
 - [x] `cihub docs stale` — ✅ **COMPLETE** (2026-01-06) Modularized package (6 modules, 63 tests including 15 Hypothesis)
   - [x] Python AST symbol extraction (base vs head comparison) ✅
@@ -514,17 +525,20 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
   - [x] CLI surface drift detection (help snapshot comparison) ✅
   - [x] File move/delete detection (`--name-status --find-renames`) ✅
   - [x] Output modes: human, `--json`, `--ai` (LLM prompt pack) ✅
-- [ ] `cihub docs audit` — Doc lifecycle consistency checks (see DOC_AUTOMATION_AUDIT.md for details):
-  - [ ] Validate `active/` ↔ `STATUS.md` sync
-  - [ ] Validate `archive/` files have superseded headers
-  - [ ] Plain-text reference scan for `docs/...` strings
-  - [ ] ADR metadata lint (Status/Date/Superseded-by)
-  - [ ] Universal header enforcement for manual docs
-  - [ ] Specs hygiene: only `REQUIREMENTS.md` is active under `development/specs/` with required header fields
-- [ ] `.cihub/tool-outputs/` artifacts for doc automation:
-  - [ ] `docs_stale.json` — Machine-readable stale reference report
-  - [ ] `docs_stale.prompt.md` — LLM-ready prompt pack
-  - [ ] `docs_audit.json` — Lifecycle/reference findings
+- [x] `cihub docs audit` — ✅ **MOSTLY COMPLETE** (2026-01-09) Modular package (7 modules, 22 tests):
+  - [x] Validate `active/` ↔ `STATUS.md` sync ✅
+  - [x] Validate `archive/` files have superseded headers ✅
+  - [x] Plain-text reference scan for `docs/...` strings ✅
+  - [x] ADR metadata lint (Status/Date/Superseded-by) ✅
+  - [x] Part 13.S: Duplicate task detection ✅
+  - [x] Part 13.T: Timestamp freshness validation ✅
+  - [x] Part 13.V: Placeholder detection ✅
+  - [ ] Universal header enforcement for manual docs (Part 12.Q)
+  - [ ] Specs hygiene: only `REQUIREMENTS.md` is active under `development/specs/`
+- [x] `.cihub/tool-outputs/` artifacts for doc automation:
+  - [x] `docs_stale.json` — Machine-readable stale reference report ✅ (via `--output-dir` or `--tool-output`)
+  - [x] `docs_stale.prompt.md` — LLM-ready prompt pack ✅ (via `--output-dir` or `--ai-output`)
+  - [x] `docs_audit.json` — Lifecycle/reference/consistency findings ✅ (wired into `cihub check --audit`)
 - [ ] Doc manifest (`docs_manifest.json`) for LLM context:
   - [ ] Path, category (guide/reference/active/archived)
   - [ ] Generated vs manual flag

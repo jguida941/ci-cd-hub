@@ -103,6 +103,12 @@ def cmd_docs_stale(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_docs_audit(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.docs_audit import cmd_docs_audit as handler
+
+    return handler(args)
+
+
 def cmd_adr(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.adr import cmd_adr as handler
 
@@ -239,6 +245,7 @@ def build_parser() -> argparse.ArgumentParser:
         cmd_docs=cmd_docs,
         cmd_docs_links=cmd_docs_links,
         cmd_docs_stale=cmd_docs_stale,
+        cmd_docs_audit=cmd_docs_audit,
         cmd_adr=cmd_adr,
         cmd_config_outputs=cmd_config_outputs,
         cmd_discover=cmd_discover,

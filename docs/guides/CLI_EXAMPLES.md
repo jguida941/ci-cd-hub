@@ -210,17 +210,40 @@ python -m cihub config-outputs --repo /path/to/repo --github-output
 
 ## Docs & ADRs
 
-```bash
-python -m cihub docs generate
-python -m cihub docs check
-python -m cihub docs links
-python -m cihub docs links --external
-```
+Generate and check reference docs:
 
 ```bash
-python -m cihub adr list
-python -m cihub adr new "Add new workflow policy"
-python -m cihub adr check
+python -m cihub docs generate                    # Generate CLI.md, CONFIG.md
+python -m cihub docs check                       # Verify generated docs are up-to-date
+python -m cihub docs links                       # Check internal links
+python -m cihub docs links --external            # Also check external URLs (requires lychee)
+```
+
+Detect stale documentation references:
+
+```bash
+python -m cihub docs stale                       # Check last 10 commits
+python -m cihub docs stale --since main          # Check against main branch
+python -m cihub docs stale --fail-on-stale       # CI mode - fail if stale refs found
+python -m cihub docs stale --ai                  # Generate AI-consumable markdown
+python -m cihub docs stale --output-dir .cihub/tool-outputs  # Write JSON + prompt pack
+```
+
+Audit documentation structure and metadata:
+
+```bash
+python -m cihub docs audit                       # Full audit (lifecycle, ADR, references)
+python -m cihub docs audit --skip-references     # Fast mode - skip path scanning
+python -m cihub docs audit --json                # Machine-readable output
+python -m cihub docs audit --output-dir .cihub/tool-outputs  # Write docs_audit.json
+```
+
+ADR management:
+
+```bash
+python -m cihub adr list                         # List all ADRs
+python -m cihub adr new "Add new workflow policy"  # Create new ADR
+python -m cihub adr check                        # Validate ADR structure
 ```
 
 ---

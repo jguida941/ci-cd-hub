@@ -5,7 +5,7 @@
 > **Action Items:** See [MASTER_PLAN.md](../MASTER_PLAN.md) for all tasks.
 > **Architecture:** See [ARCH_OVERVIEW.md](../architecture/ARCH_OVERVIEW.md)
 >
-> **Last Updated:** 2026-01-09 (SYSTEM_INTEGRATION_PLAN.md, ADR-0051)
+> **Last Updated:** 2026-01-09 (`docs audit` Part 13 checks implemented)
 > **Version Target:** v1.0.0
 
 ---
@@ -20,7 +20,7 @@
 | [CLEAN_CODE.md](../active/CLEAN_CODE.md) | Architecture improvements (polymorphism, encapsulation) | 🔄 In Progress (~90%) |
 | [SYSTEM_INTEGRATION_PLAN.md](../active/SYSTEM_INTEGRATION_PLAN.md) | Registry/wizard/schema integration | 🔄 Active (Consolidated) |
 | [TEST_REORGANIZATION.md](../active/TEST_REORGANIZATION.md) | Test suite restructuring plan | 📋 Planned (Audit Complete) |
-| [DOC_AUTOMATION_AUDIT.md](../active/DOC_AUTOMATION_AUDIT.md) | `cihub docs stale` command design | 📋 Designed |
+| [DOC_AUTOMATION_AUDIT.md](../active/DOC_AUTOMATION_AUDIT.md) | `docs stale` + `docs audit` commands | 🔄 In Progress (~80%) |
 | [TYPESCRIPT_CLI_DESIGN.md](../active/TYPESCRIPT_CLI_DESIGN.md) | TypeScript CLI wrapper design | 📋 Planning |
 | [PYQT_PLAN.md](../active/PYQT_PLAN.md) | PyQt6 GUI wrapper design | 📋 Reference |
 
@@ -32,7 +32,9 @@
    - ✅ 13 files migrated (~198 prints → CommandResult)
    - 🔄 ~65 prints remaining in ~9 allowlisted files + report/ subpackage
 2. **Test suite reorganization** — Plan complete, 5-agent audit identified ~10-12 days blockers
-3. **Documentation automation** — Implement `cihub docs stale` to detect stale references
+3. **Documentation automation** — `docs stale` ✅ complete, `docs audit` 🔄 mostly complete (~80%)
+   - ✅ `cihub docs stale` — 63 tests, modular package
+   - ✅ `cihub docs audit` — Core J/L/N + Part 13.S/T/V checks; 22 tests; missing Q headers, specs hygiene
 
 ---
 
@@ -142,4 +144,4 @@ docs/
 
 ---
 
-*Last updated: 2026-01-06*
+*Last updated: 2026-01-09*
