@@ -71,16 +71,19 @@ Run local checks before pushing:
 ```bash
 cihub check              # Fast: lint, format, type, test (~30s)
 cihub check --audit      # + links, adr, configs (~45s)
-cihub check --security   # + bandit, pip-audit, trivy (~2min)
-cihub check --full       # + templates, matrix, license (~3min)
+cihub check --security   # + bandit, pip-audit, trivy, gitleaks (~2min)
+cihub check --full       # + templates, matrix, license, zizmor (~3min)
 cihub check --all        # Everything including mutation (~15min)
 ```
 
-Validate config and run a single tool:
+Other validation commands:
 
 ```bash
 cihub validate --repo .          # Validate .ci-hub.yml against schema
 cihub run ruff --repo .          # Run one tool, emit JSON
+cihub verify --remote            # Verify workflow contracts (requires gh auth)
+cihub docs generate              # Regenerate CLI/config reference docs
+cihub docs check                 # Verify docs are up to date
 ```
 
 ---

@@ -429,7 +429,7 @@ thresholds:
 | `cihub config set <path> <value> --repo <name>` | Update a config value |
 | `cihub config enable <tool> --repo <name>` | Enable a tool |
 | `cihub config disable <tool> --repo <name>` | Disable a tool |
-| `cihub config apply-profile <profile> --repo <name>` | Apply a profile |
+| `cihub config apply-profile --profile <path> [--target <path>]` | Apply a profile to config |
 
 **Documentation & ADRs**
 | Command | Purpose |

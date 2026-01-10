@@ -1,288 +1,161 @@
-# README Audit Report
+# README Re-Audit Report (Round 2)
 
-> **Generated: 2026-01-09** | 8 agents used for comprehensive audit
+> **Generated: 2026-01-09** | 8 agents used for comprehensive re-audit
 
 ---
 
 ## Executive Summary
 
-| Area | Status | Issues Found |
-|------|--------|--------------|
-| README Links | PASS | All 11 links valid and have content |
-| CLI Commands | FAIL | 10+ essential commands missing from README |
-| Technical Claims | PARTIAL | Tool lists incomplete, env vars missing |
-| GETTING_STARTED.md | PARTIAL | Command syntax errors, missing commands |
-| CLI.md | PASS | Generated, complete, accurate |
-| TROUBLESHOOTING.md | FAIL | Missing debugging flags, triage bundles, exit codes |
-| TOOLS.md | FAIL | Hand-written (not generated), missing tools, missing config options |
+| Area | Status | New Issues Found |
+|------|--------|------------------|
+| README.md | PARTIAL | Missing docs commands, gitleaks, zizmor |
+| GETTING_STARTED.md | PARTIAL | Wrong apply-profile syntax, missing setup docs |
+| TROUBLESHOOTING.md | GOOD | Minor: missing advanced triage options |
+| TOOLS.md | CRITICAL | Hand-written, missing docker/sbom/jqwik, missing require_run_or_fail |
+| WORKFLOWS.md | PASS | Complete and accurate (generated) |
+| All Links | PASS | All 11 links valid |
+| CLI Commands | PARTIAL | registry, verify missing from tables |
+| Cross-Doc Consistency | PARTIAL | check tier lists differ, missing gitleaks/zizmor |
 
 ---
 
-## Part 1: README Issues
+## Part 1: README Remaining Issues
 
-### Missing Essential CLI Commands
+### Missing Commands
 
-These commands are **core to the CLI** but not mentioned in README:
+| Command | Status | Priority |
+|---------|--------|----------|
+| `docs generate` | NOT in README | HIGH |
+| `docs check` | NOT in README | HIGH |
+| `docs stale` | NOT in README | HIGH |
+| `docs audit` | NOT in README | MEDIUM |
+| `verify --remote` | NOT in README | HIGH |
 
-| Command | Purpose | Priority |
-|---------|---------|----------|
-| `check` | Pre-push validation (5 tiers) | MUST ADD |
-| `triage` | Analyze CI failures | MUST ADD |
-| `validate` | Validate .ci-hub.yml against schema | MUST ADD |
-| `detect` | Detect repo language | SHOULD ADD |
-| `run` | Run single tool with JSON output | SHOULD ADD |
-| `docs generate/check/stale` | Doc automation | SHOULD ADD |
-| `verify` | Verify workflow contracts | SHOULD ADD |
-| `scaffold` | Generate fixture projects | MENTION |
-| `smoke` | Local smoke test | MENTION |
-| `registry` | Tier management | MENTION |
+### Missing from Check Tiers
 
-### Incomplete Tool Lists
+- `--security` tier: Missing **gitleaks**
+- `--full` tier: Missing **zizmor**
 
-**Python tools missing from README:**
-- sbom
-- semgrep (listed as Shared but also in Python)
-- trivy (listed as Shared but also in Python)
-- codeql (listed as Shared but also in Python)
-- docker (listed as Shared but also in Python)
+### Missing Flags
 
-**Java tools missing from README:**
-- sbom
-- jqwik (mentioned but not in table)
-- semgrep, trivy, codeql, docker (shared tools)
-
-### Missing Environment Variables
-
-README lists 3 env vars, but there are more:
-
-| Variable | Purpose | In README? |
-|----------|---------|------------|
-| CIHUB_DEBUG | Tracebacks | Yes |
-| CIHUB_VERBOSE | Tool logs | Yes |
-| CIHUB_EMIT_TRIAGE | Triage bundle | Yes |
-| CIHUB_DEBUG_CONTEXT | Decision blocks | NO |
-| CIHUB_WRITE_GITHUB_SUMMARY | GH summary | NO |
-| CIHUB_REPORT_INCLUDE_DETAILS | Report details | NO |
+- `--install-missing` flag for check command
+- `--require-optional` flag for check command
 
 ---
 
-## Part 2: Linked Docs Issues
+## Part 2: GETTING_STARTED Issues
 
-### GETTING_STARTED.md (Grade: B+)
+### CRITICAL: Wrong apply-profile Syntax
 
-**Issues Found:**
-
-1. **Command syntax errors** (lines 426-431):
-   ```bash
-   # WRONG in docs:
-   cihub config --repo <name> show
-
-   # CORRECT:
-   cihub config show --repo <name>
-   ```
-
-2. **Missing commands:**
-   - `cihub setup` (interactive wizard) - not in Key Commands table
-   - `cihub new` - creates hub-side configs, not documented
-   - `cihub discover` - generates repo matrix, not documented
-   - `cihub hub` - operational settings, not documented
-
-3. **Missing report subcommands:**
-   - `aggregate`, `dashboard`, `validate` not documented
-
-4. **Inaccurate claim:**
-   - `cihub run` says "(Python only)" - WRONG, supports both languages
-
-### TROUBLESHOOTING.md (Grade: C)
-
-**Major Gaps:**
-
-1. **No debugging flags section** - CIHUB_DEBUG, CIHUB_VERBOSE, etc. not documented
-2. **No triage bundles explanation** - users won't know about .cihub/triage.json
-3. **No exit codes** - 0, 1, 2, 3, 4, 130 not explained
-4. **No tool-outputs directory** - .cihub/tool-outputs/ not mentioned
-5. **No timeout documentation** - CommandTimeoutError not covered
-6. **Broken reference** - RESEARCH_LOG.md path doesn't exist
-
-**Missing Error Scenarios:**
-- ConfigValidationError
-- CommandNotFoundError
-- CommandTimeoutError
-- JSON parse errors
-- Missing tool installations
-
-### TOOLS.md (Grade: C-)
-
-**Critical Issues:**
-
-1. **Not generated** - Hand-written, will drift from code
-2. **Missing tools:**
-   - docker (both Java and Python)
-   - sbom (both Java and Python)
-   - jqwik (Java) - mentioned but not detailed
-
-3. **Missing config options for ALL tools:**
-   - `require_run_or_fail` - not documented anywhere
-   - `fail_on_*` variants - incomplete
-   - `max_errors`, `max_issues`, `max_violations` - missing
-
-4. **Should be auto-generated** from:
-   - `cihub/tools/registry.py`
-   - `schema/ci-hub-config.schema.json`
-
-### CLI.md (Grade: A)
-
-- Generated correctly
-- All 33 commands documented
-- All subcommands present
-- Descriptions accurate
-
-### Other Docs (All PASS)
-
-- docs/README.md - Complete index
-- docs/reference/CONFIG.md - Generated, accurate
-- .github/CONTRIBUTING.md - Good command matrix
-- .github/SECURITY.md - Minimal but acceptable
-- LICENSE - Complete Elastic 2.0
-
----
-
-## Part 3: README Best Practices (From Research)
-
-### What's Missing vs. Best Practice
-
-| Best Practice | Current README | Recommendation |
-|---------------|----------------|----------------|
-| Quick "zero to working" example | Has setup/init/ci | Add expected output |
-| Features list | Problem/Solution table | Good, keep it |
-| Common use cases | Execution modes | Add "Pre-Push Validation" |
-| Troubleshooting link | Not prominent | Add mini-section with link |
-| Platform support | Prerequisites section | Good |
-| Visual/diagram | None | Consider ASCII hub→repo diagram |
-
-### Sections to Add
-
-1. **Pre-Push Validation** - `cihub check` tiers
-2. **Debugging** - Expand with triage command
-3. **Local Testing** - scaffold, smoke, verify
-4. **Configuration Management** - detect, validate, config, registry
-
----
-
-## Part 4: Recommended README Changes
-
-### Add This Section After "Quick Start"
-
-```markdown
-## Pre-Push Validation
-
-| Tier | Command | Time | What It Checks |
-|------|---------|------|----------------|
-| Fast | `cihub check` | ~30s | lint, format, type, test, actionlint |
-| Audit | `cihub check --audit` | ~45s | + links, adr, configs |
-| Security | `cihub check --security` | ~2min | + bandit, pip-audit, trivy |
-| Full | `cihub check --full` | ~3min | + templates, matrix, license |
-| All | `cihub check --all` | ~15min | + mutation testing |
+**Current (WRONG):**
+```
+| `cihub config apply-profile <profile> --repo <name>` | Apply a profile |
 ```
 
-### Expand "Debugging & Triage" Section
-
-```markdown
-## Debugging & Triage
-
-| Flag | Effect |
-|------|--------|
-| `CIHUB_DEBUG=True` | Show tracebacks |
-| `CIHUB_VERBOSE=True` | Show tool logs |
-| `CIHUB_DEBUG_CONTEXT=True` | Show decision blocks |
-| `CIHUB_EMIT_TRIAGE=True` | Write triage bundle |
-
-### Triage CI Failures
-
-```bash
-# Analyze latest failed run
-cihub triage --latest
-
-# Or analyze specific run
-cihub triage --run <run-id>
-
-# Outputs: .cihub/triage.json, priority.json, triage.md
+**Correct:**
 ```
+| `cihub config apply-profile --profile <path> [--target <path>]` | Apply a profile |
 ```
 
-### Add "Local Testing" Section
+### Missing Commands
 
-```markdown
-## Local Testing
-
-```bash
-# Generate a test fixture project
-cihub scaffold --type python
-
-# Validate schema and config
-cihub validate --repo .
-
-# Run a single tool
-cihub run ruff --repo .
-
-# Smoke test (detect → init → validate → ci)
-cihub smoke --repo .
-```
-```
-
-### Fix Tool Tables
-
-Add these to Python table:
-- sbom
-- docker
-
-Add these to Java table:
-- sbom
-- docker
-- jqwik (expand from just mention)
+- `cihub setup` - Not in Key Commands table (README features it prominently)
+- `cihub registry` - New feature, completely undocumented
+- `cihub verify` - Not in Key Commands table
+- `cihub discover` - Not documented
+- `cihub hub` - Not documented
 
 ---
 
-## Part 5: Action Items
+## Part 3: TROUBLESHOOTING Minor Gaps
 
-### Immediate (README)
+### Missing Triage Advanced Options
 
-- [ ] Add `check` command with tier table
-- [ ] Add `triage` command for CI failures
-- [ ] Add `validate` command
-- [ ] Add missing debugging flags (CIHUB_DEBUG_CONTEXT)
-- [ ] Fix tool tables (add docker, sbom, jqwik)
-- [ ] Add "Local Testing" section
-
-### Short-term (Linked Docs)
-
-- [ ] Fix GETTING_STARTED.md command syntax (--repo position)
-- [ ] Add missing commands to GETTING_STARTED.md Key Commands
-- [ ] Add debugging section to TROUBLESHOOTING.md
-- [ ] Add triage bundle explanation to TROUBLESHOOTING.md
-- [ ] Add exit codes to TROUBLESHOOTING.md
-- [ ] Remove broken RESEARCH_LOG.md reference
-
-### Medium-term (Generation)
-
-- [ ] Generate TOOLS.md from registry + schema (currently hand-written)
-- [ ] Add `require_run_or_fail` to all tool docs
-- [ ] Document all `fail_on_*` config options
+These are documented in CLI.md but not in TROUBLESHOOTING:
+- `--watch` - Background daemon mode
+- `--detect-flaky` - Flaky test analysis
+- `--gate-history` - Gate status over time
+- `--min-severity`, `--category` - Filtering options
 
 ---
 
-## Appendix: All Verified Links
+## Part 4: TOOLS.md Critical Gaps
 
-| Link | File | Status |
-|------|------|--------|
-| docs/README.md | Docs Index | VALID (94 lines) |
-| docs/guides/GETTING_STARTED.md | Getting Started | VALID (771 lines) |
-| docs/reference/CLI.md | CLI Reference | VALID (2,323 lines, generated) |
-| docs/reference/CONFIG.md | Config Reference | VALID (123 lines, generated) |
-| docs/reference/TOOLS.md | Tools Reference | VALID (696 lines, hand-written) |
-| docs/guides/TROUBLESHOOTING.md | Troubleshooting | VALID (489 lines) |
-| docs/development/DEVELOPMENT.md | Development Guide | VALID (357 lines) |
-| docs/development/status/STATUS.md | Current Status | VALID (147 lines) |
-| .github/CONTRIBUTING.md | Contributing | VALID (70 lines) |
-| .github/SECURITY.md | Security | VALID (16 lines) |
-| LICENSE | License | VALID (58 lines) |
+### Status: HAND-WRITTEN (Should be Generated)
+
+No "Generated by" banner - drifting from code.
+
+### Missing Tools (No Detail Sections)
+
+| Tool | Languages | Status |
+|------|-----------|--------|
+| docker | Both | Completely missing |
+| sbom | Both | Completely missing |
+| jqwik | Java | Only in matrix, no detail |
+
+### Missing Config Options (ALL Tools)
+
+- `require_run_or_fail` - Not documented for ANY tool
+- `fail_on_*` variants - Incomplete (Bandit has 3, only 1 documented)
+- `max_*` thresholds - Missing for many tools
+
+---
+
+## Part 5: Cross-Doc Consistency Issues
+
+### Check Tier Tools Mismatch
+
+| Tier | README | GETTING_STARTED |
+|------|--------|-----------------|
+| Fast | "lint, format, type, test" | "preflight, ruff, mypy, yamllint, pytest, actionlint, docs-check, smoke" |
+| Security | "bandit, pip-audit, trivy" | "bandit, pip-audit, trivy, **gitleaks**" |
+| Full | "templates, matrix, license" | "templates, matrix, license, **zizmor**" |
+
+### cihub setup Missing from GETTING_STARTED
+
+- README prominently features `cihub setup`
+- GETTING_STARTED has no section for it
+
+---
+
+## Action Items
+
+### Immediate Fixes (This Session)
+
+1. [x] ~~Add check tiers to README~~ (done in round 1)
+2. [x] ~~Add triage command to README~~ (done in round 1)
+3. [x] ~~Fix GETTING_STARTED config syntax~~ (done in round 1)
+4. [x] ~~Add debugging section to TROUBLESHOOTING~~ (done in round 1)
+5. [ ] Fix apply-profile syntax in GETTING_STARTED
+6. [ ] Add gitleaks to README --security tier
+7. [ ] Add zizmor to README --full tier
+8. [ ] Add docs commands to README
+9. [ ] Add verify --remote to README
+
+### Short-term (Next Session)
+
+10. [ ] Add cihub setup section to GETTING_STARTED
+11. [ ] Document registry command
+12. [ ] Add verify to Key Commands table
+13. [ ] Add advanced triage options to TROUBLESHOOTING
+
+### Medium-term (Technical Debt)
+
+14. [ ] Generate TOOLS.md from registry + schema
+15. [ ] Document require_run_or_fail for all tools
+16. [ ] Document all fail_on_* options
+17. [ ] Add docker, sbom, jqwik detail sections
+
+---
+
+## Files Verified
+
+| File | Lines | Status |
+|------|-------|--------|
+| README.md | 175 | Needs updates |
+| docs/guides/GETTING_STARTED.md | 780 | Needs apply-profile fix |
+| docs/guides/TROUBLESHOOTING.md | 560 | Good (minor gaps) |
+| docs/reference/TOOLS.md | 697 | Needs major updates |
+| docs/reference/WORKFLOWS.md | 240 | Complete |
+| docs/reference/CLI.md | 2,323 | Generated, complete |
+| docs/reference/CONFIG.md | 123 | Generated, complete |
