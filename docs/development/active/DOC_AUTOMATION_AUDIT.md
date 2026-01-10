@@ -28,6 +28,7 @@
 | Checklist-reality sync | ❌ **NOT IMPLEMENTED** | Part 13.U — verify [ ] items against code |
 | Cross-doc consistency | ❌ **NOT IMPLEMENTED** | Part 13.W — ensure same facts across docs |
 | CHANGELOG validation | ❌ **NOT IMPLEMENTED** | Part 13.X — format and ordering checks |
+| Guide command validation | ❌ **NOT IMPLEMENTED** | Validate `cihub <command>` mentions in guides against CLI |
 
 **Overall:** ~80% implemented. `docs stale` complete; `docs audit` mostly complete (J/L/N + Part 13.S/T/V). Remaining: universal headers (Q), specs hygiene, Part 13.R/U/W/X (~1-2 days).
 
@@ -47,6 +48,7 @@
 - ❌ Universal doc header enforcement (Part 12.Q)
 - ❌ Doc inventory/counts (Part 12.M)
 - ❌ Docs index consistency: `docs/README.md` active doc list must match STATUS.md + active/ (Part 13.W)
+- ❌ Guide command validation: verify `cihub <command>` references in `docs/guides/` against CLI (new)
 - ❌ Checklist-reality sync (Part 13.U)
 
 **Tests:** 22 tests in `tests/test_docs_audit.py` (types, lifecycle, ADR, references, consistency)

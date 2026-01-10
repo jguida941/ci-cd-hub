@@ -61,6 +61,7 @@ These decisions keep CLI/wizard parity and preserve the existing 3-tier config m
 10. **Drift buckets (Phase 2.4)**:
    - `unmanaged_key.*` → **warning** (schema-valid but not registry-managed yet)
    - `unknown_key.*` → **error** (schema-invalid; likely typo/stale field)
+11. **Repo config identity (v1.0)** - the repo key is the **config filename/path** relative to `config/repos/` (supports nested `owner/repo.yaml`), not `repo.owner`/`repo.name` inside the YAML. Ownership metadata can differ; drift is reported against the file-path identity.
 
 ---
 
