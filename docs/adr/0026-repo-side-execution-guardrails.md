@@ -1,6 +1,6 @@
 # ADR-0026: Repo-Side Execution Guardrails
 
-**Status**: Proposed (Placeholder)  
+**Status:** proposed  
 **Date:** 2025-12-25  
 **Developer:** Justin Guida  
 **Last Reviewed:** 2025-12-26  

@@ -6,12 +6,11 @@
 >
 > **Note:** Legacy dispatch templates are archived under `templates/legacy/`.
 
-**Status**: Superseded  
-**Date:** 2025-12-15  
-**Developer:** Justin Guida  
-**Last Reviewed:** 2025-12-26  
-
-- Superseded by: ADR-0014 (2025-12-17)
+**Status:** superseded
+**Date:** 2025-12-15
+**Superseded-by:** [ADR-0014](./0014-reusable-workflow-migration.md)
+**Developer:** Justin Guida
+**Last Reviewed:** 2025-12-26
 
 ## Context
 
