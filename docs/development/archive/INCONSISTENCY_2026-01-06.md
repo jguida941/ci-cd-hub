@@ -1,7 +1,10 @@
 # Code Consistency Audit Report
 
-**Generated:** 2026-01-06
-**Audited by:** 8-agent comprehensive code review
+> **WARNING: SUPERSEDED:** This audit report has been archived. Findings have been incorporated into `docs/development/active/CLEAN_CODE.md`.
+>
+> **Status:** Archived
+> **Generated:** 2026-01-06
+> **Audited by:** 8-agent comprehensive code review
 
 ---
 

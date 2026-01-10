@@ -1,5 +1,9 @@
 # Plan: Unify Summary Format Across ALL Workflows
 
+> **WARNING: SUPERSEDED:** Summary contract is now implemented. See `cihub/commands/report.py` and workflow summary generation.
+>
+> **Status:** Archived (Implemented)
+
 ## Summary Contract (Single Source of Truth)
 
 ### Scope

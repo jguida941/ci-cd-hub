@@ -1,10 +1,8 @@
 # CI-CD Hub - Complete Architecture Plan (Archived)
 
-> Archived on 2025-12-30. This document is historical context, not active guidance.
-> The canonical execution plan is `docs/development/MASTER_PLAN.md`.
-> The current architecture overview is `docs/development/architecture/ARCH_OVERVIEW.md`.
+> **WARNING: SUPERSEDED:** This document is archived (2025-12-30). The canonical execution plan is `docs/development/MASTER_PLAN.md` and current architecture is in `docs/development/architecture/ARCH_OVERVIEW.md`.
 >
-> **Status:** Proposed
+> **Status:** Archived
 > **Date:** 2025-12-24
 > **Author:** Justin Guida
 

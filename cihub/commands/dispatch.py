@@ -253,6 +253,8 @@ def _cmd_dispatch_metadata(args: argparse.Namespace) -> CommandResult:
 
     config_basename = args.config_basename
     output_file = output_dir / f"{config_basename}.json"
+    # Support nested config basenames (e.g., owner/repo) by ensuring parent dirs exist.
+    output_file.parent.mkdir(parents=True, exist_ok=True)
 
     metadata = {
         "config": config_basename,

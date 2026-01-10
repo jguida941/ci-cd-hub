@@ -115,6 +115,33 @@ def test_metadata_writes_file(tmp_path: Path) -> None:
     assert payload["run_id"] == "42"
 
 
+def test_metadata_writes_file_nested_basename(tmp_path: Path) -> None:
+    args = argparse.Namespace(
+        subcommand="metadata",
+        config_basename="owner/repo-config",
+        owner="owner",
+        repo="repo",
+        output_dir=str(tmp_path),
+        subdir="src",
+        language="python",
+        branch="main",
+        workflow="hub-ci.yml",
+        run_id="42",
+        correlation_id="corr-1",
+        status="success",
+        json=False,
+    )
+
+    result = dispatch_cmd.cmd_dispatch(args)
+
+    assert result.exit_code == EXIT_SUCCESS
+    metadata_path = tmp_path / "owner" / "repo-config.json"
+    payload = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert payload["config"] == "owner/repo-config"
+    assert payload["repo"] == "owner/repo"
+    assert payload["run_id"] == "42"
+
+
 def test_metadata_json_mode(tmp_path: Path) -> None:
     args = argparse.Namespace(
         subcommand="metadata",

@@ -1,5 +1,9 @@
 # Smoke Test Repository Requirements
 
+> **WARNING: SUPERSEDED:** This document is archived. Current smoke test repository info is in `docs/development/execution/SMOKE_TEST.md`.
+>
+> **Status:** Archived
+
 This document describes the repositories used for smoke testing the CI/CD Hub.
 
 ---

@@ -1,5 +1,9 @@
 # Smoke Test Setup - Summary
 
+> **WARNING: SUPERSEDED:** This historical snapshot is archived. Current smoke test documentation is at `docs/development/execution/SMOKE_TEST.md`.
+>
+> **Status:** Archived (Historical Snapshot)
+
 This document summarizes the smoke test setup completed on 2025-12-14.
 
 ---

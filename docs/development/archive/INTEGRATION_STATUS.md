@@ -1,5 +1,7 @@
 # Integration Status
 
+> **WARNING: SUPERSEDED:** This quarantine tracking document is obsolete. The quarantine approach was completed; see `docs/development/active/CLEAN_CODE.md` for current architecture work.
+>
 > Track graduation of files from `_quarantine/` to their final locations in `cihub/`.
 >
 > **Rule:** Files only leave quarantine when ALL checkboxes in their row are checked.

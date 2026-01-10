@@ -64,6 +64,27 @@ python -m cihub ci
 
 ---
 
+## Pre-Push Validation
+
+Run local checks before pushing:
+
+```bash
+cihub check              # Fast: lint, format, type, test (~30s)
+cihub check --audit      # + links, adr, configs (~45s)
+cihub check --security   # + bandit, pip-audit, trivy (~2min)
+cihub check --full       # + templates, matrix, license (~3min)
+cihub check --all        # Everything including mutation (~15min)
+```
+
+Validate config and run a single tool:
+
+```bash
+cihub validate --repo .          # Validate .ci-hub.yml against schema
+cihub run ruff --repo .          # Run one tool, emit JSON
+```
+
+---
+
 ## Toolchains
 
 ### Python
@@ -73,20 +94,22 @@ python -m cihub ci
 | Testing | pytest, Hypothesis |
 | Linting | Ruff, Black, isort |
 | Types | mypy |
-| Security | Bandit, pip-audit |
+| Security | Bandit, pip-audit, Semgrep, Trivy |
 | Mutation | mutmut |
+| Container | Docker, SBOM |
 
 ### Java
 
 | Category | Tools |
 |----------|-------|
+| Testing | jqwik |
 | Coverage | JaCoCo |
 | Quality | Checkstyle, SpotBugs, PMD |
-| Security | OWASP Dependency-Check |
+| Security | OWASP Dependency-Check, Semgrep, Trivy |
 | Mutation | PITest |
-| Testing | jqwik |
+| Container | Docker, SBOM |
 
-### Shared
+### Shared (Both Languages)
 
 Semgrep, Trivy, CodeQL, SBOM, Docker
 
@@ -121,11 +144,23 @@ gh workflow run hub-run-all.yml -R jguida941/ci-cd-hub -f run_group=fixtures
 
 ## Debugging & Triage
 
+Analyze CI failures:
+
+```bash
+cihub triage --latest        # Triage most recent failed run
+cihub triage --run <id>      # Triage specific run by ID
+```
+
+Environment flags for debugging:
+
 | Flag | Effect |
 |------|--------|
 | `CIHUB_DEBUG=True` | Show tracebacks |
 | `CIHUB_VERBOSE=True` | Show tool logs |
-| `CIHUB_EMIT_TRIAGE=True` | Write triage bundle (`.cihub/triage.json`, `priority.json`, `triage.md`) |
+| `CIHUB_DEBUG_CONTEXT=True` | Show decision/context blocks |
+| `CIHUB_EMIT_TRIAGE=True` | Write triage bundle to `.cihub/` |
+
+Triage outputs: `.cihub/triage.json`, `priority.json`, `triage.md`
 
 ## Installation (local development)
 

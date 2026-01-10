@@ -1,5 +1,9 @@
 # Phase 5A: Services Layer Contract
 
+> **WARNING: SUPERSEDED:** This services layer design is archived. The services layer was implemented; see `docs/development/active/CLEAN_CODE.md` for ongoing architecture work.
+>
+> **Status:** Archived (Implemented)
+
 ## Goal
 Create `cihub/services/` with pure Python APIs returning dataclasses. CLI calls services, formats output.
 

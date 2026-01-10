@@ -26,11 +26,19 @@ DOC_VALID_STATUSES = frozenset({"active", "archived", "reference"})
 DOC_VALID_SOURCES = frozenset({"CLI", "schema", "workflow", "manual"})
 
 # Superseded header pattern (Part 12.J)
+# Flexible patterns to detect various superseded/archived header formats:
+# - "> **WARNING: SUPERSEDED:**" or "> Superseded by" (blockquote with SUPERSEDED anywhere)
+# - "# Superseded" (heading)
+# - "> **Status:** Superseded" or "**Status:** Archived" (status line)
+# - "Status: Archived" (plain status)
+# - "> Legacy archive" or "> Historical Reference" (informal archive markers)
 SUPERSEDED_HEADER_PATTERNS = [
-    r"(?i)^\s*>\s*\*?\*?superseded",
-    r"(?i)^#+\s*superseded",
-    r"(?i)^status:\s*superseded",
-    r"(?i)^status:\s*archived",
+    r"(?i)^\s*>\s*.*\bsuperseded\b",  # Blockquote containing "superseded" anywhere
+    r"(?i)^\s*>\s*.*\barchived?\b",  # Blockquote containing "archive" or "archived"
+    r"(?i)^\s*>\s*.*\blegacy\s+archive\b",  # "Legacy archive" marker
+    r"(?i)^\s*>\s*.*\bhistorical\s+(reference|context)\b",  # Historical reference/context
+    r"(?i)^#+\s*superseded",  # Heading "# Superseded"
+    r"(?i)^\*?\*?status\*?\*?:?\s*(superseded|archived)",  # Status: superseded/archived
 ]
 
 # Paths for lifecycle validation

@@ -123,6 +123,11 @@ class RepoEntry:
         """Full repository name (owner/name)."""
         return f"{self.owner}/{self.name}"
 
+    @property
+    def config_basename_safe(self) -> str:
+        """Safe basename for filenames/artifacts (slashes replaced)."""
+        return self.config_basename.replace("/", "-")
+
     def to_matrix_entry(self) -> dict[str, Any]:
         """Convert to GitHub Actions matrix entry format.
 
@@ -130,6 +135,7 @@ class RepoEntry:
         """
         entry: dict[str, Any] = {
             "config_basename": self.config_basename,
+            "config_basename_safe": self.config_basename_safe,
             "name": self.name,
             "owner": self.owner,
             "language": self.language,
