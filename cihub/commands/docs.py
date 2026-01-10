@@ -9,6 +9,8 @@ import shutil
 from pathlib import Path
 from typing import Any, Iterable
 
+import yaml
+
 from cihub.cli_parsers.builder import build_parser
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
@@ -451,6 +453,321 @@ def _render_config_reference() -> str:
     return "\n".join(lines) + "\n"
 
 
+# =============================================================================
+# Workflow Reference Generation
+# =============================================================================
+
+WORKFLOWS_DIR = ".github/workflows"
+
+# Workflow descriptions for user-friendly explanations
+WORKFLOW_DESCRIPTIONS: dict[str, dict[str, str]] = {
+    "hub-production-ci.yml": {
+        "purpose": "Hub repo CI/CD",
+        "when_to_use": "Runs automatically on the hub repo. You don't call this directly.",
+        "target": "Hub repo only",
+    },
+    "hub-run-all.yml": {
+        "purpose": "Central test runner",
+        "when_to_use": (
+            "Use this to test all repos from the hub without needing "
+            "workflows in each repo (Central Mode)."
+        ),
+        "target": "All configured repos",
+    },
+    "hub-orchestrator.yml": {
+        "purpose": "Distributed dispatch",
+        "when_to_use": (
+            "Use when repos have their own workflows and you want CI results "
+            "in each repo's Actions tab (Distributed Mode)."
+        ),
+        "target": "Repos with workflows",
+    },
+    "hub-security.yml": {
+        "purpose": "Security-focused dispatch",
+        "when_to_use": "Use for security-only scans across repos without running full CI.",
+        "target": "Repos with workflows",
+    },
+    "java-ci.yml": {
+        "purpose": "Java reusable workflow",
+        "when_to_use": (
+            "Call from your Java repo's workflow for standardized CI "
+            "(tests, coverage, linting, security)."
+        ),
+        "target": "Any Java repo",
+    },
+    "python-ci.yml": {
+        "purpose": "Python reusable workflow",
+        "when_to_use": (
+            "Call from your Python repo's workflow for standardized CI "
+            "(tests, coverage, linting, security)."
+        ),
+        "target": "Any Python repo",
+    },
+    "hub-ci.yml": {
+        "purpose": "Language router",
+        "when_to_use": "Call this if you want automatic language detection - it routes to java-ci or python-ci.",
+        "target": "Any repo",
+    },
+    "smoke-test.yml": {
+        "purpose": "Smoke test validation",
+        "when_to_use": "Run manually to validate the hub works with fixture repos before releases.",
+        "target": "Fixture repos",
+    },
+    "config-validate.yml": {
+        "purpose": "Config schema validation",
+        "when_to_use": "Runs automatically when you change configs. Validates YAML against schema.",
+        "target": "Hub repo",
+    },
+    "release.yml": {
+        "purpose": "Release automation",
+        "when_to_use": "Triggered by pushing version tags (v*). Creates GitHub releases.",
+        "target": "Hub repo",
+    },
+    "sync-templates.yml": {
+        "purpose": "Template sync",
+        "when_to_use": "Syncs template files to target repos. Run manually when templates change.",
+        "target": "Template files",
+    },
+    "template-guard.yml": {
+        "purpose": "Template drift detection",
+        "when_to_use": "Runs on PRs to detect if templates have drifted from source.",
+        "target": "Templates",
+    },
+    "kyverno-ci.yml": {
+        "purpose": "Kyverno policy testing",
+        "when_to_use": "Call from repos with Kyverno policies to validate them.",
+        "target": "Policy repos",
+    },
+    "kyverno-validate.yml": {
+        "purpose": "Kyverno validation",
+        "when_to_use": "Validates Kyverno policies in the hub repo.",
+        "target": "Hub repo",
+    },
+}
+
+
+def _parse_workflow_triggers(on_section: Any) -> list[str]:
+    """Extract trigger names from workflow 'on' section."""
+    if isinstance(on_section, str):
+        return [on_section]
+    if isinstance(on_section, list):
+        return on_section
+    if isinstance(on_section, dict):
+        return list(on_section.keys())
+    return []
+
+
+def _parse_workflow_inputs(on_section: Any) -> list[dict[str, Any]]:
+    """Extract inputs from workflow_dispatch or workflow_call."""
+    inputs: list[dict[str, Any]] = []
+    if not isinstance(on_section, dict):
+        return inputs
+
+    # Check workflow_dispatch inputs
+    dispatch = on_section.get("workflow_dispatch", {})
+    if isinstance(dispatch, dict):
+        dispatch_inputs = dispatch.get("inputs", {})
+        if isinstance(dispatch_inputs, dict):
+            for name, config in dispatch_inputs.items():
+                if isinstance(config, dict):
+                    inputs.append({
+                        "name": name,
+                        "type": config.get("type", "string"),
+                        "required": config.get("required", False),
+                        "default": config.get("default", ""),
+                        "description": config.get("description", ""),
+                        "source": "workflow_dispatch",
+                    })
+
+    # Check workflow_call inputs
+    call = on_section.get("workflow_call", {})
+    if isinstance(call, dict):
+        call_inputs = call.get("inputs", {})
+        if isinstance(call_inputs, dict):
+            for name, config in call_inputs.items():
+                if isinstance(config, dict):
+                    inputs.append({
+                        "name": name,
+                        "type": config.get("type", "string"),
+                        "required": config.get("required", False),
+                        "default": config.get("default", ""),
+                        "description": config.get("description", ""),
+                        "source": "workflow_call",
+                    })
+
+    return inputs
+
+
+def _format_triggers(triggers: list[str]) -> str:
+    """Format triggers for display."""
+    trigger_map = {
+        "push": "push",
+        "pull_request": "PR",
+        "workflow_dispatch": "manual",
+        "workflow_call": "reusable",
+        "schedule": "schedule",
+    }
+    formatted = [trigger_map.get(t, t) for t in triggers]
+    return ", ".join(formatted)
+
+
+def _render_workflow_section(
+    filename: str,
+    workflow: dict[str, Any],
+    desc: dict[str, str],
+) -> str:
+    """Render a single workflow section."""
+    name = workflow.get("name", filename.replace(".yml", ""))
+    # YAML parses "on:" as True (boolean) due to YAML 1.1 quirk
+    on_section = workflow.get("on") or workflow.get(True) or {}
+    triggers = _parse_workflow_triggers(on_section)
+    inputs = _parse_workflow_inputs(on_section)
+
+    lines = [
+        f"## {name}",
+        "",
+        f"**File:** `.github/workflows/{filename}`",
+        "",
+        f"{desc.get('purpose', 'No description')}.",
+        "",
+        f"**When to use:** {desc.get('when_to_use', 'See workflow comments.')}",
+        "",
+        "### Triggers",
+        "",
+        "| Trigger | Details |",
+        "| ------- | ------- |",
+    ]
+
+    # Add trigger rows
+    if isinstance(on_section, dict):
+        for trigger in triggers:
+            trigger_config = on_section.get(trigger, {})
+            details = ""
+            if trigger == "push" and isinstance(trigger_config, dict):
+                branches = trigger_config.get("branches", [])
+                paths = trigger_config.get("paths", [])
+                if branches:
+                    details = f"branches: {', '.join(branches)}"
+                if paths:
+                    details += f"; {len(paths)} path filters" if details else f"{len(paths)} path filters"
+            elif trigger == "schedule" and isinstance(trigger_config, list):
+                crons = [c.get("cron", "") for c in trigger_config if isinstance(c, dict)]
+                details = f"cron: {', '.join(crons)}"
+            elif trigger == "workflow_call":
+                details = "Reusable workflow (called via `uses:`)"
+            elif trigger == "workflow_dispatch":
+                details = "Manual trigger with inputs"
+            lines.append(f"| `{trigger}` | {details or '-'} |")
+    else:
+        for trigger in triggers:
+            lines.append(f"| `{trigger}` | - |")
+
+    # Add inputs section if any
+    if inputs:
+        lines.extend([
+            "",
+            "### Inputs",
+            "",
+            "| Input | Type | Required | Default | Description |",
+            "| ----- | ---- | -------- | ------- | ----------- |",
+        ])
+        for inp in inputs:
+            default = inp["default"]
+            if default == "":
+                default_str = "(empty)"
+            elif isinstance(default, bool):
+                default_str = str(default).lower()
+            else:
+                default_str = f"`{default}`"
+            req = "yes" if inp["required"] else "no"
+            desc_text = _sanitize(str(inp["description"]))
+            lines.append(
+                f"| `{inp['name']}` | {inp['type']} | {req} | {default_str} | {desc_text} |"
+            )
+
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
+def _render_workflows_reference() -> str:
+    """Generate WORKFLOWS.md from workflow YAML files."""
+    workflows_dir = hub_root() / WORKFLOWS_DIR
+    if not workflows_dir.exists():
+        return "# Workflows Reference\n\nNo workflows found.\n"
+
+    lines = [
+        "# Workflows Reference",
+        "",
+        "> **Generated Reference** - DO NOT EDIT MANUALLY  ",
+        "> This document describes the GitHub Actions workflows in `.github/workflows/`.  ",
+        "",
+        "> For usage guidance, see [guides/WORKFLOWS.md](../guides/WORKFLOWS.md).  ",
+        "> **Last Updated:** Generated by `cihub docs generate`  ",
+        "",
+        "---",
+        "",
+        "## Quick Reference",
+        "",
+        "| Workflow | Purpose | Trigger | When to Use |",
+        "| -------- | ------- | ------- | ----------- |",
+    ]
+
+    # Collect workflow data
+    workflow_data: list[tuple[str, dict[str, Any], dict[str, str]]] = []
+
+    for yml_file in sorted(workflows_dir.glob("*.yml")):
+        filename = yml_file.name
+        try:
+            content = yaml.safe_load(yml_file.read_text(encoding="utf-8"))
+            if not isinstance(content, dict):
+                continue
+        except yaml.YAMLError:
+            continue
+
+        desc = WORKFLOW_DESCRIPTIONS.get(filename, {
+            "purpose": "Custom workflow",
+            "when_to_use": "See workflow comments.",
+            "target": "-",
+        })
+
+        # YAML parses "on:" as True (boolean) due to YAML 1.1 quirk
+        on_section = content.get("on") or content.get(True) or {}
+        triggers = _parse_workflow_triggers(on_section)
+
+        workflow_data.append((filename, content, desc))
+
+        # Add to quick reference table
+        trigger_str = _format_triggers(triggers)
+        purpose = desc.get("purpose", "-")
+        when = desc.get("when_to_use", "-")
+        # Truncate long descriptions for table
+        if len(when) > 60:
+            when = when[:57] + "..."
+        lines.append(f"| `{filename}` | {purpose} | {trigger_str} | {when} |")
+
+    lines.extend(["", "---", ""])
+
+    # Add detailed sections for each workflow
+    for filename, content, desc in workflow_data:
+        lines.append(_render_workflow_section(filename, content, desc))
+
+    # Add related docs
+    lines.extend([
+        "## Related Documentation",
+        "",
+        "- [WORKFLOWS.md (Guide)](../guides/WORKFLOWS.md) - Usage guidance and setup",
+        "- [CONFIG.md](CONFIG.md) - Configuration reference",
+        "- [CLI.md](CLI.md) - CLI command reference",
+        "- [TOOLS.md](TOOLS.md) - Tool documentation",
+        "",
+    ])
+
+    return "\n".join(lines)
+
+
 def _write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
@@ -467,6 +784,7 @@ def cmd_docs(args: argparse.Namespace) -> CommandResult:
     outputs = {
         "CLI.md": _render_cli_reference(),
         "CONFIG.md": _render_config_reference(),
+        "WORKFLOWS.md": _render_workflows_reference(),
     }
 
     missing: list[str] = []

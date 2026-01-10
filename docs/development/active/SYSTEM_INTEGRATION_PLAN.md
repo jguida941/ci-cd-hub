@@ -62,6 +62,7 @@ These decisions keep CLI/wizard parity and preserve the existing 3-tier config m
  - `unmanaged_key.*` → **warning** (schema-valid but not registry-managed yet)
  - `unknown_key.*` → **error** (schema-invalid; likely typo/stale field)
 11. **Repo config identity (v1.0)** - the repo key is the **config filename/path** relative to `config/repos/` (supports nested `owner/repo.yaml`), not `repo.owner`/`repo.name` inside the YAML. Ownership metadata can differ; drift is reported against the file-path identity.
+12. **Safe filenames/artifacts** - keep `config_basename` as identity, but use `config_basename_safe` (slashes → `-`) for filenames and artifact names.
 
 ---
 
@@ -654,6 +655,7 @@ tests/
 - [ ] 2.2 Rewrite registry_service.py for full config scope (sparse storage)
 - [ ] 2.3 Implement full sync to config/repos
 - [x] 2.3a Sync tier/repo config fragments into config/repos (managedConfig; includes tier profile merge)
+- [x] 2.3b Orchestrator-safe dispatch artifacts for nested config basenames (config_basename_safe)
 - [x] 2.4a Diff surfaces managedConfig drift via dry-run sync (non-threshold keys + thresholds) + cross-root --configs-dir handling
 - [x] 2.4b Diff flags orphan config/repos YAMLs + unmanaged top-level keys (allowlist-driven)
 - [ ] 2.4 Diff surfaces .ci-hub.yml overrides + non-tool drift

@@ -296,7 +296,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: dispatch-${{ matrix.config_basename }}-${{ github.run_id }}
+          name: dispatch-${{ matrix.config_basename_safe }}-${{ github.run_id }}
           path: dispatch-results/${{ matrix.config_basename }}.json
           retention-days: 7
 
