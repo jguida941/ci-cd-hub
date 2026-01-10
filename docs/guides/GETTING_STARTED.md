@@ -396,9 +396,11 @@ thresholds:
 **Setup & Validation**
 | Command | Purpose |
 |---------|---------|
+| `cihub setup` | Interactive wizard: scaffold → detect → configure → validate → run CI |
 | `cihub preflight` | Check environment readiness (Python, gh CLI, etc.) |
 | `cihub check` | Run tiered validation (use `--audit`, `--security`, `--full`, `--all` for more) |
 | `cihub validate --repo .` | Validate repo's `.ci-hub.yml` against schema |
+| `cihub verify --remote` | Verify workflow contracts against remote repos |
 
 **Project Initialization**
 | Command | Purpose |
@@ -430,6 +432,16 @@ thresholds:
 | `cihub config enable <tool> --repo <name>` | Enable a tool |
 | `cihub config disable <tool> --repo <name>` | Disable a tool |
 | `cihub config apply-profile --profile <path> [--target <path>]` | Apply a profile to config |
+
+**Registry & Tier Management**
+| Command | Purpose |
+|---------|---------|
+| `cihub registry list` | List all repos with their tiers |
+| `cihub registry show <repo>` | Show repo config and effective thresholds |
+| `cihub registry set <repo> <key> <value>` | Set a registry value |
+| `cihub registry diff` | Show drift between registry and repo configs |
+| `cihub registry sync` | Sync registry to repo configs |
+| `cihub registry add <repo>` | Add a new repo to the registry |
 
 **Documentation & ADRs**
 | Command | Purpose |

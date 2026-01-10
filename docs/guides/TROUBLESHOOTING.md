@@ -39,6 +39,23 @@ cihub triage --run 12345678
 cihub triage --verify-tools
 ```
 
+Advanced triage options:
+
+```bash
+# Watch for new failures (background daemon)
+cihub triage --watch
+
+# Analyze flaky test patterns
+cihub triage --detect-flaky
+
+# Analyze gate status changes over time
+cihub triage --gate-history
+
+# Filter by severity or category
+cihub triage --latest --min-severity high
+cihub triage --latest --category security
+```
+
 ---
 
 ### Triage Bundle Outputs
