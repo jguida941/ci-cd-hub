@@ -65,6 +65,9 @@ dev = [
     "pre-commit>=3.6.0",
     # License compliance
     "pip-licenses>=4.3.0",
+    # Wizard (needed for test_wizard_questions.py)
+    "questionary>=2.0.0",
+    "rich>=13.0.0",
 ]
 ci = [
     # See requirements/ci.txt for pinned CI versions
