@@ -11,7 +11,7 @@
 
 | Area | Status | Critical Issues |
 |------|--------|-----------------|
-| CLI/Wizard Parity | ⚠️ PARTIAL | Wizard covers ~16% of CLI operations (by design) |
+| CLI/Wizard Parity | ❌ GAP | Wizard covers ~16% of CLI (INCOMPLETE, not by design) |
 | Schema/Config Alignment | ✅ EXCELLENT | 98% aligned, no gaps |
 | Workflow/CLI Alignment | ✅ EXCELLENT | All thin wrappers, zero logic violations |
 | Plans vs Reality | ✅ GOOD | 95%+ accurate, minor stale numbers |
@@ -208,7 +208,7 @@ java-ci.yml@<SHA> or @v1.0.0
 |-----------|--------|-----|
 | ADR-0045 (Timeouts) | ⚠️ 90% | 5 subprocess calls missing |
 | ADR-0042 (CommandResult) | ⚠️ 97% | 9 files still use print() |
-| CLI ↔ Wizard | ⚠️ 16% | By design - wizard is config-focused |
+| CLI ↔ Wizard | ❌ 16% | **INCOMPLETE** - architecture says wizard should wrap ALL CLI |
 
 ---
 
@@ -349,8 +349,77 @@ cihub docs audit
 2. 5 subprocess calls missing timeouts (HIGH)
 3. 9 files still use print() instead of CommandResult (MEDIUM)
 
-**What's Intentionally Partial:**
-- Wizard covers config creation only (~16% of CLI) - this is BY DESIGN
+**What Needs Architecture Decision:**
+- Wizard covers ~16% of CLI - this is **NOT by design** but incomplete implementation
 - TEST_REORGANIZATION phases 2-5 deferred - infrastructure done, migration pending
 
-**Confidence Level:** 85% - The architecture is solid, but profile_cmd tests are a blocker for CI confidence.
+**Confidence Level:** 75% - Architecture is solid, but wizard parity gap and profile_cmd tests are blockers.
+
+---
+
+## DECISION POINT: Wizard Parity Strategy
+
+### The Architecture Intent (from SYSTEM_INTEGRATION_PLAN.md:53)
+
+> "CLI is the headless API - wizard is a thin UI over the same service layer (no wizard-only logic)."
+
+This means wizard SHOULD wrap ALL CLI commands, not just config creation.
+
+### Current State
+
+**Has `--wizard` (12 commands):**
+- `new`, `init`, `config` (setup)
+- `tool enable/disable/configure`
+- `threshold set/reset`
+- `profile edit`, `repo update`, `registry add`
+
+**Missing `--wizard` (7+ command groups):**
+- `check` - tier selection (fast/audit/security/full/mutation/all)
+- `ci` - repo/config selection
+- `verify` - mode selection (remote/integration)
+- `triage` - run selection (latest/specific/watch)
+- `run` - tool selection from registry
+- `docs` - subcommand selection (generate/check/stale/audit)
+- `report` - subcommand selection (build/validate/aggregate)
+
+### Recommended Priority Order
+
+| Priority | Command | Wizard Value | Reason |
+|----------|---------|--------------|--------|
+| 1 | `check --wizard` | **HIGH** | Most used, 5 tiers to choose from |
+| 2 | `ci --wizard` | **HIGH** | Complex repo/config options |
+| 3 | `run --wizard` | **HIGH** | Tool selection from registry |
+| 4 | `triage --wizard` | **MEDIUM** | Run selection (latest vs specific) |
+| 5 | `verify --wizard` | **MEDIUM** | Mode selection |
+| 6 | `docs --wizard` | **MEDIUM** | Subcommand selection |
+| 7 | `report --wizard` | **MEDIUM** | Subcommand selection |
+| 8+ | Read-only (list/show/status) | **LOW** | Simple to type, no decisions |
+
+### Rationale
+
+The wizard's value is in **helping users make decisions**, not in helping them view information.
+
+- **Execution commands** (check, ci, run) benefit most - users need guidance on tiers/modes
+- **Analysis commands** (triage, report) have moderate value - multiple subcommands
+- **Read-only commands** (list, show, status) have low value - no decisions to make
+
+### Options for Discussion
+
+1. **Complete wizard parity first** - Add `--wizard` to all 7 command groups before TypeScript work
+2. **Prioritize execution commands** - Add wizard to check/ci/run/verify first, defer read-only
+3. **Defer entirely** - Document as known gap, address post-v1.0
+4. **Hybrid approach** - Add wizard to top 3 (check, ci, run), document rest as backlog
+
+### Estimated Effort
+
+| Command | Effort | Notes |
+|---------|--------|-------|
+| `check --wizard` | 2-3 hours | Tier selection, flag mapping |
+| `ci --wizard` | 3-4 hours | Repo/config selection, complex options |
+| `run --wizard` | 2-3 hours | Tool selection from registry |
+| `triage --wizard` | 2-3 hours | Run selection, subcommand routing |
+| `verify --wizard` | 1-2 hours | Simple mode selection |
+| `docs --wizard` | 2-3 hours | Subcommand selection |
+| `report --wizard` | 2-3 hours | Subcommand selection |
+
+**Total for full parity:** ~15-20 hours of development
