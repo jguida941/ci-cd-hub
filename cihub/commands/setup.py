@@ -50,18 +50,32 @@ def _check_cancelled(value, ctx: str):
     return value
 
 
-def _run_command(cmd: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
+def _run_command(
+    cmd: list[str], cwd: Path | None = None, timeout: int = 120
+) -> tuple[int, str, str]:
     """Run a subprocess and return (exit_code, stdout, stderr).
 
     Note: Commands run by this function are trusted (git, gh CLI) - S603 suppressed.
+
+    Args:
+        cmd: Command and arguments
+        cwd: Working directory
+        timeout: Timeout in seconds (default: 120 for network operations per ADR-0045)
+
+    Returns:
+        Tuple of (exit_code, stdout, stderr)
     """
-    result = subprocess.run(  # noqa: S603 - trusted commands only
-        cmd,
-        capture_output=True,
-        text=True,
-        cwd=cwd,
-    )
-    return result.returncode, result.stdout, result.stderr
+    try:
+        result = subprocess.run(  # noqa: S603 - trusted commands only
+            cmd,
+            capture_output=True,
+            text=True,
+            cwd=cwd,
+            timeout=timeout,
+        )
+        return result.returncode, result.stdout, result.stderr
+    except subprocess.TimeoutExpired:
+        return 1, "", f"Command timed out after {timeout}s: {' '.join(cmd)}"
 
 
 def cmd_setup(args: argparse.Namespace) -> CommandResult:

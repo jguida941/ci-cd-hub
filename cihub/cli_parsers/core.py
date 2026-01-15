@@ -57,7 +57,10 @@ def add_core_commands(
     scaffold.add_argument(
         "type",
         nargs="?",
-        help=("Fixture type (python-pyproject, python-setup, java-maven, java-gradle, monorepo)"),
+        help=(
+            "Fixture type (python-pyproject, python-setup, python-src-layout, "
+            "java-maven, java-gradle, java-multi-module, monorepo)"
+        ),
     )
     scaffold.add_argument("path", nargs="?", help="Destination path")
     scaffold.add_argument("--list", action="store_true", help="List available fixture types")
@@ -76,7 +79,8 @@ def add_core_commands(
         "--type",
         action="append",
         help=(
-            "Fixture type to generate (repeatable): python-pyproject, python-setup, java-maven, java-gradle, monorepo"
+            "Fixture type to generate (repeatable): python-pyproject, python-setup, "
+            "python-src-layout, java-maven, java-gradle, java-multi-module, monorepo"
         ),
     )
     smoke.add_argument(
