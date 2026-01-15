@@ -59,12 +59,12 @@ def get_install_source(config: dict) -> str:
     # Fall back to config
     install_config = config.get("install", {})
     if isinstance(install_config, dict):
-        source = install_config.get("source", "pypi")
+        source = install_config.get("source", "git")
         if source in ("pypi", "git", "local"):
             return source
 
-    # Default to PyPI
-    return "pypi"
+    # Default to git (PyPI package doesn't include schema/config/templates yet)
+    return "git"
 
 
 def get_hub_repo() -> str:

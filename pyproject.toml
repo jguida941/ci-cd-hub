@@ -98,8 +98,19 @@ wizard = [
 # - hub-report → cihub report dashboard
 cihub = "cihub.__main__:main"
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 include = ["cihub*"]
+
+[tool.setuptools.package-data]
+cihub = [
+    "data/schema/*.json",
+    "data/config/*.yaml",
+    "data/config/repos/*.yaml",
+    "data/templates/**/*",
+]
 
 [tool.ruff]
 line-length = 120

@@ -90,8 +90,8 @@ def add_repo_setup_commands(
     init.add_argument(
         "--install-from",
         choices=["pypi", "git", "local"],
-        default="pypi",
-        help="How cihub should be installed in CI: pypi (default), git, or local",
+        default="git",
+        help="How cihub should be installed in CI: pypi, git (default), or local",
     )
     init.set_defaults(func=handlers.cmd_init)
 
