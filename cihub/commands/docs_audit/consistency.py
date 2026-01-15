@@ -732,8 +732,8 @@ def verify_checklist_reality(repo_root: Path) -> list[AuditFinding]:
                                     suggestion=f"Mark as [x] - {description}",
                                 )
                             )
-                    except Exception:
-                        # Skip verification if it fails
+                    except Exception:  # noqa: S110, BLE001
+                        # Skip verification if it fails (intentional)
                         pass
                     break  # Only report once per task
 
@@ -807,7 +807,10 @@ def validate_changelog(repo_root: Path) -> list[AuditFinding]:
                 AuditFinding(
                     severity=FindingSeverity.WARNING,
                     category=FindingCategory.SYNC,
-                    message=f"CHANGELOG entries out of order: {curr_date} (line {curr_line}) comes before {next_date} (line {next_line})",
+                    message=(
+                        f"CHANGELOG entries out of order: {curr_date} (line {curr_line}) "
+                        f"comes before {next_date} (line {next_line})"
+                    ),
                     file=rel_path,
                     line=curr_line,
                     code="CIHUB-CHANGELOG-ORDER",

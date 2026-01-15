@@ -1271,7 +1271,7 @@ def test_registry_add_with_owner_name_language(tmp_path: Path, monkeypatch) -> N
     import argparse
 
     from cihub.commands.registry_cmd import _cmd_add
-    from cihub.services.registry_service import load_registry, save_registry
+    from cihub.services.registry_service import load_registry
 
     # Setup registry in tmp_path
     config_dir = tmp_path / "config"

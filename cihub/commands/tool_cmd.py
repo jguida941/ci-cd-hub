@@ -332,7 +332,7 @@ def _wizard_configure() -> CommandResult:
         for ct in sorted(custom_tools.keys()):
             if ct not in all_tools:
                 all_tools.append(f"{ct} (custom)")
-    except Exception:
+    except Exception:  # noqa: S110, BLE001
         pass  # If loading fails, just use built-in tools
 
     tool = questionary.select(

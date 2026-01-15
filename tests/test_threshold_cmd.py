@@ -6,8 +6,6 @@ import argparse
 import json
 from pathlib import Path
 
-import pytest
-
 from cihub.commands.threshold_cmd import (
     _cmd_compare,
     _cmd_get,

@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 
 from cihub.tools.registry import (
-    CUSTOM_TOOL_PREFIX,
     get_all_tools_from_config,
     get_custom_tool_command,
     get_custom_tools_from_config,
@@ -268,7 +267,7 @@ class TestCustomToolBehavior:
 
     def test_env_override_pattern_for_custom_tools(self) -> None:
         """CIHUB_RUN_* should work for custom tools with correct pattern."""
-        from cihub.services.ci_engine.helpers import _apply_env_overrides, _set_tool_enabled
+        from cihub.services.ci_engine.helpers import _apply_env_overrides
 
         config = {
             "language": "python",
@@ -402,7 +401,10 @@ class TestCustomToolExecution:
         assert tool_outputs["x-my-checker"]["ran"] is True
         assert tool_outputs["x-my-checker"]["success"] is True
         # No error problems should be emitted for success
-        error_problems = [p for p in problems if p.get("severity") == "error" and "x-my-checker" in p.get("message", "")]
+        error_problems = [
+            p for p in problems
+            if p.get("severity") == "error" and "x-my-checker" in p.get("message", "")
+        ]
         assert len(error_problems) == 0
 
     def test_custom_tool_failure_with_fail_on_error_true_emits_error(
@@ -692,7 +694,10 @@ class TestCustomToolExecutionJava:
         mock_build_result.write_json = MagicMock()
         mock_build_result.success = True
         mock_build_result.metrics = {}
-        monkeypatch.setattr("cihub.services.ci_engine.java_tools.run_java_build", lambda *args, **kwargs: mock_build_result)
+        monkeypatch.setattr(
+            "cihub.services.ci_engine.java_tools.run_java_build",
+            lambda *args, **kwargs: mock_build_result,
+        )
 
         config = {
             "language": "java",
@@ -739,7 +744,10 @@ class TestCustomToolExecutionJava:
         mock_build_result.write_json = MagicMock()
         mock_build_result.success = True
         mock_build_result.metrics = {}
-        monkeypatch.setattr("cihub.services.ci_engine.java_tools.run_java_build", lambda *args, **kwargs: mock_build_result)
+        monkeypatch.setattr(
+            "cihub.services.ci_engine.java_tools.run_java_build",
+            lambda *args, **kwargs: mock_build_result,
+        )
 
         config = {
             "language": "java",
@@ -785,7 +793,10 @@ class TestCustomToolExecutionJava:
         mock_build_result.write_json = MagicMock()
         mock_build_result.success = True
         mock_build_result.metrics = {}
-        monkeypatch.setattr("cihub.services.ci_engine.java_tools.run_java_build", lambda *args, **kwargs: mock_build_result)
+        monkeypatch.setattr(
+            "cihub.services.ci_engine.java_tools.run_java_build",
+            lambda *args, **kwargs: mock_build_result,
+        )
 
         config = {
             "language": "java",

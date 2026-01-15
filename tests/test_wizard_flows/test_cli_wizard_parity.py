@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
-
-import pytest
 
 
 class TestConfigStructureParity:
@@ -45,7 +42,7 @@ class TestConfigStructureParity:
         """Profile selection should produce valid tool configuration."""
         from cihub.wizard.questions.profile import PROFILE_INFO
 
-        for profile_name, info in PROFILE_INFO.items():
+        for _profile_name, info in PROFILE_INFO.items():
             assert "description" in info
             assert "tools" in info
             assert "runtime" in info

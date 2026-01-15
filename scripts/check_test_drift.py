@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import argparse
 import ast
-import re
 import sys
 from pathlib import Path
 
@@ -134,7 +133,7 @@ def check_structure_compliance(tests_dir: Path) -> list[str]:
         pass
 
     # Check for orphan test files (tests not in any category)
-    for test_file in tests_dir.glob("test_*.py"):
+    for _test_file in tests_dir.glob("test_*.py"):
         # Root-level tests are allowed in flat structure
         pass
 
@@ -161,8 +160,8 @@ def check_import_consistency(test_file: Path) -> list[str]:
         if "import pytest" not in content and "@pytest" in content:
             issues.append(f"Uses pytest decorators without importing pytest: {test_file}")
 
-    except Exception:
-        pass
+    except Exception:  # noqa: S110, BLE001
+        pass  # Skip file if read fails
 
     return issues
 

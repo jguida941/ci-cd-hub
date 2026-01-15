@@ -14,7 +14,11 @@ def add_secrets_commands(
     add_json_flag: Callable[[argparse.ArgumentParser], None],
     handlers: CommandHandlers,
 ) -> None:
-    setup_secrets = subparsers.add_parser("setup-secrets", help="Set HUB_DISPATCH_TOKEN on hub and connected repos", epilog=see_also_epilog("setup-secrets"))
+    setup_secrets = subparsers.add_parser(
+        "setup-secrets",
+        help="Set HUB_DISPATCH_TOKEN on hub and connected repos",
+        epilog=see_also_epilog("setup-secrets"),
+    )
     add_json_flag(setup_secrets)
     setup_secrets.add_argument(
         "--hub-repo",

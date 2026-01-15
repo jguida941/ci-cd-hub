@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
-
-import pytest
 
 
 class TestProfileModule:
@@ -55,8 +52,9 @@ class TestProfileModule:
 
     def test_profile_names_are_valid(self) -> None:
         """Profile names should be lowercase alphanumeric with hyphens."""
-        from cihub.wizard.questions.profile import PROFILE_INFO
         import re
+
+        from cihub.wizard.questions.profile import PROFILE_INFO
 
         pattern = re.compile(r"^[a-z][a-z0-9-]*$")
         for profile_name in PROFILE_INFO.keys():
@@ -71,7 +69,6 @@ class TestAdvancedModule:
         from cihub.wizard.questions.advanced import configure_gates
 
         # With empty defaults, should return empty dict (no prompt in test)
-        defaults: dict[str, Any] = {}
         # This would normally prompt, but we can test the function signature
         assert callable(configure_gates)
 
@@ -181,8 +178,9 @@ class TestWizardCoreIntegration:
 
     def test_wizard_result_fields(self) -> None:
         """WizardResult should have expected fields."""
-        from cihub.wizard.core import WizardResult
         import dataclasses
+
+        from cihub.wizard.core import WizardResult
 
         fields = {f.name for f in dataclasses.fields(WizardResult)}
         expected = {"config", "tier", "profile", "repo_name"}

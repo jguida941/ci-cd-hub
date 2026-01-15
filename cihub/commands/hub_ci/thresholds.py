@@ -71,14 +71,20 @@ def cmd_thresholds(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary="Missing threshold key",
-                problems=[{"severity": "error", "message": "Key required for 'get'", "code": "CIHUB-THRESHOLDS-NO-KEY"}],
+                problems=[
+                    {"severity": "error", "message": "Key required for 'get'", "code": "CIHUB-THRESHOLDS-NO-KEY"}
+                ],
             )
         if key not in thresholds:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"Unknown threshold: {key}",
                 problems=[
-                    {"severity": "error", "message": f"Threshold '{key}' not found", "code": "CIHUB-THRESHOLDS-NOT-FOUND"}
+                    {
+                        "severity": "error",
+                        "message": f"Threshold '{key}' not found",
+                        "code": "CIHUB-THRESHOLDS-NOT-FOUND",
+                    }
                 ],
                 data={"available_keys": sorted(thresholds.keys())},
             )
@@ -93,7 +99,9 @@ def cmd_thresholds(args: argparse.Namespace) -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary="Missing threshold key",
-                problems=[{"severity": "error", "message": "Key required for 'set'", "code": "CIHUB-THRESHOLDS-NO-KEY"}],
+                problems=[
+                    {"severity": "error", "message": "Key required for 'set'", "code": "CIHUB-THRESHOLDS-NO-KEY"}
+                ],
             )
         if value is None:
             return CommandResult(

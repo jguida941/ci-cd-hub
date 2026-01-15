@@ -10,7 +10,6 @@ from cihub.ci_report import RunContext
 from cihub.core.gate_specs import (
     evaluate_threshold,
     get_threshold_spec_by_key,
-    get_tool_keys,
 )
 from cihub.utils import get_git_branch, get_repo_name
 

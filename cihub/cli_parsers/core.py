@@ -50,7 +50,9 @@ def add_core_commands(
     _add_preflight_parser(subparsers, add_json_flag, handlers, "preflight", "Check environment readiness")
     _add_preflight_parser(subparsers, add_json_flag, handlers, "doctor", "Alias for preflight")
 
-    scaffold = subparsers.add_parser("scaffold", help="Generate a minimal fixture project", epilog=see_also_epilog("scaffold"))
+    scaffold = subparsers.add_parser(
+        "scaffold", help="Generate a minimal fixture project", epilog=see_also_epilog("scaffold")
+    )
     add_json_flag(scaffold)
     scaffold.add_argument(
         "type",
@@ -109,7 +111,9 @@ def add_core_commands(
     )
     smoke.set_defaults(func=handlers.cmd_smoke)
 
-    smoke_validate = subparsers.add_parser("smoke-validate", help="Validate smoke test setup/results", epilog=see_also_epilog("smoke"))
+    smoke_validate = subparsers.add_parser(
+        "smoke-validate", help="Validate smoke test setup/results", epilog=see_also_epilog("smoke")
+    )
     add_json_flag(smoke_validate)
     smoke_validate.add_argument("--count", type=int, help="Repo count to validate")
     smoke_validate.add_argument("--min-count", type=int, default=2, help="Minimum required repos")
@@ -179,7 +183,9 @@ def add_core_commands(
     )
     check.set_defaults(func=handlers.cmd_check)
 
-    verify = subparsers.add_parser("verify", help="Verify workflow/template contracts", epilog=see_also_epilog("verify"))
+    verify = subparsers.add_parser(
+        "verify", help="Verify workflow/template contracts", epilog=see_also_epilog("verify")
+    )
     add_json_flag(verify)
     verify.add_argument(
         "--remote",

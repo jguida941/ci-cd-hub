@@ -11,7 +11,6 @@ from pathlib import Path
 import pytest
 
 from tests.test_repo_shapes.conftest import (
-    REPO_SHAPES,
     SHAPE_LANGUAGES,
     SINGLE_LANG_SHAPES,
     run_cihub,

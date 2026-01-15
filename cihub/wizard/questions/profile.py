@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import questionary
 import yaml
@@ -150,7 +150,6 @@ def select_profile(
     Returns:
         Profile name (e.g., 'fast') or None if skipped/cancelled
     """
-    from pathlib import Path
 
     if profiles_dir is None:
         from cihub.utils.paths import hub_root

@@ -6,8 +6,6 @@ import argparse
 import json
 from pathlib import Path
 
-import pytest
-
 from cihub.commands.repo_cmd import (
     _cmd_clone,
     _cmd_list,

@@ -16,9 +16,8 @@ from __future__ import annotations
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
-from typing import Callable, Generator
+from typing import Callable
 
 import pytest
 
@@ -72,7 +71,7 @@ def repo_shape(tmp_path: Path) -> Callable[[str], Path]:
         dest = tmp_path / shape.replace("-", "_")
         dest.mkdir(parents=True, exist_ok=True)
 
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603 - test code, safe
             [sys.executable, "-m", "cihub", "scaffold", shape, str(dest), "--force"],
             capture_output=True,
             text=True,
@@ -104,7 +103,7 @@ def all_repo_shapes(tmp_path: Path) -> dict[str, Path]:
         dest = tmp_path / shape.replace("-", "_")
         dest.mkdir(parents=True, exist_ok=True)
 
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603 - test code, safe
             [sys.executable, "-m", "cihub", "scaffold", shape, str(dest), "--force"],
             capture_output=True,
             text=True,
@@ -127,7 +126,7 @@ def run_cihub(*args: str, cwd: Path | None = None) -> subprocess.CompletedProces
     Returns:
         CompletedProcess with stdout, stderr, returncode
     """
-    return subprocess.run(
+    return subprocess.run(  # noqa: S603 - test code, safe
         [sys.executable, "-m", "cihub", *args],
         capture_output=True,
         text=True,

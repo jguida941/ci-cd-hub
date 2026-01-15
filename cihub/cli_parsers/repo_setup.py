@@ -89,7 +89,9 @@ def add_repo_setup_commands(
     )
     init.set_defaults(func=handlers.cmd_init)
 
-    update = subparsers.add_parser("update", help="Refresh hub-ci.yml and .ci-hub.yml", epilog=see_also_epilog("update"))
+    update = subparsers.add_parser(
+        "update", help="Refresh hub-ci.yml and .ci-hub.yml", epilog=see_also_epilog("update")
+    )
     add_json_flag(update)
     update.add_argument("--repo", required=True, help="Path to repo")
     update.add_argument(

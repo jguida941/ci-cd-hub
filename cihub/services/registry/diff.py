@@ -207,8 +207,8 @@ def _get_managed_config_top_level_keys(*, hub_root_path: Path | None = None) -> 
         props = managed.get("properties", {})
         if isinstance(props, dict) and props:
             return set(props.keys())
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception:  # noqa: S110, BLE001
+        pass  # Schema read may fail, use fallback
 
     # Conservative fallback (keeps diff usable even if schema missing).
     return {

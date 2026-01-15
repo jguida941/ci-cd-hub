@@ -82,7 +82,10 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
         cihub setup --skip-github      # Skip GitHub integration steps
     """
     if getattr(args, "json", False):
-        message = "--json is not supported for interactive setup; use non-interactive commands (init/new/config) instead"
+        message = (
+            "--json is not supported for interactive setup; "
+            "use non-interactive commands (init/new/config) instead"
+        )
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary=message,

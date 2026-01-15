@@ -6,10 +6,7 @@ Basic coverage for lifecycle, ADR, and reference validation.
 from __future__ import annotations
 
 import argparse
-import tempfile
 from pathlib import Path
-
-import pytest
 
 from cihub.commands.docs_audit import (
     AuditFinding,
@@ -17,12 +14,8 @@ from cihub.commands.docs_audit import (
     FindingCategory,
     FindingSeverity,
     cmd_docs_audit,
-    get_active_docs,
-    get_adr_files,
-    get_archive_docs,
     parse_status_md_entries,
     validate_adr_metadata,
-    validate_lifecycle,
 )
 from cihub.commands.docs_audit.adr import parse_adr_metadata
 from cihub.commands.docs_audit.lifecycle import check_active_status_sync
@@ -136,7 +129,7 @@ class TestLifecycleValidation:
             ("incomplete.md", "> Superseded by: docs/\n\nContent", False),  # Just directory
         ]
 
-        for filename, content, has_explicit in test_cases:
+        for filename, content, _has_explicit in test_cases:
             (archive_dir / filename).write_text(content)
 
         archive_docs = [f"docs/development/archive/{f}" for f, _, _ in test_cases]

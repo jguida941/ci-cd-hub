@@ -77,7 +77,10 @@ def _cmd_diff(args: argparse.Namespace) -> CommandResult:
                 }
             ],
             suggestions=[
-                {"message": f"Create {registry_path} (see schema/registry.schema.json) or copy it from your hub checkout."},
+                {
+                    "message": f"Create {registry_path} (see schema/registry.schema.json) "
+                    "or copy it from your hub checkout."
+                },
                 {"message": "Then rerun cihub registry diff/sync."},
             ],
         )
@@ -200,7 +203,10 @@ def _cmd_sync(args: argparse.Namespace) -> CommandResult:
                 }
             ],
             suggestions=[
-                {"message": f"Create {registry_path} (see schema/registry.schema.json) or copy it from your hub checkout."},
+                {
+                    "message": f"Create {registry_path} (see schema/registry.schema.json) "
+                    "or copy it from your hub checkout."
+                },
                 {"message": "Then rerun cihub registry diff/sync."},
             ],
         )

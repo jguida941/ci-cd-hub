@@ -6,12 +6,9 @@ repo shape (with minimal tool set).
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 from tests.test_repo_shapes.conftest import (
-    REPO_SHAPES,
     SINGLE_LANG_SHAPES,
     run_cihub,
 )
@@ -51,7 +48,7 @@ def test_ci_produces_report(shape: str, repo_shape) -> None:
     run_cihub("init", "--repo", str(path), "--apply")
 
     # Run CI
-    result = run_cihub(
+    run_cihub(
         "ci",
         "--repo",
         str(path),
