@@ -46,9 +46,7 @@ def count_tests(tests_dir: Path) -> dict[str, int]:
         try:
             tree = ast.parse(test_file.read_text(encoding="utf-8"))
             test_count = sum(
-                1
-                for node in ast.walk(tree)
-                if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")
+                1 for node in ast.walk(tree) if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")
             )
             counts["total"] += test_count
 
@@ -98,7 +96,7 @@ def generate_readme(
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | {test_counts['total']} |
+| Total Tests | {test_counts["total"]} |
 | Test Files | {len(test_files)} |
 | Overall Coverage | {overall_coverage:.1f}% |
 
@@ -106,11 +104,11 @@ def generate_readme(
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| Unit | {test_counts['unit']} | Fast, isolated tests |
-| Integration | {test_counts['integration']} | Tests with external dependencies |
-| E2E | {test_counts['e2e']} | End-to-end workflow tests |
-| Property | {test_counts['property']} | Hypothesis property-based tests |
-| Contract | {test_counts['contract']} | API/schema contract tests |
+| Unit | {test_counts["unit"]} | Fast, isolated tests |
+| Integration | {test_counts["integration"]} | Tests with external dependencies |
+| E2E | {test_counts["e2e"]} | End-to-end workflow tests |
+| Property | {test_counts["property"]} | Hypothesis property-based tests |
+| Contract | {test_counts["contract"]} | API/schema contract tests |
 
 ## Running Tests
 

@@ -18,7 +18,7 @@ def configure_gates(defaults: dict[str, Any]) -> dict[str, Any]:
     Returns:
         Gates configuration dict
     """
-    gates_defaults = defaults.get("gates", {})
+    gates_defaults: dict[str, Any] = defaults.get("gates", {})
     if not isinstance(gates_defaults, dict):
         gates_defaults = {}
 
@@ -91,7 +91,7 @@ def configure_reports(defaults: dict[str, Any]) -> dict[str, Any]:
     Returns:
         Reports configuration dict
     """
-    reports_defaults = defaults.get("reports", {})
+    reports_defaults: dict[str, Any] = defaults.get("reports", {})
     if not isinstance(reports_defaults, dict):
         reports_defaults = {}
 
@@ -141,7 +141,7 @@ def configure_notifications(defaults: dict[str, Any]) -> dict[str, Any]:
     Returns:
         Notifications configuration dict
     """
-    notifications_defaults = defaults.get("notifications", {})
+    notifications_defaults: dict[str, Any] = defaults.get("notifications", {})
     if not isinstance(notifications_defaults, dict):
         notifications_defaults = {}
 
@@ -198,7 +198,7 @@ def configure_harden_runner(defaults: dict[str, Any]) -> dict[str, Any]:
     Returns:
         Harden runner configuration dict
     """
-    harden_defaults = defaults.get("harden_runner", {})
+    harden_defaults: dict[str, Any] = defaults.get("harden_runner", {})
     if not isinstance(harden_defaults, dict):
         harden_defaults = {}
 
