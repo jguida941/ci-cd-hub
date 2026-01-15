@@ -13,8 +13,10 @@ from cihub.utils.paths import hub_root
 SCAFFOLD_TYPES: dict[str, str] = {
     "python-pyproject": "Minimal Python project with pyproject.toml",
     "python-setup": "Minimal Python project with setup.py",
+    "python-src-layout": "Python project with src/ directory layout",
     "java-maven": "Minimal Java project using Maven",
     "java-gradle": "Minimal Java project using Gradle",
+    "java-multi-module": "Multi-module Maven project with parent POM",
     "monorepo": "Monorepo with java/ and python/ subdirs",
 }
 
