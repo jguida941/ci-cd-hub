@@ -53,9 +53,7 @@ class WizardRunner:
             return deep_merge(defaults, profile_cfg)
         return defaults
 
-    def _prompt_profile_and_tier(
-        self, language: str, *, skip_tier: bool = False
-    ) -> tuple[str | None, str]:
+    def _prompt_profile_and_tier(self, language: str, *, skip_tier: bool = False) -> tuple[str | None, str]:
         """Prompt for profile and tier selection.
 
         Args:
@@ -71,7 +69,9 @@ class WizardRunner:
         self.console.print("\n[bold]Profile Selection[/bold]")
         self.console.print("Profiles pre-configure tools for common CI patterns.\n")
 
-        profile = select_profile(language, profiles_dir=self.paths.profiles_dir)
+        from pathlib import Path
+
+        profile = select_profile(language, profiles_dir=Path(self.paths.profiles_dir))
 
         # Only prompt for tier if not pre-selected via CLI
         if skip_tier:
@@ -209,9 +209,7 @@ class WizardRunner:
 
         if not skip_profile_selection and profile is None:
             # Only prompt for tier if not already provided via CLI
-            prompted_profile, prompted_tier = self._prompt_profile_and_tier(
-                language, skip_tier=(tier is not None)
-            )
+            prompted_profile, prompted_tier = self._prompt_profile_and_tier(language, skip_tier=(tier is not None))
             selected_profile = prompted_profile
             if tier is None:
                 selected_tier = prompted_tier

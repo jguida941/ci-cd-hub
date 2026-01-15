@@ -274,13 +274,15 @@ def _cmd_get(args: argparse.Namespace) -> CommandResult:
                     value = effective_thresholds.get(k, default)
                 else:
                     value = overrides.get(k)  # None if not overridden
-                thresholds.append({
-                    "key": k,
-                    "value": value,
-                    "is_override": k in overrides,
-                    "default": default,
-                    "category": THRESHOLD_METADATA.get(k, {}).get("category", "unknown"),
-                })
+                thresholds.append(
+                    {
+                        "key": k,
+                        "value": value,
+                        "is_override": k in overrides,
+                        "default": default,
+                        "category": THRESHOLD_METADATA.get(k, {}).get("category", "unknown"),
+                    }
+                )
             mode = "effective" if effective else "raw"
             return CommandResult(
                 exit_code=EXIT_SUCCESS,
@@ -350,13 +352,15 @@ def _cmd_get(args: argparse.Namespace) -> CommandResult:
             thresholds = []
             for k, default in _DEFAULT_THRESHOLDS.items():
                 value = tier_thresholds.get(k, default)
-                thresholds.append({
-                    "key": k,
-                    "value": value,
-                    "is_tier_default": k not in tier_thresholds,
-                    "default": default,
-                    "category": THRESHOLD_METADATA.get(k, {}).get("category", "unknown"),
-                })
+                thresholds.append(
+                    {
+                        "key": k,
+                        "value": value,
+                        "is_tier_default": k not in tier_thresholds,
+                        "default": default,
+                        "category": THRESHOLD_METADATA.get(k, {}).get("category", "unknown"),
+                    }
+                )
             return CommandResult(
                 exit_code=EXIT_SUCCESS,
                 summary=f"Thresholds for tier '{tier}' ({len(thresholds)} keys)",
@@ -369,15 +373,15 @@ def _cmd_get(args: argparse.Namespace) -> CommandResult:
     else:
         # Get global defaults
         if key:
-            default = _DEFAULT_THRESHOLDS.get(key)
+            key_default: int | float | None = _DEFAULT_THRESHOLDS.get(key)
             meta = THRESHOLD_METADATA.get(key, {})
             return CommandResult(
                 exit_code=EXIT_SUCCESS,
-                summary=f"{key}={default} (global default)",
+                summary=f"{key}={key_default} (global default)",
                 data={
                     "key": key,
-                    "value": default,
-                    "default": default,
+                    "value": key_default,
+                    "default": key_default,
                     "category": meta.get("category"),
                     "description": meta.get("description"),
                     "type": meta.get("type"),
@@ -387,14 +391,16 @@ def _cmd_get(args: argparse.Namespace) -> CommandResult:
             thresholds = []
             for k, default in _DEFAULT_THRESHOLDS.items():
                 meta = THRESHOLD_METADATA.get(k, {})
-                thresholds.append({
-                    "key": k,
-                    "value": default,
-                    "default": default,
-                    "category": meta.get("category"),
-                    "description": meta.get("description"),
-                    "type": meta.get("type"),
-                })
+                thresholds.append(
+                    {
+                        "key": k,
+                        "value": default,
+                        "default": default,
+                        "category": meta.get("category"),
+                        "description": meta.get("description"),
+                        "type": meta.get("type"),
+                    }
+                )
             return CommandResult(
                 exit_code=EXIT_SUCCESS,
                 summary=f"Global defaults ({len(thresholds)} keys)",
@@ -416,11 +422,13 @@ def _wizard_set() -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="questionary not installed (pip install questionary)",
-            problems=[{
-                "severity": "error",
-                "message": "Interactive mode requires questionary",
-                "code": "CIHUB-THRESHOLD-NO-QUESTIONARY",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Interactive mode requires questionary",
+                    "code": "CIHUB-THRESHOLD-NO-QUESTIONARY",
+                }
+            ],
         )
 
     try:
@@ -465,11 +473,13 @@ def _wizard_set() -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"Invalid value '{value_str}' (expected {value_type})",
-                problems=[{
-                    "severity": "error",
-                    "message": f"Cannot parse '{value_str}' as {value_type}",
-                    "code": "CIHUB-THRESHOLD-INVALID-VALUE",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": f"Cannot parse '{value_str}' as {value_type}",
+                        "code": "CIHUB-THRESHOLD-INVALID-VALUE",
+                    }
+                ],
             )
 
         # Select target: repo, tier, or all-repos
@@ -506,11 +516,13 @@ def _wizard_set() -> CommandResult:
                 return CommandResult(
                     exit_code=EXIT_FAILURE,
                     summary="No repositories in registry",
-                    problems=[{
-                        "severity": "error",
-                        "message": "Registry has no repos. Add repos first.",
-                        "code": "CIHUB-THRESHOLD-NO-REPOS",
-                    }],
+                    problems=[
+                        {
+                            "severity": "error",
+                            "message": "Registry has no repos. Add repos first.",
+                            "code": "CIHUB-THRESHOLD-NO-REPOS",
+                        }
+                    ],
                 )
             selected_repo: str = _check_cancelled(
                 questionary.select(
@@ -527,11 +539,13 @@ def _wizard_set() -> CommandResult:
                 return CommandResult(
                     exit_code=EXIT_FAILURE,
                     summary="No tiers in registry",
-                    problems=[{
-                        "severity": "error",
-                        "message": "Registry has no tiers defined.",
-                        "code": "CIHUB-THRESHOLD-NO-TIERS",
-                    }],
+                    problems=[
+                        {
+                            "severity": "error",
+                            "message": "Registry has no tiers defined.",
+                            "code": "CIHUB-THRESHOLD-NO-TIERS",
+                        }
+                    ],
                 )
             selected_tier: str = _check_cancelled(
                 questionary.select(
@@ -571,11 +585,13 @@ def _wizard_reset() -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="questionary not installed (pip install questionary)",
-            problems=[{
-                "severity": "error",
-                "message": "Interactive mode requires questionary",
-                "code": "CIHUB-THRESHOLD-NO-QUESTIONARY",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Interactive mode requires questionary",
+                    "code": "CIHUB-THRESHOLD-NO-QUESTIONARY",
+                }
+            ],
         )
 
     try:
@@ -617,11 +633,13 @@ def _wizard_reset() -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary="No repos or tiers in registry",
-                problems=[{
-                    "severity": "error",
-                    "message": "Register repos or define tiers first",
-                    "code": "CIHUB-THRESHOLD-NO-TARGETS",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": "Register repos or define tiers first",
+                        "code": "CIHUB-THRESHOLD-NO-TARGETS",
+                    }
+                ],
             )
 
         target_type: str = _check_cancelled(
@@ -685,11 +703,13 @@ def _cmd_set(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="--wizard is not supported with --json",
-            problems=[{
-                "severity": "error",
-                "message": "Interactive mode (--wizard) cannot be used with --json output",
-                "code": "CIHUB-THRESHOLD-WIZARD-JSON",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Interactive mode (--wizard) cannot be used with --json output",
+                    "code": "CIHUB-THRESHOLD-WIZARD-JSON",
+                }
+            ],
         )
 
     # Wizard mode
@@ -712,22 +732,26 @@ def _do_set(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="Threshold key required (or use --wizard)",
-            problems=[{
-                "severity": "error",
-                "message": "Threshold key is required. Use --wizard for interactive mode.",
-                "code": "CIHUB-THRESHOLD-NO-KEY",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Threshold key is required. Use --wizard for interactive mode.",
+                    "code": "CIHUB-THRESHOLD-NO-KEY",
+                }
+            ],
         )
 
     if not value_str:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="Threshold value required (or use --wizard)",
-            problems=[{
-                "severity": "error",
-                "message": "Threshold value is required. Use --wizard for interactive mode.",
-                "code": "CIHUB-THRESHOLD-NO-VALUE",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Threshold value is required. Use --wizard for interactive mode.",
+                    "code": "CIHUB-THRESHOLD-NO-VALUE",
+                }
+            ],
         )
 
     # Validate key
@@ -962,14 +986,16 @@ def _cmd_list(args: argparse.Namespace) -> CommandResult:
             if diff_only and not is_different:
                 continue
 
-            thresholds.append({
-                "key": key,
-                "value": value,
-                "default": default,
-                "is_override": is_override,
-                "is_different": is_different,
-                **meta,
-            })
+            thresholds.append(
+                {
+                    "key": key,
+                    "value": value,
+                    "default": default,
+                    "is_override": is_override,
+                    "is_different": is_different,
+                    **meta,
+                }
+            )
     else:
         # List all threshold keys with defaults
         for key, meta in THRESHOLD_METADATA.items():
@@ -977,12 +1003,14 @@ def _cmd_list(args: argparse.Namespace) -> CommandResult:
                 continue
 
             default = _DEFAULT_THRESHOLDS.get(key)
-            thresholds.append({
-                "key": key,
-                "value": default,
-                "default": default,
-                **meta,
-            })
+            thresholds.append(
+                {
+                    "key": key,
+                    "value": default,
+                    "default": default,
+                    **meta,
+                }
+            )
 
     if not thresholds:
         filter_msg = f" (category={category})" if category else ""
@@ -1013,11 +1041,13 @@ def _cmd_reset(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="--wizard is not supported with --json",
-            problems=[{
-                "severity": "error",
-                "message": "Interactive mode (--wizard) cannot be used with --json output",
-                "code": "CIHUB-THRESHOLD-WIZARD-JSON",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Interactive mode (--wizard) cannot be used with --json output",
+                    "code": "CIHUB-THRESHOLD-WIZARD-JSON",
+                }
+            ],
         )
 
     if wizard:
@@ -1272,19 +1302,23 @@ def _cmd_compare(args: argparse.Namespace) -> CommandResult:
         val2 = thresholds2.get(key, default) if effective else thresholds2.get(key)
 
         if val1 != val2:
-            differences.append({
-                "key": key,
-                "repo1_value": val1,
-                "repo2_value": val2,
-                "default": default,
-                "category": THRESHOLD_METADATA.get(key, {}).get("category"),
-            })
+            differences.append(
+                {
+                    "key": key,
+                    "repo1_value": val1,
+                    "repo2_value": val2,
+                    "default": default,
+                    "category": THRESHOLD_METADATA.get(key, {}).get("category"),
+                }
+            )
         else:
-            same.append({
-                "key": key,
-                "value": val1 if val1 is not None else default,
-                "default": default,
-            })
+            same.append(
+                {
+                    "key": key,
+                    "value": val1 if val1 is not None else default,
+                    "default": default,
+                }
+            )
 
     comparison_type = "effective" if effective else "override"
 

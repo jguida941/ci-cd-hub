@@ -350,9 +350,7 @@ def create_repo_via_registry(
             hub_root_path=root,
         )
         # Only count as synced if action was create/update (not skip)
-        synced = repo_name in [
-            c.get("repo") for c in changes if c.get("action") != "skip"
-        ]
+        synced = repo_name in [c.get("repo") for c in changes if c.get("action") != "skip"]
         if not synced:
             # Sync may not report change if config matches
             synced = (configs_dir / f"{repo_name}.yaml").exists()
@@ -444,9 +442,7 @@ def update_repo_via_registry(
             hub_root_path=root,
         )
         # Only count as synced if action was create/update (not skip)
-        synced = repo_name in [
-            c.get("repo") for c in changes if c.get("action") != "skip"
-        ]
+        synced = repo_name in [c.get("repo") for c in changes if c.get("action") != "skip"]
         if not synced:
             # Sync may not report change if config already matches
             synced = (configs_dir / f"{repo_name}.yaml").exists()

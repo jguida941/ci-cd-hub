@@ -29,9 +29,10 @@ def get_hub_root() -> Path:
     # Check if registry_service has a different hub_root (monkeypatched)
     try:
         import cihub.services.registry_service as rs_module
-        rs_hub_root = getattr(rs_module, 'hub_root', None)
+
+        rs_hub_root = getattr(rs_module, "hub_root", None)
         if rs_hub_root is not None and rs_hub_root is not hub_root:
-            return rs_hub_root()
+            return Path(rs_hub_root())
     except ImportError:
         pass
 

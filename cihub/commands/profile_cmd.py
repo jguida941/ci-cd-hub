@@ -29,7 +29,7 @@ def _list_profiles(profiles_dir: Path) -> list[dict[str, Any]]:
         - type: 'language' or 'tier'
         - language: 'python', 'java', or None (for tier profiles)
     """
-    profiles = []
+    profiles: list[dict[str, str | None]] = []
     if not profiles_dir.exists():
         return profiles
 
@@ -230,9 +230,11 @@ def _cmd_show(args: argparse.Namespace) -> CommandResult:
 
     if effective:
         # Load defaults and merge
-        from cihub.ci_config import load_defaults
+        from cihub.config.io import load_defaults
+        from cihub.config.paths import PathConfig
 
-        defaults = load_defaults()
+        paths = PathConfig(root=str(hub_root()))
+        defaults = load_defaults(paths)
         # Merge profile on top of defaults
         merged = _deep_merge(defaults, profile)
         display_profile = merged

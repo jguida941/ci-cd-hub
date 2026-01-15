@@ -43,47 +43,49 @@ EXCLUDE_PATTERNS = [
 
 # Known valid references that don't need to exist as files
 # (e.g., placeholders, examples, or pattern descriptions)
-KNOWN_EXCEPTIONS = frozenset({
-    "docs/...",
-    "docs/**",
-    "docs/reference/**",
-    "docs/development/active/**",
-    "docs/development/archive/**",
-    "docs/development/archive/.*",
-    "docs/adr/**",
-    # Template/example patterns
-    "docs/adr/00xx-incident.md",  # Placeholder ADR number
-    "docs/adr/0001-title.md",  # Example ADR pattern
-    "docs/file.md",  # Generic example
-    "docs/test.md",  # Test example
-    "docs/modularization.md",  # Example
-    # References to directories (not files)
-    "docs/tests",
-    "docs/ADRs/scripts/workflows",
-    "docs/preflight/scaffold/smoke/check",
-    "docs/README/guide/dev",
-    "docs/development/execution/",
-    "docs/documenting/yaml-style-guide/",
-    "docs/docs/backlog.md",
-    "docs/git-diff",
-    "docs/sphinx-autoapi",
-    # Active design doc templates
-    "docs/development/active/FOO.md",
-    "docs/development/active/BAR.md",
-    "docs/development/active/NEW.md",
-    # Wildcard ADR references (used in documentation)
-    "docs/adr/0035-",
-    "docs/adr/0045-",
-    # Old paths now in archive
-    "docs/development/audit.md",
-    "docs/development/architecture/ARCHITECTURE_PLAN.md",
-    "docs/development/ARCHITECTURE.md",
-    "docs/development/execution/SMOKE_TEST.md",
-    "docs/development/execution/SMOKE_TEST_REPOS.md",
-    # Conceptual/planning references
-    "docs/MAKE.md",
-    "docs/analysis/scalability.md",
-})
+KNOWN_EXCEPTIONS = frozenset(
+    {
+        "docs/...",
+        "docs/**",
+        "docs/reference/**",
+        "docs/development/active/**",
+        "docs/development/archive/**",
+        "docs/development/archive/.*",
+        "docs/adr/**",
+        # Template/example patterns
+        "docs/adr/00xx-incident.md",  # Placeholder ADR number
+        "docs/adr/0001-title.md",  # Example ADR pattern
+        "docs/file.md",  # Generic example
+        "docs/test.md",  # Test example
+        "docs/modularization.md",  # Example
+        # References to directories (not files)
+        "docs/tests",
+        "docs/ADRs/scripts/workflows",
+        "docs/preflight/scaffold/smoke/check",
+        "docs/README/guide/dev",
+        "docs/development/execution/",
+        "docs/documenting/yaml-style-guide/",
+        "docs/docs/backlog.md",
+        "docs/git-diff",
+        "docs/sphinx-autoapi",
+        # Active design doc templates
+        "docs/development/active/FOO.md",
+        "docs/development/active/BAR.md",
+        "docs/development/active/NEW.md",
+        # Wildcard ADR references (used in documentation)
+        "docs/adr/0035-",
+        "docs/adr/0045-",
+        # Old paths now in archive
+        "docs/development/audit.md",
+        "docs/development/architecture/ARCHITECTURE_PLAN.md",
+        "docs/development/ARCHITECTURE.md",
+        "docs/development/execution/SMOKE_TEST.md",
+        "docs/development/execution/SMOKE_TEST_REPOS.md",
+        # Conceptual/planning references
+        "docs/MAKE.md",
+        "docs/analysis/scalability.md",
+    }
+)
 
 
 def should_exclude(path: Path) -> bool:

@@ -159,11 +159,13 @@ def _wizard_update() -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="questionary not installed (pip install questionary)",
-            problems=[{
-                "severity": "error",
-                "message": "Interactive mode requires questionary",
-                "code": "CIHUB-REPO-NO-QUESTIONARY",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Interactive mode requires questionary",
+                    "code": "CIHUB-REPO-NO-QUESTIONARY",
+                }
+            ],
         )
 
     try:
@@ -178,11 +180,13 @@ def _wizard_update() -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary="No repositories in registry",
-                problems=[{
-                    "severity": "error",
-                    "message": "Registry has no repos. Add repos first with 'registry add'.",
-                    "code": "CIHUB-REPO-NO-REPOS",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": "Registry has no repos. Add repos first with 'registry add'.",
+                        "code": "CIHUB-REPO-NO-REPOS",
+                    }
+                ],
             )
 
         # Select repository
@@ -201,11 +205,13 @@ def _wizard_update() -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"Repository '{selected_repo}' not found",
-                problems=[{
-                    "severity": "error",
-                    "message": f"Repository '{selected_repo}' not in registry",
-                    "code": "CIHUB-REPO-NOT-FOUND",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": f"Repository '{selected_repo}' not in registry",
+                        "code": "CIHUB-REPO-NOT-FOUND",
+                    }
+                ],
             )
 
         config = repo_config.get("config", {})
@@ -226,10 +232,7 @@ def _wizard_update() -> CommandResult:
             questionary.Choice(title=f"Repo name (current: {current_name or '(none)'})", value="repo_name"),
             questionary.Choice(title=f"Default branch (current: {current_branch})", value="default_branch"),
             questionary.Choice(title=f"Language (current: {current_lang or '(none)'})", value="language"),
-            questionary.Choice(
-                title=f"Dispatch enabled (current: {current_dispatch})",
-                value="dispatch_enabled"
-            ),
+            questionary.Choice(title=f"Dispatch enabled (current: {current_dispatch})", value="dispatch_enabled"),
         ]
 
         selected_fields: list[str] = _check_cancelled(
@@ -360,11 +363,13 @@ def _cmd_update(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="--wizard is not supported with --json",
-            problems=[{
-                "severity": "error",
-                "message": "Interactive mode (--wizard) cannot be used with --json output",
-                "code": "CIHUB-REPO-WIZARD-JSON",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Interactive mode (--wizard) cannot be used with --json output",
+                    "code": "CIHUB-REPO-WIZARD-JSON",
+                }
+            ],
         )
 
     # Wizard mode
@@ -381,11 +386,13 @@ def _do_update(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="Repository name required (or use --wizard)",
-            problems=[{
-                "severity": "error",
-                "message": "Repository name is required. Use --wizard for interactive mode.",
-                "code": "CIHUB-REPO-NO-NAME",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Repository name is required. Use --wizard for interactive mode.",
+                    "code": "CIHUB-REPO-NO-NAME",
+                }
+            ],
         )
 
     owner = getattr(args, "owner", None)
@@ -471,7 +478,8 @@ def _do_update(args: argparse.Namespace) -> CommandResult:
                 {
                     "severity": "error",
                     "message": "Setting --owner requires --repo-name (schema dependency: owner requires name)",
-                    "code": "CIHUB-REPO-OWNER-NEEDS-NAME",                }
+                    "code": "CIHUB-REPO-OWNER-NEEDS-NAME",
+                }
             ],
         )
 
@@ -715,21 +723,25 @@ def _cmd_verify_connectivity(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Invalid owner name: {owner}",
-            problems=[{
-                "severity": "error",
-                "message": f"Owner '{owner}' contains invalid characters",
-                "code": "CIHUB-REPO-INVALID-OWNER",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Owner '{owner}' contains invalid characters",
+                    "code": "CIHUB-REPO-INVALID-OWNER",
+                }
+            ],
         )
     if not _validate_github_name(repo_name):
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"Invalid repo name: {repo_name}",
-            problems=[{
-                "severity": "error",
-                "message": f"Repo name '{repo_name}' contains invalid characters",
-                "code": "CIHUB-REPO-INVALID-NAME",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": f"Repo name '{repo_name}' contains invalid characters",
+                    "code": "CIHUB-REPO-INVALID-NAME",
+                }
+            ],
         )
 
     # Get full path to gh CLI
@@ -738,11 +750,13 @@ def _cmd_verify_connectivity(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="GitHub CLI (gh) not found",
-            problems=[{
-                "severity": "error",
-                "message": "Install GitHub CLI: https://cli.github.com/",
-                "code": "CIHUB-REPO-NO-GH-CLI",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Install GitHub CLI: https://cli.github.com/",
+                    "code": "CIHUB-REPO-NO-GH-CLI",
+                }
+            ],
         )
 
     # Use gh CLI to verify repo exists
@@ -759,24 +773,30 @@ def _cmd_verify_connectivity(args: argparse.Namespace) -> CommandResult:
             check=False,
         )
         if result.returncode == 0:
-            checks.append({
-                "check": "repo_exists",
-                "status": "pass",
-                "message": f"Repository {full_repo} exists",
-            })
+            checks.append(
+                {
+                    "check": "repo_exists",
+                    "status": "pass",
+                    "message": f"Repository {full_repo} exists",
+                }
+            )
         else:
-            checks.append({
+            checks.append(
+                {
+                    "check": "repo_exists",
+                    "status": "fail",
+                    "message": f"Repository {full_repo} not found or not accessible",
+                    "error": result.stderr.strip(),
+                }
+            )
+    except subprocess.TimeoutExpired:
+        checks.append(
+            {
                 "check": "repo_exists",
                 "status": "fail",
-                "message": f"Repository {full_repo} not found or not accessible",
-                "error": result.stderr.strip(),
-            })
-    except subprocess.TimeoutExpired:
-        checks.append({
-            "check": "repo_exists",
-            "status": "fail",
-            "message": "Timeout checking repository",
-        })
+                "message": "Timeout checking repository",
+            }
+        )
 
     # Check workflows if requested (inputs validated above, using full executable path)
     if check_workflows and checks[0]["status"] == "pass":
@@ -793,24 +813,30 @@ def _cmd_verify_connectivity(args: argparse.Namespace) -> CommandResult:
 
                 workflows = json.loads(result.stdout)
                 workflow_names = [w["name"] for w in workflows if w["name"].endswith(".yml")]
-                checks.append({
-                    "check": "workflows_exist",
-                    "status": "pass",
-                    "message": f"Found {len(workflow_names)} workflow file(s)",
-                    "workflows": workflow_names,
-                })
+                checks.append(
+                    {
+                        "check": "workflows_exist",
+                        "status": "pass",
+                        "message": f"Found {len(workflow_names)} workflow file(s)",
+                        "workflows": workflow_names,
+                    }
+                )
             else:
-                checks.append({
-                    "check": "workflows_exist",
-                    "status": "warn",
-                    "message": "No .github/workflows directory found",
-                })
+                checks.append(
+                    {
+                        "check": "workflows_exist",
+                        "status": "warn",
+                        "message": "No .github/workflows directory found",
+                    }
+                )
         except Exception as e:
-            checks.append({
-                "check": "workflows_exist",
-                "status": "fail",
-                "message": f"Error checking workflows: {e}",
-            })
+            checks.append(
+                {
+                    "check": "workflows_exist",
+                    "status": "fail",
+                    "message": f"Error checking workflows: {e}",
+                }
+            )
 
     # Determine overall status
     failed = [c for c in checks if c["status"] == "fail"]

@@ -30,16 +30,16 @@ from cihub.wizard import HAS_WIZARD, WizardCancelled
 
 # Step definitions for the complete setup wizard
 SETUP_STEPS = [
-    "project_type",      # New or existing project?
-    "scaffold",          # If new: create from template
-    "detect",            # Detect language/build tool
-    "configure",         # Interactive config (existing wizard)
-    "write_files",       # Write .ci-hub.yml + workflow
-    "validate",          # Run cihub validate
-    "run_local_ci",      # Optional: run cihub ci locally
-    "github_setup",      # Optional: create/configure GitHub repo
-    "push",              # Optional: push to GitHub
-    "trigger_ci",        # Optional: trigger GitHub Actions
+    "project_type",  # New or existing project?
+    "scaffold",  # If new: create from template
+    "detect",  # Detect language/build tool
+    "configure",  # Interactive config (existing wizard)
+    "write_files",  # Write .ci-hub.yml + workflow
+    "validate",  # Run cihub validate
+    "run_local_ci",  # Optional: run cihub ci locally
+    "github_setup",  # Optional: create/configure GitHub repo
+    "push",  # Optional: push to GitHub
+    "trigger_ci",  # Optional: trigger GitHub Actions
 ]
 
 
@@ -83,8 +83,7 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
     """
     if getattr(args, "json", False):
         message = (
-            "--json is not supported for interactive setup; "
-            "use non-interactive commands (init/new/config) instead"
+            "--json is not supported for interactive setup; use non-interactive commands (init/new/config) instead"
         )
         return CommandResult(
             exit_code=EXIT_USAGE,
@@ -211,10 +210,12 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
         )
         detect_result = cmd_detect(detect_args)
         if detect_result.exit_code != EXIT_SUCCESS:
-            problems.append({
-                "severity": "warning",
-                "message": f"Detection issue: {detect_result.summary}",
-            })
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"Detection issue: {detect_result.summary}",
+                }
+            )
 
         detected_data = detect_result.data or {}
         language = detected_data.get("language", "unknown")
@@ -384,9 +385,11 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
             else:
                 console.print("  [red]✗[/red] CI failed")
                 problems.extend(ci_result.problems or [])
-                suggestions.append({
-                    "message": "Run 'cihub triage' to investigate failures",
-                })
+                suggestions.append(
+                    {
+                        "message": "Run 'cihub triage' to investigate failures",
+                    }
+                )
         else:
             console.print("  [dim]Skipped[/dim]")
 

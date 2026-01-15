@@ -50,7 +50,7 @@ MASTER_PLAN_PATH = "docs/development/MASTER_PLAN.md"
 ADR_DIR = "docs/adr"
 
 # Reference patterns for plain-text scan (Part 12.N)
-DOCS_PATH_PATTERN = r'docs/[a-zA-Z0-9_\-./]+'
+DOCS_PATH_PATTERN = r"docs/[a-zA-Z0-9_\-./]+"
 
 
 # =============================================================================

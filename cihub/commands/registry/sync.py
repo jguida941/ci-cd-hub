@@ -93,11 +93,13 @@ def _cmd_diff(args: argparse.Namespace) -> CommandResult:
     if repos_root:
         repos_root_path = Path(repos_root)
         if not repos_root_path.exists():
-            repos_root_warnings.append({
-                "severity": "warning",
-                "message": f"--repos-root path does not exist: {repos_root_path}",
-                "code": "CIHUB-REGISTRY-REPOS-ROOT-MISSING",
-            })
+            repos_root_warnings.append(
+                {
+                    "severity": "warning",
+                    "message": f"--repos-root path does not exist: {repos_root_path}",
+                    "code": "CIHUB-REGISTRY-REPOS-ROOT-MISSING",
+                }
+            )
         else:
             repo_paths = {}
             for repo_name in registry.get("repos", {}).keys():
@@ -105,11 +107,13 @@ def _cmd_diff(args: argparse.Namespace) -> CommandResult:
                 if repo_dir.is_dir():
                     repo_paths[repo_name] = repo_dir
             if not repo_paths:
-                repos_root_warnings.append({
-                    "severity": "warning",
-                    "message": f"--repos-root has no matching repo directories: {repos_root_path}",
-                    "code": "CIHUB-REGISTRY-REPOS-ROOT-EMPTY",
-                })
+                repos_root_warnings.append(
+                    {
+                        "severity": "warning",
+                        "message": f"--repos-root has no matching repo directories: {repos_root_path}",
+                        "code": "CIHUB-REGISTRY-REPOS-ROOT-EMPTY",
+                    }
+                )
 
     diffs = compute_diff(
         registry,

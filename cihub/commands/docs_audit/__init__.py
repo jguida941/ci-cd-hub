@@ -231,10 +231,12 @@ def cmd_docs_audit(args: argparse.Namespace) -> CommandResult:
     # Suggestions for errors
     suggestions = []
     if report.has_errors:
-        suggestions.append({
-            "message": "Fix errors before merging",
-            "code": "CIHUB-AUDIT-FIX",
-        })
+        suggestions.append(
+            {
+                "message": "Fix errors before merging",
+                "code": "CIHUB-AUDIT-FIX",
+            }
+        )
 
     return CommandResult(
         exit_code=exit_code,

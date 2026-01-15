@@ -56,9 +56,7 @@ def _resolve_workdir(
     return "."
 
 
-def _tool_enabled(
-    config: dict[str, Any], tool: str, language: str, *, default: bool = False
-) -> bool:
+def _tool_enabled(config: dict[str, Any], tool: str, language: str, *, default: bool = False) -> bool:
     """Check if a tool is enabled. Delegates to canonical cihub.config.tool_enabled.
 
     Args:

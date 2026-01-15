@@ -196,8 +196,11 @@ def _wizard_enable_disable(enable: bool) -> CommandResult:
             exit_code=EXIT_FAILURE,
             summary="Wizard dependencies not installed",
             problems=[
-                {"severity": "error", "message": "Install wizard deps: pip install cihub[wizard]",
-                 "code": "CIHUB-TOOL-NO-WIZARD-DEPS"}
+                {
+                    "severity": "error",
+                    "message": "Install wizard deps: pip install cihub[wizard]",
+                    "code": "CIHUB-TOOL-NO-WIZARD-DEPS",
+                }
             ],
         )
 
@@ -246,8 +249,11 @@ def _wizard_enable_disable(enable: bool) -> CommandResult:
             exit_code=EXIT_FAILURE,
             summary="No repos or profiles found",
             problems=[
-                {"severity": "error", "message": "Register repos or create profiles first",
-                 "code": "CIHUB-TOOL-NO-TARGETS"}
+                {
+                    "severity": "error",
+                    "message": "Register repos or create profiles first",
+                    "code": "CIHUB-TOOL-NO-TARGETS",
+                }
             ],
         )
 
@@ -309,11 +315,13 @@ def _wizard_configure() -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="questionary not installed (pip install questionary)",
-            problems=[{
-                "severity": "error",
-                "message": "Interactive mode requires questionary",
-                "code": "CIHUB-TOOL-NO-QUESTIONARY",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Interactive mode requires questionary",
+                    "code": "CIHUB-TOOL-NO-QUESTIONARY",
+                }
+            ],
         )
 
     from cihub.services.registry_service import list_repos, load_registry
@@ -325,6 +333,7 @@ def _wizard_configure() -> CommandResult:
     # Also include custom tools from defaults if any
     try:
         from cihub.config import PathConfig, load_defaults
+
         paths = PathConfig(root=str(hub_root()))
         defaults = load_defaults(paths)
         custom_tools = get_custom_tools_from_config(defaults, "python")
@@ -416,11 +425,13 @@ def _wizard_configure() -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="No repos or profiles found",
-            problems=[{
-                "severity": "error",
-                "message": "Register repos or create profiles first",
-                "code": "CIHUB-TOOL-NO-TARGETS",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Register repos or create profiles first",
+                    "code": "CIHUB-TOOL-NO-TARGETS",
+                }
+            ],
         )
 
     target_type = questionary.select(
@@ -432,6 +443,7 @@ def _wizard_configure() -> CommandResult:
         return CommandResult(exit_code=EXIT_USAGE, summary="Cancelled")
 
     # Parse value
+    parsed_value: bool | float | int | str
     try:
         if value.lower() in ("true", "false"):
             parsed_value = value.lower() == "true"
@@ -669,8 +681,11 @@ def _cmd_enable(args: argparse.Namespace) -> CommandResult:
             exit_code=EXIT_USAGE,
             summary="--wizard is not supported with --json",
             problems=[
-                {"severity": "error", "message": "--wizard is not supported with --json",
-                 "code": "CIHUB-TOOL-WIZARD-JSON"}
+                {
+                    "severity": "error",
+                    "message": "--wizard is not supported with --json",
+                    "code": "CIHUB-TOOL-WIZARD-JSON",
+                }
             ],
         )
 
@@ -684,8 +699,11 @@ def _cmd_enable(args: argparse.Namespace) -> CommandResult:
             exit_code=EXIT_USAGE,
             summary="Tool name required (or use --wizard)",
             problems=[
-                {"severity": "error", "message": "Specify tool name or use --wizard for interactive mode",
-                 "code": "CIHUB-TOOL-NO-NAME"}
+                {
+                    "severity": "error",
+                    "message": "Specify tool name or use --wizard for interactive mode",
+                    "code": "CIHUB-TOOL-NO-NAME",
+                }
             ],
         )
 
@@ -740,8 +758,11 @@ def _cmd_disable(args: argparse.Namespace) -> CommandResult:
             exit_code=EXIT_USAGE,
             summary="--wizard is not supported with --json",
             problems=[
-                {"severity": "error", "message": "--wizard is not supported with --json",
-                 "code": "CIHUB-TOOL-WIZARD-JSON"}
+                {
+                    "severity": "error",
+                    "message": "--wizard is not supported with --json",
+                    "code": "CIHUB-TOOL-WIZARD-JSON",
+                }
             ],
         )
 
@@ -755,8 +776,11 @@ def _cmd_disable(args: argparse.Namespace) -> CommandResult:
             exit_code=EXIT_USAGE,
             summary="Tool name required (or use --wizard)",
             problems=[
-                {"severity": "error", "message": "Specify tool name or use --wizard for interactive mode",
-                 "code": "CIHUB-TOOL-NO-NAME"}
+                {
+                    "severity": "error",
+                    "message": "Specify tool name or use --wizard for interactive mode",
+                    "code": "CIHUB-TOOL-NO-NAME",
+                }
             ],
         )
 
@@ -805,8 +829,11 @@ def _cmd_configure(args: argparse.Namespace) -> CommandResult:
             exit_code=EXIT_USAGE,
             summary="--wizard is not supported with --json",
             problems=[
-                {"severity": "error", "message": "--wizard is not supported with --json",
-                 "code": "CIHUB-TOOL-WIZARD-JSON"}
+                {
+                    "severity": "error",
+                    "message": "--wizard is not supported with --json",
+                    "code": "CIHUB-TOOL-WIZARD-JSON",
+                }
             ],
         )
 
@@ -825,11 +852,13 @@ def _cmd_configure(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="Missing required arguments",
-            problems=[{
-                "severity": "error",
-                "message": "Require: tool configure <tool> <param> <value> --repo/--profile, or use --wizard",
-                "code": "CIHUB-TOOL-MISSING-ARGS",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Require: tool configure <tool> <param> <value> --repo/--profile, or use --wizard",
+                    "code": "CIHUB-TOOL-MISSING-ARGS",
+                }
+            ],
         )
 
     # Validate tool exists (built-in or custom x-* prefix)
@@ -1131,7 +1160,7 @@ def _enable_in_profile(tool: str, profile_name: str) -> CommandResult:
             lang = "python"  # Default
     else:
         info = _get_tool_info(tool)
-        lang = info.get("language")
+        lang = str(info.get("language", "python"))
         if lang in ("both", "unknown"):
             # Check profile name for language hint
             if profile_name.startswith("python-"):
@@ -1226,7 +1255,7 @@ def _disable_in_profile(tool: str, profile_name: str) -> CommandResult:
             lang = "python"  # Default to python
     else:
         info = _get_tool_info(tool)
-        lang = info.get("language")
+        lang = str(info.get("language", "python"))
         if lang in ("both", "unknown"):
             # Check profile name for language hint
             if profile_name.startswith("python-"):
@@ -1578,7 +1607,7 @@ def _configure_in_profile(tool: str, param: str, value: Any, profile_name: str) 
             lang = "python"  # Default to python
     else:
         info = _get_tool_info(tool)
-        lang = info.get("language")
+        lang = str(info.get("language", "python"))
         if lang in ("both", "unknown"):
             # Check profile name for language hint
             if profile_name.startswith("python-"):

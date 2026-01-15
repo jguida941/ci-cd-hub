@@ -305,22 +305,26 @@ def cmd_fix(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="--ai requires --report mode",
-            problems=[{
-                "severity": "error",
-                "message": "--ai only works with --report, not --safe",
-                "code": "CIHUB-FIX-INVALID-FLAGS",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "--ai only works with --report, not --safe",
+                    "code": "CIHUB-FIX-INVALID-FLAGS",
+                }
+            ],
         )
 
     if report_mode and dry_run:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="--dry-run requires --safe mode",
-            problems=[{
-                "severity": "error",
-                "message": "--dry-run only works with --safe, not --report",
-                "code": "CIHUB-FIX-INVALID-FLAGS",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "--dry-run only works with --safe, not --report",
+                    "code": "CIHUB-FIX-INVALID-FLAGS",
+                }
+            ],
         )
 
     if not safe_mode and not report_mode:

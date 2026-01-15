@@ -291,8 +291,6 @@ def _cmd_import(args: argparse.Namespace) -> CommandResult:
             "raw_output": "\n".join(lines),
         },
         files_modified=(
-            ["config/registry.json"]
-            if not dry_run and (added_repos or updated_repos or removed_repos)
-            else []
+            ["config/registry.json"] if not dry_run and (added_repos or updated_repos or removed_repos) else []
         ),
     )

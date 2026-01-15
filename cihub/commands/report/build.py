@@ -128,8 +128,7 @@ def _build_report(args: argparse.Namespace) -> CommandResult:
         # Include built-in and custom tools; custom tools default to enabled=True per schema
         all_tools = get_all_tools_from_config(config, "python")
         tools_configured = {
-            tool: _tool_enabled(config, tool, "python", default=is_custom_tool(tool))
-            for tool in all_tools
+            tool: _tool_enabled(config, tool, "python", default=is_custom_tool(tool)) for tool in all_tools
         }
         tools_ran = {tool: False for tool in tools_configured}
         tools_success = {tool: False for tool in tools_configured}
@@ -154,8 +153,7 @@ def _build_report(args: argparse.Namespace) -> CommandResult:
         # Include built-in and custom tools; custom tools default to enabled=True per schema
         all_tools = get_all_tools_from_config(config, "java")
         tools_configured = {
-            tool: _tool_enabled(config, tool, "java", default=is_custom_tool(tool))
-            for tool in all_tools
+            tool: _tool_enabled(config, tool, "java", default=is_custom_tool(tool)) for tool in all_tools
         }
         tools_ran = {tool: False for tool in tools_configured}
         tools_success = {tool: False for tool in tools_configured}

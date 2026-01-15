@@ -210,8 +210,7 @@ WORKFLOW_DESCRIPTIONS: dict[str, dict[str, str]] = {
     "hub-run-all.yml": {
         "purpose": "Central test runner",
         "when_to_use": (
-            "Use this to test all repos from the hub without needing "
-            "workflows in each repo (Central Mode)."
+            "Use this to test all repos from the hub without needing workflows in each repo (Central Mode)."
         ),
         "target": "All configured repos",
     },
@@ -231,16 +230,14 @@ WORKFLOW_DESCRIPTIONS: dict[str, dict[str, str]] = {
     "java-ci.yml": {
         "purpose": "Java reusable workflow",
         "when_to_use": (
-            "Call from your Java repo's workflow for standardized CI "
-            "(tests, coverage, linting, security)."
+            "Call from your Java repo's workflow for standardized CI (tests, coverage, linting, security)."
         ),
         "target": "Any Java repo",
     },
     "python-ci.yml": {
         "purpose": "Python reusable workflow",
         "when_to_use": (
-            "Call from your Python repo's workflow for standardized CI "
-            "(tests, coverage, linting, security)."
+            "Call from your Python repo's workflow for standardized CI (tests, coverage, linting, security)."
         ),
         "target": "Any Python repo",
     },
@@ -311,14 +308,16 @@ def _parse_workflow_inputs(on_section: Any) -> list[dict[str, Any]]:
         if isinstance(dispatch_inputs, dict):
             for name, config in dispatch_inputs.items():
                 if isinstance(config, dict):
-                    inputs.append({
-                        "name": name,
-                        "type": config.get("type", "string"),
-                        "required": config.get("required", False),
-                        "default": config.get("default", ""),
-                        "description": config.get("description", ""),
-                        "source": "workflow_dispatch",
-                    })
+                    inputs.append(
+                        {
+                            "name": name,
+                            "type": config.get("type", "string"),
+                            "required": config.get("required", False),
+                            "default": config.get("default", ""),
+                            "description": config.get("description", ""),
+                            "source": "workflow_dispatch",
+                        }
+                    )
 
     # Check workflow_call inputs
     call = on_section.get("workflow_call", {})
@@ -327,14 +326,16 @@ def _parse_workflow_inputs(on_section: Any) -> list[dict[str, Any]]:
         if isinstance(call_inputs, dict):
             for name, config in call_inputs.items():
                 if isinstance(config, dict):
-                    inputs.append({
-                        "name": name,
-                        "type": config.get("type", "string"),
-                        "required": config.get("required", False),
-                        "default": config.get("default", ""),
-                        "description": config.get("description", ""),
-                        "source": "workflow_call",
-                    })
+                    inputs.append(
+                        {
+                            "name": name,
+                            "type": config.get("type", "string"),
+                            "required": config.get("required", False),
+                            "default": config.get("default", ""),
+                            "description": config.get("description", ""),
+                            "source": "workflow_call",
+                        }
+                    )
 
     return inputs
 
@@ -360,7 +361,7 @@ def _render_workflow_section(
     """Render a single workflow section."""
     name = workflow.get("name", filename.replace(".yml", ""))
     # YAML parses "on:" as True (boolean) due to YAML 1.1 quirk
-    on_section = workflow.get("on") or workflow.get(True) or {}
+    on_section = workflow.get("on") or workflow.get(True) or {}  # type: ignore[call-overload]
     triggers = _parse_workflow_triggers(on_section)
     inputs = _parse_workflow_inputs(on_section)
 
@@ -405,13 +406,15 @@ def _render_workflow_section(
 
     # Add inputs section if any
     if inputs:
-        lines.extend([
-            "",
-            "### Inputs",
-            "",
-            "| Input | Type | Required | Default | Description |",
-            "| ----- | ---- | -------- | ------- | ----------- |",
-        ])
+        lines.extend(
+            [
+                "",
+                "### Inputs",
+                "",
+                "| Input | Type | Required | Default | Description |",
+                "| ----- | ---- | -------- | ------- | ----------- |",
+            ]
+        )
         for inp in inputs:
             default = inp["default"]
             if default == "":
@@ -422,9 +425,7 @@ def _render_workflow_section(
                 default_str = f"`{default}`"
             req = "yes" if inp["required"] else "no"
             desc_text = _sanitize(str(inp["description"]))
-            lines.append(
-                f"| `{inp['name']}` | {inp['type']} | {req} | {default_str} | {desc_text} |"
-            )
+            lines.append(f"| `{inp['name']}` | {inp['type']} | {req} | {default_str} | {desc_text} |")
 
     lines.append("")
     lines.append("---")
@@ -466,9 +467,7 @@ def render_env_reference() -> str:
     for var in sorted_vars:
         default = var.default or "-"
         desc = _sanitize(var.description)
-        lines.append(
-            f"| `{var.name}` | {var.var_type} | {default} | {var.category} | {desc} |"
-        )
+        lines.append(f"| `{var.name}` | {var.var_type} | {default} | {var.category} | {desc} |")
 
     # Add category sections
     categories: dict[str, list] = {}
@@ -485,41 +484,45 @@ def render_env_reference() -> str:
         lines.extend([f"## {cat} Variables", ""])
 
         for var in categories[cat]:
-            lines.extend([
-                f"### `{var.name}`",
-                "",
-                f"**Type:** {var.var_type}  ",
-                f"**Default:** {var.default or '(none)'}",
-                "",
-                var.description,
-                "",
-            ])
+            lines.extend(
+                [
+                    f"### `{var.name}`",
+                    "",
+                    f"**Type:** {var.var_type}  ",
+                    f"**Default:** {var.default or '(none)'}",
+                    "",
+                    var.description,
+                    "",
+                ]
+            )
 
     # Add usage examples
-    lines.extend([
-        "---",
-        "",
-        "## Usage Examples",
-        "",
-        "### Enable Debug Output",
-        "",
-        "```bash",
-        "CIHUB_DEBUG=true CIHUB_VERBOSE=true cihub check",
-        "```",
-        "",
-        "### Generate Triage Bundles",
-        "",
-        "```bash",
-        "CIHUB_EMIT_TRIAGE=true cihub ci",
-        "```",
-        "",
-        "### Skip a Specific Tool",
-        "",
-        "```bash",
-        "CIHUB_RUN_MUTMUT=false cihub check --all",
-        "```",
-        "",
-    ])
+    lines.extend(
+        [
+            "---",
+            "",
+            "## Usage Examples",
+            "",
+            "### Enable Debug Output",
+            "",
+            "```bash",
+            "CIHUB_DEBUG=true CIHUB_VERBOSE=true cihub check",
+            "```",
+            "",
+            "### Generate Triage Bundles",
+            "",
+            "```bash",
+            "CIHUB_EMIT_TRIAGE=true cihub ci",
+            "```",
+            "",
+            "### Skip a Specific Tool",
+            "",
+            "```bash",
+            "CIHUB_RUN_MUTMUT=false cihub check --all",
+            "```",
+            "",
+        ]
+    )
 
     return "\n".join(lines)
 
@@ -556,11 +559,14 @@ def render_workflows_reference() -> str:
         except yaml.YAMLError:
             continue
 
-        desc = WORKFLOW_DESCRIPTIONS.get(filename, {
-            "purpose": "Custom workflow",
-            "when_to_use": "See workflow comments.",
-            "target": "-",
-        })
+        desc = WORKFLOW_DESCRIPTIONS.get(
+            filename,
+            {
+                "purpose": "Custom workflow",
+                "when_to_use": "See workflow comments.",
+                "target": "-",
+            },
+        )
 
         # YAML parses "on:" as True (boolean) due to YAML 1.1 quirk
         on_section = content.get("on") or content.get(True) or {}
@@ -584,14 +590,16 @@ def render_workflows_reference() -> str:
         lines.append(_render_workflow_section(filename, content, desc))
 
     # Add related docs
-    lines.extend([
-        "## Related Documentation",
-        "",
-        "- [WORKFLOWS.md (Guide)](../guides/WORKFLOWS.md) - Usage guidance and setup",
-        "- [CONFIG.md](CONFIG.md) - Configuration reference",
-        "- [CLI.md](CLI.md) - CLI command reference",
-        "- [TOOLS.md](TOOLS.md) - Tool documentation",
-        "",
-    ])
+    lines.extend(
+        [
+            "## Related Documentation",
+            "",
+            "- [WORKFLOWS.md (Guide)](../guides/WORKFLOWS.md) - Usage guidance and setup",
+            "- [CONFIG.md](CONFIG.md) - Configuration reference",
+            "- [CLI.md](CLI.md) - CLI command reference",
+            "- [TOOLS.md](TOOLS.md) - Tool documentation",
+            "",
+        ]
+    )
 
     return "\n".join(lines)

@@ -73,7 +73,7 @@ def list_repos(registry: dict[str, Any], *, hub_root_path: Path | None = None) -
         combined_overrides: dict[str, Any] = {}
         repo_fragment_thresholds = repo_fragment.get("thresholds")
         has_config_thresholds = isinstance(repo_fragment_thresholds, dict) and bool(repo_fragment_thresholds)
-        if has_config_thresholds:
+        if has_config_thresholds and repo_fragment_thresholds is not None:
             combined_overrides.update(repo_fragment_thresholds)
         combined_overrides.update(overrides)
 

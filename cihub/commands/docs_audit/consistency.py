@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import date
 from difflib import SequenceMatcher
 from pathlib import Path
@@ -163,9 +164,7 @@ def find_duplicate_tasks(repo_root: Path) -> tuple[list[DuplicateTaskGroup], lis
     findings: list[AuditFinding] = []
 
     for normalized_text, entries in groups.items():
-        duplicate_groups.append(
-            DuplicateTaskGroup(normalized_text=normalized_text, entries=entries)
-        )
+        duplicate_groups.append(DuplicateTaskGroup(normalized_text=normalized_text, entries=entries))
 
         # Create finding
         locations = ", ".join(f"{e.file}:{e.line}" for e in entries)
@@ -378,25 +377,61 @@ METRICS_PATTERNS = [
 
 # Keywords that indicate historical/delta context (not current-state claims)
 # Be specific with transition words to avoid false negatives
-METRICS_DELTA_KEYWORDS = frozenset([
-    "added", "add", "new", "created", "wrote", "introduced",
-    "removed", "deleted", "fixed", "updated", "changed", "migrated",
-    "+", "→", "->",
-    # Transition patterns (more specific than just "from"/"to")
-    "went from", "grew from", "increased from", "decreased from",
-    "changed from", "moved from", "upgraded from",
-])
+METRICS_DELTA_KEYWORDS = frozenset(
+    [
+        "added",
+        "add",
+        "new",
+        "created",
+        "wrote",
+        "introduced",
+        "removed",
+        "deleted",
+        "fixed",
+        "updated",
+        "changed",
+        "migrated",
+        "+",
+        "→",
+        "->",
+        # Transition patterns (more specific than just "from"/"to")
+        "went from",
+        "grew from",
+        "increased from",
+        "decreased from",
+        "changed from",
+        "moved from",
+        "upgraded from",
+    ]
+)
 
 # Keywords that indicate module/feature-specific context (not project-wide claims)
-METRICS_LOCAL_CONTEXT_KEYWORDS = frozenset([
-    "in test", "for test", "tests for", "tests in", "test file",
-    "in module", "for module", "module has", "modules,",
-    "modular", "modularized", "package",
-    "including", "of which", "across",
-    "test_", ".py",  # File references
-    "parameterized", "hypothesis", "property-based",  # Test type descriptors
-    "cihub docs", "cihub hub-ci",  # Module-specific command references
-])
+METRICS_LOCAL_CONTEXT_KEYWORDS = frozenset(
+    [
+        "in test",
+        "for test",
+        "tests for",
+        "tests in",
+        "test file",
+        "in module",
+        "for module",
+        "module has",
+        "modules,",
+        "modular",
+        "modularized",
+        "package",
+        "including",
+        "of which",
+        "across",
+        "test_",
+        ".py",  # File references
+        "parameterized",
+        "hypothesis",
+        "property-based",  # Test type descriptors
+        "cihub docs",
+        "cihub hub-ci",  # Module-specific command references
+    ]
+)
 
 # Drift thresholds
 METRICS_WARN_THRESHOLD = 0.10  # 10% drift = warning
@@ -432,10 +467,7 @@ def _count_cli_commands(repo_root: Path) -> int:
             # Pattern 2: Helper function calls that add parsers with variable names
             # e.g., _add_preflight_parser(..., "preflight", "Check env")
             # Look for function calls with string command names as arguments
-            helper_calls = re.findall(
-                r'_add_\w+_parser\([^)]*,\s*["\']([^"\']+)["\']',
-                content
-            )
+            helper_calls = re.findall(r'_add_\w+_parser\([^)]*,\s*["\']([^"\']+)["\']', content)
             count += len(helper_calls)
 
         except (OSError, UnicodeDecodeError):
@@ -622,10 +654,10 @@ def find_stale_metrics(repo_root: Path) -> list[AuditFinding]:
 # Map task patterns to verification checks
 # Key: lowercase pattern to match in task text
 # Value: callable that returns True if the work is done
-CHECKLIST_VERIFICATIONS: dict[str, tuple[str, callable]] = {}
+CHECKLIST_VERIFICATIONS: dict[str, tuple[str, Callable[[], bool]]] = {}
 
 
-def _register_checklist_verifications(repo_root: Path) -> dict[str, tuple[str, callable]]:
+def _register_checklist_verifications(repo_root: Path) -> dict[str, tuple[str, Callable[[], bool]]]:
     """Build checklist verification map based on repo structure.
 
     Returns dict mapping task patterns to (description, verifier) tuples.
@@ -658,9 +690,9 @@ def _register_checklist_verifications(repo_root: Path) -> dict[str, tuple[str, c
         ),
         "github context": (
             "GitHubContext helper exists",
-            lambda: _file_contains(
-                repo_root / "cihub/utils/github_context.py", "class GitHubContext"
-            ) if (repo_root / "cihub/utils/github_context.py").is_file() else False,
+            lambda: _file_contains(repo_root / "cihub/utils/github_context.py", "class GitHubContext")
+            if (repo_root / "cihub/utils/github_context.py").is_file()
+            else False,
         ),
     }
 

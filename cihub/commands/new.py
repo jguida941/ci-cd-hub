@@ -178,8 +178,7 @@ def cmd_new(args: argparse.Namespace) -> CommandResult:
                 exit_code=EXIT_FAILURE,
                 summary=result.errors[0] if result.errors else "Failed to create repo",
                 problems=[
-                    {"severity": "error", "message": e, "code": "CIHUB-NEW-REGISTRY-ERROR"}
-                    for e in result.errors
+                    {"severity": "error", "message": e, "code": "CIHUB-NEW-REGISTRY-ERROR"} for e in result.errors
                 ],
             )
         if args.dry_run:

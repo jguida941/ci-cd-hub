@@ -66,7 +66,7 @@ def cmd_yamllint(args: argparse.Namespace) -> CommandResult:
     """Run yamllint across hub YAML configs."""
     config = getattr(args, "config", None)
     if not config:
-        config = '{extends: relaxed, rules: {line-length: disable}}'
+        config = "{extends: relaxed, rules: {line-length: disable}}"
 
     cmd = ["yamllint", "-d", str(config), *list(getattr(args, "paths", []))]
 
@@ -190,8 +190,7 @@ def cmd_validate_configs(args: argparse.Namespace) -> CommandResult:
             )
     else:
         repos = [
-            path.relative_to(configs_dir).with_suffix("").as_posix()
-            for path in sorted(configs_dir.rglob("*.yaml"))
+            path.relative_to(configs_dir).with_suffix("").as_posix() for path in sorted(configs_dir.rglob("*.yaml"))
         ]
 
     validated: list[str] = []

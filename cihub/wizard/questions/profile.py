@@ -121,7 +121,7 @@ def get_available_profiles(language: str, profiles_dir: Path | None = None) -> l
     if profiles_dir.exists():
         for profile_file in profiles_dir.glob(f"{prefix}*.yaml"):
             # Extract profile name from filename (e.g., python-fast.yaml -> fast)
-            name = profile_file.stem[len(prefix):]
+            name = profile_file.stem[len(prefix) :]
             # Skip tier profiles (those are threshold-only, not tool profiles)
             if name.startswith("tier-"):
                 continue
@@ -162,17 +162,19 @@ def select_profile(
         return None
 
     # Build choices with descriptions (load metadata from files)
-    choices = []
+    choices: list[dict[str, str | None]] = []
     prefix = f"{language}-"
 
     # Recommended first
     if "fast" in available:
         profile_path = profiles_dir / f"{prefix}fast.yaml"
         info = get_profile_info("fast", profile_path)
-        choices.append({
-            "name": f"Fast (Recommended) - {info.get('description', '')} ({info.get('runtime', '')})",
-            "value": "fast",
-        })
+        choices.append(
+            {
+                "name": f"Fast (Recommended) - {info.get('description', '')} ({info.get('runtime', '')})",
+                "value": "fast",
+            }
+        )
 
     # Other profiles
     for name in available:
@@ -184,10 +186,12 @@ def select_profile(
         choices.append({"name": display, "value": name})
 
     if allow_skip:
-        choices.append({
-            "name": "Start from scratch - Configure each tool individually",
-            "value": None,
-        })
+        choices.append(
+            {
+                "name": "Start from scratch - Configure each tool individually",
+                "value": None,
+            }
+        )
 
     result = questionary.select(
         "Select a CI profile (determines default tool selection):",
@@ -195,7 +199,7 @@ def select_profile(
         style=get_style(),
     ).ask()
 
-    return result
+    return result if result is None else str(result)
 
 
 def select_tier() -> str:

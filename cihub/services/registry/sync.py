@@ -404,13 +404,15 @@ def bootstrap_from_configs(
                 if isinstance(existing, dict):
                     existing_tier = existing.get("tier")
                     if existing_tier and existing_tier != default_tier:
-                        conflicts.append({
-                            "repo": repo_name,
-                            "field": "tier",
-                            "registry_value": existing_tier,
-                            "config_value": default_tier,
-                            "resolution": "kept registry value",
-                        })
+                        conflicts.append(
+                            {
+                                "repo": repo_name,
+                                "field": "tier",
+                                "registry_value": existing_tier,
+                                "config_value": default_tier,
+                                "resolution": "kept registry value",
+                            }
+                        )
                         # Keep existing tier when merging
                         default_tier_for_repo = existing_tier
                     else:
@@ -423,13 +425,15 @@ def bootstrap_from_configs(
                         if isinstance(existing_repo, dict):
                             existing_lang = existing_repo.get("language")
                     if existing_lang and config_lang and existing_lang != config_lang:
-                        conflicts.append({
-                            "repo": repo_name,
-                            "field": "language",
-                            "registry_value": existing_lang,
-                            "config_value": config_lang,
-                            "resolution": "kept registry value",
-                        })
+                        conflicts.append(
+                            {
+                                "repo": repo_name,
+                                "field": "language",
+                                "registry_value": existing_lang,
+                                "config_value": config_lang,
+                                "resolution": "kept registry value",
+                            }
+                        )
 
                     if config_fragment:
                         existing_fragment = _normalize_config_fragment(existing.get("config"))
@@ -453,13 +457,15 @@ def bootstrap_from_configs(
                                 existing_val = existing_overrides[key]
                                 config_val = config_thresholds_check[key]
                                 if existing_val != config_val:
-                                    conflicts.append({
-                                        "repo": repo_name,
-                                        "field": f"overrides.{key}",
-                                        "registry_value": existing_val,
-                                        "config_value": config_val,
-                                        "resolution": "kept registry value",
-                                    })
+                                    conflicts.append(
+                                        {
+                                            "repo": repo_name,
+                                            "field": f"overrides.{key}",
+                                            "registry_value": existing_val,
+                                            "config_value": config_val,
+                                            "resolution": "kept registry value",
+                                        }
+                                    )
                 else:
                     default_tier_for_repo = default_tier
         else:

@@ -34,38 +34,46 @@ if TYPE_CHECKING:
     pass
 
 # Generated doc filenames that should NOT have manual headers
-GENERATED_DOCS = frozenset({
-    "CLI.md",
-    "CONFIG.md",
-    "WORKFLOWS.md",
-})
+GENERATED_DOCS = frozenset(
+    {
+        "CLI.md",
+        "CONFIG.md",
+        "WORKFLOWS.md",
+    }
+)
 
 # Directories containing generated or exempt docs
-EXEMPT_DIRS = frozenset({
-    "docs/reference",  # Generated reference docs
-    "docs/adr",  # ADRs have their own metadata format
-})
+EXEMPT_DIRS = frozenset(
+    {
+        "docs/reference",  # Generated reference docs
+        "docs/adr",  # ADRs have their own metadata format
+    }
+)
 
 # Docs that are exempt from header requirements (README files, etc.)
-EXEMPT_FILES = frozenset({
-    "README.md",
-    "CHANGELOG.md",
-})
+EXEMPT_FILES = frozenset(
+    {
+        "README.md",
+        "CHANGELOG.md",
+    }
+)
 
 # Max lines to scan for header block
 HEADER_SCAN_LINES = 30
 
 # Valid header field names (case-insensitive matching)
-VALID_HEADER_FIELD_NAMES = frozenset({
-    "status",
-    "owner",
-    "source-of-truth",
-    "last-reviewed",
-    "superseded-by",
-    "priority",
-    "depends-on",
-    "can-parallel",
-})
+VALID_HEADER_FIELD_NAMES = frozenset(
+    {
+        "status",
+        "owner",
+        "source-of-truth",
+        "last-reviewed",
+        "superseded-by",
+        "priority",
+        "depends-on",
+        "can-parallel",
+    }
+)
 
 
 def is_exempt_doc(file_path: Path, repo_root: Path) -> tuple[bool, str]:
@@ -222,9 +230,7 @@ def parse_doc_header(content: str) -> dict[str, str]:
     return headers
 
 
-def validate_header_value(
-    field: str, value: str, file_path: str
-) -> list[AuditFinding]:
+def validate_header_value(field: str, value: str, file_path: str) -> list[AuditFinding]:
     """Validate a header field value.
 
     Args:
@@ -242,19 +248,13 @@ def validate_header_value(
         # Check if value starts with a valid status (case-insensitive)
         # This allows "ACTIVE - description" to match "active"
         value_lower = value.lower()
-        is_valid = any(
-            value_lower == s.lower() or value_lower.startswith(s.lower() + " ")
-            for s in DOC_VALID_STATUSES
-        )
+        is_valid = any(value_lower == s.lower() or value_lower.startswith(s.lower() + " ") for s in DOC_VALID_STATUSES)
         if not is_valid:
             findings.append(
                 AuditFinding(
                     severity=FindingSeverity.WARNING,
                     category=FindingCategory.HEADER,
-                    message=(
-                        f"Invalid Status value '{value}'. "
-                        f"Valid: {', '.join(sorted(DOC_VALID_STATUSES))}"
-                    ),
+                    message=(f"Invalid Status value '{value}'. Valid: {', '.join(sorted(DOC_VALID_STATUSES))}"),
                     file=file_path,
                     code="CIHUB-HEADER-INVALID-STATUS",
                     suggestion=f"Use one of: {', '.join(sorted(DOC_VALID_STATUSES))}",
@@ -267,10 +267,7 @@ def validate_header_value(
                 AuditFinding(
                     severity=FindingSeverity.WARNING,
                     category=FindingCategory.HEADER,
-                    message=(
-                        f"Invalid Source-of-truth value '{value}'. "
-                        f"Valid: {', '.join(sorted(DOC_VALID_SOURCES))}"
-                    ),
+                    message=(f"Invalid Source-of-truth value '{value}'. Valid: {', '.join(sorted(DOC_VALID_SOURCES))}"),
                     file=file_path,
                     code="CIHUB-HEADER-INVALID-SOURCE",
                     suggestion=f"Use one of: {', '.join(sorted(DOC_VALID_SOURCES))}",
@@ -284,10 +281,7 @@ def validate_header_value(
                 AuditFinding(
                     severity=FindingSeverity.WARNING,
                     category=FindingCategory.HEADER,
-                    message=(
-                        f"Invalid Last-reviewed date format '{value}'. "
-                        "Expected: YYYY-MM-DD"
-                    ),
+                    message=(f"Invalid Last-reviewed date format '{value}'. Expected: YYYY-MM-DD"),
                     file=file_path,
                     code="CIHUB-HEADER-INVALID-DATE",
                     suggestion="Use date format: YYYY-MM-DD (e.g., 2026-01-09)",
@@ -350,10 +344,7 @@ def validate_doc_headers(repo_root: Path) -> list[AuditFinding]:
                     message="Missing universal header block",
                     file=rel_path,
                     code="CIHUB-HEADER-MISSING-BLOCK",
-                    suggestion=(
-                        "Add header block at top: Status, Owner, "
-                        "Source-of-truth, Last-reviewed"
-                    ),
+                    suggestion=("Add header block at top: Status, Owner, Source-of-truth, Last-reviewed"),
                 )
             )
             continue
@@ -374,16 +365,10 @@ def validate_doc_headers(repo_root: Path) -> list[AuditFinding]:
                 AuditFinding(
                     severity=FindingSeverity.WARNING,
                     category=FindingCategory.HEADER,
-                    message=(
-                        f"Incomplete header block - missing: "
-                        f"{', '.join(sorted(missing_fields))}"
-                    ),
+                    message=(f"Incomplete header block - missing: {', '.join(sorted(missing_fields))}"),
                     file=rel_path,
                     code="CIHUB-HEADER-INCOMPLETE",
-                    suggestion=(
-                        "Complete header block with: Status, Owner, "
-                        "Source-of-truth, Last-reviewed"
-                    ),
+                    suggestion=("Complete header block with: Status, Owner, Source-of-truth, Last-reviewed"),
                 )
             )
 

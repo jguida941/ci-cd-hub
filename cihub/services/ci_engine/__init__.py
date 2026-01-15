@@ -127,6 +127,7 @@ def __getattr__(name: str) -> Any:
         return dict(get_runners("java"))  # Return copy for isolation
     if name in _RUNNER_COMPAT_MAP:
         from cihub.tools.registry import get_runner
+
         lang, tool = _RUNNER_COMPAT_MAP[name]
         runner = get_runner(tool, lang)
         if runner is None:
@@ -287,10 +288,7 @@ def run_ci(
     # -------------------------------------------------------------------------
     all_tools = get_all_tools_from_config(config, language)
     # Custom tools (x-* prefix) default to enabled=True per schema; built-in tools default to False
-    tools_configured = {
-        tool: _tool_enabled(config, tool, language, default=is_custom_tool(tool))
-        for tool in all_tools
-    }
+    tools_configured = {tool: _tool_enabled(config, tool, language, default=is_custom_tool(tool)) for tool in all_tools}
     tools_require_run = {tool: _tool_requires_run_or_fail(tool, config, language) for tool in all_tools}
 
     # -------------------------------------------------------------------------

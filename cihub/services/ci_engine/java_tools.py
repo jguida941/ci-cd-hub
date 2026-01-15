@@ -95,10 +95,7 @@ def _run_java_tools(
             if tool_args.get("needs_build_tool"):
                 # Tools that need build_tool parameter: pitest, checkstyle, spotbugs, pmd
                 if tool == "owasp":
-                    result = runner(
-                        workdir_path, output_dir, build_tool,
-                        tool_args.get("use_nvd_api_key", True)
-                    )
+                    result = runner(workdir_path, output_dir, build_tool, tool_args.get("use_nvd_api_key", True))
                 else:
                     result = runner(workdir_path, output_dir, build_tool)
             elif tool == "sbom":

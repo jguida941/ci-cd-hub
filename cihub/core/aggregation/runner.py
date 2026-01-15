@@ -207,9 +207,7 @@ def _classify_runs(
         or (r.get("status") == "completed" and r.get("conclusion") != "success")
         or r.get("status") not in ("completed",)
     ]
-    passed_runs = [
-        r for r in results if r.get("status") == "completed" and r.get("conclusion") == "success"
-    ]
+    passed_runs = [r for r in results if r.get("status") == "completed" and r.get("conclusion") == "success"]
     return passed_runs, failed_runs
 
 
@@ -397,9 +395,7 @@ def run_aggregation(
     )
 
     # Classify runs using shared helper
-    passed_runs, failed_runs = _classify_runs(
-        results, ("missing_run_id", "fetch_failed", "timed_out")
-    )
+    passed_runs, failed_runs = _classify_runs(results, ("missing_run_id", "fetch_failed", "timed_out"))
 
     # Custom formatter for dispatch failures
     def _format_dispatch_failure(r: dict[str, Any]) -> str:

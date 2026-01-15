@@ -28,12 +28,8 @@ def _normalize_config_fragment(fragment: Any) -> dict[str, Any]:
         return {}
 
     original_thresholds = fragment.get("thresholds")
-    original_has_trivy_cvss = (
-        isinstance(original_thresholds, dict) and "trivy_cvss_fail" in original_thresholds
-    )
-    original_has_owasp_cvss = (
-        isinstance(original_thresholds, dict) and "owasp_cvss_fail" in original_thresholds
-    )
+    original_has_trivy_cvss = isinstance(original_thresholds, dict) and "trivy_cvss_fail" in original_thresholds
+    original_has_owasp_cvss = isinstance(original_thresholds, dict) and "owasp_cvss_fail" in original_thresholds
 
     normalized = normalize_config(fragment, apply_thresholds_profile=False)
 
@@ -65,7 +61,7 @@ def _merge_config_layers(layers: list[dict[str, Any]]) -> dict[str, Any]:
 def _values_equal(a: Any, b: Any) -> bool:
     if type(a) is not type(b):
         return False
-    return a == b
+    return bool(a == b)
 
 
 def _collect_sparse_config_diffs(
@@ -227,9 +223,7 @@ def _get_managed_config_top_level_keys(*, hub_root_path: Path | None = None) -> 
     }
 
 
-def _get_config_schema_top_level_keys(
-    *, hub_root_path: Path | None = None
-) -> tuple[set[str], str | None]:
+def _get_config_schema_top_level_keys(*, hub_root_path: Path | None = None) -> tuple[set[str], str | None]:
     """Return (schema_top_level_keys, error_message)."""
     root = hub_root_path or _registry_paths.get_hub_root()
     schema_path = root / "schema" / "ci-hub-config.schema.json"
@@ -571,12 +565,14 @@ def compute_diff(
 
             # Merge fragments: defaults -> profile -> tier (with tier thresholds) -> repo
             repo_fragment = _normalize_config_fragment(repo_cfg.get("config"))
-            expected_config = _merge_config_layers([
-                defaults_cfg,
-                profile_cfg,
-                tier_fragment,
-                repo_fragment,
-            ])
+            expected_config = _merge_config_layers(
+                [
+                    defaults_cfg,
+                    profile_cfg,
+                    tier_fragment,
+                    repo_fragment,
+                ]
+            )
 
             # Apply repo explicit overrides last (highest precedence)
             expected_thresholds = expected_config.setdefault("thresholds", {})

@@ -103,7 +103,7 @@ def parse_status_md_entries(repo_root: Path) -> list[str]:
         # Parse table rows
         if in_active_table and table_started and line.startswith("|"):
             # Extract links from table row: [Name](../active/FILE.md)
-            link_pattern = re.compile(r'\[([^\]]+)\]\(\.\./active/([^)]+\.md)\)')
+            link_pattern = re.compile(r"\[([^\]]+)\]\(\.\./active/([^)]+\.md)\)")
             for match in link_pattern.finditer(line):
                 filename = match.group(2)
                 entries.append(filename)
@@ -203,14 +203,14 @@ def check_archive_superseded_headers(
     # Using \** to match zero or more asterisks flexibly around each word
     # Using [\s-]+ to match space or hyphen between "superseded" and "by"
     superseded_patterns = [
-        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*\[",              # Superseded by: [doc](path)
-        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?[\w.-]+\.md",   # Superseded by: DOC.md
+        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*\[",  # Superseded by: [doc](path)
+        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?[\w.-]+\.md",  # Superseded by: DOC.md
         r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?\.\.?/[\w./-]+\.md",  # ../active/FOO.md
-        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?docs/[\w./-]+\.md",   # docs/path/FILE.md
+        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?docs/[\w./-]+\.md",  # docs/path/FILE.md
         r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?[\w./-]+/[\w.-]+\.md",  # path/FILE.md
-        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*ADR",             # ADR-0001
-        r"(?i)\**replaced\**[\s-]+\**by\**:?\**\s*\[",                # Replaced by: [doc]
-        r"(?i)see:?\s*\[[\w\s]+\]",                                   # See: [new doc]
+        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*ADR",  # ADR-0001
+        r"(?i)\**replaced\**[\s-]+\**by\**:?\**\s*\[",  # Replaced by: [doc]
+        r"(?i)see:?\s*\[[\w\s]+\]",  # See: [new doc]
     ]
 
     for doc_path in archive_docs:
@@ -244,9 +244,7 @@ def check_archive_superseded_headers(
             continue
 
         # Second check: has explicit superseding reference (not just "Status: archived")
-        has_explicit_reference = any(
-            re.search(pattern, header_text) for pattern in superseded_patterns
-        )
+        has_explicit_reference = any(re.search(pattern, header_text) for pattern in superseded_patterns)
 
         if not has_explicit_reference:
             findings.append(

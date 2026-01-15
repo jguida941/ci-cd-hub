@@ -30,11 +30,13 @@ def _wizard_add() -> CommandResult:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="questionary not installed (pip install questionary)",
-            problems=[{
-                "severity": "error",
-                "message": "Interactive mode requires questionary",
-                "code": "CIHUB-REGISTRY-NO-QUESTIONARY",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Interactive mode requires questionary",
+                    "code": "CIHUB-REGISTRY-NO-QUESTIONARY",
+                }
+            ],
         )
 
     try:
@@ -55,11 +57,13 @@ def _wizard_add() -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_USAGE,
                 summary="Repository name cannot be empty",
-                problems=[{
-                    "severity": "error",
-                    "message": "Repository name is required",
-                    "code": "CIHUB-REGISTRY-EMPTY-NAME",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": "Repository name is required",
+                        "code": "CIHUB-REGISTRY-EMPTY-NAME",
+                    }
+                ],
             )
 
         repo_name = repo_name.strip()
@@ -67,11 +71,13 @@ def _wizard_add() -> CommandResult:
             return CommandResult(
                 exit_code=EXIT_FAILURE,
                 summary=f"Repo already exists: {repo_name}",
-                problems=[{
-                    "severity": "error",
-                    "message": f"Repo '{repo_name}' already in registry. Use 'registry set' to modify.",
-                    "code": "CIHUB-REGISTRY-EXISTS",
-                }],
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": f"Repo '{repo_name}' already in registry. Use 'registry set' to modify.",
+                        "code": "CIHUB-REGISTRY-EXISTS",
+                    }
+                ],
             )
 
         # Prompt for tier (select from available)
@@ -223,11 +229,13 @@ def _cmd_add(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="--wizard is not supported with --json",
-            problems=[{
-                "severity": "error",
-                "message": "Interactive mode (--wizard) cannot be used with --json output",
-                "code": "CIHUB-REGISTRY-WIZARD-JSON",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Interactive mode (--wizard) cannot be used with --json output",
+                    "code": "CIHUB-REGISTRY-WIZARD-JSON",
+                }
+            ],
         )
 
     # Wizard mode
@@ -239,11 +247,13 @@ def _cmd_add(args: argparse.Namespace) -> CommandResult:
         return CommandResult(
             exit_code=EXIT_USAGE,
             summary="Repository name required (or use --wizard)",
-            problems=[{
-                "severity": "error",
-                "message": "Repository name is required. Use --wizard for interactive mode.",
-                "code": "CIHUB-REGISTRY-NO-NAME",
-            }],
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Repository name is required. Use --wizard for interactive mode.",
+                    "code": "CIHUB-REGISTRY-NO-NAME",
+                }
+            ],
         )
 
     tier = args.tier

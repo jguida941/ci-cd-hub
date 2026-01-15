@@ -282,6 +282,7 @@ def _extract_tool_config(config: dict, language: str, tool: str) -> dict:
 # Python Tool Adapters
 # -----------------------------------------------------------------------------
 
+
 def _pytest_config(config: dict, language: str) -> dict[str, Any]:
     """Extract pytest-specific runner arguments."""
     cfg = _extract_tool_config(config, language, "pytest")
@@ -318,6 +319,7 @@ def _docker_config(config: dict, language: str) -> dict[str, Any]:
 # -----------------------------------------------------------------------------
 # Java Tool Adapters
 # -----------------------------------------------------------------------------
+
 
 def _owasp_config(config: dict, language: str) -> dict[str, Any]:
     """Extract OWASP-specific runner arguments."""
@@ -538,6 +540,7 @@ def _load_python_runners() -> dict[str, Callable[..., Any]]:
         run_semgrep,
         run_trivy,
     )
+
     _PYTHON_RUNNER_CACHE = {
         "pytest": run_pytest,
         "ruff": run_ruff,
@@ -578,6 +581,7 @@ def _load_java_runners() -> dict[str, Callable[..., Any]]:
         run_spotbugs,
         run_trivy,
     )
+
     _JAVA_RUNNER_CACHE = {
         "build": run_java_build,  # Special: not in JAVA_TOOLS but needed for execution
         "jacoco": run_jacoco,
@@ -676,9 +680,7 @@ def get_all_tools_from_config(config: dict[str, Any], language: str) -> list[str
     return list(builtin) + custom
 
 
-def is_tool_enabled(
-    config: dict[str, Any], tool: str, language: str, *, default: bool = False
-) -> bool:
+def is_tool_enabled(config: dict[str, Any], tool: str, language: str, *, default: bool = False) -> bool:
     """Check if a tool is enabled in config.
 
     Aligned with canonical tool_enabled in cihub/config/normalize.py.
