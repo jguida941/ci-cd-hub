@@ -138,6 +138,13 @@
           <groupId>org.pitest</groupId>
           <artifactId>pitest-maven</artifactId>
           <version>1.15.3</version>
+          <configuration>
+            <!-- XML output required for cihub to parse mutation score -->
+            <outputFormats>
+              <outputFormat>XML</outputFormat>
+              <outputFormat>HTML</outputFormat>
+            </outputFormats>
+          </configuration>
           <dependencies>
             <dependency>
               <groupId>org.pitest</groupId>
