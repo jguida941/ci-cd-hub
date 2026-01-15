@@ -22,9 +22,10 @@ from cihub.tools.registry import (
     PYTHON_SUMMARY_MAP,
     PYTHON_TOOL_METRICS,
 )
+from cihub.utils.paths import hub_root
 
-# Path to the JSON schema file (relative to package root)
-_SCHEMA_PATH = Path(__file__).parent.parent.parent / "schema" / "ci-report.v2.json"
+# Path to the JSON schema file (uses hub_root() for PyPI compatibility)
+_SCHEMA_PATH = hub_root() / "schema" / "ci-report.v2.json"
 _SCHEMA_CACHE: dict[str, Any] | None = None
 
 
