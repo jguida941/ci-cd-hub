@@ -82,7 +82,7 @@ def test_setup_rejects_json_cleanly(capsys, tmp_path: Path) -> None:
 def _write_min_ci_hub_config(repo_path: Path) -> None:
     """Write a minimal valid .ci-hub.yml for validate/config-outputs tests."""
     (repo_path / ".ci-hub.yml").write_text(
-        '\n'.join(
+        "\n".join(
             [
                 'version: "1.0"',
                 "repo:",
@@ -133,5 +133,3 @@ def test_representative_commands_json_pure(capsys, tmp_path: Path, argv: list[st
     assert isinstance(code, int)
     payload = _assert_single_json_payload(captured.out)
     assert payload.get("command") == expected_command
-
-
