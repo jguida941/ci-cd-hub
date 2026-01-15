@@ -242,11 +242,17 @@ class TestToolAdapters:
         """docker adapter extracts compose_file, health_endpoint, health_timeout."""
         from cihub.tools.registry import get_tool_runner_args
 
-        config = {"python": {"tools": {"docker": {
-            "compose_file": "docker-compose.test.yml",
-            "health_endpoint": "/health",
-            "health_timeout": 120,
-        }}}}
+        config = {
+            "python": {
+                "tools": {
+                    "docker": {
+                        "compose_file": "docker-compose.test.yml",
+                        "health_endpoint": "/health",
+                        "health_timeout": 120,
+                    }
+                }
+            }
+        }
         args = get_tool_runner_args(config, "docker", "python")
         assert args == {
             "compose_file": "docker-compose.test.yml",

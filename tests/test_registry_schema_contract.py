@@ -151,5 +151,3 @@ def test_registry_schema_rejects_partial_owner_name_in_sparse_repo(repo_block: d
     }
     with pytest.raises(jsonschema.ValidationError):
         _get_registry_validator().validate(registry)
-
-

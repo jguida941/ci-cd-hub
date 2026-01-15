@@ -114,7 +114,7 @@ class TestSchemaValidation:
                     "pytest": True,
                     "ruff": {"enabled": True},
                 }
-            }
+            },
         }
         result = validate_config(config, paths)
         assert isinstance(result, list)

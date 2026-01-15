@@ -123,9 +123,7 @@ repo:
         repos_dir.mkdir(parents=True)
 
         # Create a minimal config in a nested directory.
-        (repos_dir / "nested.yaml").write_text(
-            "repo:\n  owner: test-owner\n  name: nested\n  language: python\n"
-        )
+        (repos_dir / "nested.yaml").write_text("repo:\n  owner: test-owner\n  name: nested\n  language: python\n")
 
         result = discover_repositories(tmp_path)
 

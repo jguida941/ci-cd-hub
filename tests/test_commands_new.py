@@ -454,9 +454,7 @@ class TestCmdNew:
             assert result.exit_code == 2
             assert "Confirmation required" in result.summary
 
-    def test_use_registry_dry_run_succeeds(
-        self, hub_paths: PathConfig, base_args: argparse.Namespace
-    ) -> None:
+    def test_use_registry_dry_run_succeeds(self, hub_paths: PathConfig, base_args: argparse.Namespace) -> None:
         """--use-registry with --dry-run returns preview without writing."""
         base_args.use_registry = True
         base_args.dry_run = True
@@ -483,9 +481,7 @@ class TestCmdNew:
                 _, kwargs = mock_create.call_args
                 assert kwargs["dry_run"] is True
 
-    def test_use_registry_with_tier(
-        self, hub_paths: PathConfig, base_args: argparse.Namespace
-    ) -> None:
+    def test_use_registry_with_tier(self, hub_paths: PathConfig, base_args: argparse.Namespace) -> None:
         """--use-registry with --tier passes tier to registry service."""
         base_args.use_registry = True
         base_args.tier = "strict"

@@ -128,11 +128,7 @@ class TestToolEnablement:
         """Missing tool should use default value."""
         from cihub.config import tool_enabled
 
-        config = {
-            "python": {
-                "tools": {}
-            }
-        }
+        config = {"python": {"tools": {}}}
         # Default is False for missing tools
         assert tool_enabled(config, "pytest", "python", default=False) is False
         assert tool_enabled(config, "pytest", "python", default=True) is True

@@ -120,11 +120,7 @@ class TestGetCustomToolCommand:
     """Tests for get_custom_tool_command function."""
 
     def test_returns_command(self) -> None:
-        config = {
-            "python": {
-                "tools": {"x-linter": {"command": "my-lint --check ."}}
-            }
-        }
+        config = {"python": {"tools": {"x-linter": {"command": "my-lint --check ."}}}}
         assert get_custom_tool_command(config, "x-linter", "python") == "my-lint --check ."
 
     def test_returns_none_for_builtin(self) -> None:
@@ -181,7 +177,7 @@ class TestCustomToolBehavior:
                     "pytest": True,  # built-in
                     "x-mycustomtool": {"command": "echo hello"},  # custom
                 }
-            }
+            },
         }
 
         # Custom tool should be detected
@@ -236,7 +232,7 @@ class TestCustomToolBehavior:
                         "require_run_or_fail": False,
                     },
                 }
-            }
+            },
         }
 
         # Custom tools should respect require_run_or_fail
@@ -275,7 +271,7 @@ class TestCustomToolBehavior:
                 "tools": {
                     "x-my-linter": {"command": "lint ."},
                 }
-            }
+            },
         }
         problems: list[dict] = []
 
@@ -325,15 +321,14 @@ class TestCustomToolBehavior:
                     "pytest": True,
                     "x-coverage": {"command": "coverage report"},
                 }
-            }
+            },
         }
 
         all_tools = get_all_tools_from_config(config, "python")
 
         # Build tools_configured the same way report/build.py does now
         tools_configured = {
-            tool: is_tool_enabled(config, tool, "python", default=is_custom_tool(tool))
-            for tool in all_tools
+            tool: is_tool_enabled(config, tool, "python", default=is_custom_tool(tool)) for tool in all_tools
         }
 
         # Built-in tool should be configured
@@ -385,7 +380,7 @@ class TestCustomToolExecution:
                 "tools": {
                     "x-my-checker": {"command": "echo success"},
                 }
-            }
+            },
         }
         problems: list[dict] = []
         runners: dict = {}
@@ -402,8 +397,7 @@ class TestCustomToolExecution:
         assert tool_outputs["x-my-checker"]["success"] is True
         # No error problems should be emitted for success
         error_problems = [
-            p for p in problems
-            if p.get("severity") == "error" and "x-my-checker" in p.get("message", "")
+            p for p in problems if p.get("severity") == "error" and "x-my-checker" in p.get("message", "")
         ]
         assert len(error_problems) == 0
 
@@ -435,7 +429,7 @@ class TestCustomToolExecution:
                         "fail_on_error": True,  # default
                     },
                 }
-            }
+            },
         }
         problems: list[dict] = []
         runners: dict = {}
@@ -451,8 +445,7 @@ class TestCustomToolExecution:
 
         # Should emit error severity (affects exit code)
         error_problems = [
-            p for p in problems
-            if p.get("severity") == "error" and "x-strict-checker" in p.get("message", "")
+            p for p in problems if p.get("severity") == "error" and "x-strict-checker" in p.get("message", "")
         ]
         assert len(error_problems) == 1
         assert "exit code 1" in error_problems[0]["message"]
@@ -485,7 +478,7 @@ class TestCustomToolExecution:
                         "fail_on_error": False,  # explicitly optional
                     },
                 }
-            }
+            },
         }
         problems: list[dict] = []
         runners: dict = {}
@@ -499,15 +492,10 @@ class TestCustomToolExecution:
         assert tools_success.get("x-optional-checker") is False
 
         # Should NOT emit any error or warning for this tool (fail_on_error=False)
-        tool_problems = [
-            p for p in problems
-            if "x-optional-checker" in p.get("message", "")
-        ]
+        tool_problems = [p for p in problems if "x-optional-checker" in p.get("message", "")]
         assert len(tool_problems) == 0
 
-    def test_custom_tool_missing_command_emits_warning(
-        self, tmp_workdir: Path, output_dir: Path
-    ) -> None:
+    def test_custom_tool_missing_command_emits_warning(self, tmp_workdir: Path, output_dir: Path) -> None:
         """Custom tool with no command configured should emit warning."""
         from cihub.services.ci_engine.python_tools import _run_python_tools
 
@@ -517,7 +505,7 @@ class TestCustomToolExecution:
                 "tools": {
                     "x-no-command": True,  # boolean, no command
                 }
-            }
+            },
         }
         problems: list[dict] = []
         runners: dict = {}
@@ -526,8 +514,7 @@ class TestCustomToolExecution:
 
         # Should emit warning about missing command
         warning_problems = [
-            p for p in problems
-            if p.get("severity") == "warning" and "x-no-command" in p.get("message", "")
+            p for p in problems if p.get("severity") == "warning" and "x-no-command" in p.get("message", "")
         ]
         assert len(warning_problems) == 1
         assert "no command configured" in warning_problems[0]["message"]
@@ -560,14 +547,12 @@ class TestCustomToolExecution:
                         "fail_on_error": False,  # Don't emit error for this test
                     },
                 }
-            }
+            },
         }
         problems: list[dict] = []
         runners: dict = {}
 
-        tool_outputs, _, _ = _run_python_tools(
-            config, tmp_workdir, ".", output_dir, problems, runners
-        )
+        tool_outputs, _, _ = _run_python_tools(config, tmp_workdir, ".", output_dir, problems, runners)
 
         # Returncode should be captured
         assert tool_outputs["x-exit-code-test"]["returncode"] == 42
@@ -594,7 +579,7 @@ class TestCustomToolExecution:
                         "fail_on_error": True,  # default
                     },
                 }
-            }
+            },
         }
         problems: list[dict] = []
         runners: dict = {}
@@ -603,8 +588,7 @@ class TestCustomToolExecution:
 
         # Should emit error severity (not warning) because fail_on_error=True
         error_problems = [
-            p for p in problems
-            if p.get("severity") == "error" and "x-required-tool" in p.get("message", "")
+            p for p in problems if p.get("severity") == "error" and "x-required-tool" in p.get("message", "")
         ]
         assert len(error_problems) == 1
         assert "nonexistent-binary" in error_problems[0]["message"]
@@ -630,7 +614,7 @@ class TestCustomToolExecution:
                         "fail_on_error": False,  # optional tool
                     },
                 }
-            }
+            },
         }
         problems: list[dict] = []
         runners: dict = {}
@@ -639,12 +623,10 @@ class TestCustomToolExecution:
 
         # Should emit warning (not error) because fail_on_error=False
         warning_problems = [
-            p for p in problems
-            if p.get("severity") == "warning" and "x-optional-tool" in p.get("message", "")
+            p for p in problems if p.get("severity") == "warning" and "x-optional-tool" in p.get("message", "")
         ]
         error_problems = [
-            p for p in problems
-            if p.get("severity") == "error" and "x-optional-tool" in p.get("message", "")
+            p for p in problems if p.get("severity") == "error" and "x-optional-tool" in p.get("message", "")
         ]
         assert len(warning_problems) == 1
         assert len(error_problems) == 0
@@ -705,8 +687,8 @@ class TestCustomToolExecutionJava:
                 "build_tool": "maven",
                 "tools": {
                     "x-java-checker": {"command": "echo success"},
-                }
-            }
+                },
+            },
         }
         problems: list[dict] = []
         runners: dict = {}
@@ -758,8 +740,8 @@ class TestCustomToolExecutionJava:
                         "command": "strict-check",
                         "fail_on_error": True,
                     },
-                }
-            }
+                },
+            },
         }
         problems: list[dict] = []
         runners: dict = {}
@@ -768,8 +750,7 @@ class TestCustomToolExecutionJava:
 
         # Should emit error severity
         error_problems = [
-            p for p in problems
-            if p.get("severity") == "error" and "x-strict-java" in p.get("message", "")
+            p for p in problems if p.get("severity") == "error" and "x-strict-java" in p.get("message", "")
         ]
         assert len(error_problems) == 1
 
@@ -807,8 +788,8 @@ class TestCustomToolExecutionJava:
                         "command": "missing-java-tool",
                         "fail_on_error": True,
                     },
-                }
-            }
+                },
+            },
         }
         problems: list[dict] = []
         runners: dict = {}
@@ -817,7 +798,6 @@ class TestCustomToolExecutionJava:
 
         # Should emit error severity for required tool that can't be found
         error_problems = [
-            p for p in problems
-            if p.get("severity") == "error" and "x-required-java" in p.get("message", "")
+            p for p in problems if p.get("severity") == "error" and "x-required-java" in p.get("message", "")
         ]
         assert len(error_problems) == 1

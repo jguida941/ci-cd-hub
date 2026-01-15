@@ -630,12 +630,7 @@ class TestHeaderValidation:
         docs_dir.mkdir(parents=True)
 
         doc_path = docs_dir / "PARTIAL.md"
-        doc_path.write_text(
-            "# Partial Headers\n\n"
-            "**Status:** active\n"
-            "**Owner:** Team A\n"
-            "\nContent here.\n"
-        )
+        doc_path.write_text("# Partial Headers\n\n**Status:** active\n**Owner:** Team A\n\nContent here.\n")
 
         findings = validate_doc_headers(tmp_path)
         # Should flag incomplete header block (missing Source-of-truth, Last-reviewed)
@@ -683,8 +678,7 @@ This document explains something important.
         headers = parse_doc_header(doc_with_intro_then_header)
         # The Status appearing after ANY content should NOT be captured
         assert "Status" not in headers, (
-            "Header parsing should stop at first non-header line; "
-            "found 'Status' after intro paragraph"
+            "Header parsing should stop at first non-header line; found 'Status' after intro paragraph"
         )
 
     def test_parse_header_block_finds_headers_at_top(self, tmp_path: Path) -> None:
@@ -716,11 +710,11 @@ class TestMetricsDrift:
         cli_dir.mkdir(parents=True)
 
         # Create a parser file with add_parser calls
-        parser_content = '''
+        parser_content = """
 def setup(subparsers):
     cmd1 = subparsers.add_parser("test-cmd", help="Test")
     cmd2 = subparsers.add_parser("another-cmd", help="Another")
-'''
+"""
         (cli_dir / "test.py").write_text(parser_content)
 
         count = _count_cli_commands(tmp_path)
@@ -734,7 +728,7 @@ def setup(subparsers):
         cli_dir.mkdir(parents=True)
 
         # Create a parser file with both direct and helper-based commands
-        parser_content = '''
+        parser_content = """
 def _add_preflight_parser(subparsers, name, help_text):
     parser = subparsers.add_parser(name, help=help_text)
     return parser
@@ -743,7 +737,7 @@ def setup(subparsers):
     detect = subparsers.add_parser("detect", help="Detect")
     _add_preflight_parser(subparsers, "preflight", "Check env")
     _add_preflight_parser(subparsers, "doctor", "Alias for preflight")
-'''
+"""
         (cli_dir / "core.py").write_text(parser_content)
 
         count = _count_cli_commands(tmp_path)

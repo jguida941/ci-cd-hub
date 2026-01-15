@@ -100,9 +100,7 @@ class TestRepoShow:
 class TestRepoUpdate:
     """Tests for repo update subcommand."""
 
-    def test_update_default_branch_uses_correct_field(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_update_default_branch_uses_correct_field(self, tmp_path: Path, monkeypatch) -> None:
         """Verify --default-branch writes to default_branch, not branch."""
         _write_registry(tmp_path, _base_registry())
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
@@ -173,9 +171,7 @@ class TestRepoUpdate:
         assert result.exit_code == EXIT_FAILURE
         assert result.problems[0]["code"] == "CIHUB-REPO-NAME-NEEDS-OWNER"
 
-    def test_update_owner_allowed_when_name_exists(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_update_owner_allowed_when_name_exists(self, tmp_path: Path, monkeypatch) -> None:
         """Verify --owner works when name already exists in config."""
         _write_registry(tmp_path, _base_registry())
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
@@ -229,9 +225,7 @@ class TestRepoMigrate:
         _write_registry(tmp_path, _base_registry())
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
 
-        args = argparse.Namespace(
-            source="alpha", dest="alpha-copy", delete_source=False, force=False
-        )
+        args = argparse.Namespace(source="alpha", dest="alpha-copy", delete_source=False, force=False)
         result = _cmd_migrate(args)
 
         assert result.exit_code == EXIT_SUCCESS
@@ -241,9 +235,7 @@ class TestRepoMigrate:
 
         # Mutate the copy's nested config
         registry["repos"]["alpha-copy"]["config"]["repo"]["owner"] = "modified"
-        (tmp_path / "config" / "registry.json").write_text(
-            json.dumps(registry), encoding="utf-8"
-        )
+        (tmp_path / "config" / "registry.json").write_text(json.dumps(registry), encoding="utf-8")
 
         # Re-read and verify original is unchanged
         registry = json.loads((tmp_path / "config" / "registry.json").read_text())
@@ -255,9 +247,7 @@ class TestRepoMigrate:
         _write_registry(tmp_path, _base_registry())
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
 
-        args = argparse.Namespace(
-            source="alpha", dest="alpha-renamed", delete_source=True, force=False
-        )
+        args = argparse.Namespace(source="alpha", dest="alpha-renamed", delete_source=True, force=False)
         result = _cmd_migrate(args)
 
         assert result.exit_code == EXIT_SUCCESS

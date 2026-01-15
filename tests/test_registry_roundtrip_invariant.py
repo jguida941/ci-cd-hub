@@ -259,4 +259,3 @@ def test_registry_sync_roundtrip_applies_tier_profile_and_diff_empty(tmp_path: P
     assert cfg["thresholds"]["coverage_min"] == 91
     assert cfg["thresholds"]["mutation_score_min"] == 81
     assert compute_diff(registry, configs_dir, hub_root_path=hub_root) == []
-

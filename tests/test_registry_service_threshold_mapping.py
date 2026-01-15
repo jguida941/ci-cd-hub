@@ -484,8 +484,7 @@ def test_compute_diff_flags_orphan_config_files(tmp_path: Path) -> None:
 
     diffs = compute_diff(registry, configs_dir)
     assert any(
-        d["repo"] == orphan_name and d["field"] == "registry_entry" and d["registry_value"] == "missing"
-        for d in diffs
+        d["repo"] == orphan_name and d["field"] == "registry_entry" and d["registry_value"] == "missing" for d in diffs
     )
 
 
@@ -548,9 +547,7 @@ def test_compute_diff_flags_unmanaged_top_level_keys(tmp_path: Path) -> None:
     registry["repos"] = {repo_name: {"tier": "standard"}}
 
     diffs = compute_diff(registry, configs_dir)
-    assert any(
-        d["repo"] == repo_name and d["field"] == "unmanaged_key.extra_tests" for d in diffs
-    )
+    assert any(d["repo"] == repo_name and d["field"] == "unmanaged_key.extra_tests" for d in diffs)
 
 
 def test_compute_diff_flags_unknown_top_level_keys_as_errors(tmp_path: Path) -> None:
@@ -585,10 +582,7 @@ def test_compute_diff_flags_unknown_top_level_keys_as_errors(tmp_path: Path) -> 
 
     diffs = compute_diff(registry, configs_dir)
     assert any(
-        d["repo"] == repo_name
-        and d["field"] == "unknown_key.typo_field"
-        and d["severity"] == "error"
-        for d in diffs
+        d["repo"] == repo_name and d["field"] == "unknown_key.typo_field" and d["severity"] == "error" for d in diffs
     )
 
 
@@ -623,6 +617,7 @@ def test_compute_diff_surfaces_schema_load_failure(tmp_path: Path) -> None:
 
     diffs = compute_diff(registry, configs_dir, hub_root_path=hub)
     assert any(d["repo"] == "<hub>" and d["field"] == "schema" and d["severity"] == "error" for d in diffs)
+
 
 def test_compute_diff_dedupes_unreadable_yaml_errors(tmp_path: Path) -> None:
     """Unreadable repo YAML should not produce duplicate config_file diffs."""
@@ -708,7 +703,6 @@ def test_compute_diff_reports_sparse_repo_config_values(tmp_path: Path) -> None:
     diffs = compute_diff(registry, configs_dir)
     fields = {(d["repo"], d["field"]) for d in diffs}
     assert (repo_name, "sparse.config.repo.dispatch_enabled") in fields
-
 
 
 def test_save_registry_drops_legacy_repo_metadata_fields_when_equal(tmp_path: Path) -> None:
@@ -1225,8 +1219,7 @@ def test_compute_diff_reports_would_create_for_missing_configs(tmp_path: Path) -
 
     # Should have a would_create diff entry
     would_create_diffs = [
-        d for d in diffs
-        if d.get("repo") == "missing-config-repo" and d.get("registry_value") == "would_create"
+        d for d in diffs if d.get("repo") == "missing-config-repo" and d.get("registry_value") == "would_create"
     ]
     assert len(would_create_diffs) == 1
     assert would_create_diffs[0]["field"] == "config_file"

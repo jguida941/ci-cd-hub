@@ -82,9 +82,7 @@ class TestListProfiles:
         _create_profile(profiles_dir, "python-standard", {})
         _create_profile(profiles_dir, "java-standard", {})
         _create_profile(profiles_dir, "tier-strict", {})
-        monkeypatch.setattr(
-            "cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir
-        )
+        monkeypatch.setattr("cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir)
 
         # Create args namespace
         class Args:
@@ -103,9 +101,7 @@ class TestListProfiles:
         _create_profile(profiles_dir, "python-standard", {})
         _create_profile(profiles_dir, "python-fast", {})
         _create_profile(profiles_dir, "java-standard", {})
-        monkeypatch.setattr(
-            "cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir
-        )
+        monkeypatch.setattr("cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir)
 
         class Args:
             language = "python"
@@ -123,9 +119,7 @@ class TestListProfiles:
         _create_profile(profiles_dir, "python-standard", {})
         _create_profile(profiles_dir, "tier-strict", {})
         _create_profile(profiles_dir, "tier-relaxed", {})
-        monkeypatch.setattr(
-            "cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir
-        )
+        monkeypatch.setattr("cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir)
 
         class Args:
             language = None
@@ -141,9 +135,7 @@ class TestListProfiles:
         """List command with no matches returns empty."""
         profiles_dir = tmp_path / "templates" / "profiles"
         _create_profile(profiles_dir, "python-standard", {})
-        monkeypatch.setattr(
-            "cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir
-        )
+        monkeypatch.setattr("cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir)
 
         class Args:
             language = "java"
@@ -166,9 +158,7 @@ class TestShowProfile:
             "python": {"tools": {"ruff": {"enabled": True}}},
         }
         _create_profile(profiles_dir, "python-standard", profile_content)
-        monkeypatch.setattr(
-            "cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir
-        )
+        monkeypatch.setattr("cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir)
 
         class Args:
             name = "python-standard"
@@ -184,9 +174,7 @@ class TestShowProfile:
         """Show returns error for nonexistent profile."""
         profiles_dir = tmp_path / "templates" / "profiles"
         profiles_dir.mkdir(parents=True)
-        monkeypatch.setattr(
-            "cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir
-        )
+        monkeypatch.setattr("cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir)
 
         class Args:
             name = "nonexistent"
@@ -203,9 +191,7 @@ class TestShowProfile:
         profiles_dir.mkdir(parents=True)
         bad_yaml = profiles_dir / "bad.yaml"
         bad_yaml.write_text("{ invalid: yaml: content:", encoding="utf-8")
-        monkeypatch.setattr(
-            "cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir
-        )
+        monkeypatch.setattr("cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir)
 
         class Args:
             name = "bad"
@@ -289,9 +275,7 @@ class TestProfileDispatcher:
         """Dispatcher routes to list command."""
         profiles_dir = tmp_path / "templates" / "profiles"
         profiles_dir.mkdir(parents=True)
-        monkeypatch.setattr(
-            "cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir
-        )
+        monkeypatch.setattr("cihub.commands.profile_cmd._get_profiles_dir", lambda: profiles_dir)
 
         class Args:
             subcommand = "list"

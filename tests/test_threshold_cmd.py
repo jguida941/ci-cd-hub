@@ -47,24 +47,18 @@ class TestThresholdGet:
         _write_registry(tmp_path, _base_registry())
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
 
-        args = argparse.Namespace(
-            key="coverage_min", repo=None, tier=None, effective=False
-        )
+        args = argparse.Namespace(key="coverage_min", repo=None, tier=None, effective=False)
         result = _cmd_get(args)
 
         assert result.exit_code == EXIT_SUCCESS
         assert result.data["value"] == 70  # default
         assert result.data["default"] == 70
 
-    def test_get_repo_effective_shows_tier_inheritance(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_get_repo_effective_shows_tier_inheritance(self, tmp_path: Path, monkeypatch) -> None:
         _write_registry(tmp_path, _base_registry())
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
 
-        args = argparse.Namespace(
-            key="coverage_min", repo="beta", tier=None, effective=True
-        )
+        args = argparse.Namespace(key="coverage_min", repo="beta", tier=None, effective=True)
         result = _cmd_get(args)
 
         assert result.exit_code == EXIT_SUCCESS
@@ -72,17 +66,13 @@ class TestThresholdGet:
         # beta is in strict tier which has coverage_min=90
         assert result.data["value"] == 90
 
-    def test_get_repo_raw_shows_overrides_only(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_get_repo_raw_shows_overrides_only(self, tmp_path: Path, monkeypatch) -> None:
         """Verify --effective=False returns raw overrides, not effective values."""
         _write_registry(tmp_path, _base_registry())
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
 
         # gamma has override coverage_min=80
-        args = argparse.Namespace(
-            key="coverage_min", repo="gamma", tier=None, effective=False
-        )
+        args = argparse.Namespace(key="coverage_min", repo="gamma", tier=None, effective=False)
         result = _cmd_get(args)
 
         assert result.exit_code == EXIT_SUCCESS
@@ -90,17 +80,13 @@ class TestThresholdGet:
         assert result.data["value"] == 80
         assert result.data["is_override"] is True
 
-    def test_get_repo_raw_returns_none_when_not_overridden(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_get_repo_raw_returns_none_when_not_overridden(self, tmp_path: Path, monkeypatch) -> None:
         """Verify raw mode returns None for non-overridden thresholds."""
         _write_registry(tmp_path, _base_registry())
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
 
         # alpha has no overrides
-        args = argparse.Namespace(
-            key="coverage_min", repo="alpha", tier=None, effective=False
-        )
+        args = argparse.Namespace(key="coverage_min", repo="alpha", tier=None, effective=False)
         result = _cmd_get(args)
 
         assert result.exit_code == EXIT_SUCCESS
@@ -112,9 +98,7 @@ class TestThresholdGet:
         _write_registry(tmp_path, _base_registry())
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
 
-        args = argparse.Namespace(
-            key="invalid_threshold", repo=None, tier=None, effective=False
-        )
+        args = argparse.Namespace(key="invalid_threshold", repo=None, tier=None, effective=False)
         result = _cmd_get(args)
 
         assert result.exit_code == EXIT_FAILURE
@@ -144,9 +128,7 @@ class TestThresholdSet:
         registry = json.loads((tmp_path / "config" / "registry.json").read_text())
         assert registry["repos"]["alpha"]["overrides"]["coverage_min"] == 85
 
-    def test_set_sparse_storage_skips_default_value(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_set_sparse_storage_skips_default_value(self, tmp_path: Path, monkeypatch) -> None:
         """Verify setting a value equal to effective default doesn't store it."""
         _write_registry(tmp_path, _base_registry())
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
@@ -168,9 +150,7 @@ class TestThresholdSet:
         registry = json.loads((tmp_path / "config" / "registry.json").read_text())
         assert "overrides" not in registry["repos"]["alpha"]
 
-    def test_set_sparse_storage_removes_redundant_override(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_set_sparse_storage_removes_redundant_override(self, tmp_path: Path, monkeypatch) -> None:
         """Verify setting value equal to default removes existing override."""
         _write_registry(tmp_path, _base_registry())
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
@@ -244,9 +224,7 @@ class TestThresholdReset:
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
 
         # gamma has coverage_min override
-        args = argparse.Namespace(
-            key="coverage_min", repo="gamma", tier=None, all_repos=False
-        )
+        args = argparse.Namespace(key="coverage_min", repo="gamma", tier=None, all_repos=False)
         result = _cmd_reset(args)
 
         assert result.exit_code == EXIT_SUCCESS
@@ -270,8 +248,6 @@ class TestThresholdCompare:
 
         assert result.exit_code == EXIT_SUCCESS
         assert len(result.data["differences"]) > 0
-        coverage_diff = next(
-            d for d in result.data["differences"] if d["key"] == "coverage_min"
-        )
+        coverage_diff = next(d for d in result.data["differences"] if d["key"] == "coverage_min")
         assert coverage_diff["repo1_value"] == 70
         assert coverage_diff["repo2_value"] == 80
