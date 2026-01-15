@@ -1146,6 +1146,24 @@
     "cihub": {
       "$ref": "#/definitions/cihubConfig"
     },
+    "install": {
+      "description": "How cihub should be installed in CI workflows",
+      "oneOf": [
+        { "type": "string", "enum": ["pypi", "git", "local"] },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "source": {
+              "default": "pypi",
+              "description": "Install source: pypi (from PyPI, default), git (from git URL), local (editable checkout)",
+              "enum": ["pypi", "git", "local"],
+              "type": "string"
+            }
+          },
+          "type": "object"
+        }
+      ]
+    },
     "reports": {
       "$ref": "#/definitions/reports"
     },

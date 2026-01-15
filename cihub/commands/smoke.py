@@ -19,13 +19,8 @@ from cihub.types import CommandResult
 from cihub.utils.paths import validate_repo_path
 
 DEFAULT_TYPES = ["python-pyproject", "java-maven"]
-ALL_TYPES = [
-    "python-pyproject",
-    "python-setup",
-    "java-maven",
-    "java-gradle",
-    "monorepo",
-]
+# Use keys from SCAFFOLD_TYPES to ensure consistency
+ALL_TYPES = list(SCAFFOLD_TYPES.keys())
 
 
 @dataclass

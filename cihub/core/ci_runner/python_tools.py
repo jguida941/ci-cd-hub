@@ -44,7 +44,8 @@ def run_pytest(workdir: Path, output_dir: Path, fail_fast: bool = False) -> Tool
 
 def run_ruff(workdir: Path, output_dir: Path) -> ToolResult:
     report_path = output_dir / "ruff-report.json"
-    cmd = ["ruff", "check", ".", "--output-format", "json"]
+    # Exclude hub/ directory which contains the cihub checkout during CI
+    cmd = ["ruff", "check", ".", "--output-format", "json", "--extend-exclude", "hub"]
     proc = shared._run_tool_command("ruff", cmd, workdir, output_dir)
     report_path.write_text(proc.stdout or "[]", encoding="utf-8")
     data = shared._parse_json(report_path)

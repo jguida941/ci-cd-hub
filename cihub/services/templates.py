@@ -31,6 +31,7 @@ def build_repo_config(
     branch: str,
     subdir: str | None = None,
     repo_path: Path | None = None,
+    install_from: str = "pypi",
 ) -> dict[str, Any]:
     template_path = hub_root() / "templates" / "repo" / ".ci-hub.yml"
     base = load_yaml_file(template_path)
@@ -58,6 +59,11 @@ def build_repo_config(
         base.pop("java", None)
 
     base.setdefault("version", "1.0")
+
+    # Add install configuration for CI bootstrap
+    if install_from:
+        base["install"] = {"source": install_from}
+
     return base
 
 

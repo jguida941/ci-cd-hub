@@ -6,8 +6,12 @@ from pathlib import Path
 
 
 def hub_root() -> Path:
-    """Return the root directory of the hub-release project."""
-    return Path(__file__).resolve().parents[2]
+    """Return the data directory containing schema/config/templates.
+
+    Works both in development (git checkout) and when installed from PyPI.
+    """
+    # Data is now inside the cihub package at cihub/data/
+    return Path(__file__).resolve().parent.parent / "data"
 
 
 def validate_repo_path(repo_path: Path) -> Path:
