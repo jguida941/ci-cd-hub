@@ -1,0 +1,16 @@
+# ============================================================================
+# Repo Config: ci-cd-hub (the hub itself)
+# ============================================================================
+# Minimal config providing required schema fields.
+# All tool configs inherited from config/defaults.yaml hub_ci section.
+# ============================================================================
+
+repo:
+  owner: jguida941
+  name: ci-cd-hub
+  language: python
+  default_branch: main
+  dispatch_enabled: false
+  use_central_runner: true
+
+language: python

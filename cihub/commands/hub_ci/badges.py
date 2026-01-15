@@ -166,8 +166,23 @@ def cmd_badges_commit(_: argparse.Namespace) -> CommandResult:
 
 
 def cmd_outputs(args: argparse.Namespace) -> CommandResult:
-    config_path = Path(args.config).resolve() if args.config else hub_root() / "config" / "defaults.yaml"
-    config = _load_config(config_path)
+    # Use canonical config loading (merges defaults + repo config, validates merged result)
+    if args.config:
+        # Direct config path override (legacy mode)
+        config_path = Path(args.config).resolve()
+        config = _load_config(config_path)
+    else:
+        # Canonical: load via repo name using loader/core.py
+        from cihub.config.loader import load_config
+
+        repo_name = getattr(args, "repo", "ci-cd-hub")
+        root = hub_root()
+        try:
+            config = load_config(repo_name, root, exit_on_validation_error=False)
+        except Exception:  # noqa: BLE001
+            # Fall back to defaults if repo config not found
+            config = _load_config(root / "config" / "defaults.yaml")
+
     hub_cfg = config.get("hub_ci", {}) if isinstance(config.get("hub_ci"), dict) else {}
     enabled = hub_cfg.get("enabled", True)
     tools = hub_cfg.get("tools", {}) if isinstance(hub_cfg.get("tools"), dict) else {}

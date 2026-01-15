@@ -51,8 +51,13 @@ def add_badges_parsers(
 
     hub_ci_outputs = hub_ci_sub.add_parser("outputs", help="Emit hub CI toggle outputs")
     hub_ci_outputs.add_argument(
+        "--repo",
+        default="ci-cd-hub",
+        help="Repository name for config lookup (default: ci-cd-hub)",
+    )
+    hub_ci_outputs.add_argument(
         "--config",
-        help="Config file with hub_ci settings (defaults to config/defaults.yaml)",
+        help="Override: direct path to config file (bypasses repo config merge)",
     )
     add_output_args(hub_ci_outputs)
     add_json_flag(hub_ci_outputs)
