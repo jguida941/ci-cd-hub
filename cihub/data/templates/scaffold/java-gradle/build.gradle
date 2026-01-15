@@ -55,6 +55,7 @@ checkstyle {
     toolVersion = '10.12.5'
     maxWarnings = 0
     ignoreFailures = false
+    configFile = file('config/checkstyle/checkstyle.xml')
 }
 
 // SpotBugs - Bug Detection
