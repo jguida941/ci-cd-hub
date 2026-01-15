@@ -178,10 +178,11 @@ def check_archive_superseded_headers(
     archive_docs: list[str],
     repo_root: Path,
 ) -> list[AuditFinding]:
-    """Check that archived docs have Superseded headers.
+    """Check that archived docs have Superseded headers with explicit references.
 
     Part 12.J requirement:
     - Files in docs/development/archive/ must have a Superseded header
+    - Archived docs should have an explicit "Superseded-by" reference (not just status)
 
     Args:
         archive_docs: Files found in archive/ directory
@@ -191,6 +192,26 @@ def check_archive_superseded_headers(
         List of findings for missing superseded headers
     """
     findings: list[AuditFinding] = []
+
+    # Pattern for explicit superseded-by reference with a link/path
+    # Each pattern requires a complete file reference (not just a directory)
+    # Patterns handle optional bold (**) formatting in various positions:
+    # - **Superseded by:** (colon inside bold)
+    # - **Superseded by**: (colon outside bold)
+    # - **Superseded** by: (only "Superseded" bold)
+    # - Superseded-by: (hyphenated form from universal header template)
+    # Using \** to match zero or more asterisks flexibly around each word
+    # Using [\s-]+ to match space or hyphen between "superseded" and "by"
+    superseded_patterns = [
+        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*\[",              # Superseded by: [doc](path)
+        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?[\w.-]+\.md",   # Superseded by: DOC.md
+        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?\.\.?/[\w./-]+\.md",  # ../active/FOO.md
+        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?docs/[\w./-]+\.md",   # docs/path/FILE.md
+        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?[\w./-]+/[\w.-]+\.md",  # path/FILE.md
+        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*ADR",             # ADR-0001
+        r"(?i)\**replaced\**[\s-]+\**by\**:?\**\s*\[",                # Replaced by: [doc]
+        r"(?i)see:?\s*\[[\w\s]+\]",                                   # See: [new doc]
+    ]
 
     for doc_path in archive_docs:
         full_path = repo_root / doc_path
@@ -202,13 +223,14 @@ def check_archive_superseded_headers(
         lines = content.split("\n")[:50]
         header_text = "\n".join(lines)
 
-        has_superseded = False
+        # First check: has any superseded/archived indicator
+        has_superseded_indicator = False
         for pattern in SUPERSEDED_HEADER_PATTERNS:
             if re.search(pattern, header_text, re.MULTILINE):
-                has_superseded = True
+                has_superseded_indicator = True
                 break
 
-        if not has_superseded:
+        if not has_superseded_indicator:
             findings.append(
                 AuditFinding(
                     severity=FindingSeverity.WARNING,
@@ -217,6 +239,24 @@ def check_archive_superseded_headers(
                     file=doc_path,
                     code="CIHUB-AUDIT-NO-SUPERSEDED",
                     suggestion="Add a '> **Superseded by:** [doc](path)' header at the top",
+                )
+            )
+            continue
+
+        # Second check: has explicit superseding reference (not just "Status: archived")
+        has_explicit_reference = any(
+            re.search(pattern, header_text) for pattern in superseded_patterns
+        )
+
+        if not has_explicit_reference:
+            findings.append(
+                AuditFinding(
+                    severity=FindingSeverity.WARNING,
+                    category=FindingCategory.LIFECYCLE,
+                    message=f"Archived doc missing explicit Superseded-by reference: {doc_path}",
+                    file=doc_path,
+                    code="CIHUB-AUDIT-NO-SUPERSEDED-REF",
+                    suggestion="Add what supersedes this doc: '> **Superseded by:** [Doc](path)'",
                 )
             )
 
@@ -258,4 +298,83 @@ def validate_lifecycle(repo_root: Path) -> tuple[list[AuditFinding], list[str], 
     # Check archive headers
     findings.extend(check_archive_superseded_headers(archive_docs, repo_root))
 
+    # Check specs hygiene (Part 12.J)
+    findings.extend(check_specs_hygiene(repo_root))
+
     return findings, active_docs, status_entries, archive_docs
+
+
+# Path to REQUIREMENTS.md
+REQUIREMENTS_MD_PATH = "docs/development/specs/REQUIREMENTS.md"
+
+
+def check_specs_hygiene(repo_root: Path) -> list[AuditFinding]:
+    """Validate REQUIREMENTS.md has proper headers (Part 12.J).
+
+    Specs hygiene: only docs/development/specs/REQUIREMENTS.md is active;
+    it must include Status and Last Updated headers.
+
+    Args:
+        repo_root: Repository root path
+
+    Returns:
+        List of findings for specs hygiene issues
+    """
+    findings: list[AuditFinding] = []
+    req_path = repo_root / REQUIREMENTS_MD_PATH
+
+    if not req_path.exists():
+        findings.append(
+            AuditFinding(
+                severity=FindingSeverity.WARNING,
+                category=FindingCategory.LIFECYCLE,
+                message=f"REQUIREMENTS.md not found at {REQUIREMENTS_MD_PATH}",
+                file=REQUIREMENTS_MD_PATH,
+                code="CIHUB-AUDIT-NO-REQUIREMENTS",
+                suggestion="Create REQUIREMENTS.md with Status and Last Updated headers",
+            )
+        )
+        return findings
+
+    # Read first 20 lines to check for headers
+    try:
+        content = req_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return findings
+
+    lines = content.split("\n")[:20]
+    has_status = False
+    has_last_updated = False
+
+    for line in lines:
+        line_lower = line.lower()
+        if "**status:**" in line_lower or line_lower.startswith("status:"):
+            has_status = True
+        # Accept various "last updated" formats: bold, plain, hyphenated
+        if (
+            "**last updated:**" in line_lower
+            or "last updated:" in line_lower
+            or "last-updated:" in line_lower
+            or "last-reviewed:" in line_lower
+        ):
+            has_last_updated = True
+
+    missing = []
+    if not has_status:
+        missing.append("Status")
+    if not has_last_updated:
+        missing.append("Last Updated")
+
+    if missing:
+        findings.append(
+            AuditFinding(
+                severity=FindingSeverity.WARNING,
+                category=FindingCategory.LIFECYCLE,
+                message=f"REQUIREMENTS.md missing required headers: {', '.join(missing)}",
+                file=REQUIREMENTS_MD_PATH,
+                code="CIHUB-AUDIT-REQUIREMENTS-HEADERS",
+                suggestion="Add Status and Last Updated headers to REQUIREMENTS.md",
+            )
+        )
+
+    return findings

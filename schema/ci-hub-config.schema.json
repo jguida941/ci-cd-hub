@@ -33,6 +33,22 @@
     }
   ],
   "definitions": {
+    "customTool": {
+      "description": "Custom tool definition (x- prefix). Allows extensibility for user-defined tools.",
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "properties": {
+            "enabled": { "default": true, "type": "boolean" },
+            "command": { "type": "string", "description": "Command to run for this tool" },
+            "fail_on_error": { "default": true, "type": "boolean" },
+            "require_run_or_fail": { "default": false, "type": "boolean" }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
     "sharedSbomTool": {
       "description": "SBOM generation tool (shared between Java and Python)",
       "oneOf": [
@@ -203,6 +219,9 @@
     },
     "javaTools": {
       "additionalProperties": false,
+      "patternProperties": {
+        "^x-[a-zA-Z0-9_-]+$": { "$ref": "#/definitions/customTool" }
+      },
       "properties": {
         "checkstyle": {
           "oneOf": [
@@ -367,6 +386,9 @@
     },
     "pythonTools": {
       "additionalProperties": false,
+      "patternProperties": {
+        "^x-[a-zA-Z0-9_-]+$": { "$ref": "#/definitions/customTool" }
+      },
       "properties": {
         "bandit": {
           "oneOf": [
@@ -763,6 +785,11 @@
   },
   "description": "Schema for .ci-hub.yml files in connected repositories",
   "properties": {
+    "_metadata": {
+      "description": "Profile metadata for wizard display (internal use)",
+      "additionalProperties": true,
+      "type": "object"
+    },
     "cache_sentinel": {
       "oneOf": [
         { "type": "boolean" },

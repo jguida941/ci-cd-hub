@@ -2,6 +2,313 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-12 - SYSTEM_INTEGRATION_PLAN Complete (100%)
+
+### Complete: Registry/Wizard/Schema Integration
+
+**SYSTEM_INTEGRATION_PLAN.md** is now 100% complete with all 6 phases finished:
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 0 | Schema parity audit | ✅ Complete |
+| Phase 1 | Registry threshold normalization | ✅ Complete |
+| Phase 2 | Registry bootstrap/sync/diff | ✅ Complete |
+| Phase 3 | Wizard profile integration | ✅ Complete |
+| Phase 4 | CLI management commands | ✅ Complete |
+| Phase 5-6 | Custom tools + command contracts | ✅ Complete |
+
+### Fix: Custom Tool Schema Validation (CRITICAL)
+
+**Problem:** Report schema rejected custom `x-*` tools because `toolStatusMap` had `additionalProperties: false`.
+
+**Solution:** Added `patternProperties` to allow custom tool keys:
+
+```json
+"patternProperties": {
+  "^x-[a-zA-Z0-9_-]+$": {
+    "description": "Custom tool status (x-* prefix)",
+    "type": "boolean"
+  }
+}
+```
+
+**Files changed:**
+- `schema/ci-report.v2.json` - Added patternProperties to toolStatusMap definition
+- `tests/test_schema_contract.py` - Added 2 new tests for custom tool validation
+
+### New Tests: 159 Tests Across 6 Directories
+
+| Directory | Tests | Purpose |
+|-----------|-------|---------|
+| `test_repo_shapes/` | 57 | Repo shape matrix (Python/Java × pyproject/setup.py/pom) |
+| `test_wizard_flows/` | 37 | CLI/wizard parity, WizardResult, profile selection |
+| `test_registry/` | 9 | Registry service (list, diff, sync, bootstrap) |
+| `test_config_precedence/` | 8 | deep_merge, tier overrides, tool_enabled |
+| `test_schema_validation/` | 13 | Schema structure, customTool, patternProperties |
+| `test_custom_tools.py` | 35 | Custom tool execution (Python + Java) |
+
+### Documentation Fixes
+
+- Updated SYSTEM_INTEGRATION_PLAN.md to 100% complete
+- Fixed test count inconsistencies (Appendix A.6)
+- Clarified Phase 4.1 scope (scoped writes allowed for wizard flows)
+- Updated STATUS.md and MASTER_PLAN.md
+
+### Test Suite
+
+- **2707 tests passing** (was 2705)
+- Full test matrix verified
+
+## 2026-01-11 - Custom Tools (Phase 6.1)
+
+### New: Custom Tools (x- prefix)
+
+Users can now define custom tools with the `x-` prefix in their config:
+
+```yaml
+python:
+  tools:
+    x-custom-linter:
+      enabled: true
+      command: "my-lint --check ."
+```
+
+**Schema changes:**
+- Added `customTool` definition supporting boolean or object with `enabled`, `command`, `fail_on_error`
+- Added `patternProperties` with `^x-` pattern to `javaTools` and `pythonTools`
+
+**New helper functions in `cihub/tools/registry.py`:**
+- `is_custom_tool(name)` - Check if tool name has x- prefix
+- `get_custom_tools_from_config(config, language)` - Extract custom tools
+- `get_all_tools_from_config(config, language)` - Get built-in + custom tools
+- `is_tool_enabled(config, tool, language)` - Check if any tool is enabled
+- `get_custom_tool_command(config, tool, language)` - Get custom tool command
+
+## 2026-01-11 - Bug Fixes for Phase 5.4 and 5.5
+
+### Fixes
+
+**High priority:**
+- **Fix:** `repo update --branch` now correctly writes to `default_branch` (schema-compliant) instead of non-schema `branch` field
+- **Fix:** `registry sync/diff` suggestions now use proper dict format (`{"message": "..."}`) instead of plain strings - prevents AttributeError in renderer
+
+**Medium priority:**
+- **Fix:** `repo update` now validates owner/name dependency per schema - cannot set `--owner` without `--repo-name` (or existing name), and vice versa
+- **Fix:** `repo migrate` now uses deep copy to prevent shared nested dict mutation when `--delete-source` is not set
+- **Fix:** `threshold get --effective` flag now correctly differentiates between raw overrides and effective (tier-inherited) values
+- **Fix:** `threshold set` sparse storage now includes tier profile thresholds in inheritance chain (global → profile → tier config → legacy tier keys)
+- **Fix:** Added `--branch` as backward-compatible alias for `--default-branch` to preserve CLI API stability
+
+**Low priority:**
+- **Fix:** `threshold set` now implements sparse storage - values matching inherited defaults are not stored as overrides, reducing config noise
+- **Fix:** Updated doc comments and SYSTEM_INTEGRATION_PLAN.md to use `--default-branch` as canonical flag
+
+### Tests
+
+- **New:** `tests/test_threshold_cmd.py` - 13 behavior tests covering get/set/list/reset/compare subcommands
+- **New:** `tests/test_repo_cmd.py` - 13 behavior tests covering list/show/update/migrate/clone subcommands
+
+## 2026-01-10 - Repo Management Commands (Phase 5.5)
+
+### New: `cihub repo` Command Family
+
+Repository management for registry entries:
+
+| Subcommand | Description |
+|------------|-------------|
+| `repo list` | List repositories (`--language`, `--tier`, `--with-overrides`) |
+| `repo show <name>` | Show detailed repository info (`--effective`) |
+| `repo update <name>` | Update metadata (`--owner`, `--default-branch`, `--language`, `--tier`, `--dispatch-enabled`) |
+| `repo migrate <from> <to>` | Migrate/rename entry (`--delete-source`, `--force`) |
+| `repo clone <source> <dest>` | Clone repository config (`--force`) |
+| `repo verify-connectivity <name>` | Verify GitHub access (`--check-workflows`) |
+
+**Note:** `repo update` writes to `config.repo.*` (canonical location) for language, owner, etc.
+
+## 2026-01-10 - Threshold Management Commands (Phase 5.4)
+
+### New: `cihub threshold` Command Family
+
+Complete threshold management for CI quality gates:
+
+| Subcommand | Description |
+|------------|-------------|
+| `threshold get [<key>]` | Get threshold value(s) (`--repo`, `--tier`, `--effective`) |
+| `threshold set <key> <value>` | Set threshold (`--repo`, `--tier`, `--all-repos`) |
+| `threshold list` | List all thresholds with descriptions (`--category`, `--diff`) |
+| `threshold reset [<key>]` | Reset to default (`--repo`, `--tier`, `--all-repos`) |
+| `threshold compare <repo1> <repo2>` | Compare thresholds between repos (`--effective`) |
+
+**Supported threshold categories:**
+- **Coverage:** `coverage_min` (70%)
+- **Mutation:** `mutation_score_min` (70%)
+- **Security:** `max_critical_vulns`, `max_high_vulns`, `max_pip_audit_vulns`, `owasp_cvss_fail`, `trivy_cvss_fail`, `max_semgrep_findings`, `max_spotbugs_bugs` (0 or 7.0)
+- **Lint:** `max_ruff_errors`, `max_black_issues`, `max_isort_issues`, `max_checkstyle_errors`, `max_pmd_violations` (0)
+
+## 2026-01-10 - Profile and Tool Management Commands (Phase 5.1, 5.3)
+
+### New: `cihub profile` Command Family
+
+Complete profile management for CI tool enablement presets:
+
+| Subcommand | Description |
+|------------|-------------|
+| `profile list` | List available profiles (filter by `--language`, `--type`) |
+| `profile show <name>` | Show profile details (`--effective` for merged view) |
+| `profile create <name>` | Create new profile (`--from-profile`, `--from-repo`, `--language`) |
+| `profile edit <name>` | Edit profile (`--enable`, `--disable`, `--set`) |
+| `profile delete <name>` | Delete profile (`--force` for built-ins) |
+| `profile export <name>` | Export profile to file (`--output`) |
+| `profile import <file>` | Import profile from file (`--name`, `--force`) |
+| `profile validate <name>` | Validate profile structure (`--strict` fails on warnings) |
+
+### New: `cihub tool` Command Family
+
+Tool management for discovery, enablement, and configuration:
+
+| Subcommand | Description |
+|------------|-------------|
+| `tool list` | List available tools (filter by `--language`, `--category`, `--repo`) |
+| `tool enable <tool>` | Enable tool (`--for-repo`, `--all-repos`, `--profile`) |
+| `tool disable <tool>` | Disable tool (`--for-repo`, `--all-repos`, `--profile`) |
+| `tool configure <tool> <param> <value>` | Configure tool setting (`--repo`, `--profile`) |
+| `tool status` | Show tool status across repos (`--repo`, `--all`) |
+| `tool validate <tool>` | Validate tool installation (`--install-if-missing`) |
+| `tool info <tool>` | Show detailed tool information |
+
+### Security: Path Traversal Prevention
+
+**Fix:** Profile and tool commands now validate names to prevent path traversal:
+- Rejects names containing `/`, `\`, or `..`
+- Rejects names starting with `.`
+- Allows only alphanumeric, dash, underscore characters
+
+### Registry Service Enhancements
+
+**Fix:** `get_repo_config()` and `list_repos()` now include:
+- `language` resolved from `config.repo.language` (canonical, with legacy fallback)
+- `config` block for tool management commands
+
+### Tool Command Compatibility
+
+**Fix:** Repo-targeted tool commands now:
+- Honor `config.repo.language` when resolving repo language
+- Reject mismatched tool/language combinations (e.g., Java tools on Python repos)
+
+### CommandResult Contract Improvements
+
+**Fix:** Consistent contract adherence:
+- `problems` field now returns `[]` instead of `None` for empty lists
+- Registry-modifying tool commands include `files_modified` field
+
+## 2026-01-10 - Docs Command Refactoring (Part 7.4.4)
+
+### Internal: Split `commands/docs.py` into Package
+
+**Refactored:** Monolithic 858-line docs command split into `commands/docs/` package:
+
+| Module | Functionality | Lines |
+|--------|--------------|-------|
+| `__init__.py` | Main handlers, exports | 132 |
+| `links.py` | Link checking (`_check_internal_links`, `_run_lychee`) | 260 |
+| `generate.py` | CLI, config, workflow reference generation | 466 |
+
+**Benefits:**
+- Link checking isolated from doc generation
+- Easier to test each component in isolation
+- Reduced file size for easier navigation
+
+**CLI surface unchanged** - `cihub docs generate/check/links` work identically.
+
+## 2026-01-10 - Hub-CI Parser Refactoring (Part 7.4.3)
+
+### Internal: Split `cli_parsers/hub_ci.py` into Family Modules
+
+**Refactored:** Monolithic 638-line parser file split into `cli_parsers/hub_ci/` package:
+
+| Module | Subcommands | Count |
+|--------|-------------|-------|
+| `release.py` | actionlint, kyverno, trivy, zizmor, release-*, pytest-summary, summary, enforce | 16 |
+| `validation.py` | syntax-check, yamllint, repo-check, source-check, validate-*, verify-*, quarantine-check, enforce-command-result | 11 |
+| `security.py` | bandit, pip-audit, security-* | 6 |
+| `java_tools.py` | codeql-build, smoke-java-* | 6 |
+| `python_tools.py` | ruff, black, mypy, mutmut, coverage-verify | 6 |
+| `smoke.py` | smoke-python-* | 4 |
+| `badges.py` | badges, badges-commit, outputs | 3 |
+
+**Benefits:**
+- Smaller, focused files for each command family
+- Reduced churn risk when modifying individual commands
+- Easier navigation and testing
+
+**CLI surface unchanged** - all 50 hub-ci subcommands work identically.
+
+## 2026-01-10 - Registry Add/Remove Command Extensions (Phase 5)
+
+### New: `registry add` Flags for Sync-Ready Entries
+
+**New flags:**
+- `--owner` - Repository owner (GitHub org/user)
+- `--name` - Repository name (defaults to repo argument; requires `--owner`)
+- `--language` - Repository language (`java` or `python`)
+
+**Behavior:** When all three flags are provided, `registry sync` can create new config files:
+```bash
+cihub registry add my-repo --owner my-org --language python --tier standard
+cihub registry sync  # Creates config/repos/my-repo.yaml
+```
+
+### New: `registry remove` Command
+
+**Usage:**
+```bash
+cihub registry remove <repo> --yes                # Remove from registry only
+cihub registry remove <repo> --yes --delete-config  # Also delete config file
+```
+
+**Flags:**
+- `--yes` - Skip confirmation prompt (required for non-interactive use)
+- `--delete-config` - Also delete `config/repos/<repo>.yaml`
+
+### Registry Import Validation Guards
+
+The `registry import` command now validates input data before persisting:
+- Rejects non-dict `repos` or `tiers` values with clear error messages
+- `--replace` mode requires complete structure (`schema_version`, `tiers`, `repos`)
+- Prevents schema-invalid registries from being persisted
+
+### Breaking: `--name` Now Requires `--owner`
+
+**Reason:** The registry schema enforces `owner`/`name` as both-or-none (`dependencies` constraint). Providing `--name` without `--owner` would create schema-invalid registry entries.
+
+**Error:** `--name requires --owner (schema enforces owner/name as both-or-none)`
+
+## 2026-01-10 - Registry Bootstrap Import + Conflict Audit (Phase 3)
+
+### Update: `cihub registry bootstrap` Import Scope
+
+**Behavior:** Bootstrap now imports registry-managed config fragments from `config/repos/*.yaml`:
+- `repo` metadata, `gates`, `reports`, `notifications`, `harden_runner`
+- `python`/`java` blocks, `thresholds_profile`, `cihub`, `version`
+
+**Note:** `--include-thresholds` remains opt-in for thresholds; it now stores only overrides that differ from tier + profile defaults.
+
+### Update: Bootstrap Conflict Detection
+
+**Merge strategy now reports conflicts for:**
+- Tier mismatches (existing)
+- Language mismatches (legacy top-level vs config)
+- Managed config fragment differences
+- Threshold override differences
+
+### Test Coverage
+
+Expanded bootstrap coverage in `tests/test_registry_cross_root.py`:
+- Replace/prefer-config strategy behavior
+- Managed fragment import
+- Sparse threshold import vs profile defaults
+- Managed config fragment conflicts
+
 ## 2026-01-09 - JSON Mode Purity + New Hub-CI Commands (CLI Hardening)
 
 ### New: JSON Mode Purity for CLI Commands
@@ -443,6 +750,28 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - All active design docs (CLEAN_CODE.md, DOC_AUTOMATION_AUDIT.md, PYQT_PLAN.md) properly referenced.
 - Updated STATUS.md directory structure to include CI_PARITY.md.
 
+## 2026-01-05 - Config Loader Canonicalization + CLI Layering
+
+### CLI
+- Moved CLI helper imports in commands to services/utils (no CLI surface changes).
+- Added a parser builder helper to support docs generation without importing `cihub.cli`.
+
+### Config
+- `load_ci_config`/`load_hub_config` now delegate to the canonical validated loader.
+- Default config loading falls back to built-in defaults when `defaults.yaml` is empty or missing.
+- Preserve repo-local `repo.owner`/`repo.name`/`repo.language` when no hub override exists.
+- `load_effective_config` now delegates to the validated loader (schema-enforced).
+
+### Tests
+- Added Stage 2 AST boundary enforcement for core/services/commands layering.
+- Updated .ci-hub.yml fixtures to include required repo fields and top-level language.
+
+### Documentation
+- Consolidated P0/P1/nonfunctional checklists into `docs/development/specs/REQUIREMENTS.md`.
+- Archived legacy spec files and updated references to the consolidated requirements.
+- Marked `docs/development/research/RESEARCH_LOG.md` as historical reference-only.
+- Updated doc index/status to reflect specs and research locations.
+
 ## 2026-01-04 - Maintainability Audit (MASTER_PLAN.md §10)
 
 ### Audit Findings
@@ -500,28 +829,6 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - ADR-0035: Changed Status from Proposed → Accepted; added Implementation Note.
 - ADR-0031: Added Enforcement Addendum (what's allowed inline vs must use CLI).
 - ADR-0018: Fixed broken link to SMOKE_TEST.md → INTEGRATION_SMOKE_TEST.md.
-
-## 2026-01-05 - Config Loader Canonicalization + CLI Layering
-
-### CLI
-- Moved CLI helper imports in commands to services/utils (no CLI surface changes).
-- Added a parser builder helper to support docs generation without importing `cihub.cli`.
-
-### Config
-- `load_ci_config`/`load_hub_config` now delegate to the canonical validated loader.
-- Default config loading falls back to built-in defaults when `defaults.yaml` is empty or missing.
-- Preserve repo-local `repo.owner`/`repo.name`/`repo.language` when no hub override exists.
-- `load_effective_config` now delegates to the validated loader (schema-enforced).
-
-### Tests
-- Added Stage 2 AST boundary enforcement for core/services/commands layering.
-- Updated .ci-hub.yml fixtures to include required repo fields and top-level language.
-
-### Documentation
-- Consolidated P0/P1/nonfunctional checklists into `docs/development/specs/REQUIREMENTS.md`.
-- Archived legacy spec files and updated references to the consolidated requirements.
-- Marked `docs/development/research/RESEARCH_LOG.md` as historical reference-only.
-- Updated doc index/status to reflect specs and research locations.
 
 ## 2026-01-04 - Service Boundary + CVSS Split
 

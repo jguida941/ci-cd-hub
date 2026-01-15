@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from typing import Callable
 
+from cihub.cli_parsers.common import see_also_epilog
 from cihub.cli_parsers.types import CommandHandlers
 
 
@@ -13,7 +14,7 @@ def add_triage_command(
     add_json_flag: Callable[[argparse.ArgumentParser], None],
     handlers: CommandHandlers,
 ) -> None:
-    triage = subparsers.add_parser("triage", help="Generate triage bundle outputs")
+    triage = subparsers.add_parser("triage", help="Generate triage bundle outputs", epilog=see_also_epilog("triage"))
     add_json_flag(triage)
     triage.add_argument(
         "--output-dir",

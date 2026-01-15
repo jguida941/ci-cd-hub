@@ -213,7 +213,7 @@ python -m cihub config-outputs --repo /path/to/repo --github-output
 Generate and check reference docs:
 
 ```bash
-python -m cihub docs generate # Generate CLI.md, CONFIG.md
+python -m cihub docs generate # Generate CLI.md, CONFIG.md, ENV.md, WORKFLOWS.md
 python -m cihub docs check # Verify generated docs are up-to-date
 python -m cihub docs links # Check internal links
 python -m cihub docs links --external # Also check external URLs (requires lychee)

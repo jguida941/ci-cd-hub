@@ -6,6 +6,7 @@ Source: `schema/ci-hub-config.schema.json`
 
 | Path | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
+| `_metadata` | object | no |  | Profile metadata for wizard display (internal use) |
 | `cache_sentinel` | boolean|object | no |  |  |
 | `canary` | boolean|object | no |  |  |
 | `chaos` | boolean|object | no |  |  |

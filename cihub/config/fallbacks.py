@@ -57,10 +57,35 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
         },
     },
     "thresholds": {
+        # Coverage & Mutation
         "coverage_min": 70,
         "mutation_score_min": 70,
+        # Security Vulnerabilities
         "max_critical_vulns": 0,
         "max_high_vulns": 0,
+        "max_pip_audit_vulns": 0,
+        # CVSS Score Thresholds
+        "owasp_cvss_fail": 7.0,
+        "trivy_cvss_fail": 7.0,
+        # SAST Findings
+        "max_semgrep_findings": 0,
+        # Python Linting
+        "max_ruff_errors": 0,
+        "max_black_issues": 0,
+        "max_isort_issues": 0,
+        # Java Linting/Static Analysis
+        "max_checkstyle_errors": 0,
+        "max_spotbugs_bugs": 0,
+        "max_pmd_violations": 0,
+    },
+    "gates": {
+        "require_run_or_fail": False,
     },
     "reports": {"retention_days": 30},
+    "cihub": {
+        "debug": False,
+        "verbose": False,
+        "debug_context": False,
+        "emit_triage": False,
+    },
 }

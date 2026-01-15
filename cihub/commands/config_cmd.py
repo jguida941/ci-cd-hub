@@ -101,7 +101,8 @@ def _apply_wizard(paths: PathConfig, existing: dict[str, Any]) -> dict[str, Any]
     from cihub.wizard.core import WizardRunner  # noqa: I001
 
     runner = WizardRunner(Console(), paths)
-    return runner.run_config_wizard(existing)
+    wizard_result = runner.run_config_wizard(existing)
+    return wizard_result.config
 
 
 def cmd_config(args: argparse.Namespace) -> CommandResult:

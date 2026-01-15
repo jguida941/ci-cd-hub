@@ -126,7 +126,8 @@ skip = ["_quarantine"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 markers = [
-    "hypothesis: hypothesis-based property tests (run with derandomize=True in CI/mutation)"
+    "hypothesis: hypothesis-based property tests (run with derandomize=True in CI/mutation)",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
 
 [tool.coverage.run]

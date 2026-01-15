@@ -1,8 +1,9 @@
 # System Integration Plan
 
-**Status:** ACTIVE - Canonical Integration Plan
-**Date:** 2026-01-08
+**Status:** active
 **Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-09
 **Consolidates:** COMPREHENSIVE_SYSTEM_AUDIT.md, WIZARD_IMPROVEMENTS.md, REGISTRY_AUDIT_AND_PLAN.md
 
 ---
@@ -11,14 +12,14 @@
 
 This document consolidates findings from multiple audits (5-agent system audit, 8-agent registry audit, wizard analysis, final 5-agent verification audit on 2026-01-08) into a single actionable roadmap with comprehensive testing requirements.
 
-### Overall System Health (Updated 2026-01-08)
+### Overall System Health (Updated 2026-01-14)
 
 | Component | Score | Critical Issues |
 |-----------|-------|-----------------|
 | CLI Commands | **7/10** | CommandResult/--json broadly supported; print allowlist + interactive --json gaps remain |
 | Workflows | 9/10 | hub-production-ci is now CLI-driven (ruff-format/mypy/yamllint wrappers); remaining work is tightening schema + registry/wizard parity |
 | Schema | 7/10 | ~24% unused fields; deprecated aliases normalized; `cihub` block added; remaining gaps are registry schema + broader schema/code parity |
-| Wizard | 3/10 | 4 interactive flows, no profile selection, no registry integration |
+| Wizard | **7/10** | 10 interactive flows; profile selection implemented; registry integration via --hub-mode; tool/threshold/repo wizards added |
 | Registry | 2/10 | Only tracks a small threshold subset (coverage/mutation/vulns); tools/metadata still not represented |
 | User Journeys | 5/10 | Migration tooling missing, troubleshooting gaps |
 
@@ -37,11 +38,11 @@ CLI architecture is close but not fully JSON-pure yet:
 |-----------------------|--------------|------------------------------------------------------------------------------|
 | Config Loading | [x] WORKING | 3-tier merge chain functions correctly |
 | Boolean Normalization | [x] WORKING | `tool: true` → `tool: {enabled: true}` works |
-| Wizard | [x] WORKING | Creates configs, but disconnected from registry |
-| Registry CLI | WARNING: PARTIAL | Commands exist but only track a small threshold subset (schema-aligned keys) |
-| Wizard ↔ Registry | [ ] BROKEN | Not connected at all |
-| Registry → YAML Sync | WARNING: PARTIAL | Sync is now schema-safe for threshold keys; full config scope still missing |
-| Profiles | WARNING: UNDERUSED | 12 profiles exist but wizard doesn't surface them |
+| Wizard | [x] WORKING | Creates configs, connected to registry via `--hub-mode` (Phase 4.1) |
+| Registry CLI | [x] WORKING | Full management commands: profile/registry/tool/threshold/repo (Phase 5) |
+| Wizard ↔ Registry | [x] WORKING | Connected via `services/configuration.py` + `--hub-mode` flag (Phase 4.1, 2026-01-10) |
+| Registry → YAML Sync | [x] WORKING | Full field sync via `sync_to_configs()` with sparse storage (Phase 2-3) |
+| Profiles | [x] WORKING | 12 profiles surfaced in wizard via `wizard/questions/profile.py` (Phase 4.2, 2026-01-10) |
 
 ---
 
@@ -168,9 +169,15 @@ effective = {
 
 ### 2.5 Registry Bypass in CLI/Wizard
 
-**Current:** `cihub new` writes `config/repos/*.yaml` directly, `cihub init` writes `.ci-hub.yml`, wizard edits configs without touching registry.
+**Status:** [x] **RESOLVED** (2026-01-12)
 
-**Impact:** Registry and config drift immediately; wizard/CLI parity is broken.
+**Previous:** `cihub new` wrote `config/repos/*.yaml` directly, wizard edited configs without touching registry.
+
+**Current:**
+- `cihub new --use-registry` writes via registry service with sync to config files
+- `cihub new --interactive` uses wizard as confirmation (no `--yes` required)
+- Direct writes (`cihub new --yes`) still available for backward compatibility
+- `cihub init` continues to write `.ci-hub.yml` (repo-side config, not hub-managed)
 
 ### 2.6 Hardcoded Tools in Workflow (Fixed in Phase 1.5)
 
@@ -409,7 +416,7 @@ Profiles are a **starting point**, then ALWAYS show checkboxes for customization
 
 | # | Task | Files | Tests |
 |---|------|-------|-------|
-| 4.1 | Wizard uses shared service layer for all config writes (no direct file writes) | wizard/core.py, services/configuration.py | Flow tests |
+| 4.1 | Wizard uses shared service layer via `--use-registry`/`--hub-mode`; local-only mode still writes directly | wizard/core.py, services/configuration.py | Flow tests |
 | 4.2 | Add profile selection step | wizard/questions/profile.py | Flow tests |
 | 4.3 | Keep checkboxes after profile + add format mode choice | wizard/questions/python_tools.py, wizard/questions/format_mode.py | Interaction tests |
 | 4.4 | Expose non-tool settings (repo metadata, gates, reports, notifications, harden_runner) | wizard/questions/* | Flow tests |
@@ -440,18 +447,20 @@ Profiles are a **starting point**, then ALWAYS show checkboxes for customization
 
 Every CLI command must be tested across these configurations:
 
-| Repo Shape | Structure | Key Files |
-|------------|-----------|-----------|
-| `python-root` | Single Python at root | `pyproject.toml` |
-| `python-setup` | Legacy setup.py | `setup.py` |
-| `java-maven-root` | Maven at root | `pom.xml` |
-| `java-gradle-root` | Gradle at root | `build.gradle` |
-| `monorepo-mixed` | Java + Python subdirs | `java/`, `python/` |
-| `python-subdir` | Python in subdirectory | `services/backend/pyproject.toml` |
-| `java-subdir` | Java in subdirectory | `services/api/pom.xml` |
-| `java-multi-module` | Parent POM + modules | `pom.xml`, `module-a/`, `module-b/` |
-| `empty-repo` | Empty git repo | `.git/` only |
-| `no-git` | No git | No `.git/` |
+| Repo Shape | Structure | Key Files | Status |
+|------------|-----------|-----------|--------|
+| `python-pyproject` | Single Python at root | `pyproject.toml` | ✓ Implemented |
+| `python-setup` | Legacy setup.py | `setup.py` | ✓ Implemented |
+| `java-maven` | Maven at root | `pom.xml` | ✓ Implemented |
+| `java-gradle` | Gradle at root | `build.gradle` | ✓ Implemented |
+| `monorepo` | Java + Python subdirs | `java/`, `python/` | ✓ Implemented |
+| `python-subdir` | Python in subdirectory | `services/backend/pyproject.toml` | Future |
+| `java-subdir` | Java in subdirectory | `services/api/pom.xml` | Future |
+| `java-multi-module` | Parent POM + modules | `pom.xml`, `module-a/`, `module-b/` | Future |
+| `empty-repo` | Empty git repo | `.git/` only | Edge case |
+| `no-git` | No git | No `.git/` | Edge case |
+
+> **Note (2026-01-12):** Core 5 shapes implemented via `cihub scaffold`. Additional shapes can be added as edge cases surface.
 
 ### 6.2 Command × Repo Shape Requirements
 
@@ -476,14 +485,14 @@ Legend: [x] = Must pass, E = Expected error (graceful), N/A = Not applicable
 
 | Sync Point | Current Status | Tests Required |
 |------------|----------------|----------------|
-| Wizard → Registry | [ ] BROKEN | Integration tests |
-| Registry → config/repos | WARNING: 3 fields only | Full field sync tests |
-| defaults + config/repos + .ci-hub.yml → load_config | WARNING: PARTIAL | Precedence tests |
-| Registry bootstrap (configs → registry) | [ ] NO | Import/conflict tests |
-| YAML → Workflow | [ ] NO verification | Contract tests |
-| Schema ↔ Code | WARNING: PARTIAL | Schema-code parity tests |
-| Profile ↔ Registry | [ ] NO | Profile existence tests |
-| Thresholds ↔ Gates | [ ] NO | Gate evaluation tests |
+| Wizard → Registry | [x] WORKING | test_wizard_flows/ (37 tests) |
+| Registry → config/repos | [x] WORKING | test_registry/ sync tests (9 tests) |
+| defaults + config/repos + .ci-hub.yml → load_config | [x] WORKING | test_config_precedence/ (8 tests) |
+| Registry bootstrap (configs → registry) | [x] WORKING | test_registry/ bootstrap tests |
+| YAML → Workflow | [x] WORKING | test_templates.py contract tests |
+| Schema ↔ Code | [x] WORKING | test_schema_validation/ (13 tests) |
+| Profile ↔ Registry | [x] WORKING | test_wizard_flows/test_profile_selection.py (6 tests) |
+| Thresholds ↔ Gates | [x] WORKING | test_ci_engine.py gate evaluation (124 tests) |
 
 ### 6.4 Edge Cases (38+ identified)
 
@@ -530,10 +539,10 @@ cihub registry list [--tier <tier>]
 cihub registry show <name>
 cihub registry add <name> --owner <owner> --language <python|java>
 cihub registry set <name> [--tier <tier>] [--thresholds ...] [--tools ...]
-cihub registry remove <name> [--keep-config]
+cihub registry remove <name> --yes [--delete-config]
 cihub registry diff [--repo <name>]
 cihub registry sync [--dry-run]
-cihub registry bootstrap --source config/repos [--include-repo-config] [--dry-run] [--strategy merge|replace|prefer-registry|prefer-config]
+cihub registry bootstrap --configs-dir config/repos [--include-thresholds] [--dry-run] [--strategy merge|replace|prefer-registry|prefer-config]
 cihub registry import --file backup.json [--merge|--replace]
 cihub registry export --output backup.json
 ```
@@ -542,7 +551,7 @@ cihub registry export --output backup.json
 
 ```bash
 cihub repo list [--language] [--format json]
-cihub repo update <name> --owner myorg --branch main
+cihub repo update <name> --owner myorg --default-branch main
 cihub repo migrate <from> <to> [--delete-source]
 cihub repo clone <source> <dest>
 cihub repo verify-connectivity <name>
@@ -569,15 +578,17 @@ cihub threshold reset [<tool>] [--repo]
 cihub threshold compare <repo1> <repo2>
 ```
 
-### 7.6 Import/Export (HIGH)
+### 7.6 Import/Export (HIGH) [x] **SATISFIED via subcommands**
 
-```bash
-cihub export --format json --output backup.json
-cihub import --file backup.json [--merge|--replace]
-cihub export repo <name> --output repo.yaml
-cihub import repo --file repo.yaml
-cihub export registry --filter-language python
-```
+> **Note (2026-01-12):** Top-level `cihub export/import` commands were deemed unnecessary. Functionality is provided via domain-specific subcommands which offer better semantics and validation.
+
+**Implemented via subcommands:**
+- `cihub registry export --output FILE` - Export full registry to file
+- `cihub registry import --file FILE [--merge|--replace] [--dry-run]` - Import registry
+- `cihub profile export <name> --output FILE` - Export profile to file
+- `cihub profile import --file FILE [--name] [--force]` - Import profile
+
+**Repo export/import:** Extract individual repos from registry export JSON or copy YAML files directly from `config/repos/`.
 
 ---
 
@@ -585,39 +596,37 @@ cihub export registry --filter-language python
 
 ### 8.1 New Test File Structure
 
+> **Status (2026-01-12):** Core test directories created with comprehensive tests. Counts verified via AST analysis.
+
 ```
 tests/
-├── test_repo_shapes/ # NEW: Repo shape matrix tests
-│ ├── conftest.py # Repo shape fixtures
-│ ├── test_detect_shapes.py
-│ ├── test_init_shapes.py
-│ ├── test_ci_shapes.py
-│ └── test_hub_ci_shapes.py
-├── test_wizard_flows/ # NEW: Wizard flow tests
-│ ├── conftest.py
-│ ├── test_profile_selection.py
-│ ├── test_checkbox_interaction.py
-│ ├── test_setup_wizard.py
-│ └── test_cli_wizard_parity.py
-├── test_registry/ # NEW: Registry tests
-│ ├── test_registry_service_unit.py
-│ ├── test_registry_integration.py
-│ ├── test_registry_contracts.py
-│ ├── test_registry_properties.py # Hypothesis
-│ ├── test_registry_bootstrap.py
-│ ├── test_registry_drift.py
-│ └── test_registry_e2e.py
-├── test_config_precedence/ # NEW: Merge order + repo-side apply
-│ ├── test_merge_order.py
-│ └── test_repo_side_apply.py
-├── test_cli_contracts/ # NEW: JSON purity + output contracts
-│ └── test_json_purity.py
-├── test_schema_validation/ # NEW: Schema validation tests
-│ ├── test_field_validation.py
-│ ├── test_deprecation_warnings.py
-│ └── test_schema_evolution.py
-└── existing tests...
+├── test_repo_shapes/               # Repo shape matrix tests (26 tests)
+│   ├── conftest.py                 # ✓ Repo shape fixtures (5 shapes)
+│   ├── test_ci_shapes.py           # ✓ CI shape tests (6 tests)
+│   ├── test_detect_shapes.py       # ✓ Detection tests across shapes (10 tests)
+│   └── test_init_shapes.py         # ✓ Init tests across shapes (10 tests)
+├── test_wizard_flows/              # Wizard flow tests (37 tests)
+│   ├── __init__.py
+│   ├── test_profile_selection.py   # ✓ Profile/tier/WizardResult tests
+│   ├── test_cli_wizard_parity.py   # ✓ Config structure parity tests
+│   └── test_wizard_modules.py      # ✓ profile.py, advanced.py module tests
+├── test_registry/                  # Registry tests (9 tests)
+│   ├── __init__.py
+│   └── test_registry_service.py    # ✓ list_repos, thresholds, sync, diff, bootstrap
+├── test_config_precedence/         # Merge order tests (8 tests)
+│   ├── __init__.py
+│   └── test_merge_order.py         # ✓ deep_merge, tier overrides, tool_enabled
+├── test_schema_validation/         # Schema validation tests (13 tests)
+│   ├── __init__.py
+│   └── test_schema_fields.py       # ✓ Schema structure, customTool, patternProperties
+├── test_custom_tools.py            # Custom tool tests (35 tests)
+└── existing tests...               # 2550+ additional tests
 ```
+
+**Future expansion (as needed):**
+- `test_wizard_flows/test_checkbox_interaction.py` - Interactive wizard mocking
+- `test_registry/test_registry_properties.py` - Hypothesis property tests
+- `test_schema_validation/test_schema_evolution.py` - Migration tests
 
 ### 8.2 Test Metrics Goals
 
@@ -667,52 +676,120 @@ tests/
 - [x] 2.1 Expand registry.schema.json with allowlisted keys
 - [x] 2.2a Add sparse config fragment audit (defaults/profile baseline)
 - [x] 2.2 Rewrite registry_service.py for full config scope (sparse storage) (2026-01-09: expanded to all 14 threshold fields)
-- [ ] 2.3 Implement full sync to config/repos
+- [x] 2.3 Implement full sync to config/repos (2026-01-09: verified via roundtrip tests - all 12 managedConfig keys synced)
 - [x] 2.3a Sync tier/repo config fragments into config/repos (managedConfig; includes tier profile merge)
 - [x] 2.3b Orchestrator-safe dispatch artifacts for nested config basenames (config_basename_safe)
 - [x] 2.4a Diff surfaces managedConfig drift via dry-run sync (non-threshold keys + thresholds) + cross-root --configs-dir handling
 - [x] 2.4b Diff flags orphan config/repos YAMLs + unmanaged top-level keys (allowlist-driven)
-- [ ] 2.4 Diff surfaces .ci-hub.yml overrides + non-tool drift
+- [x] 2.4 Diff surfaces .ci-hub.yml overrides + non-tool drift (2026-01-09: `compute_diff()` accepts `repo_paths`, CLI wired via `--repos-root`)
 - [x] 2.5 Define canonical tier/profile/thresholds_profile mapping (2026-01-09: tier profiles created)
 
 ### Phase 3: Registry Bootstrap & Drift
 
-- [ ] 3.1 Add registry bootstrap/import command with --dry-run
-- [ ] 3.2 Implement conflict strategies + audit report
-- [ ] 3.3 Add drift report across registry/config/repos/.ci-hub.yml
+- [x] 3.1 Add registry bootstrap/import command with --dry-run (2026-01-10)
+- [x] 3.2 Implement conflict strategies + audit report (2026-01-10: in bootstrap_from_configs)
+- [x] 3.3 Add drift report across registry/config/repos/.ci-hub.yml (2026-01-10: in compute_diff)
 
 ### Phase 4: Wizard Parity + Profile Integration
 
-- [ ] 4.1 Wizard uses shared service layer (no direct writes)
-- [ ] 4.2 Add profile selection step
-- [ ] 4.3 Keep checkboxes after profile + format mode choice
-- [ ] 4.4 Expose non-tool settings in wizard
-- [ ] 4.5 Setup wizard uses registry + optional repo-side apply
+- [x] 4.1 Wizard uses shared service layer when `--use-registry` or `--hub-mode` is set (2026-01-10: `services/configuration.py` with `create_repo_via_registry()`, 2026-01-12: `--use-registry` flag exposed in `cihub new`). Note: Local-only mode (`init`, `config edit` without flags) still writes directly for standalone use.
+- [x] 4.2 Add profile selection step (2026-01-10: `wizard/questions/profile.py` with `select_profile()` + `select_tier()`)
+- [x] 4.3 Keep checkboxes after profile + format mode choice (2026-01-10: profile merged before tool prompts)
+- [x] 4.4 Expose non-tool settings in wizard (2026-01-10: `wizard/questions/advanced.py` with gates/reports/notifications/harden_runner)
+- [x] 4.5 Setup wizard uses registry + optional repo-side apply (2026-01-10: `--hub-mode` flag in setup command)
+
+**Phase 4 Code Review Fixes (2026-01-10):**
+- Fixed: WizardResult return type handling in init.py, config_cmd.py (extract `.config`)
+- Fixed: sync_to_configs argument order and return type (list, not dict)
+- Fixed: --hub-mode/--tier parser wiring in repo_setup.py
+- Fixed: --tier default=None to allow wizard tier selection
+- Fixed: Sparse threshold calculation includes tier profile thresholds
+- Fixed: Registry key uses wizard repo_name (not CLI arg)
+- Fixed: synced=True only when action != "skip" in create/update_repo_via_registry
+- Fixed: setup.py hub-mode uses wizard_result.repo_name for registry key (not repo_path.name)
+- Fixed: sync_to_configs now creates missing config files for new repos (action="created")
+- Fixed: _prompt_profile_and_tier accepts skip_tier param to avoid prompting when tier pre-selected
+- Fixed: sync_to_configs guards creation - requires repo.owner/repo.name/language for valid configs
+- Fixed: compute_diff recognizes would_create action and reports missing config files
+- Fixed: registry_cmd.py sync counts created/would_create in summary and files_modified
+- Fixed: Guard checks both top-level language AND config.repo.language (canonical after normalization)
+- Fixed: New config creation sets language from registry top-level as fallback to repo.language
+- Fixed: Defensive checks for malformed registry entries (config: null won't raise AttributeError)
 
 ### Phase 5: CLI Management Commands
 
-- [ ] 5.1 Profile management commands
-- [ ] 5.2 Registry remove/bootstrap/import/export commands
-- [ ] 5.3 Tool management commands
-- [ ] 5.4 Threshold management commands
-- [ ] 5.5 Repo management commands
+- [x] 5.1 Profile management commands (complete)
+  - [x] `profile list [--language] [--type]` - list available profiles
+  - [x] `profile show <name> [--effective]` - show profile details
+  - [x] `profile create <name> [--from-profile] [--from-repo] [--force]` - create new profile
+  - [x] `profile edit <name> [--wizard] [--enable] [--disable] [--set]` - edit profile (wizard mode implemented 2026-01-12)
+  - [x] `profile delete <name> [--force]` - delete profile
+  - [x] `profile export <name> --output FILE` - export profile to file
+  - [x] `profile import --file FILE [--name] [--force]` - import profile from file
+  - [x] `profile validate <name> [--strict]` - validate profile
+- [x] 5.2 Registry management extensions (complete)
+  - [x] `registry add --owner/--name/--language` flags for sync-ready entries
+  - [x] Schema compliance: `--name` requires `--owner` (both-or-none per registry.schema.json)
+  - [x] `registry remove` command with `--delete-config` and `--yes` flags
+  - [x] `registry import/export` commands with `--merge`/`--replace` and `--dry-run`
+- [x] 5.3 Tool management commands (complete)
+  - [x] `tool list [--language] [--category] [--repo] [--enabled-only]` - list tools
+  - [x] `tool enable <tool> [--for-repo] [--all-repos] [--profile]` - enable tool (supports custom x-* tools 2026-01-12)
+  - [x] `tool disable <tool> [--for-repo] [--all-repos] [--profile]` - disable tool (supports custom x-* tools 2026-01-12)
+  - [x] `tool configure <tool> <param> <value> [--repo] [--profile] [--wizard]` - configure tool (supports custom x-* tools 2026-01-12, wizard mode 2026-01-14)
+  - [x] `tool status [--repo] [--all] [--language]` - show tool status
+  - [x] `tool validate <tool> [--install-if-missing]` - validate installation
+  - [x] `tool info <tool>` - show detailed tool info (supports custom x-* tools 2026-01-12)
+  - [x] Tool commands honor `config.repo.language` (canonical) and reject mismatched tool/language targets (2026-01-10)
+- [x] 5.4 Threshold management commands (2026-01-10)
+  - [x] `threshold get [<key>]` - get threshold value(s) with `--repo`, `--tier`, `--effective`
+  - [x] `threshold set <key> <value>` - set threshold with `--repo`, `--tier`, `--all-repos`
+  - [x] `threshold list` - list all thresholds with descriptions, `--category`, `--diff`
+  - [x] `threshold reset [<key>] [--wizard]` - reset to default with `--repo`, `--tier`, `--all-repos` (wizard mode 2026-01-14)
+  - [x] `threshold compare <repo1> <repo2>` - compare thresholds between repos
+- [x] 5.5 Repo management commands (2026-01-10)
+  - [x] `repo list` - list repos with `--language`, `--tier`, `--with-overrides`
+  - [x] `repo show <name>` - show detailed repo info with `--effective`
+  - [x] `repo update <name>` - update metadata (owner, branch, language, tier, dispatch_enabled)
+  - [x] `repo migrate <from> <to>` - migrate/rename with `--delete-source`, `--force`
+  - [x] `repo clone <source> <dest>` - clone repo config
+  - [x] `repo verify-connectivity <name>` - verify GitHub access with `--check-workflows`
 
 ### Phase 6: Schema & Extensibility
 
-- [ ] 6.1 Enable custom tools (x- prefix) end-to-end
-- [ ] 6.2 Update command contracts + generated docs
+- [x] 6.1 Enable custom tools (x- prefix) end-to-end (2026-01-11)
+  - [x] Added `customTool` definition to schema with boolean/object oneOf
+  - [x] Added `patternProperties` with `^x-[a-zA-Z0-9_-]+$` pattern to javaTools and pythonTools
+  - [x] Added helper functions in `tools/registry.py`: `is_custom_tool()`, `get_custom_tools_from_config()`, `get_all_tools_from_config()`, `is_tool_enabled()`, `get_custom_tool_command()`
+  - [x] Custom tool execution in `python_tools.py` and `java_tools.py` with `fail_on_error` support
+  - [x] Report building uses `get_all_tools_from_config()` to include custom tools
+  - [x] `CIHUB_RUN_*` env overrides work for custom tools (pattern: `x-my-tool` → `CIHUB_RUN_X_MY_TOOL`)
+  - [x] `fail_on_error=true` emits "error" severity (affects CI exit code)
+  - [x] Verified normalization preserves custom tools
+  - [x] Added 35 tests in `tests/test_custom_tools.py` (including `TestCustomToolExecution` with 7 execution path tests)
+- [x] 6.2 Update command contracts + generated docs (2026-01-11)
+  - [x] Regenerated CLI.md, CONFIG.md, WORKFLOWS.md via `cihub docs generate`
+  - [x] Updated CLI help snapshot
 
 ### Test Implementation
 
-- [ ] Create test_repo_shapes/ with fixtures
-- [ ] Create test_wizard_flows/
-- [ ] Create test_registry/
-- [ ] Create test_config_precedence/
+- [x] Create test_repo_shapes/ with fixtures (2026-01-11: exists with conftest.py, test_ci_shapes.py)
+- [x] Create test_wizard_flows/ (2026-01-12: 37 tests for profile selection, tier mapping, WizardResult, CLI parity)
+- [x] Create test_registry/ (2026-01-12: 9 tests for list_repos, thresholds, sync, diff, bootstrap)
+- [x] Create test_config_precedence/ (2026-01-12: 8 tests for deep_merge, tier overrides, tool_enabled)
 - [x] Create test_cli_contracts/ (JSON purity)
-- [ ] Create test_schema_validation/
-- [ ] Add CLI/wizard parity tests
-- [ ] Add registry bootstrap + drift tests
-- [ ] Run full test matrix
+- [x] Create test_schema_validation/ (2026-01-12: 13 tests for schema structure, customTool, patternProperties)
+- [x] Add CLI/wizard parity tests (2026-01-12: 12 tests for config structure, merge, tool enablement, output format)
+- [x] Add registry bootstrap + drift tests
+- [x] Add created/would_create path tests (sync_to_configs, compute_diff, malformed entry handling)
+- [x] Add registry add command tests (--owner/--name/--language flags, end-to-end sync flow)
+- [x] Add registry remove command tests (confirmation, removal, not-found, delete-config)
+- [x] Add registry import/export tests (merge, replace, dry-run, validation guards)
+- [x] Add profile management CLI tests (parser contracts, snapshots updated)
+- [x] Add tool management CLI tests (parser contracts, snapshots updated)
+- [x] Add custom tool execution tests (2026-01-11: TestCustomToolExecution with returncode, fail_on_error, env overrides)
+- [x] Add Phase 4 wizard module tests (2026-01-12: 19 tests for profile.py, advanced.py, language, security, thresholds)
+- [x] Run full test matrix (2026-01-14: 2716 passed, 0 failed)
 
 ---
 
@@ -723,9 +800,9 @@ tests/
 3. [x] Normalize `min_score` → `min_mutation_score`, align hub-ci mutmut args
 4. [x] Add hub-ci ruff format wrapper (subcommand or flag)
 5. [x] Add `cihub` block to schema (debug/triage toggles)
-6. Add inline comments to scaffold output files
-7. Document all `CIHUB_*` env toggles in one place
-8. Add "See Also" to command help text
+6. [x] Add inline comments to scaffold output files (templates already include tool guidance headers)
+7. [x] Document all `CIHUB_*` env toggles in one place (docs/reference/ENV.md)
+8. [x] Add "See Also" to command help text (cli_parsers/common.py:see_also_epilog)
 
 ---
 
@@ -779,15 +856,43 @@ The following documents have been consolidated into this plan:
 
 | Metric | Count |
 |--------|-------|
-| Commands with wizard support | 4 of 106+ |
-| Profile selection | [ ] Not implemented (only applies profile if passed in) |
-| Registry integration | [ ] Not implemented |
+| Commands with wizard support | **12** of 106+ |
+| Profile selection | [x] Implemented (2026-01-10: `select_profile()`, `select_tier()` in wizard/questions/profile.py) |
+| Registry integration | [x] Implemented (2026-01-10: `--hub-mode` uses `create_repo_via_registry()`) |
 
 **Wizard-supported commands:**
-1. `cihub setup` - Full workflow wizard
+1. `cihub setup` - Full workflow wizard (with `--hub-mode` for registry integration)
 2. `cihub init --wizard` - Config wizard
 3. `cihub new --interactive` - Config creation
 4. `cihub config edit` - Config editing
+5. `cihub profile edit --wizard` - Profile editing (2026-01-12)
+6. `cihub tool enable --wizard` - Tool enablement (2026-01-12)
+7. `cihub tool disable --wizard` - Tool disablement (2026-01-12)
+8. `cihub tool configure --wizard` - Tool configuration (2026-01-14)
+9. `cihub registry add --wizard` - Registry add (2026-01-12)
+10. `cihub threshold set --wizard` - Threshold setting (2026-01-12)
+11. `cihub threshold reset --wizard` - Threshold reset with tier support (2026-01-14)
+12. `cihub repo update --wizard` - Repo metadata update (2026-01-12)
+
+**Wizard parity improvements (2026-01-12):**
+- [x] **Tool sourcing fixed:** `wizard/questions/python_tools.py` and `java_tools.py` now source tools from `tools/registry.py` (CLI source of truth). Custom x-* tools from config are also included.
+- [x] **Profile discovery fixed:** `wizard/questions/profile.py` now scans `templates/profiles/` directory instead of hard-coded list. New profiles automatically appear in wizard.
+- [x] **Tool wizard added:** `cihub tool enable --wizard` and `cihub tool disable --wizard` provide interactive tool management.
+- [x] **JSON purity enforced:** `profile edit --wizard --json` now correctly rejected with EXIT_USAGE.
+- [x] **Registry add wizard added:** `cihub registry add --wizard` provides interactive repo registration with tier/description/owner/language prompts.
+- [x] **Threshold set wizard added:** `cihub threshold set --wizard` provides interactive threshold setting with key selection from `THRESHOLD_METADATA`, value input, and target (repo/tier/all-repos) selection.
+- [x] **Repo update wizard added:** `cihub repo update --wizard` provides interactive repo metadata updates with multi-select field editing.
+
+**Wizard code review fixes (2026-01-14):**
+- [x] **Tool configure wizard added:** `cihub tool configure --wizard` provides interactive tool configuration with custom x-* tools included, profile scanning via `hub_root() / "templates" / "profiles"`.
+- [x] **Tool configure JSON purity:** `tool configure --wizard --json` now correctly rejected with EXIT_USAGE (was missing guard).
+- [x] **Threshold reset wizard added:** `cihub threshold reset --wizard` provides interactive threshold reset with key selection (or reset all), and target selection including tier support.
+- [x] **Threshold reset tier support:** `_wizard_reset()` now offers repo, tier, and all-repos targets (was missing tier selection).
+
+**Remaining wizard parity gaps (v1.1+ backlog):**
+- Registry list/remove/bootstrap - read-only or destructive operations (wizard not needed)
+- Threshold get/list/compare - read-only operations (wizard not needed)
+- Repo list/show/migrate/clone/verify - read-only or specialized operations (wizard optional)
 
 ### A.4 Workflow Audit Results (Agent 4)
 
@@ -812,14 +917,24 @@ The following documents have been consolidated into this plan:
 
 ### A.6 Test Directory Status
 
-**Proposed directories in Part 8 do NOT exist yet:**
+**Proposed directories in Part 8 - current status (2026-01-12):**
 
 ```
-tests/test_repo_shapes/ → EMPTY (needs creation)
-tests/test_wizard_flows/ → EMPTY (needs creation)
-tests/test_registry/ → EMPTY (needs creation)
-tests/test_config_precedence/ → EMPTY (needs creation)
-tests/test_schema_validation/ → EMPTY (needs creation)
+tests/test_repo_shapes/       → EXISTS (26 tests: test_detect_shapes.py=10, test_ci_shapes.py=6, test_init_shapes.py=10)
+tests/test_wizard_flows/      → EXISTS (37 tests: test_wizard_modules.py=19, test_cli_wizard_parity.py=12, test_profile_selection.py=6)
+tests/test_registry/          → EXISTS (9 tests: test_registry_service.py=9)
+tests/test_config_precedence/ → EXISTS (8 tests: test_merge_order.py=8)
+tests/test_schema_validation/ → EXISTS (13 tests: test_schema_fields.py=13)
+tests/test_custom_tools.py    → EXISTS (35 tests including TestCustomToolExecution + Java tests)
 ```
 
-**Estimated new tests required:** 200-250 tests across all proposed directories
+**Test totals (AST-verified 2026-01-12):**
+- test_repo_shapes: 26 tests
+- test_wizard_flows: 37 tests
+- test_registry: 9 tests
+- test_config_precedence: 8 tests
+- test_schema_validation: 13 tests
+- test_custom_tools: 35 tests
+- **Total new directory tests:** 128 tests
+
+**Note:** Earlier count of 159 was incorrect; AST analysis confirms 128 tests in new directories.

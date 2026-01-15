@@ -46,5 +46,9 @@ class CommandHandlers:
     cmd_config: CommandHandler
     cmd_fix: CommandHandler
     cmd_registry: CommandHandler
+    cmd_profile: CommandHandler
+    cmd_tool: CommandHandler
+    cmd_threshold: CommandHandler
+    cmd_repo: CommandHandler
     cmd_hub: CommandHandler
     cmd_setup: CommandHandler

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from typing import Callable
 
+from cihub.cli_parsers.common import see_also_epilog
 from cihub.cli_parsers.types import CommandHandlers
 
 
@@ -13,7 +14,7 @@ def add_adr_commands(
     add_json_flag: Callable[[argparse.ArgumentParser], None],
     handlers: CommandHandlers,
 ) -> None:
-    adr = subparsers.add_parser("adr", help="Manage Architecture Decision Records")
+    adr = subparsers.add_parser("adr", help="Manage Architecture Decision Records", epilog=see_also_epilog("adr"))
     adr_sub = adr.add_subparsers(dest="subcommand")
     adr.set_defaults(func=handlers.cmd_adr)
 

@@ -9,6 +9,7 @@ from typing import Mapping
 
 from cihub.cli_parsers.builder import build_parser as _build_parser
 from cihub.cli_parsers.types import CommandHandlers
+from cihub.config.io import ConfigParseError
 from cihub.exit_codes import EXIT_FAILURE, EXIT_INTERNAL_ERROR, EXIT_SUCCESS
 from cihub.output import get_renderer
 from cihub.types import CommandResult
@@ -217,6 +218,30 @@ def cmd_registry(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_profile(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.profile_cmd import cmd_profile as handler
+
+    return handler(args)
+
+
+def cmd_tool(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.tool_cmd import cmd_tool as handler
+
+    return handler(args)
+
+
+def cmd_threshold(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.threshold_cmd import cmd_threshold as handler
+
+    return handler(args)
+
+
+def cmd_repo(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.repo_cmd import cmd_repo as handler
+
+    return handler(args)
+
+
 def cmd_hub(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.hub_config import cmd_hub as handler
 
@@ -264,6 +289,10 @@ def build_parser() -> argparse.ArgumentParser:
         cmd_config=cmd_config,
         cmd_fix=cmd_fix,
         cmd_registry=cmd_registry,
+        cmd_profile=cmd_profile,
+        cmd_tool=cmd_tool,
+        cmd_threshold=cmd_threshold,
+        cmd_repo=cmd_repo,
         cmd_hub=cmd_hub,
         cmd_setup=cmd_setup,
     )
@@ -290,7 +319,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         result = args.func(args)
-    except (FileNotFoundError, ValueError, PermissionError, OSError) as exc:
+    except (FileNotFoundError, ValueError, PermissionError, OSError, ConfigParseError) as exc:
         # Expected user errors - show friendly message, return failure
         if debug and not json_mode:
             traceback.print_exc()

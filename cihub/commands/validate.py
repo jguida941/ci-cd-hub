@@ -5,10 +5,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-import yaml
-
 from cihub.ci_config import load_ci_config
-from cihub.config.io import load_yaml_file
+from cihub.config.io import ConfigParseError, load_yaml_file
 from cihub.config.paths import PathConfig
 from cihub.config.schema import validate_config as validate_config_schema
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
@@ -45,34 +43,24 @@ def cmd_validate(args: argparse.Namespace) -> CommandResult:
     # Try to load and parse the YAML file
     try:
         config = load_yaml_file(config_path)
-    except yaml.YAMLError as exc:
-        message = f"YAML parse error: {exc}"
-        items.append(message)
-        return CommandResult(
-            exit_code=EXIT_FAILURE,
-            summary="Invalid YAML syntax",
-            problems=[
-                {
-                    "severity": "error",
-                    "message": message,
-                    "code": "CIHUB-VALIDATE-003",
-                    "file": str(config_path),
-                }
-            ],
-            data={"items": items},
-        )
-    except ValueError as exc:
-        # load_yaml_file raises ValueError if root is not a dict
+    except ConfigParseError as exc:
+        # ConfigParseError wraps both YAML syntax errors and non-mapping errors
         message = str(exc)
         items.append(message)
+        # Determine error code based on cause
+        error_code = "CIHUB-VALIDATE-003"  # Default to YAML syntax error
+        summary = "Invalid YAML syntax"
+        if "Expected mapping" in message:
+            error_code = "CIHUB-VALIDATE-004"
+            summary = "Invalid config structure"
         return CommandResult(
             exit_code=EXIT_FAILURE,
-            summary="Invalid config structure",
+            summary=summary,
             problems=[
                 {
                     "severity": "error",
                     "message": message,
-                    "code": "CIHUB-VALIDATE-004",
+                    "code": error_code,
                     "file": str(config_path),
                 }
             ],

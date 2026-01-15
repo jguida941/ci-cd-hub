@@ -11,6 +11,15 @@ import yaml
 from cihub.config.paths import PathConfig
 
 
+class ConfigParseError(Exception):
+    """Raised when a config file contains invalid YAML or unexpected structure."""
+
+    def __init__(self, path: Path, message: str, cause: Exception | None = None):
+        self.path = path
+        self.cause = cause
+        super().__init__(f"{path}: {message}")
+
+
 def load_yaml_file(path: str | Path) -> dict[str, Any]:
     """Load a YAML file and return its contents as a dict.
 
@@ -21,18 +30,24 @@ def load_yaml_file(path: str | Path) -> dict[str, Any]:
         Dictionary containing the YAML contents, or empty dict if file doesn't exist.
 
     Raises:
-        ValueError: If the YAML root is not a mapping (dict).
+        ConfigParseError: If the YAML is malformed or root is not a mapping (dict).
     """
     path = Path(path)
     if not path.exists():
         return {}
-    with open(path, encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+    except yaml.YAMLError as e:
+        raise ConfigParseError(path, f"Invalid YAML: {e}", cause=e) from e
 
     if data is None:
         return {}
     if not isinstance(data, dict):
-        raise ValueError(f"Expected YAML file {path} to contain a mapping (dict), but got {type(data).__name__}")
+        raise ConfigParseError(
+            path,
+            f"Expected mapping (dict), got {type(data).__name__}",
+        )
     return data
 
 
@@ -109,6 +124,7 @@ def load_profile_strict(paths: PathConfig, name: str) -> dict[str, Any]:
 
     Raises:
         FileNotFoundError: If the profile file does not exist.
+        ConfigParseError: If the profile file contains invalid YAML.
     """
     profile_path = Path(paths.profile_file(name))
     if not profile_path.exists():

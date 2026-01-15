@@ -9,6 +9,7 @@ from cihub.cli_parsers.common import (
     add_repo_args,
     add_report_args,
     add_summary_args,
+    see_also_epilog,
 )
 from cihub.cli_parsers.types import CommandHandlers
 
@@ -20,7 +21,7 @@ def _add_preflight_parser(
     name: str,
     help_text: str,
 ) -> None:
-    parser = subparsers.add_parser(name, help=help_text)
+    parser = subparsers.add_parser(name, help=help_text, epilog=see_also_epilog(name))
     add_json_flag(parser)
     parser.add_argument(
         "--full",
@@ -35,7 +36,7 @@ def add_core_commands(
     add_json_flag: Callable[[argparse.ArgumentParser], None],
     handlers: CommandHandlers,
 ) -> None:
-    detect = subparsers.add_parser("detect", help="Detect repo language and tools")
+    detect = subparsers.add_parser("detect", help="Detect repo language and tools", epilog=see_also_epilog("detect"))
     add_json_flag(detect)
     add_repo_args(detect, required=True)
     detect.add_argument(
@@ -49,7 +50,7 @@ def add_core_commands(
     _add_preflight_parser(subparsers, add_json_flag, handlers, "preflight", "Check environment readiness")
     _add_preflight_parser(subparsers, add_json_flag, handlers, "doctor", "Alias for preflight")
 
-    scaffold = subparsers.add_parser("scaffold", help="Generate a minimal fixture project")
+    scaffold = subparsers.add_parser("scaffold", help="Generate a minimal fixture project", epilog=see_also_epilog("scaffold"))
     add_json_flag(scaffold)
     scaffold.add_argument(
         "type",
@@ -61,7 +62,7 @@ def add_core_commands(
     scaffold.add_argument("--force", action="store_true", help="Overwrite destination if not empty")
     scaffold.set_defaults(func=handlers.cmd_scaffold)
 
-    smoke = subparsers.add_parser("smoke", help="Run a local smoke test")
+    smoke = subparsers.add_parser("smoke", help="Run a local smoke test", epilog=see_also_epilog("smoke"))
     add_json_flag(smoke)
     smoke.add_argument(
         "repo",
@@ -108,14 +109,14 @@ def add_core_commands(
     )
     smoke.set_defaults(func=handlers.cmd_smoke)
 
-    smoke_validate = subparsers.add_parser("smoke-validate", help="Validate smoke test setup/results")
+    smoke_validate = subparsers.add_parser("smoke-validate", help="Validate smoke test setup/results", epilog=see_also_epilog("smoke"))
     add_json_flag(smoke_validate)
     smoke_validate.add_argument("--count", type=int, help="Repo count to validate")
     smoke_validate.add_argument("--min-count", type=int, default=2, help="Minimum required repos")
     smoke_validate.add_argument("--status", help="Smoke test job status (success/failure)")
     smoke_validate.set_defaults(func=handlers.cmd_smoke_validate)
 
-    check = subparsers.add_parser("check", help="Run local validation checks")
+    check = subparsers.add_parser("check", help="Run local validation checks", epilog=see_also_epilog("check"))
     add_json_flag(check)
     check.add_argument(
         "--smoke-repo",
@@ -178,7 +179,7 @@ def add_core_commands(
     )
     check.set_defaults(func=handlers.cmd_check)
 
-    verify = subparsers.add_parser("verify", help="Verify workflow/template contracts")
+    verify = subparsers.add_parser("verify", help="Verify workflow/template contracts", epilog=see_also_epilog("verify"))
     add_json_flag(verify)
     verify.add_argument(
         "--remote",
@@ -216,7 +217,7 @@ def add_core_commands(
     )
     verify.set_defaults(func=handlers.cmd_verify)
 
-    ci = subparsers.add_parser("ci", help="Run CI based on .ci-hub.yml")
+    ci = subparsers.add_parser("ci", help="Run CI based on .ci-hub.yml", epilog=see_also_epilog("ci"))
     add_json_flag(ci)
     add_repo_args(ci)
     ci.add_argument("--workdir", help="Override workdir/subdir")
@@ -259,7 +260,7 @@ def add_core_commands(
     ci.set_defaults(write_github_summary=None)
     ci.set_defaults(func=handlers.cmd_ci)
 
-    run = subparsers.add_parser("run", help="Run one tool and emit JSON output")
+    run = subparsers.add_parser("run", help="Run one tool and emit JSON output", epilog=see_also_epilog("run"))
     add_json_flag(run)
     run.add_argument("tool", help="Tool name (pytest, ruff, bandit, etc.)")
     add_repo_args(run)

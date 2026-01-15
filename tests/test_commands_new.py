@@ -64,6 +64,8 @@ def base_args() -> argparse.Namespace:
         dry_run=False,
         yes=True,
         json=False,
+        use_registry=False,
+        tier=None,
     )
 
 
@@ -398,3 +400,113 @@ class TestCmdNew:
 
                 assert isinstance(result, CommandResult)
                 assert result.exit_code == 1
+
+    def test_invalid_yaml_profile_returns_error(self, hub_paths: PathConfig, base_args: argparse.Namespace) -> None:
+        """Profile with invalid YAML returns ConfigParseError result."""
+        # Create an invalid YAML profile
+        profiles_dir = Path(hub_paths.root) / "templates" / "profiles"
+        profiles_dir.mkdir(parents=True, exist_ok=True)
+        invalid_profile = profiles_dir / "python-broken.yaml"
+        invalid_profile.write_text("name: [unclosed bracket")  # Invalid YAML
+
+        base_args.profile = "python-broken"
+
+        with mock.patch("cihub.commands.new.hub_root") as mock_hub_root:
+            mock_hub_root.return_value = Path(hub_paths.root)
+
+            result = cmd_new(base_args)
+
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 1
+            assert "Invalid YAML" in result.summary
+            assert len(result.problems) > 0
+            assert result.problems[0]["code"] == "CIHUB-NEW-PROFILE-INVALID-YAML"
+
+    def test_profile_not_found_returns_error(self, hub_paths: PathConfig, base_args: argparse.Namespace) -> None:
+        """Non-existent profile returns error result."""
+        base_args.profile = "python-nonexistent"
+
+        with mock.patch("cihub.commands.new.hub_root") as mock_hub_root:
+            mock_hub_root.return_value = Path(hub_paths.root)
+
+            result = cmd_new(base_args)
+
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 2
+            assert len(result.problems) > 0
+            assert result.problems[0]["code"] == "CIHUB-NEW-PROFILE-NOT-FOUND"
+
+    def test_use_registry_requires_yes_in_non_interactive(
+        self, hub_paths: PathConfig, base_args: argparse.Namespace
+    ) -> None:
+        """--use-registry requires --yes for non-interactive writes."""
+        base_args.use_registry = True
+        base_args.yes = False
+        base_args.dry_run = False
+        base_args.interactive = False
+
+        with mock.patch("cihub.commands.new.hub_root") as mock_hub_root:
+            mock_hub_root.return_value = Path(hub_paths.root)
+
+            result = cmd_new(base_args)
+
+            assert isinstance(result, CommandResult)
+            assert result.exit_code == 2
+            assert "Confirmation required" in result.summary
+
+    def test_use_registry_dry_run_succeeds(
+        self, hub_paths: PathConfig, base_args: argparse.Namespace
+    ) -> None:
+        """--use-registry with --dry-run returns preview without writing."""
+        base_args.use_registry = True
+        base_args.dry_run = True
+        base_args.yes = False  # Should not need --yes for dry-run
+
+        with mock.patch("cihub.commands.new.hub_root") as mock_hub_root:
+            mock_hub_root.return_value = Path(hub_paths.root)
+
+            with mock.patch("cihub.services.configuration.create_repo_via_registry") as mock_create:
+                mock_create.return_value = mock.Mock(
+                    success=True,
+                    errors=[],
+                    registry_entry={"name": "owner/repo", "tier": "standard"},
+                    config_file_path=str(hub_paths.repo_file("owner/repo")),
+                    synced=False,
+                )
+
+                result = cmd_new(base_args)
+
+                assert isinstance(result, CommandResult)
+                assert result.exit_code == 0
+                assert "Dry run" in result.summary
+                mock_create.assert_called_once()
+                _, kwargs = mock_create.call_args
+                assert kwargs["dry_run"] is True
+
+    def test_use_registry_with_tier(
+        self, hub_paths: PathConfig, base_args: argparse.Namespace
+    ) -> None:
+        """--use-registry with --tier passes tier to registry service."""
+        base_args.use_registry = True
+        base_args.tier = "strict"
+        base_args.yes = True
+
+        with mock.patch("cihub.commands.new.hub_root") as mock_hub_root:
+            mock_hub_root.return_value = Path(hub_paths.root)
+
+            with mock.patch("cihub.services.configuration.create_repo_via_registry") as mock_create:
+                mock_create.return_value = mock.Mock(
+                    success=True,
+                    errors=[],
+                    registry_entry={"name": "owner/repo", "tier": "strict"},
+                    config_file_path=str(hub_paths.repo_file("owner/repo")),
+                    synced=True,
+                )
+
+                result = cmd_new(base_args)
+
+                assert isinstance(result, CommandResult)
+                assert result.exit_code == 0
+                mock_create.assert_called_once()
+                _, kwargs = mock_create.call_args
+                assert kwargs["tier"] == "strict"

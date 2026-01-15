@@ -93,7 +93,7 @@ Structured output from every CI run (see `schema/triage.schema.json` for full sc
 
 ```json
 {
- "schema_version": "cihub-triage-v1",
+ "schema_version": "cihub-triage-v2",
  "generated_at": "2025-12-31T08:00:00Z",
  "run": {
  "correlation_id": "abc123-def456",

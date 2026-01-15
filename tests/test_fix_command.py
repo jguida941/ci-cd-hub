@@ -113,3 +113,33 @@ def test_fix_report_ai(tmp_path: Path):
     content = ai_report.read_text()
     assert "# Fix Report" in content
     assert "Summary" in content
+
+
+def test_fix_invalid_safe_ai():
+    """Test that --safe --ai is rejected (--ai only works with --report)."""
+    result = subprocess.run(
+        [sys.executable, "-m", "cihub", "fix", "--safe", "--ai", "--json"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    # Exit code 2 for usage errors (EXIT_USAGE maps to 2 via CLI)
+    assert result.returncode == 2
+    # Validation error is returned - check that the error message is present
+    assert "--ai" in result.stdout
+    assert "requires --report" in result.stdout or "--report" in result.stdout
+
+
+def test_fix_invalid_report_dry_run():
+    """Test that --report --dry-run is rejected (--dry-run only works with --safe)."""
+    result = subprocess.run(
+        [sys.executable, "-m", "cihub", "fix", "--report", "--dry-run", "--json"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    # Exit code 2 for usage errors (EXIT_USAGE maps to 2 via CLI)
+    assert result.returncode == 2
+    data = json.loads(result.stdout)
+    assert data["status"] == "failure"
+    assert "--dry-run" in data["summary"]

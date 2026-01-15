@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 
 from cihub.config.io import (
+    ConfigParseError,
     ensure_dirs,
     load_defaults,
     load_profile_strict,
@@ -89,7 +90,11 @@ def cmd_new(args: argparse.Namespace) -> CommandResult:
 
         runner = WizardRunner(Console(), paths)
         try:
-            config = runner.run_new_wizard(name, profile=args.profile)
+            # Pass tier from CLI args if provided (wizard will skip tier prompt)
+            cli_tier = getattr(args, "tier", None)
+            wizard_result = runner.run_new_wizard(name, profile=args.profile, tier=cli_tier)
+            config = wizard_result.config
+            tier = wizard_result.tier
         except WizardCancelled:
             return CommandResult(
                 exit_code=EXIT_INTERRUPTED,
@@ -101,6 +106,11 @@ def cmd_new(args: argparse.Namespace) -> CommandResult:
                 summary=str(exc),
                 problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-NEW-NOT-FOUND"}],
             )
+
+        # Use wizard's repo name (may differ from CLI arg if user edited it)
+        if wizard_result.repo_name and wizard_result.repo_name != name:
+            name = wizard_result.repo_name
+            repo_file = Path(paths.repo_file(name))
     else:
         if not args.owner or not args.language:
             message = "--owner and --language are required unless --interactive is set"
@@ -128,9 +138,66 @@ def cmd_new(args: argparse.Namespace) -> CommandResult:
                     summary=str(exc),
                     problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-NEW-PROFILE-NOT-FOUND"}],
                 )
+            except ConfigParseError as exc:
+                return CommandResult(
+                    exit_code=EXIT_FAILURE,
+                    summary=f"Invalid YAML in profile: {args.profile}",
+                    problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-NEW-PROFILE-INVALID-YAML"}],
+                )
             _validate_profile_language(profile_cfg, args.language)
             config = deep_merge(config, profile_cfg)
+        # Get tier from args for non-interactive mode (interactive mode gets it from wizard)
+        tier = getattr(args, "tier", None) or "standard"
 
+    # Handle --use-registry for both interactive and non-interactive modes
+    use_registry = getattr(args, "use_registry", False)
+    if use_registry:
+        from cihub.services.configuration import create_repo_via_registry
+
+        # In non-interactive mode, get tier from args; in interactive, already set
+        if not args.interactive:
+            tier = getattr(args, "tier", None) or "standard"
+
+        # Require --yes for non-interactive, non-dry-run writes (same as direct path)
+        if not args.dry_run and not args.yes and not args.interactive:
+            return CommandResult(
+                exit_code=EXIT_USAGE,
+                summary="Confirmation required; re-run with --yes",
+                data={"config": config, "tier": tier},
+            )
+
+        result = create_repo_via_registry(
+            name,
+            config,
+            tier=tier,
+            sync=True,
+            dry_run=args.dry_run,
+        )
+        if not result.success:
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=result.errors[0] if result.errors else "Failed to create repo",
+                problems=[
+                    {"severity": "error", "message": e, "code": "CIHUB-NEW-REGISTRY-ERROR"}
+                    for e in result.errors
+                ],
+            )
+        if args.dry_run:
+            summary = f"Dry run: would create repo via registry: {name}"
+        else:
+            summary = f"Created repo via registry: {name}"
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=summary,
+            data={
+                "config": config,
+                "tier": tier,
+                "registry_entry": result.registry_entry,
+            },
+            files_generated=[result.config_file_path] if result.synced else [],
+        )
+
+    # Standard path: write config file directly
     payload = yaml.safe_dump(config, sort_keys=False, default_flow_style=False)
     if args.dry_run:
         return CommandResult(

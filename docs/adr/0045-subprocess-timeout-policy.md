@@ -39,7 +39,7 @@ Establish a **Subprocess Timeout Policy** with tiered defaults based on operatio
 
 ```python
 import subprocess
-from cihub.constants import TIMEOUT_QUICK, TIMEOUT_NETWORK, TIMEOUT_BUILD
+from cihub.utils.exec_utils import TIMEOUT_QUICK, TIMEOUT_NETWORK, TIMEOUT_BUILD
 
 # Quick operation
 result = subprocess.run(

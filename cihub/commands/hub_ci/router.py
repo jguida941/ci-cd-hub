@@ -19,8 +19,8 @@ from .java_tools import (
 from .python_tools import (
     cmd_black,
     cmd_coverage_verify,
-    cmd_mypy,
     cmd_mutmut,
+    cmd_mypy,
     cmd_ruff,
     cmd_ruff_format,
 )
@@ -56,6 +56,7 @@ from .smoke import (
     cmd_smoke_python_ruff,
     cmd_smoke_python_tests,
 )
+from .thresholds import cmd_thresholds
 from .validation import (
     cmd_docker_compose_check,
     cmd_enforce_command_result,
@@ -126,6 +127,7 @@ def cmd_hub_ci(args: argparse.Namespace) -> CommandResult:
         "verify-matrix-keys": cmd_verify_matrix_keys,
         "quarantine-check": cmd_quarantine_check,
         "enforce-command-result": cmd_enforce_command_result,
+        "thresholds": cmd_thresholds,
     }
     handler = handlers.get(args.subcommand)
     if handler is None:

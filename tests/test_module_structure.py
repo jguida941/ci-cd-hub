@@ -80,10 +80,10 @@ class TestImportSmoke:
 class TestHubCiCommandCount:
     """Lock hub_ci command count to prevent silent command loss."""
 
-    EXPECTED_COMMAND_COUNT = 49
+    EXPECTED_COMMAND_COUNT = 52
 
     def test_command_count_locked(self) -> None:
-        """Exactly 49 cmd_* functions must exist in hub_ci."""
+        """Exactly 52 cmd_* functions must exist in hub_ci."""
         from cihub.commands import hub_ci
 
         cmd_funcs = [name for name in dir(hub_ci) if name.startswith("cmd_")]

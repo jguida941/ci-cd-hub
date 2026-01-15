@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from typing import Callable
 
+from cihub.cli_parsers.common import see_also_epilog
 from cihub.cli_parsers.types import CommandHandlers
 
 
@@ -13,11 +14,11 @@ def add_docs_commands(
     add_json_flag: Callable[[argparse.ArgumentParser], None],
     handlers: CommandHandlers,
 ) -> None:
-    docs = subparsers.add_parser("docs", help="Generate reference documentation")
+    docs = subparsers.add_parser("docs", help="Generate reference documentation", epilog=see_also_epilog("docs"))
     docs.set_defaults(func=handlers.cmd_docs)
     docs_sub = docs.add_subparsers(dest="subcommand", required=True)
 
-    docs_generate = docs_sub.add_parser("generate", help="Generate CLI and config reference docs")
+    docs_generate = docs_sub.add_parser("generate", help="Generate CLI, config, env, and workflow reference docs")
     add_json_flag(docs_generate)
     docs_generate.add_argument(
         "--output",

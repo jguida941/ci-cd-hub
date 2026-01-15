@@ -218,57 +218,116 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
         console.print(f"  [green]✓[/green] Detected: {language}")
         steps_completed.append("detect")
 
-        # Step 4: Configure (use existing wizard)
-        console.print("\n[bold]Step 4:[/bold] Configure CI Tools")
-        from cihub.commands.init import cmd_init
+        # Step 4: Configure (use wizard)
+        hub_mode = getattr(args, "hub_mode", False)
+        tier = getattr(args, "tier", None)  # None allows wizard to prompt
 
-        # Run init with wizard to configure
-        init_args = argparse.Namespace(
-            repo=str(repo_path),
-            wizard=True,
-            apply=False,  # Don't write yet
-            dry_run=True,
-            language=language if language != "unknown" else None,
-            owner=None,
-            name=None,
-            branch=None,
-            subdir="",
-            fix_pom=False,
-            force=False,
-            json=False,
-        )
-        init_result = cmd_init(init_args)
-        if init_result.exit_code == EXIT_INTERRUPTED:
-            raise WizardCancelled("Configuration cancelled")
-        if init_result.exit_code != EXIT_SUCCESS:
-            return init_result
-        steps_completed.append("configure")
+        if hub_mode:
+            # Hub-mode: Use registry-integrated wizard
+            console.print("\n[bold]Step 4:[/bold] Configure CI Tools (Hub Mode)")
+            from cihub.config.paths import PathConfig
+            from cihub.utils.paths import hub_root
+            from cihub.wizard.core import WizardRunner
 
-        # Step 5: Write files
-        console.print("\n[bold]Step 5:[/bold] Write Configuration Files")
-        write_confirm = _check_cancelled(
-            questionary.confirm(
-                "Write configuration files?",
-                default=True,
-            ).ask(),
-            "Write files confirmation",
-        )
+            paths = PathConfig(str(hub_root()))
+            runner = WizardRunner(console, paths)
 
-        if write_confirm:
-            # Re-run init with --apply
-            init_args.apply = True
-            init_args.dry_run = False
-            init_args.wizard = False  # Skip wizard this time, use detected config
+            # Run wizard with profile/tier selection
+            wizard_result = runner.run_new_wizard(
+                name=repo_path.name,
+                tier=tier,
+                skip_profile_selection=False,
+            )
+            config = wizard_result.config
+            selected_tier = wizard_result.tier
+            steps_completed.append("configure")
+
+            # Step 5: Write to registry + config/repos
+            console.print("\n[bold]Step 5:[/bold] Write Configuration (Registry Mode)")
+            write_confirm = _check_cancelled(
+                questionary.confirm(
+                    "Write to registry and generate config files?",
+                    default=True,
+                ).ask(),
+                "Write files confirmation",
+            )
+
+            if write_confirm:
+                from cihub.services.configuration import create_repo_via_registry
+
+                # Use wizard's repo_name (user may have edited it)
+                effective_repo_name = wizard_result.repo_name or repo_path.name
+                result = create_repo_via_registry(
+                    effective_repo_name,
+                    config,
+                    tier=selected_tier,
+                    sync=True,
+                    dry_run=False,
+                )
+                if result.success:
+                    console.print("  [green]✓[/green] Registry updated")
+                    if result.synced:
+                        console.print(f"  [green]✓[/green] Config synced: {result.config_file_path}")
+                        files_created.append(result.config_file_path)
+                    steps_completed.append("write_files")
+                else:
+                    console.print(f"  [red]✗[/red] Registry error: {result.errors}")
+                    problems.extend([{"severity": "error", "message": e} for e in result.errors])
+            else:
+                console.print("  [yellow]⚠[/yellow] Skipped writing files")
+
+        else:
+            # Standard mode: Use init command
+            console.print("\n[bold]Step 4:[/bold] Configure CI Tools")
+            from cihub.commands.init import cmd_init
+
+            # Run init with wizard to configure
+            init_args = argparse.Namespace(
+                repo=str(repo_path),
+                wizard=True,
+                apply=False,  # Don't write yet
+                dry_run=True,
+                language=language if language != "unknown" else None,
+                owner=None,
+                name=None,
+                branch=None,
+                subdir="",
+                fix_pom=False,
+                force=False,
+                json=False,
+            )
             init_result = cmd_init(init_args)
+            if init_result.exit_code == EXIT_INTERRUPTED:
+                raise WizardCancelled("Configuration cancelled")
             if init_result.exit_code != EXIT_SUCCESS:
                 return init_result
-            files_created.extend(init_result.files_generated or [])
-            console.print("  [green]✓[/green] Files created:")
-            for f in init_result.files_generated or []:
-                console.print(f"      - {f}")
-            steps_completed.append("write_files")
-        else:
-            console.print("  [yellow]⚠[/yellow] Skipped writing files")
+            steps_completed.append("configure")
+
+            # Step 5: Write files
+            console.print("\n[bold]Step 5:[/bold] Write Configuration Files")
+            write_confirm = _check_cancelled(
+                questionary.confirm(
+                    "Write configuration files?",
+                    default=True,
+                ).ask(),
+                "Write files confirmation",
+            )
+
+            if write_confirm:
+                # Re-run init with --apply
+                init_args.apply = True
+                init_args.dry_run = False
+                init_args.wizard = False  # Skip wizard this time, use detected config
+                init_result = cmd_init(init_args)
+                if init_result.exit_code != EXIT_SUCCESS:
+                    return init_result
+                files_created.extend(init_result.files_generated or [])
+                console.print("  [green]✓[/green] Files created:")
+                for f in init_result.files_generated or []:
+                    console.print(f"      - {f}")
+                steps_completed.append("write_files")
+            else:
+                console.print("  [yellow]⚠[/yellow] Skipped writing files")
 
         # Step 6: Validate
         console.print("\n[bold]Step 6:[/bold] Validate Configuration")
@@ -483,4 +542,15 @@ def register_setup_parser(subparsers: argparse._SubParsersAction) -> None:
         "--json",
         action="store_true",
         help="Output result as JSON",
+    )
+    setup_parser.add_argument(
+        "--hub-mode",
+        action="store_true",
+        help="Use registry-integrated hub-side mode (writes to registry + config/repos)",
+    )
+    setup_parser.add_argument(
+        "--tier",
+        choices=["strict", "standard", "relaxed"],
+        default=None,
+        help="Quality tier for thresholds (prompts if not specified)",
     )

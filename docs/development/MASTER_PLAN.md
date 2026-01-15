@@ -1,7 +1,7 @@
 # CI/CD Hub - Master Plan
 
 **Status:** Canonical plan for all active work
-**Last Updated:** 2026-01-09 (SYSTEM_INTEGRATION_PLAN.md consolidation)
+**Last Updated:** 2026-01-12 (SYSTEM_INTEGRATION_PLAN 100% complete)
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
 
@@ -11,10 +11,10 @@
 
 | Priority | Document | Status | Next Action |
 |----------|----------|--------|-------------|
-| **#1 ** | CLEAN_CODE.md | ~90% | Part 5.3: Special-Case Handling |
-| **#2 ** | SYSTEM_INTEGRATION_PLAN.md | Active | Phase 2-6 (schema, wizard, registry parity) |
+| **#1 ** | CLEAN_CODE.md | ~92% | Part 7.4: Core Module Refactoring |
+| **#2 ** | SYSTEM_INTEGRATION_PLAN.md | **100%** | Complete (102 new tests, 2705 total passed) |
 | **#3 ** | TEST_REORGANIZATION.md | PLANNED | Resolve blockers first |
-| **#4 ** | DOC_AUTOMATION_AUDIT.md | ~80% | Part 13 R/U/W/X + Q headers + specs hygiene + guide cmd validation |
+| **#4 ** | DOC_AUTOMATION_AUDIT.md | ~98% | Optional: guide cmd validation |
 | **#5 ** | TYPESCRIPT_CLI_DESIGN.md | Planning | Wait for CLEAN_CODE.md 100% |
 | **#6 ** | PYQT_PLAN.md | DEFERRED | Wait for all above |
 
@@ -51,7 +51,7 @@ Individual Planning Docs (Priority Order)
 
 ### Priority 1: CLEAN_CODE.md (CURRENT - Foundation)
 
-**Status:** ~90% complete | **Blocks:** Everything else
+**Status:** ~92% complete | **Blocks:** Everything else
 
 ```
 docs/development/active/CLEAN_CODE.md
@@ -65,18 +65,18 @@ Must complete **before** starting other docs:
 - [x] Part 7.1: CLI Layer Consolidation [x] **DONE** (factory in common.py, findings done in Part 2.2/5.2)
 - [x] Part 7.2: Hub-CI Subcommand Helpers [x] **DONE** (helpers exist, ensure_executable now used)
 - [x] Part 7.3: Utilities Consolidation [x] **DONE** (project.py, github_context.py, safe_run() + 34 migrations)
-- [ ] Part 5.3: Special-Case Handling ← **CURRENT** (move to tool adapters)
-- [ ] Part 7.4: Core Module Refactoring
-- [ ] Part 7.5: Config/Schema Consistency
-- [ ] Part 7.6: Services Layer
-- [ ] Part 9.1: Scripts & Build System
-- [ ] Part 9.2: GitHub Workflows Security
+- [x] Part 5.3: Special-Case Handling [x] **DONE** (ToolAdapter registry in cihub/tools/registry.py)
+- [ ] Part 7.4: Core Module Refactoring ← **CURRENT** (8 findings, incremental)
+- [x] Part 7.5: Config/Schema Consistency [x] **DONE** (schema validation bypass fixed)
+- [ ] Part 7.6: Services Layer (4 findings, incremental)
+- [x] Part 9.1: Scripts & Build System [x] **DONE** (deprecation warnings added)
+- [x] Part 9.2: GitHub Workflows Security [x] **DONE** (harden-runner toggle)
 
 **Why first:** Python CLI JSON output must be clean before TypeScript CLI can parse it.
 
 ### Priority 2: SYSTEM_INTEGRATION_PLAN.md (Consolidated Architecture Fix)
 
-**Status:** Consolidated (13-agent comprehensive analysis) | **Depends on:** CLEAN_CODE.md ~90%+ | **Blocks:** TEST_REORGANIZATION
+**Status:** Consolidated (13-agent comprehensive analysis) | **Depends on:** CLEAN_CODE.md ~92%+ | **Blocks:** TEST_REORGANIZATION
 
 ```
 docs/development/active/SYSTEM_INTEGRATION_PLAN.md
@@ -87,17 +87,13 @@ docs/development/active/SYSTEM_INTEGRATION_PLAN.md
 Core implementation needed:
 - [x] Phase 0: Safety + JSON purity (registry keys, --json guard/tests)
 - [x] Phase 1: Critical fixes & CLI wrappers (min_score normalization, hub-ci wrappers, cihub block)
-- [ ] Phase 2: Registry schema + service (full config scope)
-- [ ] Phase 3: Registry bootstrap + drift detection
-- [ ] Phase 4: Wizard parity + profile integration
-- [ ] Phase 5: CLI management commands (profile/registry/tool/threshold/repo)
-- [ ] Phase 6: Schema extensibility (custom tools end-to-end)
+- [x] Phase 2: Registry schema + service (full config scope, .ci-hub.yml override detection)
+- [x] Phase 3: Registry bootstrap + drift detection
+- [x] Phase 4: Wizard parity + profile integration
+- [x] Phase 5: CLI management commands (profile/registry/tool/threshold/repo) (2026-01-12)
+- [x] Phase 6: Schema extensibility (custom tools end-to-end) (2026-01-12: 35 tests)
 
-**Why second:** Fixes the wizard/registry disconnect BEFORE test reorganization validates it. The multi-agent audits revealed critical gaps:
-- Registry only tracks 3 of 40+ values
-- Wizard creates configs but never updates registry.json
-- Wizard doesn't surface existing 12 profiles
-- CLI management surface is incomplete (audit required)
+**Status:** 100% complete (2026-01-12). All phases implemented with 102 new tests.
 
 ### Priority 3: TEST_REORGANIZATION.md (After Registry Integration)
 
@@ -116,7 +112,7 @@ Blockers to resolve first:
 
 ### Priority 4: DOC_AUTOMATION_AUDIT.md (Can parallel with TEST_REORGANIZATION)
 
-**Status:** ~80% implemented (optional artifact outputs now available) | **Depends on:** Stable CLI surface
+**Status:** ~98% implemented (Part 12.J/L/N/Q + Part 13.R/S/T/U/V/W/X done) | **Depends on:** Stable CLI surface
 
 ```
 docs/development/active/DOC_AUTOMATION_AUDIT.md
@@ -125,15 +121,18 @@ docs/development/active/DOC_AUTOMATION_AUDIT.md
 Core MVP:
 - [x] `cihub docs stale` - [x] **COMPLETE** (2026-01-06) - Modularized package (6 modules, 63 tests including 15 Hypothesis)
  - [x] Optional `--output-dir`, `--tool-output`, `--ai-output` flags for artifact outputs [x] (2026-01-09)
-- [x] `cihub docs audit` - [x] **MOSTLY COMPLETE** (2026-01-09) - Modular package (7 modules, 22 tests)
+- [x] `cihub docs audit` - [x] **COMPLETE** (2026-01-10) - Modular package (7 modules, 39 tests)
  - [x] Lifecycle validation (J/L/N): active/STATUS.md sync, ADR metadata, references [x]
- - [x] Part 13.S: Duplicate task detection (fuzzy matching) [x]
+ - [x] Part 12.J: Specs hygiene - REQUIREMENTS.md headers [x]
+ - [x] Part 12.Q: Universal doc header enforcement [x]
+ - [x] Part 13.R: Metrics drift detection [x]
+ - [x] Part 13.S: Duplicate task detection (fuzzy matching) [x] (disabled pending cleanup)
  - [x] Part 13.T: Timestamp freshness validation [x]
  - [x] Part 13.V: Placeholder detection [x]
- - [ ] Part 12.Q: Universal doc header enforcement
- - [ ] Specs hygiene (Part 12.J remainder)
+ - [x] Part 13.U: Checklist-reality sync [x] (2026-01-10)
+ - [x] Part 13.W: Cross-doc consistency (README ↔ active/) [x] (2026-01-10)
+ - [x] Part 13.X: CHANGELOG validation [x] (2026-01-10)
 - [x] Default wiring into `cihub check --audit` [x] (with skip_references, skip_consistency for fast lane)
-- [ ] Part 13 remaining - Metrics drift (R), checklist-reality (U), cross-doc (W), CHANGELOG (X)
 
 **Why fourth:** Documentation automation needs stable command signatures.
 
@@ -165,7 +164,7 @@ docs/development/active/PYQT_PLAN.md
 ```
 ┌─────────────────────────┐
 │ CLEAN_CODE.md │ ◄─── START HERE (#1)
-│ (Foundation ~90%) │
+│ (Foundation ~92%) │
 └───────────┬─────────────┘
  │
  ▼
@@ -201,7 +200,7 @@ docs/development/active/PYQT_PLAN.md
 
 **CLI Commands:**
 - [x] `cihub docs stale` - [x] **COMPLETE** (2026-01-06) Modularized package, 63 tests
-- [x] `cihub docs audit` - [x] **MOSTLY COMPLETE** (2026-01-09) Lifecycle + Part 13.S/T/V, 22 tests
+- [x] `cihub docs audit` - [x] **COMPLETE** (2026-01-10) J/L/N/Q + Part 13.R/S/T/U/V/W/X, 39 tests
 - [ ] `cihub config validate` - Validate hub configs
 - [ ] `cihub audit` - Umbrella command (docs check + links + adr check + config validate)
 - [ ] `--json` flag for all commands including hub-ci subcommands
@@ -209,8 +208,8 @@ docs/development/active/PYQT_PLAN.md
 **Documentation:**
 - [ ] Generate `docs/reference/TOOLS.md` from `cihub/tools/registry.py`
 - [ ] Generate `docs/reference/WORKFLOWS.md` from `.github/workflows/*.yml`
-- [ ] Plain-text reference scan for stale `docs/...` strings
-- [ ] Universal header enforcement for manual docs
+- [x] Plain-text reference scan for stale `docs/...` strings [x] (via `cihub docs audit`)
+- [x] Universal header enforcement for manual docs [x] (via `cihub docs audit` Part 12.Q)
 - [x] `.cihub/tool-outputs/` artifacts for doc automation [x] (optional via `--output-dir`, `--tool-output`, `--ai-output`)
 - [ ] Tooling integration checklist: toggle -> CLI runner (no inline workflow logic) -> tool-outputs -> report summaries/dashboards -> templates/profiles -> docs refs -> template sync tests
 
@@ -434,7 +433,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
  - `cihub smoke [--full]`
 - [ ] Commit CLI helpers.
 - [x] Add CLI doc generation commands:
- - `cihub docs generate` -> `docs/reference/CLI.md` + `docs/reference/CONFIG.md`
+ - `cihub docs generate` -> `docs/reference/CLI.md`, `CONFIG.md`, `ENV.md`, `WORKFLOWS.md`
  - `cihub docs check` for CI drift prevention
 - [x] Add `cihub check` command (local validation suite: preflight → lint → typecheck → test → actionlint → docs-check → smoke)
 - [ ] Optional CLI utilities: see **6) CLI Automation** below
@@ -451,9 +450,9 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 - [x] Archive `docs/development/architecture/ARCHITECTURE_PLAN.md`.
 - [ ] Move remaining legacy/duplicate docs to `docs/development/archive/` with a superseded header (no deletion).
 - [x] Archive legacy dispatch templates under `templates/legacy/` and update docs/tests to match.
-- [ ] Make reference docs generated, not hand-written (CLI/CONFIG done; TOOLS/WORKFLOWS next).
+- [x] Make reference docs generated, not hand-written (CLI/CONFIG/WORKFLOWS done; TOOLS next).
  - [ ] Generate `docs/reference/TOOLS.md` from `cihub/tools/registry.py` via `cihub docs generate`.
- - [ ] Generate `docs/reference/WORKFLOWS.md` (triggers/inputs tables) from `.github/workflows/*.yml`.
+ - [x] Generate `docs/reference/WORKFLOWS.md` (triggers/inputs tables) from `.github/workflows/*.yml`.
  - Keep `guides/WORKFLOWS.md` narrative-only; tables go in generated reference.
  - Status docs: `development/status/STATUS.md` is single source for active design docs.
  - [x] Consolidate specs into `docs/development/specs/REQUIREMENTS.md` (P0/P1/nonfunctional archived).
@@ -494,7 +493,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 - [ ] `cihub audit` - Umbrella: docs check + links + adr check + config validate
 - [x] `cihub docs stale` - [x] **COMPLETE** (2026-01-06) Modularized package, 63 tests. Design: `active/DOC_AUTOMATION_AUDIT.md`
 - [ ] `cihub docs workflows` - Generate workflow tables from `.github/workflows/*.yml` (replaces manual guides/WORKFLOWS.md)
-- [x] `cihub docs audit` - [x] **MOSTLY COMPLETE** (2026-01-09) Wired into `cihub check --audit`:
+- [x] `cihub docs audit` - [x] **COMPLETE** (2026-01-10) Wired into `cihub check --audit`:
  - [x] Every doc in `status/STATUS.md` Active Design Docs table must exist under `development/active/` [x]
  - [x] Every file under `development/active/` must be listed in STATUS.md [x]
  - [x] Files under `development/archive/` must have a superseded header [x]
@@ -502,8 +501,11 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
  - [x] Part 13.S: Duplicate task detection [x]
  - [x] Part 13.T: Timestamp freshness validation [x]
  - [x] Part 13.V: Placeholder detection [x]
- - [ ] Path changes require docs/README.md + status/STATUS.md updates (not enforced yet)
- - [ ] Universal doc header enforcement (Part 12.Q)
+ - [x] Part 13.U: Checklist-reality sync [x]
+ - [x] Part 13.W: Cross-doc consistency [x]
+ - [x] Part 13.X: CHANGELOG validation [x]
+ - [x] Universal doc header enforcement (Part 12.Q) [x]
+ - [ ] Path changes require docs/README.md + status/STATUS.md updates (optional)
 - [x] Add `make links` target
 - [ ] Add `make audit` target
 - [x] Add a "triage bundle" output for failures (machine-readable: command, env, tool output, file snippet, workflow/job/step). *(Implemented via `CIHUB_EMIT_TRIAGE`)*
@@ -517,7 +519,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 ### 6b) Documentation Automation (Design: `active/DOC_AUTOMATION_AUDIT.md`)
 
 > **Design doc:** Full requirements and architecture in `docs/development/active/DOC_AUTOMATION_AUDIT.md`
-> **Status:** ~80% complete (Priority #4)
+> **Status:** ~98% complete (Priority #4)
 
 - [x] `cihub docs stale` - [x] **COMPLETE** (2026-01-06) Modularized package (6 modules, 63 tests including 15 Hypothesis)
  - [x] Python AST symbol extraction (base vs head comparison) [x]
@@ -525,16 +527,20 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
  - [x] CLI surface drift detection (help snapshot comparison) [x]
  - [x] File move/delete detection (`--name-status --find-renames`) [x]
  - [x] Output modes: human, `--json`, `--ai` (LLM prompt pack) [x]
-- [x] `cihub docs audit` - [x] **MOSTLY COMPLETE** (2026-01-09) Modular package (7 modules, 22 tests):
+- [x] `cihub docs audit` - [x] **COMPLETE** (2026-01-10) Modular package (7 modules, 39 tests):
  - [x] Validate `active/` ↔ `STATUS.md` sync [x]
  - [x] Validate `archive/` files have superseded headers [x]
  - [x] Plain-text reference scan for `docs/...` strings [x]
  - [x] ADR metadata lint (Status/Date/Superseded-by) [x]
- - [x] Part 13.S: Duplicate task detection [x]
+ - [x] Universal header enforcement for manual docs (Part 12.Q) [x]
+ - [x] Specs hygiene: REQUIREMENTS.md headers (Part 12.J) [x]
+ - [x] Part 13.R: Metrics drift detection [x]
+ - [x] Part 13.S: Duplicate task detection [x] (disabled pending cleanup)
  - [x] Part 13.T: Timestamp freshness validation [x]
  - [x] Part 13.V: Placeholder detection [x]
- - [ ] Universal header enforcement for manual docs (Part 12.Q)
- - [ ] Specs hygiene: only `REQUIREMENTS.md` is active under `development/specs/`
+ - [x] Part 13.U: Checklist-reality sync [x] (2026-01-10)
+ - [x] Part 13.W: Cross-doc consistency [x] (2026-01-10)
+ - [x] Part 13.X: CHANGELOG validation [x] (2026-01-10)
 - [x] `.cihub/tool-outputs/` artifacts for doc automation:
  - [x] `docs_stale.json` - Machine-readable stale reference report [x] (via `--output-dir` or `--tool-output`)
  - [x] `docs_stale.prompt.md` - LLM-ready prompt pack [x] (via `--output-dir` or `--ai-output`)

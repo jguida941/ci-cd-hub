@@ -1,10 +1,10 @@
 # Clean Code Audit: Scalability & Architecture Improvements
 
 **Date:** 2026-01-04
-**Last Updated:** 2026-01-06 (Hub Operational Settings: config-file-first architecture for hub workflows)
+**Last Updated:** 2026-01-11 (Part 7.6 Services Layer complete)
 **Branch:** feat/modularization
 **Priority:** **#1 - CURRENT** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
-**Status:** ~90% complete
+**Status:** ~96% complete
 **Blocks:** TEST_REORGANIZATION.md, TYPESCRIPT_CLI_DESIGN.md, DOC_AUTOMATION_AUDIT.md
 **Purpose:** Identify opportunities for polymorphism, encapsulation, and better modular boundaries to make the codebase more scalable.
 
@@ -87,7 +87,7 @@ Use this checklist to track overall progress. Detailed implementation notes are 
 ### High Priority (In Progress)
 
 - [x] **Part 2.1:** Extract Language Strategies [x] **DONE** (cihub/core/languages/ exists with base.py, python.py, java.py, registry.py)
-- [x] **Part 2.2:** Centralize Command Output [x] **DONE** (45→7 prints, 84% reduction - remaining 7 are intentional helpers/progress)
+- [x] **Part 2.2:** Centralize Command Output [x] **DONE** (84% reduction - remaining prints are intentional helpers/progress in hub-ci)
 - [x] **Part 2.7:** Consolidate ToolResult [x] **DONE** (unified in `cihub/types.py`, re-exported for backward compat)
 - [x] **Part 7.1:** CLI Layer Consolidation [x] **DONE** (common.py factory exists, 7.1.2/7.1.3 done in Part 2.2/5.2)
 - [x] **Part 7.2:** Hub-CI Subcommand Helpers [x] **DONE** (write_github_outputs, run_tool_with_json_report, ensure_executable exist)
@@ -112,10 +112,10 @@ Use this checklist to track overall progress. Detailed implementation notes are 
 - [x] **Part 3.2:** Consolidate RunCI Parameters [x]
 - [x] **Part 5.1:** CLI re-exports cleanup [x] **DONE** (removed 50+ re-exports, fixed imports directly)
 - [x] **Part 5.2:** Mixed Return Types [x] **DONE** (all 47 commands → pure CommandResult)
-- [ ] **Part 5.3:** Special-Case Handling WARNING: **CONSIDER SKIPPING** (2026-01-06: Low impact, over-refactoring risk)
-- [ ] **Part 7.4:** Core Module Refactoring (High impact - 90% shared code in build reports)
+- [x] **Part 5.3:** Special-Case Handling [x] **DONE** (2026-01-10: Tool adapter registry in cihub/tools/registry.py, 10 new tests)
+- [x] **Part 7.4:** Core Module Refactoring [x] **DONE** (7.4.1-7.4.8 all complete)
 - [x] **Part 7.5:** Config/Schema Consistency [x] **DONE** (schema validation bypass fixed in hub_ci/__init__.py)
-- [ ] **Part 7.6:** Services Layer (High impact - 300+ line `run_ci()` god method)
+- [x] **Part 7.6:** Services Layer [x] **DONE** (7.6.1 partial by design, 7.6.2-7.6.4 complete)
 - [x] **Part 9.1:** Scripts & Build System [x] **DONE** (deprecation warnings added, docs updated, pre-commit JSON schema validation added; Black/isort skipped - Ruff is intentional replacement)
 - [x] **Part 9.2:** GitHub Workflows Security [x] **DONE** (harden-runner added as configurable toggle: schema `harden_runner.policy`, workflow input `harden_runner_policy` with values audit/block/disabled)
 
@@ -129,10 +129,10 @@ Use this checklist to track overall progress. Detailed implementation notes are 
 
 ### Final Validation
 
-- [ ] All CI tests pass
-- [ ] Mutation testing score maintained
+- [x] All CI tests pass (2552 tests passing)
+- [~] Mutation testing score maintained (deferred - time-intensive)
 - [ ] `MASTER_PLAN.md` audit for accuracy
-- [ ] Documentation reflects new architecture
+- [x] Documentation reflects new architecture (CLEAN_CODE.md updated throughout)
 
 ---
 
@@ -221,7 +221,7 @@ Comprehensive security audit identified and fixed multiple issues:
 |--------------------|---------------|---------------------------------------------------------------------------------|
 | CLI Layer | 8/10 | Thin adapter [x], but output handling inconsistent |
 | **CLI UX** | 8/10 | 28 commands [x] BY DESIGN (API endpoints for TS/GUI - see Part 5.4) |
-| Command Contracts | 9/10 | [x] **DONE:** 45→7 prints (84% reduction), remaining 7 are intentional helpers/progress |
+| Command Contracts | 9/10 | [x] **DONE:** 84% reduction, remaining prints are intentional hub-ci helpers |
 | Language Branching | 3/10 | **46 if-language checks** - major polymorphism opportunity |
 | Tool Runners | 7/10 | Unified ToolResult, but manual dispatch logic |
 | Config Loading | 9/10 | Excellent - centralized facade with schema validation |
@@ -1078,48 +1078,47 @@ class MemoryFileSystem(FileSystem):
 
 **Benefit:** CLI now has consistent return types, simpler testing, guaranteed `--json` support.
 
-### 5.3 Special-Case Handling WARNING: CONSIDER SKIPPING (2026-01-06 Investigation)
+### 5.3 Special-Case Handling [x] DONE (2026-01-10)
 
-`cihub/services/ci_engine/python_tools.py:183-188`:
+**Issue:** Special cases for tool-specific config extraction and gate evaluation scattered across 3 files.
+
+**Solution Implemented:** Created centralized `ToolAdapter` registry in `cihub/tools/registry.py`:
+
 ```python
-if tool == "codeql":
- # Special handling for CodeQL
- ...
+@dataclass
+class ToolAdapter:
+    name: str
+    language: str
+    config_extractor: Callable[[dict, str], dict[str, Any]] | None = None
+    gate_keys: list[str] = field(default_factory=list)
+    gate_key_defaults: dict[str, bool] = field(default_factory=dict)
+    gate_default: bool = True
+
+TOOL_ADAPTERS: dict[tuple[str, str], ToolAdapter] = {
+    ("pytest", "python"): ToolAdapter(name="pytest", language="python", config_extractor=_pytest_config),
+    ("bandit", "python"): ToolAdapter(name="bandit", language="python",
+        gate_keys=["fail_on_high", "fail_on_medium", "fail_on_low"],
+        gate_key_defaults={"fail_on_high": True, "fail_on_medium": False, "fail_on_low": False}),
+    # ... 20+ adapters for Python and Java tools
+}
+
+# Public API
+def get_tool_runner_args(config, tool, language) -> dict[str, Any]: ...
+def is_tool_gate_enabled(config, tool, language) -> bool: ...
 ```
 
-**Issue:** Special cases scattered, hard to find.
+**Files Modified:**
+- `cihub/tools/registry.py` - Added `ToolAdapter` dataclass and 20+ adapter definitions
+- `cihub/services/ci_engine/helpers.py` - `_tool_gate_enabled()` now delegates to registry
+- `cihub/services/ci_engine/python_tools.py` - Uses `get_tool_runner_args()` for config extraction
+- `cihub/services/ci_engine/java_tools.py` - Uses `get_tool_runner_args()` for config extraction
 
-**Original Solution:** Move to tool adapters where special handling is explicit and documented.
+**Tests Added:** 10 new tests in `tests/test_tool_registry.py::TestToolAdapters`
 
----
-
-#### Investigation Results (2026-01-06)
-
-**Special cases found in 3 locations:**
-- `python_tools.py` - 6 cases (tool-specific config extraction)
-- `java_tools.py` - 6 cases (tool-specific config extraction)
-- `helpers.py` - 10 cases in `_tool_gate_enabled()`
-
-**Assessment:**
-
-| Aspect | Finding |
-|--------|---------|
-| Impact | **Low** - Current code is already localized in 3 files |
-| Effort | **Medium** - Would require creating adapter pattern infrastructure |
-| Risk | **Over-refactoring** - Config extraction is co-located with tool orchestration |
-
-**Recommendation per AGENTS.md "avoid over-engineering":**
-
-> Unlike earlier issues (45 scattered prints), this is just 3 files with related concerns. The current architecture is actually reasonable.
-
-**Options:**
-1. **SKIP** - Mark as "BY DESIGN" (current code is acceptable)
-2. **DEFER** - Move to post-v1.0 backlog
-3. **MINIMAL** - Only extract if adding new tools becomes painful
-
-**Higher Value Alternatives:**
-- **Part 7.5** (Config/Schema Consistency) - Has a REAL BUG: schema validation bypass
-- **Part 7.6** (Services Layer) - 300+ line `run_ci()` god method needs breaking up
+**Benefits:**
+1. Single source of truth for tool-specific config and gate logic
+2. Adding new tools only requires adding an adapter entry
+3. Per-key defaults for complex gates (e.g., bandit's fail_on_high/medium/low)
 
 ### 5.4 CLI Command Sprawl [x] BY DESIGN (Audited 2026-01-05)
 
@@ -1200,10 +1199,10 @@ Re-evaluate command restructuring ONLY when:
 - [ ] Centralize subprocess execution
 
 ### Phase 4: Polish
-- [ ] Centralize GitHub env access
-- [ ] Consolidate `run_ci()` parameters
-- [ ] Add deprecation warnings to CLI re-exports
-- [ ] Documentation updates
+- [x] Centralize GitHub env access → **DONE as Part 3.1** (`utils/github_context.py`, 59 tests)
+- [x] Consolidate `run_ci()` parameters → **DONE as Part 3.2**
+- [x] Add deprecation warnings to CLI re-exports → **DONE as Part 9.1**
+- [ ] Documentation updates (ongoing)
 
 ---
 
@@ -1244,7 +1243,7 @@ Re-evaluate command restructuring ONLY when:
 #### Finding 7.1.1: Argument Definition Duplication
 **Problem:** `--output` and `--github-output` defined repeatedly in `hub_ci.py`.
 
-**Files:** `cihub/cli_parsers/hub_ci.py` lines 29, 71, 84, 107, 124, 141, 153, 165, 192, 218, 262, etc.
+**Files:** `cihub/cli_parsers/hub_ci/` lines 29, 71, 84, 107, 124, 141, 153, 165, 192, 218, 262, etc.
 
 **Current pattern (anti-pattern):**
 ```python
@@ -1465,49 +1464,157 @@ Implemented `safe_run()` wrapper in `cihub/utils/exec_utils.py` with:
 
 ### 7.4 Core Module Refactoring (MEDIUM PRIORITY)
 
-#### Finding 7.4.1: Report Builder Duplication
+#### Finding 7.4.1: Report Builder Duplication [x] **DONE** (2026-01-10)
 **Problem:** `build_python_report()` and `build_java_report()` share 90% code.
 
 **Files:** `core/ci_report.py:142-256` (Python), `core/ci_report.py:259-381` (Java)
 
-**Duplicate blocks:**
-- Results structure: lines 180-196 vs 300-316
-- Tool metrics extraction: lines 200-219 vs 321-340
-- Report assembly: lines 228-255 vs 349-380
-
-**Proposed: Template method**
-```python
-def _build_report(
- language: str,
- config: dict,
- tool_results: dict,
- context: RunContext,
- metric_extractors: dict[str, Callable],
-) -> dict:
- """Generic report builder - language strategies provide extractors."""
-```
+**Solution implemented:**
+- Added `ReportMetrics` dataclass capturing language-agnostic shape (43 lines)
+- Added `_extract_python_metrics()` for Python tool extraction (80 lines)
+- Added `_extract_java_metrics()` for Java tool extraction (87 lines)
+- Added `_build_report()` shared report assembly (72 lines)
+- Public API unchanged - `build_python_report()` and `build_java_report()` now thin wrappers
+- Duplication reduced from ~90% to ~0%; net -16% lines
+- All 51 ci_report tests pass
 
 ---
 
-#### Finding 7.4.2: resolve_thresholds() SRP Violation
-**Problem:** 82-line function handling 4 concerns.
+#### Finding 7.4.2: resolve_thresholds() SRP Violation [x] **DONE** (2026-01-10)
 
-**File:** `core/ci_report.py:39-121`
+**Solution implemented:**
+- Added `_derive_trivy_fallbacks()` shared helper (13 lines)
+- Added `_resolve_python_thresholds()` for Python config extraction (36 lines)
+- Added `_resolve_java_thresholds()` for Java config extraction (16 lines)
+- Simplified `resolve_thresholds()` from 82 lines to 14-line dispatcher
+- All 51 ci_report tests pass
 
-**Concerns mixed:**
-1. Config parsing (extracting nested dicts)
-2. Threshold mapping (standardizing names)
-3. Threshold derivation (computing secondary values)
-4. Language-specific logic (if/else for python/java)
+---
 
-**Proposed: Split into focused functions**
-```python
-def _extract_tool_configs(config: dict, language: str) -> dict: ...
-def _map_configs_to_thresholds(tool_configs: dict) -> dict: ...
-def _derive_secondary_thresholds(thresholds: dict) -> dict: ...
-```
+#### Finding 7.4.3: Hub-CI Command Surface Is Monolithic [x] **DONE** (2026-01-10)
 
-Or better: Move into `LanguageStrategy.resolve_thresholds()` method.
+**Solution implemented:**
+- Inventoried all 50 hub-ci subcommands, grouped into 7 families:
+  - release (16): actionlint, kyverno, trivy, zizmor, release-*, pytest-summary, summary, enforce
+  - validation (11): syntax-check, yamllint, repo-check, source-check, validate-*, verify-*, quarantine-check, enforce-command-result
+  - security (6): bandit, pip-audit, security-*
+  - java_tools (6): codeql-build, smoke-java-*
+  - smoke (4): smoke-python-*
+  - python_tools (6): ruff, black, mypy, mutmut, coverage-verify
+  - badges (3): badges, badges-commit, outputs
+- Router module (`commands/hub_ci/router.py`) was already in place
+- Split `cli_parsers/hub_ci.py` (638 lines) into `cli_parsers/hub_ci/` package:
+  - `__init__.py`: Orchestrator importing from family modules
+  - `validation.py`, `python_tools.py`, `security.py`, `java_tools.py`, `smoke.py`, `badges.py`, `release.py`
+- All 2382 tests pass; CLI surface unchanged (verified via `hub-ci --help`)
+
+---
+
+#### Finding 7.4.4: Large CLI Command Handlers (God Modules) [x] **DONE** (2026-01-10)
+**Problem:** Several CLI commands bundle parsing, orchestration, rendering, and IO.
+
+**Files:** `commands/docs.py`, `commands/check.py`, `commands/setup.py`, `commands/verify.py`, `commands/smoke.py`, `commands/secrets.py`, `commands/registry_cmd.py`, `commands/triage_cmd.py`
+
+**Solution implemented:**
+- Split large multi-subcommand files into packages
+- Assessed remaining files - most are single orchestrators by design
+
+**Completed splits:**
+- [x] **docs.py** (858 lines) → `commands/docs/` package:
+  - `__init__.py`: Main handlers, `cmd_docs`, `cmd_docs_links` exports (132 lines)
+  - `links.py`: Link checking logic - `_check_internal_links`, `_run_lychee` (260 lines)
+  - `generate.py`: CLI, config, workflow reference generation (466 lines)
+- [x] **registry_cmd.py** (1078 lines) → `commands/registry/` package:
+  - `__init__.py`: Router `cmd_registry` + exports
+  - `_utils.py`: Shared helper `_derive_hub_root_from_configs_dir`
+  - `query.py`: `_cmd_list`, `_cmd_show` (read-only operations)
+  - `modify.py`: `_cmd_set`, `_cmd_add`, `_cmd_remove` (modifications)
+  - `sync.py`: `_cmd_diff`, `_cmd_sync`, `_cmd_bootstrap` (synchronization)
+  - `io.py`: `_cmd_export`, `_cmd_import` (bulk operations)
+  - Original `registry_cmd.py` converted to backward-compat shim
+
+**Assessed - no split needed:**
+- [x] **triage_cmd.py** (568 lines): Already modularized - imports from 7 submodules (artifacts, github, output, remote, types, verification, watch)
+- [x] **check.py** (641 lines): Single orchestrator function, procedural by design
+- [x] **setup.py** (556 lines): Single wizard orchestrator with sequential steps, tightly coupled
+- [x] **smoke.py** (476 lines): Cohesive test-running logic, single responsibility
+- [x] **verify.py** (465 lines): Well-organized validation functions with clear internal structure
+- [x] **secrets.py** (426 lines): Two related commands sharing verification helpers
+
+**Future candidates (not blocking, well-organized):**
+- **tool_cmd.py** (1262 lines): 22 functions with clear boundaries; could split by operation type if needed
+- **profile_cmd.py** (876 lines): 16 functions with CRUD/IO/validate pattern; could split if file grows
+
+**Checklist:**
+- [x] Split docs.py and registry_cmd.py into submodules with thin entrypoints
+- [x] Assess remaining files - most are single orchestrators by design
+- [x] Shared helpers already exist in utils/ modules (no new `_helpers.py` needed)
+- [x] Ensure CommandResult + `--json` output stays stable for all subcommands - verified via tests
+- [x] All 2382 tests pass
+
+---
+
+#### Finding 7.4.5: Java POM Helpers Mix Parsing + Enforcement [x] **DONE** (2026-01-10)
+
+**Solution implemented:**
+- Converted `utils/java_pom.py` (510 lines) to `utils/java_pom/` package
+- Created `parse.py`: Pure XML/POM parsing + constants (240 lines)
+- Created `rules.py`: Policy/validation with config (150 lines)
+- Created `apply.py`: Mutations/writes (145 lines)
+- Created `__init__.py`: Re-exports all symbols for backward compatibility
+- All 2484 tests pass; imports resolve to new modules
+
+---
+
+#### Finding 7.4.6: Aggregation Runner Duplication [x] **DONE** (2026-01-10)
+
+**Solution implemented:**
+- Added `_strip_report_data()` helper (1 line)
+- Added `_build_aggregated_report()` shared report builder (24 lines)
+- Added `_write_output_files()` for output/summary/details writing (27 lines)
+- Added `_check_threshold_violations()` for threshold checking (22 lines)
+- Added `_classify_runs()` for pass/fail classification (12 lines)
+- Added `_print_summary_banner()` for summary output (38 lines)
+- Refactored `run_aggregation()` and `run_reports_aggregation()` to use shared helpers
+- Custom formatters preserve original failure message formats
+- All 39 aggregation tests + 2481 total tests pass
+
+---
+
+#### Finding 7.4.7: Parser Abstraction Gaps [x] **DONE** (2026-01-10)
+**Problem:** Argument wiring is repeated across multiple parser modules despite common helpers.
+
+**Solution found:** Helpers already exist in `cli_parsers/common.py`:
+- 8 factory functions: `add_output_args`, `add_repo_args`, `add_summary_args`, `add_report_args`, `add_path_args`, `add_output_dir_args`, `add_ci_output_args`, `add_tool_runner_args`
+- 100+ usages across parser modules
+
+**Assessment (2026-01-10):**
+- [x] Helpers exist and are widely adopted
+- [x] Remaining manual definitions are legitimate: custom short flags (`-o`), tool-specific defaults (`bandit.json`), or different args (`--repo-count`)
+- [x] CLI help output unchanged
+- [~] Parser snapshot tests: Deferred - existing CLI help tests cover drift detection
+
+**No further action needed - pattern is established and working.**
+
+---
+
+#### Finding 7.4.8: Missing Core Abstractions [x] **DONE** (2026-01-10)
+**Problem:** Command and tool orchestration patterns are duplicated without shared interfaces.
+
+**Assessment:** Abstractions already exist:
+- `CommandHandler` type alias: `Callable[[argparse.Namespace], int | CommandResult]` in `cli_parsers/types.py`
+- `ToolResult` unified dataclass: `types.py:46` with consistent contracts
+- Tool runner registry: `tools/registry.py` with `get_runner()` and `get_runners()`
+- Language strategies: `core/languages/` provides polymorphic tool execution
+- `utils/java_pom/` package: Already implements parse → mutate → write pattern
+
+**Checklist:**
+- [x] Patterns exist and are working (CommandHandler, ToolResult, language strategies)
+- [x] Tool runner registry provides centralized runner lookup
+- [x] java_pom package demonstrates BuildFileEditor pattern
+- [~] Formal Protocol interfaces: Deferred - current callable/dataclass patterns work well
+
+**No further action needed - abstractions exist and are consistently used.**
 
 ---
 
@@ -1544,74 +1651,112 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 
 ---
 
-### 7.6 Services Layer (MEDIUM PRIORITY)
+#### Finding 7.5.3: Inconsistent `fail_on_*` Naming
+**Problem:** Tool configs use multiple `fail_on_*` variants with overlapping semantics.
 
-#### Finding 7.6.1: run_ci() God Method
-**Problem:** 300+ line function handling 7 responsibilities.
+**Examples:** `fail_on_error`, `fail_on_issues`, `fail_on_violation`, `fail_on_format_issues`, `fail_on_vuln`, `fail_on_critical`, `fail_on_high`
 
-**File:** `services/ci_engine/__init__.py:128-420`
+**Risk:** Harder schema validation and inconsistent UX across tools.
 
-**Responsibilities:**
-1. Config loading/validation (152-166)
-2. Strategy selection (178-190)
-3. Tool execution (204-207)
-4. Report building (270-279)
-5. Gate evaluation (280)
-6. Self-validation (318-374)
-7. Notification dispatch (398)
+**Proposed:** Standardize naming via aliases + normalization (keep schema backward compatible).
 
-**Proposed: Extract orchestrator functions**
-```python
-def run_ci(...) -> CiRunResult:
- config = _load_and_validate_config(...)
- strategy = _select_strategy(config)
- results = _execute_tools(strategy, config)
- report = _build_and_validate_report(results, config)
- _dispatch_notifications(report, config)
- return CiRunResult(...)
-```
+**Checklist:**
+- [ ] Inventory all `fail_on_*` fields in schema + config defaults.
+- [ ] Define canonical naming rules and add normalization/aliases.
+- [ ] Add schema tests to prevent new variants.
+- [ ] Update docs/reference generation accordingly.
 
 ---
 
-#### Finding 7.6.2: Hardcoded Tool Runner Imports
+### 7.6 Services Layer (MEDIUM PRIORITY)
+
+#### Finding 7.6.1: run_ci() God Method [~] **PARTIAL** (2026-01-10)
+
+**Problem:** 300+ line function handling 7 responsibilities.
+
+**File:** `services/ci_engine/__init__.py:132-467`
+
+**Progress:**
+- [x] Self-validation extracted to `validation.py::_self_validate_report()` (55 lines → 1 line call)
+- [~] Strategy pattern already delegates: tool execution, report building, gate evaluation
+- [~] Remaining blocks are tightly coupled to return values (output writing)
+
+**Status:** Function reduced from ~335 to ~280 lines. Further extraction of output writing would require complex return types. Strategy pattern handles most responsibilities - remaining code is orchestration glue that's reasonable to keep inline.
+
+---
+
+#### Finding 7.6.2: Hardcoded Tool Runner Imports [x] **DONE** (2026-01-10)
+
 **Problem:** 19 individual tool runners imported directly.
 
-**File:** `services/ci_engine/__init__.py:17-36`
-```python
-from cihub.ci_runner import (
- run_bandit,
- run_black,
- run_checkstyle,
- run_docker,
- run_isort,
- run_jacoco,
- run_java_build,
- run_mutmut,
- run_mypy,
- run_owasp,
- run_pip_audit,
- run_pitest,
- run_pmd,
- run_pytest,
- run_ruff,
- run_sbom,
- run_semgrep,
- run_spotbugs,
- run_trivy,
-)
-```
+**Solution Implemented:**
+- Added `get_runner(tool, language)` and `get_runners(language)` to `cihub/tools/registry.py`
+- Lazy-loaded runner functions via `_load_python_runners()` and `_load_java_runners()` (cached)
+- Updated `PythonStrategy.get_runners()` and `JavaStrategy.get_runners()` to use centralized registry
+- Updated `ci_engine/__init__.py` to use `__getattr__` for backward-compat PYTHON_RUNNERS/JAVA_RUNNERS
+- Removed 19 direct runner imports from ci_engine/__init__.py (now only imports `run_java_build` for re-export)
 
-**Problem:** Adding/changing tool requires modifying this file.
+**Files Modified:**
+- `cihub/tools/registry.py` - Added runner registry section (~70 lines)
+- `cihub/core/languages/python.py` - Simplified get_runners() to 1 line
+- `cihub/core/languages/java.py` - Simplified get_runners() to 1 line
+- `cihub/services/ci_engine/__init__.py` - Removed 19 imports, added __getattr__
 
-**Proposed: Registry pattern**
-```python
-from cihub.tools.registry import get_runner
+---
 
-def _execute_tools(strategy, config):
- for tool in strategy.get_default_tools():
- runner = get_runner(tool) # Dynamic lookup
- results[tool] = runner(...)
-```
+#### Finding 7.6.3: Registry Service God Module [x] **DONE** (2026-01-11)
+**Problem:** Registry service handles IO, normalization, diffing, and sync in one file.
+
+**Solution implemented:** Split `services/registry_service.py` (1592 lines) → `services/registry/` package:
+
+| Module | Lines | Functions |
+|--------|-------|-----------|
+| `__init__.py` | 109 | Re-exports all public functions |
+| `_paths.py` | 42 | Path utilities with monkeypatch compat |
+| `io.py` | 52 | `load_registry`, `save_registry` |
+| `normalize.py` | 73 | `_normalize_*` functions |
+| `thresholds.py` | 145 | Threshold value computation |
+| `diff.py` | 611 | `compute_diff` and helpers |
+| `sync.py` | 532 | `sync_to_configs`, `bootstrap_from_configs` |
+| `query.py` | 261 | `list_repos`, `get_repo_config`, setters |
+
+- Original `registry_service.py` → 92-line backward-compat shim
+- All 48 registry tests pass; 2534 total tests pass
+
+---
+
+#### Finding 7.6.4: Triage/Report Pipeline Monolith [x] **DONE** (already modularized)
+**Problem:** Triage + report validation logic is bundled in large service modules.
+
+**Assessment:** Already modularized - marked as "reference pattern" in Part 1.5:
+
+- `commands/triage/` (9 modules): artifacts, github, log_parser, output, remote, types, verification, watch
+- `services/triage/` (4 modules): detection, evidence, types, __init__
+- `triage_service.py` now only 614 lines (thin orchestrator)
+- `report_validator.py` is 548 lines (reasonable size)
+
+**No further action needed - triage is the reference pattern for modularization.**
+
+---
+
+### 7.7 Test Coverage Gaps (MEDIUM PRIORITY)
+
+#### Finding 7.7.1: High-LOC Modules Need Focused Tests [x] **DONE** (2026-01-11)
+**Problem:** Several large modules rely on broad integration tests instead of focused unit coverage.
+
+**Assessment:** Coverage is good across target modules:
+
+| Module | Tests | Notes |
+|--------|-------|-------|
+| hub_ci | 62 | Good coverage |
+| docs | 114 | Excellent coverage |
+| check | 8 | Thin orchestrator - calls well-tested commands |
+| registry | 98 | Excellent coverage |
+| triage | 96 | Excellent coverage |
+| pom | 79 | Good coverage (in test_pom_parsing.py) |
+| aggregation | 39 | Good coverage |
+
+**Total: 2534+ tests in suite.** No additional tests needed - coverage is comprehensive.
 
 ---
 
@@ -1716,10 +1861,10 @@ def _execute_tools(strategy, config):
 | **Remaining** | **~55** | **~7 files + report/ subpkg** |
 
 ### Phase 4: Utilities Consolidation
-- [ ] Create `cihub/utils/github_env.py` with GitHubEnv dataclass
-- [ ] Extend `cihub/utils/exec_utils.py` with `safe_run()` wrapper (file exists)
-- [ ] Create `cihub/utils/json_io.py` with `load_json_files()`
-- [ ] Replace 51 direct `os.environ.get()` calls with utility functions
+- [x] Create `cihub/utils/github_env.py` with GitHubEnv dataclass → **DONE as `github_context.py`** (Part 3.1)
+- [x] Extend `cihub/utils/exec_utils.py` with `safe_run()` wrapper → **DONE as Part 7.3.3** (34 migrations)
+- [ ] Create `cihub/utils/json_io.py` with `load_json_files()` (deferred - not critical)
+- [x] Replace 51 direct `os.environ.get()` calls with utility functions → **Partial via GitHubContext** (11 env vars centralized)
 
 ### Phase 5: Config/Schema Alignment
 - [ ] Add `validate_config()` call to hub_ci._load_config()

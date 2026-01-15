@@ -32,6 +32,7 @@ SCAN_PATTERNS = ["*.md", "*.py", "*.yml", "*.yaml", "*.sh"]
 # Patterns to exclude from scanning
 EXCLUDE_PATTERNS = [
     "docs/development/archive/",  # Archived docs may have stale refs (expected)
+    "docs/development/research/",  # Research logs are historical
     ".git/",
     "__pycache__/",
     "*.pyc",
@@ -50,6 +51,38 @@ KNOWN_EXCEPTIONS = frozenset({
     "docs/development/archive/**",
     "docs/development/archive/.*",
     "docs/adr/**",
+    # Template/example patterns
+    "docs/adr/00xx-incident.md",  # Placeholder ADR number
+    "docs/adr/0001-title.md",  # Example ADR pattern
+    "docs/file.md",  # Generic example
+    "docs/test.md",  # Test example
+    "docs/modularization.md",  # Example
+    # References to directories (not files)
+    "docs/tests",
+    "docs/ADRs/scripts/workflows",
+    "docs/preflight/scaffold/smoke/check",
+    "docs/README/guide/dev",
+    "docs/development/execution/",
+    "docs/documenting/yaml-style-guide/",
+    "docs/docs/backlog.md",
+    "docs/git-diff",
+    "docs/sphinx-autoapi",
+    # Active design doc templates
+    "docs/development/active/FOO.md",
+    "docs/development/active/BAR.md",
+    "docs/development/active/NEW.md",
+    # Wildcard ADR references (used in documentation)
+    "docs/adr/0035-",
+    "docs/adr/0045-",
+    # Old paths now in archive
+    "docs/development/audit.md",
+    "docs/development/architecture/ARCHITECTURE_PLAN.md",
+    "docs/development/ARCHITECTURE.md",
+    "docs/development/execution/SMOKE_TEST.md",
+    "docs/development/execution/SMOKE_TEST_REPOS.md",
+    # Conceptual/planning references
+    "docs/MAKE.md",
+    "docs/analysis/scalability.md",
 })
 
 
@@ -104,6 +137,17 @@ def extract_doc_references(content: str, file_path: str) -> list[tuple[int, str]
             # Skip if it looks like a glob pattern
             if "*" in ref or "..." in ref:
                 continue
+            # Skip if it's part of a URL (e.g., https://github.com/.../docs/checks.md)
+            match_start = match.start()
+            if match_start > 0:
+                # Look back to see if this is in a URL
+                prefix = line[:match_start]
+                if "http://" in prefix or "https://" in prefix:
+                    # Check if there's no space/bracket between URL and match
+                    last_space = max(prefix.rfind(" "), prefix.rfind("("), prefix.rfind("["))
+                    url_start = max(prefix.rfind("http://"), prefix.rfind("https://"))
+                    if url_start > last_space:
+                        continue  # This docs/ path is part of a URL
             references.append((line_num, ref))
 
     return references

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from typing import Callable
 
+from cihub.cli_parsers.common import see_also_epilog
 from cihub.cli_parsers.types import CommandHandlers
 
 
@@ -13,7 +14,7 @@ def add_repo_setup_commands(
     add_json_flag: Callable[[argparse.ArgumentParser], None],
     handlers: CommandHandlers,
 ) -> None:
-    new = subparsers.add_parser("new", help="Create hub-side repo config")
+    new = subparsers.add_parser("new", help="Create hub-side repo config", epilog=see_also_epilog("new"))
     add_json_flag(new)
     new.add_argument("name", help="Repo config name (config/repos/<name>.yaml)")
     new.add_argument("--owner", help="Repo owner (GitHub user/org)")
@@ -25,6 +26,12 @@ def add_repo_setup_commands(
     new.add_argument("--branch", help="Default branch (e.g., main)")
     new.add_argument("--subdir", help="Subdirectory for monorepos (repo.subdir)")
     new.add_argument("--profile", help="Apply a profile from templates/profiles")
+    new.add_argument("--tier", choices=["strict", "standard", "relaxed"], help="Tier for registry entry")
+    new.add_argument(
+        "--use-registry",
+        action="store_true",
+        help="Create via registry (enables sync to config/repos/*.yaml)",
+    )
     new.add_argument(
         "--interactive",
         action="store_true",
@@ -42,7 +49,7 @@ def add_repo_setup_commands(
     )
     new.set_defaults(func=handlers.cmd_new)
 
-    init = subparsers.add_parser("init", help="Generate .ci-hub.yml and hub-ci.yml")
+    init = subparsers.add_parser("init", help="Generate .ci-hub.yml and hub-ci.yml", epilog=see_also_epilog("init"))
     add_json_flag(init)
     init.add_argument("--repo", required=True, help="Path to repo")
     init.add_argument(
@@ -82,7 +89,7 @@ def add_repo_setup_commands(
     )
     init.set_defaults(func=handlers.cmd_init)
 
-    update = subparsers.add_parser("update", help="Refresh hub-ci.yml and .ci-hub.yml")
+    update = subparsers.add_parser("update", help="Refresh hub-ci.yml and .ci-hub.yml", epilog=see_also_epilog("update"))
     add_json_flag(update)
     update.add_argument("--repo", required=True, help="Path to repo")
     update.add_argument(
@@ -120,6 +127,7 @@ def add_repo_setup_commands(
     validate = subparsers.add_parser(
         "validate",
         help="Validate .ci-hub.yml against schema",
+        epilog=see_also_epilog("validate"),
     )
     add_json_flag(validate)
     validate.add_argument("--repo", required=True, help="Path to repo")
@@ -134,6 +142,7 @@ def add_repo_setup_commands(
             "Interactive wizard that guides you through the complete CI/CD setup process: "
             "scaffold → detect → configure → validate → run CI → push to GitHub"
         ),
+        epilog=see_also_epilog("setup"),
     )
     add_json_flag(setup)
     setup.add_argument(
@@ -150,5 +159,16 @@ def add_repo_setup_commands(
         "--skip-github",
         action="store_true",
         help="Skip GitHub repository setup steps",
+    )
+    setup.add_argument(
+        "--hub-mode",
+        action="store_true",
+        help="Use registry-integrated hub-side mode (writes to registry + config/repos)",
+    )
+    setup.add_argument(
+        "--tier",
+        choices=["strict", "standard", "relaxed"],
+        default=None,
+        help="Quality tier for thresholds (prompts if not specified)",
     )
     setup.set_defaults(func=handlers.cmd_setup)

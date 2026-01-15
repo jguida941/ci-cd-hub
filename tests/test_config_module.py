@@ -25,6 +25,7 @@ from cihub.config import (
     save_repo_config,
     save_yaml_file,
 )
+from cihub.config.io import ConfigParseError
 
 # =============================================================================
 # PathConfig Tests
@@ -155,36 +156,36 @@ class TestLoadYamlFile:
         result = load_yaml_file(yaml_file)
         assert result == {}
 
-    def test_load_list_raises_valueerror(self, tmp_path: Path):
-        """Loading YAML with list root raises ValueError."""
+    def test_load_list_raises_config_parse_error(self, tmp_path: Path):
+        """Loading YAML with list root raises ConfigParseError."""
         yaml_file = tmp_path / "list.yaml"
         yaml_file.write_text("- item1\n- item2")
 
-        with pytest.raises(ValueError, match="mapping.*dict"):
+        with pytest.raises(ConfigParseError, match="mapping.*dict"):
             load_yaml_file(yaml_file)
 
-    def test_load_string_raises_valueerror(self, tmp_path: Path):
-        """Loading YAML with string root raises ValueError."""
+    def test_load_string_raises_config_parse_error(self, tmp_path: Path):
+        """Loading YAML with string root raises ConfigParseError."""
         yaml_file = tmp_path / "string.yaml"
         yaml_file.write_text("just a string")
 
-        with pytest.raises(ValueError, match="mapping.*dict"):
+        with pytest.raises(ConfigParseError, match="mapping.*dict"):
             load_yaml_file(yaml_file)
 
-    def test_load_number_raises_valueerror(self, tmp_path: Path):
-        """Loading YAML with number root raises ValueError."""
+    def test_load_number_raises_config_parse_error(self, tmp_path: Path):
+        """Loading YAML with number root raises ConfigParseError."""
         yaml_file = tmp_path / "number.yaml"
         yaml_file.write_text("42")
 
-        with pytest.raises(ValueError, match="mapping.*dict"):
+        with pytest.raises(ConfigParseError, match="mapping.*dict"):
             load_yaml_file(yaml_file)
 
-    def test_load_boolean_raises_valueerror(self, tmp_path: Path):
-        """Loading YAML with boolean root raises ValueError."""
+    def test_load_boolean_raises_config_parse_error(self, tmp_path: Path):
+        """Loading YAML with boolean root raises ConfigParseError."""
         yaml_file = tmp_path / "boolean.yaml"
         yaml_file.write_text("true")
 
-        with pytest.raises(ValueError, match="mapping.*dict"):
+        with pytest.raises(ConfigParseError, match="mapping.*dict"):
             load_yaml_file(yaml_file)
 
     def test_load_accepts_string_path(self, tmp_path: Path):

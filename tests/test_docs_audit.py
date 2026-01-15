@@ -110,6 +110,45 @@ class TestLifecycleValidation:
         assert len(findings) == 1
         assert "DELETED.md" in findings[0].message
 
+    def test_check_archive_superseded_patterns(self, tmp_path: Path) -> None:
+        """Test various superseded-by reference formats are recognized."""
+        from cihub.commands.docs_audit.lifecycle import check_archive_superseded_headers
+
+        archive_dir = tmp_path / "docs" / "development" / "archive"
+        archive_dir.mkdir(parents=True)
+
+        # Test cases: (filename, content, should_have_explicit_ref)
+        test_cases = [
+            # Valid explicit references - various formatting styles
+            ("link.md", "> **Superseded by:** [New Doc](../active/NEW.md)\n\nContent", True),
+            ("plain_md.md", "> Superseded by: NEWDOC.md\n\nContent", True),
+            ("relative.md", "> Superseded by: ../active/FOO.md\n\nContent", True),
+            ("docs_path.md", "> Superseded by: docs/development/active/BAR.md\n\nContent", True),
+            ("adr_ref.md", "> Superseded by: ADR-0042\n\nContent", True),
+            # Colon-outside variants
+            ("colon_outside.md", "> **Superseded by**: NEW.md\n\nContent", True),
+            ("partial_bold.md", "> **Superseded** by: OTHER.md\n\nContent", True),
+            # Hyphenated form (universal header template style)
+            ("hyphenated.md", "> Superseded-by: NEW_DOC.md\n\nContent", True),
+            ("hyphenated_bold.md", "> **Superseded-by:** [Doc](path.md)\n\nContent", True),
+            # Invalid: only status, no explicit reference
+            ("status_only.md", "> **Status:** archived\n\nContent", False),
+            ("incomplete.md", "> Superseded by: docs/\n\nContent", False),  # Just directory
+        ]
+
+        for filename, content, has_explicit in test_cases:
+            (archive_dir / filename).write_text(content)
+
+        archive_docs = [f"docs/development/archive/{f}" for f, _, _ in test_cases]
+        findings = check_archive_superseded_headers(archive_docs, tmp_path)
+
+        # Count findings for explicit reference warnings
+        explicit_ref_findings = [f for f in findings if "explicit" in f.message.lower()]
+
+        # Should have warnings for status_only.md and incomplete.md
+        expected_missing = sum(1 for _, _, has_explicit in test_cases if not has_explicit)
+        assert len(explicit_ref_findings) == expected_missing
+
 
 class TestADRValidation:
     """Test ADR metadata validation."""
@@ -379,6 +418,185 @@ Use /Users/local/path for development.
         assert any("placeholder_marker" in m for m in messages)
         assert any("local_path" in m for m in messages)
 
+    def test_verify_checklist_reality_finds_complete_items(self, tmp_path: Path) -> None:
+        """Test that verify_checklist_reality flags unchecked items that appear done."""
+        from cihub.commands.docs_audit.consistency import verify_checklist_reality
+
+        # Set up the directory structure
+        active_dir = tmp_path / "docs" / "development" / "active"
+        active_dir.mkdir(parents=True)
+
+        # Create a simulated completed feature
+        tools_dir = tmp_path / "cihub" / "tools"
+        tools_dir.mkdir(parents=True)
+        registry_file = tools_dir / "registry.py"
+        registry_file.write_text("class ToolAdapter:\n    pass\n")
+
+        # Create doc with unchecked item matching the completed feature
+        doc_content = """# Test Plan
+
+- [ ] Implement tool adapter pattern
+- [x] Already done item
+"""
+        (active_dir / "PLAN.md").write_text(doc_content)
+
+        findings = verify_checklist_reality(tmp_path)
+        # Should flag the unchecked item since ToolAdapter exists
+        assert len(findings) >= 1
+        assert any("CHECKLIST-REALITY" in f.code for f in findings)
+        assert any("tool adapter" in f.message.lower() for f in findings)
+
+    def test_verify_checklist_reality_ignores_incomplete(self, tmp_path: Path) -> None:
+        """Test that verify_checklist_reality does not flag truly incomplete items."""
+        from cihub.commands.docs_audit.consistency import verify_checklist_reality
+
+        # Set up the directory structure (without the feature)
+        active_dir = tmp_path / "docs" / "development" / "active"
+        active_dir.mkdir(parents=True)
+
+        # Create doc with unchecked item for non-existent feature
+        doc_content = """# Test Plan
+
+- [ ] Extract language strategies
+"""
+        (active_dir / "PLAN.md").write_text(doc_content)
+
+        findings = verify_checklist_reality(tmp_path)
+        # Should NOT flag since the feature doesn't exist
+        assert not any("language strategies" in f.message.lower() for f in findings)
+
+    def test_check_docs_index_consistency_missing_from_readme(self, tmp_path: Path) -> None:
+        """Test detection of files in active/ not listed in README.md (Part 13.W)."""
+        from cihub.commands.docs_audit.consistency import check_docs_index_consistency
+
+        # Set up directory structure
+        docs_dir = tmp_path / "docs"
+        active_dir = docs_dir / "development" / "active"
+        active_dir.mkdir(parents=True)
+
+        # Create active doc
+        (active_dir / "PLAN_A.md").write_text("# Plan A")
+        (active_dir / "PLAN_B.md").write_text("# Plan B")
+
+        # Create README.md that only lists one of them
+        readme_content = """# Docs
+**Active Design Docs** (`development/active/`):
+- [PLAN_A.md](development/active/PLAN_A.md) - Listed doc
+**Other Section:**
+"""
+        (docs_dir / "README.md").write_text(readme_content)
+
+        findings = check_docs_index_consistency(tmp_path)
+        # Should flag PLAN_B.md as missing from README.md
+        assert len(findings) == 1
+        assert "PLAN_B.md" in findings[0].message
+        assert "README-MISSING-DOC" in findings[0].code
+
+    def test_check_docs_index_consistency_stale_in_readme(self, tmp_path: Path) -> None:
+        """Test detection of files in README.md that don't exist (Part 13.W)."""
+        from cihub.commands.docs_audit.consistency import check_docs_index_consistency
+
+        # Set up directory structure
+        docs_dir = tmp_path / "docs"
+        active_dir = docs_dir / "development" / "active"
+        active_dir.mkdir(parents=True)
+
+        # Create only one active doc
+        (active_dir / "PLAN_A.md").write_text("# Plan A")
+
+        # Create README.md that lists a non-existent file
+        readme_content = """# Docs
+**Active Design Docs** (`development/active/`):
+- [PLAN_A.md](development/active/PLAN_A.md) - Exists
+- [DELETED_DOC.md](development/active/DELETED_DOC.md) - Doesn't exist
+**Other:**
+"""
+        (docs_dir / "README.md").write_text(readme_content)
+
+        findings = check_docs_index_consistency(tmp_path)
+        # Should flag DELETED_DOC.md as stale
+        assert len(findings) == 1
+        assert "DELETED_DOC.md" in findings[0].message
+        assert "README-STALE-DOC" in findings[0].code
+
+    def test_validate_changelog_correct_order(self, tmp_path: Path) -> None:
+        """Test CHANGELOG validation with correct chronological order (Part 13.X)."""
+        from cihub.commands.docs_audit.consistency import validate_changelog
+
+        docs_dir = tmp_path / "docs" / "development"
+        docs_dir.mkdir(parents=True)
+
+        # Correct order: most recent first
+        content = """# Changelog
+
+## 2026-01-10 - Latest entry
+
+Content here.
+
+## 2026-01-09 - Previous entry
+
+More content.
+
+## 2026-01-05 - Older entry
+
+Old content.
+"""
+        (docs_dir / "CHANGELOG.md").write_text(content)
+
+        findings = validate_changelog(tmp_path)
+        # Should have no order findings
+        assert not any("ORDER" in f.code for f in findings)
+
+    def test_validate_changelog_wrong_order(self, tmp_path: Path) -> None:
+        """Test CHANGELOG validation detects out-of-order entries (Part 13.X)."""
+        from cihub.commands.docs_audit.consistency import validate_changelog
+
+        docs_dir = tmp_path / "docs" / "development"
+        docs_dir.mkdir(parents=True)
+
+        # Wrong order: older entry comes first
+        content = """# Changelog
+
+## 2026-01-05 - Older entry first
+
+Wrong!
+
+## 2026-01-09 - Newer entry second
+
+Should be first!
+"""
+        (docs_dir / "CHANGELOG.md").write_text(content)
+
+        findings = validate_changelog(tmp_path)
+        # Should flag order issue
+        assert len(findings) >= 1
+        assert any("CHANGELOG-ORDER" in f.code for f in findings)
+
+    def test_validate_changelog_duplicate_dates(self, tmp_path: Path) -> None:
+        """Test CHANGELOG validation detects duplicate date headers (Part 13.X)."""
+        from cihub.commands.docs_audit.consistency import validate_changelog
+
+        docs_dir = tmp_path / "docs" / "development"
+        docs_dir.mkdir(parents=True)
+
+        # Two separate H2 entries for same date
+        content = """# Changelog
+
+## 2026-01-09 - First entry
+
+Content.
+
+## 2026-01-09 - Second entry same day
+
+More content.
+"""
+        (docs_dir / "CHANGELOG.md").write_text(content)
+
+        findings = validate_changelog(tmp_path)
+        # Should flag duplicate date (INFO level)
+        assert len(findings) >= 1
+        assert any("DUPLICATE-DATE" in f.code for f in findings)
+
     def test_cmd_docs_audit_with_consistency(self) -> None:
         """Test that cmd_docs_audit includes consistency checks."""
         args = argparse.Namespace(
@@ -391,3 +609,176 @@ Use /Users/local/path for development.
         result = cmd_docs_audit(args)
         assert "stats" in result.data
         # Should have run without errors
+
+
+class TestHeaderValidation:
+    """Test Part 12.Q universal header validation."""
+
+    def test_validate_doc_headers_missing_block(self, tmp_path: Path) -> None:
+        """Test detection of missing header block."""
+        from cihub.commands.docs_audit.headers import validate_doc_headers
+
+        # Create docs/ directory with doc missing headers
+        docs_dir = tmp_path / "docs" / "development" / "active"
+        docs_dir.mkdir(parents=True)
+
+        doc_path = docs_dir / "NO_HEADERS.md"
+        doc_path.write_text("# No Headers\n\nJust content, no headers.\n")
+
+        findings = validate_doc_headers(tmp_path)
+        # Should flag missing header block
+        assert any(f.code == "CIHUB-HEADER-MISSING-BLOCK" for f in findings)
+
+    def test_validate_doc_headers_incomplete(self, tmp_path: Path) -> None:
+        """Test detection of incomplete header block."""
+        from cihub.commands.docs_audit.headers import validate_doc_headers
+
+        docs_dir = tmp_path / "docs" / "development" / "active"
+        docs_dir.mkdir(parents=True)
+
+        doc_path = docs_dir / "PARTIAL.md"
+        doc_path.write_text(
+            "# Partial Headers\n\n"
+            "**Status:** active\n"
+            "**Owner:** Team A\n"
+            "\nContent here.\n"
+        )
+
+        findings = validate_doc_headers(tmp_path)
+        # Should flag incomplete header block (missing Source-of-truth, Last-reviewed)
+        incomplete = [f for f in findings if f.code == "CIHUB-HEADER-INCOMPLETE"]
+        assert len(incomplete) >= 1
+
+    def test_validate_doc_headers_valid(self, tmp_path: Path) -> None:
+        """Test valid header block passes."""
+        from cihub.commands.docs_audit.headers import validate_doc_headers
+
+        docs_dir = tmp_path / "docs" / "development" / "active"
+        docs_dir.mkdir(parents=True)
+
+        doc_path = docs_dir / "VALID.md"
+        doc_path.write_text(
+            "# Valid Headers\n\n"
+            "**Status:** active\n"
+            "**Owner:** Team A\n"
+            "**Source-of-truth:** manual\n"
+            "**Last-reviewed:** 2026-01-09\n"
+            "\nContent here.\n"
+        )
+
+        findings = validate_doc_headers(tmp_path)
+        # Should have no header findings for this doc
+        header_findings = [f for f in findings if "VALID.md" in f.file]
+        assert len(header_findings) == 0
+
+    def test_parse_header_block_stops_at_first_content_line(self, tmp_path: Path) -> None:
+        """Regression: header parsing must stop at the FIRST content line.
+
+        Headers must appear immediately after the title (and empty lines).
+        Even a single line of prose text before **Status:** means it's not a header.
+        """
+        from cihub.commands.docs_audit.headers import parse_doc_header
+
+        # Doc with even ONE content line before headers - headers should NOT be found
+        doc_with_intro_then_header = """\
+# My Document
+
+This document explains something important.
+
+**Status:** completed
+"""
+        headers = parse_doc_header(doc_with_intro_then_header)
+        # The Status appearing after ANY content should NOT be captured
+        assert "Status" not in headers, (
+            "Header parsing should stop at first non-header line; "
+            "found 'Status' after intro paragraph"
+        )
+
+    def test_parse_header_block_finds_headers_at_top(self, tmp_path: Path) -> None:
+        """Verify headers at the top of the document ARE found."""
+        from cihub.commands.docs_audit.headers import parse_doc_header
+
+        doc_with_top_headers = """\
+# My Document
+
+**Status:** active
+**Owner:** Team A
+
+This is content after the headers.
+"""
+        headers = parse_doc_header(doc_with_top_headers)
+        assert headers.get("Status") == "active"
+        assert headers.get("Owner") == "Team A"
+
+
+class TestMetricsDrift:
+    """Test Part 13.R metrics drift detection."""
+
+    def test_count_cli_commands(self, tmp_path: Path) -> None:
+        """Test CLI command counting from add_parser calls."""
+        from cihub.commands.docs_audit.consistency import _count_cli_commands
+
+        # Create cli_parsers directory with test files
+        cli_dir = tmp_path / "cihub" / "cli_parsers"
+        cli_dir.mkdir(parents=True)
+
+        # Create a parser file with add_parser calls
+        parser_content = '''
+def setup(subparsers):
+    cmd1 = subparsers.add_parser("test-cmd", help="Test")
+    cmd2 = subparsers.add_parser("another-cmd", help="Another")
+'''
+        (cli_dir / "test.py").write_text(parser_content)
+
+        count = _count_cli_commands(tmp_path)
+        assert count == 2
+
+    def test_count_cli_commands_with_helpers(self, tmp_path: Path) -> None:
+        """Test CLI command counting includes helper-based commands."""
+        from cihub.commands.docs_audit.consistency import _count_cli_commands
+
+        cli_dir = tmp_path / "cihub" / "cli_parsers"
+        cli_dir.mkdir(parents=True)
+
+        # Create a parser file with both direct and helper-based commands
+        parser_content = '''
+def _add_preflight_parser(subparsers, name, help_text):
+    parser = subparsers.add_parser(name, help=help_text)
+    return parser
+
+def setup(subparsers):
+    detect = subparsers.add_parser("detect", help="Detect")
+    _add_preflight_parser(subparsers, "preflight", "Check env")
+    _add_preflight_parser(subparsers, "doctor", "Alias for preflight")
+'''
+        (cli_dir / "core.py").write_text(parser_content)
+
+        count = _count_cli_commands(tmp_path)
+        # 1 direct (detect) + 2 helper-based (preflight, doctor) = 3
+        assert count == 3
+
+    def test_is_delta_context(self) -> None:
+        """Test delta context detection."""
+        from cihub.commands.docs_audit.consistency import _is_delta_context
+
+        # Lines with delta keywords should be detected
+        assert _is_delta_context("Added 50 tests in this PR")
+        assert _is_delta_context("Fixed 3 bugs and added new tests")
+        assert _is_delta_context("Migrated 20 tests to new framework")
+
+        # Lines without delta keywords should pass
+        assert not _is_delta_context("We have 100 tests in the suite")
+        assert not _is_delta_context("Total of 50 commands available")
+
+    def test_is_local_context(self) -> None:
+        """Test local/module-specific context detection."""
+        from cihub.commands.docs_audit.consistency import _is_local_context
+
+        # Module-specific lines should be detected
+        assert _is_local_context("63 tests in test_docs_audit.py")
+        assert _is_local_context("Modular package with 22 tests")
+        assert _is_local_context("cihub docs stale has 63 tests")
+
+        # Project-wide claims should pass
+        assert not _is_local_context("We have 100 tests total")
+        assert not _is_local_context("The project includes 50 commands")

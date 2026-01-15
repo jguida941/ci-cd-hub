@@ -42,6 +42,17 @@ from .consistency import (
     validate_consistency,
     validate_timestamps,
 )
+from .headers import (
+    EXEMPT_DIRS,
+    EXEMPT_FILES,
+    GENERATED_DOCS,
+    has_generated_banner,
+    has_superseded_header,
+    is_exempt_doc,
+    parse_doc_header,
+    validate_doc_headers,
+    validate_header_value,
+)
 from .lifecycle import (
     check_active_status_sync,
     check_archive_superseded_headers,
@@ -56,17 +67,6 @@ from .output import (
     format_json_output,
     group_findings_by_category,
     group_findings_by_file,
-)
-from .headers import (
-    EXEMPT_DIRS,
-    EXEMPT_FILES,
-    GENERATED_DOCS,
-    has_generated_banner,
-    has_superseded_header,
-    is_exempt_doc,
-    parse_doc_header,
-    validate_doc_headers,
-    validate_header_value,
 )
 from .references import extract_doc_references, validate_doc_references
 from .types import (

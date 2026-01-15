@@ -5,7 +5,7 @@
 > **Action Items:** See [MASTER_PLAN.md](../MASTER_PLAN.md) for all tasks.
 > **Architecture:** See [ARCH_OVERVIEW.md](../architecture/ARCH_OVERVIEW.md)
 >
-> **Last Updated:** 2026-01-09 (`docs audit` Part 13 checks implemented)
+> **Last Updated:** 2026-01-12 (SYSTEM_INTEGRATION_PLAN 100% complete)
 > **Version Target:** v1.0.0
 
 ---
@@ -17,10 +17,10 @@
 
 | Design Doc | Purpose | Status |
 |------------|---------|--------|
-| [CLEAN_CODE.md](../active/CLEAN_CODE.md) | Architecture improvements (polymorphism, encapsulation) | In Progress (~90%) |
-| [SYSTEM_INTEGRATION_PLAN.md](../active/SYSTEM_INTEGRATION_PLAN.md) | Registry/wizard/schema integration | Active (Consolidated) |
+| [CLEAN_CODE.md](../active/CLEAN_CODE.md) | Architecture improvements (polymorphism, encapsulation) | In Progress (~92%) |
+| [SYSTEM_INTEGRATION_PLAN.md](../active/SYSTEM_INTEGRATION_PLAN.md) | Registry/wizard/schema integration | **Complete (100%)** |
 | [TEST_REORGANIZATION.md](../active/TEST_REORGANIZATION.md) | Test suite restructuring plan | Planned (Audit Complete) |
-| [DOC_AUTOMATION_AUDIT.md](../active/DOC_AUTOMATION_AUDIT.md) | `docs stale` + `docs audit` commands | In Progress (~80%) |
+| [DOC_AUTOMATION_AUDIT.md](../active/DOC_AUTOMATION_AUDIT.md) | `docs stale` + `docs audit` commands | Complete (~98%) |
 | [TYPESCRIPT_CLI_DESIGN.md](../active/TYPESCRIPT_CLI_DESIGN.md) | TypeScript CLI wrapper design | Planning |
 | [PYQT_PLAN.md](../active/PYQT_PLAN.md) | PyQt6 GUI wrapper design | Reference |
 
@@ -28,13 +28,20 @@
 
 ## Current Focus
 
-1. **CommandResult migration (CLEAN_CODE.md Phase 3)** - Migrate print() calls to CommandResult pattern
- - [x] 13 files migrated (~198 prints → CommandResult)
- - ~65 prints remaining in ~9 allowlisted files + report/ subpackage
-2. **Test suite reorganization** - Plan complete, 5-agent audit identified ~10-12 days blockers
-3. **Documentation automation** - `docs stale` [x] complete, `docs audit` mostly complete (~80%)
- - [x] `cihub docs stale` - 63 tests, modular package
- - [x] `cihub docs audit` - Core J/L/N + Part 13.S/T/V checks; 22 tests; missing Q headers, specs hygiene
+1. **CLEAN_CODE.md (~92% complete)** - Final polish and deferred items
+   - [x] Part 5.3: ToolAdapter registry complete (2026-01-10)
+   - [x] Part 7.4: Core module refactoring complete
+   - [x] Part 7.6: Services layer complete
+   - [ ] Part 2.3, 3.3, 4.2: DEFERRED (low priority refactoring)
+2. **SYSTEM_INTEGRATION_PLAN.md (100% complete)** - Registry/wizard/schema integration
+   - [x] All 6 phases complete (2026-01-12)
+   - [x] 159 new tests across 6 directories
+   - [x] Custom tool schema fix (patternProperties for x-* tools)
+3. **v1.0 Cutline remaining:**
+   - [ ] `cihub config validate` - Validate hub configs
+   - [ ] `cihub audit` - Umbrella command
+   - [ ] `--json` for hub-ci subcommands
+   - [ ] Generate TOOLS.md, WORKFLOWS.md
 
 ---
 
@@ -49,31 +56,33 @@
 | Archive | 21 | 7,656 | [x] Separated |
 | **Total** | **87** | **~30,430** | - |
 
-### Recent Fixes (2026-01-05)
+### Recent Fixes (2026-01-12)
 
-**CommandResult Migration (CLEAN_CODE.md Phase 3):**
-- [x] detect.py - Pure CommandResult return (no conditional JSON mode)
-- [x] validate.py - Added YAML parse error handling
-- [x] smoke.py - Fixed TemporaryDirectory resource leak
-- [x] discover.py - Reordered empty check before GITHUB_OUTPUT write
-- [x] cli.py - Error output now routes to stderr (CLI best practice)
+**SYSTEM_INTEGRATION_PLAN Completion:**
+- [x] All 6 phases complete (Phases 0-6)
+- [x] 159 new tests across 6 test directories
+- [x] Custom tool schema fix (patternProperties for x-* tools in ci-report.v2.json)
+- [x] CLI/wizard parity tests (37 tests)
+- [x] Schema validation tests (13 tests)
+- [x] Repo shape tests (57 tests)
+
+**Schema Fixes:**
+- [x] Report schema now allows custom x-* tools in tools_ran/configured/success maps
+- [x] Added patternProperties `^x-[a-zA-Z0-9_-]+$` to toolStatusMap definition
 
 **Test Suite:**
-- [x] Updated test patterns: `result.exit_code` instead of `result == int`
-- [x] All 2120 tests passing
+- [x] All 2707 tests passing
+- [x] Test directory counts verified against pytest collection
 
 **Documentation:**
-- [x] Created TEST_REORGANIZATION.md plan
-- [x] Completed 5-agent parallel audit identifying ~10-12 days blockers
-- [x] Fixed `pytest.threshold` → `min_coverage` in CLI_EXAMPLES.md
-- [x] Fixed `nvd_api_key_required` → `use_nvd_api_key` in TOOLS.md
-- [x] Fixed broken smoke test link in ARCH_OVERVIEW.md
+- [x] SYSTEM_INTEGRATION_PLAN.md updated to 100% complete
+- [x] All audit findings addressed (test counts, Phase 4.1 scope clarification)
 
 ### Pending (See MASTER_PLAN.md)
 
 - Add superseded banners to archive files → MASTER_PLAN.md §4
 - Generate TOOLS.md from code/schema → MASTER_PLAN.md §3
-- Implement `cihub docs stale` → MASTER_PLAN.md §6
+- Generate WORKFLOWS.md from workflow files → MASTER_PLAN.md §6
 
 ---
 
@@ -97,10 +106,10 @@
 
 | Check | Last Run | Result |
 |-------|----------|--------|
-| `pytest` | 2026-01-06 | [x] 2120 passed |
-| `ruff check` | 2026-01-05 | [x] Clean |
+| `pytest` | 2026-01-12 | [x] 2707 passed |
+| `ruff check` | 2026-01-12 | [x] Clean |
 | `cihub smoke --full` | 2025-12-30 | [x] Passed |
-| `cihub docs check` | 2026-01-05 | [x] Up to date |
+| `cihub docs check` | 2026-01-12 | [x] Up to date |
 | `cihub docs links` | 2026-01-05 | [x] No broken links |
 
 ---
@@ -144,4 +153,4 @@ docs/
 
 ---
 
-*Last updated: 2026-01-09*
+*Last updated: 2026-01-12*

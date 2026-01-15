@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from typing import Callable
 
+from cihub.cli_parsers.common import see_also_epilog
 from cihub.cli_parsers.types import CommandHandlers
 
 
@@ -23,6 +24,7 @@ def add_hub_commands(
     hub = subparsers.add_parser(
         "hub",
         help="Manage hub operational settings (config/hub-settings.yaml)",
+        epilog=see_also_epilog("hub"),
     )
     hub_sub = hub.add_subparsers(dest="hub_subcommand")
     hub.set_defaults(func=handlers.cmd_hub)

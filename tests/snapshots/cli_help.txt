@@ -1,11 +1,11 @@
 usage: cihub [-h] [--version]
-             {detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry}
+             {detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo}
              ...
 
 CI/CD Hub CLI
 
 positional arguments:
-  {detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry}
+  {detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo}
     detect              Detect repo language and tools
     preflight           Check environment readiness
     doctor              Alias for preflight
@@ -31,6 +31,8 @@ positional arguments:
     init                Generate .ci-hub.yml and hub-ci.yml
     update              Refresh hub-ci.yml and .ci-hub.yml
     validate            Validate .ci-hub.yml against schema
+    setup               Complete setup wizard for onboarding repos to CI/CD
+                        Hub
     setup-secrets       Set HUB_DISPATCH_TOKEN on hub and connected repos
     setup-nvd           Set NVD_API_KEY on Java repos for OWASP Dependency
                         Check
@@ -44,6 +46,11 @@ positional arguments:
     config              Manage hub-side repo configs (config/repos/*.yaml)
     registry            Centralized repo configuration management with tier
                         system
+    profile             Manage CI profiles (tool enablement presets)
+    tool                Manage CI tools (list, enable, disable, configure)
+    threshold           Manage CI thresholds (coverage, mutation, security
+                        limits)
+    repo                Manage repositories in the registry
 
 options:
   -h, --help            show this help message and exit

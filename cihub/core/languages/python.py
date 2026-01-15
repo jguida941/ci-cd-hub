@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from cihub.core.ci_report import RunContext, build_python_report, resolve_thresholds
 from cihub.core.gate_specs import PYTHON_THRESHOLDS
 from cihub.core.gate_specs import PYTHON_TOOLS as PYTHON_TOOL_SPECS
-from cihub.tools.registry import PYTHON_TOOLS
+from cihub.tools.registry import PYTHON_TOOLS, get_runners
 
 from .base import LanguageStrategy
 
@@ -35,37 +35,8 @@ class PythonStrategy(LanguageStrategy):
         return "python"
 
     def get_runners(self) -> dict[str, Callable[..., Any]]:
-        """Return Python tool runners from ci_runner module."""
-        # Import here to avoid circular dependencies
-        from cihub.ci_runner import (
-            run_bandit,
-            run_black,
-            run_docker,
-            run_isort,
-            run_mutmut,
-            run_mypy,
-            run_pip_audit,
-            run_pytest,
-            run_ruff,
-            run_sbom,
-            run_semgrep,
-            run_trivy,
-        )
-
-        return {
-            "pytest": run_pytest,
-            "ruff": run_ruff,
-            "black": run_black,
-            "isort": run_isort,
-            "mypy": run_mypy,
-            "bandit": run_bandit,
-            "pip_audit": run_pip_audit,
-            "mutmut": run_mutmut,
-            "sbom": run_sbom,
-            "semgrep": run_semgrep,
-            "trivy": run_trivy,
-            "docker": run_docker,
-        }
+        """Return Python tool runners from centralized registry."""
+        return get_runners("python")
 
     def get_default_tools(self) -> list[str]:
         """Return Python tools from registry.

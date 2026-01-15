@@ -16,9 +16,19 @@ from cihub.utils import (
 from cihub.utils.env import _parse_env_bool, env_bool
 
 
-def _tool_enabled(config: dict[str, Any], tool: str, language: str) -> bool:
-    """Check if a tool is enabled. Delegates to canonical cihub.config.tool_enabled."""
-    return _tool_enabled_canonical(config, tool, language)
+def _tool_enabled(
+    config: dict[str, Any], tool: str, language: str, *, default: bool = False
+) -> bool:
+    """Check if a tool is enabled. Delegates to canonical cihub.config.tool_enabled.
+
+    Args:
+        config: Full config dict
+        tool: Tool name
+        language: Language context
+        default: Default value if not explicitly configured. For custom tools (x-*),
+                 the schema specifies default=True, so callers should pass that.
+    """
+    return _tool_enabled_canonical(config, tool, language, default=default)
 
 
 def _build_context(

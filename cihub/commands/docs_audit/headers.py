@@ -20,14 +20,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from .types import (
-    AuditFinding,
     DOC_HEADER_FIELDS,
     DOC_HEADER_OPTIONAL,
     DOC_VALID_SOURCES,
     DOC_VALID_STATUSES,
+    SUPERSEDED_HEADER_PATTERNS,
+    AuditFinding,
     FindingCategory,
     FindingSeverity,
-    SUPERSEDED_HEADER_PATTERNS,
 )
 
 if TYPE_CHECKING:
@@ -183,9 +183,8 @@ def parse_doc_header(content: str) -> dict[str, str]:
         r"^[-*]\s",  # Bullet list
     ]
 
-    # States: looking_for_header, in_header_block, past_header
-    in_header_block = False
-    header_lines_found = 0
+    # Header block must be at the very top of the document.
+    # Stop scanning on first non-header line (structural or plain text).
 
     for line in lines:
         stripped = line.strip()
@@ -194,40 +193,31 @@ def parse_doc_header(content: str) -> dict[str, str]:
         if not stripped or stripped.startswith("# "):
             continue
 
-        # Check if we've hit content (end of header block)
+        # Check if we've hit structural content (table, code, list, etc.)
         for pattern in content_start_patterns:
             if re.match(pattern, stripped):
-                # If we already found headers, we're done
-                if header_lines_found > 0:
-                    return headers
-                # Otherwise, this doc might not have a header block
+                # Hit a structural content marker - done scanning
+                return headers
+
+        # Try to parse as header field
+        parsed_header = False
+        for pattern in header_patterns:
+            match = re.match(pattern, stripped)
+            if match:
+                field_name = match.group(1).strip()
+                field_value = match.group(2).strip()
+                # Only accept known header field names (case-insensitive)
+                if field_name.lower() in VALID_HEADER_FIELD_NAMES:
+                    # Header values shouldn't be super long (> 50 chars is likely content)
+                    if len(field_value) <= 50:
+                        headers[field_name] = field_value
+                        parsed_header = True
                 break
-        else:
-            # Try to parse as header field
-            for pattern in header_patterns:
-                match = re.match(pattern, stripped)
-                if match:
-                    field_name = match.group(1).strip()
-                    field_value = match.group(2).strip()
-                    # Only accept known header field names (case-insensitive)
-                    if field_name.lower() in VALID_HEADER_FIELD_NAMES:
-                        # Validate: header values shouldn't be super long (progress text)
-                        # Real header values are typically short
-                        if len(field_value) <= 50:
-                            headers[field_name] = field_value
-                            in_header_block = True
-                            header_lines_found += 1
-                    break
-            else:
-                # Line doesn't match header pattern
-                if in_header_block:
-                    # We were in header block but hit non-header line = done
-                    return headers
-                # If not in header block yet and we hit non-header content,
-                # limit how far we keep looking
-                if header_lines_found == 0:
-                    # Give up after a few non-header lines without finding any headers
-                    continue
+
+        if not parsed_header:
+            # Line doesn't match header pattern - this is content
+            # Headers must be at the very top; any non-header line ends scanning
+            return headers
 
     return headers
 
@@ -249,7 +239,14 @@ def validate_header_value(
     field_lower = field.lower()
 
     if field_lower == "status":
-        if value.lower() not in {s.lower() for s in DOC_VALID_STATUSES}:
+        # Check if value starts with a valid status (case-insensitive)
+        # This allows "ACTIVE - description" to match "active"
+        value_lower = value.lower()
+        is_valid = any(
+            value_lower == s.lower() or value_lower.startswith(s.lower() + " ")
+            for s in DOC_VALID_STATUSES
+        )
+        if not is_valid:
             findings.append(
                 AuditFinding(
                     severity=FindingSeverity.WARNING,
@@ -344,8 +341,21 @@ def validate_doc_headers(repo_root: Path) -> list[AuditFinding]:
         # Parse headers
         headers = parse_doc_header(content)
 
-        # Skip docs with no recognized headers (they're not using the standard format)
+        # Flag docs with no header block (missing universal headers)
         if not headers:
+            findings.append(
+                AuditFinding(
+                    severity=FindingSeverity.WARNING,
+                    category=FindingCategory.HEADER,
+                    message="Missing universal header block",
+                    file=rel_path,
+                    code="CIHUB-HEADER-MISSING-BLOCK",
+                    suggestion=(
+                        "Add header block at top: Status, Owner, "
+                        "Source-of-truth, Last-reviewed"
+                    ),
+                )
+            )
             continue
 
         # Normalize header keys to lowercase for comparison
@@ -358,30 +368,30 @@ def validate_doc_headers(repo_root: Path) -> list[AuditFinding]:
         # Convert back to display format
         missing_fields = {f for f in DOC_HEADER_FIELDS if f.lower() in missing_lower}
 
-        # Only warn about missing fields if doc has at least 2 header fields
-        # (indicates they're attempting the standard format)
-        # Docs with only 1 field might just be using it informally
-        if missing_fields and len(headers) >= 2:
+        # Flag incomplete headers (has some fields but not all required)
+        if missing_fields:
             findings.append(
                 AuditFinding(
                     severity=FindingSeverity.WARNING,
                     category=FindingCategory.HEADER,
                     message=(
-                        f"Missing required header fields: "
+                        f"Incomplete header block - missing: "
                         f"{', '.join(sorted(missing_fields))}"
                     ),
                     file=rel_path,
-                    code="CIHUB-HEADER-MISSING",
+                    code="CIHUB-HEADER-INCOMPLETE",
                     suggestion=(
-                        "Add header block with: Status, Owner, "
+                        "Complete header block with: Status, Owner, "
                         "Source-of-truth, Last-reviewed"
                     ),
                 )
             )
 
         # Validate existing field values
+        required_lower = {f.lower() for f in DOC_HEADER_FIELDS}
+        optional_lower = {f.lower() for f in DOC_HEADER_OPTIONAL}
         for field, value in headers.items():
-            if field in DOC_HEADER_FIELDS or field in DOC_HEADER_OPTIONAL:
+            if field.lower() in required_lower or field.lower() in optional_lower:
                 findings.extend(validate_header_value(field, value, rel_path))
 
     return findings

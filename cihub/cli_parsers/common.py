@@ -190,3 +190,69 @@ def add_tool_runner_args(
     """
     add_path_args(parser, default=path_default)
     add_output_args(parser)
+
+
+# =============================================================================
+# See Also References
+# =============================================================================
+
+# Mapping of command names to related commands for help epilogs
+SEE_ALSO: dict[str, list[str]] = {
+    # Core workflow
+    "detect": ["init", "preflight", "scaffold"],
+    "preflight": ["detect", "check", "smoke"],
+    "doctor": ["preflight", "check"],
+    "scaffold": ["smoke", "init", "detect"],
+    "smoke": ["scaffold", "check", "ci"],
+    "check": ["smoke", "verify", "ci", "preflight"],
+    "verify": ["check", "sync-templates", "ci"],
+    "ci": ["check", "run", "report", "triage"],
+    "run": ["ci", "tool list"],
+    # Reporting & triage
+    "report": ["ci", "triage"],
+    "triage": ["ci", "report"],
+    # Registry management
+    "registry": ["profile", "tool", "threshold", "repo"],
+    "profile": ["registry", "tool", "threshold"],
+    "tool": ["registry", "profile", "run"],
+    "threshold": ["registry", "profile"],
+    "repo": ["registry", "config"],
+    # Init & setup
+    "init": ["detect", "scaffold", "update", "setup"],
+    "update": ["init", "validate"],
+    "validate": ["init", "check"],
+    "setup": ["init", "setup-secrets", "setup-nvd"],
+    "setup-secrets": ["setup", "setup-nvd"],
+    "setup-nvd": ["setup", "setup-secrets"],
+    # Documentation
+    "docs": ["adr"],
+    "adr": ["docs"],
+    # Hub management
+    "hub": ["registry", "hub-ci"],
+    "hub-ci": ["hub", "ci", "triage"],
+    "config": ["registry", "hub"],
+    # Fix commands
+    "fix": ["fix-pom", "fix-deps", "fix-gradle"],
+    "fix-pom": ["fix", "fix-deps"],
+    "fix-deps": ["fix", "fix-pom"],
+    "fix-gradle": ["fix"],
+}
+
+
+def see_also_epilog(command: str) -> str | None:
+    """Generate a See Also epilog for a command.
+
+    Args:
+        command: The command name to get related commands for.
+
+    Returns:
+        Formatted epilog string, or None if no related commands.
+
+    Example:
+        >>> see_also_epilog("smoke")
+        'See also: scaffold, check, ci'
+    """
+    related = SEE_ALSO.get(command)
+    if not related:
+        return None
+    return f"See also: {', '.join(related)}"

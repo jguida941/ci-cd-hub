@@ -8,7 +8,12 @@ from typing import Any, Mapping
 
 from cihub.config import tool_enabled as _tool_enabled_canonical
 from cihub.core.languages import get_strategy
-from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
+from cihub.tools.registry import (
+    JAVA_TOOLS,
+    PYTHON_TOOLS,
+    RESERVED_FEATURES,
+    get_custom_tools_from_config,
+)
 from cihub.utils import (
     resolve_executable,
     validate_subdir,
@@ -51,48 +56,29 @@ def _resolve_workdir(
     return "."
 
 
-def _tool_enabled(config: dict[str, Any], tool: str, language: str) -> bool:
-    """Check if a tool is enabled. Delegates to canonical cihub.config.tool_enabled."""
-    return _tool_enabled_canonical(config, tool, language)
+def _tool_enabled(
+    config: dict[str, Any], tool: str, language: str, *, default: bool = False
+) -> bool:
+    """Check if a tool is enabled. Delegates to canonical cihub.config.tool_enabled.
+
+    Args:
+        config: Full config dict
+        tool: Tool name
+        language: Language context
+        default: Default value if not explicitly configured. For custom tools (x-*),
+                 the schema specifies default=True, so callers should pass that.
+    """
+    return _tool_enabled_canonical(config, tool, language, default=default)
 
 
 def _tool_gate_enabled(config: dict[str, Any], tool: str, language: str) -> bool:
-    tools = config.get(language, {}).get("tools", {}) or {}
-    entry = tools.get(tool, {}) if isinstance(tools, dict) else {}
-    if not isinstance(entry, dict):
-        return True
+    """Check if a tool's gate should fail the build.
 
-    if language == "python":
-        if tool == "ruff":
-            return bool(entry.get("fail_on_error", True))
-        if tool == "black":
-            return bool(entry.get("fail_on_format_issues", True))
-        if tool == "isort":
-            return bool(entry.get("fail_on_issues", True))
-        if tool == "bandit":
-            return bool(
-                entry.get("fail_on_high", True) or entry.get("fail_on_medium", False) or entry.get("fail_on_low", False)
-            )
-        if tool == "pip_audit":
-            return bool(entry.get("fail_on_vuln", True))
-        if tool == "semgrep":
-            return bool(entry.get("fail_on_findings", True))
-        if tool == "trivy":
-            return bool(entry.get("fail_on_critical", True) or entry.get("fail_on_high", True))
+    Delegates to centralized tool adapter registry (Part 5.3).
+    """
+    from cihub.tools.registry import is_tool_gate_enabled
 
-    if language == "java":
-        if tool == "checkstyle":
-            return bool(entry.get("fail_on_violation", True))
-        if tool == "spotbugs":
-            return bool(entry.get("fail_on_error", True))
-        if tool == "pmd":
-            return bool(entry.get("fail_on_violation", True))
-        if tool == "semgrep":
-            return bool(entry.get("fail_on_findings", True))
-        if tool == "trivy":
-            return bool(entry.get("fail_on_critical", True) or entry.get("fail_on_high", True))
-
-    return True
+    return is_tool_gate_enabled(config, tool, language)
 
 
 def _parse_env_bool(value: str | None) -> bool | None:
@@ -196,6 +182,28 @@ def _apply_env_overrides(
     }
     overrides = tool_env.get(language, {})
     for tool, var in overrides.items():
+        raw = env.get(var)
+        if raw is None:
+            continue
+        parsed = _parse_env_bool(raw)
+        if parsed is None:
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"Invalid boolean for {var}: {raw!r}",
+                    "code": "CIHUB-CI-ENV-BOOL",
+                }
+            )
+            continue
+        _set_tool_enabled(config, language, tool, parsed)
+
+    # Also apply env overrides for custom tools (x-* prefix)
+    # Pattern: x-my-tool -> CIHUB_RUN_X_MY_TOOL
+    custom_tools = get_custom_tools_from_config(config, language)
+    for tool in custom_tools:
+        # Convert x-my-tool to X_MY_TOOL
+        env_suffix = tool.upper().replace("-", "_")
+        var = f"CIHUB_RUN_{env_suffix}"
         raw = env.get(var)
         if raw is None:
             continue

@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from cihub.core.ci_report import RunContext, build_java_report, resolve_thresholds
 from cihub.core.gate_specs import JAVA_THRESHOLDS
 from cihub.core.gate_specs import JAVA_TOOLS as JAVA_TOOL_SPECS
-from cihub.tools.registry import JAVA_TOOLS
+from cihub.tools.registry import JAVA_TOOLS, get_runners
 
 from .base import LanguageStrategy
 
@@ -35,35 +35,8 @@ class JavaStrategy(LanguageStrategy):
         return "java"
 
     def get_runners(self) -> dict[str, Callable[..., Any]]:
-        """Return Java tool runners from ci_runner module."""
-        # Import here to avoid circular dependencies
-        from cihub.ci_runner import (
-            run_checkstyle,
-            run_docker,
-            run_jacoco,
-            run_java_build,
-            run_owasp,
-            run_pitest,
-            run_pmd,
-            run_sbom,
-            run_semgrep,
-            run_spotbugs,
-            run_trivy,
-        )
-
-        return {
-            "build": run_java_build,
-            "jacoco": run_jacoco,
-            "pitest": run_pitest,
-            "checkstyle": run_checkstyle,
-            "spotbugs": run_spotbugs,
-            "pmd": run_pmd,
-            "owasp": run_owasp,
-            "sbom": run_sbom,
-            "semgrep": run_semgrep,
-            "trivy": run_trivy,
-            "docker": run_docker,
-        }
+        """Return Java tool runners from centralized registry."""
+        return get_runners("java")
 
     def get_default_tools(self) -> list[str]:
         """Return Java tools from registry.

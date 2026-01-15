@@ -374,6 +374,90 @@ class TestReportSchemaContract:
 
         assert "additional" in str(exc_info.value).lower()
 
+    def test_schema_allows_custom_tools_in_status_maps(
+        self,
+        report_schema: dict[str, Any],
+    ) -> None:
+        """Schema should allow x-* custom tools in tools_ran/configured/success maps."""
+        # Minimal valid report with custom tool
+        report = {
+            "schema_version": "2.0",
+            "metadata": {
+                "workflow_version": "1.0.0",
+                "workflow_ref": "test/workflow@main",
+                "generated_at": "2026-01-12T00:00:00Z",
+            },
+            "repository": "test/repo",
+            "run_id": "123",
+            "run_number": "1",
+            "commit": "a" * 40,
+            "branch": "main",
+            "timestamp": "2026-01-12T00:00:00Z",
+            "results": {
+                "coverage": 80,
+                "mutation_score": 70,
+                "tests_passed": 100,
+                "tests_failed": 0,
+                "critical_vulns": 0,
+                "high_vulns": 0,
+                "medium_vulns": 0,
+            },
+            "tool_metrics": {},
+            "tools_ran": {
+                "pytest": True,
+                "x-my-custom-linter": True,  # Custom tool
+                "x-internal_tool": True,  # Another custom tool
+            },
+            "tools_configured": {
+                "pytest": True,
+                "x-my-custom-linter": True,
+            },
+            "tools_success": {
+                "pytest": True,
+                "x-my-custom-linter": True,
+            },
+        }
+
+        # Should NOT raise - custom x-* tools are allowed
+        jsonschema.validate(instance=report, schema=report_schema)
+
+    def test_schema_rejects_invalid_custom_tool_names(
+        self,
+        report_schema: dict[str, Any],
+    ) -> None:
+        """Schema should reject custom tools without x- prefix."""
+        report = {
+            "schema_version": "2.0",
+            "metadata": {
+                "workflow_version": "1.0.0",
+                "workflow_ref": "test/workflow@main",
+                "generated_at": "2026-01-12T00:00:00Z",
+            },
+            "repository": "test/repo",
+            "run_id": "123",
+            "run_number": "1",
+            "commit": "a" * 40,
+            "branch": "main",
+            "timestamp": "2026-01-12T00:00:00Z",
+            "results": {
+                "coverage": 80,
+                "mutation_score": 70,
+                "tests_passed": 100,
+                "tests_failed": 0,
+                "critical_vulns": 0,
+                "high_vulns": 0,
+                "medium_vulns": 0,
+            },
+            "tool_metrics": {},
+            "tools_ran": {
+                "pytest": True,
+                "my-custom-linter": True,  # Missing x- prefix - should fail
+            },
+        }
+
+        with pytest.raises(jsonschema.ValidationError):
+            jsonschema.validate(instance=report, schema=report_schema)
+
 
 class TestSchemaCompleteness:
     """Ensure schemas cover all fields emitted by code."""

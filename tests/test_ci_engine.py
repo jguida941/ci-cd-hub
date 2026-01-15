@@ -1251,3 +1251,69 @@ class TestRequireRunOrFail:
         failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
 
         assert any("owasp configured but did not run" in f for f in failures)
+
+
+class TestBackwardCompatRunnerImports:
+    """Tests for run_* backward-compatibility imports via __getattr__.
+
+    These tests ensure the dynamic attribute access in ci_engine/__init__.py
+    correctly provides run_pytest, run_ruff, etc. as callables. If
+    _RUNNER_COMPAT_MAP or registry entries drift, these tests will catch it.
+    """
+
+    def test_run_pytest_is_callable(self) -> None:
+        """run_pytest should be importable and callable."""
+        from cihub.services.ci_engine import run_pytest
+
+        assert callable(run_pytest), "run_pytest should be a callable"
+
+    def test_run_ruff_is_callable(self) -> None:
+        """run_ruff should be importable and callable."""
+        from cihub.services.ci_engine import run_ruff
+
+        assert callable(run_ruff), "run_ruff should be a callable"
+
+    def test_run_jacoco_is_callable(self) -> None:
+        """run_jacoco should be importable and callable."""
+        from cihub.services.ci_engine import run_jacoco
+
+        assert callable(run_jacoco), "run_jacoco should be a callable"
+
+    def test_run_checkstyle_is_callable(self) -> None:
+        """run_checkstyle should be importable and callable."""
+        from cihub.services.ci_engine import run_checkstyle
+
+        assert callable(run_checkstyle), "run_checkstyle should be a callable"
+
+    def test_missing_runner_raises_attribute_error(self) -> None:
+        """Missing runner should raise AttributeError with helpful message."""
+        import cihub.services.ci_engine as ci_engine
+
+        with pytest.raises(AttributeError, match="has no attribute"):
+            _ = ci_engine.run_nonexistent_tool
+
+    def test_python_runners_dict_is_copy(self) -> None:
+        """PYTHON_RUNNERS should return a copy to prevent mutation."""
+        from cihub.services.ci_engine import PYTHON_RUNNERS
+
+        original_len = len(PYTHON_RUNNERS)
+        PYTHON_RUNNERS["test_key"] = lambda: None
+        # Re-import should not have the mutation
+        from cihub.services import ci_engine
+
+        fresh_runners = ci_engine.PYTHON_RUNNERS
+        assert "test_key" not in fresh_runners
+        assert len(fresh_runners) == original_len
+
+    def test_java_runners_dict_is_copy(self) -> None:
+        """JAVA_RUNNERS should return a copy to prevent mutation."""
+        from cihub.services.ci_engine import JAVA_RUNNERS
+
+        original_len = len(JAVA_RUNNERS)
+        JAVA_RUNNERS["test_key"] = lambda: None
+        # Re-import should not have the mutation
+        from cihub.services import ci_engine
+
+        fresh_runners = ci_engine.JAVA_RUNNERS
+        assert "test_key" not in fresh_runners
+        assert len(fresh_runners) == original_len

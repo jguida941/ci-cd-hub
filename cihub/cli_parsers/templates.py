@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from typing import Callable
 
+from cihub.cli_parsers.common import see_also_epilog
 from cihub.cli_parsers.types import CommandHandlers
 
 
@@ -16,6 +17,7 @@ def add_templates_commands(
     sync_templates = subparsers.add_parser(
         "sync-templates",
         help="Sync caller workflow templates to dispatch-enabled repos",
+        epilog=see_also_epilog("sync-templates"),
     )
     add_json_flag(sync_templates)
     sync_templates.add_argument(

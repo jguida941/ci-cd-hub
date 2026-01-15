@@ -14,27 +14,26 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS  # noqa: E402
 from cihub.wizard import WizardCancelled  # isort: skip # noqa: E402
 from cihub.wizard.core import _check_cancelled  # noqa: E402
-from cihub.wizard.questions.java_tools import (  # noqa: E402
-    JAVA_TOOL_ORDER,
-    configure_java_tools,
-)
+from cihub.wizard.questions.java_tools import configure_java_tools  # noqa: E402
 from cihub.wizard.questions.language import (  # noqa: E402
     select_build_tool,
     select_java_version,
     select_language,
     select_python_version,
 )
-from cihub.wizard.questions.python_tools import (  # noqa: E402
-    PYTHON_TOOL_ORDER,
-    configure_python_tools,
-)
+from cihub.wizard.questions.python_tools import configure_python_tools  # noqa: E402
 from cihub.wizard.questions.security import (  # noqa: E402
     _prompt_security_tools,
     configure_security_tools,
 )
 from cihub.wizard.questions.thresholds import configure_thresholds  # noqa: E402
+
+# Tool order is now sourced from registry (CLI as source of truth)
+JAVA_TOOL_ORDER = list(JAVA_TOOLS)
+PYTHON_TOOL_ORDER = list(PYTHON_TOOLS)
 
 
 # =============================================================================
@@ -244,20 +243,24 @@ class TestConfigureJavaTools:
             result = configure_java_tools(defaults)
             assert result["jacoco"]["enabled"] is False
 
-    def test_skips_tools_not_in_defaults(self) -> None:
-        """Skips tools not present in defaults."""
+    def test_includes_all_registry_tools(self) -> None:
+        """Prompts for all tools from registry (CLI source of truth)."""
         with mock.patch("cihub.wizard.questions.java_tools.questionary.confirm") as mock_confirm:
             mock_confirm.return_value.ask.return_value = True
             defaults = {"java": {"tools": {"jacoco": {"enabled": False}}}}
             result = configure_java_tools(defaults)
-            # Only jacoco should be present, not checkstyle
+            # All registry tools should be present (sourced from tools/registry.py)
             assert "jacoco" in result
-            assert "checkstyle" not in result
+            # Checkstyle is in JAVA_TOOLS registry, so it should be prompted
+            assert "checkstyle" in result
 
-    def test_empty_defaults_returns_empty(self) -> None:
-        """Returns empty dict when defaults are empty."""
-        result = configure_java_tools({})
-        assert result == {}
+    def test_empty_defaults_prompts_all_tools(self) -> None:
+        """Prompts for all registry tools even when defaults are empty."""
+        with mock.patch("cihub.wizard.questions.java_tools.questionary.confirm") as mock_confirm:
+            mock_confirm.return_value.ask.return_value = True
+            result = configure_java_tools({})
+            # Should include all Java tools from registry
+            assert len(result) >= len(JAVA_TOOL_ORDER)
 
     def test_raises_when_cancelled(self) -> None:
         """Raises WizardCancelled when user cancels."""
@@ -306,20 +309,24 @@ class TestConfigurePythonTools:
             result = configure_python_tools(defaults)
             assert result["pytest"]["enabled"] is False
 
-    def test_skips_tools_not_in_defaults(self) -> None:
-        """Skips tools not present in defaults."""
+    def test_includes_all_registry_tools(self) -> None:
+        """Prompts for all tools from registry (CLI source of truth)."""
         with mock.patch("cihub.wizard.questions.python_tools.questionary.confirm") as mock_confirm:
             mock_confirm.return_value.ask.return_value = True
             defaults = {"python": {"tools": {"pytest": {"enabled": False}}}}
             result = configure_python_tools(defaults)
-            # Only pytest should be present
+            # All registry tools should be present (sourced from tools/registry.py)
             assert "pytest" in result
-            assert "ruff" not in result
+            # Ruff is in PYTHON_TOOLS registry, so it should be prompted
+            assert "ruff" in result
 
-    def test_empty_defaults_returns_empty(self) -> None:
-        """Returns empty dict when defaults are empty."""
-        result = configure_python_tools({})
-        assert result == {}
+    def test_empty_defaults_prompts_all_tools(self) -> None:
+        """Prompts for all registry tools even when defaults are empty."""
+        with mock.patch("cihub.wizard.questions.python_tools.questionary.confirm") as mock_confirm:
+            mock_confirm.return_value.ask.return_value = True
+            result = configure_python_tools({})
+            # Should include all Python tools from registry
+            assert len(result) >= len(PYTHON_TOOL_ORDER)
 
     def test_raises_when_cancelled(self) -> None:
         """Raises WizardCancelled when user cancels."""

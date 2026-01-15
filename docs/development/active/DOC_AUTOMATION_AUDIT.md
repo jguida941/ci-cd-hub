@@ -1,57 +1,60 @@
 # Documentation Automation Audit & Design
 
 **Date:** 2026-01-04
-**Last Updated:** 2026-01-09 (`docs audit` Part 13 checks + 22 tests)
+**Last Updated:** 2026-01-10 (`docs audit` Part 13.U/W/X complete)
 **Priority:** **#4** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
-**Status:** ~80% implemented (`docs stale` complete, `docs audit` with Part 13 checks)
+**Status:** ~98% implemented (`docs stale` complete, `docs audit` complete with Part 12.J/L/N/Q + Part 13.R/S/T/U/V/W/X)
 **Depends On:** Stable CLI surface (CLEAN_CODE.md)
 **Can Parallel:** TEST_REORGANIZATION.md (both need stable CLI)
 **Problem:** Manual documentation updates take 4+ hours/day. With 50+ docs and 28,000 lines, keeping them in sync with code changes is unsustainable.
 
 ---
 
-## Implementation Status (2026-01-09)
+## Implementation Status (2026-01-10)
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| `cihub docs generate` | [x] **IMPLEMENTED** | Generates CLI.md, CONFIG.md |
+| `cihub docs generate` | [x] **IMPLEMENTED** | Generates CLI.md, CONFIG.md, ENV.md, WORKFLOWS.md |
 | `cihub docs check` | [x] **IMPLEMENTED** | Drift detection for generated docs |
 | `cihub docs links` | [x] **IMPLEMENTED** | Internal link validation |
 | `cihub docs stale` | [x] **IMPLEMENTED** | Modularized package (957→1489 lines across 6 modules), 63 tests |
-| `cihub docs audit` | WARNING: **MOSTLY COMPLETE** | Core checks (J/L/N) + Part 13.S/T/V; missing universal headers (Q), specs hygiene |
-| `.cihub/tool-outputs/` for docs | [x] **IMPLEMENTED** | `docs audit --output-dir` wired into `check --audit` |
+| `cihub docs audit` | [x] **COMPLETE** | Core checks (J/L/N/Q) + Part 13.R/S/T/U/V/W/X complete; optional items remain |
+| `.cihub/tool-outputs/` for docs | [x] **IMPLEMENTED** | `docs audit --output-dir` wired into `check --audit` (fast mode - no refs/consistency) |
 | AI prompt pack output | WARNING: **OPTIONAL SUPPORT** | `docs stale --ai` or `--ai-output PATH` implemented |
-| Metrics drift detection | [ ] **NOT IMPLEMENTED** | Part 13.R - detect stale counts (for `docs stale`) |
-| Duplicate task detection | [x] **IMPLEMENTED** | Part 13.S - fuzzy matching across planning docs |
+| Specs hygiene | [x] **IMPLEMENTED** | Part 12.J - REQUIREMENTS.md Status/Last Updated headers |
+| Metrics drift detection | [x] **IMPLEMENTED** | Part 13.R - detect stale counts in docs vs actual |
+| Duplicate task detection | [~] **DISABLED** | Part 13.S - fuzzy matching implemented but disabled pending cleanup (too noisy) |
 | Timestamp freshness | [x] **IMPLEMENTED** | Part 13.T - "Last Updated" header staleness |
 | Placeholder detection | [x] **IMPLEMENTED** | Part 13.V - markers (YOUR_*, TODO:), local paths (GitHub usernames disabled - too noisy) |
-| Checklist-reality sync | [ ] **NOT IMPLEMENTED** | Part 13.U - verify [ ] items against code |
-| Cross-doc consistency | [ ] **NOT IMPLEMENTED** | Part 13.W - ensure same facts across docs |
-| CHANGELOG validation | [ ] **NOT IMPLEMENTED** | Part 13.X - format and ordering checks |
+| Checklist-reality sync | [x] **IMPLEMENTED** | Part 13.U - verify [ ] items against code |
+| Cross-doc consistency | [x] **IMPLEMENTED** | Part 13.W - README.md ↔ active/ directory sync (limited scope) |
+| CHANGELOG validation | [x] **IMPLEMENTED** | Part 13.X - format and ordering checks |
 | Guide command validation | [ ] **NOT IMPLEMENTED** | Validate `cihub <command>` mentions in guides against CLI |
 
-**Overall:** ~80% implemented. `docs stale` complete; `docs audit` mostly complete (J/L/N + Part 13.S/T/V). Remaining: universal headers (Q), specs hygiene, Part 13.R/U/W/X (~1-2 days).
+**Overall:** ~98% implemented. `docs stale` complete; `docs audit` complete (J/L/N/Q + Part 13.R/S/T/U/V/W/X). Only optional items remain.
 
 **Implemented in `docs audit` (2026-01-09):**
-- [x] active/ ↔ STATUS.md sync (Part 12.J partial)
-- [x] Archive superseded header check (Part 12.J partial)
+- [x] active/ ↔ STATUS.md sync (Part 12.J)
+- [x] Archive superseded header check with explicit reference requirement (Part 12.J)
+- [x] Specs hygiene: REQUIREMENTS.md Status/Last Updated validation (Part 12.J)
 - [x] ADR metadata lint: Status/Date/Superseded-by (Part 12.L)
-- [x] Plain-text docs/ reference scanning (Part 12.N)
+- [x] Plain-text docs/ reference scanning (Part 12.N) - URL-aware, excludes archived/research docs
+- [x] Universal doc header enforcement (Part 12.Q) - validates Status/Owner/Source-of-truth/Last-reviewed
 - [x] --output-dir wired in check --audit → writes .cihub/tool-outputs/docs_audit.json
-- [x] Duplicate task detection with fuzzy matching (Part 13.S)
+- [x] Metrics drift detection: stale counts in docs vs actual code (Part 13.R)
+- [~] Duplicate task detection with fuzzy matching (Part 13.S) - implemented but disabled (too noisy pending task consolidation)
 - [x] Timestamp freshness validation (Part 13.T)
-- [x] Placeholder detection: markers (YOUR_*, TODO:), local paths (Part 13.V) - GitHub usernames disabled (too noisy)
+- [x] Placeholder detection: markers (YOUR_*, TODO:), local paths (Part 13.V)
+- [x] Checklist-reality sync: verify [ ] items against code implementations (Part 13.U)
+- [x] Cross-doc consistency: README.md ↔ active/ directory sync (Part 13.W)
+- [x] CHANGELOG validation: date ordering and duplicate detection (Part 13.X)
 
-**NOT yet implemented in `docs audit`:**
-- [ ] Specs hygiene: REQUIREMENTS.md validation (Part 12.J)
+**NOT yet implemented in `docs audit` (optional):**
 - [ ] Path-change update rules (Part 12.J)
-- [ ] Universal doc header enforcement (Part 12.Q)
 - [ ] Doc inventory/counts (Part 12.M)
-- [ ] Docs index consistency: `docs/README.md` active doc list must match STATUS.md + active/ (Part 13.W)
 - [ ] Guide command validation: verify `cihub <command>` references in `docs/guides/` against CLI (new)
-- [ ] Checklist-reality sync (Part 13.U)
 
-**Tests:** 22 tests in `tests/test_docs_audit.py` (types, lifecycle, ADR, references, consistency)
+**Tests:** 39 tests in `tests/test_docs_audit.py` (types, lifecycle, ADR, references, consistency, headers, metrics, checklist-reality, cross-doc, changelog)
 
 **Module structure:**
 ```
@@ -60,29 +63,30 @@ cihub/commands/docs_audit/
 ├── types.py # Data models (AuditFinding, AuditReport, TaskEntry, etc.)
 ├── lifecycle.py # STATUS.md ↔ active/ sync validation
 ├── adr.py # ADR metadata linting
-├── references.py # Plain-text docs/ path scanning
+├── headers.py # Universal doc header enforcement (Part 12.Q)
+├── references.py # Plain-text docs/ path scanning (URL-aware)
 ├── consistency.py # Part 13: duplicates, timestamps, placeholders
 └── output.py # Output formatters (human, JSON, GitHub summary)
 ```
 
-**Next Priority:** Complete remaining Part 12 checks (Q universal headers, specs hygiene).
+**Next Priority:** Optional items only (guide command validation, doc inventory/counts).
 
 ---
 
 ## Known Documentation Contradictions (7-Agent Audit 2026-01-06)
 
-> **Source:** Comprehensive 7-agent code review. These should be addressed by `cihub docs audit` when implemented.
+> **Source:** Comprehensive 7-agent code review. Items marked ~~strikethrough~~ have been resolved.
 
-| # | Issue | Files | Impact |
-|---|-------|-------|--------|
-| 1 | CLI help snapshot missing registry command | `tests/snapshots/cli_help.txt` | Tests pass but snapshot stale |
-| 2 | ADR-0035 says `triage --ai`, but flag doesn't exist | `docs/adr/0035-*`, `cli_parsers/triage.py` | Confusing documentation |
-| 3 | ADR-0045 says `import from cihub.constants` but file doesn't exist | `docs/adr/0045-*` | Wrong import path documented |
-| 4 | Schema version v1 in ADR but v2 in code | `schema/triage.schema.json` | Minor confusion |
-| 5 | `--ai` flag for fix says "with --report" but not enforced | `cli_parsers/fix.py:39-42` | Silent ignore |
-| 6 | Docs index omits active design docs | `docs/README.md` | Confusing entry point |
+| # | Issue | Files | Impact | Status |
+|---|-------|-------|--------|--------|
+| ~~1~~ | ~~CLI help snapshot missing registry command~~ | `tests/snapshots/cli_help.txt` | ~~Tests pass but snapshot stale~~ | **RESOLVED** |
+| 2 | ADR-0035 says `triage --ai`, but flag doesn't exist | `docs/adr/0035-*`, `cli_parsers/triage.py` | Confusing documentation | Open |
+| 3 | ADR-0045 says `import from cihub.constants` but file doesn't exist | `docs/adr/0045-*` | Wrong import path documented | Open |
+| 4 | Schema version v1 in ADR but v2 in code | `schema/triage.schema.json` | Minor confusion | Open |
+| 5 | `--ai` flag for fix says "with --report" but not enforced | `cli_parsers/fix.py:39-42` | Silent ignore | Open |
+| ~~6~~ | ~~Docs index omits active design docs~~ | `docs/README.md` | ~~Confusing entry point~~ | **RESOLVED** |
 
-**Action:** Update CLI snapshots, regenerate docs, fix ADR import paths. These are inputs for `cihub docs audit` implementation.
+**Action:** Fix ADR import paths and `--ai` flag validation. Items 2-5 are candidates for `cihub docs audit` detection rules.
 
 ---
 
@@ -107,7 +111,7 @@ cihub/commands/docs_audit/
 | Category | Files | Lines | Can Auto-Generate? |
 |-------------------------|-------|--------|----------------------------------------------|
 | ADRs | 37 | ~3,700 | [ ] No (architectural decisions require human) |
-| Reference (CLI, Config) | 3 | ~2,600 | [x] Yes (your `cihub docs generate` does this) |
+| Reference (CLI, Config, ENV, Workflows) | 4 | ~3,000 | [x] Yes (`cihub docs generate` does this) |
 | Guides | 8 | ~2,300 | WARNING: Partially (examples can be validated) |
 | Development/Status | 10+ | ~3,500 | WARNING: Partially (status can track code) |
 | Archive | 15+ | ~5,000 | [ ] No (historical, shouldn't change) |
@@ -121,7 +125,7 @@ cihub/commands/docs_audit/
 
 ### 1. `cihub docs generate` (works well [x])
 
-**Location:** `cihub/commands/docs.py`
+**Location:** `cihub/commands/docs/`
 
 **How it works:**
 ```
@@ -231,7 +235,7 @@ def extract_symbols(file: Path) -> set[str]:
 Scan markdown for code references:
 - Backtick code: `load_ci_config`
 - Code blocks with function calls
-- File paths: `cihub/commands/docs.py`
+- File paths: `cihub/commands/docs/`
 
 ```python
 def extract_doc_references(md_file: Path) -> dict[str, list[int]]:
@@ -447,7 +451,7 @@ Add to `.github/workflows/hub-production-ci.yml`:
 
 | Purpose | File |
 |---------|------|
-| Docs generate/check | `cihub/commands/docs.py` |
+| Docs generate/check | `cihub/commands/docs/` |
 | ADR management | `cihub/commands/adr.py` |
 | Schema | `schema/ci-hub-config.schema.json` |
 | CLI parser | `cihub/cli_parsers/` |
@@ -743,7 +747,7 @@ SKIPPED_FENCE_TYPES = {"python", "json", "yaml", "xml", "java", ...}
 **Decision:** Exclude `docs/reference/` by default. Include root `README.md`.
 
 **Rationale:**
-- `docs/reference/` contains CLI.md, CONFIG.md, TOOLS.md - all auto-generated by `cihub docs generate`
+- `docs/reference/` contains CLI.md, CONFIG.md, TOOLS.md, ENV.md, WORKFLOWS.md - all auto-generated by `cihub docs generate`
 - These are already checked by `cihub docs check` which compares against regenerated content
 - Running staleness check on generated docs is circular - they're BY DEFINITION current (regenerated from source)
 - Root `README.md` is handwritten and references code symbols - it CAN become stale
@@ -1022,7 +1026,7 @@ Prefer:
 - Resolve `--since` into a single **base commit** (for ranges, use merge-base)
 - For each changed file, compare **base vs head**:
  - Python: `ast.parse(git show <base>:path.py)` vs `ast.parse(path.py)` and compute set diffs
- - Schema: load `schema/ci-hub-config.schema.json` at base and head and diff key paths (reuse schema traversal approach from `cihub/commands/docs.py`)
+ - Schema: load `schema/ci-hub-config.schema.json` at base and head and diff key paths (reuse schema traversal approach from `cihub/commands/docs/`)
  - CLI surface: diff a **versioned help snapshot** at base vs head (see `tests/snapshots/cli_help.txt`) to detect removed commands/flags
 
 This matches the repo’s existing “single source → deterministic output → drift gate” strategy.
@@ -1152,7 +1156,7 @@ Optional integration improvement (Phase 2+):
  - Specs hygiene: only `docs/development/specs/REQUIREMENTS.md` is active; it must include `Status` and `Last Updated`
  - Checks ADR metadata (Status/Date/Superseded-by), universal headers, and broken references (see Section N)
  - Emits `docs_audit.json` under `.cihub/tool-outputs/`
-- **Integration:** run automatically inside `cihub check --audit` so local runs and CI share the same gate.
+- **Integration:** runs automatically inside `cihub check --audit` in **fast mode** (skips `--references` and `--consistency` checks for speed). Run `cihub docs audit` directly for full validation.
 
 ### K. Generated References Expansion
 

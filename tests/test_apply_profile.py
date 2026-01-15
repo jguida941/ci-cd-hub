@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from cihub.config.io import load_yaml_file
+from cihub.config.io import ConfigParseError, load_yaml_file
 from cihub.config.merge import deep_merge
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -49,11 +49,11 @@ class TestLoadYamlFile:
         assert result == {}
 
     def test_load_non_mapping_raises(self, tmp_path: Path):
-        """Loading non-mapping YAML raises ValueError."""
+        """Loading non-mapping YAML raises ConfigParseError."""
         yaml_file = tmp_path / "list.yaml"
         yaml_file.write_text("- item1\n- item2")
 
-        with pytest.raises(ValueError, match="mapping"):
+        with pytest.raises(ConfigParseError, match="mapping"):
             load_yaml_file(yaml_file)
 
 

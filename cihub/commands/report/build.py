@@ -14,6 +14,7 @@ from cihub.ci_report import (
 )
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.reporting import render_summary_from_path
+from cihub.tools.registry import get_all_tools_from_config, is_custom_tool
 from cihub.types import CommandResult
 from cihub.utils import detect_java_project_type, hub_root
 from cihub.utils.debug import emit_debug_context
@@ -124,24 +125,11 @@ def _build_report(args: argparse.Namespace) -> CommandResult:
     tool_outputs = _load_tool_outputs(tool_dir)
 
     if language == "python":
+        # Include built-in and custom tools; custom tools default to enabled=True per schema
+        all_tools = get_all_tools_from_config(config, "python")
         tools_configured = {
-            tool: _tool_enabled(config, tool, "python")
-            for tool in [
-                "pytest",
-                "mutmut",
-                "hypothesis",
-                "ruff",
-                "black",
-                "isort",
-                "mypy",
-                "bandit",
-                "pip_audit",
-                "sbom",
-                "semgrep",
-                "trivy",
-                "codeql",
-                "docker",
-            ]
+            tool: _tool_enabled(config, tool, "python", default=is_custom_tool(tool))
+            for tool in all_tools
         }
         tools_ran = {tool: False for tool in tools_configured}
         tools_success = {tool: False for tool in tools_configured}
@@ -163,22 +151,11 @@ def _build_report(args: argparse.Namespace) -> CommandResult:
             context,
         )
     elif language == "java":
+        # Include built-in and custom tools; custom tools default to enabled=True per schema
+        all_tools = get_all_tools_from_config(config, "java")
         tools_configured = {
-            tool: _tool_enabled(config, tool, "java")
-            for tool in [
-                "jacoco",
-                "pitest",
-                "jqwik",
-                "checkstyle",
-                "spotbugs",
-                "pmd",
-                "owasp",
-                "semgrep",
-                "trivy",
-                "codeql",
-                "sbom",
-                "docker",
-            ]
+            tool: _tool_enabled(config, tool, "java", default=is_custom_tool(tool))
+            for tool in all_tools
         }
         tools_ran = {tool: False for tool in tools_configured}
         tools_success = {tool: False for tool in tools_configured}

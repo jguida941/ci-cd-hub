@@ -689,8 +689,8 @@ from cihub.commands.hub_ci.java_tools import (  # noqa: E402
 from cihub.commands.hub_ci.python_tools import (  # noqa: E402
     cmd_black,
     cmd_coverage_verify,
-    cmd_mypy,
     cmd_mutmut,
+    cmd_mypy,
     cmd_ruff,
     cmd_ruff_format,
 )

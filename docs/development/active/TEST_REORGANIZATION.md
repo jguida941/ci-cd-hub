@@ -384,11 +384,11 @@ Checks:
 ## Migration Plan
 
 ### Phase 1: Infrastructure (Day 1)
-- [ ] Add `cihub hub-ci thresholds` command (read/write to config/defaults.yaml)
+- [x] Add `cihub hub-ci thresholds` command (read/write to config/defaults.yaml)
 - [ ] Add per-module override support to config/defaults.yaml schema
-- [ ] Create `scripts/update_test_metrics.py` (reads targets from config/defaults.yaml)
-- [ ] Create `scripts/generate_test_readme.py`
-- [ ] Create `scripts/check_test_drift.py`
+- [x] Create `scripts/update_test_metrics.py` (reads targets from config/defaults.yaml)
+- [x] Create `scripts/generate_test_readme.py`
+- [x] Create `scripts/check_test_drift.py`
 - [ ] Add to CI workflow (hub-production-ci.yml)
 
 ### Phase 2: Directory Structure (Day 2)
@@ -453,12 +453,12 @@ Checks:
 
 | Blocker | Status | Effort |
 |---------|--------|--------|
-| `cihub hub-ci thresholds` CLI command | [ ] NOT IMPLEMENTED | 2-3 days |
+| `cihub hub-ci thresholds` CLI command | [x] IMPLEMENTED | Done |
 | Schema per-module overrides | [ ] BLOCKED by `additionalProperties: false` | 1 day |
-| 3 automation scripts | [ ] NOT IMPLEMENTED | 4-5 days |
+| 3 automation scripts | [x] IMPLEMENTED | Done |
 | Only 2/15 thresholds in CI outputs | WARNING: INCOMPLETE | 2 days |
 
-**Estimated effort before Phase 1: ~10-12 days**
+**Estimated effort before Phase 1: ~3 days** (schema overrides + CI workflow)
 
 ### Test File Coverage Gap
 
@@ -527,8 +527,8 @@ Split before moving:
 ### Updated Phase 0 (NEW - Pre-Implementation)
 
 Before Phase 1 can begin:
-- [ ] Implement `cihub hub-ci thresholds` command
+- [x] Implement `cihub hub-ci thresholds` command
 - [ ] Update schema for per-module overrides
 - [ ] Create comprehensive file mapping (all 78 files → new homes)
 - [ ] Split large monolithic test files (120+ tests)
-- [ ] Register pytest markers in pyproject.toml
+- [x] Register pytest markers in pyproject.toml

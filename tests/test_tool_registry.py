@@ -201,3 +201,103 @@ class TestRegistryImportsWork:
         # The module should use the same objects from registry
         assert report_validator.PYTHON_TOOL_METRICS is PYTHON_TOOL_METRICS
         assert report_validator.JAVA_TOOL_METRICS is JAVA_TOOL_METRICS
+
+
+class TestToolAdapters:
+    """Tests for tool adapter registry (Part 5.3)."""
+
+    def test_get_tool_adapter_returns_adapter(self) -> None:
+        """get_tool_adapter returns adapter for known tools."""
+        from cihub.tools.registry import get_tool_adapter
+
+        adapter = get_tool_adapter("pytest", "python")
+        assert adapter is not None
+        assert adapter.name == "pytest"
+        assert adapter.language == "python"
+
+    def test_get_tool_adapter_returns_none_for_unknown(self) -> None:
+        """get_tool_adapter returns None for unknown tools."""
+        from cihub.tools.registry import get_tool_adapter
+
+        assert get_tool_adapter("unknown_tool", "python") is None
+        assert get_tool_adapter("pytest", "unknown_language") is None
+
+    def test_get_tool_runner_args_pytest(self) -> None:
+        """pytest adapter extracts fail_fast from config."""
+        from cihub.tools.registry import get_tool_runner_args
+
+        config = {"python": {"tools": {"pytest": {"fail_fast": True}}}}
+        args = get_tool_runner_args(config, "pytest", "python")
+        assert args == {"fail_fast": True}
+
+    def test_get_tool_runner_args_mutmut(self) -> None:
+        """mutmut adapter converts timeout_minutes to seconds."""
+        from cihub.tools.registry import get_tool_runner_args
+
+        config = {"python": {"tools": {"mutmut": {"timeout_minutes": 30}}}}
+        args = get_tool_runner_args(config, "mutmut", "python")
+        assert args == {"timeout_seconds": 1800}
+
+    def test_get_tool_runner_args_docker(self) -> None:
+        """docker adapter extracts compose_file, health_endpoint, health_timeout."""
+        from cihub.tools.registry import get_tool_runner_args
+
+        config = {"python": {"tools": {"docker": {
+            "compose_file": "docker-compose.test.yml",
+            "health_endpoint": "/health",
+            "health_timeout": 120,
+        }}}}
+        args = get_tool_runner_args(config, "docker", "python")
+        assert args == {
+            "compose_file": "docker-compose.test.yml",
+            "health_endpoint": "/health",
+            "health_timeout": 120,
+        }
+
+    def test_get_tool_runner_args_unknown_tool_returns_empty(self) -> None:
+        """Unknown tools return empty dict for runner args."""
+        from cihub.tools.registry import get_tool_runner_args
+
+        args = get_tool_runner_args({}, "unknown", "python")
+        assert args == {}
+
+    def test_is_tool_gate_enabled_default_true(self) -> None:
+        """Unknown tools default to gate enabled."""
+        from cihub.tools.registry import is_tool_gate_enabled
+
+        assert is_tool_gate_enabled({}, "unknown_tool", "python") is True
+
+    def test_is_tool_gate_enabled_ruff(self) -> None:
+        """ruff gate respects fail_on_error config."""
+        from cihub.tools.registry import is_tool_gate_enabled
+
+        # Default: enabled
+        assert is_tool_gate_enabled({}, "ruff", "python") is True
+
+        # Explicitly disabled
+        config = {"python": {"tools": {"ruff": {"fail_on_error": False}}}}
+        assert is_tool_gate_enabled(config, "ruff", "python") is False
+
+    def test_is_tool_gate_enabled_bandit_per_key_defaults(self) -> None:
+        """bandit gate uses per-key defaults (high=True, medium=False, low=False)."""
+        from cihub.tools.registry import is_tool_gate_enabled
+
+        # Default: high is True, so gate is enabled
+        assert is_tool_gate_enabled({}, "bandit", "python") is True
+
+        # Disable high only -> gate disabled (medium/low default False)
+        config = {"python": {"tools": {"bandit": {"fail_on_high": False}}}}
+        assert is_tool_gate_enabled(config, "bandit", "python") is False
+
+        # Enable medium -> gate enabled
+        config = {"python": {"tools": {"bandit": {"fail_on_high": False, "fail_on_medium": True}}}}
+        assert is_tool_gate_enabled(config, "bandit", "python") is True
+
+    def test_java_owasp_adapter_includes_build_tool_flag(self) -> None:
+        """Java OWASP adapter includes needs_build_tool and use_nvd_api_key."""
+        from cihub.tools.registry import get_tool_runner_args
+
+        config = {"java": {"tools": {"owasp": {"use_nvd_api_key": False}}}}
+        args = get_tool_runner_args(config, "owasp", "java")
+        assert args["needs_build_tool"] is True
+        assert args["use_nvd_api_key"] is False

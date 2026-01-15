@@ -255,7 +255,8 @@ def _evaluate_python_gates(
                 failures.append("docker failed")
 
     # require_run_or_fail checks: configured tools that didn't run
-    for tool in get_tool_keys("python"):
+    # Iterate tools_configured keys to include custom tools (x-* prefix)
+    for tool in tools_configured:
         failure = _check_require_run_or_fail(tool, tools_configured, tools_ran, config, "python")
         if failure:
             failures.append(failure)
@@ -391,7 +392,8 @@ def _evaluate_java_gates(
                 failures.append("docker failed")
 
     # require_run_or_fail checks: configured tools that didn't run
-    for tool in get_tool_keys("java"):
+    # Iterate tools_configured keys to include custom tools (x-* prefix)
+    for tool in tools_configured:
         failure = _check_require_run_or_fail(tool, tools_configured, tools_ran, config, "java")
         if failure:
             failures.append(failure)

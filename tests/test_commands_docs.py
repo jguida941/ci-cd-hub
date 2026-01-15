@@ -175,7 +175,7 @@ def test_run_lychee_parses_json_errors(tmp_path: Path, monkeypatch) -> None:
         captured["timeout"] = timeout
         return _Proc()
 
-    monkeypatch.setattr("cihub.commands.docs.safe_run", fake_safe_run)
+    monkeypatch.setattr("cihub.commands.docs.links.safe_run", fake_safe_run)
 
     exit_code, problems = _run_lychee(docs_dir, external=False)
 

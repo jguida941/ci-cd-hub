@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from typing import Callable
 
+from cihub.cli_parsers.common import see_also_epilog
 from cihub.cli_parsers.types import CommandHandlers
 
 
@@ -16,6 +17,7 @@ def add_config_outputs_command(
     config_outputs = subparsers.add_parser(
         "config-outputs",
         help="Emit config outputs for GitHub Actions",
+        epilog=see_also_epilog("config-outputs"),
     )
     add_json_flag(config_outputs)
     config_outputs.add_argument("--repo", default=".", help="Path to repo (default: .)")
@@ -36,6 +38,7 @@ def add_config_commands(
     config = subparsers.add_parser(
         "config",
         help="Manage hub-side repo configs (config/repos/*.yaml)",
+        epilog=see_also_epilog("config"),
     )
     add_json_flag(config)
     config.add_argument(

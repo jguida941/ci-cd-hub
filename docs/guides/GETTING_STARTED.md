@@ -446,7 +446,7 @@ thresholds:
 **Documentation & ADRs**
 | Command | Purpose |
 |---------|---------|
-| `cihub docs generate` | Generate CLI and config reference docs |
+| `cihub docs generate` | Generate CLI, config, env, and workflow reference docs |
 | `cihub docs check` | Verify generated docs are up to date |
 | `cihub docs links` | Check docs for broken internal links |
 | `cihub adr list` | List all Architecture Decision Records |

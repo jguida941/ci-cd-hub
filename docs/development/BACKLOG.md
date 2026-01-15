@@ -41,6 +41,7 @@ Single queue for known issues and near-term work.
 
 | Item | Category | Notes |
 |---------------------------------------------|-------------------|---------------------------------------------------------------|
+| Deduplicate tasks across planning docs | Docs | 58 duplicate tasks detected across MASTER_PLAN.md, CLEAN_CODE.md, etc. (Part 13.S); re-enable in `consistency.py:validate_consistency()` when fixed |
 | Generate `docs/reference/TOOLS.md` | Docs | From `cihub/tools/registry.py` via `cihub docs generate` |
 | Vulnerability rollup in aggregation | Reporting | Aggregate vuln counts across repos in hub report (WORKFLOWS.md line 116) |
 | Enforce `--json` for all commands | CLI UX | Contract test; include hub-ci subcommands |

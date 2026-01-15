@@ -16,7 +16,7 @@ FAST_STEPS = [
     "docs-check",
     "smoke",
 ]
-AUDIT_STEPS = ["docs-links", "adr-check", "validate-configs", "validate-profiles"]
+AUDIT_STEPS = ["docs-links", "docs-audit", "adr-check", "validate-configs", "validate-profiles"]
 SECURITY_STEPS = ["bandit", "pip-audit", "gitleaks", "trivy"]
 FULL_STEPS = [
     "zizmor",
@@ -38,6 +38,7 @@ def _run_check(monkeypatch, **flags) -> CommandResult:
     monkeypatch.setattr(check_module, "cmd_docs", _stub_success)
     monkeypatch.setattr(check_module, "cmd_smoke", _stub_success)
     monkeypatch.setattr(check_module, "cmd_docs_links", _stub_success)
+    monkeypatch.setattr(check_module, "cmd_docs_audit", _stub_success)
     monkeypatch.setattr(check_module, "cmd_adr", _stub_success)
     monkeypatch.setattr(check_module, "_run_process", _stub_success)
     monkeypatch.setattr(check_module, "_run_optional", _stub_success)
@@ -174,6 +175,7 @@ def test_check_pytest_command_includes_coverage_gate(monkeypatch) -> None:
     monkeypatch.setattr(check_module, "cmd_docs", _stub_success)
     monkeypatch.setattr(check_module, "cmd_smoke", _stub_success)
     monkeypatch.setattr(check_module, "cmd_docs_links", _stub_success)
+    monkeypatch.setattr(check_module, "cmd_docs_audit", _stub_success)
     monkeypatch.setattr(check_module, "cmd_adr", _stub_success)
     monkeypatch.setattr(check_module, "_run_process", capture_run_process)
     monkeypatch.setattr(check_module, "_run_optional", _stub_success)

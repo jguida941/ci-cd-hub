@@ -41,7 +41,7 @@ Implement a suite of automated documentation quality tools under the `cihub docs
 
 ```
 cihub/commands/
-├── docs.py # generate, check, links handlers
+├── docs/  # generate, check, links handlers (package)
 ├── docs_stale/ # Modular package (reference pattern)
 │ ├── __init__.py # Main handler
 │ ├── types.py # CodeSymbol, DocReference, StaleReport
@@ -178,7 +178,7 @@ This ADR will be updated as new documentation automation commands are added:
 ## Files Changed
 
 - `cihub/cli_parsers/docs.py` - Parser definitions for all docs subcommands
-- `cihub/commands/docs.py` - generate, check, links handlers
+- `cihub/commands/docs/` - Modular package (generate, check, links handlers)
 - `cihub/commands/docs_stale/` - Modular package (6 files)
 - `cihub/commands/docs_audit/` - Modular package (5 files)
 - `cihub/commands/check.py` - Integration into `check --audit` tier

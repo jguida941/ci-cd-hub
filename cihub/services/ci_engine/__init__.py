@@ -13,32 +13,19 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from cihub.ci_config import load_ci_config, load_hub_config
-from cihub.ci_runner import (
-    run_bandit,
-    run_black,
-    run_checkstyle,
-    run_docker,
-    run_isort,
-    run_jacoco,
-    run_java_build,
-    run_mutmut,
-    run_mypy,
-    run_owasp,
-    run_pip_audit,
-    run_pitest,
-    run_pmd,
-    run_pytest,
-    run_ruff,
-    run_sbom,
-    run_semgrep,
-    run_spotbugs,
-    run_trivy,
-)
+from cihub.ci_runner import run_java_build  # Keep for backward compat re-export
 from cihub.core.languages import get_strategy
 from cihub.exit_codes import EXIT_FAILURE, EXIT_INTERNAL_ERROR, EXIT_SUCCESS
 from cihub.reporting import render_summary
 from cihub.services.types import RunCIOptions, ServiceResult
-from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS, RESERVED_FEATURES
+from cihub.tools.registry import (
+    JAVA_TOOLS,
+    PYTHON_TOOLS,
+    RESERVED_FEATURES,
+    get_all_tools_from_config,
+    get_runners,
+    is_custom_tool,
+)
 from cihub.utils import (
     detect_java_project_type,
     get_git_branch,
@@ -83,6 +70,7 @@ from .python_tools import (
     _run_dep_command,
     _run_python_tools,
 )
+from .validation import _self_validate_report
 
 
 @dataclass
@@ -99,34 +87,55 @@ class CiRunResult(ServiceResult):
     problems: list[dict[str, Any]] = field(default_factory=list)
 
 
-# Tool runner dictionaries
-PYTHON_RUNNERS = {
-    "pytest": run_pytest,
-    "ruff": run_ruff,
-    "black": run_black,
-    "isort": run_isort,
-    "mypy": run_mypy,
-    "bandit": run_bandit,
-    "pip_audit": run_pip_audit,
-    "mutmut": run_mutmut,
-    "sbom": run_sbom,
-    "semgrep": run_semgrep,
-    "trivy": run_trivy,
-    "docker": run_docker,
+# Tool runner dictionaries (backward compatibility)
+# New code should use: from cihub.tools.registry import get_runners
+# These are lazily evaluated on first access.
+
+# Mapping of deprecated run_* function names to (language, tool_name)
+_RUNNER_COMPAT_MAP: dict[str, tuple[str, str]] = {
+    "run_pytest": ("python", "pytest"),
+    "run_ruff": ("python", "ruff"),
+    "run_black": ("python", "black"),
+    "run_isort": ("python", "isort"),
+    "run_mypy": ("python", "mypy"),
+    "run_bandit": ("python", "bandit"),
+    "run_pip_audit": ("python", "pip_audit"),
+    "run_mutmut": ("python", "mutmut"),
+    "run_sbom": ("python", "sbom"),
+    "run_semgrep": ("python", "semgrep"),
+    "run_trivy": ("python", "trivy"),
+    "run_docker": ("python", "docker"),
+    "run_jacoco": ("java", "jacoco"),
+    "run_pitest": ("java", "pitest"),
+    "run_checkstyle": ("java", "checkstyle"),
+    "run_spotbugs": ("java", "spotbugs"),
+    "run_pmd": ("java", "pmd"),
+    "run_owasp": ("java", "owasp"),
 }
 
-JAVA_RUNNERS = {
-    "jacoco": run_jacoco,
-    "pitest": run_pitest,
-    "checkstyle": run_checkstyle,
-    "spotbugs": run_spotbugs,
-    "pmd": run_pmd,
-    "owasp": run_owasp,
-    "semgrep": run_semgrep,
-    "trivy": run_trivy,
-    "sbom": run_sbom,
-    "docker": run_docker,
-}
+
+def __getattr__(name: str) -> Any:
+    """Lazy module attribute access for backward compatibility.
+
+    Provides backward-compatible access to:
+    - PYTHON_RUNNERS, JAVA_RUNNERS dicts
+    - Individual run_* functions (run_pytest, run_ruff, etc.)
+    """
+    if name == "PYTHON_RUNNERS":
+        return dict(get_runners("python"))  # Return copy for isolation
+    if name == "JAVA_RUNNERS":
+        return dict(get_runners("java"))  # Return copy for isolation
+    if name in _RUNNER_COMPAT_MAP:
+        from cihub.tools.registry import get_runner
+        lang, tool = _RUNNER_COMPAT_MAP[name]
+        runner = get_runner(tool, lang)
+        if runner is None:
+            raise AttributeError(
+                f"Runner '{name}' not found in registry for {lang}/{tool}. "
+                f"Check cihub/tools/registry.py _load_{lang}_runners()."
+            )
+        return runner
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def run_ci(
@@ -274,9 +283,14 @@ def run_ci(
 
     # -------------------------------------------------------------------------
     # Build tools_configured and tools_require_run using strategy
+    # Include custom tools (x-* prefix) from config alongside built-in tools
     # -------------------------------------------------------------------------
-    all_tools = strategy.get_default_tools()
-    tools_configured = {tool: _tool_enabled(config, tool, language) for tool in all_tools}
+    all_tools = get_all_tools_from_config(config, language)
+    # Custom tools (x-* prefix) default to enabled=True per schema; built-in tools default to False
+    tools_configured = {
+        tool: _tool_enabled(config, tool, language, default=is_custom_tool(tool))
+        for tool in all_tools
+    }
     tools_require_run = {tool: _tool_requires_run_or_fail(tool, config, language) for tool in all_tools}
 
     # -------------------------------------------------------------------------
@@ -350,75 +364,8 @@ def run_ci(
     if write_summary and github_summary_env:
         Path(github_summary_env).write_text(summary_text, encoding="utf-8")
 
-    # -------------------------------------------------------------------------
-    # Self-validation (production invariant): fail on contradictions between the
-    # artifacts we just wrote (report/summary) and the report contract.
-    #
-    # This is intentionally *consistency-only* (not gate policy): it should not
-    # invent quality thresholds. The goal is to catch drift/contradictions like:
-    # - Summary Tools table says ran=true but report.tools_ran says false
-    # - Report is missing required structural fields
-    #
-    # Schema validation is enforced in CI (GITHUB_ACTIONS) and reported as a
-    # warning locally when git metadata may be unavailable.
-    # -------------------------------------------------------------------------
-    try:
-        from cihub.services.report_validator import (
-            ValidationRules,
-            validate_against_schema,
-            validate_report,
-        )
-
-        schema_errors = validate_against_schema(report)
-        schema_severity = "error" if env_map.get("GITHUB_ACTIONS") else "warning"
-        for msg in schema_errors:
-            problems.append(
-                {
-                    "severity": schema_severity,
-                    "message": msg,
-                    "code": "CIHUB-CI-REPORT-SCHEMA",
-                }
-            )
-
-        validation = validate_report(
-            report,
-            ValidationRules(consistency_only=True, strict=False, validate_schema=False),
-            summary_text=summary_text,
-            reports_dir=output_dir,
-        )
-        for msg in validation.errors:
-            problems.append(
-                {
-                    "severity": "error",
-                    "message": msg,
-                    "code": "CIHUB-CI-REPORT-SELF-VALIDATE",
-                }
-            )
-
-        # Escalate summary/report mismatches to errors (hard contradictions).
-        for msg in validation.warnings:
-            lowered = msg.lower()
-            is_contradiction = (
-                "configured mismatch" in lowered
-                or "ran mismatch" in lowered
-                or "summary missing tool row" in lowered
-                or "report.json missing tools_ran" in lowered
-            )
-            problems.append(
-                {
-                    "severity": "error" if is_contradiction else "warning",
-                    "message": msg,
-                    "code": "CIHUB-CI-REPORT-SELF-VALIDATE",
-                }
-            )
-    except Exception as exc:  # noqa: BLE001 - best effort: surface and fail-safe
-        problems.append(
-            {
-                "severity": "error",
-                "message": f"self-validation failed: {exc}",
-                "code": "CIHUB-CI-REPORT-SELF-VALIDATE",
-            }
-        )
+    # Self-validation: catch contradictions between report and summary
+    _self_validate_report(report, summary_text, output_dir, problems, env_map)
 
     codecov_cfg = config.get("reports", {}).get("codecov", {}) or {}
     if codecov_cfg.get("enabled", True):
@@ -516,6 +463,8 @@ __all__ = [
     "_evaluate_java_gates",
     "_tool_requires_run_or_fail",
     "_check_require_run_or_fail",
+    # Helpers from validation.py
+    "_self_validate_report",
     # Re-exports from cihub.cli for backward compatibility
     "get_git_branch",
     "get_git_remote",

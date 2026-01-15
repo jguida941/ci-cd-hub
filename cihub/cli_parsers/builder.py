@@ -48,8 +48,12 @@ def _default_handlers() -> CommandHandlers:
         cmd_config=_noop_handler,
         cmd_fix=_noop_handler,
         cmd_registry=_noop_handler,
+        cmd_profile=_noop_handler,
+        cmd_tool=_noop_handler,
         cmd_hub=_noop_handler,
         cmd_setup=_noop_handler,
+        cmd_threshold=_noop_handler,
+        cmd_repo=_noop_handler,
     )
 
 

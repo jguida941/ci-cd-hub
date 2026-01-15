@@ -9,6 +9,7 @@ from cihub.cli_parsers.common import (
     add_repo_args,
     add_report_args,
     add_summary_args,
+    see_also_epilog,
 )
 from cihub.cli_parsers.types import CommandHandlers
 
@@ -18,7 +19,7 @@ def add_report_commands(
     add_json_flag: Callable[[argparse.ArgumentParser], None],
     handlers: CommandHandlers,
 ) -> None:
-    report = subparsers.add_parser("report", help="Build reports and summaries")
+    report = subparsers.add_parser("report", help="Build reports and summaries", epilog=see_also_epilog("report"))
     add_json_flag(report)
     report.set_defaults(func=handlers.cmd_report)
     report_sub = report.add_subparsers(dest="subcommand", required=True)

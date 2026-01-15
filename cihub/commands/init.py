@@ -127,7 +127,8 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
 
         runner = WizardRunner(Console(), PathConfig(str(hub_root())))
         try:
-            config = runner.run_init_wizard(detected_config)
+            wizard_result = runner.run_init_wizard(detected_config)
+            config = wizard_result.config
         except WizardCancelled:
             return CommandResult(
                 exit_code=EXIT_INTERRUPTED,

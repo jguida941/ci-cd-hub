@@ -965,7 +965,7 @@ cihub registry remove <name> [--keep-config]
 cihub repo list [--tier] [--language] [--format json]
 
 # MISSING: Update repo metadata
-cihub repo update <name> --owner myorg --branch main
+cihub repo update <name> --owner myorg --default-branch main
 
 # MISSING: Migrate repo config
 cihub repo migrate <from> <to> [--delete-source]

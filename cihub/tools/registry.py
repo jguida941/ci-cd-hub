@@ -5,9 +5,31 @@ scattered across ci_engine.py, discovery.py, and report_validator.py.
 
 IMPORTANT: Do not modify tool lists without updating ALL related definitions.
 Run tests/test_tool_registry.py after any changes to verify consistency.
+
+Custom Tools (x- prefix):
+    Users can define custom tools with the x- prefix in their config:
+    ```yaml
+    python:
+      tools:
+        x-custom-linter:
+          enabled: true
+          command: "my-linter --check ."
+    ```
+    Custom tools are preserved through normalization and reported in triage.
 """
 
 from __future__ import annotations
+
+import re
+from dataclasses import dataclass, field
+from typing import Any, Callable
+
+# =============================================================================
+# CUSTOM TOOL PATTERN
+# =============================================================================
+
+CUSTOM_TOOL_PREFIX = "x-"
+CUSTOM_TOOL_PATTERN = re.compile(r"^x-[a-zA-Z0-9_-]+$")
 
 # =============================================================================
 # TOOL NAME LISTS (from ci_engine.py)
@@ -221,3 +243,485 @@ PYTHON_ARTIFACTS: dict[str, list[str]] = {
     "sbom": ["**/sbom*.json"],
     "trivy": ["**/trivy-report.json"],
 }
+
+# =============================================================================
+# TOOL ADAPTERS (Part 5.3: Consolidate special-case handling)
+# Each tool's configuration extraction and gate evaluation logic in one place.
+# =============================================================================
+
+
+@dataclass
+class ToolAdapter:
+    """Adapter for tool-specific configuration and gate evaluation.
+
+    Attributes:
+        name: Tool name (e.g., "pytest", "ruff")
+        language: Language context ("python" or "java")
+        config_extractor: Function to extract runner args from config dict.
+                         Signature: (config, language) -> dict of extra kwargs
+        gate_keys: Config keys that determine if gate should fail build.
+                   If any key is True, gate is enabled.
+        gate_key_defaults: Per-key defaults (overrides gate_default for specific keys).
+        gate_default: Default gate behavior when no config is present.
+    """
+
+    name: str
+    language: str
+    config_extractor: Callable[[dict, str], dict[str, Any]] | None = None
+    gate_keys: list[str] = field(default_factory=list)
+    gate_key_defaults: dict[str, bool] = field(default_factory=dict)
+    gate_default: bool = True
+
+
+def _extract_tool_config(config: dict, language: str, tool: str) -> dict:
+    """Get tool config dict from nested config structure."""
+    return config.get(language, {}).get("tools", {}).get(tool, {}) or {}
+
+
+# -----------------------------------------------------------------------------
+# Python Tool Adapters
+# -----------------------------------------------------------------------------
+
+def _pytest_config(config: dict, language: str) -> dict[str, Any]:
+    """Extract pytest-specific runner arguments."""
+    cfg = _extract_tool_config(config, language, "pytest")
+    return {"fail_fast": bool(cfg.get("fail_fast", False))}
+
+
+def _mutmut_config(config: dict, language: str) -> dict[str, Any]:
+    """Extract mutmut-specific runner arguments."""
+    cfg = _extract_tool_config(config, language, "mutmut")
+    timeout_minutes = cfg.get("timeout_minutes", 15)
+    return {"timeout_seconds": int(timeout_minutes) * 60}
+
+
+def _sbom_config(config: dict, language: str) -> dict[str, Any]:
+    """Extract SBOM-specific runner arguments."""
+    cfg = _extract_tool_config(config, language, "sbom")
+    if not isinstance(cfg, dict):
+        cfg = {}
+    return {"sbom_format": cfg.get("format", "cyclonedx")}
+
+
+def _docker_config(config: dict, language: str) -> dict[str, Any]:
+    """Extract docker-specific runner arguments."""
+    cfg = _extract_tool_config(config, language, "docker")
+    if not isinstance(cfg, dict):
+        cfg = {}
+    return {
+        "compose_file": cfg.get("compose_file", "docker-compose.yml"),
+        "health_endpoint": cfg.get("health_endpoint"),
+        "health_timeout": cfg.get("health_timeout", 300),
+    }
+
+
+# -----------------------------------------------------------------------------
+# Java Tool Adapters
+# -----------------------------------------------------------------------------
+
+def _owasp_config(config: dict, language: str) -> dict[str, Any]:
+    """Extract OWASP-specific runner arguments."""
+    cfg = _extract_tool_config(config, language, "owasp")
+    return {
+        "needs_build_tool": True,
+        "use_nvd_api_key": bool(cfg.get("use_nvd_api_key", True)),
+    }
+
+
+def _build_tool_config(config: dict, language: str) -> dict[str, Any]:
+    """Extract build-tool-dependent runner arguments (pitest, checkstyle, etc.)."""
+    # Build tool is passed separately, not from config
+    return {"needs_build_tool": True}
+
+
+# -----------------------------------------------------------------------------
+# Tool Adapter Registry
+# Key: (tool_name, language) -> ToolAdapter
+# -----------------------------------------------------------------------------
+
+TOOL_ADAPTERS: dict[tuple[str, str], ToolAdapter] = {
+    # Python tools with special config extraction
+    ("pytest", "python"): ToolAdapter(
+        name="pytest",
+        language="python",
+        config_extractor=_pytest_config,
+    ),
+    ("mutmut", "python"): ToolAdapter(
+        name="mutmut",
+        language="python",
+        config_extractor=_mutmut_config,
+    ),
+    ("sbom", "python"): ToolAdapter(
+        name="sbom",
+        language="python",
+        config_extractor=_sbom_config,
+    ),
+    ("docker", "python"): ToolAdapter(
+        name="docker",
+        language="python",
+        config_extractor=_docker_config,
+    ),
+    # Python tools with gate configuration
+    ("ruff", "python"): ToolAdapter(
+        name="ruff",
+        language="python",
+        gate_keys=["fail_on_error"],
+        gate_default=True,
+    ),
+    ("black", "python"): ToolAdapter(
+        name="black",
+        language="python",
+        gate_keys=["fail_on_format_issues"],
+        gate_default=True,
+    ),
+    ("isort", "python"): ToolAdapter(
+        name="isort",
+        language="python",
+        gate_keys=["fail_on_issues"],
+        gate_default=True,
+    ),
+    ("bandit", "python"): ToolAdapter(
+        name="bandit",
+        language="python",
+        gate_keys=["fail_on_high", "fail_on_medium", "fail_on_low"],
+        gate_key_defaults={"fail_on_high": True, "fail_on_medium": False, "fail_on_low": False},
+        gate_default=False,
+    ),
+    ("pip_audit", "python"): ToolAdapter(
+        name="pip_audit",
+        language="python",
+        gate_keys=["fail_on_vuln"],
+        gate_default=True,
+    ),
+    ("semgrep", "python"): ToolAdapter(
+        name="semgrep",
+        language="python",
+        gate_keys=["fail_on_findings"],
+        gate_default=True,
+    ),
+    ("trivy", "python"): ToolAdapter(
+        name="trivy",
+        language="python",
+        gate_keys=["fail_on_critical", "fail_on_high"],
+        gate_default=True,
+    ),
+    # Java tools with special config extraction
+    ("sbom", "java"): ToolAdapter(
+        name="sbom",
+        language="java",
+        config_extractor=_sbom_config,
+    ),
+    ("docker", "java"): ToolAdapter(
+        name="docker",
+        language="java",
+        config_extractor=_docker_config,
+    ),
+    ("owasp", "java"): ToolAdapter(
+        name="owasp",
+        language="java",
+        config_extractor=_owasp_config,
+    ),
+    ("pitest", "java"): ToolAdapter(
+        name="pitest",
+        language="java",
+        config_extractor=_build_tool_config,
+    ),
+    ("checkstyle", "java"): ToolAdapter(
+        name="checkstyle",
+        language="java",
+        config_extractor=_build_tool_config,
+        gate_keys=["fail_on_violation"],
+        gate_default=True,
+    ),
+    ("spotbugs", "java"): ToolAdapter(
+        name="spotbugs",
+        language="java",
+        config_extractor=_build_tool_config,
+        gate_keys=["fail_on_error"],
+        gate_default=True,
+    ),
+    ("pmd", "java"): ToolAdapter(
+        name="pmd",
+        language="java",
+        config_extractor=_build_tool_config,
+        gate_keys=["fail_on_violation"],
+        gate_default=True,
+    ),
+    # Java tools with gate configuration only
+    ("semgrep", "java"): ToolAdapter(
+        name="semgrep",
+        language="java",
+        gate_keys=["fail_on_findings"],
+        gate_default=True,
+    ),
+    ("trivy", "java"): ToolAdapter(
+        name="trivy",
+        language="java",
+        gate_keys=["fail_on_critical", "fail_on_high"],
+        gate_default=True,
+    ),
+}
+
+
+def get_tool_adapter(tool: str, language: str) -> ToolAdapter | None:
+    """Get adapter for a tool, or None if no special handling needed."""
+    return TOOL_ADAPTERS.get((tool, language))
+
+
+def get_tool_runner_args(
+    config: dict[str, Any],
+    tool: str,
+    language: str,
+) -> dict[str, Any]:
+    """Extract tool-specific runner arguments from config.
+
+    Returns empty dict if tool has no special config requirements.
+    """
+    adapter = get_tool_adapter(tool, language)
+    if adapter and adapter.config_extractor:
+        return adapter.config_extractor(config, language)
+    return {}
+
+
+def is_tool_gate_enabled(
+    config: dict[str, Any],
+    tool: str,
+    language: str,
+) -> bool:
+    """Check if a tool's gate should fail the build.
+
+    Uses tool adapter registry to determine gate behavior based on config keys.
+    Returns True (fail on issues) by default.
+    """
+    adapter = get_tool_adapter(tool, language)
+    if not adapter or not adapter.gate_keys:
+        return True  # Default: gate enabled
+
+    tool_config = _extract_tool_config(config, language, tool)
+    if not isinstance(tool_config, dict):
+        return adapter.gate_default
+
+    # Check if any gate key is enabled (using per-key defaults if available)
+    for key in adapter.gate_keys:
+        key_default = adapter.gate_key_defaults.get(key, adapter.gate_default)
+        if tool_config.get(key, key_default):
+            return True
+
+    return False
+
+
+# =============================================================================
+# TOOL RUNNER REGISTRY (Part 7.6.2: Centralize runner imports)
+# Lazy-loaded runner functions to avoid circular imports.
+# =============================================================================
+
+_PYTHON_RUNNER_CACHE: dict[str, Callable[..., Any]] | None = None
+_JAVA_RUNNER_CACHE: dict[str, Callable[..., Any]] | None = None
+
+
+def _load_python_runners() -> dict[str, Callable[..., Any]]:
+    """Lazy-load Python tool runners from ci_runner module."""
+    global _PYTHON_RUNNER_CACHE
+    if _PYTHON_RUNNER_CACHE is not None:
+        return _PYTHON_RUNNER_CACHE
+    from cihub.ci_runner import (
+        run_bandit,
+        run_black,
+        run_docker,
+        run_isort,
+        run_mutmut,
+        run_mypy,
+        run_pip_audit,
+        run_pytest,
+        run_ruff,
+        run_sbom,
+        run_semgrep,
+        run_trivy,
+    )
+    _PYTHON_RUNNER_CACHE = {
+        "pytest": run_pytest,
+        "ruff": run_ruff,
+        "black": run_black,
+        "isort": run_isort,
+        "mypy": run_mypy,
+        "bandit": run_bandit,
+        "pip_audit": run_pip_audit,
+        "mutmut": run_mutmut,
+        "sbom": run_sbom,
+        "semgrep": run_semgrep,
+        "trivy": run_trivy,
+        "docker": run_docker,
+    }
+    return _PYTHON_RUNNER_CACHE
+
+
+def _load_java_runners() -> dict[str, Callable[..., Any]]:
+    """Lazy-load Java tool runners from ci_runner module.
+
+    NOTE: Includes 'build' runner even though JAVA_TOOLS doesn't list it.
+    JAVA_TOOLS is for reporting/gates; runners are execution functions.
+    The 'build' step runs before tool iterations in _run_java_tools().
+    """
+    global _JAVA_RUNNER_CACHE
+    if _JAVA_RUNNER_CACHE is not None:
+        return _JAVA_RUNNER_CACHE
+    from cihub.ci_runner import (
+        run_checkstyle,
+        run_docker,
+        run_jacoco,
+        run_java_build,
+        run_owasp,
+        run_pitest,
+        run_pmd,
+        run_sbom,
+        run_semgrep,
+        run_spotbugs,
+        run_trivy,
+    )
+    _JAVA_RUNNER_CACHE = {
+        "build": run_java_build,  # Special: not in JAVA_TOOLS but needed for execution
+        "jacoco": run_jacoco,
+        "pitest": run_pitest,
+        "checkstyle": run_checkstyle,
+        "spotbugs": run_spotbugs,
+        "pmd": run_pmd,
+        "owasp": run_owasp,
+        "semgrep": run_semgrep,
+        "trivy": run_trivy,
+        "sbom": run_sbom,
+        "docker": run_docker,
+    }
+    return _JAVA_RUNNER_CACHE
+
+
+def get_runner(tool: str, language: str) -> Callable[..., Any] | None:
+    """Get runner function for a tool by name and language.
+
+    Args:
+        tool: Tool name (e.g., "pytest", "ruff", "jacoco")
+        language: Language context ("python" or "java")
+
+    Returns:
+        Runner function or None if tool has no runner (e.g., codeql, hypothesis)
+    """
+    if language == "python":
+        return _load_python_runners().get(tool)
+    elif language == "java":
+        return _load_java_runners().get(tool)
+    return None
+
+
+def get_runners(language: str) -> dict[str, Callable[..., Any]]:
+    """Get all runners for a language.
+
+    Args:
+        language: Language context ("python" or "java")
+
+    Returns:
+        Dictionary mapping tool names to runner functions.
+        Returns a copy to prevent callers from mutating global state.
+    """
+    if language == "python":
+        return dict(_load_python_runners())
+    elif language == "java":
+        return dict(_load_java_runners())
+    return {}
+
+
+# =============================================================================
+# CUSTOM TOOL HELPERS
+# =============================================================================
+
+
+def is_custom_tool(tool_name: str) -> bool:
+    """Check if a tool name is a custom tool (x- prefix).
+
+    Args:
+        tool_name: Tool name to check
+
+    Returns:
+        True if tool name starts with x- and matches the valid pattern
+    """
+    return bool(CUSTOM_TOOL_PATTERN.match(tool_name))
+
+
+def get_custom_tools_from_config(config: dict[str, Any], language: str) -> dict[str, Any]:
+    """Extract custom tools from config for a language.
+
+    Args:
+        config: Full config dict
+        language: Language context ("python" or "java")
+
+    Returns:
+        Dict of custom tool names to their configs
+    """
+    tools = config.get(language, {}).get("tools", {})
+    if not isinstance(tools, dict):
+        return {}
+    return {name: cfg for name, cfg in tools.items() if is_custom_tool(name)}
+
+
+def get_all_tools_from_config(config: dict[str, Any], language: str) -> list[str]:
+    """Get all tool names (built-in + custom) from config.
+
+    Args:
+        config: Full config dict
+        language: Language context ("python" or "java")
+
+    Returns:
+        List of all tool names (built-in first, then custom sorted)
+    """
+    builtin = PYTHON_TOOLS if language == "python" else JAVA_TOOLS
+    custom = sorted(get_custom_tools_from_config(config, language).keys())
+    return list(builtin) + custom
+
+
+def is_tool_enabled(
+    config: dict[str, Any], tool: str, language: str, *, default: bool = False
+) -> bool:
+    """Check if a tool is enabled in config.
+
+    Aligned with canonical tool_enabled in cihub/config/normalize.py.
+
+    Args:
+        config: Full config dict
+        tool: Tool name
+        language: Language context ("python" or "java")
+        default: Default value if tool config is missing or has no enabled key.
+                 For custom tools (x-* prefix), schema specifies default=True,
+                 so callers should pass default=True for custom tools.
+
+    Returns:
+        True if tool is enabled
+    """
+    tool_cfg = config.get(language, {}).get("tools", {}).get(tool)
+    if tool_cfg is None:
+        return default
+    if isinstance(tool_cfg, bool):
+        return tool_cfg
+    if isinstance(tool_cfg, dict):
+        enabled = tool_cfg.get("enabled")
+        if isinstance(enabled, bool):
+            return enabled
+        # If enabled not specified, use default (custom tools schema says default=true)
+        return default
+    return default
+
+
+def get_custom_tool_command(config: dict[str, Any], tool: str, language: str) -> str | None:
+    """Get the command for a custom tool.
+
+    Args:
+        config: Full config dict
+        tool: Custom tool name (must start with x-)
+        language: Language context ("python" or "java")
+
+    Returns:
+        Command string or None if not configured
+    """
+    if not is_custom_tool(tool):
+        return None
+    tool_cfg = config.get(language, {}).get("tools", {}).get(tool)
+    if isinstance(tool_cfg, dict):
+        return tool_cfg.get("command")
+    return None

@@ -10,7 +10,11 @@ from pathlib import Path
 from typing import Any
 
 from cihub.ci_runner import ToolResult
-from cihub.tools.registry import PYTHON_TOOLS
+from cihub.tools.registry import (
+    PYTHON_TOOLS,
+    get_custom_tools_from_config,
+    get_tool_runner_args,
+)
 from cihub.utils import resolve_executable
 from cihub.utils.exec_utils import (
     TIMEOUT_BUILD,
@@ -142,8 +146,11 @@ def _run_python_tools(
             )
 
     tool_outputs: dict[str, dict[str, Any]] = {}
-    tools_ran: dict[str, bool] = {tool: False for tool in PYTHON_TOOLS}
-    tools_success: dict[str, bool] = {tool: False for tool in PYTHON_TOOLS}
+    # Initialize with built-in tools + custom tools
+    custom_tools = get_custom_tools_from_config(config, "python")
+    all_tool_names = list(PYTHON_TOOLS) + list(custom_tools.keys())
+    tools_ran: dict[str, bool] = {tool: False for tool in all_tool_names}
+    tools_success: dict[str, bool] = {tool: False for tool in all_tool_names}
 
     tool_output_dir = output_dir / "tool-outputs"
     tool_output_dir.mkdir(parents=True, exist_ok=True)
@@ -186,27 +193,23 @@ def _run_python_tools(
             ToolResult(tool=tool, ran=False, success=False).write_json(tool_output_dir / f"{tool}.json")
             continue
         try:
+            # Get tool-specific config from centralized registry (Part 5.3)
+            tool_args = get_tool_runner_args(config, tool, "python")
+
             if tool == "pytest":
-                pytest_cfg = config.get("python", {}).get("tools", {}).get("pytest", {}) or {}
-                fail_fast = bool(pytest_cfg.get("fail_fast", False))
-                result = runner(workdir_path, output_dir, fail_fast)
+                result = runner(workdir_path, output_dir, tool_args.get("fail_fast", False))
             elif tool == "mutmut":
-                timeout = config.get("python", {}).get("tools", {}).get("mutmut", {}).get("timeout_minutes", 15)
-                result = runner(workdir_path, output_dir, int(timeout) * 60)
+                result = runner(workdir_path, output_dir, tool_args.get("timeout_seconds", 900))
             elif tool == "sbom":
-                sbom_cfg = config.get("python", {}).get("tools", {}).get("sbom", {})
-                if not isinstance(sbom_cfg, dict):
-                    sbom_cfg = {}
-                sbom_format = sbom_cfg.get("format", "cyclonedx")
-                result = runner(workdir_path, output_dir, sbom_format)
+                result = runner(workdir_path, output_dir, tool_args.get("sbom_format", "cyclonedx"))
             elif tool == "docker":
-                docker_cfg = config.get("python", {}).get("tools", {}).get("docker", {}) or {}
-                if not isinstance(docker_cfg, dict):
-                    docker_cfg = {}
-                compose_file = docker_cfg.get("compose_file", "docker-compose.yml")
-                health_endpoint = docker_cfg.get("health_endpoint")
-                health_timeout = docker_cfg.get("health_timeout", 300)
-                result = runner(workdir_path, output_dir, compose_file, health_endpoint, health_timeout)
+                result = runner(
+                    workdir_path,
+                    output_dir,
+                    tool_args.get("compose_file", "docker-compose.yml"),
+                    tool_args.get("health_endpoint"),
+                    tool_args.get("health_timeout", 300),
+                )
             else:
                 result = runner(workdir_path, output_dir)
         except FileNotFoundError as exc:
@@ -242,6 +245,77 @@ def _run_python_tools(
                 }
             )
         result.write_json(tool_output_dir / f"{tool}.json")
+
+    # Execute custom tools (x-* prefix)
+    for tool_name, tool_cfg in custom_tools.items():
+        # Schema says custom tools default to enabled=True
+        if not _tool_enabled(config, tool_name, "python", default=True):
+            continue
+        # Extract command and fail_on_error from tool config
+        tool_cfg_dict = tool_cfg if isinstance(tool_cfg, dict) else {}
+        command = tool_cfg_dict.get("command")
+        # Schema says fail_on_error defaults to True
+        fail_on_error = tool_cfg_dict.get("fail_on_error", True)
+        if not command:
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"Custom tool '{tool_name}' has no command configured",
+                    "code": "CIHUB-CI-CUSTOM-TOOL",
+                }
+            )
+            continue
+        try:
+            # Parse command string into list
+            if isinstance(command, str):
+                cmd_parts = shlex.split(command)
+            else:
+                cmd_parts = [str(p) for p in command]
+            proc = safe_run(cmd_parts, cwd=workdir_path, timeout=TIMEOUT_BUILD)
+            ran = True
+            success = proc.returncode == 0
+            result = ToolResult(
+                tool=tool_name,
+                ran=ran,
+                success=success,
+                returncode=proc.returncode,
+                metrics={"exit_code": proc.returncode},
+            )
+            # Emit error if fail_on_error is True (affects exit code); otherwise no problem
+            if not success and fail_on_error:
+                problems.append(
+                    {
+                        "severity": "error",
+                        "message": f"Custom tool '{tool_name}' failed with exit code {proc.returncode}",
+                        "code": "CIHUB-CI-CUSTOM-TOOL",
+                    }
+                )
+        except (CommandNotFoundError, CommandTimeoutError) as exc:
+            # Honor fail_on_error: if True, emit error (affects CI exit code)
+            severity = "error" if fail_on_error else "warning"
+            problems.append(
+                {
+                    "severity": severity,
+                    "message": f"Custom tool '{tool_name}' failed: {exc}",
+                    "code": "CIHUB-CI-CUSTOM-TOOL",
+                }
+            )
+            result = ToolResult(tool=tool_name, ran=False, success=False, returncode=-1)
+        except Exception as exc:
+            # Honor fail_on_error for unexpected errors too
+            severity = "error" if fail_on_error else "warning"
+            problems.append(
+                {
+                    "severity": severity,
+                    "message": f"Custom tool '{tool_name}' error: {exc}",
+                    "code": "CIHUB-CI-CUSTOM-TOOL",
+                }
+            )
+            result = ToolResult(tool=tool_name, ran=False, success=False, returncode=-1)
+        tool_outputs[tool_name] = result.to_payload()
+        tools_ran[tool_name] = result.ran
+        tools_success[tool_name] = result.success
+        result.write_json(tool_output_dir / f"{tool_name}.json")
 
     if _tool_enabled(config, "hypothesis", "python"):
         tools_ran["hypothesis"] = tools_ran.get("pytest", False)

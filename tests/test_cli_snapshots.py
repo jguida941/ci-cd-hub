@@ -51,6 +51,110 @@ class TestHelpSnapshots:
         lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
         assert lines == snapshot
 
+    def test_tool_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """tool --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["tool", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
+    def test_tool_list_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """tool list --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["tool", "list", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
+    def test_tool_enable_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """tool enable --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["tool", "enable", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
+    def test_profile_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """profile --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["profile", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
+    def test_docs_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """docs --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["docs", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
+    def test_docs_generate_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """docs generate --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["docs", "generate", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
+    def test_check_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """check --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["check", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
+    def test_triage_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """triage --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["triage", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
+    def test_config_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """config --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["config", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
+    def test_hub_ci_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """hub-ci --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["hub-ci", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
+    def test_registry_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """registry --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["registry", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
+    def test_verify_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """verify --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["verify", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
+    def test_smoke_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """smoke --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["smoke", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
 
 class TestJsonOutputSnapshots:
     """Snapshot tests for JSON output structure."""
