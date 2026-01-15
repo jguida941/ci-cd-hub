@@ -9,6 +9,13 @@ from pathlib import Path
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.types import CommandResult
 from cihub.utils.paths import hub_root
+from cihub.utils.github import (
+    check_gh_auth,
+    check_repo_exists,
+    create_github_repo,
+    get_gh_username,
+    git_init_and_commit,
+)
 
 SCAFFOLD_TYPES: dict[str, str] = {
     "python-pyproject": "Minimal Python project with pyproject.toml",
@@ -70,6 +77,40 @@ def scaffold_fixture(fixture_type: str, dest: Path, force: bool = False) -> list
     return _list_files(dest)
 
 
+def _get_language_for_scaffold(fixture_type: str) -> str:
+    """Determine language based on scaffold type."""
+    if fixture_type.startswith("python"):
+        return "python"
+    if fixture_type.startswith("java"):
+        return "java"
+    # monorepo defaults to java (has both)
+    return "java"
+
+
+def _run_init_for_scaffold(dest: Path, fixture_type: str) -> CommandResult:
+    """Run cihub init for the scaffolded project."""
+    from cihub.commands.init import cmd_init
+
+    language = _get_language_for_scaffold(fixture_type)
+
+    # Create a namespace that mimics init args
+    init_args = argparse.Namespace(
+        repo=str(dest),
+        language=language,
+        owner=None,
+        name=None,
+        branch="main",
+        subdir=None,
+        fix_pom=False,
+        apply=True,
+        force=True,
+        wizard=False,
+        dry_run=False,
+        json=False,
+    )
+    return cmd_init(init_args)
+
+
 def cmd_scaffold(args: argparse.Namespace) -> CommandResult:
     """Scaffold a minimal fixture repository.
 
@@ -95,6 +136,34 @@ def cmd_scaffold(args: argparse.Namespace) -> CommandResult:
             problems=[{"severity": "error", "message": message, "code": "CIHUB-SCAFFOLD-001"}],
         )
 
+    # Check GitHub prerequisites early if --github
+    use_github = getattr(args, "github", False)
+    if use_github:
+        auth_ok, auth_msg = check_gh_auth()
+        if not auth_ok:
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=auth_msg,
+                problems=[{"severity": "error", "message": auth_msg, "code": "CIHUB-SCAFFOLD-GH-AUTH"}],
+                suggestions=[{"message": "Run: gh auth login"}],
+            )
+
+        # Check if repo already exists
+        repo_name = getattr(args, "repo_name", None) or dest.name
+        owner = get_gh_username()
+        if owner and check_repo_exists(owner, repo_name):
+            msg = f"Repository '{owner}/{repo_name}' already exists on GitHub"
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=msg,
+                problems=[{"severity": "error", "message": msg, "code": "CIHUB-SCAFFOLD-GH-EXISTS"}],
+                suggestions=[
+                    {"message": f"Use --repo-name to specify a different name"},
+                    {"message": f"Or delete the existing repo: gh repo delete {owner}/{repo_name}"},
+                ],
+            )
+
+    # Scaffold the project
     try:
         files = scaffold_fixture(fixture_type, dest, force=bool(args.force))
     except ValueError as exc:
@@ -104,7 +173,69 @@ def cmd_scaffold(args: argparse.Namespace) -> CommandResult:
             problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-SCAFFOLD-002"}],
         )
 
-    summary = f"Scaffolded {fixture_type} at {dest}"
+    # If not using GitHub, return early
+    if not use_github:
+        summary = f"Scaffolded {fixture_type} at {dest}"
+        return CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=summary,
+            files_generated=files,
+            data={
+                "items": [summary],
+                "type": fixture_type,
+                "path": str(dest),
+                "files": files,
+            },
+        )
+
+    # GitHub flow: init + git + push
+    no_init = getattr(args, "no_init", False)
+    no_push = getattr(args, "no_push", False)
+    private = getattr(args, "private", False)
+    repo_name = getattr(args, "repo_name", None) or dest.name
+
+    # Run init to add CI config (unless --no-init)
+    if not no_init:
+        init_result = _run_init_for_scaffold(dest, fixture_type)
+        if init_result.exit_code != EXIT_SUCCESS:
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=f"Failed to initialize CI config: {init_result.summary}",
+                problems=init_result.problems,
+            )
+        # Add init-generated files to our list
+        if init_result.files_generated:
+            files.extend(init_result.files_generated)
+
+    # Initialize git and commit
+    git_ok, git_msg = git_init_and_commit(
+        dest,
+        message=f"Initial commit: {fixture_type} scaffold from cihub",
+    )
+    if not git_ok:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=git_msg,
+            problems=[{"severity": "error", "message": git_msg, "code": "CIHUB-SCAFFOLD-GIT-INIT"}],
+        )
+
+    # Create GitHub repo and push
+    description = SCAFFOLD_TYPES.get(fixture_type, "")
+    success, repo_url, error = create_github_repo(
+        dest,
+        repo_name,
+        private=private,
+        push=not no_push,
+        description=f"CI/CD Hub test: {description}",
+    )
+    if not success:
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=error,
+            problems=[{"severity": "error", "message": error, "code": "CIHUB-SCAFFOLD-GH-CREATE"}],
+        )
+
+    summary = f"Scaffolded {fixture_type} and created GitHub repo: {repo_url}"
     return CommandResult(
         exit_code=EXIT_SUCCESS,
         summary=summary,
@@ -113,6 +244,7 @@ def cmd_scaffold(args: argparse.Namespace) -> CommandResult:
             "items": [summary],
             "type": fixture_type,
             "path": str(dest),
+            "github_url": repo_url,
             "files": files,
         },
     )

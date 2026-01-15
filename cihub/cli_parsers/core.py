@@ -65,6 +65,30 @@ def add_core_commands(
     scaffold.add_argument("path", nargs="?", help="Destination path")
     scaffold.add_argument("--list", action="store_true", help="List available fixture types")
     scaffold.add_argument("--force", action="store_true", help="Overwrite destination if not empty")
+    scaffold.add_argument(
+        "--github",
+        action="store_true",
+        help="Create GitHub repo, add CI config, and push",
+    )
+    scaffold.add_argument(
+        "--private",
+        action="store_true",
+        help="Make GitHub repo private (default: public)",
+    )
+    scaffold.add_argument(
+        "--repo-name",
+        help="Override GitHub repo name (default: directory name)",
+    )
+    scaffold.add_argument(
+        "--no-init",
+        action="store_true",
+        help="Skip adding CI config (only with --github)",
+    )
+    scaffold.add_argument(
+        "--no-push",
+        action="store_true",
+        help="Skip pushing to GitHub (only with --github)",
+    )
     scaffold.set_defaults(func=handlers.cmd_scaffold)
 
     smoke = subparsers.add_parser("smoke", help="Run a local smoke test", epilog=see_also_epilog("smoke"))
