@@ -261,14 +261,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Checkout hub repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          repository: ${{ inputs.hub_repo }}
-          ref: ${{ inputs.hub_ref }}
-          path: hub
-          persist-credentials: false
-
       - name: Set up JDK ${{ inputs.java_version }}
         uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
         with:
@@ -284,8 +276,12 @@ jobs:
       - name: Upgrade pip
         run: python -m pip install --upgrade pip
 
-      - name: Install cihub + tools
-        run: pip install -e "hub[ci]"
+      - name: Install cihub via bootstrap
+        env:
+          CIHUB_HUB_REPO: ${{ inputs.hub_repo }}
+          CIHUB_HUB_REF: ${{ inputs.hub_ref }}
+        run: |
+          curl -sSL "https://raw.githubusercontent.com/${{ inputs.hub_repo }}/${{ inputs.hub_ref }}/scripts/install.py" | python
 
       - name: Install Trivy
         if: ${{ inputs.run_trivy }}

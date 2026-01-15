@@ -111,7 +111,12 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
     subdir = validate_subdir(args.subdir or "")
     # Pass repo_path for build tool detection
     effective_repo_path = repo_path / subdir if subdir else repo_path
-    detected_config = build_repo_config(language, owner, name, branch, subdir=subdir, repo_path=effective_repo_path)
+    install_from = getattr(args, "install_from", "git")
+    detected_config = build_repo_config(
+        language, owner, name, branch,
+        subdir=subdir, repo_path=effective_repo_path,
+        install_from=install_from,
+    )
 
     if args.wizard:
         if not HAS_WIZARD:

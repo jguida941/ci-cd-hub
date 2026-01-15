@@ -87,6 +87,12 @@ def add_repo_setup_commands(
         action="store_true",
         help="Print output instead of writing",
     )
+    init.add_argument(
+        "--install-from",
+        choices=["pypi", "git", "local"],
+        default="pypi",
+        help="How cihub should be installed in CI: pypi (default), git, or local",
+    )
     init.set_defaults(func=handlers.cmd_init)
 
     update = subparsers.add_parser(
