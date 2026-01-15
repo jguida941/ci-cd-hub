@@ -40,6 +40,25 @@ class TestScaffoldPython:
         assert (dest / "setup.py").exists()
         assert (dest / "tests" / "test_core.py").exists()
 
+    def test_scaffold_python_src_layout(self, tmp_path: Path) -> None:
+        """Test python-src-layout scaffold with src/ directory structure."""
+        dest = tmp_path / "fixture"
+        args = argparse.Namespace(
+            list=False,
+            type="python-src-layout",
+            path=str(dest),
+            force=False,
+            json=True,
+        )
+        result = cmd_scaffold(args)
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == 0
+        assert (dest / "pyproject.toml").exists()
+        assert (dest / "src").exists()
+        assert (dest / "src" / "cihub_src_sample" / "__init__.py").exists()
+        assert (dest / "src" / "cihub_src_sample" / "core.py").exists()
+        assert (dest / "tests" / "test_core.py").exists()
+
 
 class TestScaffoldJava:
     """Tests for Java scaffold types."""
@@ -76,6 +95,28 @@ class TestScaffoldJava:
         assert (dest / "settings.gradle").exists()
         assert (dest / "src" / "main" / "java" / "com" / "cihub" / "App.java").exists()
         assert (dest / "src" / "test" / "java" / "com" / "cihub" / "AppTest.java").exists()
+
+    def test_scaffold_java_multi_module(self, tmp_path: Path) -> None:
+        """Test java-multi-module scaffold with parent POM and child modules."""
+        dest = tmp_path / "fixture"
+        args = argparse.Namespace(
+            list=False,
+            type="java-multi-module",
+            path=str(dest),
+            force=False,
+            json=True,
+        )
+        result = cmd_scaffold(args)
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == 0
+        # Parent POM
+        assert (dest / "pom.xml").exists()
+        # Child modules
+        assert (dest / "module-core" / "pom.xml").exists()
+        assert (dest / "module-app" / "pom.xml").exists()
+        # Source files
+        assert (dest / "module-core" / "src" / "main" / "java" / "com" / "cihub" / "core" / "Calculator.java").exists()
+        assert (dest / "module-app" / "src" / "main" / "java" / "com" / "cihub" / "app" / "App.java").exists()
 
 
 class TestScaffoldMonorepo:
@@ -114,8 +155,16 @@ class TestScaffoldList:
         assert isinstance(result, CommandResult)
         fixtures = result.data.get("fixtures", [])
         types = [f["type"] for f in fixtures]
-        # All expected types should be present
-        expected = ["python-pyproject", "python-setup", "java-maven", "java-gradle", "monorepo"]
+        # All expected types should be present (all 7 scaffold types)
+        expected = [
+            "python-pyproject",
+            "python-setup",
+            "python-src-layout",
+            "java-maven",
+            "java-gradle",
+            "java-multi-module",
+            "monorepo",
+        ]
         for exp in expected:
             assert exp in types, f"Missing scaffold type: {exp}"
 
@@ -128,8 +177,10 @@ class TestScaffoldValidation:
         [
             ("python-pyproject", "pyproject.toml"),
             ("python-setup", "setup.py"),
+            ("python-src-layout", "pyproject.toml"),
             ("java-maven", "pom.xml"),
             ("java-gradle", "build.gradle"),
+            ("java-multi-module", "pom.xml"),
         ],
     )
     def test_scaffold_produces_buildable_project(self, tmp_path: Path, scaffold_type: str, build_file: str) -> None:
