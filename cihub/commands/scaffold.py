@@ -87,7 +87,7 @@ def _get_language_for_scaffold(fixture_type: str) -> str:
     return "java"
 
 
-def _run_init_for_scaffold(dest: Path, fixture_type: str) -> CommandResult:
+def _run_init_for_scaffold(dest: Path, fixture_type: str, wizard: bool = False) -> CommandResult:
     """Run cihub init for the scaffolded project."""
     from cihub.commands.init import cmd_init
 
@@ -104,9 +104,10 @@ def _run_init_for_scaffold(dest: Path, fixture_type: str) -> CommandResult:
         fix_pom=False,
         apply=True,
         force=True,
-        wizard=False,
+        wizard=wizard,
         dry_run=False,
         json=False,
+        install_from="pypi",  # Default to PyPI for scaffolded projects
     )
     return cmd_init(init_args)
 
@@ -195,8 +196,9 @@ def cmd_scaffold(args: argparse.Namespace) -> CommandResult:
     repo_name = getattr(args, "repo_name", None) or dest.name
 
     # Run init to add CI config (unless --no-init)
+    use_wizard = getattr(args, "wizard", False)
     if not no_init:
-        init_result = _run_init_for_scaffold(dest, fixture_type)
+        init_result = _run_init_for_scaffold(dest, fixture_type, wizard=use_wizard)
         if init_result.exit_code != EXIT_SUCCESS:
             return CommandResult(
                 exit_code=EXIT_FAILURE,

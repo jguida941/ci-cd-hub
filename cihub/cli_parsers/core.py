@@ -89,6 +89,11 @@ def add_core_commands(
         action="store_true",
         help="Skip pushing to GitHub (only with --github)",
     )
+    scaffold.add_argument(
+        "--wizard",
+        action="store_true",
+        help="Run interactive wizard to configure tools (requires cihub[wizard])",
+    )
     scaffold.set_defaults(func=handlers.cmd_scaffold)
 
     smoke = subparsers.add_parser("smoke", help="Run a local smoke test", epilog=see_also_epilog("smoke"))
