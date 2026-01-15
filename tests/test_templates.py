@@ -333,7 +333,11 @@ class TestActualConfigs:
         "config_path",
         [
             pytest.param(p, id=p.stem)
-            for p in ((hub_root() / "config" / "repos").glob("*.yaml") if (hub_root() / "config" / "repos").exists() else [])
+            for p in (
+                (hub_root() / "config" / "repos").glob("*.yaml")
+                if (hub_root() / "config" / "repos").exists()
+                else []
+            )
         ],
     )
     def test_actual_config_is_valid(self, config_path):

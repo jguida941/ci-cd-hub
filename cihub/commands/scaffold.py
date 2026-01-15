@@ -8,7 +8,6 @@ from pathlib import Path
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.types import CommandResult
-from cihub.utils.paths import hub_root
 from cihub.utils.github import (
     check_gh_auth,
     check_repo_exists,
@@ -16,6 +15,7 @@ from cihub.utils.github import (
     get_gh_username,
     git_init_and_commit,
 )
+from cihub.utils.paths import hub_root
 
 SCAFFOLD_TYPES: dict[str, str] = {
     "python-pyproject": "Minimal Python project with pyproject.toml",
@@ -158,7 +158,7 @@ def cmd_scaffold(args: argparse.Namespace) -> CommandResult:
                 summary=msg,
                 problems=[{"severity": "error", "message": msg, "code": "CIHUB-SCAFFOLD-GH-EXISTS"}],
                 suggestions=[
-                    {"message": f"Use --repo-name to specify a different name"},
+                    {"message": "Use --repo-name to specify a different name"},
                     {"message": f"Or delete the existing repo: gh repo delete {owner}/{repo_name}"},
                 ],
             )

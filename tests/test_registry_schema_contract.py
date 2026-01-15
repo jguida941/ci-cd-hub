@@ -7,7 +7,6 @@ explicitly validate the threshold override keys used by registry_service.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import jsonschema
 import pytest

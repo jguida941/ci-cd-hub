@@ -14,6 +14,16 @@ def hub_root() -> Path:
     return Path(__file__).resolve().parent.parent / "data"
 
 
+def project_root() -> Path:
+    """Return the project root directory (parent of cihub package).
+
+    Use this for source code paths (cihub/commands/, tests/, etc).
+    Use hub_root() for data files (schema/, config/, templates/).
+    """
+    # cihub/utils/paths.py -> cihub/utils -> cihub -> project_root
+    return Path(__file__).resolve().parent.parent.parent
+
+
 def validate_repo_path(repo_path: Path) -> Path:
     """Validate and canonicalize a repository path.
 

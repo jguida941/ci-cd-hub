@@ -6,14 +6,11 @@ import argparse
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-
-from cihub.commands.scaffold import cmd_scaffold, scaffold_fixture
+from cihub.commands.scaffold import cmd_scaffold
 from cihub.types import CommandResult
 from cihub.utils.github import (
     check_gh_auth,
     check_gh_installed,
-    check_repo_exists,
     git_init_and_commit,
 )
 

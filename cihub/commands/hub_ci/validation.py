@@ -341,7 +341,9 @@ def cmd_enforce_command_result(args: argparse.Namespace) -> CommandResult:
 
     Total allowed in non-allowlisted files: 8 prints
     """
-    root = Path(getattr(args, "path", None) or hub_root())
+    from cihub.utils.paths import project_root
+
+    root = Path(getattr(args, "path", None) or project_root())
     commands_dir = root / "cihub" / "commands"
     max_allowed = getattr(args, "max_allowed", 8)
 

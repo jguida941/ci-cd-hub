@@ -6,13 +6,12 @@ and verify that errors are properly detected and reported.
 
 from __future__ import annotations
 
-import shutil
 from pathlib import Path
 
 import pytest
 
-from cihub.commands.scaffold import scaffold_fixture
 from cihub.ci_runner import run_black, run_isort, run_ruff
+from cihub.commands.scaffold import scaffold_fixture
 
 
 class TestPythonToolErrorDetection:
