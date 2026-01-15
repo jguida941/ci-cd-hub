@@ -24,12 +24,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from cihub.utils.paths import hub_root  # noqa: E402
 from scripts.validate_config import validate_config  # noqa: E402
 
-TEMPLATES_DIR = ROOT / "templates"
+TEMPLATES_DIR = hub_root() / "templates"
 PROFILES_DIR = TEMPLATES_DIR / "profiles"
 HUB_TEMPLATES_DIR = TEMPLATES_DIR / "hub" / "config" / "repos"
-SCHEMA_PATH = ROOT / "schema" / "ci-hub-config.schema.json"
+SCHEMA_PATH = hub_root() / "schema" / "ci-hub-config.schema.json"
 
 
 def load_schema():
@@ -315,7 +316,7 @@ class TestHubRunAllSummary:
 class TestActualConfigs:
     """Test that actual repo configs in config/repos/ are valid."""
 
-    CONFIG_DIR = ROOT / "config" / "repos"
+    CONFIG_DIR = hub_root() / "config" / "repos"
 
     def get_actual_configs(self):
         """Get all actual repo config files."""
@@ -332,7 +333,7 @@ class TestActualConfigs:
         "config_path",
         [
             pytest.param(p, id=p.stem)
-            for p in ((ROOT / "config" / "repos").glob("*.yaml") if (ROOT / "config" / "repos").exists() else [])
+            for p in ((hub_root() / "config" / "repos").glob("*.yaml") if (hub_root() / "config" / "repos").exists() else [])
         ],
     )
     def test_actual_config_is_valid(self, config_path):
@@ -340,7 +341,7 @@ class TestActualConfigs:
         try:
             cfg = load_config(
                 repo_name=config_path.stem,
-                hub_root=ROOT,
+                hub_root=hub_root(),
                 exit_on_validation_error=False,
             )
             assert cfg is not None

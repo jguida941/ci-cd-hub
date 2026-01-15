@@ -190,6 +190,7 @@
     '[--owner OWNER] [--name NAME] [--branch BRANCH]',
     '[--subdir SUBDIR] [--workdir SUBDIR] [--fix-pom] [--apply]',
     '[--force] [--wizard] [--dry-run]',
+    '[--install-from {pypi,git,local}]',
     'options:',
     '-h, --help            show this help message and exit',
     '--json                Output machine-readable JSON',
@@ -207,6 +208,9 @@
     '--force               Override repo_side_execution guardrails',
     '--wizard              Run interactive wizard (requires cihub[wizard])',
     '--dry-run             Print output instead of writing',
+    '--install-from {pypi,git,local}',
+    'How cihub should be installed in CI: pypi, git',
+    '(default), or local',
     'See also: detect, scaffold, update, setup',
   ])
 # ---
@@ -348,7 +352,8 @@
     '--json           Output machine-readable JSON',
     '--subdir SUBDIR  Subdirectory for monorepos',
     '--type TYPE      Fixture type to generate (repeatable): python-pyproject,',
-    'python-setup, java-maven, java-gradle, monorepo',
+    'python-setup, python-src-layout, java-maven, java-gradle,',
+    'java-multi-module, monorepo',
     '--all            Generate and test all fixture types',
     '--full           Run cihub ci after init/validate',
     '--install-deps   Install repo dependencies during cihub ci',
@@ -548,8 +553,10 @@
     'Available fixtures',
     '- python-pyproject: Minimal Python project with pyproject.toml',
     '- python-setup: Minimal Python project with setup.py',
+    '- python-src-layout: Python project with src/ directory layout',
     '- java-maven: Minimal Java project using Maven',
     '- java-gradle: Minimal Java project using Gradle',
+    '- java-multi-module: Multi-module Maven project with parent POM',
     '- monorepo: Monorepo with java/ and python/ subdirs',
   ])
 # ---

@@ -12,10 +12,11 @@ from pathlib import Path
 import jsonschema
 import pytest
 
-ROOT = Path(__file__).resolve().parent.parent
-REGISTRY_SCHEMA_PATH = ROOT / "schema" / "registry.schema.json"
-REGISTRY_JSON_PATH = ROOT / "config" / "registry.json"
-CIHUB_CONFIG_SCHEMA_PATH = ROOT / "schema" / "ci-hub-config.schema.json"
+from cihub.utils.paths import hub_root
+
+REGISTRY_SCHEMA_PATH = hub_root() / "schema" / "registry.schema.json"
+REGISTRY_JSON_PATH = hub_root() / "config" / "registry.json"
+CIHUB_CONFIG_SCHEMA_PATH = hub_root() / "schema" / "ci-hub-config.schema.json"
 
 
 def test_registry_schema_is_valid_json() -> None:

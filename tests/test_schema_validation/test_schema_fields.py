@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from cihub.utils.paths import hub_root
+
 
 class TestSchemaStructure:
     """Tests for schema structure and definitions."""
@@ -14,7 +16,7 @@ class TestSchemaStructure:
     @pytest.fixture
     def schema(self) -> dict:
         """Load the CI Hub config schema."""
-        schema_path = Path("schema/ci-hub-config.schema.json")
+        schema_path = hub_root() / "schema" / "ci-hub-config.schema.json"
         return json.loads(schema_path.read_text())
 
     def test_schema_has_definitions(self, schema: dict) -> None:
@@ -40,7 +42,7 @@ class TestCustomToolSchema:
     @pytest.fixture
     def schema(self) -> dict:
         """Load the CI Hub config schema."""
-        schema_path = Path("schema/ci-hub-config.schema.json")
+        schema_path = hub_root() / "schema" / "ci-hub-config.schema.json"
         return json.loads(schema_path.read_text())
 
     def test_custom_tool_definition_exists(self, schema: dict) -> None:
@@ -80,7 +82,7 @@ class TestThresholdSchema:
     @pytest.fixture
     def schema(self) -> dict:
         """Load the CI Hub config schema."""
-        schema_path = Path("schema/ci-hub-config.schema.json")
+        schema_path = hub_root() / "schema" / "ci-hub-config.schema.json"
         return json.loads(schema_path.read_text())
 
     def test_coverage_min_is_integer(self, schema: dict) -> None:

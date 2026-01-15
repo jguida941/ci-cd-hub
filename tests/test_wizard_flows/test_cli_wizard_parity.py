@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from cihub.utils.paths import hub_root
+
 
 class TestConfigStructureParity:
     """Tests that CLI and wizard produce equivalent config structures."""
@@ -25,7 +27,7 @@ class TestConfigStructureParity:
         """Wizard config output should match schema structure."""
         import json
 
-        schema_path = Path("schema/ci-hub-config.schema.json")
+        schema_path = hub_root() / "schema" / "ci-hub-config.schema.json"
         schema = json.loads(schema_path.read_text())
 
         # Get top-level properties from schema

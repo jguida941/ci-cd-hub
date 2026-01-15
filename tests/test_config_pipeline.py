@@ -16,6 +16,7 @@ from cihub.config.loader import (  # noqa: E402
 )
 from cihub.config.merge import deep_merge  # noqa: E402
 from cihub.config.normalize import normalize_config, normalize_tool_configs  # noqa: E402
+from cihub.utils.paths import hub_root as get_hub_root  # noqa: E402
 from scripts.validate_config import validate_config  # noqa: E402
 
 
@@ -89,7 +90,7 @@ def test_generate_workflow_inputs_python():
 def test_load_config_merge_and_no_exit(tmp_path: Path):
     hub_root = tmp_path
     # Copy real schema so validation is faithful
-    schema_src = ROOT / "schema" / "ci-hub-config.schema.json"
+    schema_src = get_hub_root() / "schema" / "ci-hub-config.schema.json"
     schema_dst = hub_root / "schema"
     schema_dst.mkdir(parents=True, exist_ok=True)
     schema_dst.joinpath("ci-hub-config.schema.json").write_text(schema_src.read_text(), encoding="utf-8")
@@ -117,7 +118,7 @@ def test_load_config_merge_and_no_exit(tmp_path: Path):
 
 def test_load_config_raises_validation_error(tmp_path: Path):
     hub_root = tmp_path
-    schema_src = ROOT / "schema" / "ci-hub-config.schema.json"
+    schema_src = get_hub_root() / "schema" / "ci-hub-config.schema.json"
     schema_dst = hub_root / "schema"
     schema_dst.mkdir(parents=True, exist_ok=True)
     schema_dst.joinpath("ci-hub-config.schema.json").write_text(schema_src.read_text(), encoding="utf-8")
@@ -315,7 +316,7 @@ def test_generate_workflow_inputs_java_with_shorthand():
 def test_load_config_with_shorthand_booleans(tmp_path: Path):
     """Test that shorthand booleans normalize without dropping defaults."""
     hub_root = tmp_path
-    schema_src = ROOT / "schema" / "ci-hub-config.schema.json"
+    schema_src = get_hub_root() / "schema" / "ci-hub-config.schema.json"
     schema_dst = hub_root / "schema"
     schema_dst.mkdir(parents=True, exist_ok=True)
     schema_dst.joinpath("ci-hub-config.schema.json").write_text(schema_src.read_text(), encoding="utf-8")
@@ -344,7 +345,7 @@ def test_load_config_with_shorthand_booleans(tmp_path: Path):
 
 def test_load_config_applies_thresholds_profile(tmp_path: Path) -> None:
     hub_root = tmp_path
-    schema_src = ROOT / "schema" / "ci-hub-config.schema.json"
+    schema_src = get_hub_root() / "schema" / "ci-hub-config.schema.json"
     schema_dst = hub_root / "schema"
     schema_dst.mkdir(parents=True, exist_ok=True)
     schema_dst.joinpath("ci-hub-config.schema.json").write_text(schema_src.read_text(), encoding="utf-8")

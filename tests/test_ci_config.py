@@ -9,8 +9,7 @@ import pytest
 
 from cihub.ci_config import FALLBACK_DEFAULTS, load_ci_config, load_hub_config
 from cihub.config.loader import ConfigValidationError
-
-ROOT = Path(__file__).resolve().parents[1]
+from cihub.utils.paths import hub_root
 
 
 class TestFallbackDefaults:
@@ -219,7 +218,7 @@ class TestLoadCiConfig:
         ci_hub.write_text("language: python\nrepo: null\n")
         schema_dst = tmp_path / "schema"
         schema_dst.mkdir(parents=True, exist_ok=True)
-        schema_src = ROOT / "schema" / "ci-hub-config.schema.json"
+        schema_src = hub_root() / "schema" / "ci-hub-config.schema.json"
         schema_dst.joinpath("ci-hub-config.schema.json").write_text(
             schema_src.read_text(encoding="utf-8"),
             encoding="utf-8",
