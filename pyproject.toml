@@ -26,18 +26,17 @@ classifiers = [
     "Topic :: Software Development :: Testing",
     "Topic :: Software Development :: Build Tools",
 ]
+dependencies = [
+    "pyyaml>=6.0",
+    "jsonschema>=4.21.0",
+    "defusedxml>=0.7.1",
+]
 
 [project.urls]
 Homepage = "https://github.com/jguida941/ci-cd-hub"
 Repository = "https://github.com/jguida941/ci-cd-hub"
 Documentation = "https://github.com/jguida941/ci-cd-hub/tree/main/docs"
 Issues = "https://github.com/jguida941/ci-cd-hub/issues"
-
-dependencies = [
-    "pyyaml>=6.0",
-    "jsonschema>=4.21.0",
-    "defusedxml>=0.7.1",
-]
 
 [project.optional-dependencies]
 dev = [
