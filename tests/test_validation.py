@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from cihub.utils.validation import validate_profile_name
 
 
