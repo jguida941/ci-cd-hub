@@ -12,7 +12,7 @@
 > **Architecture:** See [ARCH_OVERVIEW.md](../architecture/ARCH_OVERVIEW.md)
 > **Test Counts:** Paused in docs; owner will refresh after a verified full run.
 >
-> **Last Updated:** 2026-01-15 (status index trimmed, pointers only)
+> **Last Updated:** 2026-01-15 (status index trimmed, pointers only)  
 > **Version Target:** v1.0.0
 >
 > **Current focus:** Wizard/CLI validation complete; proceed with Test Reorg CI workflow wiring + Phase 4 property tests + Phase 5 docs.
