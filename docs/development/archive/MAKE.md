@@ -1,4 +1,5 @@
 # Developer Commands
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
 > **WARNING: SUPERSEDED** - This document has been archived.
 > Make guidance is now in:

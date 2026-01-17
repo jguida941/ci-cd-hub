@@ -16,7 +16,14 @@ FAST_STEPS = [
     "docs-check",
     "smoke",
 ]
-AUDIT_STEPS = ["docs-links", "docs-audit", "adr-check", "validate-configs", "validate-profiles"]
+AUDIT_STEPS = [
+    "docs-links",
+    "docs-audit",
+    "adr-check",
+    "validate-configs",
+    "validate-profiles",
+    "schema-alignment",
+]
 SECURITY_STEPS = ["bandit", "pip-audit", "gitleaks", "trivy"]
 FULL_STEPS = [
     "zizmor",

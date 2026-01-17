@@ -1,3 +1,5 @@
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+
 > **WARNING: SUPERSEDED**: This document has been merged into [GETTING_STARTED.md](GETTING_STARTED.md).
 > See the **Choosing Your Execution Mode** section there.
 > This file is kept for historical reference only.

@@ -262,10 +262,93 @@ def parse_log_failures(
     return failures
 
 
+def _is_unknown_label(value: str, label: str) -> bool:
+    text = value.strip().upper()
+    return text.startswith(label)
+
+
+def _select_failed_step(steps: list[dict[str, Any]]) -> str | None:
+    failure_conclusions = {"failure", "cancelled", "timed_out", "action_required"}
+    for step in steps:
+        conclusion = str(step.get("conclusion", "")).lower()
+        if conclusion in failure_conclusions:
+            name = step.get("name")
+            if name:
+                return str(name)
+    return None
+
+
+def _select_failed_job(jobs: list[dict[str, Any]]) -> dict[str, Any] | None:
+    failure_conclusions = {"failure", "cancelled", "timed_out", "action_required"}
+    for job in jobs:
+        conclusion = str(job.get("conclusion", "")).lower()
+        if conclusion in failure_conclusions:
+            return job
+    return None
+
+
+def resolve_unknown_steps(
+    failures: list[dict[str, Any]],
+    jobs: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], int]:
+    """Replace UNKNOWN STEP entries using run metadata from gh --json jobs."""
+    if not failures or not jobs:
+        return failures, 0
+
+    jobs_by_name = {job.get("name"): job for job in jobs if job.get("name")}
+    resolved = 0
+
+    for failure in failures:
+        step_name = str(failure.get("step", ""))
+        if not _is_unknown_label(step_name, "UNKNOWN STEP"):
+            continue
+
+        job_name = str(failure.get("job", ""))
+        job = jobs_by_name.get(job_name)
+        if not job and (not job_name or _is_unknown_label(job_name, "UNKNOWN JOB")):
+            job = _select_failed_job(jobs)
+        if not job:
+            continue
+
+        resolved_step = _select_failed_step(job.get("steps") or [])
+        if not resolved_step:
+            continue
+
+        if not job_name or _is_unknown_label(job_name, "UNKNOWN JOB"):
+            job_label = job.get("name")
+            if job_label:
+                job_name = str(job_label)
+                failure["job"] = job_name
+
+        tool = infer_tool_from_step(resolved_step)
+        category = CATEGORY_BY_TOOL.get(tool, "workflow")
+        severity = SEVERITY_BY_CATEGORY.get(category, "medium")
+
+        errors = failure.get("errors") or []
+        failure["step"] = resolved_step
+        failure["tool"] = tool
+        failure["category"] = category
+        failure["severity"] = severity
+        failure["id"] = f"{tool}:{job_name}:{resolved_step}"
+        failure["message"] = f"{job_name} / {resolved_step}: {len(errors)} error(s)"
+
+        hints = list(failure.get("hints") or [])
+        if hints:
+            hints[0] = f"Review the {resolved_step} step output for details"
+        else:
+            hints = [f"Review the {resolved_step} step output for details"]
+        failure["hints"] = hints
+
+        resolved += 1
+
+    return failures, resolved
+
+
 __all__ = [
     "create_log_failure",
     "extract_mutmut_info",
     "extract_pytest_info",
     "infer_tool_from_step",
     "parse_log_failures",
+    "resolve_unknown_steps",
 ]

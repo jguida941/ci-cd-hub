@@ -277,8 +277,6 @@ class TimestampInfo:
 # Planning docs to scan for duplicates and checklists
 PLANNING_DOCS = [
     "docs/development/MASTER_PLAN.md",
-    "docs/development/active/CLEAN_CODE.md",
-    "docs/development/active/SYSTEM_INTEGRATION_PLAN.md",
     "docs/development/active/DOC_AUTOMATION_AUDIT.md",
     "docs/development/active/TEST_REORGANIZATION.md",
 ]

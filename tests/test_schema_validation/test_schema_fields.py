@@ -107,7 +107,7 @@ class TestSchemaValidation:
         from cihub.config import PathConfig, validate_config
 
         # Use current working directory as root
-        paths = PathConfig(root=".")
+        paths = PathConfig(root=str(hub_root()))
         config = {
             "language": "python",
             "python": {
@@ -124,7 +124,7 @@ class TestSchemaValidation:
         """Invalid config should return errors."""
         from cihub.config import PathConfig, validate_config
 
-        paths = PathConfig(root=".")
+        paths = PathConfig(root=str(hub_root()))
         # Config with wrong types should have some validation feedback
         config = {
             "language": 12345,  # Should be a string

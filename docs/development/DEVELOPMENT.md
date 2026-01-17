@@ -1,5 +1,10 @@
 # Development Quick Reference
 
+**Status:** reference
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+
 ## Goal
 
 **hub-release** is a centralized CI/CD orchestrator that runs quality pipelines for Java and Python repositories.
@@ -144,11 +149,11 @@ hub-release/
 │ ├── cli.py # Main CLI entry point
 │ ├── commands/ # Individual command implementations
 │ ├── config/ # Config loading, merging, validation
+│ ├── data/
+│ │ ├── config/ # Defaults + per-repo configs
+│ │ ├── schema/ # JSON schemas (config + report)
+│ │ └── templates/ # Workflow/templates and scaffolds
 │ └── wizard/ # Interactive setup wizard
-├── config/
-│ ├── defaults.yaml # MASTER CONFIG - all defaults
-│ ├── repos/ # Per-repo configs
-│ └── optional/ # Optional features (chaos, canary, etc.)
 ├── docs/
 │ ├── guides/ # User guides (GETTING_STARTED, WORKFLOWS, etc.)
 │ ├── reference/ # Reference docs (CONFIG, TOOLS)
@@ -160,15 +165,8 @@ hub-release/
 │ │ ├── architecture/ # ARCH_OVERVIEW and other design docs
 │ │ └── archive/ # Old/superseded docs
 │ └── adr/ # Architecture Decision Records
-├── schema/
-│ ├── ci-hub-config.schema.json # Config validation schema
-│ └── ci-report.v2.json # Report output schema
 ├── scripts/ # Standalone utilities
-├── templates/
-│ ├── profiles/ # Pre-built configs (fast, quality, security)
-│ ├── repo/ # Templates for target repos
-│ └── hub/ # Hub-side templates
-├── tests/ # pytest test suite (2120 tests)
+├── tests/ # pytest test suite (count tracked in STATUS.md)
 ├── policies/kyverno/ # Kubernetes admission policies
 └── fixtures/ # Test fixtures (empty placeholders)
 ```
@@ -186,10 +184,10 @@ hub-release/
 ### Configuration
 | File | What It Is |
 |---------------------------------------------------------------------|--------------------------------------------------|
-| [defaults.yaml](../../config/defaults.yaml) | **Master config** - all tool toggles, thresholds |
-| [config/repos/](../../config/repos/) | Per-repo overrides (one YAML per repo) |
-| [ci-hub-config.schema.json](../../schema/ci-hub-config.schema.json) | JSON Schema that validates all configs |
-| [templates/profiles/](../../templates/profiles/) | Pre-built profiles (fast, quality, security) |
+| [defaults.yaml](../../cihub/data/config/defaults.yaml) | **Master config** - all tool toggles, thresholds |
+| [config/repos/](../../cihub/data/config/repos/) | Per-repo overrides (one YAML per repo) |
+| [ci-hub-config.schema.json](../../cihub/data/schema/ci-hub-config.schema.json) | JSON Schema that validates all configs |
+| [templates/profiles/](../../cihub/data/templates/profiles/) | Pre-built profiles (fast, quality, security) |
 
 ### Workflows
 | File | What It Is |
@@ -231,6 +229,9 @@ pytest tests/
 
 # With coverage
 pytest tests/ --cov=scripts --cov=cihub
+
+# Coverage scope note: utility scripts listed in `pyproject.toml` are excluded from coverage
+# unless they are executed via the CLI surface.
 
 # Specific test file
 pytest tests/test_config_module.py -v
@@ -336,8 +337,8 @@ cihub setup-secrets --all --verify # Setup dispatch token
 |-------------------------------------------|---------------|
 | Central mode (`hub-run-all.yml`) | [x] Working |
 | Reusable workflows (java-ci, python-ci) | [x] Working |
-| CLI tool (`cihub`) | [x] 28 commands |
-| Unit tests | [x] 2120 tests |
+| CLI tool (`cihub`) | [x] Command surface tracked in `docs/reference/CLI.md` |
+| Unit tests | [x] Count tracked in STATUS.md |
 | Distributed mode (`hub-orchestrator.yml`) | [ ] Failing |
 | Security workflow (`hub-security.yml`) | [ ] Failing |
 

@@ -7,6 +7,7 @@ Fixtures here are automatically available to all tests without explicit imports.
 from __future__ import annotations
 
 import os
+import subprocess
 from pathlib import Path
 from typing import Any, Callable
 from unittest.mock import MagicMock
@@ -76,6 +77,25 @@ except ImportError:
 # =============================================================================
 # Repository Fixtures
 # =============================================================================
+
+
+@pytest.fixture(autouse=True)
+def _strip_mutmut_env_from_subprocess(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Remove mutmut env flags from subprocesses to avoid stats crashes."""
+    if os.environ.get("MUTANT_UNDER_TEST") is None:
+        return
+
+    original_run = subprocess.run
+
+    def _run(*args, **kwargs):  # type: ignore[no-untyped-def]
+        env = kwargs.get("env")
+        env_dict = dict(env) if env is not None else os.environ.copy()
+        env_dict.pop("MUTANT_UNDER_TEST", None)
+        env_dict.pop("MUTATION_SCORE_MIN", None)
+        kwargs["env"] = env_dict
+        return original_run(*args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", _run)
 
 
 @pytest.fixture

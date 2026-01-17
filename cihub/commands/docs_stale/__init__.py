@@ -30,7 +30,7 @@ from pathlib import Path
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.types import CommandResult
 from cihub.utils.github_context import OutputContext
-from cihub.utils.paths import hub_root
+from cihub.utils.paths import project_root
 
 # Import from submodules
 from .comparison import (
@@ -158,7 +158,7 @@ def cmd_docs_stale(args: argparse.Namespace) -> CommandResult:
     tool_output = getattr(args, "tool_output", None)
     ai_output = getattr(args, "ai_output", None)
 
-    root = hub_root()
+    root = project_root()
 
     # Verify git repo
     if not is_git_repo(root):

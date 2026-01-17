@@ -353,6 +353,51 @@ class TestCmdConfigOutputs:
 
         assert result.data["outputs"]["coverage_min"] == "90"
 
+    def test_global_thresholds_override_additional_keys(self, tmp_path: Path) -> None:
+        """Test global thresholds override additional max_* keys."""
+        args = argparse.Namespace(repo=str(tmp_path), json=True, workdir=None, github_output=False)
+
+        with patch("cihub.commands.config_outputs.load_ci_config") as mock_load:
+            mock_load.return_value = {
+                "language": "python",
+                "python": {"tools": {"ruff": {"max_errors": 2}}},
+                "java": {"tools": {"checkstyle": {"max_errors": 3}}},
+                "thresholds": {"max_ruff_errors": 5, "max_checkstyle_errors": 7},
+            }
+            result = cmd_config_outputs(args)
+
+        outputs = result.data["outputs"]
+        assert outputs["max_ruff_errors"] == "5"
+        assert outputs["max_checkstyle_errors"] == "7"
+
+    def test_harden_runner_outputs(self, tmp_path: Path) -> None:
+        """Test harden_runner outputs for bool and policy configs."""
+        args = argparse.Namespace(repo=str(tmp_path), json=True, workdir=None, github_output=False)
+
+        with patch("cihub.commands.config_outputs.load_ci_config") as mock_load:
+            mock_load.return_value = {"language": "python", "harden_runner": False}
+            result = cmd_config_outputs(args)
+
+        outputs = result.data["outputs"]
+        assert outputs["run_harden_runner"] == "false"
+        assert outputs["harden_runner_egress_policy"] == "audit"
+
+        with patch("cihub.commands.config_outputs.load_ci_config") as mock_load:
+            mock_load.return_value = {"language": "python", "harden_runner": {"policy": "block"}}
+            result = cmd_config_outputs(args)
+
+        outputs = result.data["outputs"]
+        assert outputs["run_harden_runner"] == "true"
+        assert outputs["harden_runner_egress_policy"] == "block"
+
+        with patch("cihub.commands.config_outputs.load_ci_config") as mock_load:
+            mock_load.return_value = {"language": "python", "harden_runner": {"policy": "disabled"}}
+            result = cmd_config_outputs(args)
+
+        outputs = result.data["outputs"]
+        assert outputs["run_harden_runner"] == "false"
+        assert outputs["harden_runner_egress_policy"] == "audit"
+
     def test_java_language_uses_java_thresholds(self, tmp_path: Path) -> None:
         """Test Java language uses Java-specific thresholds."""
         args = argparse.Namespace(repo=str(tmp_path), json=True, workdir=None, github_output=False)

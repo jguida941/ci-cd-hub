@@ -28,7 +28,7 @@ from .github import (
     fetch_run_info,
     get_current_repo,
 )
-from .log_parser import parse_log_failures
+from .log_parser import parse_log_failures, resolve_unknown_steps
 
 
 def generate_remote_triage_bundle(
@@ -179,6 +179,9 @@ def generate_remote_triage_bundle(
     notes.append("No artifacts found, using log parsing")
     logs = fetch_failed_logs(run_id, repo)
     failures = parse_log_failures(logs, run_id, repo)
+    failures, resolved = resolve_unknown_steps(failures, run_info.get("jobs") or [])
+    if resolved:
+        notes.append(f"Resolved {resolved} UNKNOWN STEP entries using run metadata")
     priority = _sort_failures(failures)
 
     run_data = {

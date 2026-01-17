@@ -16,11 +16,11 @@ Core features are now implemented:
 - Historical analysis (`--gate-history`, `--detect-flaky`)
 - Schema validation (`cihub hub-ci validate-triage`)
 
-**Registry System** (`config/registry.json`):
+**Registry System** (`cihub/data/config/registry.json`):
 - Tier-based config management (`strict`, `standard`, `relaxed`)
 - CLI: `cihub registry list|show|set|add|diff|sync`
 - Per-repo threshold overrides
-- Schema: `schema/registry.schema.json`
+- Schema: `cihub/data/schema/registry.schema.json`
 
 **Fix Command** (`cihub fix`):
 - Auto-fixers: `--safe` (ruff, black, isort / spotless)
@@ -28,8 +28,8 @@ Core features are now implemented:
 - AI output: `--ai` generates `.cihub/fix-report.md`
 
 **Schemas**:
-- `schema/triage.schema.json` with drift detection tests
-- `schema/registry.schema.json` for registry validation
+- `cihub/data/schema/triage.schema.json` with drift detection tests
+- `cihub/data/schema/registry.schema.json` for registry validation
 
 ## Context
 
@@ -51,9 +51,9 @@ We need:
 
 ## Decision
 
-### 1. Centralized Registry (`config/registry.json`)
+### 1. Centralized Registry (`cihub/data/config/registry.json`)
 
-Single source of truth for all repo configurations (see `schema/registry.schema.json` for full schema):
+Single source of truth for all repo configurations (see `cihub/data/schema/registry.schema.json` for full schema):
 
 ```json
 {
@@ -89,7 +89,7 @@ Single source of truth for all repo configurations (see `schema/registry.schema.
 
 ### 2. Triage Bundle (`.cihub/triage.json`)
 
-Structured output from every CI run (see `schema/triage.schema.json` for full schema):
+Structured output from every CI run (see `cihub/data/schema/triage.schema.json` for full schema):
 
 ```json
 {
@@ -275,8 +275,8 @@ cihub hub-ci validate-triage --triage-file X # Validate specific file
 ```
 
 Schema files (v1):
-- `schema/triage.schema.json` - Triage bundle schema
-- `schema/registry.schema.json` - Registry schema
+- `cihub/data/schema/triage.schema.json` - Triage bundle schema
+- `cihub/data/schema/registry.schema.json` - Registry schema
 
 **Planned features** (not yet implemented):
 - Registry versioning with rollback support
@@ -367,12 +367,16 @@ Derived from `history.jsonl` for trend tracking:
 - Tool output normalization required for non-JSON tools (mutmut, actionlint)
 
 ### Migration Path
-1. Create `config/registry.json` from existing `config/repos.yml`
-2. Implement `cihub registry` commands
-3. Implement `cihub triage` with SARIF/JSON output
-4. Add `cihub fix --safe` for auto-fixes
-5. Add `cihub assist` for LLM prompt generation
-6. Deprecate manual `.ci-hub.yml` edits in favor of registry sync
+
+**Completed:**
+1. ✅ Created `cihub/data/config/registry.json` with tier-based management
+2. ✅ Implemented `cihub registry` commands (list, show, set, add, diff, sync)
+3. ✅ Implemented `cihub triage` with SARIF/JSON output
+4. ✅ Added `cihub fix --safe` for auto-fixes
+
+**Deferred:**
+5. ⏸️ `cihub assist` for LLM prompt generation (triage.md serves this purpose for now)
+6. ⏸️ Deprecate manual `.ci-hub.yml` edits - registry sync is opt-in, not mandatory
 
 ## References
 

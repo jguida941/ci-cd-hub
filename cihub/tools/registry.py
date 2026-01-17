@@ -1,7 +1,7 @@
 """Single source of truth for tool definitions.
 
 This module centralizes all tool-related definitions that were previously
-scattered across ci_engine.py, discovery.py, and report_validator.py.
+scattered across ci_engine.py, discovery.py, and the report_validator package.
 
 IMPORTANT: Do not modify tool lists without updating ALL related definitions.
 Run tests/test_tool_registry.py after any changes to verify consistency.
@@ -129,7 +129,7 @@ THRESHOLD_KEYS: tuple[str, ...] = (
 )
 
 # =============================================================================
-# TOOL METRICS (from report_validator.py)
+# TOOL METRICS (from report_validator package)
 # Metrics expected for each tool (by language)
 # =============================================================================
 
@@ -166,7 +166,7 @@ JAVA_TOOL_METRICS: dict[str, list[str]] = {
 }
 
 # =============================================================================
-# LINT AND SECURITY METRIC NAMES (from report_validator.py)
+# LINT AND SECURITY METRIC NAMES (from report_validator package)
 # Metrics that must be 0 for clean builds
 # =============================================================================
 
@@ -176,7 +176,7 @@ JAVA_LINT_METRICS: list[str] = ["checkstyle_issues", "spotbugs_issues", "pmd_vio
 JAVA_SECURITY_METRICS: list[str] = ["owasp_critical", "owasp_high"]
 
 # =============================================================================
-# SUMMARY TABLE MAPS (from report_validator.py)
+# SUMMARY TABLE MAPS (from report_validator package)
 # Summary table labels -> tool keys
 # =============================================================================
 
@@ -213,7 +213,7 @@ PYTHON_SUMMARY_MAP: dict[str, str] = {
 }
 
 # =============================================================================
-# ARTIFACT PATTERNS (from report_validator.py)
+# ARTIFACT PATTERNS (from report_validator package)
 # Artifact patterns used for backup validation when metrics are missing
 # =============================================================================
 

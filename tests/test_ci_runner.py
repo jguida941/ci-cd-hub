@@ -24,6 +24,7 @@ from cihub.ci_runner import (
     run_black,
     run_isort,
     run_mypy,
+    run_mutmut,
     run_ruff,
 )
 
@@ -425,7 +426,68 @@ class TestDetectMutmutPaths:
 
         result = _detect_mutmut_paths(tmp_path)
 
-        assert result == "."
+        assert result == "file.py"
+
+    def test_skips_setup_py_for_fallback(self, tmp_path: Path) -> None:
+        (tmp_path / "setup.py").write_text("")
+        (tmp_path / "app.py").write_text("")
+
+        result = _detect_mutmut_paths(tmp_path)
+
+        assert result == "app.py"
+
+
+class TestRunMutmut:
+    """Tests for run_mutmut function."""
+
+    def test_temp_config_persists_until_results(self, tmp_path: Path) -> None:
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+        (tmp_path / "mypackage").mkdir()
+        (tmp_path / "mypackage" / "__init__.py").write_text("")
+
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.stdout = "run ok"
+        mock_proc.stderr = ""
+
+        def _fake_results(cmd: list[str], cwd: Path):
+            config_path = tmp_path / "setup.cfg"
+            assert config_path.exists()
+            return MagicMock(stdout="killed\nsurvived\n", stderr="")
+
+        with patch("cihub.core.ci_runner.shared._run_tool_command", return_value=mock_proc), patch(
+            "cihub.core.ci_runner.shared._run_command", side_effect=_fake_results
+        ):
+            result = run_mutmut(tmp_path, output_dir, 60)
+
+        assert result.metrics["mutation_score"] == 50
+        assert not (tmp_path / "setup.cfg").exists()
+
+    def test_meta_fallback_when_results_empty(self, tmp_path: Path) -> None:
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+        (tmp_path / "mypackage").mkdir()
+        (tmp_path / "mypackage" / "__init__.py").write_text("")
+        mutants_dir = tmp_path / "mutants"
+        mutants_dir.mkdir()
+        (mutants_dir / "app.py.meta").write_text(
+            json.dumps({"exit_code_by_key": {"a": 1, "b": 1, "c": 0}})
+        )
+
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.stdout = "run ok"
+        mock_proc.stderr = ""
+
+        with patch("cihub.core.ci_runner.shared._run_tool_command", return_value=mock_proc), patch(
+            "cihub.core.ci_runner.shared._run_command", return_value=MagicMock(stdout="", stderr="")
+        ):
+            result = run_mutmut(tmp_path, output_dir, 60)
+
+        assert result.metrics["mutation_killed"] == 2
+        assert result.metrics["mutation_survived"] == 1
+        assert result.metrics["mutation_score"] == 67
 
 
 class TestRunRuff:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import urllib.error
 import urllib.request
 from typing import Any
@@ -118,9 +119,22 @@ def cmd_setup_secrets(args: argparse.Namespace) -> CommandResult:
     """Set HUB_DISPATCH_TOKEN on hub and optionally all connected repos."""
     import getpass
 
-    hub_repo = args.hub_repo
+    hub_repo = args.hub_repo or os.environ.get("CIHUB_HUB_REPO", "")
     token = args.token
     json_mode = getattr(args, "json", False)
+
+    if not hub_repo:
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary="Hub repo is required (set --hub-repo or CIHUB_HUB_REPO)",
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Hub repo is required (set --hub-repo or CIHUB_HUB_REPO)",
+                    "code": "CIHUB-SECRETS-NO-HUB-REPO",
+                }
+            ],
+        )
 
     # Non-interactive mode requires --token
     if json_mode and not token:

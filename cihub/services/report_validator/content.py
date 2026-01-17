@@ -1,15 +1,18 @@
-"""Report validation service - validates report.json structure and content."""
+"""Content validation for CI reports.
+
+This module contains the core validation logic for CI reports, including:
+- Test results validation
+- Coverage validation
+- Tool execution verification
+- Summary/report cross-checking
+- Lint metrics validation
+"""
 
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
-import jsonschema
-
-from cihub.services.types import ServiceResult
 from cihub.tools.registry import (
     JAVA_ARTIFACTS,
     JAVA_LINT_METRICS,
@@ -22,68 +25,10 @@ from cihub.tools.registry import (
     PYTHON_SUMMARY_MAP,
     PYTHON_TOOL_METRICS,
 )
-from cihub.utils.paths import hub_root
 
-# Path to the JSON schema file (uses hub_root() for PyPI compatibility)
-_SCHEMA_PATH = hub_root() / "schema" / "ci-report.v2.json"
-_SCHEMA_CACHE: dict[str, Any] | None = None
-
-
-def _load_schema() -> dict[str, Any]:
-    """Load and cache the JSON schema."""
-    global _SCHEMA_CACHE
-    if _SCHEMA_CACHE is None:
-        with _SCHEMA_PATH.open(encoding="utf-8") as f:
-            _SCHEMA_CACHE = json.load(f)
-    return _SCHEMA_CACHE
-
-
-def validate_against_schema(report: dict[str, Any]) -> list[str]:
-    """Validate report against JSON schema.
-
-    Args:
-        report: Report dict to validate.
-
-    Returns:
-        List of schema validation errors (empty if valid).
-    """
-    schema = _load_schema()
-    errors: list[str] = []
-
-    validator = jsonschema.Draft7Validator(schema)
-    for error in validator.iter_errors(report):
-        # Format error path for clarity
-        path = ".".join(str(p) for p in error.absolute_path) if error.absolute_path else "root"
-        errors.append(f"Schema error at '{path}': {error.message}")
-
-    return errors
-
-
-@dataclass
-class ValidationRules:
-    """Rules for report validation."""
-
-    expect_clean: bool = True  # Expect no issues (vs expect_issues for failing fixtures)
-    coverage_min: int = 70
-    strict: bool = False  # Fail on warnings
-    validate_schema: bool = False  # Validate against JSON schema
-    consistency_only: bool = False  # Validate structure/consistency only (no clean/issue expectations)
-
-
-@dataclass
-class ValidationResult(ServiceResult):
-    """Result of report validation."""
-
-    language: str | None = None
-    schema_errors: list[str] = field(default_factory=list)
-    threshold_violations: list[str] = field(default_factory=list)
-    tool_warnings: list[str] = field(default_factory=list)
-    debug_messages: list[str] = field(default_factory=list)
-
-    @property
-    def valid(self) -> bool:
-        """Report is valid if no errors."""
-        return len(self.errors) == 0
+from .artifact import check_artifacts_non_empty, iter_existing_patterns
+from .schema import validate_against_schema
+from .types import ValidationResult, ValidationRules
 
 
 def _get_nested(data: dict, path: str) -> Any:
@@ -98,6 +43,7 @@ def _get_nested(data: dict, path: str) -> Any:
 
 
 def _parse_bool(value: str) -> bool | None:
+    """Parse a boolean from string representation."""
     normalized = value.strip().lower()
     if normalized in {"true", "yes", "1"}:
         return True
@@ -109,7 +55,14 @@ def _parse_bool(value: str) -> bool | None:
 def _parse_summary_tools(
     summary_text: str,
 ) -> tuple[dict[str, bool], dict[str, bool], dict[str, bool]]:
-    """Parse Tools Enabled table, returning (configured, ran, success) dicts."""
+    """Parse Tools Enabled table from summary markdown.
+
+    Args:
+        summary_text: The summary.md content.
+
+    Returns:
+        Tuple of (configured, ran, success) dicts mapping tool names to booleans.
+    """
     lines = summary_text.splitlines()
     in_tools = False
     configured: dict[str, bool] = {}
@@ -160,37 +113,6 @@ def _parse_summary_tools(
     return configured, ran, success
 
 
-def _iter_existing_patterns(root: Path, patterns: Iterable[str]) -> bool:
-    """Check if any files matching patterns exist in root directory."""
-    for pattern in patterns:
-        if list(root.glob(pattern)):
-            return True
-    return False
-
-
-def _check_artifacts_non_empty(root: Path, patterns: Iterable[str]) -> tuple[bool, list[str]]:
-    """Check if artifacts exist AND are non-empty.
-
-    Returns:
-        tuple: (all_non_empty, list of empty file paths)
-    """
-    empty_files: list[str] = []
-    found_any = False
-
-    for pattern in patterns:
-        for path in root.glob(pattern):
-            found_any = True
-            if path.is_file():
-                try:
-                    size = path.stat().st_size
-                    if size == 0:
-                        empty_files.append(str(path))
-                except OSError:
-                    empty_files.append(f"{path} (unreadable)")
-
-    return found_any and len(empty_files) == 0, empty_files
-
-
 def _compare_summary(
     summary_configured: dict[str, bool],
     summary_ran: dict[str, bool],
@@ -198,6 +120,18 @@ def _compare_summary(
     tools_ran: dict[str, Any],
     mapping: dict[str, str],
 ) -> list[str]:
+    """Compare summary tool status against report values.
+
+    Args:
+        summary_configured: Tool configured status from summary.
+        summary_ran: Tool ran status from summary.
+        tools_configured: tools_configured dict from report.
+        tools_ran: tools_ran dict from report.
+        mapping: Tool label to report key mapping.
+
+    Returns:
+        List of warning messages for mismatches.
+    """
     warnings: list[str] = []
     for label, key in mapping.items():
         if tools_configured and key in tools_configured:
@@ -225,7 +159,16 @@ def _check_metrics_exist(
     tool: str,
     metric_paths: list[str],
 ) -> tuple[bool, list[str]]:
-    """Check if expected metrics exist for a tool."""
+    """Check if expected metrics exist for a tool.
+
+    Args:
+        report: The CI report dict.
+        tool: Tool name being checked.
+        metric_paths: List of dot-notation paths to expected metrics.
+
+    Returns:
+        Tuple of (found, debug_messages).
+    """
     if not metric_paths:
         return True, [f"Debug: {tool} has no metrics, trusting step outcome"]
 
@@ -244,7 +187,15 @@ def _compare_configured_vs_ran(
     tools_configured: dict[str, Any],
     tools_ran: dict[str, Any],
 ) -> list[str]:
-    """Check for drift between configured and ran tools."""
+    """Check for drift between configured and ran tools.
+
+    Args:
+        tools_configured: tools_configured dict from report.
+        tools_ran: tools_ran dict from report.
+
+    Returns:
+        List of warning messages for drift (tool configured but didn't run).
+    """
     warnings: list[str] = []
     for tool, configured in tools_configured.items():
         if tool not in tools_ran:
@@ -263,7 +214,19 @@ def _validate_tool_execution(
     artifact_map: dict[str, list[str]] | None = None,
     reports_dir: Path | None = None,
 ) -> tuple[list[str], list[str]]:
-    """Validate that tools that ran have expected metrics."""
+    """Validate that tools that ran have expected metrics.
+
+    Args:
+        report: The CI report dict.
+        tools_ran: tools_ran dict from report.
+        tools_success: tools_success dict from report.
+        metrics_map: Mapping of tool names to expected metric paths.
+        artifact_map: Mapping of tool names to artifact glob patterns.
+        reports_dir: Directory containing tool output artifacts.
+
+    Returns:
+        Tuple of (warnings, debug_messages).
+    """
     warnings: list[str] = []
     debug: list[str] = []
 
@@ -282,7 +245,7 @@ def _validate_tool_execution(
             if artifact_map and reports_dir and tool in artifact_map:
                 patterns = artifact_map[tool]
                 if patterns:
-                    exists = _iter_existing_patterns(reports_dir, patterns)
+                    exists = iter_existing_patterns(reports_dir, patterns)
                     if not exists:
                         debug.append(
                             f"Debug: {tool} has metrics but missing artifacts "
@@ -290,16 +253,16 @@ def _validate_tool_execution(
                         )
                     else:
                         # Check artifacts are non-empty even if metrics exist
-                        non_empty, empty_files = _check_artifacts_non_empty(reports_dir, patterns)
+                        non_empty, empty_files = check_artifacts_non_empty(reports_dir, patterns)
                         if empty_files:
                             warnings.append(f"tool '{tool}' has empty output files: {', '.join(empty_files)}")
             continue
 
         if artifact_map and reports_dir and tool in artifact_map:
             patterns = artifact_map[tool]
-            if patterns and _iter_existing_patterns(reports_dir, patterns):
+            if patterns and iter_existing_patterns(reports_dir, patterns):
                 # Check if artifacts are non-empty before trusting them
-                non_empty, empty_files = _check_artifacts_non_empty(reports_dir, patterns)
+                non_empty, empty_files = check_artifacts_non_empty(reports_dir, patterns)
                 if non_empty:
                     debug.append(
                         f"Debug: {tool} missing metrics but non-empty artifacts found - "
@@ -334,6 +297,8 @@ def validate_report(
     Args:
         report: Report dict to validate.
         rules: Validation rules (defaults to expect clean build).
+        summary_text: Optional summary.md content for cross-checking.
+        reports_dir: Optional reports directory for artifact fallback checks.
 
     Returns:
         ValidationResult with errors, warnings, and debug info.

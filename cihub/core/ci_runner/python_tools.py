@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -185,6 +186,14 @@ def _detect_mutmut_paths(workdir: Path) -> str:
             continue
         if (entry / "__init__.py").exists():
             return f"{entry.name}/"
+    for entry in workdir.iterdir():
+        if not entry.is_file() or entry.suffix != ".py":
+            continue
+        if entry.name in {"setup.py", "__init__.py", "conftest.py"}:
+            continue
+        if entry.name.startswith("test_") or entry.name.endswith("_test.py"):
+            continue
+        return entry.name
     return "."
 
 
@@ -233,6 +242,33 @@ def run_mutmut(workdir: Path, output_dir: Path, timeout_seconds: int) -> ToolRes
             metrics={"mutation_score": 0, "mutation_killed": 0, "mutation_survived": 0},
             artifacts={"log": str(log_path)},
         )
+    try:
+        log_path.write_text((proc.stdout or "") + (proc.stderr or ""), encoding="utf-8")
+        results_proc = shared._run_command(["mutmut", "results"], workdir)
+        results_text = (results_proc.stdout or "") + (results_proc.stderr or "")
+        killed = len(re.findall(r"\bkilled\b", results_text, flags=re.IGNORECASE))
+        survived = len(re.findall(r"\bsurvived\b", results_text, flags=re.IGNORECASE))
+        total = killed + survived
+        if total == 0:
+            meta_killed, meta_survived = _parse_mutmut_meta(workdir / "mutants")
+            if meta_killed or meta_survived:
+                killed = meta_killed
+                survived = meta_survived
+                total = killed + survived
+        score = int(round((killed / total) * 100)) if total > 0 else 0
+        return ToolResult(
+            tool="mutmut",
+            ran=True,
+            success=proc.returncode == 0,
+            metrics={
+                "mutation_score": score,
+                "mutation_killed": killed,
+                "mutation_survived": survived,
+            },
+            artifacts={"log": str(log_path)},
+            stdout=proc.stdout,
+            stderr=proc.stderr,
+        )
     finally:
         if config_path:
             if original is None:
@@ -240,23 +276,23 @@ def run_mutmut(workdir: Path, output_dir: Path, timeout_seconds: int) -> ToolRes
             else:
                 config_path.write_text(original, encoding="utf-8")
 
-    log_path.write_text((proc.stdout or "") + (proc.stderr or ""), encoding="utf-8")
-    results_proc = shared._run_command(["mutmut", "results"], workdir)
-    results_text = (results_proc.stdout or "") + (results_proc.stderr or "")
-    killed = len(re.findall(r"\bkilled\b", results_text, flags=re.IGNORECASE))
-    survived = len(re.findall(r"\bsurvived\b", results_text, flags=re.IGNORECASE))
-    total = killed + survived
-    score = int(round((killed / total) * 100)) if total > 0 else 0
-    return ToolResult(
-        tool="mutmut",
-        ran=True,
-        success=proc.returncode == 0,
-        metrics={
-            "mutation_score": score,
-            "mutation_killed": killed,
-            "mutation_survived": survived,
-        },
-        artifacts={"log": str(log_path)},
-        stdout=proc.stdout,
-        stderr=proc.stderr,
-    )
+
+def _parse_mutmut_meta(mutants_dir: Path) -> tuple[int, int]:
+    killed = 0
+    survived = 0
+    if not mutants_dir.exists():
+        return killed, survived
+    for meta_path in mutants_dir.rglob("*.meta"):
+        try:
+            data = json.loads(meta_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        exit_codes = data.get("exit_code_by_key", {})
+        if not isinstance(exit_codes, dict):
+            continue
+        for code in exit_codes.values():
+            if code == 1:
+                killed += 1
+            elif code == 0:
+                survived += 1
+    return killed, survived

@@ -19,7 +19,13 @@ from cihub.config.merge import (
     deep_merge,
     get_effective_config_for_repo,
 )
-from cihub.config.normalize import normalize_config, normalize_tool_configs, tool_enabled
+from cihub.config.normalize import (
+    get_fail_on_cvss,
+    get_fail_on_flag,
+    normalize_config,
+    normalize_tool_configs,
+    tool_enabled,
+)
 from cihub.config.paths import PathConfig
 from cihub.config.schema import get_schema, validate_config
 
@@ -29,6 +35,8 @@ __all__ = [
     "deep_merge",
     "ensure_dirs",
     "get_effective_config_for_repo",
+    "get_fail_on_cvss",
+    "get_fail_on_flag",
     "get_schema",
     "list_profiles",
     "list_repos",

@@ -1,9 +1,14 @@
 # TypeScript CLI Design: CIHub Interactive Terminal
 
+**Status:** active
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+
 **Date:** 2026-01-05
 **Status:** Planning
 **Priority:** **#5** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
-**Depends On:** CLEAN_CODE.md (100% complete - explicit prerequisite)
+**Depends On:** CLEAN_CODE.md (archived, complete - explicit prerequisite)
 **Blocks:** PYQT_PLAN.md
 **Purpose:** Design document for a Claude Code / Codex-style interactive CLI built with TypeScript and Ink (React for terminals).
 
@@ -13,7 +18,7 @@
 
 > **DO NOT START THIS UNTIL `CLEAN_CODE.md` IS COMPLETE.**
 >
-> The Python CLI must have clean JSON output (no print statements corrupting stdout) before the TypeScript CLI can reliably parse CommandResult JSON. Complete all tasks in `docs/development/active/CLEAN_CODE.md` first.
+> The Python CLI must have clean JSON output (no print statements corrupting stdout) before the TypeScript CLI can reliably parse CommandResult JSON. Complete all tasks in `docs/development/archive/CLEAN_CODE.md` first.
 
 ---
 

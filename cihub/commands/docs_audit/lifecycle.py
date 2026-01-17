@@ -206,7 +206,7 @@ def check_archive_superseded_headers(
         r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*\[",  # Superseded by: [doc](path)
         r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?[\w.-]+\.md",  # Superseded by: DOC.md
         r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?\.\.?/[\w./-]+\.md",  # ../active/FOO.md
-        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?docs/[\w./-]+\.md",  # docs/path/FILE.md
+        r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?docs/[\w./-]+\.md",  # docs/<path>.md
         r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*`?[\w./-]+/[\w.-]+\.md",  # path/FILE.md
         r"(?i)\**superseded\**[\s-]+\**by\**:?\**\s*ADR",  # ADR-0001
         r"(?i)\**replaced\**[\s-]+\**by\**:?\**\s*\[",  # Replaced by: [doc]

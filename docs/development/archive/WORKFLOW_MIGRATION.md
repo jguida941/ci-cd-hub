@@ -1,4 +1,5 @@
 # Reusable Workflow Migration Plan
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
 > **Status:** Legacy archive (2025-12-23). This document is retained for historical context only and must not be used as current guidance.
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -76,13 +77,17 @@ def test_fix_safe_dry_run_java(tmp_path: Path):
     assert "dry-run" in data["summary"]
 
 
-def test_fix_report_json():
+def test_fix_report_json(tmp_path: Path):
     """Test fix --report --json produces valid JSON."""
+    (tmp_path / "pyproject.toml").write_text('[project]\nname = "test"\n')
+    env = os.environ.copy()
+    env["PATH"] = "/usr/bin:/bin"
     result = subprocess.run(
-        [sys.executable, "-m", "cihub", "fix", "--report", "--json"],
+        [sys.executable, "-m", "cihub", "fix", "--report", "--json", "--repo", str(tmp_path)],
         capture_output=True,
         text=True,
         timeout=120,  # Report mode runs multiple tools
+        env=env,
     )
     # Exit code can be 0 or 1 depending on findings
     assert result.returncode in (0, 1)

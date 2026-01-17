@@ -194,7 +194,7 @@ class TestRegistryImportsWork:
         assert _THRESHOLD_KEYS is THRESHOLD_KEYS
 
     def test_report_validator_imports_from_registry(self) -> None:
-        """report_validator.py should import metrics from registry."""
+        """report_validator package should import metrics from registry."""
         from cihub.services import report_validator
         from cihub.tools.registry import JAVA_TOOL_METRICS, PYTHON_TOOL_METRICS
 

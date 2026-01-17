@@ -911,7 +911,7 @@ def parse_readme_active_docs(repo_root: Path) -> list[str]:
 
             # Extract markdown link references: [NAME.md](development/active/NAME.md)
             # or [NAME.md](path/to/NAME.md) patterns
-            matches = re.findall(r"\[([A-Z_]+\.md)\]\(", line)
+            matches = re.findall(r"\[([A-Za-z0-9_.-]+\.md)\]\(", line)
             for match in matches:
                 active_docs.append(match)
 

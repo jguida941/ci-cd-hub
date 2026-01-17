@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -10,7 +11,7 @@ from cihub.services.triage_service import generate_triage_bundle, write_triage_b
 from cihub.types import CommandResult
 from cihub.utils import hub_root
 from cihub.utils.debug import emit_debug_context
-from cihub.utils.env import env_bool
+from cihub.utils.env import env_bool, env_int
 
 
 def _summary_for_result(result: CiRunResult) -> str:
@@ -113,6 +114,13 @@ def _resolve_output_dir(args) -> Path:
     return output_dir.resolve()
 
 
+def _get_ai_loop_env_int(name: str) -> int | None:
+    if name not in os.environ:
+        return None
+    value = env_int(name, default=0)
+    return value if value > 0 else None
+
+
 def _emit_triage_bundle(args, result: CiRunResult | None, error: str | None = None) -> None:
     if not env_bool("CIHUB_EMIT_TRIAGE", default=False):
         return
@@ -120,6 +128,12 @@ def _emit_triage_bundle(args, result: CiRunResult | None, error: str | None = No
     output_dir = _resolve_output_dir(args)
     report_path = result.report_path if result else output_dir / "report.json"
     summary_path = result.summary_path if result else output_dir / "summary.md"
+    iteration = getattr(args, "ai_loop_iteration", None)
+    max_iterations = getattr(args, "ai_loop_max_iterations", None)
+    if iteration is None:
+        iteration = _get_ai_loop_env_int("CIHUB_AI_LOOP_ITERATION")
+    if max_iterations is None:
+        max_iterations = _get_ai_loop_env_int("CIHUB_AI_LOOP_MAX_ITERATIONS")
     meta = {
         "command": "cihub ci",
         "args": [],
@@ -129,6 +143,8 @@ def _emit_triage_bundle(args, result: CiRunResult | None, error: str | None = No
         "commit_sha": "",
         "workflow_ref": "",
         "error": error or "",
+        "iteration": iteration,
+        "max_iterations": max_iterations,
     }
     try:
         bundle = generate_triage_bundle(

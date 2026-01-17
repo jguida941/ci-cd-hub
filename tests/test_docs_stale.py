@@ -691,7 +691,7 @@ class TestCommandIntegration:
             github_summary=False,
         )
 
-        with patch("cihub.commands.docs_stale.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.docs_stale.project_root", return_value=tmp_path):
             result = cmd_docs_stale(args)
 
         assert result.exit_code == EXIT_USAGE

@@ -1,9 +1,16 @@
-# System Integration Plan
+# System Integration Plan (Archived)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
-**Status:** active
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-09
+> **WARNING: SUPERSEDED:** This document is archived (2026-01-15). The canonical execution plan is
+> `docs/development/MASTER_PLAN.md`, with current architecture in `docs/development/architecture/ARCH_OVERVIEW.md`.
+>
+> **Status:** Archived
+> **Archived:** 2026-01-15
+> **Owner:** Development Team
+> **Source-of-truth:** manual
+> **Last-reviewed:** 2026-01-15
+> **Superseded-by:** docs/development/MASTER_PLAN.md
+
 **Consolidates:** COMPREHENSIVE_SYSTEM_AUDIT.md, WIZARD_IMPROVEMENTS.md, REGISTRY_AUDIT_AND_PLAN.md
 
 ---
@@ -810,7 +817,7 @@ tests/
 
 - `docs/adr/0051-wizard-profile-first-design.md` - ADR for profile-first design
 - `docs/development/MASTER_PLAN.md` - Overall priority tracking
-- `docs/development/active/CLEAN_CODE.md` - Architecture improvements (Priority #1)
+- `docs/development/archive/CLEAN_CODE.md` - Architecture improvements (Priority #1)
 
 ---
 

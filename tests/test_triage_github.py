@@ -147,6 +147,31 @@ class TestGitHubRunClient:
         assert info.name == "CI"
         assert info.conclusion == "success"
 
+    def test_fetch_run_info_raw_includes_jobs(self, monkeypatch) -> None:
+        """Raw run info should include jobs for log fallback enrichment."""
+        mock_result = MagicMock(
+            returncode=0,
+            stdout=json.dumps(
+                {
+                    "name": "CI",
+                    "status": "completed",
+                    "conclusion": "failure",
+                    "headBranch": "main",
+                    "headSha": "abc123",
+                    "url": "https://github.com/owner/repo/actions/runs/123",
+                    "jobs": [{"name": "build", "conclusion": "failure", "steps": []}],
+                }
+            ),
+            stderr="",
+        )
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
+        monkeypatch.setattr("cihub.commands.triage.github.resolve_executable", lambda x: "gh")
+
+        client = GitHubRunClient(repo="owner/repo")
+        data = client.fetch_run_info_raw("123")
+
+        assert data["jobs"] == [{"name": "build", "conclusion": "failure", "steps": []}]
+
     def test_fetch_run_info_raises_on_failure(self, monkeypatch) -> None:
         """Test fetch_run_info raises RuntimeError on gh failure."""
         mock_result = MagicMock(returncode=1, stdout="", stderr="Not found")

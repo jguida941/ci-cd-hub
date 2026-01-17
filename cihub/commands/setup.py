@@ -195,8 +195,12 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
 
             scaffold_args = argparse.Namespace(
                 type=project_type,
-                dest=str(target_path),
+                path=str(target_path),  # R-001: was 'dest', scaffold expects 'path'
                 name=project_name,
+                list=False,    # R-001: required flag
+                github=False,  # R-001: required flag
+                wizard=False,  # R-001: required flag
+                force=False,   # R-001: required per code review (scaffold.py:169)
                 json=False,
             )
             scaffold_result = cmd_scaffold(scaffold_args)
@@ -321,6 +325,22 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
                 return init_result
             steps_completed.append("configure")
 
+            # R-002: Capture wizard config from Step 4 result
+            wizard_config = init_result.data.get("config", {}) if init_result.data else {}
+            if not wizard_config:
+                # Protect against silent config loss
+                return CommandResult(
+                    exit_code=EXIT_FAILURE,
+                    summary="Wizard config was not captured; this is a bug",
+                    problems=[
+                        {
+                            "severity": "error",
+                            "message": "init did not return config in data",
+                            "code": "CIHUB-SETUP-002",
+                        }
+                    ],
+                )
+
             # Step 5: Write files
             console.print("\n[bold]Step 5:[/bold] Write Configuration Files")
             write_confirm = _check_cancelled(
@@ -332,10 +352,11 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
             )
 
             if write_confirm:
-                # Re-run init with --apply
+                # Re-run init with --apply, passing wizard config via config_override
                 init_args.apply = True
                 init_args.dry_run = False
-                init_args.wizard = False  # Skip wizard this time, use detected config
+                init_args.wizard = False  # Skip wizard this time
+                init_args.config_override = wizard_config  # R-002: Pass wizard selections
                 init_result = cmd_init(init_args)
                 if init_result.exit_code != EXIT_SUCCESS:
                     return init_result

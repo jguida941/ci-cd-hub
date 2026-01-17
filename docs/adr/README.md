@@ -53,6 +53,9 @@ Existing:
 - [ADR-0049: Hub Operational Settings](0049-hub-operational-settings.md)
 - [ADR-0050: Triage Command Modularization](0050-triage-command-modularization.md)
 - [ADR-0051: Wizard Profile-First Design](0051-wizard-profile-first-design.md)
+- [ADR-0052: fail_on_* Flag Normalization](0052-fail-on-flag-normalization.md)
+- [ADR-0053: Schema-Derived Defaults and Fallbacks](0053-schema-derived-defaults.md)
+- [ADR-0054: Hub CI Threshold Overrides](0054-hub-ci-threshold-overrides.md)
 
 Template starter:
 ```markdown

@@ -87,11 +87,11 @@ except subprocess.TimeoutExpired as exc:
 ### 4. Constants Module
 
 ```python
-# cihub/constants.py
-TIMEOUT_QUICK = 30 # Quick operations (git config, file checks)
-TIMEOUT_NETWORK = 120 # Network/API operations
-TIMEOUT_BUILD = 600 # Build/test operations (10 minutes)
-TIMEOUT_EXTENDED = 900 # Extended operations (mutation testing)
+# cihub/utils/exec_utils.py
+TIMEOUT_QUICK = 30  # Simple commands (git status, version checks)
+TIMEOUT_NETWORK = 120  # Network operations (git clone, gh api)
+TIMEOUT_BUILD = 600  # Build/test commands (pytest, mvn)
+TIMEOUT_EXTENDED = 900  # Long-running operations (full CI pipeline)
 ```
 
 ### 5. Migration Priority
@@ -135,7 +135,7 @@ From INCONSISTENCY.md audit, prioritize by risk:
 
 ## Implementation Notes
 
-1. Create `cihub/constants.py` with timeout constants
+1. ✅ Timeout constants are defined in `cihub/utils/exec_utils.py`
 2. Update call sites incrementally (high priority first)
 3. Add `TimeoutExpired` handling to command error paths
 4. Add CI enforcement check for missing timeouts (optional)

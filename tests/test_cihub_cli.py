@@ -17,6 +17,8 @@ from cihub.services.templates import (  # noqa: E402
     render_caller_workflow,
     render_dispatch_workflow,
 )
+from cihub.utils.exec_utils import TIMEOUT_QUICK  # noqa: E402
+from cihub.utils.filesystem import MemoryFileSystem  # noqa: E402
 from cihub.utils import (  # noqa: E402
     get_git_branch,
     get_git_remote,
@@ -83,7 +85,7 @@ def test_render_dispatch_workflow_hub_ci_requires_language():
 
 def test_render_dispatch_workflow_java_template():
     content = render_dispatch_workflow("java", "hub-java-ci.yml")
-    assert "uses: jguida941/ci-cd-hub/.github/workflows/hub-ci.yml@main" in content
+    assert "uses: jguida941/ci-cd-hub/.github/workflows/hub-ci.yml@v1" in content
     assert "secrets: inherit" in content
 
 
@@ -252,6 +254,26 @@ class TestSafeUrlopen:
 # =============================================================================
 
 
+class StubGitClient:
+    def __init__(
+        self,
+        *,
+        result: subprocess.CompletedProcess[str] | None = None,
+        exc: Exception | None = None,
+    ) -> None:
+        self.calls: list[tuple[list[str], Path, int]] = []
+        self._result = result
+        self._exc = exc
+
+    def run(self, args: list[str], cwd: Path, timeout: int) -> subprocess.CompletedProcess[str]:
+        self.calls.append((args, cwd, timeout))
+        if self._exc is not None:
+            raise self._exc
+        if self._result is None:
+            raise ValueError("StubGitClient missing result")
+        return self._result
+
+
 class TestGetGitRemote:
     """Tests for get_git_remote function."""
 
@@ -357,6 +379,20 @@ class TestGetGitRemote:
                     result = get_git_remote(tmp_path)
                 assert result is None
 
+    def test_uses_injected_git_and_fs(self, tmp_path: Path) -> None:
+        """Allows injecting git and filesystem abstractions."""
+        fs = MemoryFileSystem()
+        fs.write_text(tmp_path / ".git", "")
+        result = subprocess.CompletedProcess(
+            ["git"],
+            0,
+            stdout="https://github.com/owner/repo.git\n",
+            stderr="",
+        )
+        git = StubGitClient(result=result)
+        assert get_git_remote(tmp_path, fs=fs, git=git) == "https://github.com/owner/repo.git"
+        assert git.calls == [(["config", "--get", "remote.origin.url"], tmp_path, TIMEOUT_QUICK)]
+
 
 class TestGetGitBranch:
     """Tests for get_git_branch function."""
@@ -434,6 +470,15 @@ class TestGetGitBranch:
                 with mock.patch.object(Path, "exists", fake_exists):
                     result = get_git_branch(tmp_path)
                 assert result == "feature/add-new-feature"
+
+    def test_uses_injected_git_and_fs(self, tmp_path: Path) -> None:
+        """Allows injecting git and filesystem abstractions."""
+        fs = MemoryFileSystem()
+        fs.write_text(tmp_path / ".git", "")
+        result = subprocess.CompletedProcess(["git"], 0, stdout="main\n", stderr="")
+        git = StubGitClient(result=result)
+        assert get_git_branch(tmp_path, fs=fs, git=git) == "main"
+        assert git.calls == [(["symbolic-ref", "--short", "HEAD"], tmp_path, TIMEOUT_QUICK)]
 
 
 # =============================================================================

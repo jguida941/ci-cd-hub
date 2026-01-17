@@ -1,4 +1,5 @@
 # Testing Priority Analysis (SDLC Complexity Study)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
 > **WARNING: SUPERSEDED:** This analysis is archived. Testing priorities are now tracked in `docs/development/active/TEST_REORGANIZATION.md`.
 >

@@ -26,6 +26,7 @@ from cihub.config import (
     save_yaml_file,
 )
 from cihub.config.io import ConfigParseError
+from cihub.utils.paths import hub_root
 
 # =============================================================================
 # PathConfig Tests
@@ -870,7 +871,7 @@ class TestConfigIntegration:
     def test_real_profiles_loadable(self):
         """Test that real profiles in templates/profiles/ are loadable."""
         # Use real project root
-        paths = PathConfig(root=".")
+        paths = PathConfig(root=str(hub_root()))
 
         profiles = list_profiles(paths)
         assert len(profiles) >= 12  # We have 12 profiles

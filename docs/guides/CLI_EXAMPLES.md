@@ -1,5 +1,10 @@
 # CLI Examples
 
+**Status:** reference
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+
 > **Quick Reference** - This is a companion to [GETTING_STARTED.md](GETTING_STARTED.md).
 > Use this for copy-paste commands. For full context, see the Getting Started guide.
 

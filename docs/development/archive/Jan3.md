@@ -1,4 +1,5 @@
 # CLI Modularization Plan - Refined (v2)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
 > **WARNING: SUPERSEDED** - This plan was executed and completed on 2026-01-03/04.
 > See [MASTER_PLAN.md](../MASTER_PLAN.md) for current execution status and [status/STATUS.md](../status/STATUS.md) for ongoing work.

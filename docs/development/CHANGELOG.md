@@ -2,6 +2,145 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-16 - AI CI Loop CLI + Workflow (Internal)
+
+### New: AI CI loop command (internal-only)
+
+- Added `cihub ai-loop` to orchestrate iterative CI + fix loops with triage bundles.
+- Supports `--max-iterations`, `--fix-mode`, `--emit-report`, and `--output-dir`.
+
+### Change: AI CI loop remote mode + guardrails (internal-only)
+
+- Added remote loop controls for GitHub Actions polling and triage (`--remote`, `--triage-mode`, `--remote-dry-run`).
+- Added push guardrails and branch controls for remote runs (`--push`, `--push-branch`, `--allow-protected-branch`).
+- Added contract parsing, artifact pack output, and per-iteration review command (`--contract-file`, `--artifact-pack`, `--review-command`).
+- Modularized `ai-loop` internals into focused helper modules.
+
+### New: AI CI loop workflow (internal-only)
+
+- Added `.github/workflows/ai-ci-loop.yml` for `workflow_dispatch` runs that call `cihub ai-loop`.
+
+### Tests
+
+- Added CLI help snapshots for `ai-loop` and updated main help snapshots.
+
+### Docs
+
+- Archived `SYSTEM_INTEGRATION_PLAN.md` and updated references to the archive path.
+- Archived `CLEAN_CODE.md` and `remediation.md`; updated references to archive paths.
+
+## 2026-01-16 - Wizard + Aggregation Validation Fixes
+
+### Fix: Wizard repo metadata preservation + subdir detection
+
+- `cihub init` now resolves language using the provided subdir when present.
+- Wizard preserves detected repo metadata (for example, `repo.subdir`) instead of dropping it.
+
+### Fix: Java POM warnings align with build tool
+
+- POM warnings skip Gradle repos and keep subdir-aware POM resolution.
+
+### Fix: Report aggregation status reflects gate failures
+
+- Aggregation now accounts for thresholds, require-run tools, and test execution when determining pass/fail.
+
+### Tests
+
+- Added coverage for subdir language detection, Gradle missing POM warnings, aggregation status, and wizard repo preservation.
+
+## 2026-01-16 - Template Alignment for Java Mutation + OWASP
+
+### Fix: Java templates avoid repo-specific mutation targeting
+
+- Gradle templates now leave PITest target classes/tests unset so repos control base package targeting.
+
+### Fix: OWASP NVD key respects CLI config
+
+- `run_owasp` now clears `NVD_API_KEY` when `use_nvd_api_key` is false.
+
+## 2026-01-15 - Schema-Derived Defaults
+
+### Change: Config defaults now schema-derived
+
+- `cihub/data/config/defaults.yaml` and `cihub/config/fallbacks.py` are generated from the config schema.
+- `cihub check --audit` now validates defaults.yaml and fallbacks alignment with the schema.
+- Added `hub_ci.thresholds.overrides` to allow per-module coverage/mutation targets in hub CI config.
+
+### Docs
+
+- Marked CLEAN_CODE Phase 9.4 (config generation) complete.
+
+## 2026-01-15 - fail_on_* Normalization (Schema/Config Contract)
+
+### New: Canonical fail_on_* helpers
+
+Added normalization layer for consistent access to `fail_on_*` config values:
+
+- `get_fail_on_flag()`: Access boolean fail_on_* flags with schema-aligned defaults
+- `get_fail_on_cvss()`: Access CVSS threshold values consistently
+
+### New: Schema-code alignment tests
+
+- Added `tests/test_fail_on_normalization.py` with 53 tests
+- Tests verify that code defaults match schema defaults
+- Tests validate the canonical mapping and default hierarchy
+
+### Docs
+
+- Added [ADR-0052](../adr/0052-fail-on-flag-normalization.md) documenting the normalization pattern
+
+## 2026-01-15 - Docs Tooling Root Fixes
+
+### Fix: Documentation tooling uses project root
+
+- `cihub docs audit`, `cihub docs stale`, and `cihub docs links` now resolve docs from the project root (not `cihub/data`).
+- Workflow reference generation now reads `.github/workflows` from the project root.
+
+### Tests
+
+- Added coverage for R-002 wizard config persistence (`cmd_setup` ↔ `cmd_init`).
+
+## 2026-01-15 - Remediation Wiring Updates
+
+### Fix: Harden-runner wiring and workflow pins
+
+- `config-outputs` emits `run_harden_runner` and `harden_runner_egress_policy` and `hub-ci.yml` forwards them to reusable workflows.
+- Caller templates now default to `@v1` and source `hub_ref`/`hub_repo` from repo variables (`HUB_REF`, `HUB_REPO`).
+
+### Fix: Global threshold overrides expanded
+
+- Global `thresholds.*` values now override all supported `max_*` keys in `config-outputs`.
+
+### Fix: Init language alignment
+
+- `cihub init` aligns `repo.language` with the final language and prunes unused language blocks after overrides.
+
+### Fix: Secrets hub repo fallback
+
+- `cihub setup-secrets` requires `--hub-repo` or `CIHUB_HUB_REPO` (hardcoded default removed).
+
+### Fix: Bootstrap installer timeouts
+
+- `scripts/install.py` now applies timeout tiers to git/pip operations.
+- Git/local installs require `CIHUB_HUB_REPO` instead of a hardcoded default.
+
+### Fix: Triage UNKNOWN STEP mapping
+
+- Log fallback now cross-references run job metadata to replace `UNKNOWN STEP` entries.
+
+### Fix: Tools reference generation
+
+- `docs/reference/TOOLS.md` is now generated from `cihub/tools/registry.py` via `cihub docs generate`.
+
+### Fix: Template contract verification
+
+- `cihub verify` now accepts dynamic `hub_repo`/`hub_ref` expressions in caller templates when they reference vars/inputs.
+
+### Tests
+
+- Added `config-outputs` coverage for harden-runner outputs and expanded `max_*` overrides.
+- Added triage log parser coverage for `UNKNOWN STEP` resolution.
+
 ## 2026-01-12 - SYSTEM_INTEGRATION_PLAN Complete (100%)
 
 ### Complete: Registry/Wizard/Schema Integration
@@ -84,7 +223,7 @@ python:
 - `is_tool_enabled(config, tool, language)` - Check if any tool is enabled
 - `get_custom_tool_command(config, tool, language)` - Get custom tool command
 
-## 2026-01-11 - Bug Fixes for Phase 5.4 and 5.5
+### 2026-01-11 - Bug Fixes for Phase 5.4 and 5.5
 
 ### Fixes
 
@@ -125,7 +264,7 @@ Repository management for registry entries:
 
 **Note:** `repo update` writes to `config.repo.*` (canonical location) for language, owner, etc.
 
-## 2026-01-10 - Threshold Management Commands (Phase 5.4)
+### 2026-01-10 - Threshold Management Commands (Phase 5.4)
 
 ### New: `cihub threshold` Command Family
 
@@ -145,7 +284,7 @@ Complete threshold management for CI quality gates:
 - **Security:** `max_critical_vulns`, `max_high_vulns`, `max_pip_audit_vulns`, `owasp_cvss_fail`, `trivy_cvss_fail`, `max_semgrep_findings`, `max_spotbugs_bugs` (0 or 7.0)
 - **Lint:** `max_ruff_errors`, `max_black_issues`, `max_isort_issues`, `max_checkstyle_errors`, `max_pmd_violations` (0)
 
-## 2026-01-10 - Profile and Tool Management Commands (Phase 5.1, 5.3)
+### 2026-01-10 - Profile and Tool Management Commands (Phase 5.1, 5.3)
 
 ### New: `cihub profile` Command Family
 
@@ -201,7 +340,7 @@ Tool management for discovery, enablement, and configuration:
 - `problems` field now returns `[]` instead of `None` for empty lists
 - Registry-modifying tool commands include `files_modified` field
 
-## 2026-01-10 - Docs Command Refactoring (Part 7.4.4)
+### 2026-01-10 - Docs Command Refactoring (Part 7.4.4)
 
 ### Internal: Split `commands/docs.py` into Package
 
@@ -220,7 +359,7 @@ Tool management for discovery, enablement, and configuration:
 
 **CLI surface unchanged** - `cihub docs generate/check/links` work identically.
 
-## 2026-01-10 - Hub-CI Parser Refactoring (Part 7.4.3)
+### 2026-01-10 - Hub-CI Parser Refactoring (Part 7.4.3)
 
 ### Internal: Split `cli_parsers/hub_ci.py` into Family Modules
 
@@ -243,7 +382,7 @@ Tool management for discovery, enablement, and configuration:
 
 **CLI surface unchanged** - all 50 hub-ci subcommands work identically.
 
-## 2026-01-10 - Registry Add/Remove Command Extensions (Phase 5)
+### 2026-01-10 - Registry Add/Remove Command Extensions (Phase 5)
 
 ### New: `registry add` Flags for Sync-Ready Entries
 
@@ -283,7 +422,7 @@ The `registry import` command now validates input data before persisting:
 
 **Error:** `--name requires --owner (schema enforces owner/name as both-or-none)`
 
-## 2026-01-10 - Registry Bootstrap Import + Conflict Audit (Phase 3)
+### 2026-01-10 - Registry Bootstrap Import + Conflict Audit (Phase 3)
 
 ### Update: `cihub registry bootstrap` Import Scope
 
@@ -355,7 +494,7 @@ Expanded bootstrap coverage in `tests/test_registry_cross_root.py`:
 
 ---
 
-## 2026-01-09 - Registry Schema Normalization + Threshold Resolution (Phase 2.4b)
+### 2026-01-09 - Registry Schema Normalization + Threshold Resolution (Phase 2.4b)
 
 ### Update: Schema-Aligned Threshold Keys
 
@@ -407,7 +546,7 @@ New test files:
 
 ---
 
-## 2026-01-09 - Registry Sync Applies Managed Config Fragments (Phase 2.3a)
+### 2026-01-09 - Registry Sync Applies Managed Config Fragments (Phase 2.3a)
 
 ### New: `cihub registry sync` applies tier/repo config fragments
 
@@ -536,7 +675,7 @@ bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
 
 ---
 
-## 2026-01-06 - RunCIOptions Dataclass (Part 3.2)
+### 2026-01-06 - RunCIOptions Dataclass (Part 3.2)
 
 ### New: `RunCIOptions` Dataclass (CLEAN_CODE.md Part 3.2)
 
@@ -564,7 +703,7 @@ bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
 
 ---
 
-## 2026-01-06 - Unified GitHubContext (Part 3.1)
+### 2026-01-06 - Unified GitHubContext (Part 3.1)
 
 ### New: Unified `GitHubContext` Class (CLEAN_CODE.md Part 3.1)
 
@@ -588,7 +727,7 @@ bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
 
 ---
 
-## 2026-01-06 - Subprocess Consolidation (Part 7.3.3)
+### 2026-01-06 - Subprocess Consolidation (Part 7.3.3)
 
 ### New: `safe_run()` Wrapper (CLEAN_CODE.md Part 7.3.3)
 
@@ -617,7 +756,7 @@ bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
 
 ---
 
-## 2026-01-06 - Security Audit + Consistency Fixes
+### 2026-01-06 - Security Audit + Consistency Fixes
 
 ### Security Fixes (CRITICAL)
 
@@ -721,7 +860,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 
 ---
 
-## 2026-01-05 - v1.0 Cutline + Plan Alignment
+### 2026-01-05 - v1.0 Cutline + Plan Alignment
 
 ### MASTER_PLAN.md Updates
 - Added **v1.0 Cutline** section with Quick Wins, Heavy Lifts, and Verification items.
@@ -750,7 +889,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - All active design docs (CLEAN_CODE.md, DOC_AUTOMATION_AUDIT.md, PYQT_PLAN.md) properly referenced.
 - Updated STATUS.md directory structure to include CI_PARITY.md.
 
-## 2026-01-05 - Config Loader Canonicalization + CLI Layering
+### 2026-01-05 - Config Loader Canonicalization + CLI Layering
 
 ### CLI
 - Moved CLI helper imports in commands to services/utils (no CLI surface changes).
@@ -785,7 +924,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 ### MASTER_PLAN.md Updates
 - Added Section 10 (Maintainability Improvements) with CLI-compatible action items.
 - All items follow ADR-0031 (CLI-first) - no composite actions or workflow logic.
-- Linked to `active/CLEAN_CODE.md` for Language Strategies design.
+- Linked to `archive/CLEAN_CODE.md` for Language Strategies design.
 - Added 4 new items from second audit pass:
  - Env/context wrapper (`GitHubContext` centralizes 17 `GITHUB_*` reads)
  - Runner/adapter boundaries (subprocess only in `ci_runner/`)
@@ -797,7 +936,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - Workflow consolidation via modes (adds YAML complexity).
 - Typer/pdoc migrations (nice-to-have, not needed).
 
-## 2026-01-04 - Governance Alignment + Doc Automation Backlog
+### 2026-01-04 - Governance Alignment + Doc Automation Backlog
 
 ### Documentation Governance
 - Expanded MASTER_PLAN.md References section to include all active design docs (CLEAN_CODE.md, DOC_AUTOMATION_AUDIT.md, PYQT_PLAN.md).
@@ -813,7 +952,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - Doc manifest (`docs_manifest.json`) for LLM context.
 - Generated references expansion: TOOLS.md from registry, WORKFLOWS.md from workflows.
 
-## 2026-01-04 - Doc Lifecycle + ADR Updates
+### 2026-01-04 - Doc Lifecycle + ADR Updates
 
 ### Documentation
 - Created `docs/development/active/` folder for in-flight design docs.
@@ -830,7 +969,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - ADR-0031: Added Enforcement Addendum (what's allowed inline vs must use CLI).
 - ADR-0018: Fixed broken link to SMOKE_TEST.md → INTEGRATION_SMOKE_TEST.md.
 
-## 2026-01-04 - Service Boundary + CVSS Split
+### 2026-01-04 - Service Boundary + CVSS Split
 
 ### CLI
 - Moved CI execution core into `cihub.services` with CLI adapter delegation.
@@ -942,7 +1081,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - **hub-orchestrator.yml**: Replaced inline summaries with `cihub report orchestrator-summary`.
 - All workflows now use `CIHUB_WRITE_GITHUB_SUMMARY` env var for toggle control.
 
-## 2026-01-01 - No-Inline Workflow Cleanup
+### 2026-01-01 - No-Inline Workflow Cleanup
 
 ### CLI
 - Added `cihub dispatch trigger` to dispatch workflows and poll for run ID (replaces inline JS in hub-orchestrator.yml).
@@ -981,12 +1120,12 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 ### Tests
 - Updated `test_apply_profile.py` and `test_templates.py` to import from `cihub.config.merge` and `cihub.config.io` instead of deprecated shims.
 
-## 2025-12-31 - Badge CLI Integration
+### 2025-12-31 - Badge CLI Integration
 
 ### CLI
 - Added `cihub hub-ci badges` to generate or validate badge JSON from workflow artifacts.
 
-## 2025-12-31 - Summary Toggle + Report Validation Consolidation
+### 2025-12-31 - Summary Toggle + Report Validation Consolidation
 
 ### CLI
 - `cihub ci` now defaults `GITHUB_STEP_SUMMARY` behavior from `reports.github_summary.enabled` and supports `--no-write-github-summary`.
@@ -999,7 +1138,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 ### Scripts
 - Deprecated `scripts/validate_summary.py` now delegates to `cihub report validate`.
 
-## 2025-12-31 - Hub Aggregation Moved Into CLI
+### 2025-12-31 - Hub Aggregation Moved Into CLI
 
 ### CLI
 - Added `cihub report aggregate` for hub orchestrator aggregation.
@@ -1009,7 +1148,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 ### Workflows
 - `hub-orchestrator.yml` now calls `python -m cihub report aggregate` instead of inline Python.
 
-## 2025-12-31 - Workflow Contract Verification
+### 2025-12-31 - Workflow Contract Verification
 
 ### CLI
 - Added `cihub verify` to validate caller templates and reusable workflow inputs match.
@@ -1020,7 +1159,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 ### Tests
 - Added workflow contract tests to prevent template/workflow drift.
 
-## 2025-12-31 - Workflow Security & Verification Fixes
+### 2025-12-31 - Workflow Security & Verification Fixes
 
 ### Security
 - **Fixed template-injection vulnerabilities in workflows** - Converted `${{ inputs.* }}` to environment variables in `python-ci.yml`, `java-ci.yml`, and `kyverno-ci.yml` to prevent potential command injection.
@@ -1037,7 +1176,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 ### CLI Improvements
 - `cihub check` now displays suggestions with emoji for failed checks that have remediation guidance.
 
-## 2025-12-31 - Pre-push Verify + Tool Installation
+### 2025-12-31 - Pre-push Verify + Tool Installation
 
 ### Developer Workflow
 - Added `make verify` to run full pre-push validation (`cihub check --all --install-missing --require-optional`) plus template drift check.
@@ -1063,7 +1202,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - Run `make format` (or `ruff format cihub/ tests/ scripts/`) to format code
 - Keep Black installed if CI still enforces it.
 
-## 2025-12-30 - Template Freshness Guard
+### 2025-12-30 - Template Freshness Guard
 
 ### Templates & Tests
 - Archived legacy dispatch templates to `templates/legacy/`
@@ -1071,7 +1210,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - Added a guard to prevent legacy dispatch templates from drifting in active paths
 - Added `.yamllint` config to align linting with 120-char line length and ignore archived templates
 
-## 2025-12-30 - CLI Doc Drift Guardrails & Plan Consolidation
+### 2025-12-30 - CLI Doc Drift Guardrails & Plan Consolidation
 
 ### CLI & Tooling
 - Added `cihub docs generate/check` to auto-generate reference docs from CLI and schema.
@@ -1106,14 +1245,14 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - Updated ADR README with ADRs 0023-0028
 - Added ADR-0028: Boolean Config Type Coercion
 
-## 2025-12-26 - Workflow Shellcheck Cleanup
+### 2025-12-26 - Workflow Shellcheck Cleanup
 
 ### Workflows
 - Refactored summary output blocks to avoid shellcheck SC2129 warnings across hub workflows.
 - Grouped multi-line `GITHUB_OUTPUT` writes to prevent shellcheck parse errors.
 - Cleaned up summary generation redirections in hub, security, smoke test, and kyverno workflows.
 
-## 2025-12-26 - Docs Reorg, Fixtures Expansion, CLI Hardening
+### 2025-12-26 - Docs Reorg, Fixtures Expansion, CLI Hardening
 
 ### Documentation & Governance
 - Reorganized development docs into status/architecture/execution/research/archive subfolders.
@@ -1188,7 +1327,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 ### Caller Templates
 - Templates aligned with simplified callers; no `threshold_overrides_yaml` input required.
 
-## 2025-12-24 - Quarantine System, NEW_PLAN, and CLI/Validation Hardening
+### 2025-12-24 - Quarantine System, NEW_PLAN, and CLI/Validation Hardening
 
 ### Architecture & Governance
 - Added `_quarantine/` with phased graduation, `INTEGRATION_STATUS.md`, and `check_quarantine_imports.py` guardrail to prevent premature imports.
@@ -1240,7 +1379,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 
 ---
 
-## 2025-12-19 - Job Summary Improvements & Multi-Module Support
+### 2025-12-19 - Job Summary Improvements & Multi-Module Support
 
 ### Configuration Summary
 - **Configuration Summary at top of job output** - Shows all enabled tools, thresholds, and environment settings at a glance
@@ -1312,7 +1451,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 
 ---
 
-## 2025-12-15 (Evening)
+### 2025-12-15 (Evening)
 
 ### Bug Fixes
 - Fixed SpotBugs, Checkstyle, PMD not running on repos without `mvnw` - added `mvn` fallback
@@ -1344,7 +1483,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 
 ---
 
-## 2025-12-15
+### 2025-12-15
 
 ### Repository Rename
 - Renamed repository from `ci-hub-orchestrator` to `ci-cd-hub`

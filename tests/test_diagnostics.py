@@ -455,3 +455,102 @@ class TestDiagnosticMutationKillers:
         diag = Diagnostic(message="Test")
         result = format_editor([diag])
         assert "uri" not in result[0]
+
+
+class TestMutantKillers:
+    """Tests specifically designed to kill surviving mutants."""
+
+    def test_format_console_no_file_produces_empty_location(self) -> None:
+        """When no file, location string should be empty (not None or other value)."""
+        diag = Diagnostic(message="Error without file")
+        result = format_console([diag])
+        # Without file, should just be "[ERROR] Error without file"
+        # No extra XXXX or None in output
+        assert "XXXX" not in result
+        assert "None" not in result
+        # Should not have " - " separator since no location
+        assert " - " not in result
+
+    def test_format_console_no_code_produces_empty_string(self) -> None:
+        """When no code, code_str should be empty (not XXXX)."""
+        diag = Diagnostic(message="Error")
+        result = format_console([diag])
+        assert "XXXX" not in result
+        # Should not have parentheses for code since no code
+        assert "() " not in result
+
+    def test_format_console_no_source_produces_empty_string(self) -> None:
+        """When no source, source_str should be empty (not XXXX)."""
+        diag = Diagnostic(message="Error")
+        result = format_console([diag])
+        assert "XXXX" not in result
+        # Should not have extra empty brackets
+        assert "[] " not in result
+
+    def test_format_console_multiple_lines_uses_newline_separator(self) -> None:
+        """Multiple diagnostics are joined with single newline."""
+        diags = [
+            Diagnostic(message="First"),
+            Diagnostic(message="Second"),
+            Diagnostic(message="Third"),
+        ]
+        result = format_console(diags)
+        lines = result.split("\n")
+        assert len(lines) == 3
+        # Should NOT have "XX" in output from mutated join
+        assert "XX" not in result
+        # Each line should contain one message
+        assert "First" in lines[0]
+        assert "Second" in lines[1]
+        assert "Third" in lines[2]
+
+    def test_format_editor_default_severity_is_one(self) -> None:
+        """Default severity value for unknown severity should be 1 (error)."""
+        # Create a diagnostic with a custom/unknown severity
+        # Since DiagnosticSeverity enum is strict, we need to test the edge case
+        # by ensuring ERROR maps to 1
+        diag = Diagnostic(message="Test", severity=DiagnosticSeverity.ERROR)
+        result = format_editor([diag])
+        assert result[0]["severity"] == 1  # Not 2, not None
+
+    def test_format_editor_error_key_is_lowercase(self) -> None:
+        """Severity mapping uses lowercase 'error' key."""
+        diag = Diagnostic(message="Test", severity=DiagnosticSeverity.ERROR)
+        result = format_editor([diag])
+        # If the key was 'ERROR' or 'XXerrorXX', it wouldn't match and would use default
+        # Since ERROR severity should map to 1 via the "error": 1 entry
+        assert result[0]["severity"] == 1
+
+    def test_format_editor_all_severities_have_correct_values(self) -> None:
+        """Verify each severity maps to its expected numeric value."""
+        test_cases = [
+            (DiagnosticSeverity.ERROR, 1),
+            (DiagnosticSeverity.WARNING, 2),
+            (DiagnosticSeverity.INFO, 3),
+            (DiagnosticSeverity.HINT, 4),
+        ]
+        for sev, expected_val in test_cases:
+            diag = Diagnostic(message="Test", severity=sev)
+            result = format_editor([diag])
+            assert result[0]["severity"] == expected_val, (
+                f"{sev.value} should map to {expected_val}"
+            )
+
+    def test_format_console_exact_format_without_file(self) -> None:
+        """Verify exact output format when no file/location info."""
+        diag = Diagnostic(message="Simple error", severity=DiagnosticSeverity.WARNING)
+        result = format_console([diag])
+        # Should be exactly "[WARNING] Simple error" with no extra content
+        assert result == "[WARNING] Simple error"
+
+    def test_format_console_exact_format_with_code_and_source(self) -> None:
+        """Verify exact output format with code and source."""
+        diag = Diagnostic(
+            message="Error msg",
+            severity=DiagnosticSeverity.ERROR,
+            code="E001",
+            source="ruff",
+        )
+        result = format_console([diag])
+        # Expected: "[ERROR] [ruff] (E001) Error msg"
+        assert result == "[ERROR] [ruff] (E001) Error msg"

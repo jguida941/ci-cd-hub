@@ -1,9 +1,14 @@
 # Test Suite Reorganization Plan
 
+**Status:** active
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+
 **Date:** 2026-01-05
-**Status:** PLANNED (10-12 day blockers)
+**Status:** CURRENT (blocked by prerequisites)
 **Priority:** **#3** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
-**Depends On:** CLEAN_CODE.md Part 2.2 (CommandResult migration) + REGISTRY_AUDIT Part 6 (wizard integration)
+**Depends On:** CLEAN_CODE.md (archived, complete) + SYSTEM_INTEGRATION_PLAN.md (archived, complete)
 **Blocks:** Nothing (can run parallel with DOC_AUTOMATION after blockers resolved)
 
 ---
@@ -30,9 +35,9 @@
 | `ci_engine/gates.py` | [ ] None | HIGH |
 | `ci_engine/helpers.py` | [ ] None | HIGH |
 | `repo_config.py` | [ ] None | MEDIUM |
-| `registry_service.py` | [ ] None | **CRITICAL** (see REGISTRY_AUDIT Part 15) |
+| `registry_service.py` | [ ] None | **CRITICAL** (see REGISTRY_AUDIT_AND_PLAN.md Part 15 - archived) |
 
-**Note:** Registry service testing is comprehensively covered in REGISTRY_AUDIT_AND_PLAN.md Part 15 with 6 test categories and ~1,350 lines of test code proposed.
+**Note:** Registry service testing is comprehensively covered in `docs/development/archive/REGISTRY_AUDIT_AND_PLAN.md` Part 15 with 6 test categories and ~1,350 lines of test code proposed.
 
 ---
 
@@ -57,6 +62,61 @@ The test suite has grown to **2100+ tests** across files with:
 4. **Consistent patterns** - Template enforcement like ADRs
 5. **Better test IDs** - Descriptive names visible in pytest output
 6. **Automated drift detection** - CI catches missing/stale tests
+
+---
+
+## Mutation Testing Coverage Plan (CLI + Core Logic)
+
+**Current state:** `mutmut` only targets a few low-risk modules. CLI command logic and core services are not mutation-tested.
+
+**Goal:** expand mutation targets to cover the CLI and core logic without making mutation runs flaky or blocking by default.
+
+### Rollout Phases
+
+- [ ] **M0: Baseline + inventory** - Document current `paths_to_mutate` and add a per-module target list to this plan. Capture a baseline mutation run per module before expanding.
+  - [x] Add per-module target list to this plan.
+  - [~] Capture baseline mutation runs for each phase target (global baseline captured; per-module baselines pending).
+- [ ] **M1: CLI critical path** - Add `cihub/commands/ci.py`, `cihub/services/ci_engine/`, and `cihub/commands/check.py` to mutation targets. Kill surviving mutants with focused tests.
+  - [x] Update `pyproject.toml` `paths_to_mutate` for M1 targets.
+  - [~] Kill surviving mutants with targeted tests (CI CLI adapter tests added; rerun mutmut for `cihub/commands/ci.py` pending).
+- [ ] **M2: Config + outputs** - Add `cihub/commands/config_outputs.py`, `cihub/config/loader/inputs.py`, and `cihub/services/registry/thresholds.py` to mutation targets.
+- [ ] **M3: Triage + reporting** - Add `cihub/services/triage/detection.py` and `cihub/commands/triage/log_parser.py` to mutation targets.
+- [ ] **M4: High-risk commands** - Add `cihub/commands/fix.py`, `cihub/commands/registry.py`, `cihub/commands/templates.py`, and `cihub/commands/secrets.py` once external I/O is isolated behind mocks.
+
+### Baseline Status (2026-01-15)
+
+- pytest in the local venv segfaults when importing `readline` (seen in `_pytest/capture._readline_workaround`).
+- Workaround: patch `_pytest/capture.py` to honor `PYTEST_SKIP_READLINE_WORKAROUND=1`, then set that env var for mutmut runs.
+- Patched mutmut trampoline template to use `os.environ.get("MUTANT_UNDER_TEST", "")` to avoid KeyError during stats collection.
+- `mutmut` stats runs failed when subprocess CLI calls inherited `MUTANT_UNDER_TEST=stats` (mutmut config is None in subprocess, `record_trampoline_hit` crashes). Added a test harness guard to strip `MUTANT_UNDER_TEST`/`MUTATION_SCORE_MIN` from subprocess env; clear `mutants/` and rerun with `PYTEST_SKIP_READLINE_WORKAROUND=1`.
+- Clean tests failed in `tests/test_property_based_extended.py` with Hypothesis `HealthCheck.differing_executors` during mutmut. Added `--ignore-glob=**/test_property_based_extended.py` to mutmut pytest args (matches the “ignore @given tests” policy).
+- `python -m cihub hub-ci coverage-verify --coverage-file .coverage --json` succeeds and reports 231 measured files with mutation targets covered (overall coverage ~75%).
+- `mutmut run` completes with `PYTEST_SKIP_READLINE_WORKAROUND=1`: 4475 mutants, 2284 killed, 2187 survived, 3 timeouts, 1 suspicious (~51% score).
+- Survivors cluster in `cihub.services.ci_engine.gates`, `cihub.commands.check`, and `cihub.commands.ci`.
+
+### Target Modules (Tracked)
+
+| Module | Phase | Owner | Notes |
+|--------|-------|-------|-------|
+| `cihub/commands/ci.py` | M1 | TBD | CLI entry point for CI |
+| `cihub/services/ci_engine/` | M1 | TBD | Core CI execution + gating |
+| `cihub/commands/check.py` | M1 | TBD | CLI local validation |
+| `cihub/commands/config_outputs.py` | M2 | TBD | Workflow outputs contract |
+| `cihub/config/loader/inputs.py` | M2 | TBD | Input normalization |
+| `cihub/services/registry/thresholds.py` | M2 | TBD | Threshold normalization |
+| `cihub/services/triage/detection.py` | M3 | TBD | Flaky detection |
+| `cihub/commands/triage/log_parser.py` | M3 | TBD | Mutmut log parsing |
+| `cihub/commands/fix.py` | M4 | TBD | Fix workflows (high risk) |
+| `cihub/commands/registry.py` | M4 | TBD | Registry CLI surface |
+| `cihub/commands/templates.py` | M4 | TBD | Template sync logic |
+| `cihub/commands/secrets.py` | M4 | TBD | External API + secret ops |
+
+### Guardrails
+
+- Only add a module to `paths_to_mutate` after coverage is high enough to make mutation results actionable.
+- Keep `mutate_only_covered_lines = true` and the existing mutmut pytest filters to avoid flaky runs.
+- Mutation runs stay opt-in via `cihub check --mutation` unless a workflow or defaults change is approved.
+- Track per-module mutation scores in `tests/README.md` and treat regressions as drift.
 
 ---
 
@@ -183,7 +243,7 @@ hub_ci:
  services/triage:
  coverage_min: 80
  mutation_score_min: 60
- note: "Legacy code - see CLEAN_CODE.md"
+ note: "Legacy code - see archive/CLEAN_CODE.md"
 ```
 
 ### Auto-Generated Test File Headers
@@ -385,11 +445,12 @@ Checks:
 
 ### Phase 1: Infrastructure (Day 1)
 - [x] Add `cihub hub-ci thresholds` command (read/write to config/defaults.yaml)
-- [ ] Add per-module override support to config/defaults.yaml schema
+- [x] Add per-module override support to config/defaults.yaml schema
 - [x] Create `scripts/update_test_metrics.py` (reads targets from config/defaults.yaml)
 - [x] Create `scripts/generate_test_readme.py`
 - [x] Create `scripts/check_test_drift.py`
 - [ ] Add to CI workflow (hub-production-ci.yml)
+- [x] Add schema-sync fallback defaults regression coverage (gates/reports/feature flags)
 
 ### Phase 2: Directory Structure (Day 2)
 - [ ] Create new directory structure (`unit/`, `integration/`, etc.)
@@ -430,7 +491,7 @@ Checks:
 
 ## Related Documents
 
-- `CLEAN_CODE.md` - Code quality improvements (complete first)
+- `CLEAN_CODE.md` (archived) - Code quality improvements (complete first)
 - `MASTER_PLAN.md` - Overall architecture
 - `CI_PARITY.md` - CI/CD pipeline documentation
 
@@ -454,7 +515,7 @@ Checks:
 | Blocker | Status | Effort |
 |---------|--------|--------|
 | `cihub hub-ci thresholds` CLI command | [x] IMPLEMENTED | Done |
-| Schema per-module overrides | [ ] BLOCKED by `additionalProperties: false` | 1 day |
+| Schema per-module overrides | [x] IMPLEMENTED | Done |
 | 3 automation scripts | [x] IMPLEMENTED | Done |
 | Only 2/15 thresholds in CI outputs | WARNING: INCOMPLETE | 2 days |
 
@@ -528,7 +589,9 @@ Split before moving:
 
 Before Phase 1 can begin:
 - [x] Implement `cihub hub-ci thresholds` command
-- [ ] Update schema for per-module overrides
+- [x] Update schema for per-module overrides
+- [x] Validate wizard/CLI on fixture repos (subdir detection, POM warnings, aggregation status)
+- [x] Align Java templates with CLI config (remove repo-specific PITest targets; honor `use_nvd_api_key`)
 - [ ] Create comprehensive file mapping (all 78 files → new homes)
 - [ ] Split large monolithic test files (120+ tests)
 - [x] Register pytest markers in pyproject.toml

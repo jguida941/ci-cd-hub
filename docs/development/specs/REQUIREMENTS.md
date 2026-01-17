@@ -1,9 +1,10 @@
 # Requirements (v1.0)
 
-**Status:** Active
-**Last Updated:** 2026-01-05
+**Status:** active
 **Owner:** Hub maintainers
-**Sources:** `docs/development/MASTER_PLAN.md` (execution), `docs/development/status/STATUS.md` (current state)
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+**Last Updated:** 2026-01-15
 
 ---
 

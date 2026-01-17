@@ -1,4 +1,5 @@
 # Fixtures Plan
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
 > **Status:** Legacy archive (2025-12-26). Fixture matrix has been consolidated into `docs/development/execution/SMOKE_TEST.md`.
 

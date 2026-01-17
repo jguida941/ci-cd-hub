@@ -85,16 +85,14 @@ spotbugsMain {
 pmd {
     toolVersion = '7.0.0'
     consoleOutput = true
-    ruleSetFiles = files("config/pmd/ruleset.xml")
-    ruleSets = []
+    ruleSets = ['category/java/quickstart.xml']
     ignoreFailures = false
 }
 
 // @config:info.solidsoft.pitest
 pitest {
     junit5PluginVersion = '1.2.1'
-    // Note: targetClasses not specified - PITest will auto-detect from sourceSets
-    // Specifying ['*'] would cause PITest to try mutating its own jars
+    // Optional: set targetClasses/targetTests to your base package.
     threads = 4
     outputFormats = ['XML', 'HTML']
     timestampedReports = false

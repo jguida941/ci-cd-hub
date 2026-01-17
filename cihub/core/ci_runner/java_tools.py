@@ -247,6 +247,9 @@ def run_owasp(
     log_path = output_dir / "owasp-output.txt"
     env = os.environ.copy()
     nvd_key = env.get("NVD_API_KEY")
+    if not use_nvd_api_key:
+        env.pop("NVD_API_KEY", None)
+        nvd_key = None
     nvd_flags: list[str] = []
     if use_nvd_api_key and nvd_key:
         nvd_flags.append(f"-DnvdApiKey={nvd_key}")

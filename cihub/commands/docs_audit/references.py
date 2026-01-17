@@ -115,7 +115,7 @@ def extract_doc_references(content: str, file_path: str) -> list[tuple[int, str]
 
     Finds references like:
     - docs/reference/CLI.md
-    - docs/development/active/CLEAN_CODE.md
+    - docs/development/archive/CLEAN_CODE.md
     - docs/adr/0001-title.md
 
     Args:

@@ -17,7 +17,7 @@ from cihub.utils.exec_utils import (
     CommandTimeoutError,
     safe_run,
 )
-from cihub.utils.paths import hub_root
+from cihub.utils.paths import project_root
 
 # Regex to match markdown links: [text](path) or [text](path#anchor)
 MARKDOWN_LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]+)\)")
@@ -238,7 +238,7 @@ def cmd_docs_links(args: argparse.Namespace) -> CommandResult:
     Always returns CommandResult for consistent output handling.
     """
     external = getattr(args, "external", False)
-    docs_dir = hub_root() / "docs"
+    docs_dir = project_root() / "docs"
 
     # Try lychee first
     has_lychee = shutil.which("lychee") is not None

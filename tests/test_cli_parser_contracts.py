@@ -8,6 +8,7 @@ from cihub.cli import build_parser
 
 DELEGATED_SUBCOMMAND_ROOTS = {"dispatch", "hub", "hub-ci", "profile", "registry", "repo", "threshold", "tool"}
 EXPECTED_JSON_PATHS = {
+    "ai-loop",
     "adr check",
     "adr list",
     "adr new",

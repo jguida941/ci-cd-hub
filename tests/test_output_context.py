@@ -20,6 +20,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from cihub.utils.filesystem import MemoryFileSystem
 from cihub.utils.github_context import GitHubContext, OutputContext
 
 
@@ -191,6 +192,14 @@ class TestOutputContextWriteOutputs:
         # File should exist but be empty
         assert output_file.read_text() == ""
 
+    def test_write_outputs_uses_filesystem(self, tmp_path: Path) -> None:
+        """write_outputs can write via an injected filesystem."""
+        fs = MemoryFileSystem()
+        output_file = tmp_path / "output.txt"
+        ctx = OutputContext(output_path=str(output_file), filesystem=fs)
+        ctx.write_outputs({"status": "ok"})
+        assert fs.read_text(output_file) == "status=ok\n"
+
 
 class TestOutputContextWriteSummary:
     """Tests for OutputContext.write_summary() method."""
@@ -212,6 +221,14 @@ class TestOutputContextWriteSummary:
         content = summary_file.read_text()
         assert "## Test Results" in content
         assert "- Passed: 10" in content
+
+    def test_write_summary_uses_filesystem(self, tmp_path: Path) -> None:
+        """write_summary can write via an injected filesystem."""
+        fs = MemoryFileSystem()
+        summary_file = tmp_path / "summary.md"
+        ctx = OutputContext(summary_path=str(summary_file), filesystem=fs)
+        ctx.write_summary("## Summary")
+        assert fs.read_text(summary_file) == "## Summary\n"
 
     def test_writes_via_github_summary_env(self, tmp_path: Path) -> None:
         """write_summary uses GITHUB_STEP_SUMMARY env var when github_summary=True."""

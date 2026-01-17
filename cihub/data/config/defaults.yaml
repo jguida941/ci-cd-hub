@@ -1,440 +1,252 @@
 # ============================================================================
 # CI/CD Hub - Global Defaults
 # ============================================================================
+# AUTO-GENERATED from ci-hub-config.schema.json
+# To regenerate:
+#   python -c "from cihub.commands.schema_sync import generate_defaults_yaml; generate_defaults_yaml()"
+#
 # These settings apply to ALL repos unless overridden in the repo's .ci-hub.yml
 # or in config/repos/<repo-name>.yaml
-#
-# Hierarchy (highest wins):
-#   1. Repo's own .ci-hub.yml (if exists)
-#   2. Hub's config/repos/<repo-name>.yaml (if exists)
-#   3. This file (defaults.yaml)
 # ============================================================================
 
-# ------------------------------------------------------------------------------
-# Repo Defaults
-# ------------------------------------------------------------------------------
-# These are defaults for repo.* settings. Override in config/repos/<repo>.yaml.
-#
-# use_central_runner: true   - Hub clones repo and runs tools (central mode)
-# use_central_runner: false  - Hub dispatches to target repo's workflow (distributed)
-#
-# repo_side_execution: false - Hub-side config only (default, safe)
-# repo_side_execution: true  - Enable cihub generate-workflow to write to target repos
-#                              (requires explicit --apply, creates .bak backups)
-repo:
-  use_central_runner: true      # Central mode by default
-  repo_side_execution: false    # No writes to target repos by default
-  dispatch_enabled: true        # Allow orchestrator dispatch by default
-  force_all_tools: false        # Respect tool.enabled toggles by default
-
-# ------------------------------------------------------------------------------
-# Java Defaults
-# ------------------------------------------------------------------------------
-java:
-  version: "21"
-  distribution: "temurin"
-  build_tool: "maven"  # maven | gradle
-
-  # Quality Tools - set to true/false to enable/disable
+cache_sentinel:
+  enabled: false
+canary:
+  enabled: false
+chaos:
+  enabled: false
+dr_drill:
+  enabled: false
+egress_control:
+  enabled: false
+gates:
+  require_run_or_fail: false
+  tool_defaults:
+    pytest: true
+    ruff: true
+    bandit: true
+    pip_audit: true
+    mypy: false
+    black: false
+    isort: false
+    mutmut: false
+    hypothesis: false
+    semgrep: false
+    trivy: true
+    codeql: true
+    docker: false
+    sbom: false
+    jacoco: true
+    checkstyle: true
+    spotbugs: true
+    pmd: false
+    owasp: true
+    pitest: false
+    jqwik: false
+hub_ci:
+  enabled: true
+  thresholds:
+    coverage_min: 70
+    mutation_score_min: 70
+    overrides: {}
   tools:
-    # Code Coverage
-    jacoco:
-      enabled: true
-      min_coverage: 70  # fail if below this %
-      require_run_or_fail: true  # Tests MUST run if configured
-
-    # Code Style
+    actionlint: true
+    bandit: true
+    bandit_fail_high: true
+    bandit_fail_medium: false
+    bandit_fail_low: false
+    dependency_review: true
+    gitleaks: true
+    license_check: true
+    mutmut: true
+    mypy: true
+    pip_audit: true
+    pytest: true
+    ruff: true
+    scorecard: true
+    syntax: true
+    trivy: true
+    validate_configs: true
+    validate_templates: true
+    verify_matrix_keys: true
+    yamllint: true
+    zizmor: true
+java:
+  version: '21'
+  distribution: temurin
+  build_tool: maven
+  tools:
     checkstyle:
       enabled: true
       fail_on_violation: true
       max_errors: 0
-      config_file: null  # use repo default or specify path
-
-    # Static Analysis
-    spotbugs:
-      enabled: true
+    codeql:
+      enabled: false
       fail_on_error: true
-      max_bugs: 0
-      effort: "max"  # min | default | max
-      threshold: "medium"  # low | medium | high
-
-    # Dependency Vulnerabilities
-    owasp:
+      languages:
+      - java
+    docker:
+      compose_file: docker-compose.yml
+      dockerfile: Dockerfile
+      enabled: false
+      fail_on_error: true
+      fail_on_missing_compose: false
+      health_endpoint: /actuator/health
+      health_timeout: 300
+    jacoco:
       enabled: true
-      fail_on_cvss: 7  # fail if any vuln >= this score
-      use_nvd_api_key: true  # use NVD API key for faster scans (requires NVD_API_KEY secret)
-      require_run_or_fail: true  # Security MUST run if configured
-
-    # Mutation Testing (expensive - disabled by default)
-    pitest:
-      enabled: true  # Mutation testing - can be slow for large codebases
-      min_mutation_score: 70  # fail if below this %
-      threads: 4
-      timeout_multiplier: 2
-      require_run_or_fail: false  # Optional - don't fail if it doesn't run
-
-    # Property-Based Testing
+      min_coverage: 70
     jqwik:
       enabled: false
-
-    # Static Analysis - PMD
+    owasp:
+      enabled: true
+      fail_on_cvss: 7
+      use_nvd_api_key: true
+    pitest:
+      enabled: true
+      min_mutation_score: 70
+      threads: 4
+      timeout_multiplier: 2
     pmd:
       enabled: true
       fail_on_violation: false
       max_violations: 0
-
-    # SAST - Semgrep (expensive - disabled by default)
     semgrep:
-      enabled: false  # Enable via config when needed - requires network/time
+      enabled: false
       fail_on_findings: false
       max_findings: 0
-
-    # SBOM Generation (expensive - disabled by default)
     sbom:
       enabled: false
       format: cyclonedx
-
-    # Container/Filesystem Scan - Trivy (expensive - disabled by default)
+    spotbugs:
+      effort: max
+      enabled: true
+      fail_on_error: true
+      max_bugs: 0
+      threshold: medium
     trivy:
-      enabled: false  # Enable via config when needed - only useful if Dockerfile exists
-      fail_on_critical: false
-      fail_on_high: false
-
-    # Security Analysis (expensive - disabled by default)
-    codeql:
-      enabled: false  # Enable via config when needed - slow SAST analysis
-      languages: ["java"]
-      fail_on_error: true
-
-    # Docker
-    docker:
-      enabled: false  # must explicitly enable per repo
-      compose_file: "docker-compose.yml"
-      health_endpoint: "/actuator/health"
-      health_timeout: 300  # seconds
-      fail_on_error: true
-      fail_on_missing_compose: false
-
-# ------------------------------------------------------------------------------
-# Python Defaults
-# ------------------------------------------------------------------------------
-python:
-  version: "3.12"
-
-  tools:
-    # Testing
-    pytest:
-      enabled: true
-      min_coverage: 70
-      fail_fast: false
-      require_run_or_fail: true  # Tests MUST run if configured
-
-    # Linting
-    ruff:
-      enabled: true
-      fail_on_error: true
-      max_errors: 0
-
-    # Security
-    bandit:
-      enabled: true
-      fail_on_high: true
-      fail_on_medium: false
-      fail_on_low: false
-      require_run_or_fail: true  # Security MUST run if configured
-
-    # Dependency Audit
-    pip_audit:
-      enabled: true
-      fail_on_vuln: true
-      require_run_or_fail: true  # Security MUST run if configured
-
-    # Type Checking
-    mypy:
-      enabled: false  # opt-in
-
-    # Code Formatting
-    black:
-      enabled: true
-      fail_on_format_issues: false
-      max_issues: 0
-
-    # Import Sorting
-    isort:
-      enabled: true
-      fail_on_issues: false
-      max_issues: 0
-
-    # Mutation Testing (expensive - disabled by default)
-    mutmut:
-      enabled: false  # Mutation testing - can be slow for large codebases
-      min_mutation_score: 70
-      timeout_minutes: 15
-      require_run_or_fail: false  # Optional - don't fail if it doesn't run
-
-    # Property-Based Testing
-    # Note: Hypothesis runs automatically with pytest if tests use @given decorators
-    # No separate step needed - it's part of the pytest execution
-    hypothesis:
-      enabled: true  # Informational only - runs with pytest
-
-    # SAST - Semgrep (expensive - disabled by default)
-    semgrep:
-      enabled: false  # Enable via config when needed - requires network/time
-      fail_on_findings: false
-      max_findings: 0
-
-    # SBOM Generation (expensive - disabled by default)
-    sbom:
       enabled: false
-      format: cyclonedx
-
-    # Container/Filesystem Scan - Trivy (expensive - disabled by default)
-    trivy:
-      enabled: false  # Enable via config when needed - only useful if Dockerfile exists
       fail_on_critical: false
-      fail_on_high: false
       fail_on_cvss: 7
-
-    # Security Analysis (expensive - disabled by default)
-    codeql:
-      enabled: false  # Enable via config when needed - slow SAST analysis
-      languages: ["python"]
-      fail_on_error: true
-
-    # Docker
-    docker:
-      enabled: false
-      compose_file: "docker-compose.yml"
-      health_endpoint: "/actuator/health"
-      health_timeout: 300  # seconds
-      fail_on_error: true
-      fail_on_missing_compose: false
-
-# ------------------------------------------------------------------------------
-# Report Settings
-# ------------------------------------------------------------------------------
-reports:
-  # Artifact retention
-  retention_days: 30
-
-  # Generate badges
-  badges:
-    enabled: true
-    branch: "main"  # branch to commit badges to
-
-  # Codecov integration
-  codecov:
-    enabled: true
-    fail_ci_on_error: false
-
-  # Summary in PR/commit
-  github_summary:
-    enabled: true
-    include_metrics: true
-
-# ------------------------------------------------------------------------------
-# Notifications (optional)
-# ------------------------------------------------------------------------------
+      fail_on_high: false
+kyverno:
+  enabled: false
 notifications:
+  email:
+    enabled: false
+    recipients_env: CIHUB_EMAIL_TO
+    smtp_from_env: SMTP_FROM
+    smtp_host_env: SMTP_HOST
+    smtp_password_env: SMTP_PASSWORD
+    smtp_port_env: SMTP_PORT
+    smtp_starttls_env: SMTP_STARTTLS
+    smtp_user_env: SMTP_USER
   slack:
     enabled: false
     on_failure: true
     on_success: false
     webhook_env: CIHUB_SLACK_WEBHOOK_URL
-    # webhook: ${{ secrets.SLACK_WEBHOOK }}
-
-  email:
-    enabled: false
-    recipients_env: CIHUB_EMAIL_TO
-    smtp_host_env: SMTP_HOST
-    smtp_port_env: SMTP_PORT
-    smtp_user_env: SMTP_USER
-    smtp_password_env: SMTP_PASSWORD
-    smtp_starttls_env: SMTP_STARTTLS
-    smtp_from_env: SMTP_FROM
-
-# ------------------------------------------------------------------------------
-# Thresholds (global quality gates)
-# ------------------------------------------------------------------------------
-thresholds:
-  # Build must pass these to be considered "green"
-
-  # Coverage & Mutation
-  coverage_min: 70
-  mutation_score_min: 70
-
-  # Security Vulnerabilities (vuln counts)
-  max_critical_vulns: 0
-  max_high_vulns: 0
-  max_pip_audit_vulns: 0
-
-  # CVSS Score Thresholds (fail if any vuln >= threshold)
-  owasp_cvss_fail: 7.0
-  trivy_cvss_fail: 7.0
-
-  # SAST Findings
-  max_semgrep_findings: 0
-
-  # Linting (0 = must be clean)
-  max_ruff_errors: 0
-  max_black_issues: 0
-  max_isort_issues: 0
-
-  # Java Linting/Static Analysis (0 = must be clean)
-  max_checkstyle_errors: 0
-  max_spotbugs_bugs: 0
-  max_pmd_violations: 0
-
-# ------------------------------------------------------------------------------
-# Gate Policies
-# ------------------------------------------------------------------------------
-# Control how configured-but-not-run tools are handled.
-# require_run_or_fail: true → fail CI if tool was configured but didn't run
-# require_run_or_fail: false → warn but don't fail (show NOT RUN)
-gates:
-  # Global default - can be overridden per-tool
-  require_run_or_fail: false
-
-  # Per-tool defaults (override in java.tools.X or python.tools.X)
-  # Tests and security tools default to true - they MUST run if configured
-  tool_defaults:
-    # Tests - must run
-    pytest: true
-    jacoco: true
-    # Security - must run
-    bandit: true
-    pip_audit: true
-    owasp: true
-    trivy: true
-    codeql: true
-    # Quality - must run
-    checkstyle: true
-    spotbugs: true
-    ruff: true
-    # Optional/expensive - don't require
-    mutmut: false
-    pitest: false
-    semgrep: false
-    docker: false
-    sbom: false
-    mypy: false
-    black: false
-    isort: false
-    pmd: false
-    jqwik: false
-    hypothesis: false
-
-# ==============================================================================
-# OPTIONAL FEATURES (all disabled by default)
-# ==============================================================================
-# See config/optional/*.yaml for full configuration options.
-# Enable per-repo by setting <feature>.enabled = true
-# ------------------------------------------------------------------------------
-
-# Chaos Testing - Inject failures to test resilience
-# Full config: config/optional/chaos.yaml
-chaos:
-  enabled: false
-
-# Disaster Recovery Drills - Automated backup/restore testing
-# Full config: config/optional/dr-drill.yaml
-dr_drill:
-  enabled: false
-
-# Cache Sentinel - Detect cache tampering
-# Full config: config/optional/cache-sentinel.yaml
-cache_sentinel:
-  enabled: false
-
-# Runner Isolation - Concurrency limits and resource controls
-# Full config: config/optional/runner-isolation.yaml
+python:
+  version: '3.12'
+  tools:
+    bandit:
+      enabled: true
+      fail_on_high: true
+      fail_on_low: false
+      fail_on_medium: false
+    black:
+      enabled: true
+      fail_on_format_issues: false
+      max_issues: 0
+    codeql:
+      enabled: false
+      fail_on_error: true
+      languages:
+      - python
+    docker:
+      compose_file: docker-compose.yml
+      enabled: false
+      fail_on_error: true
+      fail_on_missing_compose: false
+      health_endpoint: /actuator/health
+      health_timeout: 300
+    hypothesis:
+      enabled: true
+    isort:
+      enabled: true
+      fail_on_issues: false
+      max_issues: 0
+    mutmut:
+      enabled: false
+      min_mutation_score: 70
+      timeout_minutes: 15
+    mypy:
+      enabled: false
+    pip_audit:
+      enabled: true
+      fail_on_vuln: true
+    pytest:
+      enabled: true
+      fail_fast: false
+      min_coverage: 70
+    ruff:
+      enabled: true
+      fail_on_error: true
+      max_errors: 0
+    sbom:
+      enabled: false
+      format: cyclonedx
+    semgrep:
+      enabled: false
+      fail_on_findings: false
+      max_findings: 0
+    trivy:
+      enabled: false
+      fail_on_critical: false
+      fail_on_cvss: 7
+      fail_on_high: false
+repo:
+  default_branch: main
+  dispatch_enabled: true
+  dispatch_workflow: hub-ci.yml
+  force_all_tools: false
+  repo_side_execution: false
+  run_group: full
+  use_central_runner: true
+cihub:
+  debug: false
+  verbose: false
+  debug_context: false
+  emit_triage: false
+reports:
+  badges:
+    branch: main
+    enabled: true
+  codecov:
+    enabled: true
+    fail_ci_on_error: false
+  github_summary:
+    enabled: true
+    include_metrics: true
+  retention_days: 30
 runner_isolation:
   enabled: false
-
-# Supply Chain Security - SBOM, VEX, provenance, signing
-# Full config: config/optional/supply-chain.yaml
 supply_chain:
   enabled: false
-
-# Egress Control - Network allowlists
-# Full config: config/optional/egress-control.yaml
-egress_control:
-  enabled: false
-
-# Canary Deployments - Gradual rollout with auto-rollback
-# Full config: config/optional/canary.yaml
-canary:
-  enabled: false
-
-# Telemetry - Pipeline run data collection
-# Schema: schema/pipeline-run.v1.json
 telemetry:
   enabled: false
-  output_format: ndjson  # ndjson | json
-  output_path: artifacts/telemetry/
-
-# Kyverno Policies - Kubernetes admission control
-# Policies: policies/kyverno/*.yaml
-kyverno:
-  enabled: false
-  enforcement_mode: audit  # audit | enforce
-
-# ------------------------------------------------------------------------------
-# Hub CI - Configuration for hub's own CI pipeline (hub-production-ci.yml)
-# ------------------------------------------------------------------------------
-# This controls the tools and thresholds used when validating the hub itself.
-# Unlike java/python sections (for target repos), this governs hub infrastructure.
-hub_ci:
-  enabled: true
-
-  # Tools enabled for hub-production-ci.yml
-  tools:
-    # Workflow validation
-    actionlint: true
-    zizmor: true
-
-    # Code quality
-    ruff: true
-    syntax: true
-    mypy: true
-    yamllint: true
-
-    # Testing
-    pytest: true
-    mutmut: true
-
-    # Security
-    bandit: true
-    bandit_fail_high: true
-    bandit_fail_medium: false
-    bandit_fail_low: false
-    pip_audit: true
-    gitleaks: true
-    trivy: true
-
-    # Validation
-    validate_templates: true
-    validate_configs: true
-    verify_matrix_keys: true
-    license_check: true
-
-    # Supply chain
-    dependency_review: true
-    scorecard: true
-
-  # Quality gate thresholds
-  thresholds:
-    coverage_min: 70
-    mutation_score_min: 70
-
-# ------------------------------------------------------------------------------
-# CLI Behavior Toggles (cihub block)
-# ------------------------------------------------------------------------------
-# These control CLI runtime behavior and are consumed by workflows/triage.
-# Override via CIHUB_* environment variables or per-repo .ci-hub.yml.
-cihub:
-  debug: false         # CIHUB_DEBUG - Show tracebacks on errors
-  verbose: false       # CIHUB_VERBOSE - Stream tool stdout/stderr
-  debug_context: false # CIHUB_DEBUG_CONTEXT - Show CLI context blocks
-  emit_triage: false   # CIHUB_EMIT_TRIAGE - Generate triage bundles
+thresholds:
+  coverage_min: 70
+  max_black_issues: 0
+  max_checkstyle_errors: 0
+  max_critical_vulns: 0
+  max_high_vulns: 0
+  max_isort_issues: 0
+  max_pip_audit_vulns: 0
+  max_pmd_violations: 0
+  max_ruff_errors: 0
+  max_semgrep_findings: 0
+  max_spotbugs_bugs: 0
+  mutation_score_min: 70
+  owasp_cvss_fail: 7
+  trivy_cvss_fail: 7

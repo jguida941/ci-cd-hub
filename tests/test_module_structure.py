@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import ast
 import importlib
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -35,11 +36,16 @@ class TestCliHelpSnapshot:
 
     def test_cli_help_unchanged(self) -> None:
         """CLI help output must match snapshot."""
+        env = dict(os.environ)
+        # Fix output width to keep snapshot stable across environments.
+        env["COLUMNS"] = "80"
+        env["LINES"] = "24"
         result = subprocess.run(  # noqa: S603 - trusted test command
             [sys.executable, "-m", "cihub", "--help"],
             capture_output=True,
             text=True,
             cwd=REPO_ROOT,
+            env=env,
         )
         assert result.returncode == 0, f"CLI help failed: {result.stderr}"
 

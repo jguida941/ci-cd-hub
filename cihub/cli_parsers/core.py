@@ -299,6 +299,150 @@ def add_core_commands(
     ci.set_defaults(write_github_summary=None)
     ci.set_defaults(func=handlers.cmd_ci)
 
+    ai_loop = subparsers.add_parser("ai-loop", help="Autonomous AI CI fix loop")
+    add_json_flag(ai_loop)
+    add_repo_args(ai_loop)
+    ai_loop.add_argument(
+        "--max-iterations",
+        type=int,
+        default=10,
+        help="Maximum iterations before stopping (default: 10)",
+    )
+    ai_loop.add_argument(
+        "--fix-mode",
+        choices=["safe", "report-only"],
+        default="safe",
+        help="Fix strategy: safe (auto-fix) or report-only (emit report pack only)",
+    )
+    ai_loop.add_argument(
+        "--emit-report",
+        action="store_true",
+        help="Generate fix report prompt pack each iteration",
+    )
+    ai_loop.add_argument(
+        "--output-dir",
+        default=".cihub/ai-loop",
+        help="Output directory for loop artifacts (default: .cihub/ai-loop)",
+    )
+    ai_loop.add_argument(
+        "--max-minutes",
+        type=int,
+        default=60,
+        help="Maximum runtime in minutes before stopping (default: 60)",
+    )
+    ai_loop.add_argument(
+        "--unsafe-unlimited",
+        action="store_true",
+        help="Allow unlimited iterations (still respects --max-minutes)",
+    )
+    ai_loop.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume from an existing session directory",
+    )
+    ai_loop.add_argument(
+        "--contract-file",
+        help="Path to contract file (Markdown with YAML front matter)",
+    )
+    ai_loop.add_argument(
+        "--contract-strict",
+        action="store_true",
+        help="Require contract fields to be present",
+    )
+    ai_loop.add_argument(
+        "--review-command",
+        help="Shell command to run for per-iteration review",
+    )
+    ai_loop.add_argument(
+        "--artifact-pack",
+        action="store_true",
+        help="Emit artifact bundle per iteration",
+    )
+    ai_loop.add_argument(
+        "--bundle-dir",
+        help="Override bundle output directory",
+    )
+    ai_loop.add_argument(
+        "--remote",
+        action="store_true",
+        help="Enable remote mode (GitHub Actions loop)",
+    )
+    ai_loop.add_argument(
+        "--remote-provider",
+        choices=["gh"],
+        default="gh",
+        help="Remote provider for GitHub Actions (default: gh)",
+    )
+    ai_loop.add_argument(
+        "--remote-repo",
+        help="Remote repo in owner/repo format (default: infer from git)",
+    )
+    ai_loop.add_argument(
+        "--workflow",
+        help="Workflow name or ID filter for remote runs",
+    )
+    ai_loop.add_argument(
+        "--push",
+        action="store_true",
+        help="Push changes to remote before each iteration",
+    )
+    ai_loop.add_argument(
+        "--push-branch",
+        default="ai/ci-loop",
+        help="Branch to push for remote loop (default: ai/ci-loop)",
+    )
+    ai_loop.add_argument(
+        "--push-remote",
+        default="origin",
+        help="Remote name to push (default: origin)",
+    )
+    ai_loop.add_argument(
+        "--allow-protected-branch",
+        action="store_true",
+        help="Allow pushing to protected branches (main/master)",
+    )
+    ai_loop.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help="Allow starting remote loop with a dirty working tree",
+    )
+    ai_loop.add_argument(
+        "--commit",
+        action="store_true",
+        help="Commit changes before pushing each iteration",
+    )
+    ai_loop.add_argument(
+        "--commit-message",
+        default="AI loop iteration",
+        help="Commit message prefix (default: 'AI loop iteration')",
+    )
+    ai_loop.add_argument(
+        "--triage-mode",
+        choices=["auto", "latest", "run", "none"],
+        default="auto",
+        help="Remote triage mode (default: auto)",
+    )
+    ai_loop.add_argument(
+        "--triage-run-id",
+        help="Explicit run ID for remote triage",
+    )
+    ai_loop.add_argument(
+        "--triage-output-dir",
+        help="Override remote triage output directory",
+    )
+    ai_loop.add_argument(
+        "--fallback",
+        choices=["local", "stop"],
+        default="stop",
+        help="Fallback behavior when remote triage fails (default: stop)",
+    )
+    ai_loop.add_argument(
+        "--remote-dry-run",
+        action="store_true",
+        help="Remote mode without push; triage only",
+    )
+    ai_loop.set_defaults(func=handlers.cmd_ai_loop)
+
     run = subparsers.add_parser("run", help="Run one tool and emit JSON output", epilog=see_also_epilog("run"))
     add_json_flag(run)
     run.add_argument("tool", help="Tool name (pytest, ruff, bandit, etc.)")

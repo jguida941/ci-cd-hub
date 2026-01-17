@@ -24,6 +24,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+TIMEOUT_QUICK = 30
+TIMEOUT_NETWORK = 120
+TIMEOUT_BUILD = 600
+
 
 def load_config() -> dict:
     """Load .ci-hub.yml if it exists."""
@@ -69,7 +73,7 @@ def get_install_source(config: dict) -> str:
 
 def get_hub_repo() -> str:
     """Get hub repo from env var or default."""
-    return os.environ.get("CIHUB_HUB_REPO", "jguida941/ci-cd-hub")
+    return os.environ.get("CIHUB_HUB_REPO", "")
 
 
 def get_hub_ref() -> str:
@@ -77,16 +81,28 @@ def get_hub_ref() -> str:
     return os.environ.get("CIHUB_HUB_REF", "main")
 
 
-def run_command(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
+def run_command(
+    cmd: list[str],
+    check: bool = True,
+    timeout: int = TIMEOUT_NETWORK,
+) -> subprocess.CompletedProcess:
     """Run a command and optionally check for errors."""
     print(f"$ {' '.join(cmd)}", file=sys.stderr)
-    return subprocess.run(cmd, check=check)  # noqa: S603
+    try:
+        return subprocess.run(cmd, check=check, timeout=timeout)  # noqa: S603
+    except subprocess.TimeoutExpired as exc:
+        print(f"Command timed out after {timeout}s: {' '.join(cmd)}", file=sys.stderr)
+        return subprocess.CompletedProcess(cmd, 1, exc.stdout, exc.stderr)
 
 
 def install_from_pypi() -> int:
     """Install cihub from PyPI."""
     print("Installing cihub from PyPI...", file=sys.stderr)
-    result = run_command([sys.executable, "-m", "pip", "install", "cihub[ci]"], check=False)
+    result = run_command(
+        [sys.executable, "-m", "pip", "install", "cihub[ci]"],
+        check=False,
+        timeout=TIMEOUT_BUILD,
+    )
     return result.returncode
 
 
@@ -94,10 +110,17 @@ def install_from_git() -> int:
     """Install cihub from git repository."""
     hub_repo = get_hub_repo()
     hub_ref = get_hub_ref()
+    if not hub_repo:
+        print("Missing CIHUB_HUB_REPO for git install", file=sys.stderr)
+        return 1
     git_url = f"git+https://github.com/{hub_repo}.git@{hub_ref}#egg=cihub[ci]"
 
     print(f"Installing cihub from git: {hub_repo}@{hub_ref}...", file=sys.stderr)
-    result = run_command([sys.executable, "-m", "pip", "install", git_url], check=False)
+    result = run_command(
+        [sys.executable, "-m", "pip", "install", git_url],
+        check=False,
+        timeout=TIMEOUT_BUILD,
+    )
     return result.returncode
 
 
@@ -107,29 +130,49 @@ def install_from_local() -> int:
     hub_ref = get_hub_ref()
     hub_dir = Path("/tmp/cihub-hub")  # noqa: S108
 
+    if not hub_repo:
+        print("Missing CIHUB_HUB_REPO for local install", file=sys.stderr)
+        return 1
+
     print(f"Installing cihub from local checkout: {hub_repo}@{hub_ref}...", file=sys.stderr)
 
     # Clone or update the hub repo to /tmp (outside workspace)
     if hub_dir.exists():
         # Update existing checkout
-        run_command(["git", "-C", str(hub_dir), "fetch", "origin"], check=False)
-        run_command(["git", "-C", str(hub_dir), "checkout", hub_ref], check=False)
-        run_command(["git", "-C", str(hub_dir), "pull", "--ff-only"], check=False)
+        run_command(["git", "-C", str(hub_dir), "fetch", "origin"], check=False, timeout=TIMEOUT_NETWORK)
+        run_command(["git", "-C", str(hub_dir), "checkout", hub_ref], check=False, timeout=TIMEOUT_QUICK)
+        run_command(["git", "-C", str(hub_dir), "pull", "--ff-only"], check=False, timeout=TIMEOUT_NETWORK)
     else:
         # Fresh clone
-        result = run_command([
-            "git", "clone", "--depth", "1", "--branch", hub_ref,
-            f"https://github.com/{hub_repo}.git", str(hub_dir)
-        ], check=False)
+        result = run_command(
+            [
+                "git",
+                "clone",
+                "--depth",
+                "1",
+                "--branch",
+                hub_ref,
+                f"https://github.com/{hub_repo}.git",
+                str(hub_dir),
+            ],
+            check=False,
+            timeout=TIMEOUT_NETWORK,
+        )
         if result.returncode != 0:
             # Branch might not exist, try without --branch
-            run_command([
-                "git", "clone", f"https://github.com/{hub_repo}.git", str(hub_dir)
-            ], check=False)
-            run_command(["git", "-C", str(hub_dir), "checkout", hub_ref], check=False)
+            run_command(
+                ["git", "clone", f"https://github.com/{hub_repo}.git", str(hub_dir)],
+                check=False,
+                timeout=TIMEOUT_NETWORK,
+            )
+            run_command(["git", "-C", str(hub_dir), "checkout", hub_ref], check=False, timeout=TIMEOUT_QUICK)
 
     # Install editable
-    result = run_command([sys.executable, "-m", "pip", "install", "-e", f"{hub_dir}[ci]"], check=False)
+    result = run_command(
+        [sys.executable, "-m", "pip", "install", "-e", f"{hub_dir}[ci]"],
+        check=False,
+        timeout=TIMEOUT_BUILD,
+    )
     return result.returncode
 
 

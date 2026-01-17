@@ -12,6 +12,7 @@ import pytest
 from cihub.commands import ci as ci_cmd
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services import ci_engine
+from cihub.services.triage.types import TriageBundle
 
 
 def test_get_repo_name_prefers_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -394,3 +395,302 @@ def test_summary_for_result_success() -> None:
     """Test _summary_for_result returns success message."""
     result = ci_engine.CiRunResult(success=True, exit_code=EXIT_SUCCESS)
     assert ci_cmd._summary_for_result(result) == "CI completed"
+
+
+def test_emit_triage_bundle_reads_ai_loop_env(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    captured: dict[str, dict[str, object]] = {}
+
+    def fake_generate(
+        *,
+        output_dir: Path,
+        report_path: Path | None = None,
+        summary_path: Path | None = None,
+        meta: dict[str, object] | None = None,
+    ) -> TriageBundle:
+        captured["meta"] = meta or {}
+        return TriageBundle(triage={}, priority={}, markdown="", history_entry={})
+
+    def fake_write(bundle: TriageBundle, output_dir: Path) -> dict[str, Path]:
+        return {}
+
+    args = argparse.Namespace(
+        repo=str(tmp_path),
+        output_dir=str(tmp_path / ".cihub"),
+        correlation_id=None,
+    )
+
+    monkeypatch.setenv("CIHUB_EMIT_TRIAGE", "true")
+    monkeypatch.setenv("CIHUB_AI_LOOP_ITERATION", "2")
+    monkeypatch.setenv("CIHUB_AI_LOOP_MAX_ITERATIONS", "9")
+    monkeypatch.setattr(ci_cmd, "generate_triage_bundle", fake_generate)
+    monkeypatch.setattr(ci_cmd, "write_triage_bundle", fake_write)
+
+    ci_cmd._emit_triage_bundle(args, None, error=None)
+
+    meta = captured["meta"]
+    assert meta["iteration"] == 2
+    assert meta["max_iterations"] == 9
+
+
+def test_result_to_command_result_sets_summary_and_artifacts() -> None:
+    ci_result = ci_engine.CiRunResult(
+        success=True,
+        exit_code=EXIT_SUCCESS,
+        problems=[{"severity": "warning", "message": "Low coverage"}],
+        artifacts={"report": "report.json"},
+        data={"summary": "ok"},
+    )
+
+    result = ci_cmd._result_to_command_result(ci_result)
+
+    assert result.summary == "CI completed with issues"
+    assert result.artifacts == {"report": "report.json"}
+    assert result.data == {"summary": "ok"}
+
+
+def test_describe_path_and_format_list(tmp_path: Path) -> None:
+    existing = tmp_path / "exists.txt"
+    existing.write_text("ok", encoding="utf-8")
+    missing = tmp_path / "missing.txt"
+
+    assert ci_cmd._describe_path(existing) == str(existing)
+    assert "(missing)" in ci_cmd._describe_path(missing)
+    assert ci_cmd._format_list(["a", "b"]) == "a, b"
+    assert ci_cmd._format_list([]) == "-"
+
+
+def test_resolve_output_dir_relative_and_absolute(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    absolute = tmp_path / "out"
+    args_relative = argparse.Namespace(repo=str(repo), output_dir=".cihub")
+    args_absolute = argparse.Namespace(repo=str(repo), output_dir=str(absolute))
+
+    assert ci_cmd._resolve_output_dir(args_relative) == (repo / ".cihub").resolve()
+    assert ci_cmd._resolve_output_dir(args_absolute) == absolute.resolve()
+
+
+def test_get_ai_loop_env_int_parsing(monkeypatch: pytest.MonkeyPatch) -> None:
+    name = "CIHUB_AI_LOOP_ITERATION"
+    monkeypatch.delenv(name, raising=False)
+    assert ci_cmd._get_ai_loop_env_int(name) is None
+
+    monkeypatch.setenv(name, "3")
+    assert ci_cmd._get_ai_loop_env_int(name) == 3
+
+    monkeypatch.setenv(name, "0")
+    assert ci_cmd._get_ai_loop_env_int(name) is None
+
+    monkeypatch.setenv(name, "-2")
+    assert ci_cmd._get_ai_loop_env_int(name) is None
+
+    monkeypatch.setenv(name, "abc")
+    assert ci_cmd._get_ai_loop_env_int(name) is None
+
+
+def test_emit_triage_bundle_prefers_args_and_result_paths(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_generate(
+        *,
+        output_dir: Path,
+        report_path: Path | None = None,
+        summary_path: Path | None = None,
+        meta: dict[str, object] | None = None,
+    ) -> TriageBundle:
+        captured["output_dir"] = output_dir
+        captured["report_path"] = report_path
+        captured["summary_path"] = summary_path
+        captured["meta"] = meta or {}
+        return TriageBundle(triage={}, priority={}, markdown="", history_entry={})
+
+    def fake_write(bundle: TriageBundle, output_dir: Path) -> dict[str, Path]:
+        return {}
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    output_dir = repo / ".cihub"
+    report_path = output_dir / "report.json"
+    summary_path = output_dir / "summary.md"
+    args = argparse.Namespace(
+        repo=str(repo),
+        output_dir=str(output_dir),
+        correlation_id="corr-123",
+        ai_loop_iteration=4,
+        ai_loop_max_iterations=9,
+    )
+    result = ci_engine.CiRunResult(
+        success=True,
+        exit_code=EXIT_SUCCESS,
+        report_path=report_path,
+        summary_path=summary_path,
+    )
+
+    monkeypatch.setenv("CIHUB_EMIT_TRIAGE", "true")
+    monkeypatch.setenv("CIHUB_AI_LOOP_ITERATION", "2")
+    monkeypatch.setenv("CIHUB_AI_LOOP_MAX_ITERATIONS", "5")
+    monkeypatch.setattr(ci_cmd, "generate_triage_bundle", fake_generate)
+    monkeypatch.setattr(ci_cmd, "write_triage_bundle", fake_write)
+
+    ci_cmd._emit_triage_bundle(args, result, error="boom")
+
+    meta = captured["meta"]
+    assert captured["output_dir"] == output_dir
+    assert captured["report_path"] == report_path
+    assert captured["summary_path"] == summary_path
+    assert meta["command"] == "cihub ci"
+    assert meta["args"] == []
+    assert meta["iteration"] == 4
+    assert meta["max_iterations"] == 9
+    assert meta["correlation_id"] == "corr-123"
+    assert meta["repo"] == str(repo.resolve())
+    assert meta["branch"] == ""
+    assert meta["commit_sha"] == ""
+    assert meta["workflow_ref"] == ""
+    assert meta["error"] == "boom"
+
+
+def test_emit_triage_bundle_skips_when_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    args = argparse.Namespace(repo=".", output_dir=".cihub", correlation_id=None)
+
+    def fake_generate(**_: object) -> TriageBundle:
+        raise AssertionError("generate_triage_bundle should not be called")
+
+    monkeypatch.delenv("CIHUB_EMIT_TRIAGE", raising=False)
+    monkeypatch.setattr(ci_cmd, "generate_triage_bundle", fake_generate)
+
+    ci_cmd._emit_triage_bundle(args, None, error=None)
+
+
+def _capture_debug_context(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
+    captured: dict[str, object] = {}
+
+    def fake_emit(title: str, entries: list[tuple[str, object]]) -> None:
+        captured["title"] = title
+        captured["entries"] = entries
+
+    monkeypatch.setattr(ci_cmd, "emit_debug_context", fake_emit)
+    return captured
+
+
+def test_emit_ci_debug_context_with_repo_config(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    hub_root = tmp_path / "hub"
+    (hub_root / "config").mkdir(parents=True)
+    defaults_path = hub_root / "config" / "defaults.yaml"
+    defaults_path.write_text("defaults", encoding="utf-8")
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / ".ci-hub.yml").write_text("repo", encoding="utf-8")
+    output_dir = repo / ".cihub"
+    report_path = output_dir / "report.json"
+    summary_path = output_dir / "summary.md"
+
+    args = argparse.Namespace(
+        repo=str(repo),
+        output_dir=".cihub",
+        workdir="fallback",
+        correlation_id="corr-123",
+        install_deps=True,
+        write_github_summary=True,
+        no_summary=False,
+        config_from_hub=None,
+    )
+    result = ci_engine.CiRunResult(
+        success=True,
+        exit_code=EXIT_SUCCESS,
+        report_path=report_path,
+        summary_path=summary_path,
+        report={
+            "environment": {"workdir": "src"},
+            "tools_configured": {"ruff": True, "pytest": True, "bandit": False},
+            "tools_ran": {"ruff": True},
+            "tools_success": {"ruff": False},
+            "python_version": "3.12",
+            "hub_correlation_id": "corr-456",
+        },
+    )
+
+    captured = _capture_debug_context(monkeypatch)
+    monkeypatch.setattr(ci_cmd, "hub_root", lambda: hub_root)
+
+    ci_cmd._emit_ci_debug_context(args, result)
+
+    entries = dict(captured["entries"])
+    assert captured["title"] == "ci context"
+    assert entries["repo_path"] == str(repo.resolve())
+    assert entries["workdir"] == "src"
+    assert entries["language"] == "python"
+    assert entries["config_sources"] == f"{repo / '.ci-hub.yml'}, {defaults_path}"
+    assert entries["output_dir"] == str((repo / ".cihub").resolve())
+    assert entries["report_path"] == str(report_path)
+    assert entries["summary_path"] == str(summary_path)
+    assert entries["correlation_id"] == "corr-456"
+    assert entries["install_deps"] == "True"
+    assert entries["write_github_summary"] == "True"
+    assert entries["no_summary"] == "False"
+    assert entries["config_from_hub"] is None
+    assert entries["tools_enabled"] == "pytest, ruff"
+    assert entries["tools_disabled"] == "bandit"
+    assert entries["tools_skipped"] == "pytest"
+    assert entries["tools_failed"] == "ruff"
+    assert entries["exit_code"] == str(EXIT_SUCCESS)
+
+
+def test_emit_ci_debug_context_with_hub_config(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    hub_root = tmp_path / "hub"
+    repo_config = hub_root / "config" / "repos"
+    repo_config.mkdir(parents=True)
+    defaults_path = hub_root / "config" / "defaults.yaml"
+    defaults_path.write_text("defaults", encoding="utf-8")
+    hub_config = repo_config / "sample.yaml"
+    hub_config.write_text("config", encoding="utf-8")
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / ".ci-hub.yml").write_text("repo", encoding="utf-8")
+
+    args = argparse.Namespace(
+        repo=str(repo),
+        output_dir=str(repo / ".cihub"),
+        workdir="work",
+        correlation_id="corr-789",
+        install_deps=False,
+        write_github_summary=False,
+        no_summary=True,
+        config_from_hub="sample",
+    )
+    result = ci_engine.CiRunResult(
+        success=True,
+        exit_code=EXIT_SUCCESS,
+        report={
+            "java_version": "17",
+            "tools_configured": {"checkstyle": True},
+            "tools_ran": {"checkstyle": True},
+            "tools_success": {"checkstyle": True},
+        },
+    )
+
+    captured = _capture_debug_context(monkeypatch)
+    monkeypatch.setattr(ci_cmd, "hub_root", lambda: hub_root)
+
+    ci_cmd._emit_ci_debug_context(args, result)
+
+    entries = dict(captured["entries"])
+    assert entries["language"] == "java"
+    assert entries["workdir"] == "work"
+    assert entries["correlation_id"] == "corr-789"
+    assert entries["config_from_hub"] == "sample"
+    assert entries["config_sources"] == f"{hub_config}, {repo / '.ci-hub.yml'}, {defaults_path}"

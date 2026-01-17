@@ -1,8 +1,8 @@
 """Schema contract tests - ensure code output matches JSON schemas.
 
 These tests prevent drift between:
-1. Report builders (ci_report.py) → schema/ci-report.v2.json
-2. Config loaders → schema/ci-hub-config.schema.json
+1. Report builders (ci_report.py) → cihub/data/schema/ci-report.v2.json
+2. Config loaders → cihub/data/schema/ci-hub-config.schema.json
 
 If code emits fields not in schema (or vice versa), tests fail immediately.
 """
@@ -10,7 +10,6 @@ If code emits fields not in schema (or vice versa), tests fail immediately.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
 import jsonschema
@@ -19,8 +18,9 @@ import pytest
 from cihub.core.ci_report import RunContext, build_java_report, build_python_report
 from cihub.core.gate_specs import get_thresholds
 from cihub.tools.registry import JAVA_TOOLS, PYTHON_TOOLS
+from cihub.utils.paths import hub_root
 
-SCHEMA_DIR = Path(__file__).parent.parent / "schema"
+SCHEMA_DIR = hub_root() / "schema"
 REPORT_SCHEMA_PATH = SCHEMA_DIR / "ci-report.v2.json"
 CONFIG_SCHEMA_PATH = SCHEMA_DIR / "ci-hub-config.schema.json"
 TRIAGE_SCHEMA_PATH = SCHEMA_DIR / "triage.schema.json"

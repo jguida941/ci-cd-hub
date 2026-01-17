@@ -18,6 +18,7 @@ from .generate import (
     render_cli_reference,
     render_config_reference,
     render_env_reference,
+    render_tools_reference,
     render_workflows_reference,
 )
 from .links import (
@@ -44,6 +45,7 @@ def cmd_docs(args: argparse.Namespace) -> CommandResult:
         "CLI.md": render_cli_reference(),
         "CONFIG.md": render_config_reference(),
         "ENV.md": render_env_reference(),
+        "TOOLS.md": render_tools_reference(),
         "WORKFLOWS.md": render_workflows_reference(),
     }
 
@@ -127,6 +129,7 @@ __all__ = [
     "render_cli_reference",
     "render_config_reference",
     "render_env_reference",
+    "render_tools_reference",
     "render_workflows_reference",
     # Internal functions (for tests)
     "_check_internal_links",

@@ -142,7 +142,9 @@ class GitHubRunClient:
             Dict with run metadata from gh CLI
         """
         info = self.fetch_run_info(run_id)
-        return info.to_dict()
+        payload = info.to_dict()
+        payload["jobs"] = info.jobs
+        return payload
 
     def list_runs(
         self,

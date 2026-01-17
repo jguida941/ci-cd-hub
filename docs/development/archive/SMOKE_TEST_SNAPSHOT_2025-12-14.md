@@ -1,4 +1,5 @@
 # Smoke Test Setup - Summary
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
 > **WARNING: SUPERSEDED:** This historical snapshot is archived. Current smoke test documentation is at `docs/development/execution/SMOKE_TEST.md`.
 >

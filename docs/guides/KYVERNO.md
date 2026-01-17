@@ -1,5 +1,10 @@
 # Kyverno Policies for Kubernetes Admission Control
 
+**Status:** reference
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+
 The CI/CD Hub includes **optional** Kyverno policies for organizations deploying to Kubernetes. These policies extend the hub's security posture from build-time (GitHub Actions) to deploy-time (K8s admission control).
 
 ---
@@ -90,7 +95,7 @@ spec:
 **Default:** `Audit` (warning) - Requires customization before enforcement.
 
 **Customization required:**
-- Replace `YOUR_ORG` with your GitHub org
+- Replace `<your-org>` with your GitHub org
 - Update image registry pattern
 
 ---
@@ -123,7 +128,7 @@ cp templates/kyverno/verify-images-template.yaml policies/kyverno/verify-images.
 ```
 
 Edit placeholders:
-- `YOUR_ORG` - Your GitHub organization
+- `<your-org>` - Your GitHub organization
 - `your-registry.io` - Your container registry
 - Namespace exclusions
 

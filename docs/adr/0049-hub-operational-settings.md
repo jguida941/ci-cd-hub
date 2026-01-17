@@ -24,7 +24,7 @@ Hub-internal workflows (`hub-run-all.yml`, `hub-orchestrator.yml`) have accumula
 
 Adopt a **config-file-first** pattern for hub operational settings:
 
-### 1. Config File: `config/hub-settings.yaml`
+### 1. Config File: `cihub/data/config/hub-settings.yaml`
 
 ```yaml
 execution:
@@ -71,13 +71,13 @@ Hub-internal workflows use a `load-settings` job that calls the CLI with overrid
 ```
 
 The CLI:
-1. Loads config file values from `config/hub-settings.yaml`
+1. Loads config file values from `cihub/data/config/hub-settings.yaml`
 2. Applies non-empty override arguments (empty strings are ignored)
 3. Writes resolved values to `GITHUB_OUTPUT`
 
 **Precedence (highest wins):**
 ```
-CLI --override-* args → config/hub-settings.yaml → built-in defaults
+CLI --override-* args → cihub/data/config/hub-settings.yaml → built-in defaults
 ```
 
 ### 4. Workflow Input Changes
@@ -120,7 +120,7 @@ This makes the dispatch UI cleaner - inputs only appear when you want to overrid
 - CLI provides easy viewing and editing
 - Workflow inputs become pure overrides for one-off runs
 - Same YAML pattern as repo configs (familiar to users)
-- Schema validation via `schema/hub-settings.schema.json`
+- Schema validation via `cihub/data/schema/hub-settings.schema.json`
 - Scalable - adding new settings doesn't increase workflow complexity
 
 **Negative:**
@@ -134,8 +134,8 @@ This makes the dispatch UI cleaner - inputs only appear when you want to overrid
 
 | File | Purpose |
 |------|---------|
-| `config/hub-settings.yaml` | Hub operational settings |
-| `schema/hub-settings.schema.json` | Validation schema |
+| `cihub/data/config/hub-settings.yaml` | Hub operational settings |
+| `cihub/data/schema/hub-settings.schema.json` | Validation schema |
 | `cihub/commands/hub_config.py` | CLI command implementation |
 | `cihub/cli_parsers/hub.py` | CLI parser for hub commands |
 
@@ -148,7 +148,7 @@ This makes the dispatch UI cleaner - inputs only appear when you want to overrid
 
 ```
 Hub Operational Settings (this ADR):
- config/hub-settings.yaml → controls HOW hub runs
+ cihub/data/config/hub-settings.yaml → controls HOW hub runs
 
 Per-Repo Tool Configs (ADR-0002, ADR-0024):
  1. .ci-hub.yml (repo-local)
@@ -159,9 +159,9 @@ Per-Repo Tool Configs (ADR-0002, ADR-0024):
 
 ## Migration
 
-Existing workflows continue to work. The `load-settings` job uses built-in defaults if `config/hub-settings.yaml` doesn't exist. To opt-in to config-file-first:
+Existing workflows continue to work. The `load-settings` job uses built-in defaults if `cihub/data/config/hub-settings.yaml` doesn't exist. To opt-in to config-file-first:
 
-1. Create `config/hub-settings.yaml` (or use CLI: `cihub hub config set`)
+1. Create `cihub/data/config/hub-settings.yaml` (or use CLI: `cihub hub config set`)
 2. Commit the file
 3. Future runs will use the config file values by default
 

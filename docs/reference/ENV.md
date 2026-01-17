@@ -13,6 +13,8 @@
 | `GH_TOKEN` | string | - | Auth | GitHub CLI token (preferred for gh commands). |
 | `GITHUB_TOKEN` | string | - | Auth | GitHub Actions automatic token. |
 | `HUB_DISPATCH_TOKEN` | string | - | Auth | Token for hub workflow dispatch operations. |
+| `CIHUB_AI_LOOP_ITERATION` | int | 0 | Context | Current AI loop iteration number (hook/internal use). |
+| `CIHUB_AI_LOOP_MAX_ITERATIONS` | int | 0 | Context | AI loop max iterations (hook/internal use). |
 | `CIHUB_OWNER` | string | - | Context | Default repository owner (fallback for --owner flag). |
 | `CIHUB_REPO` | string | - | Context | Default repository name (fallback for --repo/--name flag). |
 | `CIHUB_DEBUG` | bool | false | Debug | Enable tracebacks and verbose error output. |
@@ -102,6 +104,20 @@ GitHub Actions automatic token.
 Token for hub workflow dispatch operations.
 
 ## Context Variables
+
+### `CIHUB_AI_LOOP_ITERATION`
+
+**Type:** int  
+**Default:** 0
+
+Current AI loop iteration number (hook/internal use).
+
+### `CIHUB_AI_LOOP_MAX_ITERATIONS`
+
+**Type:** int  
+**Default:** 0
+
+AI loop max iterations (hook/internal use).
 
 ### `CIHUB_OWNER`
 

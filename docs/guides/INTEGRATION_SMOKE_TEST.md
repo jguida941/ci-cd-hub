@@ -1,5 +1,10 @@
 # Integration Smoke Test Guide (Maintainers)
 
+**Status:** reference
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+
 ## Purpose
 
 Validate the CLI and config pipeline end-to-end. This guide is for maintainers

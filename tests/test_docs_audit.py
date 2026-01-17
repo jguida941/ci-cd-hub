@@ -485,6 +485,25 @@ Use /Users/local/path for development.
         assert "PLAN_B.md" in findings[0].message
         assert "README-MISSING-DOC" in findings[0].code
 
+    def test_check_docs_index_consistency_lowercase_doc(self, tmp_path: Path) -> None:
+        """Ensure lowercase doc names in README.md are detected."""
+        from cihub.commands.docs_audit.consistency import check_docs_index_consistency
+
+        docs_dir = tmp_path / "docs"
+        active_dir = docs_dir / "development" / "active"
+        active_dir.mkdir(parents=True)
+
+        (active_dir / "lowercase-doc.md").write_text("# Lowercase Doc")
+
+        readme_content = """# Docs
+**Active Design Docs** (`development/active/`):
+- [lowercase-doc.md](development/active/lowercase-doc.md) - Listed doc
+"""
+        (docs_dir / "README.md").write_text(readme_content)
+
+        findings = check_docs_index_consistency(tmp_path)
+        assert not any("lowercase-doc.md" in f.message for f in findings)
+
     def test_check_docs_index_consistency_stale_in_readme(self, tmp_path: Path) -> None:
         """Test detection of files in README.md that don't exist (Part 13.W)."""
         from cihub.commands.docs_audit.consistency import check_docs_index_consistency

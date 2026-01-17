@@ -1,6 +1,7 @@
 # Phase 5A: Services Layer Contract
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
-> **WARNING: SUPERSEDED:** This services layer design is archived. The services layer was implemented; see `docs/development/active/CLEAN_CODE.md` for ongoing architecture work.
+> **WARNING: SUPERSEDED:** This services layer design is archived. The services layer was implemented; see `docs/development/archive/CLEAN_CODE.md` for ongoing architecture work.
 >
 > **Status:** Archived (Implemented)
 

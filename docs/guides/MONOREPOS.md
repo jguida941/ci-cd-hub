@@ -1,5 +1,10 @@
 # Monorepo Support
 
+**Status:** reference
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+
 Use `repo.subdir` when your project lives in a subfolder of a repository (e.g., fixtures monorepo).
 
 ## How to configure

@@ -118,12 +118,16 @@ class WizardRunner:
             ).ask(),
             "Repo-side execution prompt",
         )
-        return {
+        repo_config = dict(repo_defaults) if isinstance(repo_defaults, dict) else {}
+        repo_config.update(
+            {
             "owner": str(owner),
             "name": str(repo_name),
             "use_central_runner": bool(use_central_runner),
             "repo_side_execution": bool(repo_side_execution),
-        }
+            }
+        )
+        return repo_config
 
     def _apply_language_prompts(self, config: dict, *, skip_language: bool = False) -> dict:
         from cihub.wizard.questions.advanced import configure_advanced_settings

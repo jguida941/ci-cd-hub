@@ -96,6 +96,7 @@ Source: `schema/ci-hub-config.schema.json`
 | `cihub.verbose` | boolean | no | false |  |
 | `cihub.debug_context` | boolean | no | false |  |
 | `cihub.emit_triage` | boolean | no | false |  |
+| `install` | string|object | no |  | How cihub should be installed in CI workflows |
 | `reports` | object | no |  |  |
 | `reports.badges` | boolean|object | no |  |  |
 | `reports.codecov` | boolean|object | no |  |  |

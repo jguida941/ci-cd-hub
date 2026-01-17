@@ -1,6 +1,9 @@
 # Design Journey: The Evolution of CI/CD Hub
 
-**Status:** Living Document
+**Status:** reference
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
 **Created:** 2026-01-05
 **Author:** Justin Guida
 **Purpose:** Technical development document showing the architectural evolution of CI-HUB.
@@ -30,7 +33,7 @@
 | Timeline | Oct 23 - Nov 21 (30 days) | Dec 14 - Jan 5 (22 days) | -27% time |
 | Commits | 230 | 399 | +73% |
 | Python LOC | 6,890 | 27,419 | +298% |
-| Tests | ~50 | 2,120 | +4,140% |
+| Tests | ~50 | 2,646 | +4,140% |
 | Test Files | ~10 | 79 | +690% |
 | ADRs | 0 | 44 | ∞ |
 | CLI Commands | 0 | 87 (28 top-level + 59 subcommands) | ∞ |
@@ -304,7 +307,7 @@ cihub/
 ├── services/
 │ ├── ci_engine/ # gates.py, helpers.py (CI execution core)
 │ ├── triage/ # Failure analysis (reference modularization)
-│ ├── report_validator.py
+│ ├── report_validator/ # schema/content/artifact validators
 │ ├── discovery.py
 │ └── aggregation.py
 ├── tools/
@@ -492,7 +495,7 @@ I have a few things I'm working on:
 
 | Doc | Status | What It's For |
 |--------------------------|-----------|------------------------------------|
-| CLEAN_CODE.md | ~85% done | Finishing the output normalization |
+| CLEAN_CODE.md | Archived (complete) | Output normalization complete |
 | TEST_REORGANIZATION.md | Planning | Organizing 2,100+ tests |
 | TYPESCRIPT_CLI_DESIGN.md | Planning | Interactive terminal UI |
 | PYQT_PLAN.md | Deferred | Desktop GUI (later) |

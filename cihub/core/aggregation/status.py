@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+from cihub.core.gate_specs import evaluate_threshold, get_metric_value, get_thresholds
 from cihub.core.reporting import detect_language
 
 
@@ -89,10 +90,83 @@ def _config_from_artifact_name(artifact_name: str) -> str:
     return artifact_name
 
 
+def _evaluate_threshold_failures(report_data: dict[str, Any], language: str) -> list[str]:
+    if language not in {"python", "java"}:
+        return []
+    thresholds = report_data.get("thresholds", {}) or {}
+    if not thresholds:
+        return []
+    results = report_data.get("results", {}) or {}
+    tool_metrics = report_data.get("tool_metrics", {}) or {}
+
+    failures: list[str] = []
+    for spec in get_thresholds(language):
+        if spec.key not in thresholds:
+            continue
+        threshold_value = thresholds.get(spec.key)
+        if threshold_value is None:
+            continue
+        metric_value = get_metric_value(spec, results, tool_metrics)
+        passed, msg = evaluate_threshold(spec, metric_value, threshold_value)
+        if not passed and msg:
+            failures.append(msg)
+    return failures
+
+
+def _evaluate_tool_failures(report_data: dict[str, Any], language: str) -> list[str]:
+    results = report_data.get("results", {}) or {}
+    tools_configured = report_data.get("tools_configured", {}) or {}
+    tools_ran = report_data.get("tools_ran", {}) or {}
+    tools_success = report_data.get("tools_success", {}) or {}
+    tools_require_run = report_data.get("tools_require_run", {}) or {}
+
+    tests_passed = int(results.get("tests_passed", 0) or 0)
+    tests_failed = int(results.get("tests_failed", 0) or 0)
+    tests_skipped = int(results.get("tests_skipped", 0) or 0)
+    tests_total = tests_passed + tests_failed + tests_skipped
+
+    failures: list[str] = []
+    if language == "python":
+        if tools_configured.get("pytest"):
+            if tests_total == 0:
+                failures.append("no tests ran - cannot verify quality")
+            elif tests_failed > 0:
+                failures.append("pytest failures detected")
+    elif language == "java":
+        if tests_total == 0:
+            failures.append("no tests ran - cannot verify quality")
+        elif tests_failed > 0:
+            failures.append("test failures detected")
+    else:
+        if tests_failed > 0:
+            failures.append("test failures detected")
+
+    for tool, configured in tools_configured.items():
+        if not configured:
+            continue
+        if tools_require_run.get(tool) and not tools_ran.get(tool):
+            failures.append(f"{tool} configured but did not run (require_run_or_fail=true)")
+        if tools_ran.get(tool) and tools_success.get(tool) is False:
+            failures.append(f"{tool} failed")
+
+    return failures
+
+
 def _status_from_report(report_data: dict[str, Any]) -> tuple[str, str]:
     results = report_data.get("results", {}) or {}
-    status = results.get("build") or results.get("test") or "unknown"
-    if status in {"success", "failure", "skipped"}:
+    status = results.get("build") or results.get("test")
+    status = status if status in {"success", "failure", "skipped"} else None
+
+    language = detect_language(report_data)
+    failures: list[str] = []
+    if status == "failure":
+        failures.append("build/test failure")
+    failures.extend(_evaluate_tool_failures(report_data, language))
+    failures.extend(_evaluate_threshold_failures(report_data, language))
+    if failures:
+        return "completed", "failure"
+
+    if status:
         return "completed", status
 
     tests_failed = results.get("tests_failed")

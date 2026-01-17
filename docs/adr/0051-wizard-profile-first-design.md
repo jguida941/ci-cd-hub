@@ -1,9 +1,35 @@
 # ADR-0051: Wizard Profile-First Design
 
-**Status**: Proposed
+**Status**: Implemented
 **Date:** 2026-01-08
 **Developer:** Justin Guida
-**Last Reviewed:** 2026-01-08
+**Last Reviewed:** 2026-01-15
+
+## Implementation Summary
+
+The profile-first wizard design is now fully implemented in the codebase:
+
+**Core Implementation** (`cihub/wizard/core.py`):
+- `WizardResult` dataclass with `profile` and `tier` fields (lines 22-29)
+- `_prompt_profile_and_tier()` method for profile selection (lines 56-84)
+- `run_new_wizard()` with profile-first flow: Language -> Profile/Tier -> Repo -> Tools (lines 177-244)
+- `run_init_wizard()` with profile selection for detected repos (lines 246-284)
+
+**Profile Selection** (`cihub/wizard/questions/profile.py`):
+- `select_profile()` - presents available profiles for the language
+- `select_tier()` - quality tier selection (strict, standard, relaxed)
+
+**Key Flow**:
+1. Language detection
+2. Profile selection (minimal, fast, quality, security, compliance, coverage-gate)
+3. Tier selection
+4. Repo metadata
+5. Tool configuration (pre-filled from profile, always editable)
+
+**Sub-decisions implemented**:
+- Black/isort default to `check` mode in CI
+- All CI config stays in `.ci-hub.yml`
+- GitHub Actions is the only supported CI for v1.0
 
 ## Context
 

@@ -1,5 +1,10 @@
 # Troubleshooting
 
+**Status:** reference
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+
 Common issues and their solutions, organized by category.
 
 ---

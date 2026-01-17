@@ -1,5 +1,10 @@
 # Language Plugin Manifest
 
+**Status:** reference
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+
 **Purpose:** This document provides AI assistants with complete context to add new language support to CIHub.
 
 **Usage:** When a user requests adding a new language (e.g., JavaScript, Go, Rust), an AI can use this manifest to generate all required code, following the established patterns.

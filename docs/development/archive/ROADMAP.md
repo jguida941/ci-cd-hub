@@ -1,4 +1,5 @@
 # CI/CD Hub Release Roadmap
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
 > WARNING: **Historical Reference** - Phases 0-3 context only.
 >

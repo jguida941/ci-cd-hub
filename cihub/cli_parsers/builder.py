@@ -23,6 +23,7 @@ def _default_handlers() -> CommandHandlers:
         cmd_check=_noop_handler,
         cmd_verify=_noop_handler,
         cmd_ci=_noop_handler,
+        cmd_ai_loop=_noop_handler,
         cmd_run=_noop_handler,
         cmd_report=_noop_handler,
         cmd_triage=_noop_handler,

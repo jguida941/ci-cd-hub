@@ -1,6 +1,7 @@
 # Code Consistency Audit Report
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
-> **WARNING: SUPERSEDED:** This audit report has been archived. Findings have been incorporated into `docs/development/active/CLEAN_CODE.md`.
+> **WARNING: SUPERSEDED:** This audit report has been archived. Findings have been incorporated into `docs/development/archive/CLEAN_CODE.md`.
 >
 > **Status:** Archived
 > **Generated:** 2026-01-06
@@ -653,6 +654,6 @@ except Exception as exc:
 
 ## Related Documentation
 
-- `docs/development/active/CLEAN_CODE.md` - Ongoing cleanup tasks
+- `docs/development/archive/CLEAN_CODE.md` - Ongoing cleanup tasks
 - `docs/development/MASTER_PLAN.md` - Architecture roadmap
 - `AGENTS.md` - Project context for AI assistants

@@ -26,6 +26,8 @@ java:
       enabled: true
     owasp:
       enabled: true
+      require_run_or_fail: false
+      use_nvd_api_key: false
     pmd:
       enabled: true
     pitest:
@@ -39,6 +41,6 @@ java:
 
 thresholds:
   coverage_min: 50
-  mutation_score_min: 0
+  mutation_score_min: 70
   max_critical_vulns: 100
   max_high_vulns: 100

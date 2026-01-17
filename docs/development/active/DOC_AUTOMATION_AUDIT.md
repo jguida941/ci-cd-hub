@@ -1,10 +1,15 @@
 # Documentation Automation Audit & Design
 
+**Status:** active
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+
 **Date:** 2026-01-04
 **Last Updated:** 2026-01-10 (`docs audit` Part 13.U/W/X complete)
 **Priority:** **#4** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
 **Status:** ~98% implemented (`docs stale` complete, `docs audit` complete with Part 12.J/L/N/Q + Part 13.R/S/T/U/V/W/X)
-**Depends On:** Stable CLI surface (CLEAN_CODE.md)
+**Depends On:** Stable CLI surface (CLEAN_CODE.md archived)
 **Can Parallel:** TEST_REORGANIZATION.md (both need stable CLI)
 **Problem:** Manual documentation updates take 4+ hours/day. With 50+ docs and 28,000 lines, keeping them in sync with code changes is unsustainable.
 
@@ -70,6 +75,16 @@ cihub/commands/docs_audit/
 ```
 
 **Next Priority:** Optional items only (guide command validation, doc inventory/counts).
+
+---
+
+## 2026-01-15 Doc Audit Cleanup
+
+- Added universal header blocks to manual docs (Status/Owner/Source-of-truth/Last-reviewed).
+- Inserted explicit Superseded-by headers for archived docs.
+- Normalized CHANGELOG duplicate date headings by demoting repeats to `###`.
+- README active-doc parsing now accepts lowercase filenames (case-insensitive match).
+- Docs audit clean as of 2026-01-15 (warnings limited to stale test counts and duplicate changelog dates).
 
 ---
 
@@ -1453,9 +1468,9 @@ PLACEHOLDER_PATTERNS = [
  # GitHub usernames in URLs (not matching CODEOWNERS)
  (r'github\.com/([a-zA-Z0-9_-]+)/', 'github_username'),
  # Common placeholder markers
- (r'\b(YOUR_[A-Z_]+|CHANGE_ME|TODO:|FIXME:|XXX:)\b', 'placeholder_marker'),
+ (r'\b(YOUR_[A-Z_]+|CHANGE_ME_PLACEHOLDER|TODO:|FIXME:|XXX:)\b', 'placeholder_marker'),
  # Hardcoded local paths
- (r'(/Users/[^/\s]+|/home/[^/\s]+|C:\\Users\\[^\\]+)', 'local_path'),
+ (r'(/<home>/[^/\s]+|/<home>/[^/\s]+|C:\\<User>\\[^\\]+)', 'local_path'),
  # Hardcoded IPs (except localhost)
  (r'\b(?!127\.0\.0\.1)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b', 'ip_address'),
 ]

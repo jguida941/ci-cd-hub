@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 from pathlib import Path
 
@@ -246,12 +247,13 @@ def _clean_mutmut_log(log_text: str) -> str:
     mutmut uses rich/spinner output that pollutes logs with unicode spinner chars.
     This function extracts actual error messages from the noise.
     """
+    normalized = log_text.replace("\r", "\n")
     # Spinner characters used by mutmut
     spinner_chars = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
     lines = []
     seen_lines: set[str] = set()
 
-    for line in log_text.split("\n"):
+    for line in normalized.split("\n"):
         # Skip lines that are just spinner + "Generating mutants"
         stripped = line.strip()
         if stripped.startswith(tuple(spinner_chars)) and "Generating mutants" in stripped:
@@ -308,21 +310,63 @@ def _extract_mutmut_error(log_text: str) -> str:
     return "No error details available"
 
 
+def _mutmut_fallback_env() -> dict[str, str]:
+    env = dict(os.environ)
+    env.setdefault("TERM", "dumb")
+    env.setdefault("CI", "1")
+    env.setdefault("RICH_DISABLE", "1")
+    env.setdefault("PYTHONFAULTHANDLER", "1")
+    return env
+
+
+def _run_mutmut(
+    workdir: Path,
+    *,
+    max_children: int | None = None,
+    env: dict[str, str] | None = None,
+):
+    cmd = ["mutmut", "run"]
+    if max_children is not None:
+        cmd += ["--max-children", str(max_children)]
+    return _run_command(cmd, workdir, env=env)
+
+
 def cmd_mutmut(args: argparse.Namespace) -> CommandResult:
     workdir = Path(args.workdir).resolve()
     output_dir = Path(args.output_dir).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     log_path = output_dir / "mutmut-run.log"
+    fallback_log_path = output_dir / "mutmut-run-fallback.log"
 
     ctx = OutputContext.from_args(args)
 
-    proc = _run_command(["mutmut", "run"], workdir)
+    proc = _run_mutmut(workdir)
     log_text = (proc.stdout or "") + (proc.stderr or "")
     log_path.write_text(log_text, encoding="utf-8")
     if proc.returncode != 0:
         # Extract actual error from the log
         error_detail = _extract_mutmut_error(log_text)
         cleaned_log = _clean_mutmut_log(log_text)
+        fallback_used = False
+        fallback_log = ""
+        fallback_exit_code: int | None = None
+        fallback_cleaned = ""
+        fallback_error = ""
+
+        if not cleaned_log or error_detail == "No error details available":
+            fallback_used = True
+            fallback_proc = _run_mutmut(workdir, max_children=1, env=_mutmut_fallback_env())
+            fallback_exit_code = fallback_proc.returncode
+            fallback_log = (fallback_proc.stdout or "") + (fallback_proc.stderr or "")
+            fallback_log_path.write_text(fallback_log, encoding="utf-8")
+            fallback_cleaned = _clean_mutmut_log(fallback_log)
+            fallback_error = _extract_mutmut_error(fallback_log)
+            if fallback_cleaned:
+                cleaned_log = fallback_cleaned
+            if fallback_error != "No error details available":
+                error_detail = fallback_error
+            elif fallback_exit_code == 139:
+                error_detail = "mutmut crashed (signal 11) during mutant generation"
 
         # Write error summary to GitHub
         error_summary = (
@@ -333,17 +377,37 @@ def cmd_mutmut(args: argparse.Namespace) -> CommandResult:
         )
         if cleaned_log:
             error_summary += f"### Cleaned Log\n\n```\n{cleaned_log[:1000]}\n```\n"
+        if fallback_used:
+            error_summary += (
+                "\n### Fallback Run\n\n"
+                f"- exit_code: {fallback_exit_code}\n"
+                f"- log_path: {fallback_log_path}\n"
+            )
 
         ctx.write_summary(error_summary)
+
+        log_preview = cleaned_log[:MAX_LOG_PREVIEW_CHARS] if cleaned_log else log_text[:MAX_LOG_PREVIEW_CHARS]
+        data = {
+            "log": log_preview,
+            "error": error_detail,
+            "log_path": str(log_path),
+        }
+        if fallback_used:
+            fallback_preview = fallback_cleaned or fallback_log
+            data.update(
+                {
+                    "fallback_used": True,
+                    "fallback_exit_code": fallback_exit_code,
+                    "fallback_log": fallback_preview[:MAX_LOG_PREVIEW_CHARS] if fallback_preview else "",
+                    "fallback_log_path": str(fallback_log_path),
+                }
+            )
 
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary="mutmut run failed - check for import errors or test failures",
             problems=[{"severity": "error", "message": f"mutmut run failed: {error_detail[:200]}"}],
-            data={
-                "log": cleaned_log[:MAX_LOG_PREVIEW_CHARS] if cleaned_log else log_text[:MAX_LOG_PREVIEW_CHARS],
-                "error": error_detail,
-            },
+            data=data,
         )
     if "mutations/second" not in log_text:
         return CommandResult(

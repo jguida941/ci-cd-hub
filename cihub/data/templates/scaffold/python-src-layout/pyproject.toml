@@ -40,3 +40,6 @@ src_paths = ["src"]
 
 [tool.mypy]
 mypy_path = "src"
+
+[tool.mutmut]
+paths_to_mutate = ["src/cihub_src_sample"]

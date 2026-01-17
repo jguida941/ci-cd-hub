@@ -77,15 +77,14 @@ spotbugsMain {
 pmd {
     toolVersion = '7.0.0'
     consoleOutput = true
-    ruleSets = []
+    ruleSets = ['category/java/quickstart.xml']
     ignoreFailures = false
 }
 
 // PITest - Mutation Testing
 pitest {
     junit5PluginVersion = '1.2.1'
-    targetClasses = ['*']
-    targetTests = ['*']
+    // Optional: set targetClasses/targetTests to your base package.
     threads = 4
     outputFormats = ['XML', 'HTML']
     timestampedReports = false
@@ -97,4 +96,9 @@ dependencyCheck {
     format = 'ALL'
     failBuildOnCVSS = 11
     failOnError = false
+    nvd {
+        apiKey = System.getenv('NVD_API_KEY') ?: ''
+        delay = 3500
+        validForHours = 24
+    }
 }

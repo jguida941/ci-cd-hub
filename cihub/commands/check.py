@@ -25,6 +25,7 @@ from cihub.commands.adr import cmd_adr
 from cihub.commands.docs import cmd_docs, cmd_docs_links
 from cihub.commands.docs_audit import cmd_docs_audit
 from cihub.commands.preflight import cmd_preflight
+from cihub.commands.schema_sync import check_schema_alignment
 from cihub.commands.smoke import cmd_smoke
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
@@ -465,6 +466,9 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
                     root,
                 ),
             )
+
+        # Schema-defaults alignment check (defaults.yaml + fallbacks.py)
+        add_step("schema-alignment", check_schema_alignment())
 
     # ========== SECURITY MODE (--security or --all) ==========
     if run_security:

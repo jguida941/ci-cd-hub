@@ -36,7 +36,7 @@ class EnvVarDef:
 # Environment Variable Registry
 # =============================================================================
 # This is the single source of truth for all cihub environment variables.
-# Add new variables here, not in docs/generate.py or elsewhere.
+# Add new variables here, not in the docs generation helper or elsewhere.
 
 _ENV_VARS: list[EnvVarDef] = [
     # ---------------------------------------------------------------------
@@ -127,6 +127,20 @@ _ENV_VARS: list[EnvVarDef] = [
         default="",
         category="Context",
         description="Default repository name (fallback for --repo/--name flag).",
+    ),
+    EnvVarDef(
+        name="CIHUB_AI_LOOP_ITERATION",
+        var_type="int",
+        default="0",
+        category="Context",
+        description="Current AI loop iteration number (hook/internal use).",
+    ),
+    EnvVarDef(
+        name="CIHUB_AI_LOOP_MAX_ITERATIONS",
+        var_type="int",
+        default="0",
+        category="Context",
+        description="AI loop max iterations (hook/internal use).",
     ),
     # ---------------------------------------------------------------------
     # Notifications

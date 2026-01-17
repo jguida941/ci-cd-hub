@@ -38,7 +38,9 @@ class TestAggregateFromReportsDir:
                 "test": "success",
                 "coverage": 80,
                 "mutation_score": 70,
+                "tests_passed": 1,
                 "tests_failed": 0,
+                "tests_skipped": 0,
             },
             "tool_metrics": {"ruff_errors": 0},
             "tools_configured": {"pytest": True},
@@ -75,6 +77,95 @@ class TestAggregateFromReportsDir:
         assert result.passed_count == 1
         assert result.failed_count == 0
         assert len(result.errors) == 0
+
+    def test_marks_failure_on_thresholds(self, tmp_path: Path) -> None:
+        """Fails aggregation when thresholds are violated."""
+        reports_dir = tmp_path / "reports" / "sample" / ".cihub"
+        reports_dir.mkdir(parents=True)
+        report = {
+            "schema_version": "2.0",
+            "repository": "org/sample",
+            "branch": "main",
+            "run_id": "123",
+            "python_version": "3.12",
+            "results": {
+                "test": "success",
+                "coverage": 0,
+                "tests_passed": 1,
+                "tests_failed": 0,
+                "tests_skipped": 0,
+            },
+            "tool_metrics": {},
+            "tools_configured": {"pytest": True},
+            "tools_ran": {"pytest": True},
+            "tools_success": {"pytest": True},
+            "thresholds": {"coverage_min": 70},
+            "environment": {"workdir": "."},
+        }
+        (reports_dir / "report.json").write_text(json.dumps(report), encoding="utf-8")
+
+        defaults_file = tmp_path / "defaults.yaml"
+        defaults_file.write_text("thresholds:\n  max_critical_vulns: 0\n  max_high_vulns: 0\n", encoding="utf-8")
+
+        output_file = tmp_path / "out.json"
+
+        result = aggregate_from_reports_dir(
+            reports_dir=tmp_path / "reports",
+            output_file=output_file,
+            defaults_file=defaults_file,
+            hub_run_id="hub-5",
+            hub_event="push",
+            total_repos=1,
+            strict=True,
+        )
+
+        assert result.success is False
+        assert result.failed_count == 1
+
+    def test_marks_failure_on_require_run(self, tmp_path: Path) -> None:
+        """Fails aggregation when require_run_or_fail tools did not run."""
+        reports_dir = tmp_path / "reports" / "sample" / ".cihub"
+        reports_dir.mkdir(parents=True)
+        report = {
+            "schema_version": "2.0",
+            "repository": "org/sample",
+            "branch": "main",
+            "run_id": "123",
+            "python_version": "3.12",
+            "results": {
+                "test": "success",
+                "coverage": 90,
+                "tests_passed": 1,
+                "tests_failed": 0,
+                "tests_skipped": 0,
+            },
+            "tool_metrics": {},
+            "tools_configured": {"ruff": True},
+            "tools_ran": {},
+            "tools_success": {},
+            "tools_require_run": {"ruff": True},
+            "thresholds": {"coverage_min": 70},
+            "environment": {"workdir": "."},
+        }
+        (reports_dir / "report.json").write_text(json.dumps(report), encoding="utf-8")
+
+        defaults_file = tmp_path / "defaults.yaml"
+        defaults_file.write_text("thresholds:\n  max_critical_vulns: 0\n  max_high_vulns: 0\n", encoding="utf-8")
+
+        output_file = tmp_path / "out.json"
+
+        result = aggregate_from_reports_dir(
+            reports_dir=tmp_path / "reports",
+            output_file=output_file,
+            defaults_file=defaults_file,
+            hub_run_id="hub-6",
+            hub_event="push",
+            total_repos=1,
+            strict=True,
+        )
+
+        assert result.success is False
+        assert result.failed_count == 1
 
     def test_returns_report_data(self, tmp_path: Path):
         """Result includes parsed report data."""

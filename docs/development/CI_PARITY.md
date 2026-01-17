@@ -1,10 +1,15 @@
 # CI Parity Map
 
+**Status:** reference
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+
 > **Purpose:** Documents which checks run identically in local development vs CI,
 > and which differ. This helps developers understand what `cihub check` validates
 > versus what `hub-production-ci.yml` runs.
 >
-> **Last Verified:** 2026-01-05 against `hub-production-ci.yml`
+> **Last Verified:** 2026-01-15 against `hub-production-ci.yml`
 
 ---
 

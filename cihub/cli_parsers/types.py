@@ -21,6 +21,7 @@ class CommandHandlers:
     cmd_check: CommandHandler
     cmd_verify: CommandHandler
     cmd_ci: CommandHandler
+    cmd_ai_loop: CommandHandler
     cmd_run: CommandHandler
     cmd_report: CommandHandler
     cmd_triage: CommandHandler

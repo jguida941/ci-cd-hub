@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from cihub.utils.paths import hub_root
 
 
@@ -54,9 +52,9 @@ class TestConfigStructureParity:
         import yaml
 
         tier_files = [
-            Path("templates/profiles/tier-strict.yaml"),
-            Path("templates/profiles/tier-standard.yaml"),
-            Path("templates/profiles/tier-relaxed.yaml"),
+            hub_root() / "templates" / "profiles" / "tier-strict.yaml",
+            hub_root() / "templates" / "profiles" / "tier-standard.yaml",
+            hub_root() / "templates" / "profiles" / "tier-relaxed.yaml",
         ]
 
         for tier_file in tier_files:
@@ -77,7 +75,7 @@ class TestDefaultMergeParity:
         """defaults.yaml should exist and be loadable."""
         from cihub.config import PathConfig, load_defaults
 
-        paths = PathConfig(root=".")
+        paths = PathConfig(root=str(hub_root()))
         defaults = load_defaults(paths)
         assert isinstance(defaults, dict)
 

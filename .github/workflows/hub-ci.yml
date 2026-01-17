@@ -10,7 +10,7 @@
 #   on: [push, pull_request, workflow_dispatch]
 #   jobs:
 #     ci:
-#       uses: jguida941/ci-cd-hub/.github/workflows/hub-ci.yml@main
+#       uses: jguida941/ci-cd-hub/.github/workflows/hub-ci.yml@v1
 #       secrets: inherit
 #
 # Configuration in target repo (.ci-hub.yml):
@@ -120,6 +120,9 @@ jobs:
       run_pmd: ${{ steps.parse.outputs.run_pmd }}
       run_pitest: ${{ steps.parse.outputs.run_pitest }}
       run_jqwik: ${{ steps.parse.outputs.run_jqwik }}
+      # Harden runner
+      run_harden_runner: ${{ steps.parse.outputs.run_harden_runner }}
+      harden_runner_egress_policy: ${{ steps.parse.outputs.harden_runner_egress_policy }}
 
     steps:
       - name: Checkout calling repo
@@ -152,7 +155,7 @@ jobs:
     name: Python CI
     needs: config
     if: needs.config.outputs.language == 'python'
-    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@main
+    uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
     with:
       python_version: ${{ needs.config.outputs.python_version }}
       workdir: ${{ needs.config.outputs.workdir }}
@@ -180,6 +183,10 @@ jobs:
       run_codeql: ${{ fromJson(needs.config.outputs.run_codeql) }}
       run_docker: ${{ fromJson(needs.config.outputs.run_docker) }}
 
+      # Harden runner
+      run_harden_runner: ${{ fromJson(needs.config.outputs.run_harden_runner) }}
+      harden_runner_egress_policy: ${{ needs.config.outputs.harden_runner_egress_policy }}
+
       # Thresholds - use fromJson() for proper number conversion
       coverage_min: ${{ fromJson(needs.config.outputs.coverage_min) }}
       mutation_score_min: ${{ fromJson(needs.config.outputs.mutation_score_min) }}
@@ -203,7 +210,7 @@ jobs:
     name: Java CI
     needs: config
     if: needs.config.outputs.language == 'java'
-    uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@main
+    uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@v1
     with:
       java_version: ${{ needs.config.outputs.java_version }}
       build_tool: ${{ needs.config.outputs.build_tool }}
@@ -230,6 +237,10 @@ jobs:
       run_codeql: ${{ fromJson(needs.config.outputs.run_codeql) }}
       run_sbom: ${{ fromJson(needs.config.outputs.run_sbom) }}
       run_docker: ${{ fromJson(needs.config.outputs.run_docker) }}
+
+      # Harden runner
+      run_harden_runner: ${{ fromJson(needs.config.outputs.run_harden_runner) }}
+      harden_runner_egress_policy: ${{ needs.config.outputs.harden_runner_egress_policy }}
 
       # Thresholds - use fromJson() for proper number conversion
       coverage_min: ${{ fromJson(needs.config.outputs.coverage_min) }}

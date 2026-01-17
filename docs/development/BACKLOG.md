@@ -1,5 +1,10 @@
 # Backlog
 
+**Status:** active
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+
 Single queue for known issues and near-term work.
 
 ## High Priority
@@ -22,9 +27,11 @@ Single queue for known issues and near-term work.
 
 | Item | Category | Notes |
 |---------------------------------------|----------------|--------------------------------------------------------------------|
+| Optional feature schemas (canary, chaos, etc.) | Schema | Full schema definitions for canary, chaos, dr_drill, egress_control, cache_sentinel, runner_isolation, supply_chain; tighten additionalProperties to false. Not needed until features are implemented. |
 | Dependabot for Satellite Repos | Supply Chain | Extend dependabot.yml to satellite repos; see ADR-0030 |
 | Validate configs against actual repos | Testing | audit.md mentions this as incomplete |
 | Fuzzing Support | Supply Chain | Scorecard flagged; consider OSS-Fuzz for config parsing/validation |
+| R-002-FOLLOWUP: split init detect/write | Architecture | Separate detection from write in `cihub init`; deferred from remediation |
 
 ---
 

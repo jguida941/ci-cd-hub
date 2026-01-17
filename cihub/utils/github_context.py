@@ -24,9 +24,11 @@ Usage:
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping
+
+from cihub.utils.filesystem import FileSystem, RealFileSystem
 
 if TYPE_CHECKING:
     pass
@@ -80,6 +82,7 @@ class GitHubContext:
     summary_path: str | None = None
     github_summary: bool = False
     json_mode: bool = False
+    filesystem: FileSystem = field(default_factory=RealFileSystem)
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> GitHubContext:
@@ -240,9 +243,8 @@ class GitHubContext:
             for key, value in values.items():
                 print(f"{key}={value}")
             return
-        with open(resolved, "a", encoding="utf-8") as handle:
-            for key, value in values.items():
-                handle.write(f"{key}={value}\n")
+        output_text = "".join(f"{key}={value}\n" for key, value in values.items())
+        self.filesystem.append_text(resolved, output_text)
 
     def write_summary(self, text: str) -> None:
         """Append markdown text to the resolved summary path.
@@ -261,10 +263,8 @@ class GitHubContext:
                 return
             print(text)
             return
-        with open(resolved, "a", encoding="utf-8") as handle:
-            handle.write(text)
-            if not text.endswith("\n"):
-                handle.write("\n")
+        summary_text = text if text.endswith("\n") else f"{text}\n"
+        self.filesystem.append_text(resolved, summary_text)
 
     def has_output(self) -> bool:
         """Check if outputs will be written to a file (not stdout)."""

@@ -13,7 +13,7 @@ from cihub.services.registry.thresholds import _normalize_threshold_dict_inplace
 def _normalize_repo_metadata_inplace(repo_cfg: dict[str, Any]) -> None:
     """Normalize duplicated repo metadata fields to a single canonical location.
 
-    Contract (SYSTEM_INTEGRATION_PLAN.md):
+    Contract (docs/development/archive/SYSTEM_INTEGRATION_PLAN.md):
     - `repo_cfg["config"]["repo"]` is canonical when present
     - top-level `repo_cfg["language"]` / `repo_cfg["dispatch_enabled"]` are legacy/back-compat
     - if both are present and equal, drop the legacy copy to keep storage sparse

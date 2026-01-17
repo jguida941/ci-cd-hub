@@ -121,15 +121,45 @@ def cmd_config_outputs(args: argparse.Namespace) -> CommandResult:
     java_thresholds["trivy_cvss_fail"] = java_thresholds["owasp_cvss_fail"]
 
     global_thresholds = config.get("thresholds", {}) or {}
-    for key in ("coverage_min", "mutation_score_min", "owasp_cvss_fail", "trivy_cvss_fail"):
+    # All schema-defined threshold keys that can be globally overridden
+    all_threshold_keys = (
+        "coverage_min",
+        "mutation_score_min",
+        "owasp_cvss_fail",
+        "trivy_cvss_fail",
+        "max_semgrep_findings",
+        "max_ruff_errors",
+        "max_black_issues",
+        "max_isort_issues",
+        "max_pip_audit_vulns",
+        "max_checkstyle_errors",
+        "max_spotbugs_bugs",
+        "max_pmd_violations",
+    )
+    for key in all_threshold_keys:
         if key in global_thresholds and global_thresholds[key] is not None:
             threshold_value = int(global_thresholds[key])
-            python_thresholds[key] = threshold_value
-            java_thresholds[key] = threshold_value
+            if key in python_thresholds:
+                python_thresholds[key] = threshold_value
+            if key in java_thresholds:
+                java_thresholds[key] = threshold_value
 
     max_critical = _get_int(config, ["thresholds", "max_critical_vulns"], 0)
     max_high = _get_int(config, ["thresholds", "max_high_vulns"], 0)
     github_summary_enabled = _get_value(config, ["reports", "github_summary", "enabled"], True)
+
+    # Extract harden_runner config
+    harden_runner_config = config.get("harden_runner", True)  # default: enabled
+    if isinstance(harden_runner_config, bool):
+        run_harden_runner = harden_runner_config
+        harden_runner_egress_policy = "audit"  # default policy
+    elif isinstance(harden_runner_config, dict):
+        policy = harden_runner_config.get("policy", "audit")
+        run_harden_runner = policy != "disabled"
+        harden_runner_egress_policy = policy if policy != "disabled" else "audit"
+    else:
+        run_harden_runner = True
+        harden_runner_egress_policy = "audit"
 
     lang_for_shared = "java" if language == "java" else "python"
 
@@ -183,6 +213,9 @@ def cmd_config_outputs(args: argparse.Namespace) -> CommandResult:
         "max_pmd_violations": str(java_thresholds["max_pmd_violations"]),
         "max_critical_vulns": str(max_critical),
         "max_high_vulns": str(max_high),
+        # Harden runner config
+        "run_harden_runner": _bool_str(run_harden_runner),
+        "harden_runner_egress_policy": harden_runner_egress_policy,
     }
 
     if language == "java":

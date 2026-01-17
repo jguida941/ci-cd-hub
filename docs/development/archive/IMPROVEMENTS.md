@@ -1,6 +1,7 @@
 # CIHub CLI Architecture Improvements
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
-> **WARNING: SUPERSEDED:** This document has been consolidated into `docs/development/active/CLEAN_CODE.md`.
+> **WARNING: SUPERSEDED:** This document has been consolidated into `docs/development/archive/CLEAN_CODE.md`.
 > Architecture improvements are now tracked in the active CLEAN_CODE.md design doc.
 >
 > **Status:** Archived

@@ -30,7 +30,7 @@ from pathlib import Path
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
 from cihub.utils.github_context import OutputContext
-from cihub.utils.paths import hub_root
+from cihub.utils.paths import project_root
 
 # Import from submodules
 from .adr import get_adr_files, parse_adr_metadata, validate_adr_metadata
@@ -156,7 +156,7 @@ def cmd_docs_audit(args: argparse.Namespace) -> CommandResult:
     Returns:
         CommandResult with audit findings
     """
-    repo_root = hub_root()
+    repo_root = project_root()
     skip_references = getattr(args, "skip_references", False)
     skip_consistency = getattr(args, "skip_consistency", False)
     output_dir = getattr(args, "output_dir", None)

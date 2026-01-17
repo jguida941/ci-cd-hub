@@ -68,8 +68,6 @@ Internal planning and governance docs:
 - [research/RESEARCH_LOG.md](development/research/RESEARCH_LOG.md) - Best practices research notes (reference-only)
 
 **Active Design Docs** (`development/active/`):
-- [CLEAN_CODE.md](development/active/CLEAN_CODE.md) - Architecture improvements
-- [SYSTEM_INTEGRATION_PLAN.md](development/active/SYSTEM_INTEGRATION_PLAN.md) - Registry/wizard/schema integration
 - [TEST_REORGANIZATION.md](development/active/TEST_REORGANIZATION.md) - Test suite restructuring plan
 - [DOC_AUTOMATION_AUDIT.md](development/active/DOC_AUTOMATION_AUDIT.md) - `cihub docs stale` design
 - [TYPESCRIPT_CLI_DESIGN.md](development/active/TYPESCRIPT_CLI_DESIGN.md) - TypeScript CLI wrapper design
@@ -81,6 +79,9 @@ Internal planning and governance docs:
 
 **Archive:**
 - [archive/](development/archive/) - Superseded docs (kept for history)
+- [CLEAN_CODE.md](development/archive/CLEAN_CODE.md) - Architecture improvements (archived)
+- [remediation.md](development/archive/remediation.md) - Audit remediation tracking (archived)
+- [SYSTEM_INTEGRATION_PLAN.md](development/archive/SYSTEM_INTEGRATION_PLAN.md) - Registry/wizard/schema integration (archived)
 
 ---
 

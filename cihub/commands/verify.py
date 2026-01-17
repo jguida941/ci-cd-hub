@@ -22,7 +22,7 @@ from cihub.utils.exec_utils import (
     CommandTimeoutError,
     safe_run,
 )
-from cihub.utils.paths import hub_root
+from cihub.utils.paths import hub_root, project_root
 
 REQUIRED_TEMPLATE_INPUTS = {"hub_repo", "hub_ref"}
 
@@ -77,6 +77,12 @@ def _parse_uses(uses: str | None) -> tuple[str | None, str | None]:
     return repo, ref
 
 
+def _is_dynamic_ref(value: str | None) -> bool:
+    if not isinstance(value, str):
+        return False
+    return "${{" in value or "vars." in value or "inputs." in value
+
+
 def validate_template_contracts(root: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     problems: list[dict[str, Any]] = []
     data: dict[str, Any] = {"templates_checked": 0, "templates": []}
@@ -87,7 +93,7 @@ def validate_template_contracts(root: Path) -> tuple[list[dict[str, Any]], dict[
     hub_input_keys = set(hub_inputs.keys())
     required_inputs = _required_inputs(hub_inputs) | REQUIRED_TEMPLATE_INPUTS
 
-    templates_dir = root / "templates" / "repo"
+    templates_dir = hub_root() / "templates" / "repo"
     templates = sorted(templates_dir.glob("hub-*-ci.yml")) + sorted(templates_dir.glob("hub-*-ci.yaml"))
     data["templates_checked"] = len(templates)
 
@@ -109,21 +115,23 @@ def validate_template_contracts(root: Path) -> tuple[list[dict[str, Any]], dict[
             )
         else:
             repo, ref = _parse_uses(uses)
-            if repo and with_inputs.get("hub_repo") != repo:
+            hub_repo = with_inputs.get("hub_repo")
+            if repo and hub_repo != repo and not _is_dynamic_ref(hub_repo):
                 entry["issues"].append("hub_repo does not match workflow repo")
                 problems.append(
                     {
                         "severity": "error",
-                        "message": f"hub_repo '{with_inputs.get('hub_repo')}' does not match uses repo '{repo}'",
+                        "message": f"hub_repo '{hub_repo}' does not match uses repo '{repo}'",
                         "file": str(template),
                     }
                 )
-            if ref and with_inputs.get("hub_ref") != ref:
+            hub_ref = with_inputs.get("hub_ref")
+            if ref and hub_ref != ref and not _is_dynamic_ref(hub_ref):
                 entry["issues"].append("hub_ref does not match workflow ref")
                 problems.append(
                     {
                         "severity": "error",
-                        "message": f"hub_ref '{with_inputs.get('hub_ref')}' does not match uses ref '{ref}'",
+                        "message": f"hub_ref '{hub_ref}' does not match uses ref '{ref}'",
                         "file": str(template),
                     }
                 )
@@ -381,7 +389,7 @@ def _run_integration(
 
 def cmd_verify(args: argparse.Namespace) -> CommandResult:
     """Verify templates and workflows."""
-    root = hub_root()
+    root = project_root()
     run_remote = bool(getattr(args, "remote", False))
     run_integration = bool(getattr(args, "integration", False))
     install_deps = bool(getattr(args, "install_deps", False))

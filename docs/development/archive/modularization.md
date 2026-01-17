@@ -1,6 +1,7 @@
 # CIHUB Modularization Plan (Behavior Preserving) - Updated With Guardrails
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
-> **WARNING: SUPERSEDED:** This modularization plan was executed. See `docs/development/active/CLEAN_CODE.md` for ongoing architecture work and `docs/development/archive/Jan3.md` for execution history.
+> **WARNING: SUPERSEDED:** This modularization plan was executed. See `docs/development/archive/CLEAN_CODE.md` for ongoing architecture work and `docs/development/archive/Jan3.md` for execution history.
 >
 > **Status:** Archived (Completed)
 
@@ -137,7 +138,7 @@ cihub/
  notifications.py
  helpers.py
  discovery.py
- report_validator.py
+ report_validator/
  aggregation.py
  configuration.py
  report_summary.py

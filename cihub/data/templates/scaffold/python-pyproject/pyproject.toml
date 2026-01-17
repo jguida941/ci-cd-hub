@@ -32,3 +32,6 @@ line-length = 88
 
 [tool.isort]
 profile = "black"
+
+[tool.mutmut]
+paths_to_mutate = ["app.py"]

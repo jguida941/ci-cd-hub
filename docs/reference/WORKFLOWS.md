@@ -9,6 +9,7 @@
 
 | Workflow | Purpose | Trigger | When to Use |
 | -------- | ------- | ------- | ----------- |
+| `ai-ci-loop.yml` | Custom workflow | manual | See workflow comments. |
 | `config-validate.yml` | Config schema validation | push, PR, manual | Runs automatically when you change configs. Validates YAM... |
 | `hub-ci.yml` | Language router | reusable | Call this if you want automatic language detection - it r... |
 | `hub-orchestrator.yml` | Distributed dispatch | manual, schedule, push | Use when repos have their own workflows and you want CI r... |
@@ -18,11 +19,35 @@
 | `java-ci.yml` | Java reusable workflow | reusable | Call from your Java repo's workflow for standardized CI (... |
 | `kyverno-ci.yml` | Kyverno policy testing | reusable | Call from repos with Kyverno policies to validate them. |
 | `kyverno-validate.yml` | Kyverno validation | push, PR, manual | Validates Kyverno policies in the hub repo. |
+| `publish-pypi.yml` | Custom workflow | release, push | See workflow comments. |
 | `python-ci.yml` | Python reusable workflow | reusable | Call from your Python repo's workflow for standardized CI... |
 | `release.yml` | Release automation | push | Triggered by pushing version tags (v*). Creates GitHub re... |
 | `smoke-test.yml` | Smoke test validation | manual, PR | Run manually to validate the hub works with fixture repos... |
 | `sync-templates.yml` | Template sync | push, manual | Syncs template files to target repos. Run manually when t... |
 | `template-guard.yml` | Template drift detection | PR, schedule, manual | Runs on PRs to detect if templates have drifted from source. |
+
+---
+
+## AI CI Loop
+
+**File:** `.github/workflows/ai-ci-loop.yml`
+
+Custom workflow.
+
+**When to use:** See workflow comments.
+
+### Triggers
+
+| Trigger | Details |
+| ------- | ------- |
+| `workflow_dispatch` | Manual trigger with inputs |
+
+### Inputs
+
+| Input | Type | Required | Default | Description |
+| ----- | ---- | -------- | ------- | ----------- |
+| `max_iterations` | string | no | `5` | Maximum fix iterations |
+| `fix_mode` | choice | no | `safe` | Fix strategy |
 
 ---
 
@@ -302,6 +327,23 @@ Kyverno validation.
 | Input | Type | Required | Default | Description |
 | ----- | ---- | -------- | ------- | ----------- |
 | `write_github_summary` | boolean | no | true | Write summary to GITHUB_STEP_SUMMARY |
+
+---
+
+## Publish to PyPI
+
+**File:** `.github/workflows/publish-pypi.yml`
+
+Custom workflow.
+
+**When to use:** See workflow comments.
+
+### Triggers
+
+| Trigger | Details |
+| ------- | ------- |
+| `release` | - |
+| `push` | - |
 
 ---
 

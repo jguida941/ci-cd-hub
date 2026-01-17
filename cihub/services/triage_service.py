@@ -572,6 +572,9 @@ def generate_triage_bundle(
         "gate_failures": gate_failures,
         "gate_passed_count": gate_passed_count,
         "gate_failed_count": gate_failed_count,
+        # AI loop iteration tracking (None if not from ai-loop)
+        "iteration": meta.get("iteration") if meta else None,
+        "max_iterations": meta.get("max_iterations") if meta else None,
     }
 
     markdown = _build_markdown(triage, max_failures=10)

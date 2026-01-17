@@ -12,6 +12,7 @@ import yaml
 from cihub.ci_config import load_ci_config
 from cihub.commands.pom import apply_dependency_fixes, apply_pom_fixes
 from cihub.config.io import load_yaml_file, save_yaml_file
+from cihub.config.merge import deep_merge
 from cihub.config.paths import PathConfig
 from cihub.exit_codes import (
     EXIT_FAILURE,
@@ -87,7 +88,11 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
             ],
         )
 
-    language, _ = resolve_language(repo_path, args.language)
+    # Validate subdir to prevent path traversal
+    subdir = validate_subdir(args.subdir or "")
+    effective_repo_path = repo_path / subdir if subdir else repo_path
+
+    language, _ = resolve_language(effective_repo_path, args.language)
 
     owner = args.owner or ""
     name = args.name or ""
@@ -107,16 +112,15 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
 
     branch = args.branch or get_git_branch(repo_path) or "main"
 
-    # Validate subdir to prevent path traversal
-    subdir = validate_subdir(args.subdir or "")
-    # Pass repo_path for build tool detection
-    effective_repo_path = repo_path / subdir if subdir else repo_path
     install_from = getattr(args, "install_from", "git")
     detected_config = build_repo_config(
         language, owner, name, branch,
         subdir=subdir, repo_path=effective_repo_path,
         install_from=install_from,
     )
+
+    # R-002: Track whether wizard was used (for including config in data)
+    wizard_used = False
 
     if args.wizard:
         if not HAS_WIZARD:
@@ -140,9 +144,37 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
                 summary="Cancelled",
             )
         language = config.get("language", language)
+        wizard_used = True
     else:
-        config = detected_config
+        # R-002: Handle config_override (internal, no CLI surface change)
+        config_override = getattr(args, "config_override", None)
+        if config_override and isinstance(config_override, dict):
+            # Merge override into detected config
+            config = deep_merge(detected_config, config_override)
+            # Set language from override BEFORE render_caller_workflow
+            language = config.get("language", language)
+        else:
+            config = detected_config
     config_path = repo_path / ".ci-hub.yml"
+
+    repo_config = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
+    # Keep repo metadata aligned with the final language.
+    if language:
+        repo_config["language"] = language
+    config["repo"] = repo_config
+    if language == "java":
+        config.pop("python", None)
+    elif language == "python":
+        config.pop("java", None)
+    final_owner = repo_config.get("owner", owner)
+    final_name = repo_config.get("name", name)
+    final_branch = repo_config.get("default_branch", repo_config.get("branch", branch))
+    final_subdir = repo_config.get("subdir", subdir)
+    root_path = repo_path / final_subdir if final_subdir else repo_path
+
+    # Clear owner warning if wizard/config_override provided a valid owner
+    if final_owner != "unknown":
+        owner_warnings = []
 
     payload = yaml.safe_dump(config, sort_keys=False, default_flow_style=False, allow_unicode=True)
 
@@ -170,7 +202,7 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
                     "severity": "warning",
                     "message": warning,
                     "code": "CIHUB-POM-001",
-                    "file": str(repo_path / "pom.xml"),
+                    "file": str(root_path / "pom.xml"),
                 }
                 for warning in pom_warning_list
             ]
@@ -179,7 +211,6 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
                     pom_result = apply_pom_fixes(repo_path, effective, apply=True)
                     dep_result = apply_dependency_fixes(repo_path, effective, apply=True)
                     status = max(pom_result.exit_code, dep_result.exit_code)
-                root_path = repo_path / subdir if subdir else repo_path
                 pom_path = root_path / "pom.xml"
                 files_modified = [str(pom_path)] if pom_path.exists() else []
                 summary = (
@@ -214,10 +245,10 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
                     files_modified=files_modified,
                     data={
                         "language": language,
-                        "owner": owner,
-                        "name": name,
-                        "branch": branch,
-                        "subdir": subdir,
+                        "owner": final_owner,
+                        "name": final_name,
+                        "branch": final_branch,
+                        "subdir": final_subdir,
                         "dry_run": dry_run,
                         "bootstrap": bootstrap,
                         "pom_fix_applied": True,
@@ -242,15 +273,19 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
 
     data = {
         "language": language,
-        "owner": owner,
-        "name": name,
-        "branch": branch,
-        "subdir": subdir,
+        "owner": final_owner,
+        "name": final_name,
+        "branch": final_branch,
+        "subdir": final_subdir,
         "dry_run": dry_run,
         "bootstrap": bootstrap,
     }
     if dry_run:
         data["raw_output"] = payload
+    # R-002: Include config in data when wizard was used (so setup can capture it)
+    # Do NOT add to non-wizard outputs to avoid snapshot churn
+    if wizard_used:
+        data["config"] = config
     data.update(pom_fix_data)
 
     return CommandResult(

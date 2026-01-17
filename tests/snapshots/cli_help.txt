@@ -1,11 +1,11 @@
 usage: cihub [-h] [--version]
-             {detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo}
+             {detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,ai-loop,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo}
              ...
 
 CI/CD Hub CLI
 
 positional arguments:
-  {detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo}
+  {detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,ai-loop,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo}
     detect              Detect repo language and tools
     preflight           Check environment readiness
     doctor              Alias for preflight
@@ -15,6 +15,7 @@ positional arguments:
     check               Run local validation checks
     verify              Verify workflow/template contracts
     ci                  Run CI based on .ci-hub.yml
+    ai-loop             Autonomous AI CI fix loop
     run                 Run one tool and emit JSON output
     report              Build reports and summaries
     triage              Generate triage bundle outputs

@@ -11,6 +11,8 @@ from pathlib import Path
 
 import yaml
 
+from cihub.utils.paths import hub_root
+
 
 def test_registry_sync_roundtrip_applies_repo_dispatch_enabled(tmp_path: Path) -> None:
     """Registry tier config fragment should impact effective config after sync."""
@@ -20,23 +22,23 @@ def test_registry_sync_roundtrip_applies_repo_dispatch_enabled(tmp_path: Path) -
     repo_name = "demo-repo"
 
     # Create an isolated hub root on disk for load_config().
-    hub_root = tmp_path / "hub"
-    (hub_root / "config" / "repos").mkdir(parents=True)
-    (hub_root / "schema").mkdir(parents=True)
+    hub_root_path = tmp_path / "hub"
+    (hub_root_path / "config" / "repos").mkdir(parents=True)
+    (hub_root_path / "schema").mkdir(parents=True)
 
     # Copy real defaults + schema into the isolated hub root.
-    real_root = Path(__file__).resolve().parent.parent
-    (hub_root / "config" / "defaults.yaml").write_text(
-        (real_root / "config" / "defaults.yaml").read_text(encoding="utf-8"),
+    data_root = hub_root()
+    (hub_root_path / "config" / "defaults.yaml").write_text(
+        (data_root / "config" / "defaults.yaml").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
-    (hub_root / "schema" / "ci-hub-config.schema.json").write_text(
-        (real_root / "schema" / "ci-hub-config.schema.json").read_text(encoding="utf-8"),
+    (hub_root_path / "schema" / "ci-hub-config.schema.json").write_text(
+        (data_root / "schema" / "ci-hub-config.schema.json").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
 
     # Minimal repo override config.
-    repo_override_path = hub_root / "config" / "repos" / f"{repo_name}.yaml"
+    repo_override_path = hub_root_path / "config" / "repos" / f"{repo_name}.yaml"
     repo_override_path.write_text(
         yaml.safe_dump(
             {
@@ -70,12 +72,12 @@ def test_registry_sync_roundtrip_applies_repo_dispatch_enabled(tmp_path: Path) -
     }
     registry["repos"] = {repo_name: {"tier": "standard"}}
 
-    configs_dir = hub_root / "config" / "repos"
-    sync_to_configs(registry, configs_dir, dry_run=False, hub_root_path=hub_root)
+    configs_dir = hub_root_path / "config" / "repos"
+    sync_to_configs(registry, configs_dir, dry_run=False, hub_root_path=hub_root_path)
 
-    cfg = load_config(repo_name=repo_name, hub_root=hub_root, exit_on_validation_error=False)
+    cfg = load_config(repo_name=repo_name, hub_root=hub_root_path, exit_on_validation_error=False)
     assert cfg["repo"]["dispatch_enabled"] is False
-    assert compute_diff(registry, configs_dir, hub_root_path=hub_root) == []
+    assert compute_diff(registry, configs_dir, hub_root_path=hub_root_path) == []
 
 
 def test_registry_sync_roundtrip_applies_repo_tool_config(tmp_path: Path) -> None:
@@ -85,21 +87,21 @@ def test_registry_sync_roundtrip_applies_repo_tool_config(tmp_path: Path) -> Non
 
     repo_name = "demo-repo"
 
-    hub_root = tmp_path / "hub"
-    (hub_root / "config" / "repos").mkdir(parents=True)
-    (hub_root / "schema").mkdir(parents=True)
+    hub_root_path = tmp_path / "hub"
+    (hub_root_path / "config" / "repos").mkdir(parents=True)
+    (hub_root_path / "schema").mkdir(parents=True)
 
-    real_root = Path(__file__).resolve().parent.parent
-    (hub_root / "config" / "defaults.yaml").write_text(
-        (real_root / "config" / "defaults.yaml").read_text(encoding="utf-8"),
+    data_root = hub_root()
+    (hub_root_path / "config" / "defaults.yaml").write_text(
+        (data_root / "config" / "defaults.yaml").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
-    (hub_root / "schema" / "ci-hub-config.schema.json").write_text(
-        (real_root / "schema" / "ci-hub-config.schema.json").read_text(encoding="utf-8"),
+    (hub_root_path / "schema" / "ci-hub-config.schema.json").write_text(
+        (data_root / "schema" / "ci-hub-config.schema.json").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
 
-    repo_override_path = hub_root / "config" / "repos" / f"{repo_name}.yaml"
+    repo_override_path = hub_root_path / "config" / "repos" / f"{repo_name}.yaml"
     repo_override_path.write_text(
         yaml.safe_dump(
             {
@@ -126,12 +128,12 @@ def test_registry_sync_roundtrip_applies_repo_tool_config(tmp_path: Path) -> Non
         }
     }
 
-    configs_dir = hub_root / "config" / "repos"
-    sync_to_configs(registry, configs_dir, dry_run=False, hub_root_path=hub_root)
+    configs_dir = hub_root_path / "config" / "repos"
+    sync_to_configs(registry, configs_dir, dry_run=False, hub_root_path=hub_root_path)
 
-    cfg = load_config(repo_name=repo_name, hub_root=hub_root, exit_on_validation_error=False)
+    cfg = load_config(repo_name=repo_name, hub_root=hub_root_path, exit_on_validation_error=False)
     assert cfg["python"]["tools"]["mypy"]["enabled"] is True
-    assert compute_diff(registry, configs_dir, hub_root_path=hub_root) == []
+    assert compute_diff(registry, configs_dir, hub_root_path=hub_root_path) == []
 
 
 def test_registry_sync_roundtrip_applies_reports_and_gates(tmp_path: Path) -> None:
@@ -141,21 +143,21 @@ def test_registry_sync_roundtrip_applies_reports_and_gates(tmp_path: Path) -> No
 
     repo_name = "demo-repo"
 
-    hub_root = tmp_path / "hub"
-    (hub_root / "config" / "repos").mkdir(parents=True)
-    (hub_root / "schema").mkdir(parents=True)
+    hub_root_path = tmp_path / "hub"
+    (hub_root_path / "config" / "repos").mkdir(parents=True)
+    (hub_root_path / "schema").mkdir(parents=True)
 
-    real_root = Path(__file__).resolve().parent.parent
-    (hub_root / "config" / "defaults.yaml").write_text(
-        (real_root / "config" / "defaults.yaml").read_text(encoding="utf-8"),
+    data_root = hub_root()
+    (hub_root_path / "config" / "defaults.yaml").write_text(
+        (data_root / "config" / "defaults.yaml").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
-    (hub_root / "schema" / "ci-hub-config.schema.json").write_text(
-        (real_root / "schema" / "ci-hub-config.schema.json").read_text(encoding="utf-8"),
+    (hub_root_path / "schema" / "ci-hub-config.schema.json").write_text(
+        (data_root / "schema" / "ci-hub-config.schema.json").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
 
-    repo_override_path = hub_root / "config" / "repos" / f"{repo_name}.yaml"
+    repo_override_path = hub_root_path / "config" / "repos" / f"{repo_name}.yaml"
     repo_override_path.write_text(
         yaml.safe_dump(
             {
@@ -186,13 +188,13 @@ def test_registry_sync_roundtrip_applies_reports_and_gates(tmp_path: Path) -> No
     }
     registry["repos"] = {repo_name: {"tier": "standard"}}
 
-    configs_dir = hub_root / "config" / "repos"
-    sync_to_configs(registry, configs_dir, dry_run=False, hub_root_path=hub_root)
+    configs_dir = hub_root_path / "config" / "repos"
+    sync_to_configs(registry, configs_dir, dry_run=False, hub_root_path=hub_root_path)
 
-    cfg = load_config(repo_name=repo_name, hub_root=hub_root, exit_on_validation_error=False)
+    cfg = load_config(repo_name=repo_name, hub_root=hub_root_path, exit_on_validation_error=False)
     assert cfg["reports"]["github_summary"]["enabled"] is False
     assert cfg["gates"]["require_run_or_fail"] is True
-    assert compute_diff(registry, configs_dir, hub_root_path=hub_root) == []
+    assert compute_diff(registry, configs_dir, hub_root_path=hub_root_path) == []
 
 
 def test_registry_sync_roundtrip_applies_tier_profile_and_diff_empty(tmp_path: Path) -> None:
@@ -202,23 +204,23 @@ def test_registry_sync_roundtrip_applies_tier_profile_and_diff_empty(tmp_path: P
 
     repo_name = "demo-repo"
 
-    hub_root = tmp_path / "hub"
-    (hub_root / "config" / "repos").mkdir(parents=True)
-    (hub_root / "schema").mkdir(parents=True)
-    (hub_root / "templates" / "profiles").mkdir(parents=True)
+    hub_root_path = tmp_path / "hub"
+    (hub_root_path / "config" / "repos").mkdir(parents=True)
+    (hub_root_path / "schema").mkdir(parents=True)
+    (hub_root_path / "templates" / "profiles").mkdir(parents=True)
 
-    real_root = Path(__file__).resolve().parent.parent
-    (hub_root / "config" / "defaults.yaml").write_text(
-        (real_root / "config" / "defaults.yaml").read_text(encoding="utf-8"),
+    data_root = hub_root()
+    (hub_root_path / "config" / "defaults.yaml").write_text(
+        (data_root / "config" / "defaults.yaml").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
-    (hub_root / "schema" / "ci-hub-config.schema.json").write_text(
-        (real_root / "schema" / "ci-hub-config.schema.json").read_text(encoding="utf-8"),
+    (hub_root_path / "schema" / "ci-hub-config.schema.json").write_text(
+        (data_root / "schema" / "ci-hub-config.schema.json").read_text(encoding="utf-8"),
         encoding="utf-8",
     )
 
     # Minimal profile: tweak thresholds and repo dispatch flag.
-    (hub_root / "templates" / "profiles" / "custom.yaml").write_text(
+    (hub_root_path / "templates" / "profiles" / "custom.yaml").write_text(
         yaml.safe_dump(
             {
                 "repo": {"dispatch_enabled": False},
@@ -229,7 +231,7 @@ def test_registry_sync_roundtrip_applies_tier_profile_and_diff_empty(tmp_path: P
         encoding="utf-8",
     )
 
-    repo_override_path = hub_root / "config" / "repos" / f"{repo_name}.yaml"
+    repo_override_path = hub_root_path / "config" / "repos" / f"{repo_name}.yaml"
     repo_override_path.write_text(
         yaml.safe_dump(
             {
@@ -251,11 +253,11 @@ def test_registry_sync_roundtrip_applies_tier_profile_and_diff_empty(tmp_path: P
     registry["tiers"] = {"standard": {"description": "Standard", "profile": "custom"}}
     registry["repos"] = {repo_name: {"tier": "standard"}}
 
-    configs_dir = hub_root / "config" / "repos"
-    sync_to_configs(registry, configs_dir, dry_run=False, hub_root_path=hub_root)
+    configs_dir = hub_root_path / "config" / "repos"
+    sync_to_configs(registry, configs_dir, dry_run=False, hub_root_path=hub_root_path)
 
-    cfg = load_config(repo_name=repo_name, hub_root=hub_root, exit_on_validation_error=False)
+    cfg = load_config(repo_name=repo_name, hub_root=hub_root_path, exit_on_validation_error=False)
     assert cfg["repo"]["dispatch_enabled"] is False
     assert cfg["thresholds"]["coverage_min"] == 91
     assert cfg["thresholds"]["mutation_score_min"] == 81
-    assert compute_diff(registry, configs_dir, hub_root_path=hub_root) == []
+    assert compute_diff(registry, configs_dir, hub_root_path=hub_root_path) == []

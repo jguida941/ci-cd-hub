@@ -68,6 +68,38 @@ class TestCheckCancelled:
 
 
 # =============================================================================
+# Repo Prompt Tests
+# =============================================================================
+
+
+class TestPromptRepo:
+    """Tests for WizardRunner._prompt_repo."""
+
+    def test_prompt_repo_preserves_defaults(self) -> None:
+        """Prompt preserves existing repo fields like subdir."""
+        from rich.console import Console  # noqa: WPS433
+
+        from cihub.config.paths import PathConfig  # noqa: WPS433
+        from cihub.wizard.core import WizardRunner  # noqa: WPS433
+
+        runner = WizardRunner(Console(), PathConfig(str(ROOT)))
+        base = {"repo": {"subdir": "java", "dispatch_workflow": "hub-ci.yml"}}
+
+        with mock.patch("cihub.wizard.core.questionary.text") as mock_text:
+            with mock.patch("cihub.wizard.core.questionary.confirm") as mock_confirm:
+                mock_text.return_value.ask.side_effect = ["owner", "repo-name"]
+                mock_confirm.return_value.ask.side_effect = [True, False]
+                repo = runner._prompt_repo(None, base)
+
+        assert repo["owner"] == "owner"
+        assert repo["name"] == "repo-name"
+        assert repo["use_central_runner"] is True
+        assert repo["repo_side_execution"] is False
+        assert repo["subdir"] == "java"
+        assert repo["dispatch_workflow"] == "hub-ci.yml"
+
+
+# =============================================================================
 # Language Selection Tests
 # =============================================================================
 

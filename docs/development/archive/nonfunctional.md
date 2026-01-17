@@ -1,4 +1,5 @@
 # Non-Functional Requirements
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
 > **Status:** Superseded. See `docs/development/specs/REQUIREMENTS.md` for current requirements.
 

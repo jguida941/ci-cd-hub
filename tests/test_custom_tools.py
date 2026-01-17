@@ -14,6 +14,7 @@ from cihub.tools.registry import (
     is_custom_tool,
     is_tool_enabled,
 )
+from cihub.utils.paths import hub_root
 
 
 class TestIsCustomTool:
@@ -137,7 +138,7 @@ class TestSchemaValidation:
 
     @pytest.fixture
     def schema(self) -> dict:
-        schema_path = Path(__file__).parent.parent / "schema" / "ci-hub-config.schema.json"
+        schema_path = hub_root() / "schema" / "ci-hub-config.schema.json"
         return json.loads(schema_path.read_text())
 
     def test_schema_has_custom_tool_definition(self, schema: dict) -> None:

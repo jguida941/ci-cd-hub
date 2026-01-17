@@ -148,8 +148,8 @@ class TestGetGithubToken:
     def test_explicit_token_takes_priority(self) -> None:
         """Explicit token argument takes priority."""
         env = {"GH_TOKEN": "env_token"}
-        token, source = get_github_token(explicit_token="my_token", env=env)
-        assert token == "my_token"
+        token, source = get_github_token(explicit_token="my_token", env=env)  # noqa: S106
+        assert token == "my_token"  # noqa: S105
         assert source == "arg"
 
     def test_gh_token_priority(self) -> None:
@@ -160,7 +160,7 @@ class TestGetGithubToken:
             "HUB_DISPATCH_TOKEN": "hub_token",
         }
         token, source = get_github_token(env=env)
-        assert token == "gh_token"
+        assert token == "gh_token"  # noqa: S105
         assert source == "GH_TOKEN"
 
     def test_github_token_fallback(self) -> None:
@@ -170,14 +170,14 @@ class TestGetGithubToken:
             "HUB_DISPATCH_TOKEN": "hub_token",
         }
         token, source = get_github_token(env=env)
-        assert token == "github_token"
+        assert token == "github_token"  # noqa: S105
         assert source == "GITHUB_TOKEN"
 
     def test_hub_dispatch_token_fallback(self) -> None:
         """HUB_DISPATCH_TOKEN used as last resort."""
         env = {"HUB_DISPATCH_TOKEN": "hub_token"}
         token, source = get_github_token(env=env)
-        assert token == "hub_token"
+        assert token == "hub_token"  # noqa: S105
         assert source == "HUB_DISPATCH_TOKEN"
 
     def test_custom_token_env(self) -> None:
@@ -186,15 +186,15 @@ class TestGetGithubToken:
             "MY_CUSTOM_TOKEN": "custom_token",
             "GH_TOKEN": "gh_token",
         }
-        token, source = get_github_token(token_env="MY_CUSTOM_TOKEN", env=env)
-        assert token == "custom_token"
+        token, source = get_github_token(token_env="MY_CUSTOM_TOKEN", env=env)  # noqa: S106
+        assert token == "custom_token"  # noqa: S105
         assert source == "MY_CUSTOM_TOKEN"
 
     def test_custom_token_env_skips_standard_names(self) -> None:
         """Custom token env skipped if it's a standard name."""
         env = {"GH_TOKEN": "gh_token"}
-        token, source = get_github_token(token_env="GH_TOKEN", env=env)
-        assert token == "gh_token"
+        token, source = get_github_token(token_env="GH_TOKEN", env=env)  # noqa: S106
+        assert token == "gh_token"  # noqa: S105
         assert source == "GH_TOKEN"
 
     def test_returns_missing_when_no_token(self) -> None:
@@ -210,6 +210,6 @@ class TestGetGithubToken:
             "MY_CUSTOM_TOKEN": "",
             "GH_TOKEN": "gh_token",
         }
-        token, source = get_github_token(token_env="MY_CUSTOM_TOKEN", env=env)
-        assert token == "gh_token"
+        token, source = get_github_token(token_env="MY_CUSTOM_TOKEN", env=env)  # noqa: S106
+        assert token == "gh_token"  # noqa: S105
         assert source == "GH_TOKEN"

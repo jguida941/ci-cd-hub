@@ -68,6 +68,12 @@ def cmd_ci(args: argparse.Namespace) -> int | CommandResult:
     return handler(args)
 
 
+def cmd_ai_loop(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.ai_loop import cmd_ai_loop as handler
+
+    return handler(args)
+
+
 def cmd_run(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.run import cmd_run as handler
 
@@ -264,6 +270,7 @@ def build_parser() -> argparse.ArgumentParser:
         cmd_check=cmd_check,
         cmd_verify=cmd_verify,
         cmd_ci=cmd_ci,
+        cmd_ai_loop=cmd_ai_loop,
         cmd_run=cmd_run,
         cmd_report=cmd_report,
         cmd_triage=cmd_triage,

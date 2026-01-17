@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import yaml
+
+from cihub.utils.paths import hub_root
 
 
 class TestConfigMergeOrder:
@@ -12,7 +12,7 @@ class TestConfigMergeOrder:
 
     def test_defaults_provide_base_values(self) -> None:
         """defaults.yaml should provide base configuration values."""
-        defaults_path = Path("config/defaults.yaml")
+        defaults_path = hub_root() / "config" / "defaults.yaml"
         assert defaults_path.exists(), "defaults.yaml must exist"
 
         content = yaml.safe_load(defaults_path.read_text())
@@ -71,7 +71,7 @@ class TestThresholdPrecedence:
 
     def test_tier_profile_applies_thresholds(self) -> None:
         """Tier profile should set threshold values."""
-        tier_strict = Path("templates/profiles/tier-strict.yaml")
+        tier_strict = hub_root() / "templates" / "profiles" / "tier-strict.yaml"
         if tier_strict.exists():
             content = yaml.safe_load(tier_strict.read_text())
             assert "thresholds" in content

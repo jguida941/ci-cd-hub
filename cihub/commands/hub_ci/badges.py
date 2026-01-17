@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import tempfile
 from pathlib import Path
 
 from cihub import badges as badge_tools
 from cihub.types import CommandResult
+from cihub.utils.env import resolve_flag
 from cihub.utils.github_context import OutputContext
 from cihub.utils.paths import hub_root
 
@@ -23,8 +25,6 @@ from . import (
 
 
 def cmd_badges(args: argparse.Namespace) -> CommandResult:
-    import os
-
     root = hub_root()
     config_path = Path(args.config).resolve() if args.config else root / "config" / "defaults.yaml"
     config = _load_config(config_path)
@@ -175,12 +175,22 @@ def cmd_outputs(args: argparse.Namespace) -> CommandResult:
         # Canonical: load via repo name using loader/core.py
         from cihub.config.loader import load_config
 
-        repo_name = getattr(args, "repo", "ci-cd-hub")
         root = hub_root()
-        try:
-            config = load_config(repo_name, root, exit_on_validation_error=False)
-        except Exception:  # noqa: BLE001
-            # Fall back to defaults if repo config not found
+        repo_name = resolve_flag(getattr(args, "repo", None), "CIHUB_REPO")
+        if not repo_name:
+            repo_env = os.environ.get("GITHUB_REPOSITORY", "")
+            if repo_env and "/" in repo_env:
+                repo_name = repo_env.split("/", 1)[1]
+        if repo_name and "/" in repo_name:
+            repo_name = repo_name.split("/", 1)[1]
+
+        if repo_name:
+            try:
+                config = load_config(repo_name, root, exit_on_validation_error=False)
+            except Exception:  # noqa: BLE001
+                # Fall back to defaults if repo config not found
+                config = _load_config(root / "config" / "defaults.yaml")
+        else:
             config = _load_config(root / "config" / "defaults.yaml")
 
     hub_cfg = config.get("hub_ci", {}) if isinstance(config.get("hub_ci"), dict) else {}

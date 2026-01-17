@@ -52,8 +52,7 @@ def add_badges_parsers(
     hub_ci_outputs = hub_ci_sub.add_parser("outputs", help="Emit hub CI toggle outputs")
     hub_ci_outputs.add_argument(
         "--repo",
-        default="ci-cd-hub",
-        help="Repository name for config lookup (default: ci-cd-hub)",
+        help="Repository name for config lookup (default: $CIHUB_REPO or $GITHUB_REPOSITORY name)",
     )
     hub_ci_outputs.add_argument(
         "--config",

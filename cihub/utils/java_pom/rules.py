@@ -63,13 +63,14 @@ def collect_java_pom_warnings(repo_path: Path, config: dict[str, Any]) -> tuple[
 
     subdir = config.get("repo", {}).get("subdir") or ""
     root_path = repo_path / subdir if subdir else repo_path
-    pom_path = root_path / "pom.xml"
-    if not pom_path.exists():
-        warnings.append("pom.xml not found")
-        return warnings, missing_plugins
 
     build_tool = config.get("java", {}).get("build_tool", "maven")
     if build_tool != "maven":
+        return warnings, missing_plugins
+
+    pom_path = root_path / "pom.xml"
+    if not pom_path.exists():
+        warnings.append("pom.xml not found")
         return warnings, missing_plugins
 
     plugins, plugins_mgmt, has_modules, error = parse_pom_plugins(pom_path)
@@ -116,12 +117,12 @@ def collect_java_dependency_warnings(
 
     subdir = config.get("repo", {}).get("subdir") or ""
     root_path = repo_path / subdir if subdir else repo_path
-    pom_path = root_path / "pom.xml"
-    if not pom_path.exists():
-        return warnings, missing
-
     build_tool = config.get("java", {}).get("build_tool", "maven")
     if build_tool != "maven":
+        return warnings, missing
+
+    pom_path = root_path / "pom.xml"
+    if not pom_path.exists():
         return warnings, missing
 
     modules, error = parse_pom_modules(pom_path)

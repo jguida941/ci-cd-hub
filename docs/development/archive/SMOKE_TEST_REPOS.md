@@ -1,4 +1,5 @@
 # Smoke Test Repository Requirements
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
 > **WARNING: SUPERSEDED:** This document is archived. Current smoke test repository info is in `docs/development/execution/SMOKE_TEST.md`.
 >
@@ -220,7 +221,7 @@ If creating new smoke test repos, use this config template:
 
 ```yaml
 repo:
- owner: YOUR_ORG
+  owner: your-org
  name: YOUR_REPO
  language: java
  default_branch: main
@@ -257,7 +258,7 @@ thresholds:
 
 ```yaml
 repo:
- owner: YOUR_ORG
+  owner: your-org
  name: YOUR_REPO
  language: python
  default_branch: main

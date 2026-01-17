@@ -114,6 +114,10 @@
             <format>HTML</format>
             <format>JSON</format>
           </formats>
+          <failOnError>false</failOnError>
+          <nvdApiKey>${env.NVD_API_KEY}</nvdApiKey>
+          <nvdApiDelay>3500</nvdApiDelay>
+          <nvdValidForHours>24</nvdValidForHours>
         </configuration>
       </plugin>
 

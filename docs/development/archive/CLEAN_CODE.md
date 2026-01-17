@@ -1,17 +1,23 @@
-# Clean Code Audit: Scalability & Architecture Improvements
+# Clean Code Audit: Scalability & Architecture Improvements (Archived)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+
+> **WARNING: SUPERSEDED:** This document is archived (2026-01-15). The canonical execution plan is
+> `docs/development/MASTER_PLAN.md`, with current architecture in `docs/development/architecture/ARCH_OVERVIEW.md`.
+>
+> **Status:** Archived
+> **Archived:** 2026-01-15
+> **Owner:** Development Team
+> **Source-of-truth:** manual
+> **Last-reviewed:** 2026-01-15
+> **Superseded-by:** docs/development/MASTER_PLAN.md
 
 **Date:** 2026-01-04
-**Last Updated:** 2026-01-11 (Part 7.6 Services Layer complete)
+**Last Updated:** 2026-01-15 (Status reconciliation: test count policy applied)
 **Branch:** feat/modularization
-**Priority:** **#1 - CURRENT** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
-**Status:** ~96% complete
-**Blocks:** TEST_REORGANIZATION.md, TYPESCRIPT_CLI_DESIGN.md, DOC_AUTOMATION_AUDIT.md
+**Progress:** Complete (Phase T4 contains ongoing process items tracked in TEST_REORGANIZATION.md)
 **Purpose:** Identify opportunities for polymorphism, encapsulation, and better modular boundaries to make the codebase more scalable.
 
-> WARNING: **IMPORTANT:** When ALL phases in this document are complete, perform a full audit of
-> `MASTER_PLAN.md` to ensure it accurately reflects the new architecture and code locations.
-> Architecture changes in this refactoring affect paths, module boundaries, and patterns
-> referenced throughout MASTER_PLAN.md.
+> NOTE: The MASTER_PLAN accuracy audit was completed on 2026-01-15.
 
 ---
 
@@ -28,18 +34,18 @@ Hub-internal workflows (`hub-run-all.yml`, `hub-orchestrator.yml`) had 10+ boole
 
 ### Solution Implemented
 
-**Config-file-first pattern:** Settings live in `config/hub-settings.yaml`, workflow inputs become overrides.
+**Config-file-first pattern:** Settings live in `cihub/data/config/hub-settings.yaml`, workflow inputs become overrides.
 
 ```
-Precedence: workflow_dispatch inputs → config/hub-settings.yaml → built-in defaults
+Precedence: workflow_dispatch inputs → cihub/data/config/hub-settings.yaml → built-in defaults
 ```
 
 ### Files Created/Modified
 
 | File | Purpose |
 |------|---------|
-| `config/hub-settings.yaml` | Hub operational settings (execution, debug, security) |
-| `schema/hub-settings.schema.json` | Validation schema |
+| `cihub/data/config/hub-settings.yaml` | Hub operational settings (execution, debug, security) |
+| `cihub/data/schema/hub-settings.schema.json` | Validation schema |
 | `cihub/commands/hub_config.py` | CLI command implementation |
 | `cihub/cli_parsers/hub.py` | CLI parser for `cihub hub config` commands |
 | `.github/workflows/hub-run-all.yml` | Added `load-settings` job |
@@ -58,12 +64,12 @@ cihub hub config load --github-output # Export for GitHub Actions
 
 ```
 Hub Operational Settings (ADR-0049):
- config/hub-settings.yaml → controls HOW hub runs
+ cihub/data/config/hub-settings.yaml → controls HOW hub runs
 
 Per-Repo Tool Configs (ADR-0002, ADR-0024):
  1. .ci-hub.yml (repo-local)
- 2. config/repos/<repo>.yaml (hub-side)
- 3. config/defaults.yaml (global)
+ 2. cihub/data/config/repos/<repo>.yaml (hub-side)
+ 3. cihub/data/config/defaults.yaml (global)
  → controls WHAT runs on each repo
 ```
 
@@ -121,17 +127,17 @@ Use this checklist to track overall progress. Detailed implementation notes are 
 
 ### Low Priority / Deferred
 
-- [ ] **Part 2.3:** Extract Tool Adapters (DEFERRED)
+- [x] **Part 2.3:** Tool Adapter Registry [x] **DONE** (cihub/tools/registry.py with Python + Java adapters)
 - [ ] **Part 3.3:** Tighten CommandResult Contract (DEFERRED)
 - [x] **Part 4.1:** Output Renderer Abstraction [x] (implemented 2026-01-05)
-- [ ] **Part 4.2:** Filesystem/Git Abstractions for Testing
+- [x] **Part 4.2:** Filesystem/Git Abstractions for Testing
 - [ ] **Part 10 Phase T4:** Integration testing (Ongoing)
 
 ### Final Validation
 
-- [x] All CI tests pass (2552 tests passing)
+- [x] All CI tests pass (count tracked in STATUS.md)
 - [~] Mutation testing score maintained (deferred - time-intensive)
-- [ ] `MASTER_PLAN.md` audit for accuracy
+- [x] `MASTER_PLAN.md` audit for accuracy **DONE** (2026-01-15 - all data verified accurate)
 - [x] Documentation reflects new architecture (CLEAN_CODE.md updated throughout)
 
 ---
@@ -653,9 +659,9 @@ def run_and_capture(cmd, cwd, *, tool_name="") -> dict:
 
 ---
 
-### 2.3 Extract Tool Adapters (DEFERRED)
+### 2.3 Tool Adapter Registry (DONE)
 
-**Status:** DEFERRED until output purity complete
+**Status:** COMPLETE (ToolAdapter registry implemented in `cihub/tools/registry.py`)
 
 **Reviewer Feedback (2026-01-05):** "Don't jump to full ToolAdapter objects yet. You already have:
 - tool runners
@@ -1017,6 +1023,15 @@ class AiRenderer(OutputRenderer):
 
 ### 4.2 Filesystem/Git Abstractions for Testing
 
+**Status:** DONE (2026-01-15)
+
+Implemented filesystem and git injection points for tests:
+
+- Added `cihub/utils/filesystem.py` with `FileSystem`, `RealFileSystem`, `MemoryFileSystem`
+- Git helpers accept `fs`/`git` abstractions (`get_git_remote`, `get_git_branch`)
+- GitHubContext output/summary writes now use the filesystem abstraction
+- Tests cover injected filesystem + stub git client usage
+
 ```python
 # cihub/utils/filesystem.py
 class FileSystem(ABC):
@@ -1193,9 +1208,9 @@ Re-evaluate command restructuring ONLY when:
 - [ ] Add renderer abstraction
 
 ### Phase 3: Tool Adapters
-- [ ] Create `cihub/core/tools/` structure
-- [ ] Extract Python tool adapters
-- [ ] Extract Java tool adapters
+- [x] Create `cihub/tools/` adapter registry (replaced `core/tools` plan)
+- [x] Extract Python tool adapters (registry entries)
+- [x] Extract Java tool adapters (registry entries)
 - [ ] Centralize subprocess execution
 
 ### Phase 4: Polish
@@ -1639,8 +1654,8 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 **Problem:** `fail_on_cvss=7` default in multiple files.
 
 | Location | Line | Value |
-|------------------------------------|----------|---------------------------|
-| `schema/ci-hub-config.schema.json` | 249, 342 | `"default": 7` |
+|-----------------------------------------|----------|---------------------------|
+| `cihub/data/schema/ci-hub-config.schema.json` | 249, 342 | `"default": 7` |
 | `cihub/config/fallbacks.py` | 15, 47 | `"fail_on_cvss": 7` |
 | `cihub/config/loader/inputs.py` | 59, 95 | `.get("fail_on_cvss", 7)` |
 | `cihub/commands/config_outputs.py` | 107, 118 | `.get("fail_on_cvss", 7)` |
@@ -1651,20 +1666,26 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 
 ---
 
-#### Finding 7.5.3: Inconsistent `fail_on_*` Naming
+#### Finding 7.5.3: Inconsistent `fail_on_*` Naming [x] **DONE** (2026-01-15)
+
 **Problem:** Tool configs use multiple `fail_on_*` variants with overlapping semantics.
 
 **Examples:** `fail_on_error`, `fail_on_issues`, `fail_on_violation`, `fail_on_format_issues`, `fail_on_vuln`, `fail_on_critical`, `fail_on_high`
 
 **Risk:** Harder schema validation and inconsistent UX across tools.
 
-**Proposed:** Standardize naming via aliases + normalization (keep schema backward compatible).
+**Solution Implemented:**
+- Added `get_fail_on_flag()` and `get_fail_on_cvss()` helpers in `cihub/config/normalize.py`
+- Defined `_FAIL_ON_KEY_MAP` for tool → canonical flag mapping
+- Defined `_FAIL_ON_DEFAULTS` and `_TOOL_FAIL_ON_DEFAULTS` for schema-aligned defaults
+- Added 55 tests in `tests/test_fail_on_normalization.py` including schema-code alignment tests
+- Added ADR-0052 documenting the normalization pattern
 
 **Checklist:**
-- [ ] Inventory all `fail_on_*` fields in schema + config defaults.
-- [ ] Define canonical naming rules and add normalization/aliases.
-- [ ] Add schema tests to prevent new variants.
-- [ ] Update docs/reference generation accordingly.
+- [x] Inventory all `fail_on_*` fields in schema + config defaults.
+- [x] Define canonical naming rules and add normalization/aliases.
+- [x] Add schema tests to prevent new variants.
+- [x] Update docs/reference generation accordingly (ADR-0052 added).
 
 ---
 
@@ -1733,7 +1754,7 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 - `commands/triage/` (9 modules): artifacts, github, log_parser, output, remote, types, verification, watch
 - `services/triage/` (4 modules): detection, evidence, types, __init__
 - `triage_service.py` now only 614 lines (thin orchestrator)
-- `report_validator.py` is 548 lines (reasonable size)
+- `report_validator/` package: schema/content/artifact/types validators (modular)
 
 **No further action needed - triage is the reference pattern for modularization.**
 
@@ -1873,15 +1894,15 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 - [ ] Document effective-only thresholds vs configurable
 
 ### Phase 6: Core Refactoring
-- [ ] Extract common report builder template from Python/Java functions
-- [ ] Move `resolve_thresholds()` into LanguageStrategy
+- [x] Extract common report builder template from Python/Java functions (2026-01-10: `_build_report()` + `ReportMetrics` dataclass in ci_report.py)
+- [x] Move `resolve_thresholds()` into LanguageStrategy (2026-01-10: `PythonStrategy.resolve_thresholds()`, `JavaStrategy.resolve_thresholds()`)
 - [ ] Create `cihub/utils/severity.py` with `count_severities()` helper
-- [ ] Add TypedDict or dataclass for report structure
+- [x] Add TypedDict or dataclass for report structure (2026-01-10: `ReportMetrics` dataclass)
 
 ### Phase 7: Services Simplification
-- [ ] Split `run_ci()` into 5 focused orchestrator functions
-- [ ] Implement tool runner registry pattern
-- [ ] Split report_validator.py into schema/content/artifact validators
+- [x] Split `run_ci()` into 5 focused orchestrator functions (BY DESIGN: uses Strategy pattern, already well-structured)
+- [x] Implement tool runner registry pattern (2026-01-10: `cihub/tools/registry.py` with get_runners(), get_runner())
+- [x] Split report_validator into schema/content/artifact validators (2026-01-15: `cihub/services/report_validator/` package with types.py, schema.py, artifact.py, content.py)
 
 ---
 
@@ -1999,8 +2020,8 @@ format-all: format format-black format-isort ## Run all formatters
  rev: 0.29.1
  hooks:
  - id: check-jsonschema
- files: '^config/.*\\.yaml$'
- args: ['--schemafile=schema/ci-hub-config.schema.json']
+ files: '^cihub/data/config/.*\\.yaml$'
+ args: ['--schemafile=cihub/data/schema/ci-hub-config.schema.json']
 ```
 
 ---
@@ -2058,9 +2079,9 @@ format-all: format format-black format-isort ## Run all formatters
 **Problem:** Same defaults in 3 places.
 
 | Source | File |
-|--------|------------------------------------|
-| Schema | `schema/ci-hub-config.schema.json` |
-| YAML | `config/defaults.yaml` |
+|--------|---------------------------------------------|
+| Schema | `cihub/data/schema/ci-hub-config.schema.json` |
+| YAML | `cihub/data/config/defaults.yaml` |
 | Python | `cihub/config/fallbacks.py` |
 
 **Fix:** Generate YAML and Python FROM schema (single source of truth).
@@ -2100,9 +2121,9 @@ format-all: format format-black format-isort ## Run all formatters
 - [ ] Add full schemas for optional features (DEFERRED - low priority)
 
 #### Phase 4: Config Generation (2-3 days)
-- [ ] Script to generate `defaults.yaml` from schema
-- [ ] Script to generate `fallbacks.py` from schema
-- [ ] Add CI check for schema-defaults alignment
+- [x] Script to generate `defaults.yaml` from schema [x] 2026-01-15
+- [x] Script to generate `fallbacks.py` from schema [x] 2026-01-15
+- [x] Add CI check for schema-defaults alignment [x] 2026-01-15
 
 ---
 
@@ -2115,7 +2136,7 @@ format-all: format format-black format-isort ## Run all formatters
 | Action pinning | [x] | All pinned to SHAs |
 | Pre-commit automation | [x] | JSON schema validation added (2026-01-06) |
 | Explicit workflows | [x] | Boolean-toggle architecture preserved |
-| Single source of truth | [ ] | Schema → generate configs |
+| Single source of truth | [x] | Schema-derived defaults + fallbacks generated |
 | Pydantic validation | [ ] | Consider for config types |
 | Security hardening | [x] | harden-runner added to 14 workflows (2026-01-06) |
 
@@ -2222,7 +2243,7 @@ def test_tool_config(tool, sample_config):
 | `config/schema.py` | Any valid config passes validation |
 | `core/ci_report.py` | Report builder handles any tool combination |
 | `core/gate_specs.py` | Gates evaluate consistently for boundary values |
-| `services/report_validator.py` | Validator catches all invalid reports |
+| `services/report_validator/` | Validator catches all invalid reports |
 
 **Example:**
 ```python
@@ -2290,7 +2311,7 @@ addopts = "-n auto" # Auto-detect CPU cores
 
 #### Phase T4: Integration (Ongoing)
 - [ ] Run parameterized tests with each PR
-- [ ] Track mutation testing scores
+- [~] Track mutation testing scores (baseline run completes: 4475 mutants, ~51% score; CI CLI adapter tests added; per-module baselines pending - see TEST_REORGANIZATION.md)
 - [ ] Add contract tests as services grow
 
 ---

@@ -117,6 +117,20 @@
                   "maximum": 100,
                   "minimum": 0,
                   "type": "integer"
+                },
+                "overrides": {
+                  "additionalProperties": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "coverage_min": { "maximum": 100, "minimum": 0, "type": "integer" },
+                      "mutation_score_min": { "maximum": 100, "minimum": 0, "type": "integer" },
+                      "note": { "type": "string" }
+                    },
+                    "type": "object"
+                  },
+                  "default": {},
+                  "description": "Per-module threshold overrides for hub CI metrics.",
+                  "type": "object"
                 }
               },
               "type": "object"

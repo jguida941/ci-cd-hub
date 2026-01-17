@@ -1,6 +1,7 @@
 # Registry System Audit and Implementation Plan
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
-> **WARNING: SUPERSEDED:** This document has been consolidated into `docs/development/active/SYSTEM_INTEGRATION_PLAN.md` (2026-01-08)
+> **WARNING: SUPERSEDED:** This document has been consolidated into `docs/development/archive/SYSTEM_INTEGRATION_PLAN.md` (2026-01-08)
 
 **Date:** 2026-01-06
 **Priority:** **#2** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from cihub.utils.paths import hub_root
+
 
 class TestProfileSelectionHelpers:
     """Tests for profile selection helper functions."""
@@ -26,11 +28,9 @@ class TestTierProfileMapping:
 
     def test_tier_strict_has_high_thresholds(self) -> None:
         """Strict tier should have coverage >= 85%."""
-        from pathlib import Path
-
         import yaml
 
-        tier_path = Path("templates/profiles/tier-strict.yaml")
+        tier_path = hub_root() / "templates" / "profiles" / "tier-strict.yaml"
         if tier_path.exists():
             content = yaml.safe_load(tier_path.read_text())
             thresholds = content.get("thresholds", {})
@@ -39,11 +39,9 @@ class TestTierProfileMapping:
 
     def test_tier_relaxed_has_lower_thresholds(self) -> None:
         """Relaxed tier should have coverage <= 60%."""
-        from pathlib import Path
-
         import yaml
 
-        tier_path = Path("templates/profiles/tier-relaxed.yaml")
+        tier_path = hub_root() / "templates" / "profiles" / "tier-relaxed.yaml"
         if tier_path.exists():
             content = yaml.safe_load(tier_path.read_text())
             thresholds = content.get("thresholds", {})

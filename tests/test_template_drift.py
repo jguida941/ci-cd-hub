@@ -8,7 +8,7 @@ These tests verify that:
 This prevents drift between:
 - gate_specs.py (single source of truth)
 - Workflow templates (.github/workflows/*-ci.yml)
-- Config defaults (config/defaults.yaml)
+- Config defaults (cihub/data/config/defaults.yaml)
 """
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ from cihub.core.gate_specs import (
     PYTHON_THRESHOLDS,
     PYTHON_TOOLS,
 )
+from cihub.utils.paths import hub_root
 
 
 def _load_workflow_inputs(workflow_path: Path) -> set[str]:
@@ -42,7 +43,7 @@ def _load_workflow_inputs(workflow_path: Path) -> set[str]:
 
 def _load_defaults_tool_keys(language: str) -> set[str]:
     """Extract tool keys from defaults.yaml for a language."""
-    defaults_path = Path("config/defaults.yaml")
+    defaults_path = hub_root() / "config" / "defaults.yaml"
     if not defaults_path.exists():
         return set()
 
@@ -53,7 +54,7 @@ def _load_defaults_tool_keys(language: str) -> set[str]:
 
 def _load_defaults_threshold_keys() -> set[str]:
     """Extract threshold keys from defaults.yaml."""
-    defaults_path = Path("config/defaults.yaml")
+    defaults_path = hub_root() / "config" / "defaults.yaml"
     if not defaults_path.exists():
         return set()
 

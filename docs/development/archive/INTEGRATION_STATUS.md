@@ -1,6 +1,7 @@
 # Integration Status
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
 
-> **WARNING: SUPERSEDED:** This quarantine tracking document is obsolete. The quarantine approach was completed; see `docs/development/active/CLEAN_CODE.md` for current architecture work.
+> **WARNING: SUPERSEDED:** This quarantine tracking document is obsolete. The quarantine approach was completed; see `docs/development/archive/CLEAN_CODE.md` for current architecture work.
 >
 > Track graduation of files from `_quarantine/` to their final locations in `cihub/`.
 >

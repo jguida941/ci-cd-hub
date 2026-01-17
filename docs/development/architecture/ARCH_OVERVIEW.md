@@ -1,8 +1,12 @@
 # CI/CD Hub: Architectural Overview
-> **Status:** Audited
-> **Last Updated:** 2026-01-06
-> **Author:** Justin Guida
->
+
+**Status:** reference
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+**Last Updated:** 2026-01-15
+**Author:** Justin Guida
+
 This document provides a comprehensive overview of the CI/CD Hub platform,
 detailing its architecture, core components, execution modes, toolchains,
 reporting mechanisms, and current status.
@@ -18,7 +22,7 @@ reporting mechanisms, and current status.
 │ │ │ │ │ │ │ │ (cihub) │ │
 │ │ defaults.yaml│ │ ci-hub-*.json│ │ hub-run-all │ │ │ │
 │ │ repos/*.yaml │ │ ci-report.v2 │ │ java-ci.yml │ │ 28 commands │ │
-│ │ templates/ │ │ │ │ python-ci.yml│ │ 2120 tests │ │
+│ │ templates/ │ │ │ │ python-ci.yml│ │ 2862 tests │ │
 │ │ profiles/ │ │ │ │ │ │ │ │
 │ └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘ │
 │ │ │ │ │ │

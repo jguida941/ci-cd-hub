@@ -107,6 +107,14 @@ class TestHelpSnapshots:
         lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
         assert lines == snapshot
 
+    def test_ai_loop_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
+        """ai-loop --help output should be stable."""
+        with pytest.raises(SystemExit):
+            main(["ai-loop", "--help"])
+        out = capsys.readouterr().out
+        lines = [line.strip() for line in out.strip().split("\n") if line.strip()]
+        assert lines == snapshot
+
     def test_triage_help_snapshot(self, capsys, snapshot: SnapshotAssertion) -> None:
         """triage --help output should be stable."""
         with pytest.raises(SystemExit):

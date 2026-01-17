@@ -423,6 +423,29 @@ class TestCmdInit:
         config_text = config_path.read_text()
         assert subdir in config_text
 
+    def test_init_detects_language_from_subdir(self, tmp_path: Path) -> None:
+        """Init detects language using the subdir when provided."""
+        subdir = "services/java"
+        (tmp_path / subdir).mkdir(parents=True)
+        (tmp_path / subdir / "pom.xml").write_text("<project></project>", encoding="utf-8")
+        args = argparse.Namespace(
+            repo=str(tmp_path),
+            language=None,
+            owner="testowner",
+            name="testrepo",
+            branch="main",
+            subdir=subdir,
+            wizard=False,
+            dry_run=False,
+            apply=True,
+            force=False,
+            fix_pom=False,
+        )
+        result = cmd_init(args)
+        assert result.exit_code == 0
+        config_text = (tmp_path / ".ci-hub.yml").read_text(encoding="utf-8")
+        assert "language: java" in config_text
+
     def test_init_missing_owner_uses_fallback(self, tmp_path: Path) -> None:
         """Init uses fallback owner when not provided and no git remote."""
         (tmp_path / "pyproject.toml").write_text("[project]\nname='example'\n", encoding="utf-8")

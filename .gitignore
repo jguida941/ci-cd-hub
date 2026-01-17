@@ -43,7 +43,6 @@ reports/*.html
 
 # AI context files (local only)
 CLAUDE.md
-AGENTS.md
 claude_audit.md
 
 # Internal audit docs

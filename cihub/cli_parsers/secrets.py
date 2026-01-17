@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from typing import Callable
 
 from cihub.cli_parsers.common import see_also_epilog
@@ -22,8 +23,8 @@ def add_secrets_commands(
     add_json_flag(setup_secrets)
     setup_secrets.add_argument(
         "--hub-repo",
-        default="jguida941/ci-cd-hub",
-        help="Hub repository (default: jguida941/ci-cd-hub)",
+        default=os.environ.get("CIHUB_HUB_REPO"),
+        help="Hub repository (default: $CIHUB_HUB_REPO)",
     )
     setup_secrets.add_argument("--token", help="GitHub PAT (prompts if not provided)")
     setup_secrets.add_argument("--all", action="store_true", help="Also set on all connected repos")

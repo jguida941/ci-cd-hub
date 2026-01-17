@@ -3,17 +3,17 @@ from types import SimpleNamespace
 from cihub.commands import verify as verify_module
 from cihub.commands.verify import cmd_verify, validate_reusable_contracts, validate_template_contracts
 from cihub.types import CommandResult
-from cihub.utils import hub_root
+from cihub.utils.paths import project_root
 
 
 def test_template_contracts_clean() -> None:
-    problems, data = validate_template_contracts(hub_root())
+    problems, data = validate_template_contracts(project_root())
     assert problems == []
     assert data["templates_checked"] > 0
 
 
 def test_reusable_contracts_clean() -> None:
-    problems, data = validate_reusable_contracts(hub_root())
+    problems, data = validate_reusable_contracts(project_root())
     assert problems == []
     assert data["workflows"]
 

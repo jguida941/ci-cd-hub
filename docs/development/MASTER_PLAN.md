@@ -1,21 +1,36 @@
 # CI/CD Hub - Master Plan
 
-**Status:** Canonical plan for all active work
-**Last Updated:** 2026-01-12 (SYSTEM_INTEGRATION_PLAN 100% complete)
+**Status:** active
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-15
+**Last Updated:** 2026-01-15 (archived CLEAN_CODE/remediation, priority shift)
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
 
 ---
 
+## AI CI Loop Proposal (In Progress)
+
+See [AI_CI_LOOP_PROPOSAL.md](docs/development/AI_CI_LOOP_PROPOSAL.md). This is a draft initiative and
+will be promoted into an active design doc when scope and sequencing are finalized.
+
+**Status update:** Phase 1-3 complete (CLI registered; workflow wrapper added).
+**Current focus:** Wizard/CLI flows validated; proceed with Test Reorg Phase 0 file mapping before resuming AI loop work.
+
+---
+
 ## CURRENT PRIORITY AT A GLANCE
+
+> Current priority is **#3** (first non-archived doc). Immediate focus is Phase 0 file mapping before test splits and AI loop tooling.
 
 | Priority | Document | Status | Next Action |
 |----------|----------|--------|-------------|
-| **#1 ** | CLEAN_CODE.md | ~92% | Part 7.4: Core Module Refactoring |
-| **#2 ** | SYSTEM_INTEGRATION_PLAN.md | **100%** | Complete (102 new tests, 2705 total passed) |
-| **#3 ** | TEST_REORGANIZATION.md | PLANNED | Resolve blockers first |
+| **#1 ** | CLEAN_CODE.md | ARCHIVED | Complete (archived) |
+| **#2 ** | [SYSTEM_INTEGRATION_PLAN.md](docs/development/archive/SYSTEM_INTEGRATION_PLAN.md) | ARCHIVED | Complete (archived) |
+| **#3 ** | TEST_REORGANIZATION.md | CURRENT | Phase 0 file mapping (all 78 files → new homes) |
 | **#4 ** | DOC_AUTOMATION_AUDIT.md | ~98% | Optional: guide cmd validation |
-| **#5 ** | TYPESCRIPT_CLI_DESIGN.md | Planning | Wait for CLEAN_CODE.md 100% |
+| **#5 ** | TYPESCRIPT_CLI_DESIGN.md | Planning | Wait for TEST_REORGANIZATION.md complete |
 | **#6 ** | PYQT_PLAN.md | DEFERRED | Wait for all above |
 
 ---
@@ -23,6 +38,59 @@
 ## Purpose
 
 Single source of truth for **priorities, scope, and sequencing**. Individual planning docs own the **detailed implementation plans**.
+
+## Multi-Agent Coordination (Production)
+
+MASTER_PLAN is the canonical coordination point. All agents must read this file and [AGENTS.md](../../AGENTS.md) before starting work.
+
+### Parallel Workstreams (Internal)
+
+| Workstream | Source Doc | Checklist Location | Notes |
+|------------|------------|--------------------|-------|
+| Remediation Plan | `docs/development/archive/remediation.md` | Remediation phases and findings | Archived intake log; follow-ups tracked in BACKLOG.md |
+| AI CI Loop Proposal | `docs/development/AI_CI_LOOP_PROPOSAL.md` | Proposal phases | Internal-only; workflow changes require approval |
+
+### Agent Assignment (Operational)
+
+Use this table to keep parallel agents in scope and avoid overlapping edits.
+
+| Agent | Scope | Primary Docs | Notes |
+|-------|-------|--------------|-------|
+| Coordinator | Orchestrate scopes, resolve conflicts | `docs/development/MASTER_PLAN.md`, `AGENTS.md` | Owns file ownership map |
+| Remediation Phase 1 (Code) | R-001/R-002 fixes + tests | `docs/development/archive/remediation.md` | Archived (complete) |
+| Remediation Phase 2 (Docs/ADR) | R-012/R-024/R-023 alignment | `docs/development/archive/remediation.md` | Archived (complete) |
+| CI Stabilization | R-033 triage/parser + snapshot drift | `docs/development/archive/remediation.md` | Archived (complete) |
+| CLEAN_CODE Reconciliation | Status accuracy cleanup | `docs/development/archive/CLEAN_CODE.md` | Archived (complete) |
+| AI Loop Proposal | Proposal + internal tooling doc | `docs/development/AI_CI_LOOP_PROPOSAL.md` | CLI surface + workflow wrapper approved |
+| Test Reorg Blockers | Validate blocker list | `docs/development/active/TEST_REORGANIZATION.md` | Report only |
+| Doc Automation Refs | TOOLS/WORKFLOWS gaps | `docs/development/active/DOC_AUTOMATION_AUDIT.md` | Report only |
+
+### File Ownership Map (Authoritative)
+
+> **This table is authoritative.** Agents may only edit files in their "Exclusive Edit" column.
+> Read-only access is unrestricted. Conflicts require Coordinator resolution.
+
+| Agent | Exclusive Edit Rights | Read-Only | Notes |
+|-------|----------------------|-----------|-------|
+| **Coordinator (0)** | `docs/development/MASTER_PLAN.md`, `AGENTS.md`, `docs/development/status/STATUS.md` | All | Updates ownership map, resolves conflicts |
+| **Remediation Code (1)** | `cihub/commands/setup.py`, `cihub/commands/init.py`, `tests/test_init_override.py`, `tests/test_setup_flow.py` | `docs/development/archive/remediation.md` | Archived (no active edits) |
+| **Remediation Docs (2)** | `docs/adr/0051-wizard-profile-first-design.md`, `docs/reference/TOOLS.md` | `docs/development/archive/remediation.md` | Archived (no active edits) |
+| **CI Stabilization (3)** | `cihub/commands/triage_cmd.py`, `tests/test_triage*.py`, snapshot files | `docs/development/archive/remediation.md` | Archived (no active edits) |
+| **CLEAN_CODE Reconcile (4)** | `docs/development/archive/CLEAN_CODE.md` (status sections only) | `docs/development/MASTER_PLAN.md` | Archived (complete) |
+| **AI Loop Proposal (5)** | `docs/development/AI_CI_LOOP_PROPOSAL.md`, `cihub/commands/ai_loop.py`, `templates/hooks/`, `tests/test_ai_loop.py`, `cihub/commands/ci.py`, `cihub/utils/env_registry.py`, `tests/test_commands_ci.py`, `cihub/services/ai/`, `cihub/cli.py`, `cihub/cli_parsers/core.py`, `cihub/cli_parsers/types.py`, `cihub/cli_parsers/builder.py`, `.github/workflows/ai-ci-loop.yml`, `tests/test_cli_snapshots.py`, `tests/__snapshots__/test_cli_snapshots.ambr`, `tests/snapshots/cli_help.txt` | None | CLI surface approved; includes workflow wrapper |
+| **Test Reorg (6)** | *(report only)* | `TEST_REORGANIZATION.md` | Validate blockers; no edits |
+| **Doc Automation (7)** | *(report only)* | `DOC_AUTOMATION_AUDIT.md` | Validate gaps; no edits |
+
+### Coordination Rules
+
+- Check `git status` before starting; do not overwrite unrelated in-flight changes.
+- Declare file ownership for each workstream; avoid overlapping edits without explicit coordination.
+- When a change affects shared docs, update them together: `docs/development/MASTER_PLAN.md`, `docs/development/status/STATUS.md`, `AGENTS.md`, `docs/development/CHANGELOG.md`.
+- Major design decisions require ADR updates and a MASTER_PLAN “Current Decisions” update.
+
+### Test Count Policy (Temporary)
+
+- Test counts in docs are paused to reduce churn; do not update numeric totals unless you ran a verified full test run and can cite the command/date. Owner will refresh counts after the next full run.
 
 ### Document Hierarchy (Updated 2026-01-06)
 
@@ -33,9 +101,9 @@ MASTER_PLAN.md
 └── Cross-cutting architectural decisions
 
 Individual Planning Docs (Priority Order)
-├── #1 CLEAN_CODE.md → HOW to implement architecture improvements
-├── #2 SYSTEM_INTEGRATION_PLAN.md → HOW to fix registry/wizard disconnect
-├── #3 TEST_REORGANIZATION.md → HOW to restructure 2100+ tests
+├── #1 CLEAN_CODE.md (ARCHIVED) → HOW to implement architecture improvements
+├── #2 SYSTEM_INTEGRATION_PLAN.md (ARCHIVED) → HOW to fix registry/wizard disconnect
+├── #3 TEST_REORGANIZATION.md (CURRENT - blocked) → HOW to restructure 2100+ tests
 ├── #4 DOC_AUTOMATION_AUDIT.md → HOW to implement doc automation
 ├── #5 TYPESCRIPT_CLI_DESIGN.md → HOW to build TypeScript CLI
 └── #6 PYQT_PLAN.md → HOW to build GUI (deferred)
@@ -47,39 +115,39 @@ Individual Planning Docs (Priority Order)
 
 ## Active Design Docs - Priority Order
 
-> **Work on these IN ORDER. Each doc blocks the next.** Updated 2026-01-06.
+> **Work on these IN ORDER. Each doc blocks the next.** Updated 2026-01-15.
 
-### Priority 1: CLEAN_CODE.md (CURRENT - Foundation)
+### Priority 1: CLEAN_CODE.md (ARCHIVED)
 
-**Status:** ~92% complete | **Blocks:** Everything else
+**Status:** Archived (complete) | **Blocks:** None
 
 ```
-docs/development/active/CLEAN_CODE.md
+docs/development/archive/CLEAN_CODE.md
 ```
 
 Must complete **before** starting other docs:
 - [x] Part 2.2: Centralize Command Output [x] **DONE** (45→7 prints, 84% reduction)
 - [x] Part 2.7: Consolidate ToolResult [x] **DONE** (unified in `cihub/types.py`)
-- [x] Part 5.2: Mixed Return Types [x] **DONE** (all 47 commands → pure CommandResult)
+- [x] Part 5.2: Mixed Return Types [x] **DONE** (all commands → pure CommandResult)
 - [x] Part 9.3: Schema Consolidation [x] **DONE** (sbom/semgrep → sharedTools, toolStatusMap extracted)
 - [x] Part 7.1: CLI Layer Consolidation [x] **DONE** (factory in common.py, findings done in Part 2.2/5.2)
 - [x] Part 7.2: Hub-CI Subcommand Helpers [x] **DONE** (helpers exist, ensure_executable now used)
 - [x] Part 7.3: Utilities Consolidation [x] **DONE** (project.py, github_context.py, safe_run() + 34 migrations)
 - [x] Part 5.3: Special-Case Handling [x] **DONE** (ToolAdapter registry in cihub/tools/registry.py)
-- [ ] Part 7.4: Core Module Refactoring ← **CURRENT** (8 findings, incremental)
+- [x] Part 7.4: Core Module Refactoring **DONE** (8 findings)
 - [x] Part 7.5: Config/Schema Consistency [x] **DONE** (schema validation bypass fixed)
-- [ ] Part 7.6: Services Layer (4 findings, incremental)
+- [x] Part 7.6: Services Layer **DONE** (4 findings)
 - [x] Part 9.1: Scripts & Build System [x] **DONE** (deprecation warnings added)
 - [x] Part 9.2: GitHub Workflows Security [x] **DONE** (harden-runner toggle)
 
 **Why first:** Python CLI JSON output must be clean before TypeScript CLI can parse it.
 
-### Priority 2: SYSTEM_INTEGRATION_PLAN.md (Consolidated Architecture Fix)
+### Priority 2: SYSTEM_INTEGRATION_PLAN.md (Archived)
 
-**Status:** Consolidated (13-agent comprehensive analysis) | **Depends on:** CLEAN_CODE.md ~92%+ | **Blocks:** TEST_REORGANIZATION
+**Status:** Archived (complete) | **Depends on:** CLEAN_CODE.md (archived) | **Blocks:** TEST_REORGANIZATION
 
 ```
-docs/development/active/SYSTEM_INTEGRATION_PLAN.md
+docs/development/archive/SYSTEM_INTEGRATION_PLAN.md
 ```
 
 > **Note:** This consolidates the former REGISTRY_AUDIT_AND_PLAN.md, WIZARD_IMPROVEMENTS.md, and COMPREHENSIVE_SYSTEM_AUDIT.md into a single actionable plan.
@@ -91,22 +159,21 @@ Core implementation needed:
 - [x] Phase 3: Registry bootstrap + drift detection
 - [x] Phase 4: Wizard parity + profile integration
 - [x] Phase 5: CLI management commands (profile/registry/tool/threshold/repo) (2026-01-12)
-- [x] Phase 6: Schema extensibility (custom tools end-to-end) (2026-01-12: 35 tests)
+- [x] Phase 6: Schema extensibility (custom tools end-to-end) (2026-01-12: added tests)
 
 **Status:** 100% complete (2026-01-12). All phases implemented with 102 new tests.
 
-### Priority 3: TEST_REORGANIZATION.md (After Registry Integration)
+### Priority 3: TEST_REORGANIZATION.md (CURRENT - Blocked)
 
-**Status:** PLANNED (10-12 day blockers identified) | **Depends on:** CommandResult migration + Registry fix
+**Status:** PLANNED (wizard/CLI validation complete; repo run blockers resolved; Phase 0 file mapping next) | **Depends on:** CommandResult migration + Registry fix
 
 ```
 docs/development/active/TEST_REORGANIZATION.md
 ```
 
-Blockers to resolve first:
-- [ ] `cihub hub-ci thresholds` CLI command not implemented
-- [ ] Schema blocks per-module overrides (`additionalProperties: false`)
-- [ ] 3 automation scripts must be created
+Blockers resolved:
+- [x] Schema allows per-module overrides (`additionalProperties: false` addressed)
+- [x] 3 automation scripts created (`scripts/update_test_metrics.py`, `scripts/generate_test_readme.py`, `scripts/check_test_drift.py`)
 
 **Why third:** Tests need to validate registry integration alongside command outputs.
 
@@ -136,9 +203,9 @@ Core MVP:
 
 **Why fourth:** Documentation automation needs stable command signatures.
 
-### Priority 5: TYPESCRIPT_CLI_DESIGN.md (After CLEAN_CODE complete)
+### Priority 5: TYPESCRIPT_CLI_DESIGN.md (After TEST_REORGANIZATION complete)
 
-**Status:** Planning | **Depends on:** CLEAN_CODE.md (100% - explicit prerequisite)
+**Status:** Planning | **Depends on:** CLEAN_CODE.md (complete) + TEST_REORGANIZATION.md
 
 ```
 docs/development/active/TYPESCRIPT_CLI_DESIGN.md
@@ -159,35 +226,6 @@ docs/development/active/PYQT_PLAN.md
 
 **Why last:** GUI wrapper needs all CLI commands stable and tested.
 
-### Dependency Graph
-
-```
-┌─────────────────────────┐
-│ CLEAN_CODE.md │ ◄─── START HERE (#1)
-│ (Foundation ~92%) │
-└───────────┬─────────────┘
- │
- ▼
-┌─────────────────────────┐
-│ REGISTRY_AUDIT_AND_ │ ◄─── NEW (#2)
-│ PLAN.md (Architecture) │
-└───────────┬─────────────┘
- │
- ┌───────┴───────┬─────────────────┐
- ▼ ▼ ▼
-┌───────────┐ ┌──────────────┐ ┌──────────────────────┐
-│ TEST_ │ │ DOC_AUTO_ │ │ TYPESCRIPT_CLI_ │
-│ REORG.md │ │ AUDIT.md │ │ DESIGN.md │
-│ (#3) │ │ (#4) │ │ (#5) │
-└─────┬─────┘ └──────────────┘ └──────────┬───────────┘
- │ │
- └───────────────┬───────────────────┘
- ▼
- ┌───────────────┐
- │ PYQT_PLAN.md │
- │ (#6) │
- └───────────────┘
-```
 
 ---
 
@@ -206,14 +244,14 @@ docs/development/active/PYQT_PLAN.md
 - [ ] `--json` flag for all commands including hub-ci subcommands
 
 **Documentation:**
-- [ ] Generate `docs/reference/TOOLS.md` from `cihub/tools/registry.py`
+- [x] Generate `docs/reference/TOOLS.md` from `cihub/tools/registry.py`
 - [ ] Generate `docs/reference/WORKFLOWS.md` from `.github/workflows/*.yml`
 - [x] Plain-text reference scan for stale `docs/...` strings [x] (via `cihub docs audit`)
 - [x] Universal header enforcement for manual docs [x] (via `cihub docs audit` Part 12.Q)
 - [x] `.cihub/tool-outputs/` artifacts for doc automation [x] (optional via `--output-dir`, `--tool-output`, `--ai-output`)
 - [ ] Tooling integration checklist: toggle -> CLI runner (no inline workflow logic) -> tool-outputs -> report summaries/dashboards -> templates/profiles -> docs refs -> template sync tests
 
-**Clean Code:** *(See `active/CLEAN_CODE.md` for details - audit updated 2026-01-05)*
+**Clean Code:** *(See `archive/CLEAN_CODE.md` for details - audit updated 2026-01-05)*
 - [x] `_tool_enabled()` consolidation (5 implementations → 1 canonical) [x]
  - Added `tool_enabled()` to `cihub/config/normalize.py` as canonical implementation
  - Updated 4 call sites to delegate to canonical function
@@ -225,10 +263,10 @@ docs/development/active/PYQT_PLAN.md
 - [x] Language strategy extraction (Python/Java) - Complete [x]
  - Created `cihub/core/languages/` with base.py, python.py, java.py, registry.py
  - Delegation pattern: strategies delegate to existing `_run_*_tools()` functions
- - 33 tests covering registry, strategies, build tool detection, language detection
+- Added tests covering registry, strategies, build tool detection, language detection
  - Refactored `run_ci()` to use strategy as primary dispatch
  - Updated `helpers.py` to use `strategy.get_default_tools()`
- - All 1837 tests pass
+- All 2862 tests pass
 - [x] Hub-CI CommandResult migration (43 functions → return CommandResult) - **Complete** [x]
  - [x] validation.py: 8 functions migrated [x]
  - [x] security.py: 6 functions migrated [x]
@@ -238,11 +276,11 @@ docs/development/active/PYQT_PLAN.md
  - [x] release.py: 16 functions migrated [x]
  - Router bug fixed (CommandResult vs int comparison)
 - [x] Expand CI-engine tests (2 → 151) [x] - 118 CI engine tests + 33 strategy tests
-- [x] Testing framework improvements [x] (See `active/CLEAN_CODE.md` Part 10)
+- [x] Testing framework improvements [x] (See `archive/CLEAN_CODE.md` Part 10)
  - [x] Phase T1: conftest.py, pytest-xdist, hypothesis
  - [x] Phase T2: Parameterized tests (5 files refactored)
  - [x] Phase T3: Property-based testing (12 Hypothesis tests)
- - **Total: 2120 tests passing** *(updated 2026-01-06)*
+- **Total: 2862 tests passing** *(verified 2026-01-15; per docs audit)*
 - [x] Output normalization - OutputRenderer infrastructure [x] (see **Architecture Consolidation** below)
  - [x] Contract enforcement test added (`test_command_output_contract.py`) - prevents regression
  - [x] **Migrated 13 major files** (~198 prints → CommandResult):
@@ -363,7 +401,7 @@ docs/development/active/PYQT_PLAN.md
 ## References (Background Only)
 
 **Active Design Docs** (in-progress designs, listed in `status/STATUS.md`):
-- `docs/development/active/CLEAN_CODE.md` (architecture improvements: polymorphism, encapsulation)
+- `docs/development/archive/CLEAN_CODE.md` (architecture improvements: polymorphism, encapsulation)
 - `docs/development/archive/REGISTRY_AUDIT_AND_PLAN.md` (wizard↔registry integration, schema expansion - **archived**)
 - `docs/development/active/TEST_REORGANIZATION.md` (test suite restructuring: 2100+ tests → unit/integration/e2e)
 - `docs/development/active/DOC_AUTOMATION_AUDIT.md` (doc automation design: `cihub docs stale`, `cihub docs audit`)
@@ -381,6 +419,8 @@ These are references, not competing plans.
 ## Current Decisions
 
 - **CLI is the execution engine**; workflows are thin wrappers.
+- **Schema is the source of truth for defaults**; defaults.yaml and fallbacks.py are generated and audited in `cihub check --audit`.
+- **Hub CI supports per-module threshold overrides** under `hub_ci.thresholds.overrides` (ADR-0054).
 - **Single entrypoint workflow is `hub-ci.yml`**; it routes to `python-ci.yml`/`java-ci.yml` internally.
 - **Local verification uses CLI scaffolding + smoke**; fixtures repo is for CI/regression, not required for local tests.
 
@@ -450,8 +490,8 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 - [x] Archive `docs/development/architecture/ARCHITECTURE_PLAN.md`.
 - [ ] Move remaining legacy/duplicate docs to `docs/development/archive/` with a superseded header (no deletion).
 - [x] Archive legacy dispatch templates under `templates/legacy/` and update docs/tests to match.
-- [x] Make reference docs generated, not hand-written (CLI/CONFIG/WORKFLOWS done; TOOLS next).
- - [ ] Generate `docs/reference/TOOLS.md` from `cihub/tools/registry.py` via `cihub docs generate`.
+- [x] Make reference docs generated, not hand-written (CLI/CONFIG/WORKFLOWS/TOOLS done).
+ - [x] Generate `docs/reference/TOOLS.md` from `cihub/tools/registry.py` via `cihub docs generate`.
  - [x] Generate `docs/reference/WORKFLOWS.md` (triggers/inputs tables) from `.github/workflows/*.yml`.
  - Keep `guides/WORKFLOWS.md` narrative-only; tables go in generated reference.
  - Status docs: `development/status/STATUS.md` is single source for active design docs.
@@ -549,9 +589,9 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
  - [ ] Path, category (guide/reference/active/archived)
  - [ ] Generated vs manual flag
  - [ ] Last-reviewed date
-- [ ] Generated references expansion:
- - [ ] `docs/reference/TOOLS.md` from `cihub/tools/registry.py`
- - [ ] `docs/reference/WORKFLOWS.md` from `.github/workflows/*.yml`
+- [x] Generated references expansion:
+ - [x] `docs/reference/TOOLS.md` from `cihub/tools/registry.py`
+ - [x] `docs/reference/WORKFLOWS.md` from `.github/workflows/*.yml`
 
 ### 7) Local/CI Parity (Expand `cihub check`)
 
@@ -683,7 +723,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 - [ ] Add dedicated unit tests for `services/ci_engine/helpers.py` (233 lines after consolidation, limited coverage)
 
 **CLI Consistency:**
-- [ ] Enable `--json` flag for `hub-ci` subcommands (47 commands currently blocked)
+- [ ] Enable `--json` flag for `hub-ci` subcommands (remaining gaps)
  - Issue: `hub_ci.py` explicitly deletes the JSON flag parameter
 - [ ] Require subcommand for `cihub config` and `cihub adr` (currently optional, confusing UX)
 
@@ -692,7 +732,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
  - Eliminates 38+ `if language == "python"` / `elif language == "java"` branches
  - Files: `base.py` (ABC), `python.py`, `java.py`, `registry.py`
  - 33+ tests in `test_language_strategies.py`
- - See `active/CLEAN_CODE.md` Part 2.1 for design
+ - See `archive/CLEAN_CODE.md` Part 2.1 for design
 - [x] CLI argument factory consolidation - `cihub/cli_parsers/common.py` [x]
  - 8 factory functions: `add_output_args`, `add_summary_args`, `add_repo_args`, `add_report_args`, `add_path_args`, `add_output_dir_args`, `add_ci_output_args`, `add_tool_runner_args`
  - `hub_ci.py`: 628 → 535 lines (93 lines, 15% reduction)
@@ -702,7 +742,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
  - Replaces 2-step pattern: `_resolve_output_path()` + `_write_outputs()` → `ctx.write_outputs()`
  - 32 call sites migrated across 7 hub-ci files
  - 38 tests (parameterized + Hypothesis property-based)
- - See `active/CLEAN_CODE.md` Phase 2
+ - See `archive/CLEAN_CODE.md` Phase 2
 - [x] Tool execution helpers - `cihub/commands/hub_ci/__init__.py` [x] *(2026-01-05)*
  - `ToolResult` dataclass for structured tool execution results
  - `ensure_executable()` consolidates 6 chmod patterns

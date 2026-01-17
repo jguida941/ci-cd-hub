@@ -379,6 +379,13 @@ class TestCollectJavaPomWarnings:
         warnings, missing = collect_java_pom_warnings(tmp_path, config)
         assert any("pom.xml not found" in w for w in warnings)
 
+    def test_gradle_missing_pom_skipped(self, tmp_path: Path) -> None:
+        """Skip missing pom.xml warnings for Gradle projects."""
+        config = {"java": {"build_tool": "gradle"}}
+        warnings, missing = collect_java_pom_warnings(tmp_path, config)
+        assert warnings == []
+        assert missing == []
+
     def test_gradle_project_skipped(self, tmp_path: Path) -> None:
         """Skip POM checks for Gradle projects."""
         pom = tmp_path / "pom.xml"
