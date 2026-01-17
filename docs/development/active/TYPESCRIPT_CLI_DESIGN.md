@@ -47,6 +47,8 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [ ] Write unit tests for AI module (`tests/test_ai_module.py`)
 - [ ] Write integration tests for AI enhancement
 
+**Note:** Any new Python CLI flags or commands require ADR + command-contract updates + regenerated reference docs.
+
 ### Phase 2: TypeScript CLI Foundation
 - [ ] Initialize TypeScript project (`cihub-cli/`)
 - [ ] Configure `tsconfig.json` with `strict: true`
@@ -1619,7 +1621,7 @@ Commands opt-in to AI enhancement with minimal changes:
 ```python
 # In cihub/commands/triage.py
 
-def cmd_triage(args: argparse.Namespace) -> int | CommandResult:
+def cmd_triage(args: argparse.Namespace) -> CommandResult:
  # ... existing triage logic (unchanged) ...
  result = build_triage_result()
 

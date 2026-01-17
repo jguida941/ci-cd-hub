@@ -922,6 +922,113 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 - [ ] Evaluate `act` integration for local workflow simulation (document limitations)
 - [ ] Doc manifest (`docs_manifest.json`) for LLM context (path, category, generated flag, last-reviewed)
 
+### CLI/Wizard Roadmap (Post v1.0, Phased)
+
+**Architecture alignment:** CLI-first, schema-driven defaults, CommandResult outputs, wizard wraps CLI handlers.
+Workflow changes are only allowed as thin wrappers that call `cihub ...` (no inline logic).
+
+#### Phase A: CLI UX Quick Wins (No schema change)
+- [ ] `cihub hooks generate` / `cihub hooks install` to generate `.pre-commit-config.yaml` from enabled tools.
+ - Implementation: derive from tool registry + resolved config; allow opt-in tool selection.
+- [ ] `cihub ci --dry-run` to emit an execution plan (tools, versions, config sources).
+ - Implementation: reuse language strategies to list planned tool runs, no execution.
+- [ ] `cihub config diff --repo A --repo B` to compare resolved configs.
+ - Implementation: load both configs via config service and diff normalized output.
+- [ ] Wizard/CLI parity: every wizard prompt has a CLI flag or non-interactive default.
+ - Implementation: align wizard questions with `cihub config set`/`cihub init` flags.
+- [ ] Wizard: profile preview during selection + "what changed" diff at end.
+ - Implementation: reuse config diff output in wizard summary.
+- [ ] Wizard: copy config from another repo (seed setup).
+ - Implementation: choose repo -> load resolved config -> override repo metadata.
+- [ ] Wizard: quick edit mode for single setting/tool.
+ - Implementation: select target field -> write config -> summary diff.
+- [ ] Wizard UX: progress indicator, accept defaults, inline help, and resume support.
+ - Implementation: keep wizard state in temp file; add `--resume` flag.
+- [ ] CLI UX: progress indicators for long-running runs (human output only).
+ - Implementation: OutputRenderer-driven status (no prints in commands).
+- [ ] Standardize `--quiet`/`--verbose` flags across commands.
+ - Implementation: map to OutputRenderer settings and `CIHUB_VERBOSE`.
+- [ ] Shell autocompletion (`cihub completion bash|zsh|fish`).
+ - Implementation: generate from argparse (optional extra dependency).
+- [ ] Missing tool prompt standardization.
+ - Implementation: extend `--install-missing` to prompt/skip across commands.
+- [ ] Preview/backup for destructive ops (`--diff`, `--backup`, `cihub config revert`).
+ - Implementation: add to file-modifying commands only.
+- [ ] `cihub config lint` (best-practices warnings, non-blocking).
+ - Implementation: new service rule set (missing security tools, permissive thresholds).
+
+#### Phase B: Schema + Validation Enhancements (ADR required)
+- [ ] Publish schema to SchemaStore + add `$schema` in generated configs.
+ - Implementation: release process + schema metadata update.
+- [ ] Semantic validation rules (beyond schema).
+ - Implementation: extend `cihub config lint` with hard/soft warnings (ex: mutation enabled but tests disabled).
+- [ ] Config inheritance/includes (extends/includes).
+ - Implementation: must align with profiles/registry to avoid multiple sources of truth.
+- [ ] Env var interpolation for config values (opt-in).
+ - Implementation: explicit `${VAR:-default}` parsing in config loader.
+- [ ] Per-tool `extra_args` passthrough in schema (e.g., `python.tools.ruff.extra_args`).
+ - Implementation: extend schema/defaults + registry, pass args in tool adapters.
+- [ ] Test parallelization config (pytest `-n`, surefire/gradle parallel).
+ - Implementation: schema fields + strategy adapters; default off.
+- [ ] Conditional tool execution (simple `depends_on` / `only_if` rules).
+ - Implementation: gate in CLI tool runner before execution.
+
+#### Phase C: Branch/Profile Overrides (ADR required)
+- [ ] Branch-specific overrides in config (pattern match + override block).
+ - Implementation: resolve branch from `--branch` or `GITHUB_REF`, apply overrides in config loader.
+- [ ] Wizard flow to add branch overrides with preview.
+
+#### Phase D: Scheduling + Matrix (Workflow touch required)
+- [ ] Config metadata for schedules and matrices (source of truth).
+ - Implementation: `cihub config-outputs` exposes derived schedule/matrix data.
+- [ ] Minimal workflow templates that read schedule/matrix outputs and call `cihub ci`.
+ - No inline logic; only pass outputs into CLI.
+- [ ] CLI-only fallback: sequential matrix runs (no GH job fan-out).
+
+#### Phase E: Migration + IDE + Reporting
+- [ ] `cihub import --from <workflow>` best-effort config import.
+- [ ] `cihub migrate --from travis|circle|jenkins` guided migration wizard.
+- [ ] `cihub ide generate --vscode/--intellij` from config/tool settings.
+- [ ] `cihub report render --template <path>` for custom report outputs.
+- [ ] `cihub explain --run <id>` (triage summary -> human-readable explanation).
+- [ ] `cihub setup --quick` to run common onboarding defaults end-to-end.
+- [ ] `cihub docs serve` for local docs browsing (search optional).
+- [ ] `cihub config history` (git-backed history view; read-only).
+- [ ] Compliance report export (`cihub report compliance --format pdf|csv`).
+
+#### Phase F: Drift Detection + Governance (ADR required)
+- [ ] `cihub drift check` to compare config vs repo workflow/tool reality.
+- [ ] `cihub drift fix` to reconcile drift (CLI-first, no YAML logic).
+- [ ] Config lock header + strict verify (managed-by-cihub enforcement).
+- [ ] Drift notifications (email/Teams/etc.) via optional integrations.
+
+#### Phase G: Extensibility + Plugins (ADR required)
+- [ ] Plugin registry/install for tools and profiles.
+- [ ] Profile install from community registry.
+- [ ] Reusable config components/templates for teams (org defaults).
+- [ ] Hooks/callbacks (pre/post tool hooks) with opt-in security guardrails.
+- [ ] Custom gates (prefer custom tools pattern; formalize if needed).
+
+#### Phase H: Developer Experience + Analytics
+- [ ] Local workflow simulation (tie into `act` evaluation).
+- [ ] Cache guidance + cache hit reporting (CLI report metrics).
+- [ ] Build time analytics per tool over time (requires storage).
+- [ ] Cost estimation for GH Actions minutes before runs.
+- [ ] Tool parallelization where safe (core runner changes).
+- [ ] Expand `cihub fix --ai` coverage beyond current tool set.
+- [ ] Threshold history/trend reporting (coverage/mutation over time).
+
+**Out-of-architecture/needs exception (decide to adjust or drop):**
+- Per-artifact retention in GH Actions requires workflow changes beyond CLI-only outputs.
+- Full GH matrix fan-out requires workflow updates; CLI can only do sequential matrices.
+- Live multi-repo dashboards and custom notifications require external services or workflows.
+- RBAC roles are enforced by GitHub/org permissions, not the CLI.
+
+### Codebase Quality Sweep (Post v1.0, After Test Reorg)
+- [ ] Modularization sweep: reduce monoliths, improve polymorphism, clean abstractions.
+- [ ] Consistency pass: CommandResult-only outputs, no print() in commands.
+- [ ] Tech debt cleanup: remove dead code paths and legacy adapters after tests.
+
 ### Tooling Expansion (Security + Quality)
 - [ ] DAST (ZAP) CLI-first toggle + runner:
  - Add `python.tools.zap` config + schema/defaults
@@ -930,9 +1037,16 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
  - Add report summaries + dashboard metrics for ZAP findings
  - Update templates/profiles + `tests/test_templates.py`
 - [ ] API schema testing via Schemathesis (`python.tools.schemathesis`), CLI runner + report metrics
+- [ ] Python env managers (poetry/pdm/uv) support in install strategy
+- [ ] `tox` support for multi-environment testing
 - [ ] Pre-commit integration (`cihub init --pre-commit`) + config template support
+- [ ] Optional `pre-commit` run as a CI tool (`python.tools.pre_commit`)
 - [ ] API docs generation (`cihub docs generate --api` via pdoc or equivalent)
 - [ ] Deep linting (`python.tools.pylint`) as optional complement to Ruff
+- [ ] Python: pytest-benchmark, nbqa (notebook validation), sphinx build checks
+- [ ] Java: Error Prone, ArchUnit, Testcontainers awareness, Maven Enforcer
+- [ ] Java: Kotlin-aware detection/strategy for mixed projects
+- [ ] Publishing: JFrog/Nexus artifact publish (optional, infra-dependent)
 - [ ] Quality dashboards (SonarQube integration; optional, infra-dependent)
 - [ ] Premium DAST option (StackHawk; optional)
 

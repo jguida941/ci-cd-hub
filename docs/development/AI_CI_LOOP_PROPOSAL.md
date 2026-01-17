@@ -111,7 +111,7 @@ cihub triage --watch            # Background monitoring daemon
 | `check` has no `--ai` flag and no formatter; registry is docs-stale only | Medium | Low |
 | CLI registration must use `cli_parsers` + `CommandHandlers` (not direct parser edits) | Medium | Low |
 | Workflow-based loop logic conflicts with CLI-first rules and requires explicit approval | Medium | Low |
-| Some references use `cihub.utils.exit_codes` (actual module is `cihub/exit_codes.py`) | Low | Low |
+| Update references to `cihub.exit_codes` (no `cihub.utils.exit_codes`) | Low | Low |
 
 ---
 

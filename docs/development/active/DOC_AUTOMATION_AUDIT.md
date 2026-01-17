@@ -95,13 +95,13 @@ cihub/commands/docs_audit/
 | # | Issue | Files | Impact | Status |
 |---|-------|-------|--------|--------|
 | ~~1~~ | ~~CLI help snapshot missing registry command~~ | `tests/snapshots/cli_help.txt` | ~~Tests pass but snapshot stale~~ | **RESOLVED** |
-| 2 | ADR-0035 says `triage --ai`, but flag doesn't exist | `docs/adr/0035-*`, `cli_parsers/triage.py` | Confusing documentation | Open |
-| 3 | ADR-0045 says `import from cihub.constants` but file doesn't exist | `docs/adr/0045-*` | Wrong import path documented | Open |
-| 4 | Schema version v1 in ADR but v2 in code | `schema/triage.schema.json` | Minor confusion | Open |
-| 5 | `--ai` flag for fix says "with --report" but not enforced | `cli_parsers/fix.py:39-42` | Silent ignore | Open |
+| ~~2~~ | ~~TypeScript CLI design references `triage --ai` as planned behavior~~ | `docs/development/active/TYPESCRIPT_CLI_DESIGN.md` | ~~Design doc only; not a code mismatch~~ | **RESOLVED** |
+| ~~3~~ | ~~ADR-0045 import path mismatch~~ | `docs/adr/0045-*` | ~~No mismatch; ADR uses exec_utils~~ | **RESOLVED** |
+| ~~4~~ | ~~Schema version v1 in ADR but v2 in code~~ | `schema/triage.schema.json` | ~~ADR already references v2~~ | **RESOLVED** |
+| ~~5~~ | ~~`--ai` flag for fix says "with --report" but not enforced~~ | `cihub/commands/fix.py` | ~~Flag validation already enforced~~ | **RESOLVED** |
 | ~~6~~ | ~~Docs index omits active design docs~~ | `docs/README.md` | ~~Confusing entry point~~ | **RESOLVED** |
 
-**Action:** Fix ADR import paths and `--ai` flag validation. Items 2-5 are candidates for `cihub docs audit` detection rules.
+**Action:** Keep contradiction list in sync; add new findings to `cihub docs audit` rules when discovered.
 
 ---
 
