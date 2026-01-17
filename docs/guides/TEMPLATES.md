@@ -1,9 +1,9 @@
 # Templates
 
-**Status:** reference
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
+**Status:** reference    
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
 
 Copy/paste starters that align with current workflows and schema.
 

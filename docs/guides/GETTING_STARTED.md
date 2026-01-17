@@ -1,9 +1,9 @@
 # Getting Started with CI/CD Hub
 
-**Status:** reference
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
+**Status:** reference  
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
 
 This guide walks you through setting up and using the CI/CD Hub CLI from scratch.
 By the end, you'll have validated the CLI works end-to-end on your machine.

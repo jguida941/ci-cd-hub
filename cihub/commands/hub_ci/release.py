@@ -8,7 +8,9 @@ import os
 import platform
 import re
 import shutil
+import stat
 import tarfile
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -87,6 +89,30 @@ def _resolve_actionlint_version(version: str) -> str:
     if not tag:
         raise RuntimeError("Failed to resolve latest actionlint version")
     return tag.lstrip("v")
+
+
+def _extract_zip_member(zip_path: Path, member_name: str, dest_dir: Path) -> Path:
+    """Extract a single member from a zip archive with path traversal protection."""
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    resolved_dest = dest_dir.resolve()
+    extracted = (dest_dir / member_name).resolve()
+    try:
+        extracted.relative_to(resolved_dest)
+    except ValueError:
+        raise ValueError(f"Path traversal detected in zip: {member_name}") from None
+
+    with zipfile.ZipFile(zip_path, "r") as archive:
+        try:
+            info = archive.getinfo(member_name)
+        except KeyError as exc:
+            raise KeyError(f"{member_name} not found in zip archive") from exc
+        if info.is_dir():
+            raise ValueError(f"Zip member is a directory: {member_name}")
+        with archive.open(info) as src, extracted.open("wb") as dst:
+            shutil.copyfileobj(src, dst)
+
+    extracted.chmod(extracted.stat().st_mode | stat.S_IEXEC)
+    return extracted
 
 
 def cmd_actionlint_install(args: argparse.Namespace) -> CommandResult:
@@ -281,6 +307,7 @@ def _trivy_asset_name(version: str) -> str:
             suffix = "Linux-ARM64"
         else:
             raise ValueError(f"Unsupported Linux architecture: {machine}")
+        ext = "tar.gz"
     elif system == "darwin":
         if machine in {"x86_64", "amd64"}:
             suffix = "macOS-64bit"
@@ -288,15 +315,24 @@ def _trivy_asset_name(version: str) -> str:
             suffix = "macOS-ARM64"
         else:
             raise ValueError(f"Unsupported macOS architecture: {machine}")
+        ext = "tar.gz"
+    elif system == "windows":
+        if machine in {"x86_64", "amd64"}:
+            suffix = "Windows-64bit"
+        elif machine in {"arm64", "aarch64"}:
+            suffix = "Windows-ARM64"
+        else:
+            raise ValueError(f"Unsupported Windows architecture: {machine}")
+        ext = "zip"
     else:
         raise ValueError(f"Unsupported platform: {system}")
-    return f"trivy_{version}_{suffix}.tar.gz"
+    return f"trivy_{version}_{suffix}.{ext}"
 
 
 def cmd_trivy_install(args: argparse.Namespace) -> CommandResult:
     version = args.version.lstrip("v")
     try:
-        tar_name = _trivy_asset_name(version)
+        asset_name = _trivy_asset_name(version)
     except ValueError as exc:
         return CommandResult(
             exit_code=EXIT_FAILURE,
@@ -304,12 +340,12 @@ def cmd_trivy_install(args: argparse.Namespace) -> CommandResult:
             problems=[{"severity": "error", "message": f"Failed to resolve trivy asset: {exc}"}],
         )
 
-    url = f"https://github.com/aquasecurity/trivy/releases/download/v{version}/{tar_name}"
+    url = f"https://github.com/aquasecurity/trivy/releases/download/v{version}/{asset_name}"
     dest_dir = Path(args.dest).resolve()
-    tar_path = dest_dir / tar_name
+    asset_path = dest_dir / asset_name
 
     try:
-        _download_file(url, tar_path)
+        _download_file(url, asset_path)
     except OSError as exc:
         return CommandResult(
             exit_code=EXIT_FAILURE,
@@ -318,8 +354,14 @@ def cmd_trivy_install(args: argparse.Namespace) -> CommandResult:
         )
 
     try:
-        bin_path = _extract_tarball_member(tar_path, "trivy", dest_dir)
-    except (OSError, tarfile.TarError, KeyError) as exc:
+        if asset_name.endswith(".zip"):
+            try:
+                bin_path = _extract_zip_member(asset_path, "trivy.exe", dest_dir)
+            except KeyError:
+                bin_path = _extract_zip_member(asset_path, "trivy", dest_dir)
+        else:
+            bin_path = _extract_tarball_member(asset_path, "trivy", dest_dir)
+    except (OSError, tarfile.TarError, KeyError, ValueError, zipfile.BadZipFile) as exc:
         return CommandResult(
             exit_code=EXIT_FAILURE,
             summary=f"trivy-install: extraction failed - {exc}",
@@ -327,7 +369,7 @@ def cmd_trivy_install(args: argparse.Namespace) -> CommandResult:
         )
     finally:
         try:
-            tar_path.unlink()
+            asset_path.unlink()
         except OSError:
             pass
 
