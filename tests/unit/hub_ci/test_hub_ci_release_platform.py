@@ -151,6 +151,7 @@ class TestTrivyAssetName:
         result = _trivy_asset_name("0.50.0")
 
         assert "Windows" in result
+        assert result.endswith(".zip")
 
     @patch("platform.system")
     def test_unsupported_os(self, mock_system: MagicMock):
@@ -174,23 +175,23 @@ class TestResolveActionlintVersion:
         result = _resolve_actionlint_version("1.6.27")
         assert result == "1.6.27"
 
-    @patch("cihub.commands.hub_ci.release._run_command")
-    def test_latest_version_resolved(self, mock_run: MagicMock):
+    @patch("urllib.request.urlopen")
+    def test_latest_version_resolved(self, mock_urlopen: MagicMock):
         """Test that 'latest' resolves to actual version."""
-        mock_proc = MagicMock()
-        mock_proc.stdout = '{"tag_name": "v1.7.0"}'
-        mock_run.return_value = mock_proc
+        mock_response = MagicMock()
+        mock_response.read.return_value = b'{"tag_name": "v1.7.0"}'
+        mock_urlopen.return_value.__enter__.return_value = mock_response
 
         result = _resolve_actionlint_version("latest")
 
         assert result == "1.7.0"
 
-    @patch("cihub.commands.hub_ci.release._run_command")
-    def test_latest_version_failure(self, mock_run: MagicMock):
+    @patch("urllib.request.urlopen")
+    def test_latest_version_failure(self, mock_urlopen: MagicMock):
         """Test that failure to resolve latest raises error."""
-        mock_proc = MagicMock()
-        mock_proc.stdout = "{}"
-        mock_run.return_value = mock_proc
+        mock_response = MagicMock()
+        mock_response.read.return_value = b"{}"
+        mock_urlopen.return_value.__enter__.return_value = mock_response
 
         with pytest.raises(RuntimeError, match="Failed to resolve"):
             _resolve_actionlint_version("latest")

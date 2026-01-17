@@ -497,6 +497,7 @@ Checks:
 - [x] Split `test_config_*.py` into `unit/config/test_*.py`
 - [x] Add parameterized tests where applicable
 - [x] Add descriptive test IDs
+- [x] Fix contract test command path resolution + hub-ci release platform mocks after file moves (2026-01-17)
 
 ### Phase 4: Property Tests (Day 6)
 - [ ] Identify pure functions suitable for Hypothesis
