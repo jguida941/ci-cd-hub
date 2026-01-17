@@ -1,11 +1,11 @@
 # CI/CD Hub: Architectural Overview
 
-**Status:** reference
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
-**Last Updated:** 2026-01-15
-**Author:** Justin Guida
+**Status:** reference  
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
+**Last Updated:** 2026-01-15  
+**Author:** Justin Guida  
 
 This document provides a comprehensive overview of the CI/CD Hub platform,
 detailing its architecture, core components, execution modes, toolchains,
@@ -13,34 +13,34 @@ reporting mechanisms, and current status.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────┐
-│ CI/CD HUB (hub-release) │
+│                           CI/CD HUB (hub-release)                          │
 ├────────────────────────────────────────────────────────────────────────────┤
-│ │
-│ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ │
-│ │ CONFIG │ │ SCHEMAS │ │ WORKFLOWS │ │ CLI │ │
-│ │ LAYER │ │ LAYER │ │ LAYER │ │ TOOL │ │
-│ │ │ │ │ │ │ │ (cihub) │ │
-│ │ defaults.yaml│ │ ci-hub-*.json│ │ hub-run-all │ │ │ │
-│ │ repos/*.yaml │ │ ci-report.v2 │ │ java-ci.yml │ │ 28 commands │ │
-│ │ templates/ │ │ │ │ python-ci.yml│ │ 2862 tests │ │
-│ │ profiles/ │ │ │ │ │ │ │ │
-│ └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘ │
-│ │ │ │ │ │
-│ └──────────────────┴──────────────────┴──────────────────┘ │
-│ │ │
-│ ┌────────▼────────┐ │
-│ │ AGGREGATION │ │
-│ │ ENGINE │ │
-│ │ (summary.json) │ │
-│ └─────────────────┘ │
+│                                                                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
+│  │    CONFIG    │  │   SCHEMAS    │  │  WORKFLOWS   │  │     CLI      │   │
+│  │    LAYER     │  │    LAYER     │  │    LAYER     │  │    TOOL      │   │
+│  │              │  │              │  │              │  │   (cihub)    │   │
+│  │defaults.yaml │  │ci-hub-*.json │  │ hub-run-all  │  │              │   │
+│  │repos/*.yaml  │  │ci-report.v2  │  │ java-ci.yml  │  │ 28 commands  │   │
+│  │templates/    │  │              │  │python-ci.yml │  │ 3559 tests   │   │
+│  │profiles/     │  │              │  │              │  │              │   │
+│  └──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘   │
+│         │                 │                 │                 │           │
+│         └─────────────────┴─────────────────┴─────────────────┘           │
+│                                    │                                      │
+│                         ┌──────────▼──────────┐                           │
+│                         │    AGGREGATION      │                           │
+│                         │      ENGINE         │                           │
+│                         │   (summary.json)    │                           │
+│                         └─────────────────────┘                           │
 └────────────────────────────────────────────────────────────────────────────┘
- │
- ┌────────────────────────────┼────────────────────────────┐
- ▼ ▼ ▼
- ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
- │ Java Repo │ │ Python Repo │ │ Monorepo │
- │ (11 tools) │ │ (13 tools) │ │ (multi-lang)│
- └─────────────┘ └─────────────┘ └─────────────┘
+                                     │
+          ┌──────────────────────────┼──────────────────────────┐
+          ▼                          ▼                          ▼
+   ┌─────────────┐            ┌─────────────┐            ┌─────────────┐
+   │  Java Repo  │            │ Python Repo │            │  Monorepo   │
+   │ (11 tools)  │            │ (13 tools)  │            │(multi-lang) │
+   └─────────────┘            └─────────────┘            └─────────────┘
 ```
 
 **Primary Hub Workflows:**
