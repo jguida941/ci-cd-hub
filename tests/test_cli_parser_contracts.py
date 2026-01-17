@@ -26,6 +26,7 @@ EXPECTED_JSON_PATHS = {
     "discover",
     "dispatch metadata",
     "dispatch trigger",
+    "dispatch watch",
     "docs audit",
     "docs check",
     "docs generate",

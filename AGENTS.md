@@ -319,6 +319,7 @@ Follow the active doc's Master Checklist for current tasks (currently TEST_REORG
 - Config tooling: `python -m cihub config ...`
 - Single tool run: `python -m cihub run <tool>`
 - Report aggregation: `python -m cihub report aggregate`
+- Workflow dispatch/watch: `python -m cihub dispatch trigger` / `python -m cihub dispatch watch`
 - Doc freshness: `python -m cihub docs stale` (detects stale code references)
 - Doc audit: `python -m cihub docs audit` (lifecycle checks, header enforcement, consistency)
 - Doc workflows (planned): `python -m cihub docs workflows` (generate workflow tables)

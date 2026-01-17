@@ -419,6 +419,7 @@ These are references, not competing plans.
 ## Current Decisions
 
 - **CLI is the execution engine**; workflows are thin wrappers.
+- **Workflow dispatch/watch lives in the CLI** (`cihub dispatch`) with wizard wrappers (ADR-0055).
 - **Schema is the source of truth for defaults**; defaults.yaml and fallbacks.py are generated and audited in `cihub check --audit`.
 - **Hub CI supports per-module threshold overrides** under `hub_ci.thresholds.overrides` (ADR-0054).
 - **Single entrypoint workflow is `hub-ci.yml`**; it routes to `python-ci.yml`/`java-ci.yml` internally.

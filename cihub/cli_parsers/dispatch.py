@@ -22,6 +22,11 @@ def add_dispatch_commands(
 
     dispatch_trigger = dispatch_sub.add_parser("trigger", help="Dispatch a workflow and poll for run ID")
     add_json_flag(dispatch_trigger)
+    dispatch_trigger.add_argument(
+        "--wizard",
+        action="store_true",
+        help="Interactive mode (requires cihub[wizard])",
+    )
     dispatch_trigger.add_argument("--owner", required=True, help="Repository owner")
     dispatch_trigger.add_argument("--repo", required=True, help="Repository name")
     dispatch_trigger.add_argument("--ref", required=True, help="Git ref (branch) to dispatch on")
@@ -29,6 +34,12 @@ def add_dispatch_commands(
         "--workflow", default="hub-ci.yml", help="Workflow file to dispatch (default: hub-ci.yml)"
     )
     dispatch_trigger.add_argument("--correlation-id", help="Hub correlation ID to pass as input")
+    dispatch_trigger.add_argument(
+        "--input",
+        action="append",
+        dest="inputs",
+        help="Workflow input in key=value format (repeatable)",
+    )
     dispatch_trigger.add_argument(
         "--dispatch-enabled",
         type=lambda x: x.lower() != "false",
@@ -39,6 +50,59 @@ def add_dispatch_commands(
     dispatch_trigger.add_argument("--token-env", default="HUB_DISPATCH_TOKEN", help="Environment variable for token")
     dispatch_trigger.add_argument(
         "--timeout", type=int, default=1800, help="Timeout in seconds for polling (default: 1800)"
+    )
+    dispatch_trigger.add_argument(
+        "--watch",
+        action="store_true",
+        help="Wait for run completion after dispatch",
+    )
+    dispatch_trigger.add_argument(
+        "--watch-interval",
+        type=int,
+        default=10,
+        help="Polling interval in seconds for --watch (default: 10)",
+    )
+    dispatch_trigger.add_argument(
+        "--watch-timeout",
+        type=int,
+        default=1800,
+        help="Timeout in seconds for --watch (default: 1800)",
+    )
+
+    dispatch_watch = dispatch_sub.add_parser("watch", help="Watch a workflow run until completion")
+    add_json_flag(dispatch_watch)
+    dispatch_watch.add_argument(
+        "--wizard",
+        action="store_true",
+        help="Interactive mode (requires cihub[wizard])",
+    )
+    dispatch_watch.add_argument("--owner", required=True, help="Repository owner")
+    dispatch_watch.add_argument("--repo", required=True, help="Repository name")
+    dispatch_watch.add_argument("--run-id", help="Workflow run ID to watch")
+    dispatch_watch.add_argument(
+        "--latest",
+        action="store_true",
+        help="Watch latest run for the workflow/branch",
+    )
+    dispatch_watch.add_argument(
+        "--workflow",
+        default="hub-ci.yml",
+        help="Workflow file to filter latest run (default: hub-ci.yml)",
+    )
+    dispatch_watch.add_argument("--branch", help="Branch name to filter latest run")
+    dispatch_watch.add_argument("--token", help="GitHub token (or use HUB_DISPATCH_TOKEN env)")
+    dispatch_watch.add_argument("--token-env", default="HUB_DISPATCH_TOKEN", help="Environment variable for token")
+    dispatch_watch.add_argument(
+        "--interval",
+        type=int,
+        default=10,
+        help="Polling interval in seconds (default: 10)",
+    )
+    dispatch_watch.add_argument(
+        "--timeout",
+        type=int,
+        default=1800,
+        help="Timeout in seconds (default: 1800)",
     )
 
     dispatch_metadata = dispatch_sub.add_parser("metadata", help="Generate dispatch metadata JSON file")

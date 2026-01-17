@@ -568,6 +568,12 @@ class TestDispatchSubcommands:
             main(["dispatch", "trigger"])
         assert exc.value.code == 2
 
+    def test_dispatch_watch_missing_args(self) -> None:
+        """dispatch watch requires arguments."""
+        with pytest.raises(SystemExit) as exc:
+            main(["dispatch", "watch"])
+        assert exc.value.code == 2
+
 
 class TestScaffoldCommand:
     """Tests for scaffold command."""

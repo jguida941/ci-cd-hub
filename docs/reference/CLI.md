@@ -984,42 +984,80 @@ options:
 ## cihub dispatch
 
 ```
-usage: cihub dispatch [-h] {trigger,metadata} ...
+usage: cihub dispatch [-h] {trigger,watch,metadata} ...
 
 positional arguments:
-  {trigger,metadata}
-    trigger           Dispatch a workflow and poll for run ID
-    metadata          Generate dispatch metadata JSON file
+  {trigger,watch,metadata}
+    trigger             Dispatch a workflow and poll for run ID
+    watch               Watch a workflow run until completion
+    metadata            Generate dispatch metadata JSON file
 
 options:
-  -h, --help          show this help message and exit
+  -h, --help            show this help message and exit
 ```
 
 ## cihub dispatch trigger
 
 ```
-usage: cihub dispatch trigger [-h] [--json] --owner OWNER --repo REPO --ref
-                              REF [--workflow WORKFLOW]
+usage: cihub dispatch trigger [-h] [--json] [--wizard] --owner OWNER --repo
+                              REPO --ref REF [--workflow WORKFLOW]
                               [--correlation-id CORRELATION_ID]
+                              [--input INPUTS]
                               [--dispatch-enabled DISPATCH_ENABLED]
                               [--token TOKEN] [--token-env TOKEN_ENV]
-                              [--timeout TIMEOUT]
+                              [--timeout TIMEOUT] [--watch]
+                              [--watch-interval WATCH_INTERVAL]
+                              [--watch-timeout WATCH_TIMEOUT]
 
 options:
   -h, --help            show this help message and exit
   --json                Output machine-readable JSON
+  --wizard              Interactive mode (requires cihub[wizard])
   --owner OWNER         Repository owner
   --repo REPO           Repository name
   --ref REF             Git ref (branch) to dispatch on
   --workflow WORKFLOW   Workflow file to dispatch (default: hub-ci.yml)
   --correlation-id CORRELATION_ID
                         Hub correlation ID to pass as input
+  --input INPUTS        Workflow input in key=value format (repeatable)
   --dispatch-enabled DISPATCH_ENABLED
                         Whether dispatch is enabled (default: true)
   --token TOKEN         GitHub token (or use HUB_DISPATCH_TOKEN env)
   --token-env TOKEN_ENV
                         Environment variable for token
   --timeout TIMEOUT     Timeout in seconds for polling (default: 1800)
+  --watch               Wait for run completion after dispatch
+  --watch-interval WATCH_INTERVAL
+                        Polling interval in seconds for --watch (default: 10)
+  --watch-timeout WATCH_TIMEOUT
+                        Timeout in seconds for --watch (default: 1800)
+```
+
+## cihub dispatch watch
+
+```
+usage: cihub dispatch watch [-h] [--json] [--wizard] --owner OWNER --repo REPO
+                            [--run-id RUN_ID] [--latest] [--workflow WORKFLOW]
+                            [--branch BRANCH] [--token TOKEN]
+                            [--token-env TOKEN_ENV] [--interval INTERVAL]
+                            [--timeout TIMEOUT]
+
+options:
+  -h, --help            show this help message and exit
+  --json                Output machine-readable JSON
+  --wizard              Interactive mode (requires cihub[wizard])
+  --owner OWNER         Repository owner
+  --repo REPO           Repository name
+  --run-id RUN_ID       Workflow run ID to watch
+  --latest              Watch latest run for the workflow/branch
+  --workflow WORKFLOW   Workflow file to filter latest run (default: hub-
+                        ci.yml)
+  --branch BRANCH       Branch name to filter latest run
+  --token TOKEN         GitHub token (or use HUB_DISPATCH_TOKEN env)
+  --token-env TOKEN_ENV
+                        Environment variable for token
+  --interval INTERVAL   Polling interval in seconds (default: 10)
+  --timeout TIMEOUT     Timeout in seconds (default: 1800)
 ```
 
 ## cihub dispatch metadata

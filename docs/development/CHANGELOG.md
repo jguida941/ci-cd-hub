@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-17 - CLI Workflow Dispatch Watch + Wizard
+
+### New: Dispatch watch + wizard wrapper
+
+- Added `cihub dispatch watch` to poll workflow runs to completion.
+- Added `cihub dispatch trigger --watch` for optional post-dispatch tracking.
+- Added wizard wrappers for dispatch trigger/watch (no YAML logic).
+
+### Tests
+
+- Added dispatch watch coverage and updated CLI parser/command tests.
+- Refreshed CLI help snapshots.
+
 ## 2026-01-16 - AI CI Loop CLI + Workflow (Internal)
 
 ### New: AI CI loop command (internal-only)

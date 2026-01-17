@@ -14,7 +14,7 @@ import pytest
 
 from cihub.commands import dispatch as dispatch_cmd
 from cihub.commands.dispatch import GitHubRequestResult
-from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 
 
 def _base_trigger_args() -> argparse.Namespace:
@@ -25,10 +25,15 @@ def _base_trigger_args() -> argparse.Namespace:
         workflow="hub-ci.yml",
         ref="main",
         correlation_id=None,
+        inputs=[],
         token=None,
         token_env="HUB_DISPATCH_TOKEN",  # noqa: S106
         dispatch_enabled=True,
         timeout=5,
+        watch=False,
+        watch_interval=1,
+        watch_timeout=5,
+        wizard=False,
         json=False,
     )
 
@@ -87,6 +92,107 @@ def test_trigger_poll_failure_json(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert result.exit_code == EXIT_FAILURE
     assert "could not determine run ID" in result.summary
+
+
+def test_trigger_invalid_inputs(monkeypatch: pytest.MonkeyPatch) -> None:
+    args = _base_trigger_args()
+    args.inputs = ["badinput"]
+    monkeypatch.setenv("HUB_DISPATCH_TOKEN", "token")
+    result = dispatch_cmd.cmd_dispatch(args)
+
+    assert result.exit_code == EXIT_USAGE
+    assert "Invalid workflow inputs" in result.summary
+
+
+def test_trigger_watch_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    args = _base_trigger_args()
+    args.watch = True
+    monkeypatch.setenv("HUB_DISPATCH_TOKEN", "token")
+
+    dispatch_result = GitHubRequestResult(data={})
+    with mock.patch.object(dispatch_cmd, "_dispatch_workflow", return_value=dispatch_result):
+        with mock.patch.object(dispatch_cmd, "_poll_for_run_id", return_value="12345"):
+            with mock.patch.object(
+                dispatch_cmd,
+                "_wait_for_run_completion",
+                return_value={"status": "completed", "conclusion": "success", "url": "http://example"},
+            ):
+                result = dispatch_cmd.cmd_dispatch(args)
+
+    assert result.exit_code == EXIT_SUCCESS
+    assert result.data["conclusion"] == "success"
+
+
+def test_trigger_watch_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    args = _base_trigger_args()
+    args.watch = True
+    monkeypatch.setenv("HUB_DISPATCH_TOKEN", "token")
+
+    dispatch_result = GitHubRequestResult(data={})
+    with mock.patch.object(dispatch_cmd, "_dispatch_workflow", return_value=dispatch_result):
+        with mock.patch.object(dispatch_cmd, "_poll_for_run_id", return_value="12345"):
+            with mock.patch.object(
+                dispatch_cmd,
+                "_wait_for_run_completion",
+                return_value={"status": "completed", "conclusion": "failure", "url": ""},
+            ):
+                result = dispatch_cmd.cmd_dispatch(args)
+
+    assert result.exit_code == EXIT_FAILURE
+    assert result.data["conclusion"] == "failure"
+
+
+def test_watch_requires_run_id(monkeypatch: pytest.MonkeyPatch) -> None:
+    args = argparse.Namespace(
+        subcommand="watch",
+        owner="owner",
+        repo="repo",
+        run_id=None,
+        latest=False,
+        workflow="hub-ci.yml",
+        branch=None,
+        token=None,
+        token_env="HUB_DISPATCH_TOKEN",  # noqa: S106
+        interval=1,
+        timeout=5,
+        wizard=False,
+        json=False,
+    )
+
+    monkeypatch.setenv("HUB_DISPATCH_TOKEN", "token")
+    result = dispatch_cmd.cmd_dispatch(args)
+
+    assert result.exit_code == EXIT_USAGE
+    assert "Run ID required" in result.summary
+
+
+def test_watch_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    args = argparse.Namespace(
+        subcommand="watch",
+        owner="owner",
+        repo="repo",
+        run_id="123",
+        latest=False,
+        workflow="hub-ci.yml",
+        branch=None,
+        token=None,
+        token_env="HUB_DISPATCH_TOKEN",  # noqa: S106
+        interval=1,
+        timeout=5,
+        wizard=False,
+        json=False,
+    )
+
+    monkeypatch.setenv("HUB_DISPATCH_TOKEN", "token")
+    with mock.patch.object(
+        dispatch_cmd,
+        "_wait_for_run_completion",
+        return_value={"status": "completed", "conclusion": "success", "url": "http://example"},
+    ):
+        result = dispatch_cmd.cmd_dispatch(args)
+
+    assert result.exit_code == EXIT_SUCCESS
+    assert result.data["conclusion"] == "success"
 
 
 def test_metadata_writes_file(tmp_path: Path) -> None:

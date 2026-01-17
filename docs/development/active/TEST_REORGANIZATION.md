@@ -591,6 +591,7 @@ Before Phase 1 can begin:
 - [x] Implement `cihub hub-ci thresholds` command
 - [x] Update schema for per-module overrides
 - [x] Validate wizard/CLI on fixture repos (subdir detection, POM warnings, aggregation status)
+- [x] Add CLI workflow dispatch/watch with wizard wrapper (ADR-0055)
 - [x] Align Java templates with CLI config (remove repo-specific PITest targets; honor `use_nvd_api_key`)
 - [ ] Create comprehensive file mapping (all 78 files → new homes)
 - [ ] Split large monolithic test files (120+ tests)

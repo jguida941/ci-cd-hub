@@ -1056,11 +1056,12 @@ The `hub-ci` command provides 46 specialized CI/CD tools. Each maps to a slash c
 | `/hub-ci status` | Overall hub-ci status | Health interpretation |
 | `/hub-ci doctor` | Diagnose issues | Problem resolution |
 
-### 7.9 Dispatch Subcommands (2 Commands)
+### 7.9 Dispatch Subcommands (3 Commands)
 
 | Slash Command | Purpose | AI Enhancement |
 |---------------|---------|----------------|
 | `/dispatch trigger` | Dispatch workflow and poll for run ID | Workflow selection help |
+| `/dispatch watch` | Watch workflow run to completion | Run status interpretation |
 | `/dispatch metadata` | Generate dispatch metadata JSON | Metadata generation |
 
 ---
