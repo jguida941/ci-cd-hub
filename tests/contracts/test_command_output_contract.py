@@ -76,7 +76,8 @@ SUBPACKAGE_ALLOWLISTS: dict[str, set[str]] = {
 
 def get_commands_dir() -> Path:
     """Get the path to cihub/commands/ directory."""
-    return Path(__file__).parent.parent / "cihub" / "commands"
+    repo_root = Path(__file__).resolve().parents[2]
+    return repo_root / "cihub" / "commands"
 
 
 def find_print_calls(filepath: Path) -> list[tuple[int, str]]:
