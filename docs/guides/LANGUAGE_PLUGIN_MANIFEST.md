@@ -1,9 +1,9 @@
 # Language Plugin Manifest
 
-**Status:** reference
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
+**Status:** reference  
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
 
 **Purpose:** This document provides AI assistants with complete context to add new language support to CIHub.
 
@@ -17,28 +17,28 @@ CIHub uses a **Language Strategy Pattern** (see ADR-0041) that encapsulates all 
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ CI Engine │
-│ (Language-agnostic orchestration - does NOT change) │
+│ CI Engine                                                       │
+│ (Language-agnostic orchestration - does NOT change)             │
 └─────────────────────────────────────────────────────────────────┘
- │
- ▼
+                                 │
+                                 ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ Language Strategy Registry │
-│ get_strategy("python") → PythonStrategy │
-│ get_strategy("java") → JavaStrategy │
-│ get_strategy("javascript") → JavaScriptStrategy (NEW) │
+│ Language Strategy Registry                                      │
+│ get_strategy("python") → PythonStrategy                         │
+│ get_strategy("java") → JavaStrategy                             │
+│ get_strategy("javascript") → JavaScriptStrategy (NEW)           │
 └─────────────────────────────────────────────────────────────────┘
- │
- ┌─────────────────────┼─────────────────────┐
- ▼ ▼ ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│ PythonStrategy│ │ JavaStrategy │ │ JSStrategy │
-│ │ │ │ │ (NEW) │
-│ - 14 tools │ │ - 12 tools │ │ - N tools │
-│ - runners │ │ - runners │ │ - runners │
-│ - gates │ │ - gates │ │ - gates │
-│ - thresholds │ │ - thresholds │ │ - thresholds │
-└──────────────┘ └──────────────┘ └──────────────┘
+                                 │
+          ┌──────────────────────┼──────────────────────┐
+          ▼                      ▼                      ▼
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│  PythonStrategy  │  │   JavaStrategy   │  │    JSStrategy    │
+│                  │  │                  │  │      (NEW)       │
+│  - 14 tools      │  │  - 12 tools      │  │  - N tools       │
+│  - runners       │  │  - runners       │  │  - runners       │
+│  - gates         │  │  - gates         │  │  - gates         │
+│  - thresholds    │  │  - thresholds    │  │  - thresholds    │
+└──────────────────┘  └──────────────────┘  └──────────────────┘
 ```
 
 ---
