@@ -156,8 +156,8 @@ All 46 hub-ci functions migrated:
 - `cihub/commands/hub_ci/__init__.py` - Added helpers
 - `cihub/commands/hub_ci/*.py` - All subcommand files migrated
 - `cihub/commands/*.py` - Other command modules
-- `tests/test_hub_ci.py` - Updated assertions
-- `tests/test_commands_*.py` - Updated assertions
+- `tests/unit/hub_ci/test_hub_ci_*.py` - Updated assertions
+- `tests/unit/commands/test_commands_*.py` - Updated assertions
 
 ## Related ADRs
 

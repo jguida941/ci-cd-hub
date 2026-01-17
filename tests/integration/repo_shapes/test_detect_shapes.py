@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.test_repo_shapes.conftest import (
+from .conftest import (
     SHAPE_LANGUAGES,
     SINGLE_LANG_SHAPES,
     run_cihub,

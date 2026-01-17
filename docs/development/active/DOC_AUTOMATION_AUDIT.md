@@ -589,7 +589,7 @@ def cmd_docs_stale(args) -> int | CommandResult
 | `cihub/cli_parsers/docs.py` | MODIFY - add `stale` subparser |
 | `cihub/cli_parsers/types.py` | MODIFY - add handler type |
 | `cihub/cli.py` | MODIFY - add wrapper function |
-| `tests/test_docs_stale.py` | **CREATE** - tests |
+| `tests/unit/docs/` | **CREATE** - tests |
 
 ### User Decisions (Confirmed)
 
@@ -606,7 +606,7 @@ def cmd_docs_stale(args) -> int | CommandResult
 
 We will NOT touch any real docs until the tool is proven to work.
 
-### Phase 1: Unit Tests (`tests/test_docs_stale.py`)
+### Phase 1: Unit Tests (`tests/unit/docs/`)
 
 ```python
 class TestSymbolExtraction:
@@ -943,7 +943,7 @@ class TestDocsStaleIntegration:
 | `cihub/cli_parsers/docs.py` | MODIFY | Add `stale` subparser with full flag set |
 | `cihub/cli_parsers/types.py` | MODIFY | Add `cmd_docs_stale` handler type |
 | `cihub/cli.py` | MODIFY | Add `cmd_docs_stale` wrapper function |
-| `tests/test_docs_stale.py` | **CREATE** | Comprehensive tests per above |
+| `tests/unit/docs/` | **CREATE** | Comprehensive tests per above |
 | `tests/snapshots/cli_help.txt` | MODIFY | Regenerate after CLI changes |
 
 ### Finalized CLI Surface
@@ -1009,7 +1009,7 @@ Options:
  - Correlation logic (only flag REMOVED/RENAMED, not ADDED)
  - Three output modes (human, JSON, AI markdown)
 3. ⬜ **Wire CLI** - Update `cli_parsers/docs.py`, `cli_parsers/types.py`, `cli.py`
-4. ⬜ **Create tests** - `tests/test_docs_stale.py` with unit + integration tests
+4. ⬜ **Create tests** - `tests/unit/docs/` with unit + integration tests
 5. ⬜ **Update snapshots** - Regenerate `tests/snapshots/cli_help.txt`
 6. ⬜ **Local validation** - Run on real codebase, verify output makes sense
 7. ⬜ **Wire into CI** - Add to `cihub check` or as standalone CI step (after local validation)

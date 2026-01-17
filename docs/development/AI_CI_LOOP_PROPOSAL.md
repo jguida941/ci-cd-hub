@@ -1,10 +1,10 @@
 # Autonomous AI CI Loop Proposal
 
-**Status:** active
-**Owner:** AI Architecture
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
-**State:** Draft
+**Status:** active  
+**Owner:** AI Architecture  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
+**State:** Draft  
 
 ---
 

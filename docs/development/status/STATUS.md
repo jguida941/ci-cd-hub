@@ -1,9 +1,9 @@
 # CI/CD Hub Development Status
 
-**Status:** reference
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
+**Status:** reference  
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
 
 > **Status snapshot** for active docs only. The authoritative plan is [MASTER_PLAN.md](../MASTER_PLAN.md).
 > This file may be stale and will be audited later; it remains because automation scripts may reference it.
@@ -16,7 +16,7 @@
 > **Last Updated:** 2026-01-15 (status index trimmed, pointers only)
 > **Version Target:** v1.0.0
 >
-> **Current focus:** Wizard/CLI validation complete; proceed with Test Reorg Phase 0 file mapping and test splits.
+> **Current focus:** Wizard/CLI validation complete; proceed with Test Reorg CI workflow wiring + Phase 4 property tests + Phase 5 docs.
 
 ---
 
@@ -50,5 +50,4 @@ These are active but **not** part of the priority order. See [MASTER_PLAN.md](..
 ## Status References
 
 - [MASTER_PLAN.md](../MASTER_PLAN.md) - priorities, scope, sequencing, and decisions
-- [AGENTS.md](../../AGENTS.md) - workflow rules and CLI-first policy
 - [CHANGELOG.md](../CHANGELOG.md) - user-facing change history

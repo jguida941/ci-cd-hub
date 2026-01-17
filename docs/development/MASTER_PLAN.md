@@ -1,9 +1,9 @@
 # CI/CD Hub - Master Plan
 
-**Status:** active
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
+**Status:** active  
+**Owner:** Development Team  
+**Source-of-truth:** manual   
+**Last-reviewed:** 2026-01-15  
 **Last Updated:** 2026-01-15 (archived CLEAN_CODE/remediation, priority shift)
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
@@ -22,13 +22,13 @@ will be promoted into an active design doc when scope and sequencing are finaliz
 
 ## CURRENT PRIORITY AT A GLANCE
 
-> Current priority is **#3** (first non-archived doc). Phase 0 file mapping complete (145 files). Next: split 5 monolithic test files before Phase 1 directory restructure.
+> Current priority is **#3** (first non-archived doc). Phase 0-3 complete; next: CI workflow wiring + Phase 4 property tests + Phase 5 docs.
 
 | Priority | Document | Status | Next Action |
 |----------|----------|--------|-------------|
 | **#1 ** | CLEAN_CODE.md | ARCHIVED | Complete (archived) |
 | **#2 ** | [SYSTEM_INTEGRATION_PLAN.md](docs/development/archive/SYSTEM_INTEGRATION_PLAN.md) | ARCHIVED | Complete (archived) |
-| **#3 ** | TEST_REORGANIZATION.md | CURRENT | Phase 0 ✓; next: monolithic splits (5 files → 23) |
+| **#3 ** | TEST_REORGANIZATION.md | CURRENT | Phase 0-3 ✓; next: CI workflow wiring + Phase 4/5 |
 | **#4 ** | DOC_AUTOMATION_AUDIT.md | ~98% | Optional: guide cmd validation |
 | **#5 ** | TYPESCRIPT_CLI_DESIGN.md | Planning | Wait for TEST_REORGANIZATION.md complete |
 | **#6 ** | PYQT_PLAN.md | DEFERRED | Wait for all above |
@@ -165,7 +165,7 @@ Core implementation needed:
 
 ### Priority 3: TEST_REORGANIZATION.md (CURRENT)
 
-**Status:** Phase 0 COMPLETE (145 files mapped; 5 monolithic splits planned → 23 new files) | **Depends on:** CommandResult migration + Registry fix (both complete)
+**Status:** Phase 0-3 COMPLETE (mapping + splits done; structure in place) | **Depends on:** CommandResult migration + Registry fix (both complete)
 
 ```
 docs/development/active/TEST_REORGANIZATION.md

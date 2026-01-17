@@ -1,9 +1,9 @@
 # CI Parity Map
 
-**Status:** reference
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
+**Status:** reference  
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
 
 > **Purpose:** Documents which checks run identically in local development vs CI,
 > and which differ. This helps developers understand what `cihub check` validates
@@ -148,5 +148,3 @@ When updating `hub-production-ci.yml` or `cihub/commands/check.py`:
 4. If adding new checks, categorize them appropriately
 
 ---
-
-*See also: [AGENTS.md](../../AGENTS.md) for CLI-first rules and scope guardrails.*

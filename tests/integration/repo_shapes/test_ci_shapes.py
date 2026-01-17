@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from tests.test_repo_shapes.conftest import (
+from .conftest import (
     SINGLE_LANG_SHAPES,
     run_cihub,
 )
