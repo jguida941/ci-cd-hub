@@ -10,7 +10,8 @@
 
 ## Executive Summary
 
-This document proposes implementing a **Ralph Wiggum-style autonomous AI loop** for the CI/CD Hub, enabling Claude Code (or similar AI agents) to continuously iterate on CI failures until all checks pass. The audit of our codebase reveals we are **~80% ready** for this implementation.
+This document proposes implementing a **Ralph Wiggum-style autonomous AI loop** for the CI/CD Hub, enabling Claude Code (or similar AI agents) to continuously iterate on CI failures until all checks pass.   
+The audit of our codebase reveals we are **~80% ready** for this implementation.
 
 Initial scope is **internal-only**. The loop should target `cihub ci` (with triage emission) rather than `cihub check`, because triage requires `report.json` and the `ci` path already produces it.
 
