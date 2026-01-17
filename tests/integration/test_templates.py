@@ -20,7 +20,7 @@ from cihub.config.loader import ConfigValidationError, load_config
 from cihub.config.merge import deep_merge
 
 # Allow importing scripts as modules (for validate_config which is not yet migrated)
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 

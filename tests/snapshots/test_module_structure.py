@@ -25,7 +25,7 @@ import pytest
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-REPO_ROOT = Path(__file__).parent.parent
+REPO_ROOT = Path(__file__).parent.parent.parent
 TESTS_DIR = REPO_ROOT / "tests"
 MUTANTS_TESTS_DIR = REPO_ROOT / "mutants" / "tests"
 SNAPSHOTS_DIR = TESTS_DIR / "snapshots"
