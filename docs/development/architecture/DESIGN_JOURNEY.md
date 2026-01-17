@@ -1,12 +1,12 @@
 # Design Journey: The Evolution of CI/CD Hub
 
-**Status:** reference
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
-**Created:** 2026-01-05
-**Author:** Justin Guida
-**Purpose:** Technical development document showing the architectural evolution of CI-HUB.
+**Status:** reference  
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
+**Created:** 2026-01-05  
+**Author:** Justin Guida  
+**Purpose:** Technical development document showing the architectural evolution of CI-HUB.  
 
 ---
 

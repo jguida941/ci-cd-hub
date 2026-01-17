@@ -10,7 +10,6 @@
 >
 > **Action Items:** See [MASTER_PLAN.md](../MASTER_PLAN.md) for all tasks.
 > **Architecture:** See [ARCH_OVERVIEW.md](../architecture/ARCH_OVERVIEW.md)
-> **Workflow Rules:** See [AGENTS.md](../../AGENTS.md)
 > **Test Counts:** Paused in docs; owner will refresh after a verified full run.
 >
 > **Last Updated:** 2026-01-15 (status index trimmed, pointers only)

@@ -17,24 +17,24 @@ security, mutation testing) with simple boolean toggles.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ HUB-RELEASE │
-│ │
-│ 1. CONFIG LAYER │
-│ config/defaults.yaml ←── Global tool toggles & thresholds │
-│ ↓ │
-│ config/repos/*.yaml ←── Per-repo overrides (one file per repo) │
-│ ↓ │
-│ Target repo .ci-hub.yml (optional) ←── Repo can override │
-│ │
-│ 2. WORKFLOW LAYER │
-│ hub-run-all.yml ←── Central mode: hub clones & runs tools │
-│ hub-orchestrator.yml ←── Distributed mode: dispatches to repos │
-│ ↓ │
-│ java-ci.yml / python-ci.yml ←── Reusable tool workflows │
-│ │
-│ 3. OUTPUT LAYER │
-│ reports/*.json ←── Per-repo results │
-│ hub-report.json ←── Aggregated dashboard data │
+│                              HUB-RELEASE                                │
+│                                                                         │
+│  1. CONFIG LAYER                                                        │
+│     config/defaults.yaml      ←── Global tool toggles & thresholds     │
+│              ↓                                                          │
+│     config/repos/*.yaml       ←── Per-repo overrides (one file/repo)   │
+│              ↓                                                          │
+│     Target repo .ci-hub.yml   ←── Repo can override (optional)         │
+│                                                                         │
+│  2. WORKFLOW LAYER                                                      │
+│     hub-run-all.yml           ←── Central mode: hub clones & runs      │
+│     hub-orchestrator.yml      ←── Distributed mode: dispatches to repos│
+│              ↓                                                          │
+│     java-ci.yml / python-ci.yml ←── Reusable tool workflows            │
+│                                                                         │
+│  3. OUTPUT LAYER                                                        │
+│     reports/*.json            ←── Per-repo results                     │
+│     hub-report.json           ←── Aggregated dashboard data            │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 

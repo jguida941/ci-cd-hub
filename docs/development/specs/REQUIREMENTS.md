@@ -1,11 +1,11 @@
 # Requirements (v1.0)
 
-**Status:** active
-**Owner:** Hub maintainers
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
-**Last Updated:** 2026-01-15
-
+**Status:** active  
+**Owner:** Hub maintainers  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
+**Last Updated:** 2026-01-15  
+ 
 ---
 
 ## Status Legend

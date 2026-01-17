@@ -1,9 +1,9 @@
 # Documentation Automation Audit & Design
 
-**Status:** active
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
+**Status:** active  
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
 
 **Date:** 2026-01-04
 **Last Updated:** 2026-01-10 (`docs audit` Part 13.U/W/X complete)

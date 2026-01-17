@@ -1,9 +1,9 @@
 # PyQt6 GUI Plan
 
-**Status:** active
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
+**Status:** active  
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
 
 > Reference only - the canonical execution plan lives in `docs/development/MASTER_PLAN.md`.
 

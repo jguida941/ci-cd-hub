@@ -1,9 +1,9 @@
 # TypeScript CLI Design: CIHub Interactive Terminal
 
-**Status:** active
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
+**Status:** active  
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
 
 **Date:** 2026-01-05
 **Status:** Planning
@@ -236,46 +236,46 @@ Both run **directly in your terminal** - no separate window, no Electron, no Tau
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
-│ YOUR TERMINAL │
-│ (iTerm, Terminal.app, Windows Terminal, etc.) │
+│                          YOUR TERMINAL                             │
+│              (iTerm, Terminal.app, Windows Terminal)               │
 ├────────────────────────────────────────────────────────────────────┤
-│ │
-│ ┌───────────────────────────────────────────────────────────────┐ │
-│ │ CIHUB INTERACTIVE CLI │
-│ │ (TypeScript + Ink) │ │
-│ ├───────────────────────────────────────────────────────────────┤ │
-│ │ │ │
-│ │ ╭─────────────────────────────────────────────────────────╮ │ │
-│ │ │ CIHub v1.0.0 ~/myproject │ │ │
-│ │ ╰─────────────────────────────────────────────────────────╯ │ │
-│ │ │ │
-│ │ Found Python project with 3 issues: │ │
-│ │ │ │
-│ │ Coverage below threshold (65% < 70%) │ │
-│ │ 2 security vulnerabilities detected │ │
-│ │ [ ] Ruff check failed with 5 errors │ │
-│ │ │ │
-│ │ Suggestions: │ │
-│ │ • Run `/check --fix` to auto-fix linting issues │ │
-│ │ • Run `/triage` for AI-assisted remediation │ │
-│ │ │ │
-│ │ ╭─────────────────────────────────────────────────────────╮ │ │
-│ │ │ > /triage --since HEAD~5 │ │ │
-│ │ ╰─────────────────────────────────────────────────────────╯ │ │
-│ │ │ │
-│ └───────────────────────────────────────────────────────────────┘ │
-│ │
+│                                                                    │
+│  ┌──────────────────────────────────────────────────────────────┐  │
+│  │                   CIHUB INTERACTIVE CLI                      │  │
+│  │                    (TypeScript + Ink)                        │  │
+│  ├──────────────────────────────────────────────────────────────┤  │
+│  │                                                              │  │
+│  │  ╭────────────────────────────────────────────────────────╮  │  │
+│  │  │  CIHub v1.0.0                         ~/myproject      │  │  │
+│  │  ╰────────────────────────────────────────────────────────╯  │  │
+│  │                                                              │  │
+│  │  Found Python project with 3 issues:                        │  │
+│  │                                                              │  │
+│  │    ⚠ Coverage below threshold (65% < 70%)                   │  │
+│  │    ⚠ 2 security vulnerabilities detected                    │  │
+│  │    ✗ Ruff check failed with 5 errors                        │  │
+│  │                                                              │  │
+│  │  Suggestions:                                                │  │
+│  │    • Run `/check --fix` to auto-fix linting issues          │  │
+│  │    • Run `/triage` for AI-assisted remediation              │  │
+│  │                                                              │  │
+│  │  ╭────────────────────────────────────────────────────────╮  │  │
+│  │  │  > /triage --since HEAD~5                              │  │  │
+│  │  ╰────────────────────────────────────────────────────────╯  │  │
+│  │                                                              │  │
+│  └──────────────────────────────────────────────────────────────┘  │
+│                                                                    │
 └────────────────────────────────────────────────────────────────────┘
- │
- │ subprocess (spawn)
- ▼
+                                  │
+                                  │ subprocess (spawn)
+                                  ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│ PYTHON CLI (cihub) │
-│ │
-│ $ python -m cihub triage --since HEAD~5 --json │
-│ │
-│ Returns: CommandResult JSON │
-│ │
+│                        PYTHON CLI (cihub)                          │
+│                                                                    │
+│    $ python -m cihub triage --since HEAD~5 --json                  │
+│                                                                    │
+│    Returns: CommandResult JSON                                     │
+│                                                                    │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -283,31 +283,31 @@ Both run **directly in your terminal** - no separate window, no Electron, no Tau
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ TypeScript CLI Package │
+│                    TypeScript CLI Package                       │
 ├─────────────────────────────────────────────────────────────────┤
-│ │
-│ ┌──────────────┐ ┌──────────────┐ ┌──────────────────────┐ │
-│ │ App.tsx │ │ Commands/ │ │ AI Bridge │ │
-│ │ (Main UI) │ │ (Handlers) │ │ (Claude/Codex API) │ │
-│ └──────┬───────┘ └──────┬───────┘ └──────────┬───────────┘ │
-│ │ │ │ │
-│ └────────┬────────┴─────────────────────┘ │
-│ │ │
-│ ┌────────▼────────┐ │
-│ │ CLI Bridge │ │
-│ │ (spawn cihub) │ │
-│ └────────┬────────┘ │
-│ │ │
-└──────────────────┼──────────────────────────────────────────────┘
- │ subprocess
- ▼
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │   App.tsx    │  │  Commands/   │  │      AI Bridge       │  │
+│  │  (Main UI)   │  │  (Handlers)  │  │  (Claude/Codex API)  │  │
+│  └──────┬───────┘  └──────┬───────┘  └──────────┬───────────┘  │
+│         │                 │                     │              │
+│         └─────────────────┼─────────────────────┘              │
+│                           │                                    │
+│                  ┌────────▼────────┐                           │
+│                  │   CLI Bridge    │                           │
+│                  │  (spawn cihub)  │                           │
+│                  └────────┬────────┘                           │
+│                           │                                    │
+└───────────────────────────┼────────────────────────────────────┘
+                            │ subprocess
+                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ Python CLI (existing cihub package) │
-│ │
-│ cihub discover --json │
-│ cihub triage --json │
-│ cihub check --json │
-│ │
+│              Python CLI (existing cihub package)                │
+│                                                                 │
+│    cihub discover --json                                        │
+│    cihub triage --json                                          │
+│    cihub check --json                                           │
+│                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
