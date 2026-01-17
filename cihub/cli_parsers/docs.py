@@ -126,6 +126,11 @@ def add_docs_commands(
         help="Output dir for CIHub-style artifacts (e.g., .cihub/tool-outputs)",
     )
     docs_audit.add_argument(
+        "--inventory",
+        action="store_true",
+        help="Include doc inventory counts in JSON output",
+    )
+    docs_audit.add_argument(
         "--skip-references",
         action="store_true",
         help="Skip plain-text reference scanning (faster)",

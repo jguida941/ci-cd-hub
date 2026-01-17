@@ -9,10 +9,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from hypothesis import given, settings
+import pytest
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
+from cihub.commands.threshold_cmd import THRESHOLD_METADATA, _validate_threshold_key
 from cihub.config import deep_merge
+from cihub.config.loader.inputs import generate_workflow_inputs
+from cihub.utils.paths import validate_subdir
 
 # =============================================================================
 # Strategy Definitions
@@ -71,6 +75,13 @@ nested_dict_strategy = st.recursive(
     ),
     max_leaves=10,
 )
+
+# Strategy for safe subdir segments
+subdir_segment_strategy = st.text(
+    alphabet="abcdefghijklmnopqrstuvwxyz0123456789-_",
+    min_size=1,
+    max_size=8,
+).filter(lambda value: value not in {".", ".."})
 
 
 # =============================================================================
@@ -198,6 +209,95 @@ class TestToolConfigProperties:
         config = {language: {"tools": {tool: {"enabled": True}}}}
         # Access pattern works
         assert config[language]["tools"][tool]["enabled"] is True
+
+
+# =============================================================================
+# Workflow Input Generation Properties
+# =============================================================================
+
+
+class TestWorkflowInputsProperties:
+    """Property-based tests for workflow input generation."""
+
+    @given(
+        coverage=st.integers(min_value=0, max_value=100),
+        mutation=st.integers(min_value=0, max_value=100),
+        run_pytest=st.booleans(),
+    )
+    @settings(max_examples=50)
+    def test_python_global_thresholds_override(
+        self, coverage: int, mutation: int, run_pytest: bool
+    ) -> None:
+        """Property: global thresholds override tool thresholds for Python."""
+        config = {
+            "language": "python",
+            "python": {
+                "tools": {
+                    "pytest": {"enabled": run_pytest, "min_coverage": 10},
+                    "mutmut": {"enabled": False, "min_mutation_score": 10},
+                }
+            },
+            "thresholds": {"coverage_min": coverage, "mutation_score_min": mutation},
+        }
+        inputs = generate_workflow_inputs(config)
+        assert inputs["coverage_min"] == coverage
+        assert inputs["mutation_score_min"] == mutation
+
+    @given(cihub_value=st.one_of(st.none(), st.booleans(), st.text(max_size=20)))
+    @settings(max_examples=50)
+    def test_non_dict_ci_hub_defaults(self, cihub_value: Any) -> None:
+        """Property: non-dict cihub config yields default debug flags."""
+        assume(not isinstance(cihub_value, dict))
+        inputs = generate_workflow_inputs({"language": "python", "cihub": cihub_value})
+        assert inputs["cihub_debug"] is False
+        assert inputs["cihub_verbose"] is False
+        assert inputs["cihub_debug_context"] is False
+        assert inputs["cihub_emit_triage"] is False
+
+
+# =============================================================================
+# Validator Properties
+# =============================================================================
+
+
+class TestValidatorProperties:
+    """Property-based tests for validator helpers."""
+
+    @given(segments=st.lists(subdir_segment_strategy, min_size=1, max_size=4))
+    @settings(max_examples=50)
+    def test_validate_subdir_accepts_relative(self, segments: list[str]) -> None:
+        """Property: validate_subdir accepts relative paths without traversal."""
+        subdir = "/".join(segments)
+        assert validate_subdir(subdir) == subdir
+
+    @given(segments=st.lists(subdir_segment_strategy, min_size=1, max_size=4))
+    @settings(max_examples=50)
+    def test_validate_subdir_rejects_traversal(self, segments: list[str]) -> None:
+        """Property: validate_subdir rejects paths with traversal segments."""
+        subdir = "/".join([segments[0], "..", *segments[1:]])
+        with pytest.raises(ValueError):
+            validate_subdir(subdir)
+
+    @given(segments=st.lists(subdir_segment_strategy, min_size=1, max_size=4))
+    @settings(max_examples=50)
+    def test_validate_subdir_rejects_absolute(self, segments: list[str]) -> None:
+        """Property: validate_subdir rejects absolute paths."""
+        subdir = "/" + "/".join(segments)
+        with pytest.raises(ValueError):
+            validate_subdir(subdir)
+
+    @given(key=st.sampled_from(sorted(THRESHOLD_METADATA.keys())))
+    @settings(max_examples=50)
+    def test_validate_threshold_key_accepts_known_keys(self, key: str) -> None:
+        """Property: known threshold keys are accepted."""
+        assert _validate_threshold_key(key) is None
+
+    @given(key=st.text(min_size=1, max_size=20))
+    @settings(max_examples=50)
+    def test_validate_threshold_key_rejects_unknown_keys(self, key: str) -> None:
+        """Property: unknown threshold keys are rejected."""
+        assume(key not in THRESHOLD_METADATA)
+        assert _validate_threshold_key(key) is not None
 
 
 # =============================================================================

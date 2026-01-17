@@ -8,6 +8,7 @@ This module implements Part 13 from DOC_AUTOMATION_AUDIT.md:
 - V. Hardcoded Placeholder Detection
 - W. Cross-Doc Consistency (README.md ↔ active/)
 - X. CHANGELOG Format Validation
+- Guide command validation (docs/guides/)
 """
 
 from __future__ import annotations
@@ -31,6 +32,7 @@ from .types import (
     FindingSeverity,
     TaskEntry,
 )
+from .guides import validate_guide_commands
 
 
 def _normalize_task_text(text: str) -> str:
@@ -1002,6 +1004,9 @@ def validate_consistency(repo_root: Path) -> list[AuditFinding]:
 
     # Part 13.W: Cross-doc consistency (README.md ↔ active/)
     findings.extend(check_docs_index_consistency(repo_root))
+
+    # Guide command validation (docs/guides/)
+    findings.extend(validate_guide_commands(repo_root))
 
     # Part 13.X: CHANGELOG format validation
     findings.extend(validate_changelog(repo_root))

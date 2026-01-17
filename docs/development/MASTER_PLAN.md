@@ -165,7 +165,7 @@ Core implementation needed:
 
 ### Priority 3: TEST_REORGANIZATION.md (CURRENT)
 
-**Status:** Phase 0-3 COMPLETE (mapping + splits done; structure in place) | **Depends on:** CommandResult migration + Registry fix (both complete)  
+**Status:** Phase 0-4 COMPLETE (mapping + splits done; property tests added) | **Depends on:** CommandResult migration + Registry fix (both complete)  
 
 ```
 docs/development/active/TEST_REORGANIZATION.md

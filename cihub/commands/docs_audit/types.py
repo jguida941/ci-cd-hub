@@ -74,6 +74,7 @@ class FindingCategory(str, Enum):
     HEADER = "header"
     REFERENCE = "reference"
     SYNC = "sync"
+    GUIDE_COMMAND = "guide_command"
     # Part 13 categories
     DUPLICATE_TASK = "duplicate_task"
     TIMESTAMP = "timestamp"
@@ -141,6 +142,7 @@ class AuditReport:
         status_entries: Entries parsed from STATUS.md
         adr_files: ADR files found
         archive_docs: Files found in docs/development/archive/
+        inventory_summary: Optional doc inventory counts (when requested)
     """
 
     findings: list[AuditFinding] = field(default_factory=list)
@@ -148,6 +150,7 @@ class AuditReport:
     status_entries: list[str] = field(default_factory=list)
     adr_files: list[str] = field(default_factory=list)
     archive_docs: list[str] = field(default_factory=list)
+    inventory_summary: DocInventorySummary | None = None
 
     @property
     def error_count(self) -> int:
@@ -169,7 +172,7 @@ class AuditReport:
 
         Returns a structured dict suitable for JSON output mode.
         """
-        return {
+        data = {
             "stats": {
                 "total_findings": len(self.findings),
                 "errors": self.error_count,
@@ -185,6 +188,38 @@ class AuditReport:
                 "adr_files": self.adr_files,
                 "archive_docs": self.archive_docs,
             },
+        }
+        if self.inventory_summary is not None:
+            data["inventory_summary"] = self.inventory_summary.to_dict()
+        return data
+
+
+@dataclass
+class DocInventoryCategory:
+    """Inventory counts for a documentation category."""
+
+    files: int = 0
+    lines: int = 0
+
+    def to_dict(self) -> dict[str, int]:
+        """Convert to JSON-serializable dict."""
+        return {"files": self.files, "lines": self.lines}
+
+
+@dataclass
+class DocInventorySummary:
+    """Inventory summary for docs/ markdown files."""
+
+    total_files: int = 0
+    total_lines: int = 0
+    categories: dict[str, DocInventoryCategory] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to JSON-serializable dict."""
+        return {
+            "total_files": self.total_files,
+            "total_lines": self.total_lines,
+            "categories": {name: category.to_dict() for name, category in self.categories.items()},
         }
 
 

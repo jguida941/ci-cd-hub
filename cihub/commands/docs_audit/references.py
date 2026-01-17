@@ -130,9 +130,11 @@ def extract_doc_references(content: str, file_path: str) -> list[tuple[int, str]
 
     for line_num, line in enumerate(content.split("\n"), 1):
         for match in pattern.finditer(line):
+            if not _is_valid_reference_start(line, match.start()):
+                continue
             ref = match.group(0)
             # Clean up common trailing characters
-            ref = ref.rstrip(")`'\",;:]")
+            ref = ref.rstrip(")`'\",;:].")
             # Skip known exceptions
             if ref in KNOWN_EXCEPTIONS:
                 continue
@@ -153,6 +155,26 @@ def extract_doc_references(content: str, file_path: str) -> list[tuple[int, str]
             references.append((line_num, ref))
 
     return references
+
+
+def _is_valid_reference_start(line: str, match_start: int) -> bool:
+    """Validate that a docs/ reference isn't embedded in another path."""
+    if match_start == 0:
+        return True
+
+    prefix = line[:match_start]
+    prev_char = prefix[-1]
+
+    if prev_char.isalnum() or prev_char in "_-.":
+        return False
+
+    if prev_char == "/":
+        # Allow relative references like ../docs/... or ./docs/...
+        if re.search(r"(?:^|[^A-Za-z0-9_-])(?:\./|\.\./)+$", prefix):
+            return True
+        return False
+
+    return True
 
 
 def validate_doc_references(repo_root: Path) -> list[AuditFinding]:

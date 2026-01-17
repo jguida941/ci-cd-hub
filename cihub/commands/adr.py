@@ -174,10 +174,10 @@ def cmd_adr_new(args: argparse.Namespace) -> CommandResult:
     today = date.today().isoformat()
     content = f"""# ADR-{number:04d}: {title}
 
-**Status**: Proposed
-**Date:** {today}
-**Developer:**
-**Last Reviewed:** {today}
+**Status**: Proposed  
+**Date:** {today}  
+**Developer:**  
+**Last Reviewed:** {today}  
 
 ## Context
 

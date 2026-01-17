@@ -53,6 +53,7 @@ from .headers import (
     validate_doc_headers,
     validate_header_value,
 )
+from .inventory import build_doc_inventory
 from .lifecycle import (
     check_active_status_sync,
     check_archive_superseded_headers,
@@ -79,6 +80,8 @@ from .types import (
     ADRMetadata,
     AuditFinding,
     AuditReport,
+    DocInventoryCategory,
+    DocInventorySummary,
     FindingCategory,
     FindingSeverity,
 )
@@ -92,6 +95,8 @@ __all__ = [
     "ADRMetadata",
     "FindingSeverity",
     "FindingCategory",
+    "DocInventoryCategory",
+    "DocInventorySummary",
     # Constants
     "ACTIVE_DOCS_DIR",
     "ARCHIVE_DOCS_DIR",
@@ -136,6 +141,8 @@ __all__ = [
     "format_github_summary",
     "group_findings_by_category",
     "group_findings_by_file",
+    # Inventory
+    "build_doc_inventory",
 ]
 
 
@@ -152,6 +159,7 @@ def cmd_docs_audit(args: argparse.Namespace) -> CommandResult:
             --skip-headers: Skip Part 12.Q universal header validation
             --skip-references: Skip reference scanning (faster)
             --skip-consistency: Skip Part 13 consistency checks (faster)
+            --inventory: Include doc inventory counts in JSON output
 
     Returns:
         CommandResult with audit findings
@@ -159,6 +167,7 @@ def cmd_docs_audit(args: argparse.Namespace) -> CommandResult:
     repo_root = project_root()
     skip_references = getattr(args, "skip_references", False)
     skip_consistency = getattr(args, "skip_consistency", False)
+    include_inventory = getattr(args, "inventory", False)
     output_dir = getattr(args, "output_dir", None)
     github_summary = getattr(args, "github_summary", False)
 
@@ -193,6 +202,10 @@ def cmd_docs_audit(args: argparse.Namespace) -> CommandResult:
     if not skip_consistency:
         consistency_findings = validate_consistency(repo_root)
         report.findings.extend(consistency_findings)
+
+    # 6. Inventory summary (optional)
+    if include_inventory:
+        report.inventory_summary = build_doc_inventory(repo_root)
 
     # Prepare output context for artifacts
     ctx = OutputContext.from_args(args)

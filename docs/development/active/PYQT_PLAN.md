@@ -388,8 +388,8 @@ Execution order (avoid rework):
 │ ┌────────────┐  ┌──────────────────────────────────────────────┐ │
 │ │   REPOS    │  │  REPO: myorg/my-service                      │ │
 │ │            │  │  ┌────────────────────────────────────────┐  │ │
-│ │ ▸ myorg/   │  │  │ Language: [Python ▼]  Version: [3.12] │  │ │
-│ │   my-svc   │  │  │ Branch:   [main    ]  Monorepo: [ ]   │  │ │
+│ │ ▸ myorg/   │  │  │ Language: [Python ▼]  Version: [3.12] │   │ │
+│ │   my-svc   │  │  │ Branch:   [main    ]  Monorepo: [ ]   │   │ │
 │ │   other    │  │  └────────────────────────────────────────┘  │ │
 │ │ ▸ fixtures │  │  ┌────────────────────────────────────────┐  │ │
 │ │   java-pass│  │  │ TOOLS                                  │  │ │
@@ -401,7 +401,7 @@ Execution order (avoid rework):
 │ │            │  │  │ Coverage: [80]%    Mutation: [70]%     │  │ │
 │ │            │  │  └────────────────────────────────────────┘  │ │
 │ │            │  │                                              │ │
-│ │  [+ Add]   │  │  [Save] [Push to Repo] [Validate] [Delete]  │ │
+│ │  [+ Add]   │  │  [Save] [Push to Repo] [Validate] [Delete]   │ │
 │ └────────────┘  └──────────────────────────────────────────────┘ │
 ├──────────────────────────────────────────────────────────────────┤
 │  Status: Ready                                                   │

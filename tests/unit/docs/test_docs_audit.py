@@ -71,6 +71,56 @@ class TestAuditTypes:
         assert report.has_errors is False
 
 
+class TestDocInventory:
+    """Test docs inventory counts."""
+
+    def test_build_doc_inventory_counts(self, tmp_path: Path) -> None:
+        from cihub.commands.docs_audit.inventory import build_doc_inventory
+
+        docs_dir = tmp_path / "docs"
+        (docs_dir / "README.md").parent.mkdir(parents=True, exist_ok=True)
+        (docs_dir / "README.md").write_text("root\n")
+
+        adr_dir = docs_dir / "adr"
+        adr_dir.mkdir()
+        (adr_dir / "0001-test.md").write_text("adr\n")
+
+        ref_dir = docs_dir / "reference"
+        ref_dir.mkdir()
+        (ref_dir / "CLI.md").write_text("ref\n")
+
+        guides_dir = docs_dir / "guides"
+        guides_dir.mkdir()
+        (guides_dir / "GETTING_STARTED.md").write_text("guide\n")
+
+        dev_active = docs_dir / "development" / "active"
+        dev_active.mkdir(parents=True)
+        (dev_active / "PLAN.md").write_text("dev\n")
+
+        dev_archive = docs_dir / "development" / "archive"
+        dev_archive.mkdir(parents=True)
+        (dev_archive / "OLD.md").write_text("archive\n")
+
+        dev_research = docs_dir / "development" / "research"
+        dev_research.mkdir(parents=True)
+        (dev_research / "NOTE.md").write_text("research\n")
+
+        other_dir = docs_dir / "misc"
+        other_dir.mkdir()
+        (other_dir / "OTHER.md").write_text("other\n")
+
+        summary = build_doc_inventory(tmp_path)
+        assert summary.total_files == 8
+        assert summary.categories["root"].files == 1
+        assert summary.categories["adr"].files == 1
+        assert summary.categories["reference"].files == 1
+        assert summary.categories["guides"].files == 1
+        assert summary.categories["development"].files == 1
+        assert summary.categories["archive"].files == 1
+        assert summary.categories["research"].files == 1
+        assert summary.categories["other"].files == 1
+
+
 class TestLifecycleValidation:
     """Test lifecycle validation functions."""
 
@@ -223,6 +273,22 @@ class TestReferenceValidation:
         # The reference should be found
         assert refs[0][1].startswith("docs/README.md")
 
+    def test_extract_doc_references_ignores_nested_docs_path(self) -> None:
+        """Skip docs/ matches embedded inside other paths."""
+        from cihub.commands.docs_audit.references import extract_doc_references
+
+        content = "tests/unit/docs/test_docs_audit.py"
+        refs = extract_doc_references(content, "test.md")
+        assert refs == []
+
+    def test_extract_doc_references_strips_trailing_period(self) -> None:
+        """Strip trailing punctuation from docs/ references."""
+        from cihub.commands.docs_audit.references import extract_doc_references
+
+        content = "See docs/guides/."
+        refs = extract_doc_references(content, "test.md")
+        assert refs == [(1, "docs/guides/")]
+
 
 class TestCommandIntegration:
     """Integration tests for cmd_docs_audit."""
@@ -254,6 +320,19 @@ class TestCommandIntegration:
         # data field should contain the report dict
         assert "stats" in result.data
         assert "findings" in result.data
+
+    def test_cmd_docs_audit_inventory_summary(self) -> None:
+        """Test that --inventory includes summary in JSON output."""
+        args = argparse.Namespace(
+            json=True,
+            output_dir=None,
+            skip_references=True,
+            skip_consistency=True,
+            github_summary=False,
+            inventory=True,
+        )
+        result = cmd_docs_audit(args)
+        assert "inventory_summary" in result.data
 
     def test_cmd_docs_audit_writes_artifact(self, tmp_path: Path) -> None:
         """Test that --output-dir writes docs_audit.json."""
@@ -621,6 +700,34 @@ More content.
         result = cmd_docs_audit(args)
         assert "stats" in result.data
         # Should have run without errors
+
+
+class TestGuideValidation:
+    """Test guide command validation."""
+
+    def test_validate_guide_commands_invalid(self, tmp_path: Path) -> None:
+        from cihub.commands.docs_audit.guides import validate_guide_commands
+
+        guides_dir = tmp_path / "docs" / "guides"
+        guides_dir.mkdir(parents=True)
+
+        content = """# Guide
+
+```bash
+cihub docs generate
+cihub 0.x.x
+python -m cihub check --all
+cihub docs generat
+```
+
+Inline: `cihub check --full`
+"""
+        (guides_dir / "GUIDE.md").write_text(content)
+
+        findings = validate_guide_commands(tmp_path)
+        assert len(findings) == 1
+        assert "generat" in findings[0].message
+        assert findings[0].category == FindingCategory.GUIDE_COMMAND
 
 
 class TestHeaderValidation:

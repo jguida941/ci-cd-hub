@@ -95,6 +95,7 @@ def format_human_output(report: AuditReport) -> str:
         FindingCategory.ADR_METADATA: "ADR Metadata Issues",
         FindingCategory.HEADER: "Header Issues",
         FindingCategory.REFERENCE: "Reference Issues",
+        FindingCategory.GUIDE_COMMAND: "Guide Command Issues",
     }
 
     for category, category_findings in sorted(by_category.items(), key=lambda x: x[0].value):
