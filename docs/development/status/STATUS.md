@@ -8,7 +8,7 @@
 > **Status snapshot** for active docs only. The authoritative plan is [MASTER_PLAN.md](../MASTER_PLAN.md).
 > This file may be stale and will be audited later; it remains because automation scripts may reference it.
 >
-> **Action Items:** See [MASTER_PLAN.md](../MASTER_PLAN.md) for all tasks.
+> **Action Items:** See [MASTER_PLAN.md](../MASTER_PLAN.md) for all tasks.  
 > **Architecture:** See [ARCH_OVERVIEW.md](../architecture/ARCH_OVERVIEW.md)
 > **Test Counts:** Paused in docs; owner will refresh after a verified full run.
 >
