@@ -249,15 +249,15 @@ Both run **directly in your terminal** - no separate window, no Electron, no Tau
 │  │  │  CIHub v1.0.0                         ~/myproject      │  │  │
 │  │  ╰────────────────────────────────────────────────────────╯  │  │
 │  │                                                              │  │
-│  │  Found Python project with 3 issues:                        │  │
+│  │  Found Python project with 3 issues:                         │  │
 │  │                                                              │  │
-│  │    ⚠ Coverage below threshold (65% < 70%)                   │  │
-│  │    ⚠ 2 security vulnerabilities detected                    │  │
-│  │    ✗ Ruff check failed with 5 errors                        │  │
+│  │    ⚠ Coverage below threshold (65% < 70%)                    │  │
+│  │    ⚠ 2 security vulnerabilities detected                     │  │
+│  │    ✗ Ruff check failed with 5 errors                         │  │
 │  │                                                              │  │
 │  │  Suggestions:                                                │  │
-│  │    • Run `/check --fix` to auto-fix linting issues          │  │
-│  │    • Run `/triage` for AI-assisted remediation              │  │
+│  │    • Run `/check --fix` to auto-fix linting issues           │  │
+│  │    • Run `/triage` for AI-assisted remediation               │  │
 │  │                                                              │  │
 │  │  ╭────────────────────────────────────────────────────────╮  │  │
 │  │  │  > /triage --since HEAD~5                              │  │  │
