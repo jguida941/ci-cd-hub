@@ -1057,18 +1057,18 @@ OUTPUT_DIR=".cihub"
 
 mkdir -p "$OUTPUT_DIR"
 
-echo "🤖 Starting AI CI Loop (max $MAX_ITERATIONS iterations)"
+echo "Starting AI CI Loop (max $MAX_ITERATIONS iterations)"
 echo "=================================================="
 
 for i in $(seq 1 $MAX_ITERATIONS); do
     echo ""
-    echo "🔄 Iteration $i of $MAX_ITERATIONS"
+    echo " Iteration $i of $MAX_ITERATIONS"
     echo "-----------------------------------"
 
     # Run CI with JSON output (emits triage bundle)
     if CIHUB_EMIT_TRIAGE=true \
         python -m cihub ci --json --output-dir "$OUTPUT_DIR" > "$OUTPUT_DIR/ci-$i.json" 2>&1; then
-        echo "✅ All CI checks passed!"
+        echo " All CI checks passed!"
         echo ""
         echo "Summary:"
         echo "  - Iterations: $i"
@@ -1076,12 +1076,12 @@ for i in $(seq 1 $MAX_ITERATIONS); do
         exit 0
     fi
 
-    echo "❌ CI failed, analyzing..."
+    echo "CI failed, analyzing..."
 
     # Show priority issues
     if [[ -f "$OUTPUT_DIR/priority.json" ]]; then
         echo ""
-        echo "📋 Priority Issues:"
+        echo "Priority Issues:"
         python3 -c "
 import json
 with open('$OUTPUT_DIR/priority.json') as f:
@@ -1093,21 +1093,21 @@ for f in data.get('failures', [])[:5]:
 
     # Apply safe auto-fixes
     echo ""
-    echo "🔧 Attempting safe auto-fixes..."
+    echo "Attempting safe auto-fixes..."
     python -m cihub fix --safe 2>/dev/null || true
 
     # Check if any changes were made
     if [[ -n $(git status --porcelain 2>/dev/null) ]]; then
-        echo "📝 Changes detected, ready for next iteration"
+        echo "Changes detected, ready for next iteration"
     else
-        echo "⚠️  No automatic fixes available"
+        echo "️ No automatic fixes available"
     fi
 
     sleep 1
 done
 
 echo ""
-echo "❌ Max iterations ($MAX_ITERATIONS) reached"
+echo "Max iterations ($MAX_ITERATIONS) reached"
 echo ""
 echo "Review remaining issues:"
 echo "  - Triage: $OUTPUT_DIR/triage.md"
@@ -1210,16 +1210,16 @@ CIHUB_AI_LOOP=true claude --max-turns 50 \
 
 The following components were audited:
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| CLI Architecture | ✅ Ready | CommandResult pattern, lazy loading |
-| Triage System | ✅ Ready | Full AI-ready structured output |
-| Check Tiers | ✅ Ready | CheckStep aggregation, deduplication |
-| Fix Infrastructure | ✅ Ready | Safe auto-fixes for Python/Java |
-| Report System | ✅ Ready | tools_configured/ran/success maps |
-| Hook Mechanisms | ⚠️ Partial | Tool adapters exist, no CLI hooks yet |
-| AI Formatters | ⚠️ Partial | Only `docs stale` registered; `check` has no `--ai` |
-| Configuration | ✅ Ready | Full schema support, custom tools |
+| Component          | Status  | Notes                                               |
+|--------------------|---------|-----------------------------------------------------|
+| CLI Architecture   | Ready   | CommandResult pattern, lazy loading                 |
+| Triage System      | Ready   | Full AI-ready structured output                     |
+| Check Tiers        | Ready   | CheckStep aggregation, deduplication                |
+| Fix Infrastructure | Ready   | Safe auto-fixes for Python/Java                     |
+| Report System      | Ready   | tools_configured/ran/success maps                   |
+| Hook Mechanisms    | Partial | Tool adapters exist, no CLI hooks yet               |
+| AI Formatters      | Partial | Only `docs stale` registered; `check` has no `--ai` |
+| Configuration      | Ready   | Full schema support, custom tools                   |
 
 ---
 
