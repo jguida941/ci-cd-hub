@@ -1,9 +1,9 @@
 # ADR-0051: Wizard Profile-First Design
 
-**Status**: Implemented
-**Date:** 2026-01-08
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-15
+**Status**: Implemented  
+**Date:** 2026-01-08  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-15  
 
 ## Implementation Summary
 

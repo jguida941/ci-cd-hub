@@ -1,9 +1,9 @@
 # ADR-0046: OutputRenderer Pattern
 
-**Status**: Accepted
-**Date:** 2026-01-06
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-06
+**Status**: Accepted  
+**Date:** 2026-01-06  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-06  
 **Updated:** 2026-01-06 (Added AIRenderer with registry pattern)
 
 ## Context

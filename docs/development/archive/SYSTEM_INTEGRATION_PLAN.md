@@ -1,15 +1,15 @@
 # System Integration Plan (Archived)
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
 > **WARNING: SUPERSEDED:** This document is archived (2026-01-15). The canonical execution plan is
 > `docs/development/MASTER_PLAN.md`, with current architecture in `docs/development/architecture/ARCH_OVERVIEW.md`.
 >
-> **Status:** Archived
+> **Status:** Archived  
 > **Archived:** 2026-01-15
-> **Owner:** Development Team
-> **Source-of-truth:** manual
-> **Last-reviewed:** 2026-01-15
-> **Superseded-by:** docs/development/MASTER_PLAN.md
+> **Owner:** Development Team  
+> **Source-of-truth:** manual  
+> **Last-reviewed:** 2026-01-15  
+> **Superseded-by:** docs/development/MASTER_PLAN.md  
 
 **Consolidates:** COMPREHENSIVE_SYSTEM_AUDIT.md, WIZARD_IMPROVEMENTS.md, REGISTRY_AUDIT_AND_PLAN.md
 
@@ -151,7 +151,7 @@ effective = {
 
 **Location:** `services/registry_service.py`
 
-**Status:** [x] **RESOLVED in Phase 0.1**
+**Status:** [x] **RESOLVED in Phase 0.1**  
 
 **Fix implemented:**
 - Registry now normalizes legacy keys to schema-aligned keys on load/save (`coverage_min`, `mutation_score_min`, `max_{critical,high}_vulns`)
@@ -176,7 +176,7 @@ effective = {
 
 ### 2.5 Registry Bypass in CLI/Wizard
 
-**Status:** [x] **RESOLVED** (2026-01-12)
+**Status:** [x] **RESOLVED** (2026-01-12)  
 
 **Previous:** `cihub new` wrote `config/repos/*.yaml` directly, wizard edited configs without touching registry.
 
@@ -209,7 +209,7 @@ effective = {
 
 ### 2.9 Tiers / Profiles / Thresholds Profile Mapping (RESOLVED 2026-01-09)
 
-**Status:** [x] **RESOLVED** - Canonical mapping defined and tier profiles created.
+**Status:** [x] **RESOLVED** - Canonical mapping defined and tier profiles created.  
 
 **Solution:**
 - **Tiers** (strict/standard/relaxed) are language-agnostic quality levels that set thresholds

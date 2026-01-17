@@ -1,9 +1,9 @@
 # ADR-0047: Config Validation Order
 
-**Status**: Accepted
-**Date:** 2026-01-06
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-06
+**Status**: Accepted  
+**Date:** 2026-01-06  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-06  
 
 ## Context
 

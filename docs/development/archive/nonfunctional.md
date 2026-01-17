@@ -1,7 +1,7 @@
 # Non-Functional Requirements
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
-> **Status:** Superseded. See `docs/development/specs/REQUIREMENTS.md` for current requirements.
+> **Status:** Superseded. See `docs/development/specs/REQUIREMENTS.md` for current requirements.  
 
 Quality targets for hub-release.
 
@@ -79,4 +79,4 @@ Quality targets for hub-release.
 - `[x]` - Verified complete
 
 **Last Updated:** 2025-12-14
-**Status:** MOSTLY UNVERIFIED - needs baseline measurements
+**Status:** MOSTLY UNVERIFIED - needs baseline measurements  

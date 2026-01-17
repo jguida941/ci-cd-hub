@@ -1,7 +1,7 @@
 # ADR-0053: Schema-Derived Defaults and Fallbacks
 
-**Status:** Implemented
-**Date:** 2026-01-15
+**Status:** Implemented  
+**Date:** 2026-01-15  
 **Supersedes:** None
 
 ## Context

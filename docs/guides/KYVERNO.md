@@ -1,9 +1,9 @@
 # Kyverno Policies for Kubernetes Admission Control
 
-**Status:** reference
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
+**Status:** reference  
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
 
 The CI/CD Hub includes **optional** Kyverno policies for organizations deploying to Kubernetes. These policies extend the hub's security posture from build-time (GitHub Actions) to deploy-time (K8s admission control).
 

@@ -878,7 +878,7 @@ options:
 ## cihub docs audit
 
 ```
-usage: cihub docs audit [-h] [--json] [--output-dir OUTPUT_DIR]
+usage: cihub docs audit [-h] [--json] [--output-dir OUTPUT_DIR] [--inventory]
                         [--skip-references] [--skip-headers]
                         [--skip-consistency] [--github-summary]
 
@@ -888,6 +888,7 @@ options:
   --output-dir OUTPUT_DIR
                         Output dir for CIHub-style artifacts (e.g.,
                         .cihub/tool-outputs)
+  --inventory           Include doc inventory counts in JSON output
   --skip-references     Skip plain-text reference scanning (faster)
   --skip-headers        Skip Part 12.Q universal header validation
   --skip-consistency    Skip Part 13 consistency checks (duplicates,

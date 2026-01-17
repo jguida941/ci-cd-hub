@@ -1,21 +1,21 @@
 # Documentation Automation Audit & Design
 
-**Status:** active
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
+**Status:** active  
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-17  
 
-**Date:** 2026-01-04
-**Last Updated:** 2026-01-10 (`docs audit` Part 13.U/W/X complete)
+**Date:** 2026-01-04  
+**Last Updated:** 2026-01-17 (`docs audit` optional items: inventory + guide validation)
 **Priority:** **#4** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
-**Status:** ~98% implemented (`docs stale` complete, `docs audit` complete with Part 12.J/L/N/Q + Part 13.R/S/T/U/V/W/X)
+**Status:** ~99% implemented (only Part 12.J path-change update rules remain)  
 **Depends On:** Stable CLI surface (CLEAN_CODE.md archived)
 **Can Parallel:** TEST_REORGANIZATION.md (both need stable CLI)
 **Problem:** Manual documentation updates take 4+ hours/day. With 50+ docs and 28,000 lines, keeping them in sync with code changes is unsustainable.
 
 ---
 
-## Implementation Status (2026-01-10)
+## Implementation Status (2026-01-17)
 
 | Component | Status | Notes |
 |-----------|--------|-------|
@@ -34,9 +34,10 @@
 | Checklist-reality sync | [x] **IMPLEMENTED** | Part 13.U - verify [ ] items against code |
 | Cross-doc consistency | [x] **IMPLEMENTED** | Part 13.W - README.md ↔ active/ directory sync (limited scope) |
 | CHANGELOG validation | [x] **IMPLEMENTED** | Part 13.X - format and ordering checks |
-| Guide command validation | [ ] **NOT IMPLEMENTED** | Validate `cihub <command>` mentions in guides against CLI |
+| Doc inventory/counts | [x] **IMPLEMENTED** | `docs audit --inventory` emits counts for JSON output |
+| Guide command validation | [x] **IMPLEMENTED** | Validate `cihub <command>` mentions in guides against CLI |
 
-**Overall:** ~98% implemented. `docs stale` complete; `docs audit` complete (J/L/N/Q + Part 13.R/S/T/U/V/W/X). Only optional items remain.
+**Overall:** ~99% implemented. `docs stale` complete; `docs audit` complete (J/L/N/Q + Part 13.R/S/T/U/V/W/X). Only path-change update rules remain.
 
 **Implemented in `docs audit` (2026-01-09):**
 - [x] active/ ↔ STATUS.md sync (Part 12.J)
@@ -56,8 +57,6 @@
 
 **NOT yet implemented in `docs audit` (optional):**
 - [ ] Path-change update rules (Part 12.J)
-- [ ] Doc inventory/counts (Part 12.M)
-- [ ] Guide command validation: verify `cihub <command>` references in `docs/guides/` against CLI (new)
 
 **Tests:** 39 tests in `tests/test_docs_audit.py` (types, lifecycle, ADR, references, consistency, headers, metrics, checklist-reality, cross-doc, changelog)
 
@@ -69,12 +68,14 @@ cihub/commands/docs_audit/
 ├── lifecycle.py # STATUS.md ↔ active/ sync validation
 ├── adr.py # ADR metadata linting
 ├── headers.py # Universal doc header enforcement (Part 12.Q)
+├── inventory.py # Doc inventory counts (Part 12.M)
+├── guides.py # Guide command validation
 ├── references.py # Plain-text docs/ path scanning (URL-aware)
 ├── consistency.py # Part 13: duplicates, timestamps, placeholders
 └── output.py # Output formatters (human, JSON, GitHub summary)
 ```
 
-**Next Priority:** Optional items only (guide command validation, doc inventory/counts).
+**Next Priority:** Optional items only (path-change update rules).
 
 ---
 
@@ -1192,10 +1193,9 @@ Optional integration improvement (Phase 2+):
 
 ### M. Doc Inventory + Counts
 
-- `docs/development/status/STATUS.md` currently lists counts that drift. Decide between:
- 1. Drop counts entirely (preferred to avoid churn), or
- 2. Auto-generate counts via `cihub docs audit --inventory --json` and surface them in STATUS.md
-- Capture the decision in this plan; until then, note that counts are informational and may be removed.
+- `docs/development/status/STATUS.md` currently lists counts that drift.
+- **Decision (2026-01-17):** Keep counts paused in STATUS.md and use `cihub docs audit --inventory --json` for ad-hoc counts when needed.
+- Script: `scripts/docs_inventory_summary.py` pulls from `--inventory` output (prints only; no auto-write).
 
 ### N. Plain-Text Reference Scan
 
@@ -1226,6 +1226,8 @@ Optional integration improvement (Phase 2+):
  Last-reviewed: YYYY-MM-DD
  Superseded-by: <path or ADR> # optional
  ```
+- Header lines end with two trailing spaces so markdown renderers keep each line separate.
+- Script: `scripts/normalize_doc_headers.py` applies the line-break formatting.
 - `cihub docs audit` enforces presence/format; headers provide structured metadata for humans, tooling, and LLMs.
 
 ## Part 13: Cross-Document Consistency & Metrics Validation (Audit Addendum 2026-01-06)

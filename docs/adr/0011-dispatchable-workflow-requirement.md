@@ -1,9 +1,9 @@
 # ADR-0011: Dispatchable Workflow Requirement
 
-**Status**: Accepted
-**Date:** 2026-01-15
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-30
+**Status**: Accepted  
+**Date:** 2026-01-15  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 

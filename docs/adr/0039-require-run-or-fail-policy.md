@@ -1,9 +1,9 @@
 # ADR-0039: Require Run or Fail Policy
 
-**Status**: Accepted
-**Date:** 2026-01-05
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-05
+**Status**: Accepted  
+**Date:** 2026-01-05  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-05  
 
 ## Context
 

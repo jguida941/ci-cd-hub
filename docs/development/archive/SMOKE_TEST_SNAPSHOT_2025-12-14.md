@@ -1,9 +1,9 @@
 # Smoke Test Setup - Summary
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
 > **WARNING: SUPERSEDED:** This historical snapshot is archived. Current smoke test documentation is at `docs/development/execution/SMOKE_TEST.md`.
 >
-> **Status:** Archived (Historical Snapshot)
+> **Status:** Archived (Historical Snapshot)  
 
 This document summarizes the smoke test setup completed on 2025-12-14.
 
@@ -209,7 +209,7 @@ Historical excerpt from `docs/development/archive/P0.md` (superseded by `docs/de
 - [x] Verify step summary accurate
 ```
 
-**Status:** Ready to test
+**Status:** Ready to test  
 - [x] Smoke test workflow created
 - [x] 2 fixture repos configured (Java + Python)
 - [x] Documentation complete

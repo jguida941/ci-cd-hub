@@ -1,9 +1,9 @@
 # ADR-0027: Hub Production CI Policy
 
-**Status**: Accepted
-**Date:** 2025-12-25
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-26
+**Status**: Accepted  
+**Date:** 2025-12-25  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-26  
 
 ## Context
 

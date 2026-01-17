@@ -1,9 +1,9 @@
 # ADR-0038: GateSpec Registry (Single Source of Truth)
 
-**Status**: Accepted
-**Date:** 2026-01-05
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-05
+**Status**: Accepted  
+**Date:** 2026-01-05  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-05  
 
 ## Context
 

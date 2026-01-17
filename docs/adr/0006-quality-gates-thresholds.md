@@ -1,9 +1,9 @@
 # ADR-0006: Quality Gates and Thresholds
 
-**Status**: Accepted
-**Date:** 2025-12-14
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-05
+**Status**: Accepted  
+**Date:** 2025-12-14  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-05  
 
 **Implementation Update (2026-01-05):**
 - [x] CVSS enforcement fully implemented (parser + gate evaluation)

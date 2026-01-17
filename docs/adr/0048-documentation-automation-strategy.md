@@ -1,9 +1,9 @@
 # ADR-0048: Documentation Automation Strategy
 
-**Status**: Accepted
-**Date:** 2026-01-06
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-06
+**Status**: Accepted  
+**Date:** 2026-01-06  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-06  
 
 > **Living Document Note:** This ADR covers the overall documentation automation strategy.
 > As new documentation automation commands are added (e.g., `docs coverage`, `docs drift`),

@@ -1,9 +1,9 @@
 # Testing Priority Analysis (SDLC Complexity Study)
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
 > **WARNING: SUPERSEDED:** This analysis is archived. Testing priorities are now tracked in `docs/development/active/TEST_REORGANIZATION.md`.
 >
-> **Status:** Archived
+> **Status:** Archived  
 
 This document identifies high-risk code areas in `cihub/` based on cyclomatic complexity and SDLC best practices. Areas with high complexity correlate strongly with defect density and require focused testing.
 

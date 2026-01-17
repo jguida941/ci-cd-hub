@@ -1,9 +1,9 @@
 # ADR-0014: Reusable Workflow Migration
 
-**Status**: Accepted
-**Date:** 2025-12-17
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-30
+**Status**: Accepted  
+**Date:** 2025-12-17  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-30  
 
 - Supersedes: ADR-0013
 

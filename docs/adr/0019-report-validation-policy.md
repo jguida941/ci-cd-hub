@@ -1,9 +1,9 @@
 # ADR-0019: Report Validation Policy
 
-**Status**: Accepted
-**Date:** 2025-12-18
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-05
+**Status**: Accepted  
+**Date:** 2025-12-18  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-05  
 
 **Implementation Update (2026-01-05):**
 - [x] `cihub report validate --schema` validates against JSON schema

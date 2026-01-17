@@ -1,7 +1,7 @@
 # ADR-0055: CLI Workflow Dispatch Watch + Wizard Wrapper
 
-**Status:** Implemented
-**Date:** 2026-01-17
+**Status:** Implemented  
+**Date:** 2026-01-17  
 **Supersedes:** None
 
 ## Context

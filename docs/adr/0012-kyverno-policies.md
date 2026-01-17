@@ -1,9 +1,9 @@
 # ADR-0012: Kyverno Policies for Kubernetes Admission Control
 
-**Status**: Accepted
-**Date:** 2025-12-15
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-26
+**Status**: Accepted  
+**Date:** 2025-12-15  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-26  
 
 ## Context
 

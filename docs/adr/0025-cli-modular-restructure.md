@@ -1,9 +1,9 @@
 # ADR-0025: CLI Modular Restructure with Interactive Wizard
 
-**Status**: Accepted
-**Date:** 2025-12-25
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-26
+**Status**: Accepted  
+**Date:** 2025-12-25  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-26  
 
 ## Context
 

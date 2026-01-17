@@ -1,9 +1,9 @@
 # ADR-0049: Hub Operational Settings (Config-File-First)
 
-**Status**: Accepted
-**Date:** 2026-01-06
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-06
+**Status**: Accepted  
+**Date:** 2026-01-06  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-06  
 
 ## Context
 

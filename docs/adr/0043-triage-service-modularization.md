@@ -1,9 +1,9 @@
 # ADR-0043: Triage Service Modularization
 
-**Status**: Accepted
-**Date:** 2026-01-05
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-05
+**Status**: Accepted  
+**Date:** 2026-01-05  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-05  
 
 ## Context
 

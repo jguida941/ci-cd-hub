@@ -238,7 +238,7 @@ Then Claude can call tools such as:
 ### 3.4 Option D: New `cihub ai-loop` Command
 
 Add a dedicated command to orchestrate the autonomous loop.
-**Status:** Internal-only; CLI registration enabled (explicit approval granted).
+**Status:** Internal-only; CLI registration enabled (explicit approval granted).  
 Implementation should force `CIHUB_EMIT_TRIAGE=true` and pass iteration metadata to `cihub ci`
 so triage output stays on the standard path.
 

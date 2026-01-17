@@ -1,10 +1,10 @@
 # Full Audit + Code Review
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
-> **Status:** Legacy archive (2025-12-14). This document is retained for historical context only and must not be used as current guidance.
+> **Status:** Legacy archive (2025-12-14). This document is retained for historical context only and must not be used as current guidance.  
 
 **Auditor:** Justin Guida
-**Date:** 2025-12-14
+**Date:** 2025-12-14  
 **Scope:** All changes made by ChatGPT against the 5-step plan
 
 ---

@@ -10,9 +10,18 @@ All notable changes to this project will be documented in this file.
 - Added `cihub dispatch trigger --watch` for optional post-dispatch tracking.
 - Added wizard wrappers for dispatch trigger/watch (no YAML logic).
 
+### Change: Docs audit inventory + guide validation
+
+- Added `cihub docs audit --inventory` for doc inventory counts in JSON output.
+- Added guide command validation for `docs/guides/` examples.
+- Filtered false positives in plain-text `docs/...` reference scanning.
+- Added `scripts/docs_inventory_summary.py` to print inventory counts from `--inventory` output.
+- Normalized doc header metadata line breaks (two-space markdown line breaks).
+
 ### Tests
 
 - Added dispatch watch coverage and updated CLI parser/command tests.
+- Added docs audit coverage for inventory, guide validation, and reference filtering.
 - Refreshed CLI help snapshots.
 
 ## 2026-01-16 - AI CI Loop CLI + Workflow (Internal)

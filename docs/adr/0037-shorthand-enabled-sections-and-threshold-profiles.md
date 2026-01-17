@@ -1,9 +1,9 @@
 # ADR-0037: Shorthand Enabled Sections + Threshold Profiles
 
-**Status**: Accepted
-**Date:** 2026-01-03
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-03
+**Status**: Accepted  
+**Date:** 2026-01-03  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-03  
 
 ## Context
 

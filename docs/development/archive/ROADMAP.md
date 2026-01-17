@@ -1,5 +1,5 @@
 # CI/CD Hub Release Roadmap
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
 > WARNING: **Historical Reference** - Phases 0-3 context only.
 >
@@ -9,8 +9,8 @@
 > Phases 4-8 have been superseded by the migration plan's Parts 1-6.
 
 **Version:** 1.0.0
-**Date:** 2025-12-15
-**Status:** Phases 0-3 Complete; Phases 4-8 superseded by migration plan
+**Date:** 2025-12-15  
+**Status:** Phases 0-3 Complete; Phases 4-8 superseded by migration plan  
 **References:** See `docs/development/specs/REQUIREMENTS.md` for current checklists.
 **Active Plan:** `docs/development/MASTER_PLAN.md`
 

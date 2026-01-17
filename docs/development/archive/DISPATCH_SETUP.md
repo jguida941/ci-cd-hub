@@ -1,4 +1,4 @@
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
 > **WARNING: SUPERSEDED**: This document has been merged into [GETTING_STARTED.md](GETTING_STARTED.md).
 > See the **Distributed Mode: Repo-Side Setup** and **Secrets Setup** sections there.

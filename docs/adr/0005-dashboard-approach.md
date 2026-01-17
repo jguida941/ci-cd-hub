@@ -1,9 +1,9 @@
 # ADR-0005: Dashboard Approach
 
-**Status**: Proposed
-**Date:** 2025-12-14
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-26
+**Status**: Proposed  
+**Date:** 2025-12-14  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-26  
 
 ## Context
 

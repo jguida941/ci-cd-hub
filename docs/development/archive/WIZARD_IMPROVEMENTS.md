@@ -1,10 +1,10 @@
 # Wizard Improvements Plan
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
 > **WARNING: SUPERSEDED:** This document has been consolidated into `docs/development/archive/SYSTEM_INTEGRATION_PLAN.md` (2026-01-08)
 
-**Status:** ARCHIVED
-**Owner:** Development Team
+**Status:** ARCHIVED  
+**Owner:** Development Team  
 **Last Updated:** 2026-01-08
 
 ## Executive Summary

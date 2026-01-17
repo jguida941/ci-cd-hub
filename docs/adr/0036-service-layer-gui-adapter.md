@@ -1,9 +1,9 @@
 # ADR-0036: Service Layer APIs for GUI Integration
 
-**Status**: Accepted
-**Date:** 2026-01-03
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-03
+**Status**: Accepted  
+**Date:** 2026-01-03  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-03  
 
 ## Context
 

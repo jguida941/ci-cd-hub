@@ -1,9 +1,9 @@
 # ADR-0003: Dispatch and Orchestration
 
-**Status**: Accepted
-**Date:** 2025-12-14
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-30
+**Status**: Accepted  
+**Date:** 2025-12-14  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 

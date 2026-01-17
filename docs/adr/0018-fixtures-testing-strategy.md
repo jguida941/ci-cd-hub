@@ -1,9 +1,9 @@
 # ADR-0018: Fixtures & Testing Strategy
 
-**Status**: Accepted
-**Date:** 2025-12-18
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-30
+**Status**: Accepted  
+**Date:** 2025-12-18  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 

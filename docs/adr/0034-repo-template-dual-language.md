@@ -1,9 +1,9 @@
 # ADR-0034: Repo Template Includes Both Language Sections
 
-**Status**: Accepted
-**Date:** 2025-12-30
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-30
+**Status**: Accepted  
+**Date:** 2025-12-30  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 

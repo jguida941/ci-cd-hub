@@ -119,7 +119,7 @@ Individual Planning Docs (Priority Order)
 
 ### Priority 1: CLEAN_CODE.md (ARCHIVED)
 
-**Status:** Archived (complete) | **Blocks:** None
+**Status:** Archived (complete) | **Blocks:** None  
 
 ```
 docs/development/archive/CLEAN_CODE.md
@@ -144,7 +144,7 @@ Must complete **before** starting other docs:
 
 ### Priority 2: SYSTEM_INTEGRATION_PLAN.md (Archived)
 
-**Status:** Archived (complete) | **Depends on:** CLEAN_CODE.md (archived) | **Blocks:** TEST_REORGANIZATION
+**Status:** Archived (complete) | **Depends on:** CLEAN_CODE.md (archived) | **Blocks:** TEST_REORGANIZATION  
 
 ```
 docs/development/archive/SYSTEM_INTEGRATION_PLAN.md
@@ -161,11 +161,11 @@ Core implementation needed:
 - [x] Phase 5: CLI management commands (profile/registry/tool/threshold/repo) (2026-01-12)
 - [x] Phase 6: Schema extensibility (custom tools end-to-end) (2026-01-12: added tests)
 
-**Status:** 100% complete (2026-01-12). All phases implemented with 102 new tests.
+**Status:** 100% complete (2026-01-12). All phases implemented with 102 new tests.  
 
 ### Priority 3: TEST_REORGANIZATION.md (CURRENT)
 
-**Status:** Phase 0-3 COMPLETE (mapping + splits done; structure in place) | **Depends on:** CommandResult migration + Registry fix (both complete)
+**Status:** Phase 0-3 COMPLETE (mapping + splits done; structure in place) | **Depends on:** CommandResult migration + Registry fix (both complete)  
 
 ```
 docs/development/active/TEST_REORGANIZATION.md
@@ -179,7 +179,7 @@ Blockers resolved:
 
 ### Priority 4: DOC_AUTOMATION_AUDIT.md (Can parallel with TEST_REORGANIZATION)
 
-**Status:** ~98% implemented (Part 12.J/L/N/Q + Part 13.R/S/T/U/V/W/X done) | **Depends on:** Stable CLI surface
+**Status:** ~99% implemented (Part 12.J/L/N/Q + Part 13.R/S/T/U/V/W/X done; inventory + guide validation done) | **Depends on:** Stable CLI surface  
 
 ```
 docs/development/active/DOC_AUTOMATION_AUDIT.md
@@ -199,13 +199,15 @@ Core MVP:
  - [x] Part 13.U: Checklist-reality sync [x] (2026-01-10)
  - [x] Part 13.W: Cross-doc consistency (README ↔ active/) [x] (2026-01-10)
  - [x] Part 13.X: CHANGELOG validation [x] (2026-01-10)
+ - [x] Part 12.M: Doc inventory output (`docs audit --inventory`) [x] (2026-01-17)
+ - [x] Guide command validation in `docs audit` [x] (2026-01-17)
 - [x] Default wiring into `cihub check --audit` [x] (with skip_references, skip_consistency for fast lane)
 
 **Why fourth:** Documentation automation needs stable command signatures.
 
 ### Priority 5: TYPESCRIPT_CLI_DESIGN.md (After TEST_REORGANIZATION complete)
 
-**Status:** Planning | **Depends on:** CLEAN_CODE.md (complete) + TEST_REORGANIZATION.md
+**Status:** Planning | **Depends on:** CLEAN_CODE.md (complete) + TEST_REORGANIZATION.md  
 
 ```
 docs/development/active/TYPESCRIPT_CLI_DESIGN.md
@@ -218,7 +220,7 @@ Explicit prerequisite in doc:
 
 ### Priority 6: PYQT_PLAN.md (Deferred)
 
-**Status:** Reference only | **Depends on:** Everything above
+**Status:** Reference only | **Depends on:** Everything above  
 
 ```
 docs/development/active/PYQT_PLAN.md
@@ -422,6 +424,7 @@ These are references, not competing plans.
 - **Workflow dispatch/watch lives in the CLI** (`cihub dispatch`) with wizard wrappers (ADR-0055).
 - **Schema is the source of truth for defaults**; defaults.yaml and fallbacks.py are generated and audited in `cihub check --audit`.
 - **Hub CI supports per-module threshold overrides** under `hub_ci.thresholds.overrides` (ADR-0054).
+- **Docs audit inventory + guide command validation** live in the CLI (`cihub docs audit --inventory`) (ADR-0056).
 - **Single entrypoint workflow is `hub-ci.yml`**; it routes to `python-ci.yml`/`java-ci.yml` internally.
 - **Local verification uses CLI scaffolding + smoke**; fixtures repo is for CI/regression, not required for local tests.
 
@@ -560,7 +563,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 ### 6b) Documentation Automation (Design: `active/DOC_AUTOMATION_AUDIT.md`)
 
 > **Design doc:** Full requirements and architecture in `docs/development/active/DOC_AUTOMATION_AUDIT.md`
-> **Status:** ~98% complete (Priority #4)
+> **Status:** ~98% complete (Priority #4)  
 
 - [x] `cihub docs stale` - [x] **COMPLETE** (2026-01-06) Modularized package (6 modules, 63 tests including 15 Hypothesis)
  - [x] Python AST symbol extraction (base vs head comparison) [x]
@@ -850,7 +853,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 
 **Remote Run Analysis (CLI-First, ADR-0035 aligned):**
 
-> **Status:** Full artifact-first implementation complete. Tool evidence + multi-report aggregation implemented.
+> **Status:** Full artifact-first implementation complete. Tool evidence + multi-report aggregation implemented.  
 
 - [x] Add `cihub triage --run <run_id>` - Basic implementation (log parsing fallback)
 - [x] Add `cihub triage --artifacts-dir <path>` - Offline mode (basic support)

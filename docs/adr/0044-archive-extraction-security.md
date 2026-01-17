@@ -1,7 +1,7 @@
 # ADR-0044: Archive Extraction Security Hardening
 
-**Status:** Accepted
-**Date:** 2026-01-06
+**Status:** Accepted  
+**Date:** 2026-01-06  
 
 ## Context
 

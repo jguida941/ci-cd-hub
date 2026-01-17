@@ -5,8 +5,8 @@
 **Source-of-truth:** manual  
 **Last-reviewed:** 2026-01-15  
 
-**Date:** 2026-01-05
-**Status:** Planning
+**Date:** 2026-01-05  
+**Status:** Planning  
 **Priority:** **#5** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
 **Depends On:** CLEAN_CODE.md (archived, complete - explicit prerequisite)
 **Blocks:** PYQT_PLAN.md

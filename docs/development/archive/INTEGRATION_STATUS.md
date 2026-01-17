@@ -1,5 +1,5 @@
 # Integration Status
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
 > **WARNING: SUPERSEDED:** This quarantine tracking document is obsolete. The quarantine approach was completed; see `docs/development/archive/CLEAN_CODE.md` for current architecture work.
 >

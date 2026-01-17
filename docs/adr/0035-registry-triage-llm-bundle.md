@@ -1,9 +1,9 @@
 # ADR-0035: Centralized Registry, Triage Bundle, and LLM-Ready Reports
 
-**Status**: Implemented
-**Date:** 2025-12-31
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-06
+**Status**: Implemented  
+**Date:** 2025-12-31  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-06  
 
 ## Implementation Summary
 

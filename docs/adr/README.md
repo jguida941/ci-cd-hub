@@ -57,6 +57,7 @@ Existing:
 - [ADR-0053: Schema-Derived Defaults and Fallbacks](0053-schema-derived-defaults.md)
 - [ADR-0054: Hub CI Threshold Overrides](0054-hub-ci-threshold-overrides.md)
 - [ADR-0055: CLI Workflow Dispatch Watch + Wizard Wrapper](0055-cli-dispatch-watch.md)
+- [ADR-0056: Docs Audit Inventory and Guide Command Validation](0056-docs-audit-inventory-and-guide-command-validation.md)
 
 Template starter:
 ```markdown

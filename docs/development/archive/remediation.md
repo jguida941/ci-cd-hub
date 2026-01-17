@@ -1,15 +1,15 @@
 # Remediation Plan: Architecture and Plan Alignment (Archived)
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
 > **WARNING: SUPERSEDED:** This intake log is archived (2026-01-15). Remediation work is complete
 > or deferred to backlog. See `docs/development/MASTER_PLAN.md` and `docs/development/BACKLOG.md`.
 >
-> **Status:** Archived
+> **Status:** Archived  
 > **Archived:** 2026-01-15
-> **Owner:** Development Team
-> **Source-of-truth:** manual
-> **Last-reviewed:** 2026-01-15
-> **Superseded-by:** docs/development/MASTER_PLAN.md
+> **Owner:** Development Team  
+> **Source-of-truth:** manual  
+> **Last-reviewed:** 2026-01-15  
+> **Superseded-by:** docs/development/MASTER_PLAN.md  
 
 **Completion:** All phases complete. R-002-FOLLOWUP is deferred to backlog (non-blocking).
 

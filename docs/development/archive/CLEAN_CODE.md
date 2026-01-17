@@ -1,17 +1,17 @@
 # Clean Code Audit: Scalability & Architecture Improvements (Archived)
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
 > **WARNING: SUPERSEDED:** This document is archived (2026-01-15). The canonical execution plan is
 > `docs/development/MASTER_PLAN.md`, with current architecture in `docs/development/architecture/ARCH_OVERVIEW.md`.
 >
-> **Status:** Archived
+> **Status:** Archived  
 > **Archived:** 2026-01-15
-> **Owner:** Development Team
-> **Source-of-truth:** manual
-> **Last-reviewed:** 2026-01-15
-> **Superseded-by:** docs/development/MASTER_PLAN.md
+> **Owner:** Development Team  
+> **Source-of-truth:** manual  
+> **Last-reviewed:** 2026-01-15  
+> **Superseded-by:** docs/development/MASTER_PLAN.md  
 
-**Date:** 2026-01-04
+**Date:** 2026-01-04  
 **Last Updated:** 2026-01-15 (Status reconciliation: test count policy applied)
 **Branch:** feat/modularization
 **Progress:** Complete (Phase T4 contains ongoing process items tracked in TEST_REORGANIZATION.md)
@@ -661,7 +661,7 @@ def run_and_capture(cmd, cwd, *, tool_name="") -> dict:
 
 ### 2.3 Tool Adapter Registry (DONE)
 
-**Status:** COMPLETE (ToolAdapter registry implemented in `cihub/tools/registry.py`)
+**Status:** COMPLETE (ToolAdapter registry implemented in `cihub/tools/registry.py`)  
 
 **Reviewer Feedback (2026-01-05):** "Don't jump to full ToolAdapter objects yet. You already have:
 - tool runners
@@ -795,7 +795,7 @@ def run_tools(adapters: list[ToolAdapter], config: dict, ctx: RunContext) -> dic
 ---
 ### 2.5 Expand CI Engine Tests (HIGH) [x] COMPLETE
 
-**Status:** DONE (2026-01-06)
+**Status:** DONE (2026-01-06)  
 
 **Problem:** `tests/test_services_ci.py` originally covered only two scenarios.
 
@@ -832,7 +832,7 @@ def run_tools(adapters: list[ToolAdapter], config: dict, ctx: RunContext) -> dic
 
 ### 2.7 Consolidate ToolResult [x] DONE
 
-**Status:** COMPLETE (2026-01-05)
+**Status:** COMPLETE (2026-01-05)  
 
 **Problem (SOLVED):** Two incompatible `ToolResult` definitions existed:
 
@@ -880,7 +880,7 @@ class ToolResult:
 
 ### 3.1 Centralize GitHub Environment Access [x] COMPLETE
 
-**Status:** DONE (2026-01-06)
+**Status:** DONE (2026-01-06)  
 
 **Problem:** 17+ files with direct `os.environ.get("GITHUB_*")` calls.
 
@@ -902,7 +902,7 @@ class ToolResult:
 
 ### 3.2 Consolidate RunCI Parameters [x]
 
-**Status:** COMPLETE (2026-01-06)
+**Status:** COMPLETE (2026-01-06)  
 
 **Problem:** `run_ci()` had 10 keyword parameters - too many for clean function signatures.
 
@@ -955,7 +955,7 @@ def run_ci(
 
 ### 3.3 Tighten CommandResult Contract (DEFERRED)
 
-**Status:** DEFERRED until all commands return pure CommandResult
+**Status:** DEFERRED until all commands return pure CommandResult  
 
 **Reviewer Feedback (2026-01-05):** "The CommandCategory + required fields idea is fine, but
 it's phase-4 polish. If you add strict invariants while files still print or
@@ -1023,7 +1023,7 @@ class AiRenderer(OutputRenderer):
 
 ### 4.2 Filesystem/Git Abstractions for Testing
 
-**Status:** DONE (2026-01-15)
+**Status:** DONE (2026-01-15)  
 
 Implemented filesystem and git injection points for tests:
 
@@ -1060,7 +1060,7 @@ class MemoryFileSystem(FileSystem):
 
 ### 5.1 CLI Re-exporting Helpers [x] COMPLETE (2026-01-06)
 
-**Status:** COMPLETE - Fixed directly instead of phased deprecation.
+**Status:** COMPLETE - Fixed directly instead of phased deprecation.  
 
 **Problem:** `cihub/cli.py` re-exported 50+ functions for backward compatibility, creating messy dependencies.
 
@@ -1079,7 +1079,7 @@ class MemoryFileSystem(FileSystem):
 
 ### 5.2 Mixed Return Types [x] DONE
 
-**Status:** COMPLETE (2026-01-05)
+**Status:** COMPLETE (2026-01-05)  
 
 **Problem (SOLVED):** Some commands returned `int`, others `CommandResult`, requiring CLI to handle both.
 
@@ -1702,7 +1702,7 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 - [~] Strategy pattern already delegates: tool execution, report building, gate evaluation
 - [~] Remaining blocks are tightly coupled to return values (output writing)
 
-**Status:** Function reduced from ~335 to ~280 lines. Further extraction of output writing would require complex return types. Strategy pattern handles most responsibilities - remaining code is orchestration glue that's reasonable to keep inline.
+**Status:** Function reduced from ~335 to ~280 lines. Further extraction of output writing would require complex return types. Strategy pattern handles most responsibilities - remaining code is orchestration glue that's reasonable to keep inline.  
 
 ---
 
@@ -2043,7 +2043,7 @@ format-all: format format-black format-isort ## Run all formatters
 
 ### 9.3 Schema Consolidation [x] DONE
 
-**Status:** COMPLETE (2026-01-05)
+**Status:** COMPLETE (2026-01-05)  
 
 **Problem (SOLVED):** Schema duplication causing ~150 lines of redundant definitions.
 

@@ -1,9 +1,9 @@
 # Smoke Test Repository Requirements
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
 > **WARNING: SUPERSEDED:** This document is archived. Current smoke test repository info is in `docs/development/execution/SMOKE_TEST.md`.
 >
-> **Status:** Archived
+> **Status:** Archived  
 
 This document describes the repositories used for smoke testing the CI/CD Hub.
 

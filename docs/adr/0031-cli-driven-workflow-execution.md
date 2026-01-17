@@ -1,9 +1,9 @@
 # ADR-0031: CLI-Driven Workflow Execution (Thin Workflows)
 
-**Status**: Accepted
-**Date:** 2025-12-26
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-30
+**Status**: Accepted  
+**Date:** 2025-12-26  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 

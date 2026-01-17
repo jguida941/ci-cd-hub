@@ -1,9 +1,9 @@
 # CIHUB Modularization Plan (Behavior Preserving) - Updated With Guardrails
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
 > **WARNING: SUPERSEDED:** This modularization plan was executed. See `docs/development/archive/CLEAN_CODE.md` for ongoing architecture work and `docs/development/archive/Jan3.md` for execution history.
 >
-> **Status:** Archived (Completed)
+> **Status:** Archived (Completed)  
 
 This is your plan, kept behavior-preserving, but tightened so it does not sprawl and so you do not accidentally mix refactor work with new feature work (triage). I also added progressive boundary enforcement, a single canonical config loader rule, and a clear re-export policy so cli.py does not become a permanent dumping ground.
 

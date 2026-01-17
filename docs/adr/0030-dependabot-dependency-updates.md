@@ -1,9 +1,9 @@
 # ADR-0030: Dependabot for Automated Dependency Updates
 
-**Status**: Accepted
-**Date:** 2025-12-26
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-26
+**Status**: Accepted  
+**Date:** 2025-12-26  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-26  
 
 ## Context
 

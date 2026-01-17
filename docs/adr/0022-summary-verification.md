@@ -1,9 +1,9 @@
 # ADR-0022: Summary Verification Against Reports
 
-**Status**: Accepted
-**Date:** 2025-12-24
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-05
+**Status**: Accepted  
+**Date:** 2025-12-24  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-05  
 
 **Implementation Update (2026-01-05):**
 - [x] Contract tests implemented (`tests/test_contract_consistency.py`)

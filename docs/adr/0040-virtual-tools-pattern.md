@@ -1,9 +1,9 @@
 # ADR-0040: Virtual Tools Pattern (Hypothesis, jqwik)
 
-**Status**: Accepted
-**Date:** 2026-01-05
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-05
+**Status**: Accepted  
+**Date:** 2026-01-05  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-05  
 
 ## Context
 

@@ -1,9 +1,9 @@
 # Plan: Unify Summary Format Across ALL Workflows
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
 > **WARNING: SUPERSEDED:** Summary contract is now implemented. See `cihub/commands/report.py` and workflow summary generation.
 >
-> **Status:** Archived (Implemented)
+> **Status:** Archived (Implemented)  
 
 ## Summary Contract (Single Source of Truth)
 

@@ -1,7 +1,7 @@
 # Outstanding Work (CI/CD Hub)
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
-> **Status:** Legacy archive (2025-12-15). This document is retained for historical context only and must not be used as current guidance.
+> **Status:** Legacy archive (2025-12-15). This document is retained for historical context only and must not be used as current guidance.  
 
 **Last Updated:** 2025-12-15
 

@@ -1,7 +1,7 @@
 # Reusable Workflow Migration Plan
-> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)
+> **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
-> **Status:** Legacy archive (2025-12-23). This document is retained for historical context only and must not be used as current guidance.
+> **Status:** Legacy archive (2025-12-23). This document is retained for historical context only and must not be used as current guidance.  
 
 > WARNING: **STALE DOCUMENT:** This document is outdated. Fixture naming has changed from `java-passing`/`python-failing` to an expanded matrix (`java-maven-pass`, `python-pyproject-fail`, etc.). See `docs/development/execution/SMOKE_TEST.md` for current fixture strategy.
 
@@ -9,7 +9,7 @@
 >
 > **See also:** `docs/development/status/STATUS.md` for high-level status and checklists.
 
-**Status:** Phase 2 - Polish & Stabilization
+**Status:** Phase 2 - Polish & Stabilization  
 **Created:** 2025-12-15
 **Last Updated:** 2025-12-23
 **Goal:** Migrate from dispatch templates to GitHub reusable workflows + CLI tool for automatic repo onboarding
@@ -2229,7 +2229,7 @@ Add a new section to docs with:
 
 ## Known Issues & Relaxed Thresholds (TODO: Fix Later)
 
-**Status:** These are temporary workarounds to allow testing to proceed. Must be revisited before production release.
+**Status:** These are temporary workarounds to allow testing to proceed. Must be revisited before production release.  
 
 ### Mutation Testing Issues
 
@@ -2454,7 +2454,7 @@ These policy decisions should be formalized in ADRs before v1.0.0 release:
 
 **Prerequisite:** Part 1 complete (reusable workflows generating correct reports)
 
-**Status:** [x] Mostly implemented - blocked by Part 1 (bad report.json from old templates)
+**Status:** [x] Mostly implemented - blocked by Part 1 (bad report.json from old templates)  
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -2496,7 +2496,7 @@ Parses report.json → aggregate_reports.py → hub-report.json
 
 **Prerequisite:** Part 4 complete (aggregation working)
 
-**Status:** Partially implemented - HTML generation exists in `aggregate_reports.py`
+**Status:** Partially implemented - HTML generation exists in `aggregate_reports.py`  
 
 | Task | Status | Notes |
 |------|--------|-------|

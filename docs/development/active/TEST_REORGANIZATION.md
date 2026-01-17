@@ -1,12 +1,12 @@
 # Test Suite Reorganization Plan
 
-**Status:** active
-**Owner:** Development Team
-**Source-of-truth:** manual
-**Last-reviewed:** 2026-01-15
+**Status:** active  
+**Owner:** Development Team  
+**Source-of-truth:** manual  
+**Last-reviewed:** 2026-01-15  
 
-**Date:** 2026-01-05
-**Status:** CURRENT (blocked by prerequisites)
+**Date:** 2026-01-05  
+**Status:** CURRENT (blocked by prerequisites)  
 **Priority:** **#3** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
 **Depends On:** CLEAN_CODE.md (archived, complete) + SYSTEM_INTEGRATION_PLAN.md (archived, complete)
 **Blocks:** Nothing (can run parallel with DOC_AUTOMATION after blockers resolved)
@@ -511,10 +511,10 @@ Checks:
 - [x] Fix contract test command path resolution + hub-ci release platform mocks after file moves (2026-01-17)
 
 ### Phase 4: Property Tests (Day 6)
-- [ ] Identify pure functions suitable for Hypothesis
-- [ ] Create `property/` tests for config parsing
-- [ ] Create `property/` tests for validators
-- [ ] Target: 5% of tests are property-based
+- [x] Identify pure functions suitable for Hypothesis (config input generation, path/threshold validators)
+- [x] Create `property/` tests for config parsing (generate_workflow_inputs invariants)
+- [x] Create `property/` tests for validators (validate_subdir, threshold key validation)
+- [ ] Target: 5% of tests are property-based (pending metrics refresh)
 
 ### Phase 5: Documentation (Day 7)
 - [ ] Generate initial `tests/README.md`

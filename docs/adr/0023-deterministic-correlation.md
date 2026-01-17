@@ -1,9 +1,9 @@
 # ADR-0023: Deterministic Run Correlation
 
-**Status**: Accepted
-**Date:** 2025-12-24
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-30
+**Status**: Accepted  
+**Date:** 2025-12-24  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-30  
 
 ## Context
 

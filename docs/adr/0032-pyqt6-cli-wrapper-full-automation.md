@@ -1,9 +1,9 @@
 # ADR-0032: PyQt6 GUI Wrapper for Full Automation
 
-**Status**: Accepted
-**Date:** 2025-12-26
-**Developer:** Justin Guida
-**Last Reviewed:** 2026-01-03
+**Status**: Accepted  
+**Date:** 2025-12-26  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2026-01-03  
 
 ## Context
 

@@ -1,9 +1,9 @@
 # ADR-0001: Central vs. Distributed Execution
 
-**Status**: Accepted
-**Date:** 2025-12-14
-**Developer:** Justin Guida
-**Last Reviewed:** 2025-12-26
+**Status**: Accepted  
+**Date:** 2025-12-14  
+**Developer:** Justin Guida  
+**Last Reviewed:** 2025-12-26  
 
 ## Context
 
