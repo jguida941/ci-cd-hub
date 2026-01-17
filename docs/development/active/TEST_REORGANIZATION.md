@@ -523,9 +523,10 @@ Checks:
 
 ### Test File Coverage Gap
 
-- **78 test files** currently in flat `tests/` directory
-- **43 files (55%)** map to proposed categories
-- **35 files (45%)** need NEW categories added
+- **145 total files** in `tests/` directory (127 test files + 18 supporting files)
+- **136 files (94%)** map cleanly to proposed categories
+- **5 files** require splitting before moving (see "Monolithic File Split Plan")
+- **4 files** with excellent cohesion kept as-is despite size
 
 ### Missing Directory Categories
 
@@ -593,6 +594,380 @@ Before Phase 1 can begin:
 - [x] Validate wizard/CLI on fixture repos (subdir detection, POM warnings, aggregation status)
 - [x] Add CLI workflow dispatch/watch with wizard wrapper (ADR-0055)
 - [x] Align Java templates with CLI config (remove repo-specific PITest targets; honor `use_nvd_api_key`)
-- [ ] Create comprehensive file mapping (all 78 files → new homes)
-- [ ] Split large monolithic test files (120+ tests)
+- [x] Create comprehensive file mapping (all 145 files → new homes) — **COMPLETED 2026-01-17**
+- [ ] Split large monolithic test files (see "Monolithic File Split Plan" below)
 - [x] Register pytest markers in pyproject.toml
+
+---
+
+## Phase 0: Comprehensive File Mapping (145 Files)
+
+> **Completed:** 2026-01-17 | **Author:** 8-Agent Parallel Analysis
+>
+> **Note:** Original estimate was 78 files. Actual count is **145 files** including:
+> - 127 `test_*.py` files in root
+> - 6 subdirectory test files
+> - 2 snapshot files
+> - 2 conftest.py files
+> - 5 `__init__.py` package markers
+> - 3 additional data/fixture files
+
+### Supporting Files (Keep in Place)
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `tests/conftest.py` | `tests/conftest.py` | fixture | Root fixture config; keep at root |
+| `tests/__snapshots__/test_cli_snapshots.ambr` | `tests/snapshots/__snapshots__/test_cli_snapshots.ambr` | snapshot | Move with snapshot tests |
+| `tests/snapshots/cli_help.txt` | `tests/snapshots/cli_help.txt` | snapshot | Already in correct location |
+| `tests/test_repo_shapes/conftest.py` | `tests/integration/repo_shapes/conftest.py` | fixture | Move with repo shape tests |
+| `tests/test_config_precedence/__init__.py` | `tests/unit/config/__init__.py` | marker | Merge into unit/config |
+| `tests/test_registry/__init__.py` | `tests/unit/services/__init__.py` | marker | Merge into unit/services |
+| `tests/test_repo_shapes/__init__.py` | `tests/integration/repo_shapes/__init__.py` | marker | Move with repo shape tests |
+| `tests/test_schema_validation/__init__.py` | `tests/contracts/__init__.py` | marker | Merge into contracts |
+| `tests/test_wizard_flows/__init__.py` | `tests/integration/wizard/__init__.py` | marker | Move with wizard tests |
+
+### Contract Tests → `tests/contracts/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_cli_parser_contracts.py` | `contracts/test_cli_parser_contracts.py` | contract | CLI parser structure contracts |
+| `test_command_output_contract.py` | `contracts/test_command_output_contract.py` | contract | CommandResult output contracts |
+| `test_contract_command_result.py` | `contracts/test_contract_command_result.py` | contract | CommandResult field contracts |
+| `test_contract_consistency.py` | `contracts/test_contract_consistency.py` | contract | Gate/report consistency |
+| `test_migrated_commands_contract.py` | `contracts/test_migrated_commands_contract.py` | contract | Migration verification |
+| `test_schema_contract.py` | `contracts/test_schema_contract.py` | contract | Schema compliance |
+| `test_workflow_contract.py` | `contracts/test_workflow_contract.py` | contract | Workflow input/output contracts |
+| `test_cli_contracts/test_json_purity.py` | `contracts/test_json_purity.py` | contract | JSON output purity |
+| `test_schema_validation/test_schema_fields.py` | `contracts/test_schema_fields.py` | contract | Schema field validation |
+| `test_registry_schema_contract.py` | `contracts/test_registry_schema_contract.py` | contract | Registry schema contracts |
+
+### E2E Tests → `tests/e2e/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_e2e_smoke.py` | `e2e/test_smoke_workflows.py` | e2e | Full Python/Java workflows |
+| `test_cli_integration.py` | `e2e/test_cli_integration.py` | e2e | Full CLI command sequences |
+| `test_setup_flow.py` | `e2e/test_setup_flow.py` | e2e | Complete init workflow |
+| `test_triage_integration.py` | `e2e/test_triage_integration.py` | e2e | Full triage with CI artifacts |
+
+### Property-Based Tests → `tests/property/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_property_based.py` | `property/test_core_properties.py` | property | Core Hypothesis tests |
+| `test_property_based_extended.py` | `property/test_extended_properties.py` | property | Extended property tests |
+| `test_triage_properties.py` | `property/test_triage_properties.py` | property | Triage logic properties |
+| `test_registry_roundtrip_invariant.py` | `property/test_registry_roundtrip.py` | property | Registry import/export invariants |
+
+### Snapshot Tests → `tests/snapshots/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_cli_snapshots.py` | `snapshots/test_cli_snapshots.py` | snapshot | CLI help output stability |
+| `test_summary_commands.py` | `snapshots/test_summary_snapshots.py` | snapshot | Report summary snapshots |
+| `test_module_structure.py` | `snapshots/test_module_structure.py` | snapshot | Module structure snapshots |
+
+### Integration Tests → `tests/integration/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_fixture_repo_shapes.py` | `integration/test_fixture_repo_shapes.py` | integration | Multi-repo shape testing |
+| `test_integration_check.py` | `integration/test_integration_check.py` | integration | Check command integration |
+| `test_template_drift.py` | `integration/test_template_drift.py` | integration | Template sync integration |
+| `test_templates.py` | `integration/test_templates.py` | integration | Template rendering integration |
+| `test_config_pipeline.py` | `integration/test_config_pipeline.py` | integration | Config cascade integration |
+| `test_services_aggregation.py` | `integration/test_services_aggregation.py` | integration | Report aggregation workflow |
+| `test_repo_shapes/test_ci_shapes.py` | `integration/repo_shapes/test_ci_shapes.py` | integration | CI repo shape tests |
+| `test_repo_shapes/test_detect_shapes.py` | `integration/repo_shapes/test_detect_shapes.py` | integration | Detection shape tests |
+| `test_repo_shapes/test_init_shapes.py` | `integration/repo_shapes/test_init_shapes.py` | integration | Init shape tests |
+| `test_wizard_flows/test_cli_wizard_parity.py` | `integration/wizard/test_cli_wizard_parity.py` | integration | CLI/wizard parity |
+| `test_wizard_flows/test_profile_selection.py` | `integration/wizard/test_profile_selection.py` | integration | Profile selection flow |
+| `test_wizard_flows/test_wizard_modules.py` | `integration/wizard/test_wizard_modules.py` | integration | Wizard module integration |
+
+### Regression Tests → `tests/regression/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_triage_detection.py` | `regression/test_triage_detection.py` | regression | Regression detection tests |
+
+### Performance Tests → `tests/performance/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_performance.py` | `performance/test_performance.py` | performance | Benchmark tests |
+
+### Validation Tests → `tests/validation/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_validation.py` | `validation/test_validation.py` | validation | Input validation |
+| `test_validate_config.py` | `validation/test_validate_config.py` | validation | Config validation |
+
+### Unit Tests: Commands → `tests/unit/commands/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_commands.py` | `unit/commands/test_commands_base.py` | unit | Generic command tests |
+| `test_commands_adr.py` | `unit/commands/test_adr.py` | unit | ADR command tests |
+| `test_commands_check.py` | `unit/commands/test_check.py` | unit | Check command tests |
+| `test_commands_ci.py` | `unit/commands/test_ci.py` | unit | CI command tests |
+| `test_commands_discover.py` | `unit/commands/test_discover.py` | unit | Discover command tests |
+| `test_commands_dispatch.py` | `unit/commands/test_dispatch.py` | unit | Dispatch command tests |
+| `test_commands_docs.py` | `unit/commands/test_docs.py` | unit | Docs command tests |
+| `test_commands_extended.py` | `unit/commands/test_extended.py` | unit | Extended command tests |
+| `test_commands_new.py` | `unit/commands/test_new.py` | unit | New command tests |
+| `test_commands_preflight.py` | `unit/commands/test_preflight.py` | unit | Preflight command tests |
+| `test_commands_scaffold.py` | `unit/commands/test_scaffold.py` | unit | Scaffold command tests |
+| `test_commands_smoke.py` | `unit/commands/test_smoke.py` | unit | Smoke command tests |
+| `test_commands_templates.py` | `unit/commands/test_templates.py` | unit | Templates command tests |
+| `test_config_cmd.py` | `unit/commands/test_config_cmd.py` | unit | Config command tests |
+| `test_fix_command.py` | `unit/commands/test_fix_command.py` | unit | Fix command tests |
+| `test_fix_unit.py` | `unit/commands/test_fix_unit.py` | unit | Fix unit tests |
+| `test_gradle_cmd.py` | `unit/commands/test_gradle_cmd.py` | unit | Gradle command tests |
+| `test_pom_cmd.py` | `unit/commands/test_pom_cmd.py` | unit | POM command tests |
+| `test_profile_cmd.py` | `unit/commands/test_profile_cmd.py` | unit | Profile command tests |
+| `test_registry_cmd.py` | `unit/commands/test_registry_cmd.py` | unit | Registry command tests |
+| `test_repo_cmd.py` | `unit/commands/test_repo_cmd.py` | unit | Repo command tests |
+| `test_run.py` | `unit/commands/test_run.py` | unit | Run command tests |
+| `test_smoke_command.py` | `unit/commands/test_smoke_command.py` | unit | Smoke command tests |
+| `test_threshold_cmd.py` | `unit/commands/test_threshold_cmd.py` | unit | Threshold command tests |
+| `test_tool_cmd.py` | `unit/commands/test_tool_cmd.py` | unit | Tool command tests |
+| `test_tool_cmd_extended.py` | `unit/commands/test_tool_cmd_extended.py` | unit | Tool command extended |
+
+### Unit Tests: Services → `tests/unit/services/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_ci_engine.py` | `unit/services/ci_engine/` (SPLIT) | unit | **MONOLITHIC - SPLIT** |
+| `test_ci_runner.py` | `unit/services/ci_runner/` (SPLIT) | unit | **MONOLITHIC - SPLIT** |
+| `test_services_ci.py` | `unit/services/test_ci.py` | unit | CI service tests |
+| `test_services_configuration.py` | `unit/services/test_configuration.py` | unit | Config service tests |
+| `test_services_discovery.py` | `unit/services/test_discovery.py` | unit | Discovery service tests |
+| `test_services_report_summary.py` | `unit/services/test_report_summary.py` | unit | Report summary service |
+| `test_services_report_validator.py` | `unit/services/test_report_validator.py` | unit | Report validator service |
+| `test_triage_service.py` | `unit/services/test_triage_service.py` | unit | Triage service tests |
+| `test_triage_evidence.py` | `unit/services/test_triage_evidence.py` | unit | Triage evidence tests |
+| `test_triage_github.py` | `unit/services/test_triage_github.py` | unit | Triage GitHub tests |
+| `test_triage_log_parser.py` | `unit/services/test_triage_log_parser.py` | unit | Triage log parser tests |
+| `test_triage_verification.py` | `unit/services/test_triage_verification.py` | unit | Triage verification tests |
+| `test_registry/test_registry_service.py` | `unit/services/test_registry_service.py` | unit | Registry service tests |
+
+### Unit Tests: Config → `tests/unit/config/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_config_module.py` | `unit/config/` (SPLIT) | unit | **MONOLITHIC - SPLIT** |
+| `test_ci_config.py` | `unit/config/test_ci_config.py` | unit | CI config tests |
+| `test_config_outputs.py` | `unit/config/test_config_outputs.py` | unit | Config outputs tests |
+| `test_repo_config.py` | `unit/config/test_repo_config.py` | unit | Repo config tests |
+| `test_apply_profile.py` | `unit/config/test_apply_profile.py` | unit | Profile application tests |
+| `test_schema_sync.py` | `unit/config/test_schema_sync.py` | unit | Schema sync tests |
+| `test_config_precedence/test_merge_order.py` | `unit/config/test_merge_order.py` | unit | Config merge order tests |
+
+### Unit Tests: Core → `tests/unit/core/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_ci_report.py` | `unit/core/test_ci_report.py` | unit | CI report tests |
+| `test_gate_specs.py` | `unit/core/test_gate_specs.py` | unit | Gate spec tests |
+| `test_ci_env_overrides.py` | `unit/core/test_ci_env_overrides.py` | unit | Env override tests |
+| `test_ci_self_validate.py` | `unit/core/test_ci_self_validate.py` | unit | Self-validation tests |
+| `test_fail_on_normalization.py` | `unit/core/test_fail_on_normalization.py` | unit | Normalization tests |
+| `test_init_override.py` | `unit/core/test_init_override.py` | unit | Init override tests |
+
+### Unit Tests: Core/Languages → `tests/unit/core/languages/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_pom_parsing.py` | `unit/core/languages/test_pom_parsing.py` | unit | POM parsing tests |
+| `test_pom_tools.py` | `unit/core/languages/test_pom_tools.py` | unit | POM tool tests |
+| `test_python_ci_badges.py` | `unit/core/languages/test_python_ci_badges.py` | unit | Python badge tests |
+| `test_language_strategies.py` | `unit/core/languages/test_language_strategies.py` | unit | Language strategy tests |
+
+### Unit Tests: Core/Output → `tests/unit/core/output/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_output_renderers.py` | `unit/core/output/test_output_renderers.py` | unit | Renderer tests |
+| `test_output_context.py` | `unit/core/output/test_output_context.py` | unit | Output context tests |
+
+### Unit Tests: Core/Diagnostics → `tests/unit/core/diagnostics/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_diagnostics.py` | `unit/core/diagnostics/test_diagnostics.py` | unit | Diagnostics tests |
+| `test_correlation.py` | `unit/core/diagnostics/test_correlation.py` | unit | Correlation tests |
+| `test_debug_utils.py` | `unit/core/diagnostics/test_debug_utils.py` | unit | Debug utility tests |
+
+### Unit Tests: Utils → `tests/unit/utils/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_env_registry.py` | `unit/utils/test_env_registry.py` | unit | Env registry tests |
+| `test_env_toggles.py` | `unit/utils/test_env_toggles.py` | unit | Env toggle tests |
+| `test_env_utils.py` | `unit/utils/test_env_utils.py` | unit | Env utility tests |
+| `test_exec_utils.py` | `unit/utils/test_exec_utils.py` | unit | Exec utility tests |
+| `test_fs_utils.py` | `unit/utils/test_fs_utils.py` | unit | Filesystem utility tests |
+| `test_progress_utils.py` | `unit/utils/test_progress_utils.py` | unit | Progress utility tests |
+| `test_script_shims.py` | `unit/utils/test_script_shims.py` | unit | Script shim tests |
+| `test_utils_project.py` | `unit/utils/test_utils_project.py` | unit | Project utility tests |
+
+### Unit Tests: Wizard → `tests/unit/wizard/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_wizard_questions.py` | `unit/wizard/test_wizard_questions.py` | unit | Wizard question tests |
+| `test_wizard_validators.py` | `unit/wizard/test_wizard_validators.py` | unit | Wizard validator tests |
+
+### Unit Tests: Hub CI → `tests/unit/hub_ci/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_hub_ci.py` | `unit/hub_ci/` (SPLIT) | unit | **MONOLITHIC - SPLIT** |
+| `test_hub_ci_mutmut.py` | `unit/hub_ci/test_hub_ci_mutmut.py` | unit | Hub CI mutmut tests |
+| `test_hub_ci_python_tools.py` | `unit/hub_ci/test_hub_ci_python_tools.py` | unit | Hub CI Python tool tests |
+| `test_hub_ci_release.py` | `unit/hub_ci/` (SPLIT) | unit | **MONOLITHIC - SPLIT** |
+| `test_hub_ci_security.py` | `unit/hub_ci/test_hub_ci_security.py` | unit | Hub CI security tests |
+
+### Unit Tests: CLI → `tests/unit/cli/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_cihub_cli.py` | `unit/cli/test_cihub_cli.py` | unit | Main CLI tests |
+| `test_cli_commands.py` | `unit/cli/test_cli_commands.py` | unit | CLI command tests |
+| `test_cli_common.py` | `unit/cli/test_cli_common.py` | unit | CLI common tests |
+| `test_cli_debug.py` | `unit/cli/test_cli_debug.py` | unit | CLI debug tests |
+| `test_cli_command_matrix.py` | `unit/cli/test_cli_command_matrix.py` | unit | CLI matrix tests |
+
+### Unit Tests: Reports → `tests/unit/reports/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_report.py` | `unit/reports/test_report.py` | unit | Report tests |
+| `test_reporting.py` | `unit/reports/test_reporting.py` | unit | Reporting tests |
+| `test_aggregate_reports.py` | `unit/reports/test_aggregate_reports.py` | unit | Aggregate report tests |
+| `test_report_aggregate_reports_dir.py` | `unit/reports/test_aggregate_reports_dir.py` | unit | Reports dir tests |
+| `test_report_validator_modules.py` | `unit/reports/test_report_validator_modules.py` | unit | Validator module tests |
+
+### Unit Tests: Tools → `tests/unit/tools/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_tool_registry.py` | `unit/tools/test_tool_registry.py` | unit | Tool registry tests |
+| `test_tool_helpers.py` | `unit/tools/test_tool_helpers.py` | unit | Tool helper tests |
+| `test_tool_error_detection.py` | `unit/tools/test_tool_error_detection.py` | unit | Tool error detection |
+| `test_custom_tools.py` | `unit/tools/test_custom_tools.py` | unit | Custom tool tests |
+
+### Unit Tests: Other → `tests/unit/`
+
+| Current Path | Target Path | Type | Rationale |
+|--------------|-------------|------|-----------|
+| `test_ai_loop.py` | `unit/test_ai_loop.py` | unit | AI loop tests |
+| `test_ai_patterns.py` | `unit/test_ai_patterns.py` | unit | AI pattern tests |
+| `test_docs_audit.py` | `unit/test_docs_audit.py` | unit | Docs audit tests |
+| `test_docs_stale.py` | `unit/` (SPLIT) | unit | **MONOLITHIC - SPLIT** |
+| `test_scaffold_github.py` | `unit/test_scaffold_github.py` | unit | Scaffold GitHub tests |
+| `test_secrets.py` | `unit/test_secrets.py` | unit | Secrets tests |
+| `test_workflow_lint.py` | `unit/test_workflow_lint.py` | unit | Workflow lint tests |
+| `test_registry_cross_root.py` | `unit/test_registry_cross_root.py` | unit | Registry cross-root tests |
+| `test_registry_service_threshold_mapping.py` | `unit/test_registry_threshold_mapping.py` | unit | Registry threshold tests |
+
+---
+
+## Monolithic File Split Plan
+
+> **5 files identified for splitting** (1000+ lines or 20+ test classes)
+
+### 1. `test_ci_engine.py` (1319 lines, 24 classes, 127 tests) → HIGHEST PRIORITY
+
+Split into 5 files in `unit/services/ci_engine/`:
+
+| New File | Classes | Est. Lines |
+|----------|---------|------------|
+| `test_engine_project_detection.py` | GetRepoName, ResolveWorkdir, DetectJavaProjectType | ~200 |
+| `test_engine_tool_state.py` | ToolEnabled, GateEnabled, GetEnv, SetToolEnabled, etc. (7 classes) | ~300 |
+| `test_engine_notifications.py` | CodecovUpload, SendSlack, SendEmail, Notify (5 classes) | ~250 |
+| `test_engine_runner_management.py` | DepCommand, PythonDependencies, RunPythonTools, RunJavaTools (4 classes) | ~200 |
+| `test_engine_gates_evaluation.py` | BuildContext, EvaluatePythonGates, EvaluateJavaGates, etc. (5 classes) | ~350 |
+
+### 2. `test_hub_ci.py` (1300 lines, 29 classes, 62 tests)
+
+Split into 6 files in `unit/hub_ci/`:
+
+| New File | Classes | Est. Lines |
+|----------|---------|------------|
+| `test_hub_ci_output_helpers.py` | WriteOutputs, AppendSummary, ResolveOutputPath, etc. (7 classes) | ~220 |
+| `test_hub_ci_python_lint.py` | Ruff, RuffFormat, Mypy, Black (4 classes) | ~200 |
+| `test_hub_ci_badges_security.py` | Badges, BadgesCommit, Bandit (3 classes) | ~180 |
+| `test_hub_ci_security_scanning.py` | ZizmorRun, ZizmorCheck, ValidateProfiles, LicenseCheck (4 classes) | ~220 |
+| `test_hub_ci_system_checks.py` | Enforce, VerifyMatrixKeys, QuarantineCheck, RepoCheck, SourceCheck (5 classes) | ~230 |
+| `test_hub_ci_runtime_checks.py` | SmokeJava, SmokePython, HubCi, PlatformDetection, etc. (6 classes) | ~250 |
+
+### 3. `test_hub_ci_release.py` (1195 lines, 20 classes, 63 tests)
+
+Split into 4 files in `unit/hub_ci/`:
+
+| New File | Classes | Est. Lines |
+|----------|---------|------------|
+| `test_hub_ci_yaml_validators.py` | Actionlint, Kyverno, related validation (8 classes) | ~350 |
+| `test_hub_ci_trivy_scanning.py` | TrivyAssetName, TrivyInstall, TrivySummary (3 classes) | ~200 |
+| `test_hub_ci_release_tags.py` | ReleaseParseTag, ReleaseUpdateTag, Zizmor (4 classes) | ~280 |
+| `test_hub_ci_compliance.py` | LicenseCheck, GitleaksSummary, PytestSummary, etc. (5 classes) | ~240 |
+
+### 4. `test_ci_runner.py` (977 lines, 29 classes, 55 tests)
+
+Split into 4 files in `unit/services/ci_runner/`:
+
+| New File | Classes | Est. Lines |
+|----------|---------|------------|
+| `test_ci_runner_parsers.py` | ToolResult, ParseJunit, ParseCoverage, ParseJson, etc. (14 classes) | ~450 |
+| `test_ci_runner_python.py` | RunRuff, RunBlack, RunIsort, RunMypy, RunPytest, etc. (7 classes) | ~250 |
+| `test_ci_runner_java.py` | RunJavaBuild, RunJacoco, RunCheckstyle, RunSpotbugs, etc. (6 classes) | ~200 |
+| `test_ci_runner_mutation.py` | RunMutmut, RunSbom (2 classes) | ~70 |
+
+### 5. `test_docs_stale.py` (960 lines, 18 classes, 63 tests)
+
+Split into 4 files in `unit/docs/`:
+
+| New File | Classes | Est. Lines |
+|----------|---------|------------|
+| `test_docs_stale_models.py` | CodeSymbol, DocReference, StaleReport, Constants (4 classes) | ~200 |
+| `test_docs_stale_extraction.py` | ExtractPythonSymbols, ExtractDocReferences, FindStaleReferences, etc. (4 classes) | ~280 |
+| `test_docs_stale_formatting.py` | FormatHumanOutput, FormatJsonOutput, FormatAiOutput, etc. (6 classes) | ~260 |
+| `test_docs_stale_integration.py` | CommandIntegration, PropertyBased tests (4 classes) | ~220 |
+
+---
+
+## Edge Cases / Unclear Placements
+
+| File | Issue | Recommendation |
+|------|-------|----------------|
+| `test_summary_commands.py` | Mix of snapshot + unit tests | Keep as snapshot; snapshot tests benefit from isolation |
+| `test_registry_service_threshold_mapping.py` | 1842 lines but excellent cohesion | **KEEP AS-IS** - all tests verify same feature |
+| `test_registry_cross_root.py` | 942 lines but excellent cohesion | **KEEP AS-IS** - all tests verify cross-root ops |
+| `test_config_module.py` | 995 lines, 81 tests, 14 classes | **KEEP AS-IS** - each class tests one function; excellent cohesion |
+| `test_hub_ci_security.py` | 854 lines | **KEEP AS-IS** - focused on security tools |
+| `test_hub_ci_python_tools.py` | 834 lines | **KEEP AS-IS** - focused on Python tool execution |
+
+---
+
+## Mapping Statistics
+
+| Category | File Count | Notes |
+|----------|------------|-------|
+| **Contract Tests** | 10 | Schema, CLI, workflow contracts |
+| **E2E Tests** | 4 | Full workflow tests |
+| **Property Tests** | 4 | Hypothesis-based tests |
+| **Snapshot Tests** | 3 | CLI output stability |
+| **Integration Tests** | 12 | Cross-module tests |
+| **Regression Tests** | 1 | Bug reproduction |
+| **Performance Tests** | 1 | Benchmarks |
+| **Validation Tests** | 2 | Input validation |
+| **Unit Tests** | 99 | Isolated function tests |
+| **Supporting Files** | 9 | conftest, __init__, snapshots |
+| **TOTAL** | **145** | |
+
+| Split Required | Files | Est. New Files |
+|----------------|-------|----------------|
+| Monolithic splits | 5 | 23 new files |
+| Post-split total | 163 | |
