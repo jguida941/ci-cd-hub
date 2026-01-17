@@ -8,6 +8,8 @@ Tests the OutputRenderer abstraction and concrete implementations:
 Includes parameterized tests and Hypothesis property-based tests.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

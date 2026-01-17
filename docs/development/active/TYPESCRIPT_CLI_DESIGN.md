@@ -7,8 +7,8 @@
 
 **Date:** 2026-01-05  
 **Status:** Planning  
-**Priority:** **#5** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
-**Depends On:** CLEAN_CODE.md (archived, complete - explicit prerequisite)
+**Priority:** **#5** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))  
+**Depends On:** CLEAN_CODE.md (archived, complete - explicit prerequisite)  
 **Blocks:** PYQT_PLAN.md
 **Purpose:** Design document for a Claude Code / Codex-style interactive CLI built with TypeScript and Ink (React for terminals).
 
@@ -2039,7 +2039,7 @@ export async function* streamAI(
 
 ### 10.1 Critical: JSON Output Purity
 
-**Problem:** 80 print statements across 18 files can corrupt JSON output.
+**Problem:** 80 print statements across 18 files can corrupt JSON output.  
 
 **Files emitting GitHub annotations in stdout:**
 - `smoke.py` - `::warning::`

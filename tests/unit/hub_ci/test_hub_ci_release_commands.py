@@ -4,6 +4,8 @@ Split from test_hub_ci_release.py for better organization.
 Tests: cmd_release_parse_tag, cmd_release_update_tag, cmd_zizmor_run, cmd_zizmor_check, cmd_license_check
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

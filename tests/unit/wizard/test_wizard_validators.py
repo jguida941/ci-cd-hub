@@ -1,5 +1,7 @@
 """Tests for wizard input validators."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import sys

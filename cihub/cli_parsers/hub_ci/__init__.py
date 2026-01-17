@@ -8,6 +8,7 @@ This package organizes hub-ci subcommand parsers by family:
 - smoke: smoke-python-*
 - badges: badges, badges-commit, outputs
 - release: actionlint, kyverno-*, trivy-*, zizmor-*, release-*, pytest-summary, etc.
+- test_metrics: test-metrics wrapper
 
 Each family module exports a single `add_*_parsers(hub_ci_sub, add_json_flag)` function.
 """
@@ -22,6 +23,7 @@ from .python_tools import add_python_tools_parsers
 from .release import add_release_parsers
 from .security import add_security_parsers
 from .smoke import add_smoke_parsers
+from .test_metrics import add_test_metrics_parsers
 from .thresholds import add_thresholds_parsers
 from .validation import add_validation_parsers
 
@@ -45,6 +47,7 @@ def add_hub_ci_commands(subparsers, add_json_flag, handlers: CommandHandlers) ->
     add_java_tools_parsers(hub_ci_sub, add_json_flag)  # codeql-build, smoke-java-*
     add_smoke_parsers(hub_ci_sub, add_json_flag)  # smoke-python-*
     add_python_tools_parsers(hub_ci_sub, add_json_flag)  # ruff, black, mypy, mutmut
+    add_test_metrics_parsers(hub_ci_sub, add_json_flag)  # test-metrics
     add_badges_parsers(hub_ci_sub, add_json_flag)  # badges, badges-commit, outputs
     add_thresholds_parsers(hub_ci_sub, add_json_flag)  # thresholds
 

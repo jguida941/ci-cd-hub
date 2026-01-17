@@ -16,6 +16,11 @@ HEADER_LABELS = {
     "Source-of-truth",
     "Last-reviewed",
     "Date",
+    "Last Updated",
+    "Priority",
+    "Depends On",
+    "Can Parallel",
+    "Problem",
     "Developer",
     "Last Reviewed",
     "Superseded-by",
@@ -58,6 +63,10 @@ def _ensure_trailing_spaces(line: str) -> str:
         core = line
         newline = ""
     core = core.rstrip(" ")
+    for suffix in ("<br>", "<br/>", "<br />"):
+        if core.endswith(suffix):
+            core = core[: -len(suffix)].rstrip(" ")
+            break
     return f"{core}  {newline}"
 
 

@@ -1,5 +1,7 @@
 """Tests for cihub.commands.smoke (unit-level, no real tool execution)."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from pathlib import Path

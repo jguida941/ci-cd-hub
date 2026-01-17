@@ -4,6 +4,8 @@ Verifies that `cihub ci` runs successfully for each supported
 repo shape (with minimal tool set).
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import pytest

@@ -1,5 +1,8 @@
 """Tests for validate_config.py - Config validation functionality."""
 
+# TEST-METRICS:
+#   Coverage: 100.0%
+
 from __future__ import annotations
 
 import json

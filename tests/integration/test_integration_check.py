@@ -5,6 +5,8 @@ multiple tools and produces coherent results across the full flow
 from CLI invocation to report generation.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

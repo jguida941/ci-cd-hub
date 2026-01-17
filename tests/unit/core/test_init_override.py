@@ -1,5 +1,7 @@
 """Tests for cmd_init config_override functionality (R-002)."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

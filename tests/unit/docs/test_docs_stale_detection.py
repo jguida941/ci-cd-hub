@@ -4,6 +4,8 @@ Split from test_docs_stale.py for better organization.
 Tests: find_stale_references, group_stale_by_file, output formatters
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

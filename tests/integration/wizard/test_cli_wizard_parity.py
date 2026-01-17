@@ -1,5 +1,7 @@
 """Tests for CLI/wizard parity - ensuring CLI commands produce same config as wizard."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from cihub.utils.paths import hub_root

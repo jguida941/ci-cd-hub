@@ -1,5 +1,7 @@
 """Tests for schema field validation."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

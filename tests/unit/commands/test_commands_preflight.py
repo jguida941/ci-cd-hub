@@ -1,3 +1,6 @@
+# TEST-METRICS:
+"""Unit tests for the preflight command."""
+
 import argparse
 import subprocess
 

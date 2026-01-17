@@ -142,7 +142,7 @@ Turn cihub/cli.py from a "utility dumping ground" into a thin facade while keepi
  ---
  Critical Constraint: Config Validation
 
- Problem: cli.py's load_effective_config() does NOT use schema validation.
+ Problem: cli.py's load_effective_config() does NOT use schema validation.  
  Solution: It must delegate to config/loader/core.py::load_config() which DOES validate.
 
  # WRONG (current cli.py - no validation)

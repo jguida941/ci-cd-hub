@@ -4,6 +4,8 @@ Uses syrupy to capture CLI output and detect unintended changes.
 Run with: pytest tests/test_cli_snapshots.py --snapshot-update to update snapshots.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

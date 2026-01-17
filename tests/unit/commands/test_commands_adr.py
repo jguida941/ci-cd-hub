@@ -1,5 +1,7 @@
 """Tests for cihub.commands.adr module."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

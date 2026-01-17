@@ -1,5 +1,8 @@
 """Tests for cihub.reporting module."""
 
+# TEST-METRICS:
+#   Coverage: 80.0%
+
 from __future__ import annotations
 
 import json

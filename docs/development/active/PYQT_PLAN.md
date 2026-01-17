@@ -7,9 +7,9 @@
 
 > Reference only - the canonical execution plan lives in `docs/development/MASTER_PLAN.md`.
 
-**Priority:** **#5 - DEFERRED** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
+**Priority:** **#5 - DEFERRED** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))  
 **Status:** Concept only  
-**Depends On:** CLEAN_CODE.md (archived), TEST_REORGANIZATION.md, TYPESCRIPT_CLI_DESIGN.md (all complete)
+**Depends On:** CLEAN_CODE.md (archived), TEST_REORGANIZATION.md, TYPESCRIPT_CLI_DESIGN.md (all complete)  
 
 ---
 

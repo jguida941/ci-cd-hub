@@ -5,6 +5,8 @@ Phase 0.3 in SYSTEM_INTEGRATION_PLAN.md:
 - Interactive commands must reject --json with a CommandResult (still JSON output).
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

@@ -4,6 +4,8 @@ NOTE: All command functions now return CommandResult (never int).
 Tests check result.exit_code instead of comparing result to int.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 # isort: skip_file

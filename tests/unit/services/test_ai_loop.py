@@ -8,6 +8,9 @@ Tests cover:
 - Integration with cmd_ci and cmd_fix (mocked)
 """
 
+# TEST-METRICS:
+#   Coverage: 78.7%
+
 from __future__ import annotations
 
 import argparse

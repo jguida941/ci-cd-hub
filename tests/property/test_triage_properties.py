@@ -4,6 +4,8 @@ These tests verify invariants that should hold for any input,
 catching edge cases that unit tests might miss.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

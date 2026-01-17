@@ -1,3 +1,5 @@
+"""Unit tests for scaffold commands."""
+
 import argparse
 from pathlib import Path
 
@@ -9,6 +11,8 @@ from cihub.types import CommandResult
 
 class TestScaffoldPython:
     """Tests for Python scaffold types."""
+
+# TEST-METRICS:
 
     def test_scaffold_python_pyproject(self, tmp_path: Path) -> None:
         dest = tmp_path / "fixture"

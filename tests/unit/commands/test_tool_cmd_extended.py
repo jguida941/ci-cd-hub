@@ -5,6 +5,8 @@ that were previously undertested, including validate, info, configure,
 and the wizard functions.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

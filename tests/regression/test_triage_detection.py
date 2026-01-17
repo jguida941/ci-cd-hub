@@ -6,6 +6,8 @@ Tests cover:
 - detect_gate_changes: Gate status change tracking
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

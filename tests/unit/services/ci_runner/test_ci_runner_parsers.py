@@ -6,6 +6,8 @@ Tests: _parse_junit_files, _parse_jacoco_files, _parse_pitest_files,
        _parse_dependency_check, _count_pip_audit_vulns
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

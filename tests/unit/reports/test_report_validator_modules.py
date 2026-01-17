@@ -4,6 +4,8 @@ These tests verify the new modular split of report_validator works correctly
 and maintains backward compatibility with existing import patterns.
 """
 
+# TEST-METRICS:
+
 from pathlib import Path
 
 

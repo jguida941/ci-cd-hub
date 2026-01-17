@@ -8,6 +8,8 @@ This test module covers CLI command testing best practices:
 5. JSON output mode testing
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

@@ -15,6 +15,7 @@ from pathlib import Path
 from .types import (
     ACTIVE_DOCS_DIR,
     ARCHIVE_DOCS_DIR,
+    MASTER_PLAN_PATH,
     STATUS_MD_PATH,
     SUPERSEDED_HEADER_PATTERNS,
     AuditFinding,
@@ -109,6 +110,92 @@ def parse_status_md_entries(repo_root: Path) -> list[str]:
                 entries.append(filename)
 
     return entries
+
+
+def parse_master_plan_active_docs(repo_root: Path) -> list[str]:
+    """Parse MASTER_PLAN.md to extract active doc references.
+
+    Looks for the "Active Design Docs - Priority Order" section and extracts
+    docs/development/active/*.md references inside that section.
+
+    Args:
+        repo_root: Repository root path
+
+    Returns:
+        List of active doc filenames referenced in MASTER_PLAN.md
+    """
+    master_path = repo_root / MASTER_PLAN_PATH
+    if not master_path.exists():
+        return []
+
+    try:
+        content = master_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return []
+
+    active_docs: list[str] = []
+    in_section = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## ") and "Active Design Docs - Priority Order" in line:
+            in_section = True
+            continue
+        if in_section and line.strip().startswith("## "):
+            break
+        if in_section:
+            matches = re.findall(r"docs/development/active/([A-Za-z0-9_.-]+\.md)", line)
+            active_docs.extend(matches)
+
+    return active_docs
+
+
+def check_master_plan_active_sync(
+    active_docs: list[str],
+    master_entries: list[str],
+) -> list[AuditFinding]:
+    """Check MASTER_PLAN.md Active Design Docs list matches actual files.
+
+    Part 12.J requirement:
+    - Path changes for active docs must update MASTER_PLAN.md
+
+    Args:
+        active_docs: Files found in active/ directory
+        master_entries: Active doc filenames parsed from MASTER_PLAN.md
+
+    Returns:
+        List of findings for sync issues
+    """
+    findings: list[AuditFinding] = []
+
+    active_set = {Path(p).name for p in active_docs}
+    master_set = {Path(p).name for p in master_entries}
+
+    missing_in_master = active_set - master_set
+    for name in sorted(missing_in_master):
+        findings.append(
+            AuditFinding(
+                severity=FindingSeverity.WARNING,
+                category=FindingCategory.SYNC,
+                message=f"Active doc not listed in MASTER_PLAN.md: {name}",
+                file=f"{ACTIVE_DOCS_DIR}/{name}",
+                code="CIHUB-AUDIT-MISSING-IN-MASTER-PLAN",
+                suggestion=f"Add {name} to the Active Design Docs section in {MASTER_PLAN_PATH}",
+            )
+        )
+
+    stale_in_master = master_set - active_set
+    for name in sorted(stale_in_master):
+        findings.append(
+            AuditFinding(
+                severity=FindingSeverity.WARNING,
+                category=FindingCategory.SYNC,
+                message=f"MASTER_PLAN.md references non-existent active doc: {name}",
+                file=MASTER_PLAN_PATH,
+                code="CIHUB-AUDIT-STALE-IN-MASTER-PLAN",
+                suggestion="Update the Active Design Docs section or restore the file",
+            )
+        )
+
+    return findings
 
 
 def check_active_status_sync(
@@ -292,6 +379,23 @@ def validate_lifecycle(repo_root: Path) -> tuple[list[AuditFinding], list[str], 
     else:
         # Check sync
         findings.extend(check_active_status_sync(active_docs, status_entries))
+
+    # Check MASTER_PLAN.md sync for active docs
+    master_plan_path = repo_root / MASTER_PLAN_PATH
+    if master_plan_path.exists():
+        master_entries = parse_master_plan_active_docs(repo_root)
+        findings.extend(check_master_plan_active_sync(active_docs, master_entries))
+    else:
+        findings.append(
+            AuditFinding(
+                severity=FindingSeverity.WARNING,
+                category=FindingCategory.LIFECYCLE,
+                message=f"MASTER_PLAN.md not found at {MASTER_PLAN_PATH}",
+                file=MASTER_PLAN_PATH,
+                code="CIHUB-AUDIT-NO-MASTER-PLAN",
+                suggestion="Create docs/development/MASTER_PLAN.md or update docs audit configuration",
+            )
+        )
 
     # Check archive headers
     findings.extend(check_archive_superseded_headers(archive_docs, repo_root))

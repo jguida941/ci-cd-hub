@@ -1,5 +1,7 @@
 """Tests for the cihub fix command."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

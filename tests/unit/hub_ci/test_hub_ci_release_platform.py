@@ -4,6 +4,8 @@ Split from test_hub_ci_release.py for better organization.
 Tests: platform detection helpers, _trivy_asset_name, _resolve_actionlint_version, _iter_yaml_files
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

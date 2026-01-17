@@ -4,6 +4,8 @@ This module extends property-based testing to cover more of the codebase,
 including command result structures, tool configurations, and validation logic.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -1,3 +1,5 @@
+"""Unit tests for POM tool helpers."""
+
 import sys
 from pathlib import Path
 
@@ -46,6 +48,8 @@ def test_collect_java_pom_warnings_missing_plugin(tmp_path: Path) -> None:
   <modelVersion>4.0.0</modelVersion>
 </project>
 """,
+
+# TEST-METRICS:
     )
 
     warnings, missing = collect_java_pom_warnings(tmp_path, base_plugin_config("jacoco"))

@@ -11,6 +11,8 @@ Test design follows the parameterized pattern from test_language_strategies.py:
 ─────────────────────────────────────────────────
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from argparse import ArgumentParser

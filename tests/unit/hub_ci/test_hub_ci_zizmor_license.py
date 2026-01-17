@@ -5,6 +5,8 @@ Tests: cmd_zizmor_run, cmd_zizmor_check, cmd_license_check
 (Separate from test_hub_ci_security.py which covers bandit/pip-audit/OWASP in depth)
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

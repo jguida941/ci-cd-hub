@@ -10,6 +10,8 @@ These tests establish baseline guarantees before modularization:
 See docs/modularization.md for the full plan.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import ast
@@ -86,10 +88,10 @@ class TestImportSmoke:
 class TestHubCiCommandCount:
     """Lock hub_ci command count to prevent silent command loss."""
 
-    EXPECTED_COMMAND_COUNT = 52
+    EXPECTED_COMMAND_COUNT = 53
 
     def test_command_count_locked(self) -> None:
-        """Exactly 52 cmd_* functions must exist in hub_ci."""
+        """Exactly 53 cmd_* functions must exist in hub_ci."""
         from cihub.commands import hub_ci
 
         cmd_funcs = [name for name in dir(hub_ci) if name.startswith("cmd_")]

@@ -1,5 +1,7 @@
 """Tests for cihub.services.discovery module."""
 
+# TEST-METRICS:
+
 import json
 from pathlib import Path
 

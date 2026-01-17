@@ -1,5 +1,8 @@
 """Tests for cihub.core.gate_specs module."""
 
+# TEST-METRICS:
+#   Coverage: 97.5%
+
 from __future__ import annotations
 
 import pytest

@@ -4,6 +4,8 @@ Split from test_hub_ci.py for better organization.
 Tests: cmd_badges, cmd_badges_commit
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

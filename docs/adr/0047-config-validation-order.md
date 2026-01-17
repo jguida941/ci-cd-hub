@@ -14,7 +14,7 @@ The config loading system merges configuration from multiple sources:
 
 Each layer is normalized before merging, then the final merged config is validated.
 
-**Problem:** The original implementation only validated the final merged config:
+**Problem:** The original implementation only validated the final merged config:  
 
 ```python
 # BEFORE (problematic)

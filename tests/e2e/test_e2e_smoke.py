@@ -5,6 +5,8 @@ simulating real-world usage patterns. They're quick sanity checks that
 catch integration issues between commands.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

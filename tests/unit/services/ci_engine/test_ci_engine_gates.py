@@ -5,6 +5,8 @@ Tests: _build_context, _evaluate_python_gates, _evaluate_java_gates,
        require_run_or_fail, backward compat runner imports
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import os

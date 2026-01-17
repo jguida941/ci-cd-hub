@@ -1,5 +1,7 @@
 """Tests for CI engine helpers and CLI adapter behavior."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

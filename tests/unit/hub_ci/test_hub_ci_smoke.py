@@ -5,6 +5,8 @@ Tests: cmd_smoke_java_tests, cmd_smoke_java_coverage, cmd_smoke_python_tests,
        cmd_hub_ci, platform detection, ensure_executable
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

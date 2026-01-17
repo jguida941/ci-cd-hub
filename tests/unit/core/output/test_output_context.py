@@ -9,6 +9,8 @@ variables, output files, and summary handling. It validates:
 5. Output/summary file writing behaviors
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

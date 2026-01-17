@@ -3,6 +3,8 @@
 Tests for GitHubRunClient class and related helper functions.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

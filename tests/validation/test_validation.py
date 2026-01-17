@@ -1,5 +1,8 @@
 """Tests for cihub.utils.validation module."""
 
+# TEST-METRICS:
+#   Coverage: 100.0%
+
 from __future__ import annotations
 
 from cihub.utils.validation import validate_profile_name

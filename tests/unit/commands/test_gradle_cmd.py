@@ -4,6 +4,8 @@ This module provides comprehensive tests for the Gradle fix functionality,
 including plugin insertion, configuration management, and error handling.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

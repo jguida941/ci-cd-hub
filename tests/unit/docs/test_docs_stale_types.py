@@ -4,6 +4,8 @@ Split from test_docs_stale.py for better organization.
 Tests: CodeSymbol, DocReference, StaleReport, module constants
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from cihub.commands.docs_stale import (

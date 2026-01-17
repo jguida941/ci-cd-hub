@@ -1,5 +1,7 @@
 """Tests for wizard/questions modules."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 # isort: skip_file

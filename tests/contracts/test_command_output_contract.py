@@ -13,6 +13,8 @@ This follows the "strangler fig" pattern - new code is enforced immediately,
 existing code is migrated incrementally.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import ast

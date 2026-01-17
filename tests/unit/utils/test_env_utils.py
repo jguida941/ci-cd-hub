@@ -1,5 +1,7 @@
 """Tests for cihub.utils.env module."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from cihub.utils.env import (

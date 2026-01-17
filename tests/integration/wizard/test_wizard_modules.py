@@ -1,5 +1,7 @@
 """Tests for Phase 4 wizard modules (profile.py, advanced.py)."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from pathlib import Path

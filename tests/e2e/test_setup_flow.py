@@ -1,5 +1,7 @@
 """Tests for setup command flow (R-002 wizard config persistence)."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

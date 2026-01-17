@@ -4,6 +4,8 @@ These tests scaffold projects, inject intentional errors, run tools,
 and verify that errors are properly detected and reported.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from pathlib import Path

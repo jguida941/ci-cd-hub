@@ -6,6 +6,8 @@ This module tests the Phase 2 consolidation helpers for:
 - Running tools that produce JSON output
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

@@ -1,5 +1,7 @@
 """Tests for cihub.commands.smoke module."""
 
+# TEST-METRICS:
+
 import argparse
 from pathlib import Path
 

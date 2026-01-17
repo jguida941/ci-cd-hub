@@ -1,3 +1,6 @@
+# TEST-METRICS:
+"""Unit tests for configuration service behavior."""
+
 from __future__ import annotations
 
 from pathlib import Path

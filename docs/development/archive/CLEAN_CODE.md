@@ -12,7 +12,7 @@
 > **Superseded-by:** docs/development/MASTER_PLAN.md  
 
 **Date:** 2026-01-04  
-**Last Updated:** 2026-01-15 (Status reconciliation: test count policy applied)
+**Last Updated:** 2026-01-15 (Status reconciliation: test count policy applied)  
 **Branch:** feat/modularization
 **Progress:** Complete (Phase T4 contains ongoing process items tracked in TEST_REORGANIZATION.md)
 **Purpose:** Identify opportunities for polymorphism, encapsulation, and better modular boundaries to make the codebase more scalable.
@@ -385,7 +385,7 @@ JAVA_THRESHOLDS: tuple[ThresholdSpec, ...] = (...)
 
 ### 2.1 Extract Language Strategies (CRITICAL)
 
-**Problem:** 46 `if language == "python"` / `elif language == "java"` checks scattered across 20 files.
+**Problem:** 46 `if language == "python"` / `elif language == "java"` checks scattered across 20 files.  
 
 **2026-01-05 Audit Update:** Grep found 46 total checks (2 if + 10 elif patterns × distribution).
 
@@ -518,7 +518,7 @@ def run_ci(language: str, repo_path: Path, ctx: RunContext) -> CIReport:
 
 ### 2.2 Centralize Command Output (HIGH) - In Progress
 
-**Problem:** Commands print directly instead of returning structured results.
+**Problem:** Commands print directly instead of returning structured results.  
 
 **2026-01-05 Progress Update:** Significant progress made on migration:
 - ~~**37 files**~~ → **~16 files** in `cihub/commands/` contain direct `print()` calls
@@ -613,7 +613,7 @@ def main(argv: list[str] | None = None) -> int:
 
 ### 2.2a Hub-CI CommandResult Gap [x] COMPLETE
 
-**Problem:** All 46 hub-ci subcommands returned bare `int`, breaking `--json` support.
+**Problem:** All 46 hub-ci subcommands returned bare `int`, breaking `--json` support.  
 
 **2026-01-05 Final Status:** All 46 functions migrated to CommandResult.
 
@@ -672,7 +672,7 @@ def run_and_capture(cmd, cwd, *, tool_name="") -> dict:
 You can get 80% of the value with a smaller step first. Only graduate to
 ToolSpec/ToolAdapter when you actually have 3+ tools that need special handling."
 
-**Problem:** Tool-specific config extraction scattered and duplicated.
+**Problem:** Tool-specific config extraction scattered and duplicated.  
 
 **Current pattern:** `cihub/services/ci_engine/python_tools.py:176-198`
 ```python
@@ -778,7 +778,7 @@ def run_tools(adapters: list[ToolAdapter], config: dict, ctx: RunContext) -> dic
 ---
 ### 2.4 Consolidate `_tool_enabled()` [x] COMPLETE
 
-**Problem:** `_tool_enabled()` (or variants) existed in five places. Any bug fix or semantic change had to be replicated everywhere.
+**Problem:** `_tool_enabled()` (or variants) existed in five places. Any bug fix or semantic change had to be replicated everywhere.  
 
 **Implementation (2026-01-05):**
 - Added canonical `tool_enabled(config, tool, language, *, default=False)` to `cihub/config/normalize.py`
@@ -797,7 +797,7 @@ def run_tools(adapters: list[ToolAdapter], config: dict, ctx: RunContext) -> dic
 
 **Status:** DONE (2026-01-06)  
 
-**Problem:** `tests/test_services_ci.py` originally covered only two scenarios.
+**Problem:** `tests/test_services_ci.py` originally covered only two scenarios.  
 
 **Solution:** Comprehensive test coverage now exists across multiple files:
 
@@ -819,7 +819,7 @@ def run_tools(adapters: list[ToolAdapter], config: dict, ctx: RunContext) -> dic
 ---
 ### 2.6 Gate Evaluation Refactor (MEDIUM)
 
-**Problem:** `_evaluate_python_gates` and `_evaluate_java_gates` duplicate long `if` chains for coverage/mutation/security thresholds.
+**Problem:** `_evaluate_python_gates` and `_evaluate_java_gates` duplicate long `if` chains for coverage/mutation/security thresholds.  
 
 **Plan:**
 - Define declarative gate specs (e.g., `Gate(name="coverage", metric="coverage", threshold_key="coverage_min")`).
@@ -882,7 +882,7 @@ class ToolResult:
 
 **Status:** DONE (2026-01-06)  
 
-**Problem:** 17+ files with direct `os.environ.get("GITHUB_*")` calls.
+**Problem:** 17+ files with direct `os.environ.get("GITHUB_*")` calls.  
 
 **Solution:** Unified `GitHubContext` class that merges:
 1. Original `OutputContext` (GITHUB_OUTPUT, GITHUB_STEP_SUMMARY writing)
@@ -904,7 +904,7 @@ class ToolResult:
 
 **Status:** COMPLETE (2026-01-06)  
 
-**Problem:** `run_ci()` had 10 keyword parameters - too many for clean function signatures.
+**Problem:** `run_ci()` had 10 keyword parameters - too many for clean function signatures.  
 
 **Solution:** Created `RunCIOptions` dataclass in `cihub/services/types.py`:
 
@@ -966,7 +966,7 @@ return ints, you'll slow the migration and create churn."
 2. Renderer consumes CommandResult consistently
 3. Then add stronger schema/invariants
 
-**Problem:** All fields optional, commands populate inconsistently.
+**Problem:** All fields optional, commands populate inconsistently.  
 
 **Proposed: Define required fields per command category:**
 
@@ -1062,7 +1062,7 @@ class MemoryFileSystem(FileSystem):
 
 **Status:** COMPLETE - Fixed directly instead of phased deprecation.  
 
-**Problem:** `cihub/cli.py` re-exported 50+ functions for backward compatibility, creating messy dependencies.
+**Problem:** `cihub/cli.py` re-exported 50+ functions for backward compatibility, creating messy dependencies.  
 
 **Solution:** Just fixed the imports directly and removed the re-exports.
 
@@ -1256,7 +1256,7 @@ Re-evaluate command restructuring ONLY when:
 ### 7.1 CLI Layer Consolidation (HIGH PRIORITY)
 
 #### Finding 7.1.1: Argument Definition Duplication
-**Problem:** `--output` and `--github-output` defined repeatedly in `hub_ci.py`.
+**Problem:** `--output` and `--github-output` defined repeatedly in `hub_ci.py`.  
 
 **Files:** `cihub/cli_parsers/hub_ci/` lines 29, 71, 84, 107, 124, 141, 153, 165, 192, 218, 262, etc.
 
@@ -1288,7 +1288,7 @@ def add_summary_args(parser: argparse.ArgumentParser) -> None:
 ---
 
 #### Finding 7.1.2: Direct Printing in Commands
-**Problem:** 261 print() calls across 30 command files instead of returning CommandResult.
+**Problem:** 261 print() calls across 30 command files instead of returning CommandResult.  
 
 **Worst offenders:**
 | File | Print Calls | Issue |
@@ -1321,7 +1321,7 @@ def cmd_example(args) -> CommandResult:
 ---
 
 #### Finding 7.1.3: Mixed Return Types
-**Problem:** Commands inconsistently return `int` or `CommandResult`.
+**Problem:** Commands inconsistently return `int` or `CommandResult`.  
 
 **Evidence:** `cihub/cli.py:383-388` wraps bare ints only in non-JSON mode.
 
@@ -1337,7 +1337,7 @@ def cmd_example(args) -> CommandResult:
 ### 7.2 Hub-CI Subcommand Helpers (HIGH PRIORITY)
 
 #### Finding 7.2.1: Output Writing Boilerplate
-**Problem:** 15+ occurrences of identical 3-line pattern.
+**Problem:** 15+ occurrences of identical 3-line pattern.  
 
 **Current pattern:**
 ```python
@@ -1358,7 +1358,7 @@ def write_github_outputs(values: dict[str, str], args: argparse.Namespace) -> No
 ---
 
 #### Finding 7.2.2: Tool Status Pattern
-**Problem:** 90 lines of identical logic in 3 security commands.
+**Problem:** 90 lines of identical logic in 3 security commands.  
 
 **Files:** `security.py:174-223` (pip_audit), `security.py:226-269` (bandit), `security.py:272-305` (ruff)
 
@@ -1383,7 +1383,7 @@ def run_tool_with_json_report(
 ---
 
 #### Finding 7.2.3: Maven Wrapper Chmod Pattern
-**Problem:** 20 lines duplicated 4 times.
+**Problem:** 20 lines duplicated 4 times.  
 
 **Files:** `java_tools.py:64-71, 89-98, 195-201`, `security.py:314-318`
 
@@ -1406,7 +1406,7 @@ def ensure_executable_and_run(repo_path: Path, wrapper: str, cmd: list[str]) -> 
 ### 7.3 Utilities Consolidation (HIGH PRIORITY)
 
 #### Finding 7.3.1: Duplicate Functions
-**Problem:** Identical functions in multiple files.
+**Problem:** Identical functions in multiple files.  
 
 | Function | Location 1 | Location 2 | Lines |
 |-------------------------------|---------------------------|------------------------------|-------|
@@ -1418,7 +1418,7 @@ def ensure_executable_and_run(repo_path: Path, wrapper: str, cmd: list[str]) -> 
 ---
 
 #### Finding 7.3.2: Direct Environment Variable Access
-**Problem:** 52 direct `os.environ.get()` calls bypass centralized utilities.
+**Problem:** 52 direct `os.environ.get()` calls bypass centralized utilities.  
 
 **Available but underused:**
 - `cihub/utils/env.py:env_str()` - for string env vars
@@ -1452,7 +1452,7 @@ class GitHubEnv:
 ---
 
 #### Finding 7.3.3: Ad-hoc Subprocess Calls [x] **DONE**
-**Problem:** 30 subprocess.run() calls scattered without consistent patterns.
+**Problem:** 30 subprocess.run() calls scattered without consistent patterns.  
 
 **Issues:**
 - No standardized timeout (varies: 5, 10, 30, 60, 120 seconds)
@@ -1480,7 +1480,7 @@ Implemented `safe_run()` wrapper in `cihub/utils/exec_utils.py` with:
 ### 7.4 Core Module Refactoring (MEDIUM PRIORITY)
 
 #### Finding 7.4.1: Report Builder Duplication [x] **DONE** (2026-01-10)
-**Problem:** `build_python_report()` and `build_java_report()` share 90% code.
+**Problem:** `build_python_report()` and `build_java_report()` share 90% code.  
 
 **Files:** `core/ci_report.py:142-256` (Python), `core/ci_report.py:259-381` (Java)
 
@@ -1526,7 +1526,7 @@ Implemented `safe_run()` wrapper in `cihub/utils/exec_utils.py` with:
 ---
 
 #### Finding 7.4.4: Large CLI Command Handlers (God Modules) [x] **DONE** (2026-01-10)
-**Problem:** Several CLI commands bundle parsing, orchestration, rendering, and IO.
+**Problem:** Several CLI commands bundle parsing, orchestration, rendering, and IO.  
 
 **Files:** `commands/docs.py`, `commands/check.py`, `commands/setup.py`, `commands/verify.py`, `commands/smoke.py`, `commands/secrets.py`, `commands/registry_cmd.py`, `commands/triage_cmd.py`
 
@@ -1597,7 +1597,7 @@ Implemented `safe_run()` wrapper in `cihub/utils/exec_utils.py` with:
 ---
 
 #### Finding 7.4.7: Parser Abstraction Gaps [x] **DONE** (2026-01-10)
-**Problem:** Argument wiring is repeated across multiple parser modules despite common helpers.
+**Problem:** Argument wiring is repeated across multiple parser modules despite common helpers.  
 
 **Solution found:** Helpers already exist in `cli_parsers/common.py`:
 - 8 factory functions: `add_output_args`, `add_repo_args`, `add_summary_args`, `add_report_args`, `add_path_args`, `add_output_dir_args`, `add_ci_output_args`, `add_tool_runner_args`
@@ -1614,7 +1614,7 @@ Implemented `safe_run()` wrapper in `cihub/utils/exec_utils.py` with:
 ---
 
 #### Finding 7.4.8: Missing Core Abstractions [x] **DONE** (2026-01-10)
-**Problem:** Command and tool orchestration patterns are duplicated without shared interfaces.
+**Problem:** Command and tool orchestration patterns are duplicated without shared interfaces.  
 
 **Assessment:** Abstractions already exist:
 - `CommandHandler` type alias: `Callable[[argparse.Namespace], int | CommandResult]` in `cli_parsers/types.py`
@@ -1636,7 +1636,7 @@ Implemented `safe_run()` wrapper in `cihub/utils/exec_utils.py` with:
 ### 7.5 Config/Schema Consistency (MEDIUM PRIORITY)
 
 #### Finding 7.5.1: Schema Validation Bypass
-**Problem:** Hub-CI config loading skips schema validation.
+**Problem:** Hub-CI config loading skips schema validation.  
 
 **File:** `commands/hub_ci/__init__.py:90-97`
 ```python
@@ -1651,7 +1651,7 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 ---
 
 #### Finding 7.5.2: Defaults Defined in 4 Places
-**Problem:** `fail_on_cvss=7` default in multiple files.
+**Problem:** `fail_on_cvss=7` default in multiple files.  
 
 | Location | Line | Value |
 |-----------------------------------------|----------|---------------------------|
@@ -1668,7 +1668,7 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 
 #### Finding 7.5.3: Inconsistent `fail_on_*` Naming [x] **DONE** (2026-01-15)
 
-**Problem:** Tool configs use multiple `fail_on_*` variants with overlapping semantics.
+**Problem:** Tool configs use multiple `fail_on_*` variants with overlapping semantics.  
 
 **Examples:** `fail_on_error`, `fail_on_issues`, `fail_on_violation`, `fail_on_format_issues`, `fail_on_vuln`, `fail_on_critical`, `fail_on_high`
 
@@ -1693,7 +1693,7 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 
 #### Finding 7.6.1: run_ci() God Method [~] **PARTIAL** (2026-01-10)
 
-**Problem:** 300+ line function handling 7 responsibilities.
+**Problem:** 300+ line function handling 7 responsibilities.  
 
 **File:** `services/ci_engine/__init__.py:132-467`
 
@@ -1708,7 +1708,7 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 
 #### Finding 7.6.2: Hardcoded Tool Runner Imports [x] **DONE** (2026-01-10)
 
-**Problem:** 19 individual tool runners imported directly.
+**Problem:** 19 individual tool runners imported directly.  
 
 **Solution Implemented:**
 - Added `get_runner(tool, language)` and `get_runners(language)` to `cihub/tools/registry.py`
@@ -1726,7 +1726,7 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 ---
 
 #### Finding 7.6.3: Registry Service God Module [x] **DONE** (2026-01-11)
-**Problem:** Registry service handles IO, normalization, diffing, and sync in one file.
+**Problem:** Registry service handles IO, normalization, diffing, and sync in one file.  
 
 **Solution implemented:** Split `services/registry_service.py` (1592 lines) → `services/registry/` package:
 
@@ -1747,7 +1747,7 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 ---
 
 #### Finding 7.6.4: Triage/Report Pipeline Monolith [x] **DONE** (already modularized)
-**Problem:** Triage + report validation logic is bundled in large service modules.
+**Problem:** Triage + report validation logic is bundled in large service modules.  
 
 **Assessment:** Already modularized - marked as "reference pattern" in Part 1.5:
 
@@ -1763,7 +1763,7 @@ def _load_config(path: Path | None) -> dict[str, Any]:
 ### 7.7 Test Coverage Gaps (MEDIUM PRIORITY)
 
 #### Finding 7.7.1: High-LOC Modules Need Focused Tests [x] **DONE** (2026-01-11)
-**Problem:** Several large modules rely on broad integration tests instead of focused unit coverage.
+**Problem:** Several large modules rely on broad integration tests instead of focused unit coverage.  
 
 **Assessment:** Coverage is good across target modules:
 
@@ -1957,7 +1957,7 @@ The other improvements (output consistency, tool adapters, GitHub context) are i
 ### 9.1 Scripts & Build System (HIGH PRIORITY)
 
 #### Finding 9.1.1: 11 Deprecated Script Shims
-**Problem:** `scripts/` directory contains deprecated shims wrapping CLI commands.
+**Problem:** `scripts/` directory contains deprecated shims wrapping CLI commands.  
 
 | Script | Replacement CLI |
 |--------|-----------------|
@@ -1978,7 +1978,7 @@ The other improvements (output consistency, tool adapters, GitHub context) are i
 ---
 
 #### Finding 9.1.2: Add Black/isort to Local Tooling (Parity Gap)
-**Problem:** Black and isort run in CI but NOT locally.
+**Problem:** Black and isort run in CI but NOT locally.  
 
 | Environment | Black/isort Status |
 |---------------|------------------------------------------------------|
@@ -2061,7 +2061,7 @@ format-all: format format-black format-isort ## Run all formatters
 **Note:** docker, trivy, codeql remain inline because they have language-specific defaults (e.g., `languages: ["java"]` vs `["python"]`).
 
 #### Finding 9.3.1: Shared Tools Duplicated (RESOLVED)
-**Problem:** 5 tools defined identically in javaTools AND pythonTools.
+**Problem:** 5 tools defined identically in javaTools AND pythonTools.  
 
 | Tool | Duplicate Lines | Status |
 |---------|-----------------|--------|
@@ -2076,7 +2076,7 @@ format-all: format format-black format-isort ## Run all formatters
 ---
 
 #### Finding 9.3.2: Triple Default Definition
-**Problem:** Same defaults in 3 places.
+**Problem:** Same defaults in 3 places.  
 
 | Source | File |
 |--------|---------------------------------------------|
@@ -2089,14 +2089,14 @@ format-all: format format-black format-isort ## Run all formatters
 ---
 
 #### Finding 9.3.3: Report Schema Tool Lists (RESOLVED)
-**Problem:** 4 identical 22-tool lists in `ci-report.v2.json`.
+**Problem:** 4 identical 22-tool lists in `ci-report.v2.json`.  
 
 **Fix:** [x] Extracted to `#/definitions/toolStatusMap`, referenced 4x (~66 lines removed).
 
 ---
 
 #### Finding 9.3.4: Optional Features Unvalidated
-**Problem:** `canary`, `chaos`, etc. have `additionalProperties: true`.
+**Problem:** `canary`, `chaos`, etc. have `additionalProperties: true`.  
 
 **Fix:** Create full schema definitions for each optional feature.
 
@@ -2170,7 +2170,7 @@ format-all: format format-black format-isort ## Run all formatters
 ### 10.2 Missing Testing Patterns
 
 #### Finding 10.2.1: No conftest.py for Shared Fixtures
-**Problem:** Fixtures are duplicated across test files instead of centralized.
+**Problem:** Fixtures are duplicated across test files instead of centralized.  
 
 **Create `tests/conftest.py`:**
 ```python
@@ -2205,7 +2205,7 @@ def mock_env(monkeypatch):
 ---
 
 #### Finding 10.2.2: Underutilized Parameterized Testing
-**Problem:** Only 6/70 test files use `@pytest.mark.parametrize`.
+**Problem:** Only 6/70 test files use `@pytest.mark.parametrize`.  
 
 **High-value candidates for parameterization:**
 
@@ -2233,7 +2233,7 @@ def test_tool_config(tool, sample_config):
 ---
 
 #### Finding 10.2.3: Expand Hypothesis Property-Based Testing
-**Problem:** Hypothesis only used in 5 files despite being installed.
+**Problem:** Hypothesis only used in 5 files despite being installed.  
 
 **High-value Hypothesis candidates:**
 
@@ -2260,7 +2260,7 @@ def test_coverage_threshold_boundary(coverage):
 ---
 
 #### Finding 10.2.4: Missing pytest-xdist for Parallel Execution
-**Problem:** Tests run sequentially; CI could be faster.
+**Problem:** Tests run sequentially; CI could be faster.  
 
 **Add to pyproject.toml:**
 ```toml
@@ -2279,7 +2279,7 @@ addopts = "-n auto" # Auto-detect CPU cores
 ---
 
 #### Finding 10.2.5: Consider Contract Testing for APIs
-**Problem:** No contract tests between services and consumers.
+**Problem:** No contract tests between services and consumers.  
 
 **For future consideration (not immediate):**
 - `pact-python` for consumer-driven contracts

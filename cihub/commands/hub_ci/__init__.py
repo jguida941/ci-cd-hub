@@ -728,6 +728,7 @@ from cihub.commands.hub_ci.smoke import (  # noqa: E402
     cmd_smoke_python_ruff,
     cmd_smoke_python_tests,
 )
+from cihub.commands.hub_ci.test_metrics import cmd_test_metrics  # noqa: E402
 from cihub.commands.hub_ci.validation import (  # noqa: E402
     cmd_docker_compose_check,
     cmd_quarantine_check,
@@ -807,6 +808,8 @@ __all__ = [
     "cmd_smoke_python_ruff",
     "cmd_smoke_python_black",
     "_last_regex_int",
+    # Test metrics
+    "cmd_test_metrics",
     # Release & tooling
     "cmd_release_parse_tag",
     "cmd_release_update_tag",

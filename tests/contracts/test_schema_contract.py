@@ -7,6 +7,8 @@ These tests prevent drift between:
 If code emits fields not in schema (or vice versa), tests fail immediately.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

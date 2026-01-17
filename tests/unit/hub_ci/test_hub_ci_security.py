@@ -3,6 +3,8 @@
 This module tests security scanning commands: bandit, pip-audit, OWASP, and ruff security rules.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

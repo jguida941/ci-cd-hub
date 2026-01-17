@@ -1,5 +1,7 @@
 """Debug mode behavior tests for the CLI."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

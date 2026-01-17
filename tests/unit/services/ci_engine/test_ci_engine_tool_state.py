@@ -5,6 +5,8 @@ Tests: _tool_enabled, _tool_gate_enabled, _get_env_name, _get_env_value,
        _warn_reserved_features, _set_tool_enabled, _apply_force_all_tools
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from cihub.services.ci_engine import (

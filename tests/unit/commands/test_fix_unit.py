@@ -5,6 +5,8 @@ without going through CLI invocation. This provides faster, more
 targeted testing of business logic.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

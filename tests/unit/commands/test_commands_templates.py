@@ -5,6 +5,8 @@ Tests check result.exit_code and result.data["items"] instead of
 comparing result to int or checking capsys output.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 # isort: skip_file

@@ -5,6 +5,8 @@ that certain properties always hold, catching edge cases that
 explicit example-based tests might miss.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from typing import Any

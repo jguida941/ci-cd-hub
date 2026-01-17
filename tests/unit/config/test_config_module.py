@@ -4,6 +4,8 @@ These tests are designed to be mutation-testing ready with specific
 assertions that would fail if the logic were changed.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from pathlib import Path

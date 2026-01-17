@@ -1,5 +1,7 @@
 """Tests for custom tools (x- prefix) support."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

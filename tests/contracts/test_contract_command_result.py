@@ -5,6 +5,8 @@ maintain their contract - field presence, types, and serialization stability.
 This is critical for CLI output stability and JSON API consistency.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

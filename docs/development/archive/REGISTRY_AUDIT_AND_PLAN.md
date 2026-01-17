@@ -4,9 +4,9 @@
 > **WARNING: SUPERSEDED:** This document has been consolidated into `docs/development/archive/SYSTEM_INTEGRATION_PLAN.md` (2026-01-08)
 
 **Date:** 2026-01-06  
-**Priority:** **#2** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
+**Priority:** **#2** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))  
 **Status:** ARCHIVED  
-**Depends On:** CLEAN_CODE.md (~90% complete)
+**Depends On:** CLEAN_CODE.md (~90% complete)  
 **Blocks:** TEST_REORGANIZATION.md (validates registry integration)
 **Audit Method:** 8-agent comprehensive codebase analysis
 
@@ -453,7 +453,7 @@ cihub profile create my-team-standard --from-repo production-api
 
 ### 5.6 Future Architecture: Config-File-First for Hub Workflows (RECOMMENDED)
 
-> **Problem:** Hub-internal workflows use many toggles (10 currently, growing). Input-based design:
+> **Problem:** Hub-internal workflows use many toggles (10 currently, growing). Input-based design:  
 > 1. Requires editing complex workflow YAML to add toggles
 > 2. Hits 25-input ceiling eventually
 > 3. Forces users to understand GitHub Actions syntax

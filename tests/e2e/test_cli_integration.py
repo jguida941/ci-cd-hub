@@ -1,3 +1,5 @@
+"""End-to-end CLI integration tests."""
+
 import os
 import shutil
 import sys
@@ -40,6 +42,8 @@ def write_minimal_pom(path: Path) -> None:
   <modelVersion>4.0.0</modelVersion>
 </project>
 """,
+
+# TEST-METRICS:
         encoding="utf-8",
     )
 

@@ -1,3 +1,6 @@
+# TEST-METRICS:
+"""Contract tests for workflow input/output expectations."""
+
 from types import SimpleNamespace
 
 from cihub.commands import verify as verify_module

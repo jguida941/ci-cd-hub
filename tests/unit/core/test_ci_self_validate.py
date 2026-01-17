@@ -1,5 +1,7 @@
 """Tests for cihub ci self-validation (report/summary contradictions)."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from pathlib import Path

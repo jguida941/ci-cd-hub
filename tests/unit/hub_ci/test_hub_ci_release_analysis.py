@@ -5,6 +5,8 @@ Tests: cmd_actionlint, cmd_trivy_summary, cmd_kyverno_validate, cmd_kyverno_test
        cmd_gitleaks_summary, cmd_pytest_summary, cmd_summary, cmd_enforce
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

@@ -56,6 +56,7 @@ from .smoke import (
     cmd_smoke_python_ruff,
     cmd_smoke_python_tests,
 )
+from .test_metrics import cmd_test_metrics
 from .thresholds import cmd_thresholds
 from .validation import (
     cmd_docker_compose_check,
@@ -128,6 +129,7 @@ def cmd_hub_ci(args: argparse.Namespace) -> CommandResult:
         "quarantine-check": cmd_quarantine_check,
         "enforce-command-result": cmd_enforce_command_result,
         "thresholds": cmd_thresholds,
+        "test-metrics": cmd_test_metrics,
     }
     handler = handlers.get(args.subcommand)
     if handler is None:

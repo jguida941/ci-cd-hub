@@ -7,8 +7,8 @@
 
 **Date:** 2026-01-05  
 **Status:** CURRENT (blocked by prerequisites)  
-**Priority:** **#3** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
-**Depends On:** CLEAN_CODE.md (archived, complete) + SYSTEM_INTEGRATION_PLAN.md (archived, complete)
+**Priority:** **#3** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))  
+**Depends On:** CLEAN_CODE.md (archived, complete) + SYSTEM_INTEGRATION_PLAN.md (archived, complete)  
 **Blocks:** Nothing (can run parallel with DOC_AUTOMATION after blockers resolved)
 
 ---
@@ -446,7 +446,7 @@ class TestDetectProperties:
 
 Usage: python scripts/update_test_metrics.py
 
-Reads coverage_targets.yaml and updates each test file's
+Reads coverage and mutation results and updates each test file's
 TEST-METRICS block with actual values.
 """
 ```
@@ -474,14 +474,22 @@ Aggregates all test metrics into a summary README.
 Usage: python scripts/check_test_drift.py
 
 Checks:
-- All test files have TEST-METRICS block
-- All test files are in coverage_targets.yaml
-- No files below target thresholds
+- All test files follow naming conventions
+- TEST-METRICS blocks are present
+- Module docstrings and import consistency
 - Template structure compliance
 """
 ```
 
-**Runs:** In CI, fails build on drift
+**Runs:** In CI. `--strict` enabled in `hub-production-ci.yml` (2026-01-17).
+
+### CLI Wrapper (`cihub hub-ci test-metrics`)
+
+Runs update + README + drift checks with consistent CI behavior.
+
+- `--write` updates metrics and README (main-only by default).
+- `--strict` makes drift warnings fail the run.
+- Defaults to check-only mode for PRs.
 
 ---
 
@@ -493,7 +501,9 @@ Checks:
 - [x] Create `scripts/update_test_metrics.py` (reads targets from config/defaults.yaml)
 - [x] Create `scripts/generate_test_readme.py`
 - [x] Create `scripts/check_test_drift.py`
-- [ ] Add to CI workflow (hub-production-ci.yml)
+- [x] Add to CI workflow (hub-production-ci.yml)
+- [x] Seed test metrics + README; validate `cihub hub-ci test-metrics --strict` (2026-01-17)
+- [x] Enable `cihub hub-ci test-metrics --strict` in CI (2026-01-17)
 - [x] Add schema-sync fallback defaults regression coverage (gates/reports/feature flags)
 
 ### Phase 2: Directory Structure (Day 2) — ✅ COMPLETED 2026-01-17
@@ -568,8 +578,8 @@ Checks:
 
 ### Test File Coverage Gap
 
-- **163 total files** in `tests/` directory (154 test files + 9 supporting files) — file count only
-- **163 files (100%)** map cleanly to proposed categories
+- **164 total files** in `tests/` directory (155 test files + 9 supporting files) — file count only
+- **164 files (100%)** map cleanly to proposed categories
 - **0 files** require splitting before moving (splits complete)
 - **4 files** with excellent cohesion kept as-is despite size
 
@@ -596,10 +606,8 @@ Current plan covers ~20% of drift scenarios. Add detection for:
 
 ### CI Integration Gaps
 
-New jobs required in `hub-production-ci.yml`:
-1. `generate-test-readme` - After mutation-tests
-2. `check-test-drift` - After README generation
-3. `update-test-metrics` - Updates file headers (main only)
+New step required in `hub-production-ci.yml`:
+1. `cihub hub-ci test-metrics` - run after mutation tests to use coverage + mutmut inputs; strict enabled (2026-01-17)
 
 ### Large Monolithic Files
 
@@ -637,18 +645,18 @@ Before Phase 1 can begin:
 - [x] Validate wizard/CLI on fixture repos (subdir detection, POM warnings, aggregation status)
 - [x] Add CLI workflow dispatch/watch with wizard wrapper (ADR-0055)
 - [x] Align Java templates with CLI config (remove repo-specific PITest targets; honor `use_nvd_api_key`)
-- [x] Create comprehensive file mapping (all 163 files → new homes) — **COMPLETED 2026-01-17**
+- [x] Create comprehensive file mapping (all 164 files → new homes) — **COMPLETED 2026-01-17**
 - [x] Split large monolithic test files (see "Monolithic File Split Plan" below) — **COMPLETED 2026-01-17**
 - [x] Register pytest markers in pyproject.toml
 
 ---
 
-## Phase 0: Comprehensive File Mapping (163 Files)
+## Phase 0: Comprehensive File Mapping (164 Files)
 
 > **Completed:** 2026-01-17 | **Author:** 8-Agent Parallel Analysis
 >
-> **Note:** Original estimate was 78 files. Actual count is **163 files** including:
-> - 154 `test_*.py` files
+> **Note:** Original estimate was 78 files. Actual count is **164 files** including:
+> - 155 `test_*.py` files
 > - 9 supporting files (`conftest.py`, `__init__.py`, snapshots)
 > - File counts only (not test counts), derived from `rg --files tests`
 
@@ -898,6 +906,7 @@ Before Phase 1 can begin:
 | `tests/unit/hub_ci/test_hub_ci_release_platform.py` | `tests/unit/hub_ci/test_hub_ci_release_platform.py` | unit | Unit tests for hub-ci command implementations. |
 | `tests/unit/hub_ci/test_hub_ci_security.py` | `tests/unit/hub_ci/test_hub_ci_security.py` | unit | Unit tests for hub-ci command implementations. |
 | `tests/unit/hub_ci/test_hub_ci_smoke.py` | `tests/unit/hub_ci/test_hub_ci_smoke.py` | unit | Unit tests for hub-ci command implementations. |
+| `tests/unit/hub_ci/test_hub_ci_test_metrics.py` | `tests/unit/hub_ci/test_hub_ci_test_metrics.py` | unit | Unit tests for hub-ci test metrics automation. |
 | `tests/unit/hub_ci/test_hub_ci_validation.py` | `tests/unit/hub_ci/test_hub_ci_validation.py` | unit | Unit tests for hub-ci command implementations. |
 | `tests/unit/hub_ci/test_hub_ci_zizmor_license.py` | `tests/unit/hub_ci/test_hub_ci_zizmor_license.py` | unit | Unit tests for hub-ci command implementations. |
 
@@ -1022,11 +1031,11 @@ Before Phase 1 can begin:
 | **Regression Tests** | 1 | Bug reproduction |
 | **Performance Tests** | 1 | Benchmarks |
 | **Validation Tests** | 2 | Input validation |
-| **Unit Tests** | 117 | Isolated function tests |
+| **Unit Tests** | 118 | Isolated function tests |
 | **Supporting Files** | 9 | conftest, __init__, snapshots |
-| **TOTAL** | **163** | |
+| **TOTAL** | **164** | |
 
 | Split Status | Files | Notes |
 |--------------|-------|-------|
 | Splits completed | 5 | 23 new files |
-| Post-split total | 163 | |
+| Post-split total | 164 | |

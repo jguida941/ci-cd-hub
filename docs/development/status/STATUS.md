@@ -10,12 +10,12 @@
 >
 > **Action Items:** See [MASTER_PLAN.md](../MASTER_PLAN.md) for all tasks.  
 > **Architecture:** See [ARCH_OVERVIEW.md](../architecture/ARCH_OVERVIEW.md)
-> **Test Counts:** Refresh via verified automation when updated (no manual edits).
+> **Test Counts:** Refresh via `cihub hub-ci test-metrics --write` after verified pytest+coverage (no manual edits).
 >
 > **Last Updated:** 2026-01-15 (status index trimmed, pointers only)  
 > **Version Target:** v1.0.0
 >
-> **Current focus:** Wizard/CLI validation complete; proceed with Test Reorg CI workflow wiring + Phase 4 property tests + Phase 5 docs.
+> **Current focus:** Test Reorg Phase 5 docs.
 
 ---
 

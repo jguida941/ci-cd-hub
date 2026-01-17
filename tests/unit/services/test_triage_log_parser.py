@@ -1,5 +1,7 @@
 """Unit tests for triage log parser utilities."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from cihub.commands.triage.log_parser import create_log_failure, resolve_unknown_steps

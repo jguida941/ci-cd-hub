@@ -17,6 +17,8 @@ All tests verify the CommandResult contract:
 Following CLEAN_CODE.md Part 10 testing patterns.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

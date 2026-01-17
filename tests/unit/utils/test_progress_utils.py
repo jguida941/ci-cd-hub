@@ -1,5 +1,7 @@
 """Tests for cihub.utils.progress module."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from cihub.utils.progress import _bar

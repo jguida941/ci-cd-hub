@@ -1,5 +1,7 @@
 """Tests for report aggregate --reports-dir mode."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

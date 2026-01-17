@@ -3,7 +3,7 @@
 
 > **Status:** Legacy archive (2025-12-15). This document is retained for historical context only and must not be used as current guidance.  
 
-**Last Updated:** 2025-12-15
+**Last Updated:** 2025-12-15  
 
 ## Fix First (Priority Queue)
 

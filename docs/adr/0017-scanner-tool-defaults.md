@@ -126,7 +126,7 @@ trivy_cvss_fail: 11
 
 ### 3b. Production Verification Strategy
 
-**Problem**: How do users verify their CI pipeline is correctly detecting issues?
+**Problem**: How do users verify their CI pipeline is correctly detecting issues?  
 
 **Solution - Dual Fixture Approach**:
 
@@ -269,7 +269,7 @@ mvn verify checkstyle:checkstyle spotbugs:spotbugs dependency-check:check
 
 ### 7. Continue-on-Error Strategy
 
-**Problem**: When tests fail, Maven stops before running analysis plugins. Even with `-fn` (fail-never), explicit goals appended to the command line don't run after lifecycle failure.
+**Problem**: When tests fail, Maven stops before running analysis plugins. Even with `-fn` (fail-never), explicit goals appended to the command line don't run after lifecycle failure.  
 
 **Solution**: Split the build into two phases:
 
@@ -296,7 +296,7 @@ mvn verify checkstyle:checkstyle spotbugs:spotbugs dependency-check:check
 
 ### 7a. OWASP NVD API Rate Limiting
 
-**Problem**: OWASP Dependency Check downloads vulnerability data from the NVD API. Without rate limiting, bulk downloads trigger 403 errors due to NVD rate limits (even without an API key).
+**Problem**: OWASP Dependency Check downloads vulnerability data from the NVD API. Without rate limiting, bulk downloads trigger 403 errors due to NVD rate limits (even without an API key).  
 
 **Solution**: Add delay and retry parameters to avoid rate limiting:
 
@@ -321,7 +321,7 @@ mvn -B -ntp -DskipTests \
 
 ### 7b. PITest and -DskipTests
 
-**Problem**: PITest mutation testing was showing 0% because the command included `-DskipTests`:
+**Problem**: PITest mutation testing was showing 0% because the command included `-DskipTests`:  
 
 ```bash
 # WRONG: PITest skips because tests are disabled
@@ -357,7 +357,7 @@ Mutation testing requires a green suite.
 
 ### 8. Dependent Job Execution with `if: always()`
 
-**Problem**: When using `continue-on-error: true` on steps, the individual steps continue but the **job** is still marked as `failure` if any step fails. This causes dependent jobs (with `needs: build-test`) to be **skipped** by default.
+**Problem**: When using `continue-on-error: true` on steps, the individual steps continue but the **job** is still marked as `failure` if any step fails. This causes dependent jobs (with `needs: build-test`) to be **skipped** by default.  
 
 **Solution**: Add `if: always() && inputs.run_<tool>` to dependent jobs:
 

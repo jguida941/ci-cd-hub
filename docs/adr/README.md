@@ -58,6 +58,7 @@ Existing:
 - [ADR-0054: Hub CI Threshold Overrides](0054-hub-ci-threshold-overrides.md)
 - [ADR-0055: CLI Workflow Dispatch Watch + Wizard Wrapper](0055-cli-dispatch-watch.md)
 - [ADR-0056: Docs Audit Inventory and Guide Command Validation](0056-docs-audit-inventory-and-guide-command-validation.md)
+- [ADR-0057: Test Metrics Automation via hub-ci](0057-test-metrics-automation-via-hub-ci.md)
 
 Template starter:
 ```markdown

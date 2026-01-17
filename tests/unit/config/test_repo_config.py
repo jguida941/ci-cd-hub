@@ -1,5 +1,8 @@
 """Tests for cihub.services.repo_config module."""
 
+# TEST-METRICS:
+#   Coverage: 89.5%
+
 from __future__ import annotations
 
 from pathlib import Path

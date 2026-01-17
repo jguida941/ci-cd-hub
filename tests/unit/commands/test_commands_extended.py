@@ -1,5 +1,7 @@
 """Extended tests for cihub.commands module - JSON mode, error paths, edge cases."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

@@ -4,6 +4,8 @@ Split from test_ci_runner.py for better organization.
 Tests: ToolResult, _parse_junit, _parse_coverage, _parse_json, _find_files
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

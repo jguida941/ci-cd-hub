@@ -422,7 +422,7 @@ The following issues from initial review have been confirmed resolved:
 
 ---
 
-**Last Updated:** 2025-12-14
+**Last Updated:** 2025-12-14  
 
 ---
 

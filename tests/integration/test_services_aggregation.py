@@ -1,5 +1,7 @@
 """Tests for cihub.services.aggregation module."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

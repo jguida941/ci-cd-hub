@@ -1,3 +1,5 @@
+"""Unit tests for the cihub CLI entry point."""
+
 import json
 import subprocess
 import sys
@@ -111,6 +113,8 @@ def test_render_dispatch_workflow_rejects_unknown():
 
 class TestValidateRepoPath:
     """Tests for validate_repo_path security function."""
+
+# TEST-METRICS:
 
     def test_valid_directory_returns_resolved_path(self, tmp_path: Path) -> None:
         """Valid directory path returns the resolved path."""

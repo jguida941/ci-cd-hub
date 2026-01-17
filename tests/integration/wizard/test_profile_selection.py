@@ -1,5 +1,7 @@
 """Tests for wizard profile selection flow."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from cihub.utils.paths import hub_root

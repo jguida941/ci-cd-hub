@@ -3,6 +3,8 @@
 This module tests Python linting and mutation testing commands.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

@@ -206,4 +206,4 @@ mutmut run --paths-to-mutate=cihub/cli.py
 
 ---
 
-**Last Updated:** 2025-12-26
+**Last Updated:** 2025-12-26  

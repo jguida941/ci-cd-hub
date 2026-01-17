@@ -1,5 +1,7 @@
 """Environment toggle behavior tests."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import subprocess

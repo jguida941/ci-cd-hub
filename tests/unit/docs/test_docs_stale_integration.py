@@ -4,6 +4,8 @@ Split from test_docs_stale.py for better organization.
 Tests: Git operations, command integration, Hypothesis property tests
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

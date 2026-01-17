@@ -838,7 +838,7 @@ This section provides concrete solutions for all identified gaps.
 
 ### Solution 1: Orchestrator Unified Format
 
-**Problem**: Orchestrator uses completely different columns than child workflows.
+**Problem**: Orchestrator uses completely different columns than child workflows.  
 
 **Solution**: Orchestrator emits the SAME `## Tools Enabled` format, but aggregated across all repos.
 
@@ -872,7 +872,7 @@ This section provides concrete solutions for all identified gaps.
 
 ### Solution 2: Emit tools_configured and tools_success in Workflows
 
-**Problem**: Workflows emit `tools_ran` but not `tools_configured` or `tools_success`.
+**Problem**: Workflows emit `tools_ran` but not `tools_configured` or `tools_success`.  
 
 **Solution**: Add these to the report job in both workflows.
 

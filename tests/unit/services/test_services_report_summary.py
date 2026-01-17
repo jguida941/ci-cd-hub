@@ -1,5 +1,7 @@
 """Tests for cihub.services.report_summary module."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

@@ -7,6 +7,9 @@ Tests cover:
 - Consistency with actual environment variable usage
 """
 
+# TEST-METRICS:
+#   Coverage: 100.0%
+
 from __future__ import annotations
 
 import pytest

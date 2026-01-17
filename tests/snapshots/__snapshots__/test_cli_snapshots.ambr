@@ -188,10 +188,10 @@
 # name: TestHelpSnapshots.test_hub_ci_help_snapshot
   list([
     'usage: cihub hub-ci [-h] [--json]',
-    '{actionlint-install,actionlint,release-parse-tag,release-update-tag,kyverno-install,kyverno-validate,kyverno-test,trivy-install,trivy-summary,zizmor-run,zizmor-check,license-check,gitleaks-summary,pytest-summary,summary,enforce,syntax-check,yamllint,repo-check,source-check,docker-compose-check,validate-configs,validate-profiles,validate-triage,verify-matrix-keys,quarantine-check,enforce-command-result,security-pip-audit,security-bandit,security-ruff,security-owasp,bandit,pip-audit,codeql-build,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,ruff,ruff-format,black,mypy,mutmut,coverage-verify,badges,badges-commit,outputs,thresholds}',
+    '{actionlint-install,actionlint,release-parse-tag,release-update-tag,kyverno-install,kyverno-validate,kyverno-test,trivy-install,trivy-summary,zizmor-run,zizmor-check,license-check,gitleaks-summary,pytest-summary,summary,enforce,syntax-check,yamllint,repo-check,source-check,docker-compose-check,validate-configs,validate-profiles,validate-triage,verify-matrix-keys,quarantine-check,enforce-command-result,security-pip-audit,security-bandit,security-ruff,security-owasp,bandit,pip-audit,codeql-build,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,ruff,ruff-format,black,mypy,mutmut,coverage-verify,test-metrics,badges,badges-commit,outputs,thresholds}',
     '...',
     'positional arguments:',
-    '{actionlint-install,actionlint,release-parse-tag,release-update-tag,kyverno-install,kyverno-validate,kyverno-test,trivy-install,trivy-summary,zizmor-run,zizmor-check,license-check,gitleaks-summary,pytest-summary,summary,enforce,syntax-check,yamllint,repo-check,source-check,docker-compose-check,validate-configs,validate-profiles,validate-triage,verify-matrix-keys,quarantine-check,enforce-command-result,security-pip-audit,security-bandit,security-ruff,security-owasp,bandit,pip-audit,codeql-build,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,ruff,ruff-format,black,mypy,mutmut,coverage-verify,badges,badges-commit,outputs,thresholds}',
+    '{actionlint-install,actionlint,release-parse-tag,release-update-tag,kyverno-install,kyverno-validate,kyverno-test,trivy-install,trivy-summary,zizmor-run,zizmor-check,license-check,gitleaks-summary,pytest-summary,summary,enforce,syntax-check,yamllint,repo-check,source-check,docker-compose-check,validate-configs,validate-profiles,validate-triage,verify-matrix-keys,quarantine-check,enforce-command-result,security-pip-audit,security-bandit,security-ruff,security-owasp,bandit,pip-audit,codeql-build,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,ruff,ruff-format,black,mypy,mutmut,coverage-verify,test-metrics,badges,badges-commit,outputs,thresholds}',
     'actionlint-install  Download the actionlint binary',
     'actionlint          Run actionlint (optionally with reviewdog)',
     'release-parse-tag   Parse tag ref into version outputs',
@@ -252,6 +252,7 @@
     'mutmut              Run mutmut and emit summary outputs',
     'coverage-verify     Verify coverage database exists and is readable for',
     'mutation testing',
+    'test-metrics        Generate/check test metrics and README',
     'badges              Generate or validate CI badges',
     'badges-commit       Commit and push badge updates',
     'outputs             Emit hub CI toggle outputs',

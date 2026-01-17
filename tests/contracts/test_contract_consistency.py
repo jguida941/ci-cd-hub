@@ -6,6 +6,8 @@ These tests ensure that when gates.py says a gate passes/fails, the summary
 rendering in reporting.py shows the corresponding status.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from cihub.core.reporting import build_quality_gates

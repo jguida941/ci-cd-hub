@@ -4,12 +4,12 @@
 Usage: python scripts/check_test_drift.py [--tests-dir PATH] [--strict]
 
 Checks:
-- All test files have TEST-METRICS block
 - All test files follow naming conventions
-- No files below target thresholds
+- TEST-METRICS blocks are present
+- Module docstrings and import consistency
 - Template structure compliance
 
-Runs: In CI, fails build on drift
+Runs: In CI; use --strict to fail builds on drift
 
 Exit codes:
     0: All checks pass

@@ -8,6 +8,8 @@ These tests target high-complexity functions identified in the SDLC analysis:
 - insert_dependencies_into_pom()
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import sys

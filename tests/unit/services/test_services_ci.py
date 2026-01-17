@@ -1,3 +1,5 @@
+"""Unit tests for the CI service layer."""
+
 from __future__ import annotations
 
 from argparse import Namespace
@@ -26,6 +28,8 @@ def test_run_ci_writes_report_and_summary(tmp_path: Path) -> None:
     Note: Self-validation is mocked here to focus on file I/O.
     Validation behavior is tested in test_ci_self_validate.py.
     """
+
+# TEST-METRICS:
     output_dir = tmp_path / ".cihub"
     config = {
         "language": "python",

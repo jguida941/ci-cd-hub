@@ -4,6 +4,8 @@ Split from test_ci_engine.py for better organization.
 Tests: get_repo_name, _resolve_workdir, detect_java_project_type
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import os

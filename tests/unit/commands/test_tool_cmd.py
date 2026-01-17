@@ -1,3 +1,5 @@
+"""Unit tests for tool command handlers."""
+
 from __future__ import annotations
 
 import argparse
@@ -76,6 +78,9 @@ def test_tool_status_uses_config_repo_language(tmp_path: Path, monkeypatch) -> N
 
 def test_tool_status_includes_custom_tools(tmp_path: Path, monkeypatch) -> None:
     """Tool status includes custom x-* tools from config."""
+
+# TEST-METRICS:
+#   Coverage: 100.0%
     repo_config = {
         "tier": "standard",
         "config": {

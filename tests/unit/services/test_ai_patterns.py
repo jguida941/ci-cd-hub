@@ -1,5 +1,7 @@
 """Tests for AI loop suggestion patterns."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from cihub.services.ai.patterns import collect_suggestions

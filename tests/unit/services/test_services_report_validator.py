@@ -1,5 +1,7 @@
 """Tests for cihub.services.report_validator module."""
 
+# TEST-METRICS:
+
 from pathlib import Path
 
 from cihub.services import ValidationResult, ValidationRules, validate_report, validate_report_file

@@ -70,7 +70,7 @@ except ConfigValidationError:
  raise
 ```
 
-**Problem:** Library code that calls `sys.exit()` makes it impossible to test error paths and breaks composability.
+**Problem:** Library code that calls `sys.exit()` makes it impossible to test error paths and breaks composability.  
 
 **Recommended Fix:** Always raise exceptions from library code. Let CLI entry points handle `sys.exit()`.
 

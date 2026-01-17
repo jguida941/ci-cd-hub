@@ -7,6 +7,8 @@ This module tests the consolidated project detection utilities:
 Includes both parameterized tests and Hypothesis property-based tests.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import os

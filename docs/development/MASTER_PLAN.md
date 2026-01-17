@@ -3,8 +3,8 @@
 **Status:** active  
 **Owner:** Development Team  
 **Source-of-truth:** manual   
-**Last-reviewed:** 2026-01-15  
-**Last Updated:** 2026-01-15 (archived CLEAN_CODE/remediation, priority shift)
+**Last-reviewed:** 2026-01-17  
+**Last Updated:** 2026-01-17 (test metrics CI wiring, doc automation complete)  
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
 
@@ -15,21 +15,21 @@
 See [AI_CI_LOOP_PROPOSAL.md](docs/development/AI_CI_LOOP_PROPOSAL.md). This is a draft initiative and
 will be promoted into an active design doc when scope and sequencing are finalized.
 
-**Status update:** Phase 1-3 complete (CLI registered; workflow wrapper added).
-**Current focus:** Wizard/CLI flows validated; proceed with Test Reorg Phase 0 file mapping before resuming AI loop work.
+**Status update:** Wizard/CLI validation complete; Test Reorg CI wiring done.
+**Current focus:** Finish Test Reorg Phase 5 docs, then resume AI loop work.
 
 ---
 
 ## CURRENT PRIORITY AT A GLANCE
 
-> Current priority is **#3** (first non-archived doc). Phase 0-3 complete; next: CI workflow wiring + Phase 4 property tests + Phase 5 docs.
+> Current priority is **#3** (first non-archived doc). Phase 0-4 complete; next: Phase 5 docs + metrics seeding.
 
 | Priority | Document | Status | Next Action |
 |----------|----------|--------|-------------|
 | **#1 ** | CLEAN_CODE.md | ARCHIVED | Complete (archived) |
 | **#2 ** | [SYSTEM_INTEGRATION_PLAN.md](docs/development/archive/SYSTEM_INTEGRATION_PLAN.md) | ARCHIVED | Complete (archived) |
-| **#3 ** | TEST_REORGANIZATION.md | CURRENT | Phase 0-3 ✓; next: CI workflow wiring + Phase 4/5 |
-| **#4 ** | DOC_AUTOMATION_AUDIT.md | ~98% | Optional: guide cmd validation |
+| **#3 ** | TEST_REORGANIZATION.md | CURRENT | Phase 0-4 ✓; Phase 1 CI wiring done; next: Phase 5 docs |
+| **#4 ** | DOC_AUTOMATION_AUDIT.md | COMPLETE | Optional: duplicate task detection cleanup |
 | **#5 ** | TYPESCRIPT_CLI_DESIGN.md | Planning | Wait for TEST_REORGANIZATION.md complete |
 | **#6 ** | PYQT_PLAN.md | DEFERRED | Wait for all above |
 
@@ -165,7 +165,7 @@ Core implementation needed:
 
 ### Priority 3: TEST_REORGANIZATION.md (CURRENT)
 
-**Status:** Phase 0-4 COMPLETE (mapping + splits done; property tests added) | **Depends on:** CommandResult migration + Registry fix (both complete)  
+**Status:** Phase 0-4 COMPLETE; Phase 1 CI wiring done; Phase 5 docs pending | **Depends on:** CommandResult migration + Registry fix (both complete)  
 
 ```
 docs/development/active/TEST_REORGANIZATION.md
@@ -179,7 +179,7 @@ Blockers resolved:
 
 ### Priority 4: DOC_AUTOMATION_AUDIT.md (Can parallel with TEST_REORGANIZATION)
 
-**Status:** ~99% implemented (Part 12.J/L/N/Q + Part 13.R/S/T/U/V/W/X done; inventory + guide validation done) | **Depends on:** Stable CLI surface  
+**Status:** COMPLETE (Part 12.J/L/N/Q + Part 13.R/S/T/U/V/W/X done; inventory + guide validation done; duplicate task detection remains disabled) | **Depends on:** Stable CLI surface  
 
 ```
 docs/development/active/DOC_AUTOMATION_AUDIT.md
@@ -268,7 +268,7 @@ docs/development/active/PYQT_PLAN.md
 - Added tests covering registry, strategies, build tool detection, language detection
  - Refactored `run_ci()` to use strategy as primary dispatch
  - Updated `helpers.py` to use `strategy.get_default_tools()`
-- All 2862 tests pass
+- All 3337 tests pass
 - [x] Hub-CI CommandResult migration (43 functions → return CommandResult) - **Complete** [x]
  - [x] validation.py: 8 functions migrated [x]
  - [x] security.py: 6 functions migrated [x]
@@ -282,7 +282,7 @@ docs/development/active/PYQT_PLAN.md
  - [x] Phase T1: conftest.py, pytest-xdist, hypothesis
  - [x] Phase T2: Parameterized tests (5 files refactored)
  - [x] Phase T3: Property-based testing (12 Hypothesis tests)
-- **Total: 2862 tests passing** *(verified 2026-01-15; per docs audit)*
+- **Total: 3337 tests passing** *(verified 2026-01-17; per docs audit)*
 - [x] Output normalization - OutputRenderer infrastructure [x] (see **Architecture Consolidation** below)
  - [x] Contract enforcement test added (`test_command_output_contract.py`) - prevents regression
  - [x] **Migrated 13 major files** (~198 prints → CommandResult):

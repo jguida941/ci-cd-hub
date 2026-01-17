@@ -4,6 +4,8 @@ Verifies that `cihub init` generates valid .ci-hub.yml for each
 supported repo shape.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import pytest

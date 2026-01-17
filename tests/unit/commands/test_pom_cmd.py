@@ -1,5 +1,7 @@
 """Tests for cihub.commands.pom module (fix-pom and fix-deps commands)."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

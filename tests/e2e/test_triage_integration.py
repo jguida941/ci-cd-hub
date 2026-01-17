@@ -4,6 +4,8 @@ These tests verify end-to-end behavior of the triage command
 with realistic scenarios and mocked external dependencies.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

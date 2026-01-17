@@ -1,5 +1,8 @@
 """Tests for cihub.badges - Badge generation functionality."""
 
+# TEST-METRICS:
+#   Coverage: 100.0%
+
 from __future__ import annotations
 
 import json

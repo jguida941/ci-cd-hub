@@ -155,7 +155,7 @@ Directories required because tests:
 
 ### macOS Fix (mutmut 3.x multiprocessing)
 
-**Problem:** mutmut 3.x fails on macOS with:
+**Problem:** mutmut 3.x fails on macOS with:  
 ```
 RuntimeError: context has already been set
 ```

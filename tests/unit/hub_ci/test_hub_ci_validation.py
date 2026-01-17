@@ -5,6 +5,8 @@ Tests: cmd_validate_profiles, cmd_enforce, cmd_verify_matrix_keys,
        cmd_quarantine_check, cmd_repo_check, cmd_source_check
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

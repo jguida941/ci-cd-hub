@@ -7,6 +7,8 @@ mixed language, and edge cases like empty repos.
 This is critical for a CI/CD tool that must work across diverse codebases.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

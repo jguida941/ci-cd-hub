@@ -1,5 +1,8 @@
 """Tests for cihub.ci_report module."""
 
+# TEST-METRICS:
+#   Coverage: 100.0%
+
 from __future__ import annotations
 
 from typing import Any

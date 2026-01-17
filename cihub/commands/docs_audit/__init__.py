@@ -57,8 +57,10 @@ from .inventory import build_doc_inventory
 from .lifecycle import (
     check_active_status_sync,
     check_archive_superseded_headers,
+    check_master_plan_active_sync,
     get_active_docs,
     get_archive_docs,
+    parse_master_plan_active_docs,
     parse_status_md_entries,
     validate_lifecycle,
 )
@@ -107,9 +109,11 @@ __all__ = [
     # Lifecycle functions
     "get_active_docs",
     "get_archive_docs",
+    "parse_master_plan_active_docs",
     "parse_status_md_entries",
     "check_active_status_sync",
     "check_archive_superseded_headers",
+    "check_master_plan_active_sync",
     "validate_lifecycle",
     # ADR functions
     "get_adr_files",

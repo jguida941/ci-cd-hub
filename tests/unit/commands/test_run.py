@@ -1,5 +1,8 @@
 """Tests for cihub.commands.run module."""
 
+# TEST-METRICS:
+#   Coverage: 100.0%
+
 from __future__ import annotations
 
 import argparse

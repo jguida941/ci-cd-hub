@@ -4,6 +4,8 @@ Goal: When --configs-dir points at a different hub root, registry and profiles
 should be loaded from that target root (not the current checkout).
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

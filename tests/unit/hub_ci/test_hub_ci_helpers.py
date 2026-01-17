@@ -5,6 +5,8 @@ Tests: _write_outputs, _append_summary, _resolve_output_path, _resolve_summary_p
        _extract_count, _compare_badges, _count_pip_audit_vulns
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import os

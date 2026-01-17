@@ -1,5 +1,7 @@
 """Tests for mutmut hub-ci wrapper behavior."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

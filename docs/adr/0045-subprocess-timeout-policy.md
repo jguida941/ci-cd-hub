@@ -17,7 +17,7 @@ The codebase has 33+ subprocess calls across 15+ files without timeout parameter
 | `cihub/core/ci_runner/shared.py` | 2 | Build process hangs |
 | Various | 19+ | Mixed risk |
 
-**Problem:** Without timeouts, a subprocess can hang indefinitely, causing:
+**Problem:** Without timeouts, a subprocess can hang indefinitely, causing:  
 1. CI jobs to stall until GitHub's 6-hour limit kills them
 2. Local commands to appear frozen with no feedback
 3. Resource exhaustion in automated pipelines

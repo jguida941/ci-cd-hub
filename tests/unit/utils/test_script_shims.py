@@ -1,5 +1,7 @@
 """Tests for deprecated script shims."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import sys

@@ -1,5 +1,7 @@
 """Tests for config merge order and precedence."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import yaml

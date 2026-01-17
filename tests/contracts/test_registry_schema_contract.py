@@ -4,6 +4,8 @@ Goal: registry schema should validate the current config/registry.json, and shou
 explicitly validate the threshold override keys used by registry_service.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

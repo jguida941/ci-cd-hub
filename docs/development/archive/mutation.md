@@ -4,7 +4,7 @@
 > **WARNING: SUPERSEDED:** This guide is archived. Current mutation testing documentation is in the main test documentation and `docs/development/active/TEST_REORGANIZATION.md`.
 >
 > **Status:** Archived  
-> **Last Updated:** 2025-12-26
+> **Last Updated:** 2025-12-26  
 
 This guide covers mutation testing setup, test frameworks, and best practices for the cihub project.
 

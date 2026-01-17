@@ -4,6 +4,8 @@ These tests ensure tool definitions don't drift across files.
 The registry should be the single source of truth.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 

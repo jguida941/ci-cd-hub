@@ -7,6 +7,9 @@ Validates that:
 3. Templates don't reference stale repo names
 """
 
+# TEST-METRICS:
+#   Coverage: 100.0%
+
 import argparse
 import re
 import sys

@@ -1,5 +1,7 @@
 """Tests for scaffold --github integration."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

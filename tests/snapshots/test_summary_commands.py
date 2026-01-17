@@ -4,6 +4,8 @@ These tests verify that summary output doesn't drift from expected format.
 Each summary command has fixed inputs and expected output (snapshots).
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

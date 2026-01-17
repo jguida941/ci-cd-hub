@@ -1,5 +1,7 @@
 """Contract tests for CLI parser wiring."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse
@@ -84,6 +86,7 @@ EXPECTED_JSON_PATHS = {
     "hub-ci source-check",
     "hub-ci summary",
     "hub-ci syntax-check",
+    "hub-ci test-metrics",
     "hub-ci thresholds",
     "hub-ci trivy-install",
     "hub-ci trivy-summary",

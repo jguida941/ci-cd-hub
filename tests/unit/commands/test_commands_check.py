@@ -1,3 +1,5 @@
+"""Unit tests for the check command."""
+
 from types import SimpleNamespace
 
 from cihub.commands import check as check_module
@@ -172,6 +174,8 @@ def test_check_pytest_command_includes_coverage_gate(monkeypatch) -> None:
     This test ensures the coverage gate is enforced locally,
     catching the issue where CI failed but local check passed.
     """
+
+# TEST-METRICS:
     captured_cmds: list[list[str]] = []
 
     def capture_run_process(name: str, cmd: list[str], cwd) -> CommandResult:

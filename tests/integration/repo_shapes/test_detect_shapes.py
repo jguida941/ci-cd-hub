@@ -4,6 +4,8 @@ Verifies that `cihub detect` correctly identifies the language
 and tools for each supported repo shape.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from pathlib import Path

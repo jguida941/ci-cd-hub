@@ -6,12 +6,12 @@
 **Last-reviewed:** 2026-01-17  
 
 **Date:** 2026-01-04  
-**Last Updated:** 2026-01-17 (`docs audit` optional items: inventory + guide validation)
-**Priority:** **#4** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))
-**Status:** ~99% implemented (only Part 12.J path-change update rules remain)  
-**Depends On:** Stable CLI surface (CLEAN_CODE.md archived)
-**Can Parallel:** TEST_REORGANIZATION.md (both need stable CLI)
-**Problem:** Manual documentation updates take 4+ hours/day. With 50+ docs and 28,000 lines, keeping them in sync with code changes is unsustainable.
+**Last Updated:** 2026-01-17 (`docs audit` optional items: inventory + guide validation)  
+**Priority:** **#4** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))  
+**Status:** COMPLETE (Part 12.J path-change update rules implemented; duplicate task detection remains disabled)  
+**Depends On:** Stable CLI surface (CLEAN_CODE.md archived)  
+**Can Parallel:** TEST_REORGANIZATION.md (both need stable CLI)  
+**Problem:** Manual documentation updates take 4+ hours/day. With 50+ docs and 28,000 lines, keeping them in sync with code changes is unsustainable.  
 
 ---
 
@@ -37,10 +37,11 @@
 | Doc inventory/counts | [x] **IMPLEMENTED** | `docs audit --inventory` emits counts for JSON output |
 | Guide command validation | [x] **IMPLEMENTED** | Validate `cihub <command>` mentions in guides against CLI |
 
-**Overall:** ~99% implemented. `docs stale` complete; `docs audit` complete (J/L/N/Q + Part 13.R/S/T/U/V/W/X). Only path-change update rules remain.
+**Overall:** COMPLETE. `docs stale` and `docs audit` complete (J/L/N/Q + Part 13.R/S/T/U/V/W/X). Path-change update rules implemented.
 
 **Implemented in `docs audit` (2026-01-09):**
 - [x] active/ ↔ STATUS.md sync (Part 12.J)
+- [x] MASTER_PLAN.md Active Design Docs sync (Part 12.J)
 - [x] Archive superseded header check with explicit reference requirement (Part 12.J)
 - [x] Specs hygiene: REQUIREMENTS.md Status/Last Updated validation (Part 12.J)
 - [x] ADR metadata lint: Status/Date/Superseded-by (Part 12.L)
@@ -55,8 +56,7 @@
 - [x] Cross-doc consistency: README.md ↔ active/ directory sync (Part 13.W)
 - [x] CHANGELOG validation: date ordering and duplicate detection (Part 13.X)
 
-**NOT yet implemented in `docs audit` (optional):**
-- [ ] Path-change update rules (Part 12.J)
+**All Part 12.J lifecycle rules implemented in `docs audit`.**
 
 **Tests:** 39 tests in `tests/test_docs_audit.py` (types, lifecycle, ADR, references, consistency, headers, metrics, checklist-reality, cross-doc, changelog)
 
@@ -75,7 +75,7 @@ cihub/commands/docs_audit/
 └── output.py # Output formatters (human, JSON, GitHub summary)
 ```
 
-**Next Priority:** Optional items only (path-change update rules).
+**Next Priority:** Optional items only (duplicate task detection cleanup).
 
 ---
 
@@ -206,19 +206,19 @@ When code changes:
 │                      DOC FRESHNESS PIPELINE                      │
 ├──────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│  1. EXTRACT        2. INDEX        3. DIFF        4. ALERT      │
-│  ────────────────────────────────────────────────────────────   │
+│  1. EXTRACT        2. INDEX        3. DIFF        4. ALERT       │
+│  ────────────────────────────────────────────────────────────    │
 │                                                                  │
-│  ┌─────────┐      ┌─────────────┐  ┌─────────┐   ┌─────────┐    │
-│  │  Code   │─────▶│ References  │─▶│ Compare │──▶│  Stale  │    │
-│  │ Symbols │      │   Index     │  │ to Git  │   │ Report  │    │
-│  └─────────┘      └─────────────┘  │  Diff   │   └─────────┘    │
-│       │                 ▲          └─────────┘        │         │
-│       │                 │                             ▼         │
-│  ┌─────────┐      ┌─────────────┐             ┌─────────────┐   │
-│  │  Docs   │─────▶│    Doc      │             │  AI Update  │   │
-│  │  (.md)  │      │ References  │             │ (Optional)  │   │
-│  └─────────┘      └─────────────┘             └─────────────┘   │
+│  ┌─────────┐      ┌─────────────┐  ┌─────────┐   ┌─────────┐     │
+│  │  Code   │─────▶│ References  │─▶│ Compare │──▶│  Stale  │     │
+│  │ Symbols │      │   Index     │  │ to Git  │   │ Report  │     │
+│  └─────────┘      └─────────────┘  │  Diff   │   └─────────┘     │
+│       │                 ▲          └─────────┘        │          │
+│       │                 │                             ▼          │
+│  ┌─────────┐      ┌─────────────┐             ┌─────────────┐    │
+│  │  Docs   │─────▶│    Doc      │             │  AI Update  │    │
+│  │  (.md)  │      │ References  │             │ (Optional)  │    │
+│  └─────────┘      └─────────────┘             └─────────────┘    │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
@@ -526,7 +526,7 @@ cihub docs stale --since HEAD~5 --all
 │                      cihub docs stale                       │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
-│  1. EXTRACT SYMBOLS           2. EXTRACT DOC REFS          │
+│  1. EXTRACT SYMBOLS           2. EXTRACT DOC REFS           │
 │  ────────────────────         ────────────────────          │
 │  cihub/**/*.py                docs/**/*.md                  │
 │        │                            │                       │
@@ -1194,7 +1194,7 @@ Optional integration improvement (Phase 2+):
 ### M. Doc Inventory + Counts
 
 - `docs/development/status/STATUS.md` currently lists counts that drift.
-- **Decision (2026-01-17):** Keep counts paused in STATUS.md and use `cihub docs audit --inventory --json` for ad-hoc counts when needed.
+- **Decision (2026-01-17):** Refresh STATUS.md counts via automation output (no manual recalculation). Use `cihub docs audit --inventory --json` when updating.
 - Script: `scripts/docs_inventory_summary.py` pulls from `--inventory` output (prints only; no auto-write).
 
 ### N. Plain-Text Reference Scan
@@ -1236,7 +1236,7 @@ This section captures additional gaps discovered during an 8-agent documentation
 
 ### R. Metrics/Counts Drift Detection
 
-**Problem:** Docs embed numeric claims like "11 commands, 80 tests" that become stale.
+**Problem:** Docs embed numeric claims like "11 commands, 80 tests" that become stale.  
 
 **Examples found:**
 - DEVELOPMENT.md line 337: "11 commands" → Reality: 28 commands
@@ -1290,7 +1290,7 @@ def find_stale_metrics(doc_file: Path) -> list[MetricsDrift]:
 
 ### S. Duplicate Task Detection in Planning Docs
 
-**Problem:** Same task appears multiple times in MASTER_PLAN.md, creating confusion.
+**Problem:** Same task appears multiple times in MASTER_PLAN.md, creating confusion.  
 
 **Examples found:**
 - `cihub docs stale` appears at lines 63, 123, 395, 418 in MASTER_PLAN.md
@@ -1344,7 +1344,7 @@ def find_duplicate_tasks(planning_docs: list[Path]) -> list[DuplicateTask]:
 
 ### T. Timestamp Freshness Validation
 
-**Problem:** "Last Updated: YYYY-MM-DD" headers become stale.
+**Problem:** "Last Updated: YYYY-MM-DD" headers become stale.  
 
 **Examples found:**
 - MASTER_PLAN.md: "Last Updated: 2026-01-05" but file modified after
@@ -1404,7 +1404,7 @@ def check_timestamp_freshness(
 
 ### U. Checklist vs Reality Consistency
 
-**Problem:** Checklist items marked `[ ]` when work is already done.
+**Problem:** Checklist items marked `[ ]` when work is already done.  
 
 **Examples found:**
 - CLEAN_CODE.md Part 2.1: "Extract Language Strategies" marked `[ ]` but `cihub/core/languages/` exists
@@ -1457,7 +1457,7 @@ CLEAN_CODE.md:35 - Task "Extract Language Strategies" marked [ ] but:
 
 ### V. Hardcoded Placeholder Detection
 
-**Problem:** Docs contain hardcoded usernames, paths, or placeholder values.
+**Problem:** Docs contain hardcoded usernames, paths, or placeholder values.  
 
 **Examples found:**
 - GETTING_STARTED.md: `jguida941/ci-cd-hub` (personal fork URL)
@@ -1511,7 +1511,7 @@ def find_placeholders(
 
 ### W. Cross-Document Consistency Validation
 
-**Problem:** Same facts appear differently across multiple docs.
+**Problem:** Same facts appear differently across multiple docs.  
 
 **Examples found:**
 - Test count: STATUS.md says "2120", MASTER_PLAN says "2104", DEVELOPMENT.md says "80+"
@@ -1596,7 +1596,7 @@ Suggestion: Update MASTER_PLAN.md line 4 and DEVELOPMENT.md lines 169, 337, 338
 
 ### X. CHANGELOG Format Validation
 
-**Problem:** CHANGELOG has formatting issues.
+**Problem:** CHANGELOG has formatting issues.  
 
 **Examples found:**
 - Two 2026-01-05 entries out of chronological order

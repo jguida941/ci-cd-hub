@@ -4,6 +4,9 @@ NOTE: These tests now import from cihub.commands.report instead of
 scripts/aggregate_reports.py (which is now a deprecation shim).
 """
 
+# TEST-METRICS:
+#   Coverage: 100.0%
+
 import json
 from pathlib import Path
 

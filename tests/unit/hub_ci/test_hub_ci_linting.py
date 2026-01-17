@@ -4,6 +4,8 @@ Split from test_hub_ci.py for better organization.
 Tests: cmd_ruff, cmd_ruff_format, cmd_mypy, cmd_black, cmd_yamllint
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

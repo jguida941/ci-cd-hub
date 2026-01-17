@@ -4,6 +4,8 @@ Split from test_hub_ci_release.py for better organization.
 Tests: cmd_actionlint_install, cmd_kyverno_install, cmd_trivy_install
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

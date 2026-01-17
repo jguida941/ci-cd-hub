@@ -4,6 +4,8 @@ These tests validate the fail_on_* helper functions and ensure
 schema-code alignment for fail_on_* defaults.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

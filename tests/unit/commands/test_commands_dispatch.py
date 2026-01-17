@@ -1,5 +1,7 @@
 """Tests for dispatch command helpers."""
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import argparse

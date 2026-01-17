@@ -4,6 +4,8 @@ Uses pytest-benchmark to track execution time and catch performance regressions.
 Run with: pytest tests/test_performance.py --benchmark-enable
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from pathlib import Path

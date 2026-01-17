@@ -18,11 +18,19 @@ All notable changes to this project will be documented in this file.
 - Added `scripts/docs_inventory_summary.py` to print inventory counts from `--inventory` output.
 - Normalized doc header metadata line breaks (two-space markdown line breaks).
 
+### New: Test metrics automation (hub-ci)
+
+- Added `cihub hub-ci test-metrics` to wrap test metrics scripts and README checks.
+- Wired `hub-production-ci.yml` to run `cihub hub-ci test-metrics` after mutation tests.
+- README drift checks ignore the `Last updated` line to avoid false positives in strict mode.
+- Enabled `cihub hub-ci test-metrics --strict` in `hub-production-ci.yml`.
+
 ### Tests
 
 - Added dispatch watch coverage and updated CLI parser/command tests.
 - Added docs audit coverage for inventory, guide validation, and reference filtering.
 - Refreshed CLI help snapshots.
+- Added unit coverage for `cihub hub-ci test-metrics`.
 
 ## 2026-01-16 - AI CI Loop CLI + Workflow (Internal)
 
@@ -180,7 +188,7 @@ Added normalization layer for consistent access to `fail_on_*` config values:
 
 ### Fix: Custom Tool Schema Validation (CRITICAL)
 
-**Problem:** Report schema rejected custom `x-*` tools because `toolStatusMap` had `additionalProperties: false`.
+**Problem:** Report schema rejected custom `x-*` tools because `toolStatusMap` had `additionalProperties: false`.  
 
 **Solution:** Added `patternProperties` to allow custom tool keys:
 
@@ -474,7 +482,7 @@ Expanded bootstrap coverage in `tests/test_registry_cross_root.py`:
 
 ### New: JSON Mode Purity for CLI Commands
 
-**Problem:** When commands are invoked with `--json`, auxiliary output (github-format annotations, stdout summaries) pollutes the JSON stream, breaking programmatic consumers.
+**Problem:** When commands are invoked with `--json`, auxiliary output (github-format annotations, stdout summaries) pollutes the JSON stream, breaking programmatic consumers.  
 
 **Solution:** Added `json_mode` field to `GitHubContext` that suppresses non-JSON stdout:
 - `write_outputs()` skips stdout fallback in JSON mode (use GITHUB_OUTPUT instead)
@@ -520,7 +528,7 @@ Expanded bootstrap coverage in `tests/test_registry_cross_root.py`:
 
 ### Update: Schema-Aligned Threshold Keys
 
-**Problem:** Registry used legacy threshold keys (`coverage`, `mutation`, `vulns_max`) while the schema uses (`coverage_min`, `mutation_score_min`, `max_critical_vulns`, `max_high_vulns`).
+**Problem:** Registry used legacy threshold keys (`coverage`, `mutation`, `vulns_max`) while the schema uses (`coverage_min`, `mutation_score_min`, `max_critical_vulns`, `max_high_vulns`).  
 
 **Solution:** Registry service now normalizes threshold keys on load/save:
 
@@ -554,7 +562,7 @@ Expanded bootstrap coverage in `tests/test_registry_cross_root.py`:
 
 ### Update: Repo Metadata Normalization
 
-**Problem:** Repo metadata (`language`, `dispatch_enabled`) was duplicated at top-level and in `config.repo`.
+**Problem:** Repo metadata (`language`, `dispatch_enabled`) was duplicated at top-level and in `config.repo`.  
 
 **Solution:** `_normalize_repo_metadata_inplace()` deduplicates when values match; `_compute_repo_metadata_drift()` detects conflicts.
 
@@ -600,7 +608,7 @@ New test files:
 
 ### New: Sparse Config Fragment Audit in `cihub registry diff`
 
-**Problem:** Registry config fragments are intended to be sparse, but redundant values can accumulate and hide drift.
+**Problem:** Registry config fragments are intended to be sparse, but redundant values can accumulate and hide drift.  
 
 **Solution:** `cihub registry diff` now reports non-sparse config fragment values as `sparse.config.*` warnings for both tier and repo config fragments.
 
@@ -613,7 +621,7 @@ New test files:
 
 ### Refactor: Triage Command Package (ADR-0050 Phases 1-3)
 
-**Problem:** `triage.py` had grown to 1502 lines handling 8 different responsibilities.
+**Problem:** `triage.py` had grown to 1502 lines handling 8 different responsibilities.  
 
 **Solution:** Modularized into `cihub/commands/triage/` package:
 
@@ -678,7 +686,7 @@ bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
 
 ### Removed: CLI Re-exports (CLEAN_CODE.md Part 5.1)
 
-**Problem:** `cihub/cli.py` re-exported 50+ functions for backward compat, creating messy dependencies.
+**Problem:** `cihub/cli.py` re-exported 50+ functions for backward compat, creating messy dependencies.  
 
 **Solution:** Fixed imports directly instead of phased deprecation:
 - Updated ~20 test files to import from canonical locations

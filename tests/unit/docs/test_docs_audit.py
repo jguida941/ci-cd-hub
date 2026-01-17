@@ -3,6 +3,9 @@
 Basic coverage for lifecycle, ADR, and reference validation.
 """
 
+# TEST-METRICS:
+#   Coverage: 90.9%
+
 from __future__ import annotations
 
 import argparse
@@ -13,7 +16,10 @@ from cihub.commands.docs_audit import (
     AuditReport,
     FindingCategory,
     FindingSeverity,
+    check_master_plan_active_sync,
     cmd_docs_audit,
+    get_active_docs,
+    parse_master_plan_active_docs,
     parse_status_md_entries,
     validate_adr_metadata,
 )
@@ -152,6 +158,52 @@ class TestLifecycleValidation:
         findings = check_active_status_sync(active_docs, status_entries)
         assert len(findings) == 1
         assert "DELETED.md" in findings[0].message
+
+    def test_check_master_plan_active_sync_missing_entry(self, tmp_path: Path) -> None:
+        """Test when MASTER_PLAN.md omits an active doc."""
+        active_dir = tmp_path / "docs" / "development" / "active"
+        active_dir.mkdir(parents=True)
+        (active_dir / "FOO.md").write_text("foo")
+        (active_dir / "BAR.md").write_text("bar")
+
+        master_path = tmp_path / "docs" / "development" / "MASTER_PLAN.md"
+        master_path.parent.mkdir(parents=True, exist_ok=True)
+        master_path.write_text(
+            "## Active Design Docs - Priority Order\n\n"
+            "```\n"
+            "docs/development/active/FOO.md\n"
+            "```\n"
+        )
+
+        active_docs = get_active_docs(tmp_path)
+        master_entries = parse_master_plan_active_docs(tmp_path)
+        findings = check_master_plan_active_sync(active_docs, master_entries)
+
+        assert any(
+            f.code == "CIHUB-AUDIT-MISSING-IN-MASTER-PLAN" and "BAR.md" in f.message for f in findings
+        )
+
+    def test_check_master_plan_active_sync_stale_entry(self, tmp_path: Path) -> None:
+        """Test when MASTER_PLAN.md lists a non-existent active doc."""
+        active_dir = tmp_path / "docs" / "development" / "active"
+        active_dir.mkdir(parents=True)
+        (active_dir / "FOO.md").write_text("foo")
+
+        master_path = tmp_path / "docs" / "development" / "MASTER_PLAN.md"
+        master_path.parent.mkdir(parents=True, exist_ok=True)
+        master_path.write_text(
+            "## Active Design Docs - Priority Order\n\n"
+            "```\n"
+            "docs/development/active/FOO.md\n"
+            "docs/development/active/NEW.md\n"
+            "```\n"
+        )
+
+        active_docs = get_active_docs(tmp_path)
+        master_entries = parse_master_plan_active_docs(tmp_path)
+        findings = check_master_plan_active_sync(active_docs, master_entries)
+
+        assert any(f.code == "CIHUB-AUDIT-STALE-IN-MASTER-PLAN" and "NEW.md" in f.message for f in findings)
 
     def test_check_archive_superseded_patterns(self, tmp_path: Path) -> None:
         """Test various superseded-by reference formats are recognized."""

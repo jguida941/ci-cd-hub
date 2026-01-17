@@ -5,6 +5,8 @@ threshold keys (coverage_min, mutation_score_min, max_*_vulns) and must not
 write schema-incompatible keys (coverage, mutation_score, vulns_max).
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

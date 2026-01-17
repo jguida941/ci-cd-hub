@@ -1,5 +1,8 @@
 """Tests for profile_cmd - profile management commands."""
 
+# TEST-METRICS:
+#   Coverage: 100.0%
+
 from __future__ import annotations
 
 from pathlib import Path

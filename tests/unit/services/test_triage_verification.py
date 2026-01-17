@@ -3,6 +3,8 @@
 Tests for tool verification logic that detects drift, failures, and missing proof.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import json

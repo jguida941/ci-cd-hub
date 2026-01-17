@@ -5,6 +5,8 @@ sync into hub repo configs such that the merged effective config (via load_confi
 reflects the registry intent.
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -4,6 +4,8 @@ Split from test_docs_stale.py for better organization.
 Tests: extract_python_symbols, extract_doc_references
 """
 
+# TEST-METRICS:
+
 from __future__ import annotations
 
 import textwrap

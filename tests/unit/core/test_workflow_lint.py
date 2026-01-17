@@ -6,6 +6,8 @@ Requires actionlint to be installed: https://github.com/rhysd/actionlint
 Note: Uses subprocess to run actionlint - this is safe as we only run on
 test-generated files or files in our own repo.
 """
+
+# TEST-METRICS:
 # ruff: noqa: S603, S607  # subprocess calls are safe for test code
 
 from __future__ import annotations

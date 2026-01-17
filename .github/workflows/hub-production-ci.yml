@@ -543,7 +543,7 @@ jobs:
         run: pip install -e ".[dev,wizard]"
 
       - name: Install mutation test dependencies
-        run: pip install pytest==8.3.4 pyyaml==6.0.2 jsonschema==4.23.0 hypothesis==6.149.0 mutmut==3.4.0
+        run: pip install pytest==8.3.4 pytest-cov==6.0.0 pyyaml==6.0.2 jsonschema==4.23.0 hypothesis==6.149.0 mutmut==3.4.0
 
       - name: Download coverage database
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -558,6 +558,10 @@ jobs:
         env:
           MUTATION_SCORE_MIN: ${{ needs.hub-ci-config.outputs.mutation_score_min }}
         run: python -m cihub hub-ci mutmut --min-score "$MUTATION_SCORE_MIN" --output-dir . --github-output --github-summary
+
+      - name: Test metrics (README + drift)
+        if: always()
+        run: python -m cihub hub-ci test-metrics --strict
 
       - name: Upload mutation results
         if: always()
