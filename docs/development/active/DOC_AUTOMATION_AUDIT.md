@@ -523,37 +523,37 @@ cihub docs stale --since HEAD~5 --all
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ cihub docs stale │
+│                      cihub docs stale                       │
 ├─────────────────────────────────────────────────────────────┤
-│ │
-│ 1. EXTRACT SYMBOLS 2. EXTRACT DOC REFS │
-│ ──────────────────── ──────────────────── │
-│ cihub/**/*.py docs/**/*.md │
-│ │ │ │
-│ ▼ ▼ │
-│ ast.parse() regex backticks │
-│ - functions - `symbol_name` │
-│ - classes - skip code blocks │
-│ - constants - skip archive/ │
-│ │ │ │
-│ ▼ ▼ │
-│ {name: CodeSymbol} [DocReference] │
-│ │
-│ 3. GIT DIFF 4. CORRELATE │
-│ ──────────────────── ──────────────────── │
-│ git diff --since match refs to changes │
-│ git diff --name-status detect moved/deleted files │
-│ │ │ │
-│ ▼ ▼ │
-│ changed_symbols stale_references │
-│ moved_deleted_files │
-│ │
-│ 5. OUTPUT │
-│ ──────────────────── │
-│ --json → CommandResult.data │
-│ --ai → Markdown prompt for LLM │
-│ default → Human-readable summary │
-│ │
+│                                                             │
+│  1. EXTRACT SYMBOLS           2. EXTRACT DOC REFS          │
+│  ────────────────────         ────────────────────          │
+│  cihub/**/*.py                docs/**/*.md                  │
+│        │                            │                       │
+│        ▼                            ▼                       │
+│  ast.parse()                  regex backticks               │
+│  - functions                  - `symbol_name`               │
+│  - classes                    - skip code blocks            │
+│  - constants                  - skip archive/               │
+│        │                            │                       │
+│        ▼                            ▼                       │
+│  {name: CodeSymbol}           [DocReference]                │
+│                                                             │
+│  3. GIT DIFF                  4. CORRELATE                  │
+│  ────────────────────         ────────────────────          │
+│  git diff --since             match refs to changes         │
+│  git diff --name-status       detect moved/deleted files    │
+│        │                            │                       │
+│        ▼                            ▼                       │
+│  changed_symbols              stale_references              │
+│  moved_deleted_files                                        │
+│                                                             │
+│  5. OUTPUT                                                  │
+│  ────────────────────                                       │
+│  --json   → CommandResult.data                              │
+│  --ai     → Markdown prompt for LLM                         │
+│  default  → Human-readable summary                          │
+│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
