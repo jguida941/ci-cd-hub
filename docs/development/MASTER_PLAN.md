@@ -22,13 +22,13 @@ will be promoted into an active design doc when scope and sequencing are finaliz
 
 ## CURRENT PRIORITY AT A GLANCE
 
-> Current priority is **#3** (first non-archived doc). Immediate focus is Phase 0 file mapping before test splits and AI loop tooling.
+> Current priority is **#3** (first non-archived doc). Phase 0 file mapping complete (145 files). Next: split 5 monolithic test files before Phase 1 directory restructure.
 
 | Priority | Document | Status | Next Action |
 |----------|----------|--------|-------------|
 | **#1 ** | CLEAN_CODE.md | ARCHIVED | Complete (archived) |
 | **#2 ** | [SYSTEM_INTEGRATION_PLAN.md](docs/development/archive/SYSTEM_INTEGRATION_PLAN.md) | ARCHIVED | Complete (archived) |
-| **#3 ** | TEST_REORGANIZATION.md | CURRENT | Phase 0 file mapping (all 78 files → new homes) |
+| **#3 ** | TEST_REORGANIZATION.md | CURRENT | Phase 0 ✓; next: monolithic splits (5 files → 23) |
 | **#4 ** | DOC_AUTOMATION_AUDIT.md | ~98% | Optional: guide cmd validation |
 | **#5 ** | TYPESCRIPT_CLI_DESIGN.md | Planning | Wait for TEST_REORGANIZATION.md complete |
 | **#6 ** | PYQT_PLAN.md | DEFERRED | Wait for all above |
@@ -163,9 +163,9 @@ Core implementation needed:
 
 **Status:** 100% complete (2026-01-12). All phases implemented with 102 new tests.
 
-### Priority 3: TEST_REORGANIZATION.md (CURRENT - Blocked)
+### Priority 3: TEST_REORGANIZATION.md (CURRENT)
 
-**Status:** PLANNED (wizard/CLI validation complete; repo run blockers resolved; Phase 0 file mapping next) | **Depends on:** CommandResult migration + Registry fix
+**Status:** Phase 0 COMPLETE (145 files mapped; 5 monolithic splits planned → 23 new files) | **Depends on:** CommandResult migration + Registry fix (both complete)
 
 ```
 docs/development/active/TEST_REORGANIZATION.md
