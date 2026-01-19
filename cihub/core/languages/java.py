@@ -422,6 +422,23 @@ class JavaStrategy(LanguageStrategy):
             return 0.6
         return 0.0
 
+    def detect_reasons(self, repo_path: Path) -> list[str]:
+        reasons: list[str] = []
+        if (repo_path / "pom.xml").exists():
+            reasons.append("pom.xml")
+        if (repo_path / "build.gradle").exists():
+            reasons.append("build.gradle")
+        if (repo_path / "build.gradle.kts").exists():
+            reasons.append("build.gradle.kts")
+        if (repo_path / "settings.gradle").exists():
+            reasons.append("settings.gradle")
+        if (repo_path / "settings.gradle.kts").exists():
+            reasons.append("settings.gradle.kts")
+        src_dir = repo_path / "src"
+        if src_dir.exists() and any(src_dir.rglob("*.java")):
+            reasons.append("src/**/*.java")
+        return reasons
+
     def get_run_kwargs(
         self,
         config: dict[str, Any],

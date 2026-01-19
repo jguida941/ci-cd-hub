@@ -179,6 +179,13 @@ class LanguageStrategy(ABC):
         """
         return 0.0
 
+    def detect_reasons(self, repo_path: Path) -> list[str]:
+        """Return detection markers found for this language.
+
+        Used by CLI detection explain output. Defaults to empty list.
+        """
+        return []
+
     def get_allowed_kwargs(self) -> frozenset[str]:
         """Return the set of kwargs that run_tools() accepts.
 

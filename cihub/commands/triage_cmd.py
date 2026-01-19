@@ -69,6 +69,19 @@ from cihub.services.triage_service import (
 from cihub.types import CommandResult
 
 
+def _maybe_enhance(
+    args: argparse.Namespace,
+    result: CommandResult,
+    *,
+    mode: str = "analyze",
+) -> CommandResult:
+    if getattr(args, "ai", False):
+        from cihub.ai import enhance_result
+
+        return enhance_result(result, mode=mode)
+    return result
+
+
 def cmd_triage(args: argparse.Namespace) -> CommandResult:
     """Main entry point for the triage command."""
     output_dir = Path(args.output_dir or ".cihub")
@@ -80,17 +93,20 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
     if repo is not None:
         repo_pattern = re.compile(r"^[a-zA-Z0-9][-a-zA-Z0-9]*/[a-zA-Z0-9][-a-zA-Z0-9_.]*$")
         if not repo_pattern.match(repo):
-            return CommandResult(
-                exit_code=EXIT_FAILURE,
-                summary=f"Invalid repo format: {repo}",
-                problems=[
-                    {
-                        "severity": "error",
-                        "message": f"Repo must be in 'owner/repo' format (got: {repo})",
-                        "code": "CIHUB-TRIAGE-INVALID-REPO",
-                    }
-                ],
-                data={"repo": repo},
+            return _maybe_enhance(
+                args,
+                CommandResult(
+                    exit_code=EXIT_FAILURE,
+                    summary=f"Invalid repo format: {repo}",
+                    problems=[
+                        {
+                            "severity": "error",
+                            "message": f"Repo must be in 'owner/repo' format (got: {repo})",
+                            "code": "CIHUB-TRIAGE-INVALID-REPO",
+                        }
+                    ],
+                    data={"repo": repo},
+                ),
             )
 
     multi_mode = getattr(args, "multi", False)
@@ -109,13 +125,18 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
 
     # Handle --watch mode (background daemon)
     if watch_mode:
-        return _watch_for_failures(
-            args=args,
-            interval=watch_interval,
-            repo=repo,
-            workflow=workflow_filter,
-            branch=branch_filter,
+        return _maybe_enhance(
+            args,
+            _watch_for_failures(
+                args=args,
+                interval=watch_interval,
+                repo=repo,
+                workflow=workflow_filter,
+                branch=branch_filter,
+            ),
         )
+
+    run_note = None
 
     # Handle --latest mode (auto-find most recent failed run)
     if latest_mode and not run_id:
@@ -131,31 +152,37 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             if branch_filter:
                 filter_parts.append(f"branch={branch_filter}")
             filter_desc = f" ({', '.join(filter_parts)})" if filter_parts else ""
-            return CommandResult(
-                exit_code=EXIT_FAILURE,
-                summary=f"No failed runs found{filter_desc}",
-                problems=[
-                    {
-                        "severity": "info",
-                        "message": "No recent failed workflow runs to triage",
-                        "code": "CIHUB-TRIAGE-NO-FAILURES",
-                    }
-                ],
+            return _maybe_enhance(
+                args,
+                CommandResult(
+                    exit_code=EXIT_FAILURE,
+                    summary=f"No failed runs found{filter_desc}",
+                    problems=[
+                        {
+                            "severity": "info",
+                            "message": "No recent failed workflow runs to triage",
+                            "code": "CIHUB-TRIAGE-NO-FAILURES",
+                        }
+                    ],
+                ),
             )
-        print(f"Auto-selected latest failed run: {run_id}")
+        run_note = f"Auto-selected latest failed run: {run_id}"
 
     # Handle --gate-history mode (standalone analysis)
     if gate_history:
         history_path = output_dir / "history.jsonl"
         gate_result = detect_gate_changes(history_path)
 
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=gate_result["summary"],
-            data={
-                **gate_result,
-                "raw_output": "\n".join(_format_gate_history_output(gate_result)),
-            },
+        return _maybe_enhance(
+            args,
+            CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=gate_result["summary"],
+                data={
+                    **gate_result,
+                    "raw_output": "\n".join(_format_gate_history_output(gate_result)),
+                },
+            ),
         )
 
     # Handle --detect-flaky mode (standalone analysis)
@@ -163,37 +190,42 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
         history_path = output_dir / "history.jsonl"
         flaky_result = detect_flaky_patterns(history_path)
 
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=(
-                f"Flaky analysis: score={flaky_result['flakiness_score']}%, suspected={flaky_result['suspected_flaky']}"
+        return _maybe_enhance(
+            args,
+            CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=(
+                    f"Flaky analysis: score={flaky_result['flakiness_score']}%, suspected={flaky_result['suspected_flaky']}"
+                ),
+                data={
+                    **flaky_result,
+                    "raw_output": "\n".join(_format_flaky_output(flaky_result)),
+                },
             ),
-            data={
-                **flaky_result,
-                "raw_output": "\n".join(_format_flaky_output(flaky_result)),
-            },
         )
 
     # Handle --verify-tools mode (standalone analysis)
     verify_tools = getattr(args, "verify_tools", False)
     if verify_tools:
-        return _handle_verify_tools(
-            args=args,
-            output_dir=output_dir,
-            run_id=run_id,
-            latest_mode=latest_mode,
-            repo=repo,
-            workflow_filter=workflow_filter,
-            branch_filter=branch_filter,
+        return _maybe_enhance(
+            args,
+            _handle_verify_tools(
+                args=args,
+                output_dir=output_dir,
+                run_id=run_id,
+                latest_mode=latest_mode,
+                repo=repo,
+                workflow_filter=workflow_filter,
+                branch_filter=branch_filter,
+            ),
         )
 
     try:
         # Multi-report mode
         if multi_mode:
-            return _handle_multi_mode(reports_dir, output_dir)
+            return _maybe_enhance(args, _handle_multi_mode(reports_dir, output_dir))
 
         # Handle --workflow/--branch filters without explicit --run
-        run_note = None
         if (workflow_filter or branch_filter) and not run_id:
             runs = _list_runs(repo, workflow=workflow_filter, branch=branch_filter, limit=10)
             if not runs:
@@ -226,20 +258,23 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
                 passed = result_data["passed_count"]
                 failed = result_data["failed_count"]
 
-                return CommandResult(
-                    exit_code=EXIT_SUCCESS,
-                    summary=f"Run {run_id}: {result_data['repo_count']} repos, {passed} passed, {failed} failed",
-                    artifacts={k: str(v) for k, v in artifacts_out.items()},
-                    files_generated=[
-                        str(artifacts_out.get("multi_triage", "")),
-                        str(artifacts_out.get("multi_markdown", "")),
-                    ],
-                    data={
-                        **result_data,
-                        "run_note": run_note,
-                    }
-                    if run_note
-                    else result_data,
+                return _maybe_enhance(
+                    args,
+                    CommandResult(
+                        exit_code=EXIT_SUCCESS,
+                        summary=f"Run {run_id}: {result_data['repo_count']} repos, {passed} passed, {failed} failed",
+                        artifacts={k: str(v) for k, v in artifacts_out.items()},
+                        files_generated=[
+                            str(artifacts_out.get("multi_triage", "")),
+                            str(artifacts_out.get("multi_markdown", "")),
+                        ],
+                        data={
+                            **result_data,
+                            "run_note": run_note,
+                        }
+                        if run_note
+                        else result_data,
+                    ),
                 )
 
             # Single report or log-fallback mode (returns TriageBundle)
@@ -272,16 +307,19 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             bundle = _filter_bundle(bundle, min_severity, category_filter)
             artifacts = write_triage_bundle(bundle, output_dir)
     except Exception as exc:  # noqa: BLE001 - surface error in CLI
-        return CommandResult(
-            exit_code=EXIT_FAILURE,
-            summary=f"Failed to generate triage bundle: {exc}",
-            problems=[
-                {
-                    "severity": "error",
-                    "message": str(exc),
-                    "code": "CIHUB-TRIAGE-ERROR",
-                }
-            ],
+        return _maybe_enhance(
+            args,
+            CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary=f"Failed to generate triage bundle: {exc}",
+                problems=[
+                    {
+                        "severity": "error",
+                        "message": str(exc),
+                        "code": "CIHUB-TRIAGE-ERROR",
+                    }
+                ],
+            ),
         )
 
     # Build summary with filter info
@@ -367,29 +405,33 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             }
         )
 
-    return CommandResult(
-        exit_code=EXIT_SUCCESS,
-        summary=summary,
-        problems=problems,
-        suggestions=suggestions,
-        artifacts={key: str(path) for key, path in artifacts.items()},
-        files_generated=[
-            str(artifacts["triage"]),
-            str(artifacts["priority"]),
-            str(artifacts["markdown"]),
-        ],
-        data={
-            "schema_version": bundle.triage.get("schema_version", ""),
-            "failure_count": failure_count,
-            "filters_applied": filters_applied,
-            "tool_verification": tool_verification,
-            "key_values": {
-                "triage": str(artifacts["triage"]),
-                "priority": str(artifacts["priority"]),
-                "prompt_pack": str(artifacts["markdown"]),
-                "history": str(artifacts["history"]),
+    return _maybe_enhance(
+        args,
+        CommandResult(
+            exit_code=EXIT_SUCCESS,
+            summary=summary,
+            problems=problems,
+            suggestions=suggestions,
+            artifacts={key: str(path) for key, path in artifacts.items()},
+            files_generated=[
+                str(artifacts["triage"]),
+                str(artifacts["priority"]),
+                str(artifacts["markdown"]),
+            ],
+            data={
+                "schema_version": bundle.triage.get("schema_version", ""),
+                "failure_count": failure_count,
+                "filters_applied": filters_applied,
+                "tool_verification": tool_verification,
+                "key_values": {
+                    "triage": str(artifacts["triage"]),
+                    "priority": str(artifacts["priority"]),
+                    "prompt_pack": str(artifacts["markdown"]),
+                    "history": str(artifacts["history"]),
+                },
+                **({"run_note": run_note} if run_note else {}),
             },
-        },
+        ),
     )
 
 

@@ -3,13 +3,13 @@
 **Status:** active  
 **Owner:** Development Team  
 **Source-of-truth:** manual  
-**Last-reviewed:** 2026-01-15  
+**Last-reviewed:** 2026-01-19  
 
 **Date:** 2026-01-05  
-**Status:** Planning  
-**Priority:** **#5** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))  
-**Depends On:** CLEAN_CODE.md (archived, complete - explicit prerequisite)  
-**Blocks:** PYQT_PLAN.md
+**Status:** In Progress  
+**Priority:** **#6** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))  
+**Depends On:** CLEAN_CODE.md (archived, complete - explicit prerequisite) + CLI_WIZARD_SYNC_AUDIT.md (archived)  
+**Blocks:** PYQT_PLAN.md  
 **Purpose:** Design document for a Claude Code / Codex-style interactive CLI built with TypeScript and Ink (React for terminals).
 
 ---
@@ -27,68 +27,69 @@
 This checklist tracks ALL implementation tasks. Check items off as they're completed.
 
 ### Phase 0: Prerequisites (CLEAN_CODE.md)
-- [ ] Fix all remaining print statements in Python CLI
-- [ ] Ensure all commands return clean JSON on stdout when `--json` flag is used
-- [ ] Add JSON purity contract test
-- [ ] Verify CommandResult schema is consistent across all commands
+- [x] Remove remaining print() calls in command handlers (CommandResult-only output)
+- [x] Ensure commands return clean JSON on stdout when `--json` is used
+- [x] Add JSON purity contract test
+- [x] Verify CommandResult schema is consistent across all commands
 
 ### Phase 1: Python CLI AI Integration (Modular)
-- [ ] Create `cihub/ai/` module directory
-- [ ] Create `cihub/ai/__init__.py` with public API
-- [ ] Create `cihub/ai/claude_client.py` - Claude CLI subprocess wrapper
-- [ ] Create `cihub/ai/context.py` - Context builder for AI
-- [ ] Create `cihub/ai/enhance.py` - Result enhancement logic
-- [ ] Add `--ai` flag to argument parser
-- [ ] Add `--ai` support to `triage` command
-- [ ] Add `--ai` support to `check` command
-- [ ] Add `--ai` support to `report` commands
-- [ ] Add `CIHUB_DEV_MODE` environment variable support
-- [ ] Add `CIHUB_AI_PROVIDER` environment variable (default: claude)
-- [ ] Write unit tests for AI module (`tests/test_ai_module.py`)
-- [ ] Write integration tests for AI enhancement
+- [x] Create `cihub/ai/` module directory
+- [x] Create `cihub/ai/__init__.py` with public API
+- [x] Create `cihub/ai/claude_client.py` - Claude CLI subprocess wrapper
+- [x] Create `cihub/ai/context.py` - Context builder for AI
+- [x] Create `cihub/ai/enhance.py` - Result enhancement logic
+- [x] Add `--ai` flag to argument parser
+- [x] Add `--ai` support to `triage` command
+- [x] Add `--ai` support to `check` command
+- [x] Add `--ai` support to `report` commands
+- [x] Add `CIHUB_DEV_MODE` environment variable support
+- [x] Add `CIHUB_AI_PROVIDER` environment variable (default: claude)
+- [x] Write unit tests for AI module (`tests/test_ai_module.py`)
+- [x] Write integration tests for AI enhancement
 
 **Note:** Any new Python CLI flags or commands require ADR + command-contract updates + regenerated reference docs.
 
 ### Phase 2: TypeScript CLI Foundation
-- [ ] Initialize TypeScript project (`cihub-cli/`)
-- [ ] Configure `tsconfig.json` with `strict: true`
-- [ ] Configure `tsup.config.ts` bundler
-- [ ] Set up `package.json` with dependencies
-- [ ] Set up Vitest for testing
-- [ ] Create entry point (`src/index.tsx`)
-- [ ] Create CLI argument parser (`src/cli.ts`)
-- [ ] Add version check between TypeScript and Python CLI
-- [ ] Add health check for Python CLI availability
+- [x] Initialize TypeScript project (`cihub-cli/`)
+- [x] Configure `tsconfig.json` with `strict: true`
+- [x] Configure `tsup.config.ts` bundler
+- [x] Set up `package.json` with dependencies
+- [x] Set up Vitest for testing
+- [x] Create entry point (`src/index.tsx`)
+- [x] Create CLI argument parser (`src/cli.ts`)
+- [x] Add version check between TypeScript and Python CLI
+- [x] Add health check for Python CLI availability
 
 ### Phase 3: Core Components
-- [ ] Create `src/app.tsx` - Main App component
-- [ ] Create `src/components/Header.tsx`
-- [ ] Create `src/components/Input.tsx` - Command input with history
-- [ ] Create `src/components/Output.tsx` - Result display
-- [ ] Create `src/components/Problems.tsx` - Problem list with icons
-- [ ] Create `src/components/Suggestions.tsx`
-- [ ] Create `src/components/Table.tsx`
-- [ ] Create `src/components/Spinner.tsx`
-- [ ] Create `src/components/ErrorBoundary.tsx`
+- [x] Create `src/app.tsx` - Main App component
+- [x] Create `src/components/Header.tsx`
+- [x] Create `src/components/Input.tsx` - Command input with history
+- [x] Create `src/components/Output.tsx` - Result display
+- [x] Create `src/components/Problems.tsx` - Problem list with icons
+- [x] Create `src/components/Suggestions.tsx`
+- [x] Create `src/components/Table.tsx`
+- [x] Create `src/components/Spinner.tsx`
+- [x] Create `src/components/ErrorBoundary.tsx`
 
 ### Phase 4: Python CLI Bridge
-- [ ] Create `src/lib/cihub.ts` - Subprocess wrapper
-- [ ] Create `src/lib/parser.ts` - Slash command parser
-- [ ] Create `src/lib/timeouts.ts` - Command-specific timeouts
-- [ ] Create `src/lib/errors.ts` - Error handling utilities
-- [ ] Create `src/types/command-result.ts` - Zod schemas
-- [ ] Create `src/types/exit-codes.ts`
-- [ ] Write contract tests (`test/contracts/`)
+- [x] Create `src/lib/cihub.ts` - Subprocess wrapper
+- [x] Create `src/lib/parser.ts` - Slash command parser
+- [x] Create `src/lib/timeouts.ts` - Command-specific timeouts
+- [x] Create `src/lib/errors.ts` - Error handling utilities
+- [x] Create `src/types/command-result.ts` - Zod schemas
+- [x] Create `src/types/exit-codes.ts`
+- [x] Write contract tests (`test/contracts/`)
 
 ### Phase 5: Slash Commands
-- [ ] Create `src/commands/index.ts` - Command registry
-- [ ] Implement all top-level commands (27)
-- [ ] Implement report subcommands (11)
-- [ ] Implement config subcommands (7)
-- [ ] Implement docs subcommands (5)
-- [ ] Implement adr subcommands (4)
-- [ ] Implement hub-ci subcommands (46)
-- [ ] Implement meta commands (`/help`, `/clear`, `/exit`, etc.)
+- [x] Create `src/commands/index.ts` - Command registry
+- [x] Load slash registry from `cihub commands list --json` (CLI is source of truth)
+- [x] Implement all top-level commands (27)
+- [x] Implement report subcommands (11)
+- [x] Implement config subcommands (7)
+- [x] Implement docs subcommands (5)
+- [x] Implement adr subcommands (4)
+- [x] Implement hub-ci subcommands (52)
+- [x] Implement meta commands (`/help`, `/clear`, `/exit`, etc.)
 
 ### Phase 6: Interactive Wizard
 - [ ] Create `src/components/Wizard.tsx`
@@ -97,6 +98,8 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [ ] Implement `/new` wizard flow
 - [ ] Implement `/init` wizard flow
 - [ ] Implement `/config edit` wizard flow
+- [x] Architecture sync audit (CLI/wizard/schema) documented in `docs/development/archive/CLI_WIZARD_SYNC_AUDIT.md`
+- [x] Second-pass alignment audit consolidated in `docs/development/archive/CLI_WIZARD_SYNC_AUDIT.md` (supersedes `docs/development/archive/CLI_WIZARD_SYNC_FINDINGS.md`)
 
 ### Phase 7: Configuration
 - [ ] Create `src/lib/config.ts` - Config loader
@@ -177,7 +180,7 @@ Build an interactive TypeScript CLI that wraps the existing CIHub Python CLI wit
 - [Part 4: Project Structure](#part-4-project-structure)
 - [Part 5: Complete Slash Command Reference](#part-5-complete-slash-command-reference)
 - [Part 6: AI Enhancement by Category](#part-6-ai-enhancement-by-category)
-- [Part 7: Hub-CI Subcommands (46 Tools)](#part-7-hub-ci-subcommands-46-tools)
+- [Part 7: Hub-CI Subcommands (see CLI help)](#part-7-hub-ci-subcommands-see-cli-help)
 - [Part 8: Interactive Wizard System](#part-8-interactive-wizard-system)
 - [Part 9: Modular AI Architecture (Python)](#part-9-modular-ai-architecture-python)
 - [Part 10: Blockers & Prerequisites](#part-10-blockers--prerequisites)
@@ -429,7 +432,8 @@ cihub-cli/
 
 ## Part 5: Complete Slash Command Reference
 
-This section maps **ALL 92+ cihub commands** to slash commands. The goal: users never need to leave the interactive CLI.
+This section maps **ALL CLI commands** to slash commands. The interactive CLI loads the command registry from
+`cihub commands list --json`, so the slash list stays aligned with the Python CLI.
 
 ### 5.1 Top-Level Commands (27 Commands)
 
@@ -458,8 +462,8 @@ This section maps **ALL 92+ cihub commands** to slash commands. The goal: users 
 | `/sync-templates` | `cihub sync-templates` | `--json` | Template update analysis |
 | `/new` | `cihub new` | `--json` | Project scaffolding wizard |
 | `/config` | `cihub config` | (see subcommands) | Config optimization |
-| `/config outputs` | `cihub config-outputs` | `--json` | Output path suggestions |
-| `/hub-ci` | `cihub hub-ci` | (46 subcommands) | Full hub-ci intelligence |
+| `/config-outputs` | `cihub config-outputs` | `--json` | Output path suggestions |
+| `/hub-ci` | `cihub hub-ci` | (see `cihub hub-ci --help`) | Full hub-ci intelligence |
 | `/discover` | `cihub discover` | `--json` | Repo analysis |
 | `/dispatch` | `cihub dispatch` | `--json` | Workflow dispatch assistance |
 
@@ -477,7 +481,8 @@ This section maps **ALL 92+ cihub commands** to slash commands. The goal: users 
 | `/report smoke-summary` | `cihub report smoke-summary` | Smoke test summaries | Test health |
 | `/report kyverno-summary` | `cihub report kyverno-summary` | Kyverno summaries | Policy insights |
 | `/report orchestrator-summary` | `cihub report orchestrator-summary` | Orchestrator summaries | Workflow health |
-| `/report pytest-summary` | `cihub report pytest-summary` (via hub-ci) | Pytest summaries | Test insights |
+
+**Note:** Pytest summaries are exposed as `cihub hub-ci pytest-summary` (hub-ci subcommand).
 
 ### 5.3 Docs Subcommands (5+ Commands)
 
@@ -485,9 +490,10 @@ This section maps **ALL 92+ cihub commands** to slash commands. The goal: users 
 |---------------|------------|---------|----------|
 | `/docs check` | `cihub docs check` | Validate documentation | Error explanations |
 | `/docs links` | `cihub docs links` | Check broken links | Fix suggestions |
-| `/docs stale` | `cihub docs stale` (planned) | Detect stale docs | **AI-driven updates** |
-| `/docs generate` | `cihub docs generate` (planned) | Generate docs | Auto-documentation |
-| `/docs sync` | `cihub docs sync` (planned) | Sync with code | Keep docs current |
+| `/docs stale` | `cihub docs stale` | Detect stale docs | **AI-driven updates** |
+| `/docs generate` | `cihub docs generate` | Generate docs | Auto-documentation |
+
+**Note:** Additional docs commands appear in the slash list once implemented in the Python CLI.
 
 ### 5.4 ADR Subcommands (4 Commands)
 
@@ -508,7 +514,7 @@ This section maps **ALL 92+ cihub commands** to slash commands. The goal: users 
 | `/config enable` | `cihub config enable` | Enable a tool | Tool recommendations |
 | `/config disable` | `cihub config disable` | Disable a tool | Impact analysis |
 | `/config apply-profile` | `cihub config apply-profile` | Apply a profile | Profile selection help |
-| `/config outputs` | `cihub config-outputs` | Show output paths | Path optimization |
+| `/config-outputs` | `cihub config-outputs` | Show output paths | Path optimization |
 
 ### 5.6 Meta Commands (Interactive CLI Only)
 
@@ -968,9 +974,9 @@ Create this configuration? [Y/n]
 
 ---
 
-## Part 7: Hub-CI Subcommands (46 Tools)
+## Part 7: Hub-CI Subcommands (see CLI help)
 
-The `hub-ci` command provides 46 specialized CI/CD tools. Each maps to a slash command.
+The `hub-ci` command provides many specialized CI/CD tools. Use `cihub hub-ci --help` for the current list. The examples below are illustrative.
 
 ### 7.1 Validation Tools (11 Commands)
 
@@ -2039,7 +2045,7 @@ export async function* streamAI(
 
 ### 10.1 Critical: JSON Output Purity
 
-**Problem:** 80 print statements across 18 files can corrupt JSON output.  
+**Resolved:** Command handlers no longer call print(); JSON output is emitted only by the renderer.  
 
 **Files emitting GitHub annotations in stdout:**
 - `smoke.py` - `::warning::`
@@ -2094,9 +2100,9 @@ async function findCihub(): Promise<string> {
 ### Phase 0: Prerequisites (CLEAN_CODE.md)
 > Must complete before starting TypeScript CLI
 
-- [ ] Fix 80 remaining print statements
-- [ ] Ensure all commands return clean JSON on stdout
-- [ ] Add JSON purity contract test
+- [x] Remove print() calls in command handlers
+- [x] Ensure all commands return clean JSON on stdout
+- [x] Add JSON purity contract test
 
 ### Phase 1: Minimal Interactive CLI [3-4 days]
 
@@ -2790,19 +2796,22 @@ This section defines the **complete testing strategy** for the TypeScript CLI, e
 ### 15.1 Test Pyramid
 
 ```
- ┌─────────┐
- │ E2E │ 2-3 tests (full flows)
- │ Tests │
- ┌┴─────────┴┐
- │Integration│ 10-20 tests (CLI bridge)
- │ Tests │
- ┌┴───────────┴┐
- │ Component │ 30-50 tests (React/Ink)
- │ Tests │
- ┌┴─────────────┴┐
- │ Unit │ 100+ tests (logic, parsing)
- │ Tests │
- └───────────────┘
+      ┌───────────┐
+      │ E2E       │ 2-3 tests (full flows)
+      │ Tests     │
+      └───────────┘
+    ┌───────────────┐
+    │ Integration   │ 10-20 tests (CLI bridge)
+    │ Tests         │
+    └───────────────┘
+  ┌───────────────────┐
+  │ Component         │ 30-50 tests (React/Ink)
+  │ Tests             │
+  └───────────────────┘
+┌─────────────────────────┐
+│ Unit                    │ 100+ tests (logic, parsing)
+│ Tests                   │
+└─────────────────────────┘
 ```
 
 ### 15.2 Contract Tests (Critical)

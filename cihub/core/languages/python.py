@@ -162,6 +162,18 @@ class PythonStrategy(LanguageStrategy):
             return 0.5
         return 0.0
 
+    def detect_reasons(self, repo_path: Path) -> list[str]:
+        reasons: list[str] = []
+        if (repo_path / "pyproject.toml").exists():
+            reasons.append("pyproject.toml")
+        if (repo_path / "setup.py").exists():
+            reasons.append("setup.py")
+        if (repo_path / "requirements.txt").exists():
+            reasons.append("requirements.txt")
+        if any(repo_path.glob("*.py")):
+            reasons.append("*.py")
+        return reasons
+
     def get_run_kwargs(
         self,
         config: dict[str, Any],

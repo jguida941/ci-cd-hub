@@ -160,6 +160,22 @@ def add_output_dir_args(
     parser.add_argument("--output-dir", default=default, help=help_text)
 
 
+def add_ai_flags(parser: ArgumentParser) -> None:
+    """Add standard --ai/--no-ai arguments for optional AI enhancement."""
+    parser.add_argument(
+        "--ai",
+        action="store_true",
+        default=False,
+        help="Enable AI-assisted analysis (requires Claude CLI)",
+    )
+    parser.add_argument(
+        "--no-ai",
+        action="store_false",
+        dest="ai",
+        help="Disable AI assistance",
+    )
+
+
 # =============================================================================
 # Composite Helpers (common combinations)
 # =============================================================================

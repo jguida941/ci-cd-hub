@@ -1,41 +1,45 @@
-# Documentation Automation Audit & Design
-
-**Status:** active  
-**Owner:** Development Team  
-**Source-of-truth:** manual  
-**Last-reviewed:** 2026-01-17  
+# Documentation Automation Audit & Design (Archived)
+> **Superseded by:** [DOC_AUTOMATION.md](../guides/DOC_AUTOMATION.md)  
+> **Status:** Archived  
+> **Archived:** 2026-01-17  
+> **Owner:** Development Team  
+> **Source-of-truth:** manual  
+> **Last-reviewed:** 2026-01-17  
+> **Superseded-by:** docs/guides/DOC_AUTOMATION.md  
 
 **Date:** 2026-01-04  
 **Last Updated:** 2026-01-17 (`docs audit` optional items: inventory + guide validation)  
-**Priority:** **#4** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))  
+**Priority:** **#4** (historical - see [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))  
 **Status:** COMPLETE (Part 12.J path-change update rules implemented; duplicate task detection remains disabled)  
 **Depends On:** Stable CLI surface (CLEAN_CODE.md archived)  
-**Can Parallel:** TEST_REORGANIZATION.md (both need stable CLI)  
+**Can Parallel:** None (TEST_REORGANIZATION.md archived)  
 **Problem:** Manual documentation updates take 4+ hours/day. With 50+ docs and 28,000 lines, keeping them in sync with code changes is unsustainable.  
 
 ---
 
 ## Implementation Status (2026-01-17)
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| `cihub docs generate` | [x] **IMPLEMENTED** | Generates CLI.md, CONFIG.md, ENV.md, WORKFLOWS.md |
-| `cihub docs check` | [x] **IMPLEMENTED** | Drift detection for generated docs |
-| `cihub docs links` | [x] **IMPLEMENTED** | Internal link validation |
-| `cihub docs stale` | [x] **IMPLEMENTED** | Modularized package (957→1489 lines across 6 modules), 63 tests |
-| `cihub docs audit` | [x] **COMPLETE** | Core checks (J/L/N/Q) + Part 13.R/S/T/U/V/W/X complete; optional items remain |
-| `.cihub/tool-outputs/` for docs | [x] **IMPLEMENTED** | `docs audit --output-dir` wired into `check --audit` (fast mode - no refs/consistency) |
-| AI prompt pack output | WARNING: **OPTIONAL SUPPORT** | `docs stale --ai` or `--ai-output PATH` implemented |
-| Specs hygiene | [x] **IMPLEMENTED** | Part 12.J - REQUIREMENTS.md Status/Last Updated headers |
-| Metrics drift detection | [x] **IMPLEMENTED** | Part 13.R - detect stale counts in docs vs actual |
-| Duplicate task detection | [~] **DISABLED** | Part 13.S - fuzzy matching implemented but disabled pending cleanup (too noisy) |
-| Timestamp freshness | [x] **IMPLEMENTED** | Part 13.T - "Last Updated" header staleness |
-| Placeholder detection | [x] **IMPLEMENTED** | Part 13.V - markers (YOUR_*, TODO:), local paths (GitHub usernames disabled - too noisy) |
-| Checklist-reality sync | [x] **IMPLEMENTED** | Part 13.U - verify [ ] items against code |
-| Cross-doc consistency | [x] **IMPLEMENTED** | Part 13.W - README.md ↔ active/ directory sync (limited scope) |
-| CHANGELOG validation | [x] **IMPLEMENTED** | Part 13.X - format and ordering checks |
-| Doc inventory/counts | [x] **IMPLEMENTED** | `docs audit --inventory` emits counts for JSON output |
-| Guide command validation | [x] **IMPLEMENTED** | Validate `cihub <command>` mentions in guides against CLI |
+**Usage guide:** `docs/guides/DOC_AUTOMATION.md` (command workflows + required gates)  
+
+| Component                       | Status                        | Notes                                                                                    |
+|---------------------------------|-------------------------------|------------------------------------------------------------------------------------------|
+| `cihub docs generate`           | [x] **IMPLEMENTED**           | Generates CLI.md, CONFIG.md, ENV.md, WORKFLOWS.md                                        |
+| `cihub docs check`              | [x] **IMPLEMENTED**           | Drift detection for generated docs                                                       |
+| `cihub docs links`              | [x] **IMPLEMENTED**           | Internal link validation                                                                 |
+| `cihub docs stale`              | [x] **IMPLEMENTED**           | Modularized package (957→1489 lines across 6 modules), 63 tests                          |
+| `cihub docs audit`              | [x] **COMPLETE**              | Core checks (J/L/N/Q) + Part 13.R/S/T/U/V/W/X complete; optional items remain            |
+| `.cihub/tool-outputs/` for docs | [x] **IMPLEMENTED**           | `docs audit --output-dir` wired into `check --audit` (fast mode - no refs/consistency)   |
+| AI prompt pack output           | WARNING: **OPTIONAL SUPPORT** | `docs stale --ai` or `--ai-output PATH` implemented                                      |
+| Specs hygiene                   | [x] **IMPLEMENTED**           | Part 12.J - REQUIREMENTS.md Status/Last Updated headers                                  |
+| Metrics drift detection         | [x] **IMPLEMENTED**           | Part 13.R - detect stale counts in docs vs actual                                        |
+| Duplicate task detection        | [~] **DISABLED**              | Part 13.S - fuzzy matching implemented but disabled pending cleanup (too noisy)          |
+| Timestamp freshness             | [x] **IMPLEMENTED**           | Part 13.T - "Last Updated" header staleness                                              |
+| Placeholder detection           | [x] **IMPLEMENTED**           | Part 13.V - markers (YOUR_*, TODO:), local paths (GitHub usernames disabled - too noisy) |
+| Checklist-reality sync          | [x] **IMPLEMENTED**           | Part 13.U - verify [ ] items against code                                                |
+| Cross-doc consistency           | [x] **IMPLEMENTED**           | Part 13.W - README.md ↔ active/ directory sync (limited scope)                           |
+| CHANGELOG validation            | [x] **IMPLEMENTED**           | Part 13.X - format and ordering checks                                                   |
+| Doc inventory/counts            | [x] **IMPLEMENTED**           | `docs audit --inventory` emits counts for JSON output                                    |
+| Guide command validation        | [x] **IMPLEMENTED**           | Validate `cihub <command>` mentions in guides against CLI                                |
 
 **Overall:** COMPLETE. `docs stale` and `docs audit` complete (J/L/N/Q + Part 13.R/S/T/U/V/W/X). Path-change update rules implemented.
 
@@ -124,14 +128,14 @@ cihub/commands/docs_audit/
 
 ### By Category
 
-| Category | Files | Lines | Can Auto-Generate? |
-|-------------------------|-------|--------|----------------------------------------------|
-| ADRs | 37 | ~3,700 | [ ] No (architectural decisions require human) |
-| Reference (CLI, Config, ENV, Workflows) | 4 | ~3,000 | [x] Yes (`cihub docs generate` does this) |
-| Guides | 8 | ~2,300 | WARNING: Partially (examples can be validated) |
-| Development/Status | 10+ | ~3,500 | WARNING: Partially (status can track code) |
-| Archive | 15+ | ~5,000 | [ ] No (historical, shouldn't change) |
-| Research | 1 | ~1,600 | [ ] No (notes, not synced to code) |
+| Category                                | Files | Lines  | Can Auto-Generate?                             |
+|-----------------------------------------|-------|--------|------------------------------------------------|
+| ADRs                                    | 37    | ~3,700 | [ ] No (architectural decisions require human) |
+| Reference (CLI, Config, ENV, Workflows) | 4     | ~3,000 | [x] Yes (`cihub docs generate` does this)      |
+| Guides                                  | 8     | ~2,300 | WARNING: Partially (examples can be validated) |
+| Development/Status                      | 10+   | ~3,500 | WARNING: Partially (status can track code)     |
+| Archive                                 | 15+   | ~5,000 | [ ] No (historical, shouldn't change)          |
+| Research                                | 1     | ~1,600 | [ ] No (notes, not synced to code)             |
 
 ### Total: ~28,000 lines across 70+ files
 
@@ -431,12 +435,12 @@ Add to `.github/workflows/hub-production-ci.yml`:
 
 ## Part 7: What You CANNOT Automate
 
-| Doc Type | Why Not |
-|----------|---------|
-| ADR decisions | Architectural judgment requires human |
-| Guide prose | Explaining "why" requires understanding |
-| Troubleshooting | Requires experience with real issues |
-| Research notes | Personal investigation logs |
+| Doc Type        | Why Not                                 |
+|-----------------|-----------------------------------------|
+| ADR decisions   | Architectural judgment requires human   |
+| Guide prose     | Explaining "why" requires understanding |
+| Troubleshooting | Requires experience with real issues    |
+| Research notes  | Personal investigation logs             |
 
 **These require human review.** The best you can do:
 - Flag them as potentially stale
@@ -584,13 +588,13 @@ def cmd_docs_stale(args) -> int | CommandResult
 
 ### Files to Create/Modify
 
-| File | Action |
-|------|--------|
-| `cihub/commands/docs_stale.py` | **CREATE** - main logic |
-| `cihub/cli_parsers/docs.py` | MODIFY - add `stale` subparser |
-| `cihub/cli_parsers/types.py` | MODIFY - add handler type |
-| `cihub/cli.py` | MODIFY - add wrapper function |
-| `tests/unit/docs/` | **CREATE** - tests |
+| File                           | Action                         |
+|--------------------------------|--------------------------------|
+| `cihub/commands/docs_stale.py` | **CREATE** - main logic        |
+| `cihub/cli_parsers/docs.py`    | MODIFY - add `stale` subparser |
+| `cihub/cli_parsers/types.py`   | MODIFY - add handler type      |
+| `cihub/cli.py`                 | MODIFY - add wrapper function  |
+| `tests/unit/docs/`             | **CREATE** - tests             |
 
 ### User Decisions (Confirmed)
 

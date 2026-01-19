@@ -19,13 +19,12 @@ import pytest
 class TestWriteOutputs:
     """Tests for _write_outputs helper."""
 
-    def test_writes_to_stdout_when_no_path(self, capsys) -> None:
+    def test_returns_text_when_no_path(self) -> None:
         from cihub.commands.hub_ci import _write_outputs
 
-        _write_outputs({"key1": "value1", "key2": "value2"}, None)
-        captured = capsys.readouterr()
-        assert "key1=value1" in captured.out
-        assert "key2=value2" in captured.out
+        output = _write_outputs({"key1": "value1", "key2": "value2"}, None)
+        assert "key1=value1" in (output or "")
+        assert "key2=value2" in (output or "")
 
     def test_writes_to_file_when_path_provided(self, tmp_path: Path) -> None:
         from cihub.commands.hub_ci import _write_outputs
@@ -49,12 +48,11 @@ class TestWriteOutputs:
 class TestAppendSummary:
     """Tests for _append_summary helper."""
 
-    def test_prints_to_stdout_when_no_path(self, capsys) -> None:
+    def test_returns_text_when_no_path(self) -> None:
         from cihub.commands.hub_ci import _append_summary
 
-        _append_summary("Summary text", None)
-        captured = capsys.readouterr()
-        assert "Summary text" in captured.out
+        output = _append_summary("Summary text", None)
+        assert "Summary text" in (output or "")
 
     def test_writes_to_file_when_path_provided(self, tmp_path: Path) -> None:
         from cihub.commands.hub_ci import _append_summary

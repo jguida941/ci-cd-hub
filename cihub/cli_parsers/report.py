@@ -6,6 +6,7 @@ import argparse
 from typing import Callable
 
 from cihub.cli_parsers.common import (
+    add_ai_flags,
     add_repo_args,
     add_report_args,
     add_summary_args,
@@ -21,11 +22,13 @@ def add_report_commands(
 ) -> None:
     report = subparsers.add_parser("report", help="Build reports and summaries", epilog=see_also_epilog("report"))
     add_json_flag(report)
+    add_ai_flags(report)
     report.set_defaults(func=handlers.cmd_report)
     report_sub = report.add_subparsers(dest="subcommand", required=True)
 
     report_build = report_sub.add_parser("build", help="Build report.json from tool outputs")
     add_json_flag(report_build)
+    add_ai_flags(report_build)
     add_repo_args(report_build)
     report_build.add_argument("--workdir", help="Override workdir/subdir")
     report_build.add_argument("--correlation-id", help="Hub correlation id")
@@ -44,6 +47,7 @@ def add_report_commands(
 
     report_summary = report_sub.add_parser("summary", help="Render summary from report.json")
     add_json_flag(report_summary)
+    add_ai_flags(report_summary)
     add_report_args(report_summary, required=True)
     report_summary.add_argument("--output", help="Output summary.md path")
     report_summary.add_argument(
@@ -55,12 +59,14 @@ def add_report_commands(
 
     report_outputs = report_sub.add_parser("outputs", help="Write workflow outputs from report.json")
     add_json_flag(report_outputs)
+    add_ai_flags(report_outputs)
     add_report_args(report_outputs, required=True)
     report_outputs.add_argument("--output", help="Path to write outputs (defaults to GITHUB_OUTPUT)")
     report_outputs.set_defaults(func=handlers.cmd_report)
 
     report_aggregate = report_sub.add_parser("aggregate", help="Aggregate hub reports across repos")
     add_json_flag(report_aggregate)
+    add_ai_flags(report_aggregate)
     report_aggregate.add_argument(
         "--reports-dir",
         help="Directory containing downloaded report artifacts (hub-run-all mode)",
@@ -121,6 +127,7 @@ def add_report_commands(
 
     report_validate = report_sub.add_parser("validate", help="Validate report.json structure and content")
     add_json_flag(report_validate)
+    add_ai_flags(report_validate)
     add_report_args(report_validate, required=True)
     report_validate.add_argument(
         "--expect",
@@ -162,6 +169,7 @@ def add_report_commands(
         "dashboard", help="Generate HTML or JSON dashboard from aggregated reports"
     )
     add_json_flag(report_dashboard)
+    add_ai_flags(report_dashboard)
     report_dashboard.add_argument(
         "--reports-dir",
         required=True,
@@ -187,6 +195,8 @@ def add_report_commands(
     report_dashboard.set_defaults(func=handlers.cmd_report)
 
     report_security_summary = report_sub.add_parser("security-summary", help="Render hub security summaries")
+    add_json_flag(report_security_summary)
+    add_ai_flags(report_security_summary)
     report_security_summary.add_argument(
         "--mode",
         choices=["repo", "zap", "overall"],
@@ -216,6 +226,8 @@ def add_report_commands(
     report_security_summary.set_defaults(func=handlers.cmd_report)
 
     report_smoke_summary = report_sub.add_parser("smoke-summary", help="Render smoke test summaries")
+    add_json_flag(report_smoke_summary)
+    add_ai_flags(report_smoke_summary)
     report_smoke_summary.add_argument(
         "--mode",
         choices=["repo", "overall"],
@@ -250,6 +262,8 @@ def add_report_commands(
     report_smoke_summary.set_defaults(func=handlers.cmd_report)
 
     report_kyverno_summary = report_sub.add_parser("kyverno-summary", help="Render Kyverno summaries")
+    add_json_flag(report_kyverno_summary)
+    add_ai_flags(report_kyverno_summary)
     report_kyverno_summary.add_argument("--policies-dir", default="policies", help="Policies directory")
     report_kyverno_summary.add_argument("--validated", type=int, default=0, help="Validated policy count")
     report_kyverno_summary.add_argument("--failed", type=int, default=0, help="Failed policy count")
@@ -269,6 +283,8 @@ def add_report_commands(
     report_kyverno_summary.set_defaults(func=handlers.cmd_report)
 
     report_orchestrator_summary = report_sub.add_parser("orchestrator-summary", help="Render orchestrator summaries")
+    add_json_flag(report_orchestrator_summary)
+    add_ai_flags(report_orchestrator_summary)
     report_orchestrator_summary.add_argument(
         "--mode",
         choices=["load-config", "trigger-record"],

@@ -13,6 +13,7 @@ from cihub.utils import (
     _get_repo_name,
     get_git_branch,
 )
+from cihub.utils.github_context import GitHubContext
 from cihub.utils.env import _parse_env_bool, env_bool
 
 
@@ -40,16 +41,17 @@ def _build_context(
     docker_health_endpoint: str | None = None,
 ) -> RunContext:
     repo_info = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
-    branch = os.environ.get("GITHUB_REF_NAME") or repo_info.get("default_branch")
+    ctx = GitHubContext.from_env()
+    branch = ctx.ref_name or repo_info.get("default_branch")
     branch = branch or get_git_branch(repo_path) or ""
     return RunContext(
         repository=_get_repo_name(config, repo_path),
         branch=branch,
-        run_id=os.environ.get("GITHUB_RUN_ID"),
-        run_number=os.environ.get("GITHUB_RUN_NUMBER"),
-        commit=os.environ.get("GITHUB_SHA") or "",
+        run_id=ctx.run_id,
+        run_number=ctx.run_number,
+        commit=ctx.sha or "",
         correlation_id=correlation_id,
-        workflow_ref=os.environ.get("GITHUB_WORKFLOW_REF"),
+        workflow_ref=ctx.workflow_ref,
         workdir=workdir,
         build_tool=build_tool,
         retention_days=config.get("reports", {}).get("retention_days"),
@@ -93,15 +95,14 @@ def _resolve_summary_path(path_value: str | None, write_summary: bool) -> Path |
     return None
 
 
-def _append_summary(text: str, summary_path: Path | None, print_stdout: bool) -> None:
+def _append_summary(text: str, summary_path: Path | None, emit_stdout: bool) -> str | None:
     if summary_path is None:
-        if print_stdout:
-            print(text)
-        return
+        return text if emit_stdout else None
     with open(summary_path, "a", encoding="utf-8") as handle:
         handle.write(text)
         if not text.endswith("\n"):
             handle.write("\n")
+    return None
 
 
 def _coerce_bool(value: object) -> bool:

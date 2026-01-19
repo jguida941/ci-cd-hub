@@ -12,6 +12,7 @@ from cihub.cli_parsers.types import CommandHandlers
 from cihub.config.io import ConfigParseError
 from cihub.exit_codes import EXIT_FAILURE, EXIT_INTERNAL_ERROR, EXIT_SUCCESS
 from cihub.output import get_renderer
+from cihub.output.events import set_event_sink
 from cihub.types import CommandResult
 from cihub.utils.env import env_bool
 
@@ -88,6 +89,12 @@ def cmd_report(args: argparse.Namespace) -> int | CommandResult:
 
 def cmd_triage(args: argparse.Namespace) -> int | CommandResult:
     from cihub.commands.triage import cmd_triage as handler
+
+    return handler(args)
+
+
+def cmd_commands(args: argparse.Namespace) -> int | CommandResult:
+    from cihub.commands.commands_cmd import cmd_commands as handler
 
     return handler(args)
 
@@ -274,6 +281,7 @@ def build_parser() -> argparse.ArgumentParser:
         cmd_run=cmd_run,
         cmd_report=cmd_report,
         cmd_triage=cmd_triage,
+        cmd_commands=cmd_commands,
         cmd_docs=cmd_docs,
         cmd_docs_links=cmd_docs_links,
         cmd_docs_stale=cmd_docs_stale,
@@ -316,87 +324,119 @@ def main(argv: list[str] | None = None) -> int:
         command = f"{command} {subcommand}"
     debug = is_debug_enabled()
     json_mode = getattr(args, "json", False)
-    ai_mode = getattr(args, "ai", False)
+    ai_requested = getattr(args, "ai", False)
+    ai_output_mode = False
+    if ai_requested:
+        from cihub.output.ai_formatters import has_ai_formatter
+
+        ai_output_mode = has_ai_formatter(command)
 
     def emit_debug(message: str) -> None:
         if debug:
             print(f"[debug] {message}", file=sys.stderr)
 
-    emit_debug(f"command={command} json={json_mode} ai={ai_mode}")
+    emit_debug(f"command={command} json={json_mode} ai={ai_requested} ai_output={ai_output_mode}")
+
+    event_sink_set = False
+    if not json_mode and not ai_output_mode:
+        def _cli_event_sink(event: str, payload: dict[str, Any]) -> None:
+            text = payload.get("text")
+            if not text:
+                return
+            stream = payload.get("stream", "stdout")
+            if stream == "stderr":
+                print(text, file=sys.stderr)
+            else:
+                print(text)
+
+        set_event_sink(_cli_event_sink)
+        event_sink_set = True
 
     try:
-        result = args.func(args)
-    except (FileNotFoundError, ValueError, PermissionError, OSError, ConfigParseError) as exc:
-        # Expected user errors - show friendly message, return failure
-        if debug and not json_mode:
-            traceback.print_exc()
-        if json_mode:
-            problems = [
-                {
-                    "severity": "error",
-                    "message": str(exc),
-                    "code": "CIHUB-USER-ERROR",
-                }
-            ]
-            payload = CommandResult(
-                exit_code=EXIT_FAILURE,
-                summary=str(exc),
-                problems=problems,
-            ).to_payload(
-                command,
-                "failure",
-                int((time.perf_counter() - start) * 1000),
-            )
-            print(json.dumps(payload, indent=2))
+        try:
+            result = args.func(args)
+        except (FileNotFoundError, ValueError, PermissionError, OSError, ConfigParseError) as exc:
+            # Expected user errors - show friendly message, return failure
+            if debug and not json_mode:
+                traceback.print_exc()
+            if json_mode:
+                problems = [
+                    {
+                        "severity": "error",
+                        "message": str(exc),
+                        "code": "CIHUB-USER-ERROR",
+                    }
+                ]
+                payload = CommandResult(
+                    exit_code=EXIT_FAILURE,
+                    summary=str(exc),
+                    problems=problems,
+                ).to_payload(
+                    command,
+                    "failure",
+                    int((time.perf_counter() - start) * 1000),
+                )
+                print(json.dumps(payload, indent=2))
+            else:
+                print(f"Error: {exc}", file=sys.stderr)
+            return EXIT_FAILURE
+        except Exception as exc:  # noqa: BLE001 - surface in JSON mode
+            if json_mode:
+                problems = [
+                    {
+                        "severity": "error",
+                        "message": str(exc),
+                        "code": "CIHUB-UNHANDLED",
+                    }
+                ]
+                payload = CommandResult(
+                    exit_code=EXIT_INTERNAL_ERROR,
+                    summary=str(exc),
+                    problems=problems,
+                ).to_payload(
+                    command,
+                    "error",
+                    int((time.perf_counter() - start) * 1000),
+                )
+                print(json.dumps(payload, indent=2))
+                return EXIT_INTERNAL_ERROR
+            raise
+
+        if isinstance(result, CommandResult):
+            exit_code = result.exit_code
+            command_result = result
         else:
-            print(f"Error: {exc}", file=sys.stderr)
-        return EXIT_FAILURE
-    except Exception as exc:  # noqa: BLE001 - surface in JSON mode
-        if json_mode:
-            problems = [
-                {
-                    "severity": "error",
-                    "message": str(exc),
-                    "code": "CIHUB-UNHANDLED",
-                }
-            ]
-            payload = CommandResult(
-                exit_code=EXIT_INTERNAL_ERROR,
-                summary=str(exc),
-                problems=problems,
-            ).to_payload(
-                command,
-                "error",
-                int((time.perf_counter() - start) * 1000),
-            )
-            print(json.dumps(payload, indent=2))
-            return EXIT_INTERNAL_ERROR
-        raise
+            exit_code = int(result)
+            command_result = CommandResult(exit_code=exit_code)
 
-    if isinstance(result, CommandResult):
-        exit_code = result.exit_code
-        command_result = result
-    else:
-        exit_code = int(result)
-        command_result = CommandResult(exit_code=exit_code)
+        if env_bool("CIHUB_DEV_MODE", default=False) and command_result.exit_code != 0 and not ai_requested:
+            from cihub.ai import enhance_result, is_ai_available
 
-    if not command_result.summary:
-        command_result.summary = "OK" if exit_code == EXIT_SUCCESS else "Command failed"
+            if is_ai_available():
+                if not json_mode:
+                    print("[DEV MODE] Invoking AI for debugging...", file=sys.stderr)
+                command_result = enhance_result(command_result, mode="analyze")
 
-    # Use renderer pattern for all output
-    duration_ms = int((time.perf_counter() - start) * 1000)
-    renderer = get_renderer(json_mode=json_mode, ai_mode=ai_mode)
-    output = renderer.render(command_result, command, duration_ms)
-    # Always print for JSON/AI modes, or if there's meaningful content beyond default summary
-    if json_mode or ai_mode or (output and output not in ("OK", "Command failed")):
-        # CLI best practice: error output to stderr, success output to stdout
-        # AI mode always goes to stdout for easy piping
-        if exit_code != EXIT_SUCCESS and not json_mode and not ai_mode:
-            print(output, file=sys.stderr)
-        else:
-            print(output)
+        if not command_result.summary:
+            command_result.summary = "OK" if exit_code == EXIT_SUCCESS else "Command failed"
 
-    return exit_code
+        # Use renderer pattern for all output
+        duration_ms = int((time.perf_counter() - start) * 1000)
+        renderer = get_renderer(json_mode=json_mode, ai_mode=ai_output_mode)
+        output = renderer.render(command_result, command, duration_ms)
+        # Always print for JSON/AI modes, or if there's meaningful content beyond default summary
+        if json_mode or ai_output_mode or (output and output not in ("OK", "Command failed")):
+            # CLI best practice: error output to stderr, success output to stdout
+            # AI mode always goes to stdout for easy piping
+            if exit_code != EXIT_SUCCESS and not json_mode and not ai_output_mode:
+                print(output, file=sys.stderr)
+            else:
+                print(output)
+
+        return exit_code
+    finally:
+        if event_sink_set:
+            set_event_sink(None)
 
 
 if __name__ == "__main__":

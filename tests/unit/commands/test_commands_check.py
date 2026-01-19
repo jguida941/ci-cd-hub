@@ -3,6 +3,7 @@
 from types import SimpleNamespace
 
 from cihub.commands import check as check_module
+from cihub.output.events import get_event_sink, set_event_sink
 from cihub.types import CommandResult
 
 FAST_STEPS = [
@@ -215,3 +216,46 @@ def test_check_pytest_command_includes_coverage_gate(monkeypatch) -> None:
     assert "--cov=cihub" in test_cmd, "Missing --cov=cihub"
     assert "--cov=scripts" in test_cmd, "Missing --cov=scripts"
     assert "--cov-fail-under=70" in test_cmd, "Missing --cov-fail-under=70 - this is the CI parity gate!"
+
+
+def test_check_streaming_emits_lines(monkeypatch) -> None:
+    events: list[tuple[str, dict[str, object]]] = []
+
+    def capture(event: str, payload: dict[str, object]) -> None:
+        events.append((event, payload))
+
+    monkeypatch.setattr(check_module, "cmd_preflight", _stub_success)
+    monkeypatch.setattr(check_module, "cmd_docs", _stub_success)
+    monkeypatch.setattr(check_module, "cmd_smoke", _stub_success)
+    monkeypatch.setattr(check_module, "cmd_docs_links", _stub_success)
+    monkeypatch.setattr(check_module, "cmd_docs_audit", _stub_success)
+    monkeypatch.setattr(check_module, "cmd_adr", _stub_success)
+    monkeypatch.setattr(check_module, "_run_process", _stub_success)
+    monkeypatch.setattr(check_module, "_run_optional", _stub_success)
+    monkeypatch.setattr(check_module, "_run_zizmor", _stub_success)
+
+    args = SimpleNamespace(
+        json=False,
+        smoke_repo=None,
+        smoke_subdir=None,
+        install_deps=False,
+        relax=False,
+        keep=False,
+        audit=False,
+        security=False,
+        full=False,
+        mutation=False,
+        all=False,
+    )
+
+    previous_sink = get_event_sink()
+    set_event_sink(capture)
+    try:
+        result = check_module.cmd_check(args)
+    finally:
+        set_event_sink(previous_sink)
+
+    assert isinstance(result, CommandResult)
+    line_events = [payload for event, payload in events if event == "line"]
+    assert line_events, "Expected streaming line events when sink is set"
+    assert any("preflight" in str(payload.get("text", "")) for payload in line_events)

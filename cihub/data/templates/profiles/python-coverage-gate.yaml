@@ -6,6 +6,12 @@
 # Expected runtime: ~12-20 minutes (mutation dominates)
 # ============================================================================
 
+# Metadata for wizard display (CLI as source of truth)
+_metadata:
+  description: High coverage and mutation requirements
+  tools: pytest, ruff, black, isort, mutmut
+  runtime: "~12-20 min"
+
 python:
   tools:
     pytest:

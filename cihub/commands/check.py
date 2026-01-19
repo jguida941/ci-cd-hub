@@ -28,6 +28,7 @@ from cihub.commands.preflight import cmd_preflight
 from cihub.commands.schema_sync import check_schema_alignment
 from cihub.commands.smoke import cmd_smoke
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
+from cihub.output.events import emit_event, get_event_sink
 from cihub.types import CommandResult
 from cihub.utils.exec_utils import (
     TIMEOUT_BUILD,
@@ -265,7 +266,7 @@ def _run_optional(
 
 
 def _format_line(step: CheckStep) -> str:
-    status = "OK" if step.exit_code == 0 else "FAIL"
+    status = "OK" if step.exit_code == EXIT_SUCCESS else "FAIL"
     summary = f": {step.summary}" if step.summary else ""
     return f"[{status}] {step.name}{summary}"
 
@@ -308,7 +309,15 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
 
     steps: list[CheckStep] = []
     problems: list[dict[str, Any]] = []
+    output_lines: list[str] = []
     completed_checks: set[str] = set()  # Track to avoid duplicates
+    streaming = get_event_sink() is not None and not json_mode
+
+    def emit_line(line: str) -> None:
+        if streaming:
+            emit_event("line", {"text": line})
+        else:
+            output_lines.append(line)
 
     def add_step(name: str, result: int | CommandResult) -> None:
         if name in completed_checks:
@@ -326,17 +335,17 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
         if outcome.exit_code != 0:
             problems.extend(outcome.problems)
         if not json_mode:
-            print(_format_line(step))
+            emit_line(_format_line(step))
             if outcome.exit_code != 0:
                 for problem in outcome.problems:
                     detail = problem.get("detail") or problem.get("message")
                     if detail:
-                        print(detail)
-                # Print suggestions for failed checks
+                        emit_line(detail)
+                # Capture suggestions for failed checks
                 for suggestion in getattr(outcome, "suggestions", []) or []:
                     msg = suggestion.get("message", "")
                     if msg:
-                        print(f"  * {msg}")
+                        emit_line(f"  * {msg}")
 
     # ========== FAST MODE (always runs) ==========
     preflight_args = argparse.Namespace(json=True, full=True)
@@ -621,25 +630,35 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
     summary = f"{len(failed)} checks failed{mode_str}" if failed else f"All {len(steps)} checks passed{mode_str}"
 
     # Always return CommandResult (progress prints above are for real-time UX)
-    return CommandResult(
+    data = {
+        "steps": [
+            {
+                "name": step.name,
+                "exit_code": step.exit_code,
+                "summary": step.summary,
+                "problems": step.problems,
+            }
+            for step in steps
+        ],
+        "modes": {
+            "audit": run_audit,
+            "security": run_security,
+            "full": run_full,
+            "mutation": run_mutation,
+        },
+    }
+    if output_lines and not json_mode and not streaming:
+        data["raw_output"] = "\n".join(output_lines)
+
+    result = CommandResult(
         exit_code=exit_code,
         summary=summary,
         problems=problems,
-        data={
-            "steps": [
-                {
-                    "name": step.name,
-                    "exit_code": step.exit_code,
-                    "summary": step.summary,
-                    "problems": step.problems,
-                }
-                for step in steps
-            ],
-            "modes": {
-                "audit": run_audit,
-                "security": run_security,
-                "full": run_full,
-                "mutation": run_mutation,
-            },
-        },
+        data=data,
     )
+    if getattr(args, "ai", False):
+        from cihub.ai import enhance_result
+
+        result = enhance_result(result, mode="analyze")
+
+    return result

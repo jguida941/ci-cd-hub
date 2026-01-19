@@ -33,6 +33,7 @@ User-facing how-tos and setup guides:
 
 **Maintainer Guides:**
 - [INTEGRATION_SMOKE_TEST.md](guides/INTEGRATION_SMOKE_TEST.md) - CLI validation
+- [DOC_AUTOMATION.md](guides/DOC_AUTOMATION.md) - Doc automation commands and gates
 
 **Archived (superseded by GETTING_STARTED.md):**
 - [ONBOARDING.md](development/archive/ONBOARDING.md) - archived
@@ -68,9 +69,8 @@ Internal planning and governance docs:
 - [research/RESEARCH_LOG.md](development/research/RESEARCH_LOG.md) - Best practices research notes (reference-only)
 
 **Active Design Docs** (`development/active/`):
-- [TEST_REORGANIZATION.md](development/active/TEST_REORGANIZATION.md) - Test suite restructuring plan
-- [DOC_AUTOMATION_AUDIT.md](development/active/DOC_AUTOMATION_AUDIT.md) - `cihub docs stale` design
 - [TYPESCRIPT_CLI_DESIGN.md](development/active/TYPESCRIPT_CLI_DESIGN.md) - TypeScript CLI wrapper design
+- [AI_CI_LOOP_PROPOSAL.md](development/active/AI_CI_LOOP_PROPOSAL.md) - Autonomous AI CI loop proposal
 - [PYQT_PLAN.md](development/active/PYQT_PLAN.md) - PyQt6 GUI wrapper design
 
 **Architecture:**
@@ -79,6 +79,9 @@ Internal planning and governance docs:
 
 **Archive:**
 - [archive/](development/archive/) - Superseded docs (kept for history)
+- [CLI_WIZARD_SYNC_AUDIT.md](development/archive/CLI_WIZARD_SYNC_AUDIT.md) - CLI/wizard/schema/TS alignment audit (archived 2026-01-19)
+- [DOC_AUTOMATION_AUDIT.md](development/archive/DOC_AUTOMATION_AUDIT.md) - Doc automation design (archived 2026-01-17)
+- [TEST_REORGANIZATION.md](development/archive/TEST_REORGANIZATION.md) - Test suite restructuring (archived 2026-01-17)
 - [CLEAN_CODE.md](development/archive/CLEAN_CODE.md) - Architecture improvements (archived)
 - [remediation.md](development/archive/remediation.md) - Audit remediation tracking (archived)
 - [SYSTEM_INTEGRATION_PLAN.md](development/archive/SYSTEM_INTEGRATION_PLAN.md) - Registry/wizard/schema integration (archived)

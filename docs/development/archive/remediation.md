@@ -32,8 +32,8 @@ This is the intake doc; downstream plan docs are updated after remediation tasks
 
 - `docs/development/archive/CLEAN_CODE.md`
 - `docs/development/archive/SYSTEM_INTEGRATION_PLAN.md`
-- `docs/development/active/DOC_AUTOMATION_AUDIT.md`
-- `docs/development/active/TEST_REORGANIZATION.md`
+- `docs/development/archive/DOC_AUTOMATION_AUDIT.md`
+- `docs/development/archive/TEST_REORGANIZATION.md`
 - `docs/development/MASTER_PLAN.md`
 - `docs/adr/*.md`
 - Local triage bundles in `.cihub/runs/*/triage.json`

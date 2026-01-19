@@ -97,13 +97,15 @@
 # ---
 # name: TestHelpSnapshots.test_check_help_snapshot
   list([
-    'usage: cihub check [-h] [--json] [--smoke-repo SMOKE_REPO]',
+    'usage: cihub check [-h] [--json] [--ai] [--no-ai] [--smoke-repo SMOKE_REPO]',
     '[--smoke-subdir SMOKE_SUBDIR] [--install-deps] [--relax]',
     '[--keep] [--install-missing] [--require-optional] [--audit]',
     '[--security] [--full] [--mutation] [--all]',
     'options:',
     '-h, --help            show this help message and exit',
     '--json                Output machine-readable JSON',
+    '--ai                  Enable AI-assisted analysis (requires Claude CLI)',
+    '--no-ai               Disable AI assistance',
     '--smoke-repo SMOKE_REPO',
     'Path to repo for smoke test (omit to scaffold',
     'fixtures)',
@@ -287,19 +289,19 @@
     '--wizard              Run interactive wizard (requires cihub[wizard])',
     '--dry-run             Print output instead of writing',
     '--install-from {pypi,git,local}',
-    'How cihub should be installed in CI: pypi, git',
-    '(default), or local',
+    'How cihub should be installed in CI: pypi (default),',
+    'git, or local',
     'See also: detect, scaffold, update, setup',
   ])
 # ---
 # name: TestHelpSnapshots.test_main_help_snapshot
   list([
     'usage: cihub [-h] [--version]',
-    '{detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,ai-loop,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo}',
+    '{detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,ai-loop,run,commands,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo}',
     '...',
     'CI/CD Hub CLI',
     'positional arguments:',
-    '{detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,ai-loop,run,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo}',
+    '{detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,ai-loop,run,commands,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo}',
     'detect              Detect repo language and tools',
     'preflight           Check environment readiness',
     'doctor              Alias for preflight',
@@ -311,6 +313,7 @@
     'ci                  Run CI based on .ci-hub.yml',
     'ai-loop             Autonomous AI CI fix loop',
     'run                 Run one tool and emit JSON output',
+    'commands            Command registry helpers',
     'report              Build reports and summaries',
     'triage              Generate triage bundle outputs',
     'fix                 Run auto-fixers or report issues for manual review',
@@ -396,7 +399,7 @@
 # ---
 # name: TestHelpSnapshots.test_report_help_snapshot
   list([
-    'usage: cihub report [-h] [--json]',
+    'usage: cihub report [-h] [--json] [--ai] [--no-ai]',
     '{build,summary,outputs,aggregate,validate,dashboard,security-summary,smoke-summary,kyverno-summary,orchestrator-summary}',
     '...',
     'positional arguments:',
@@ -416,6 +419,8 @@
     'options:',
     '-h, --help            show this help message and exit',
     '--json                Output machine-readable JSON',
+    '--ai                  Enable AI-assisted analysis (requires Claude CLI)',
+    '--no-ai               Disable AI assistance',
     'See also: ci, triage',
   ])
 # ---
@@ -496,16 +501,19 @@
 # ---
 # name: TestHelpSnapshots.test_triage_help_snapshot
   list([
-    'usage: cihub triage [-h] [--json] [--output-dir OUTPUT_DIR] [--report REPORT]',
-    '[--summary SUMMARY] [--run RUN_ID] [--latest] [--watch]',
-    '[--interval SECONDS] [--artifacts-dir PATH]',
-    '[--repo OWNER/REPO] [--workflow NAME] [--branch NAME]',
-    '[--multi] [--aggregate] [--per-repo] [--reports-dir PATH]',
-    '[--detect-flaky] [--gate-history] [--min-severity LEVEL]',
-    '[--category CAT] [--verify-tools]',
+    'usage: cihub triage [-h] [--json] [--ai] [--no-ai] [--output-dir OUTPUT_DIR]',
+    '[--report REPORT] [--summary SUMMARY] [--run RUN_ID]',
+    '[--latest] [--watch] [--interval SECONDS]',
+    '[--artifacts-dir PATH] [--repo OWNER/REPO]',
+    '[--workflow NAME] [--branch NAME] [--multi] [--aggregate]',
+    '[--per-repo] [--reports-dir PATH] [--detect-flaky]',
+    '[--gate-history] [--min-severity LEVEL] [--category CAT]',
+    '[--verify-tools]',
     'options:',
     '-h, --help            show this help message and exit',
     '--json                Output machine-readable JSON',
+    '--ai                  Enable AI-assisted analysis (requires Claude CLI)',
+    '--no-ai               Disable AI assistance',
     '--output-dir OUTPUT_DIR',
     'Output directory (default: .cihub)',
     '--report REPORT       Path to report.json (default: <output-',

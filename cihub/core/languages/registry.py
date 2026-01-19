@@ -76,8 +76,8 @@ def get_strategy(language: str) -> LanguageStrategy:
     return strategy
 
 
-def detect_language(repo_path: Path) -> str:
-    """Auto-detect the project language from repository contents.
+def detect_language_with_scores(repo_path: Path) -> tuple[str, dict[str, float]]:
+    """Auto-detect the project language and return confidence scores.
 
     Uses confidence scoring from each strategy's detect() method.
     Returns the language with highest confidence above 0.5 threshold.
@@ -86,18 +86,17 @@ def detect_language(repo_path: Path) -> str:
         repo_path: Path to the repository root
 
     Returns:
-        The detected language identifier
+        Tuple of (detected language identifier, scores by language).
 
     Raises:
         ValueError: If no language could be detected with sufficient confidence
     """
     strategies = _init_strategies()
+    scores = {lang: strategy.detect(repo_path) for lang, strategy in strategies.items()}
 
     best_lang = None
     best_score = 0.0
-
-    for lang, strategy in strategies.items():
-        score = strategy.detect(repo_path)
+    for lang, score in scores.items():
         if score > best_score:
             best_score = score
             best_lang = lang
@@ -105,7 +104,13 @@ def detect_language(repo_path: Path) -> str:
     if best_score < 0.5 or best_lang is None:
         raise ValueError(f"Could not detect language in {repo_path}. No language markers found with confidence >= 0.5")
 
-    return best_lang
+    return best_lang, scores
+
+
+def detect_language(repo_path: Path) -> str:
+    """Auto-detect the project language from repository contents."""
+    language, _ = detect_language_with_scores(repo_path)
+    return language
 
 
 def list_supported_languages() -> list[str]:

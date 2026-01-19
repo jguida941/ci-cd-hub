@@ -11,6 +11,7 @@ from cihub.services import aggregate_from_dispatch, aggregate_from_reports_dir
 from cihub.types import CommandResult
 from cihub.utils.debug import emit_debug_context
 from cihub.utils.env import get_github_token
+from cihub.utils.github_context import GitHubContext
 
 from .helpers import _resolve_include_details, _resolve_write_summary
 
@@ -90,9 +91,10 @@ def _aggregate_report(args: argparse.Namespace) -> CommandResult:
         if summary_env:
             summary_file = Path(summary_env)
 
+    ctx = GitHubContext.from_env()
     total_repos = args.total_repos or int(os.environ.get("TOTAL_REPOS", 0) or 0)
-    hub_run_id = args.hub_run_id or os.environ.get("HUB_RUN_ID", os.environ.get("GITHUB_RUN_ID", ""))
-    hub_event = args.hub_event or os.environ.get("HUB_EVENT", os.environ.get("GITHUB_EVENT_NAME", ""))
+    hub_run_id = args.hub_run_id or os.environ.get("HUB_RUN_ID", ctx.run_id or "")
+    hub_event = args.hub_event or os.environ.get("HUB_EVENT", ctx.event_name or "")
 
     reports_dir = getattr(args, "reports_dir", None)
     if reports_dir:

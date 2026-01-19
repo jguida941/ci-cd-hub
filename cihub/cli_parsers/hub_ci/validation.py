@@ -135,8 +135,8 @@ def add_validation_parsers(
     hub_ci_enforce_cmd_result.add_argument(
         "--max-allowed",
         type=int,
-        default=8,
-        help="Maximum allowed print() calls in cihub/commands/ (default: 8)",
+        default=0,
+        help="Maximum allowed print() calls in cihub/commands/ (default: 0)",
     )
     add_summary_args(hub_ci_enforce_cmd_result)
     hub_ci_enforce_cmd_result.add_argument(

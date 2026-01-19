@@ -4,28 +4,32 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from cihub.core.languages.registry import (
+    detect_language_with_scores,
+    get_strategy,
+    list_supported_languages,
+)
+
+
+def _collect_reasons(repo_path: Path) -> list[str]:
+    reasons: list[str] = []
+    for language in list_supported_languages():
+        strategy = get_strategy(language)
+        reasons.extend(strategy.detect_reasons(repo_path))
+    return reasons
+
 
 def detect_language(repo_path: Path) -> tuple[str | None, list[str]]:
-    checks = {
-        "java": ["pom.xml", "build.gradle", "build.gradle.kts"],
-        "python": ["pyproject.toml", "requirements.txt", "setup.py"],
-    }
-    matches: dict[str, list[str]] = {"java": [], "python": []}
-    for language, files in checks.items():
-        for name in files:
-            if (repo_path / name).exists():
-                matches[language].append(name)
+    try:
+        language, scores = detect_language_with_scores(repo_path)
+    except ValueError:
+        return None, _collect_reasons(repo_path)
 
-    java_found = bool(matches["java"])
-    python_found = bool(matches["python"])
-
-    if java_found and not python_found:
-        return "java", matches["java"]
-    if python_found and not java_found:
-        return "python", matches["python"]
-    if java_found and python_found:
-        return None, matches["java"] + matches["python"]
-    return None, []
+    reasons = get_strategy(language).detect_reasons(repo_path)
+    if not reasons:
+        score = scores.get(language, 0.0)
+        reasons = [f"{language} confidence {score:.2f}"]
+    return language, reasons
 
 
 def resolve_language(repo_path: Path, override: str | None) -> tuple[str, list[str]]:

@@ -8,6 +8,12 @@
 # Pairs with: python-quality, java-quality, or python-security profiles
 # ============================================================================
 
+# Metadata for wizard display (CLI as source of truth)
+_metadata:
+  description: Strict quality gates for production-critical code
+  tools: thresholds only
+  runtime: "n/a"
+
 thresholds:
   # Coverage requirements - higher bar
   coverage_min: 85

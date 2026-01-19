@@ -80,11 +80,13 @@ java:
       enabled: true
       fail_on_violation: true
       max_errors: 0
+      require_run_or_fail: true
     codeql:
       enabled: false
       fail_on_error: true
       languages:
       - java
+      require_run_or_fail: true
     docker:
       compose_file: docker-compose.yml
       dockerfile: Dockerfile
@@ -93,42 +95,52 @@ java:
       fail_on_missing_compose: false
       health_endpoint: /actuator/health
       health_timeout: 300
+      require_run_or_fail: false
     jacoco:
       enabled: true
       min_coverage: 70
+      require_run_or_fail: true
     jqwik:
       enabled: false
+      require_run_or_fail: false
     owasp:
       enabled: true
       fail_on_cvss: 7
+      require_run_or_fail: false
       use_nvd_api_key: true
     pitest:
       enabled: true
       min_mutation_score: 70
+      require_run_or_fail: false
       threads: 4
       timeout_multiplier: 2
     pmd:
       enabled: true
       fail_on_violation: false
       max_violations: 0
+      require_run_or_fail: false
     semgrep:
       enabled: false
       fail_on_findings: false
       max_findings: 0
+      require_run_or_fail: false
     sbom:
       enabled: false
       format: cyclonedx
+      require_run_or_fail: false
     spotbugs:
       effort: max
       enabled: true
       fail_on_error: true
       max_bugs: 0
+      require_run_or_fail: true
       threshold: medium
     trivy:
       enabled: false
       fail_on_critical: false
       fail_on_cvss: 7
       fail_on_high: false
+      require_run_or_fail: true
 kyverno:
   enabled: false
 notifications:
@@ -154,15 +166,18 @@ python:
       fail_on_high: true
       fail_on_low: false
       fail_on_medium: false
+      require_run_or_fail: true
     black:
       enabled: true
       fail_on_format_issues: false
       max_issues: 0
+      require_run_or_fail: false
     codeql:
       enabled: false
       fail_on_error: true
       languages:
       - python
+      require_run_or_fail: true
     docker:
       compose_file: docker-compose.yml
       enabled: false
@@ -170,41 +185,52 @@ python:
       fail_on_missing_compose: false
       health_endpoint: /actuator/health
       health_timeout: 300
+      require_run_or_fail: false
     hypothesis:
       enabled: true
+      require_run_or_fail: false
     isort:
       enabled: true
       fail_on_issues: false
       max_issues: 0
+      require_run_or_fail: false
     mutmut:
       enabled: false
       min_mutation_score: 70
+      require_run_or_fail: false
       timeout_minutes: 15
     mypy:
       enabled: false
+      require_run_or_fail: false
     pip_audit:
       enabled: true
       fail_on_vuln: true
+      require_run_or_fail: true
     pytest:
       enabled: true
       fail_fast: false
       min_coverage: 70
+      require_run_or_fail: true
     ruff:
       enabled: true
       fail_on_error: true
       max_errors: 0
+      require_run_or_fail: true
     sbom:
       enabled: false
       format: cyclonedx
+      require_run_or_fail: false
     semgrep:
       enabled: false
       fail_on_findings: false
       max_findings: 0
+      require_run_or_fail: false
     trivy:
       enabled: false
       fail_on_critical: false
       fail_on_cvss: 7
       fail_on_high: false
+      require_run_or_fail: true
 repo:
   default_branch: main
   dispatch_enabled: true
@@ -218,6 +244,8 @@ cihub:
   verbose: false
   debug_context: false
   emit_triage: false
+install:
+  source: pypi
 reports:
   badges:
     branch: main
@@ -229,6 +257,8 @@ reports:
     enabled: true
     include_metrics: true
   retention_days: 30
+harden_runner:
+  policy: audit
 runner_isolation:
   enabled: false
 supply_chain:

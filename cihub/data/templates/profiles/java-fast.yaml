@@ -9,6 +9,12 @@
 # Expected runtime: ~5-10 minutes
 # ============================================================================
 
+# Metadata for wizard display (CLI as source of truth)
+_metadata:
+  description: Quick CI with core Java quality tools
+  tools: jacoco, checkstyle, spotbugs
+  runtime: "~5-10 min"
+
 java:
   tools:
     # Core quality tools - always run

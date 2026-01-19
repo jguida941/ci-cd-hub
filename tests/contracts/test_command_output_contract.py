@@ -18,62 +18,17 @@ existing code is migrated incrementally.
 from __future__ import annotations
 
 import ast
+import argparse
 from pathlib import Path
 
 import pytest
+import yaml
 
-# Files pending migration - remove from list as each is migrated
-# Goal: empty list = all commands follow the contract
-PRINT_ALLOWLIST: set[str] = {
-    # Interactive/streaming output - needs real-time prints (cannot use CommandResult)
-    "triage_cmd.py",  # --latest auto-select prints user feedback during triage flow
-    # Hub settings display - intentionally prints YAML for user visibility
-    "hub_config.py",  # hub config show/load prints YAML or key=value for GitHub Actions
-    # Worst offenders (migrate first)
-    # "triage.py",    # MIGRATED - 34 prints → CommandResult
-    # "secrets.py",   # MIGRATED - 32 prints → CommandResult
-    # "templates.py", # MIGRATED - 22 prints → CommandResult
-    # "pom.py",       # MIGRATED - 21 prints → CommandResult
-    # "adr.py",       # MIGRATED - 16 prints → CommandResult
-    # "new.py",       # MIGRATED - 10 prints → CommandResult
-    # "init.py",      # MIGRATED - 10 prints → CommandResult
-    # "docs.py",      # MIGRATED - 10 prints → CommandResult
-    # Medium (migrate next)
-    # "dispatch.py",  # MIGRATED - 10 prints → CommandResult
-    # "config_cmd.py",  # MIGRATED - 9 prints → CommandResult
-    # "update.py",     # MIGRATED - 8 prints → CommandResult
-    # "smoke.py",      # MIGRATED - 8 prints → CommandResult
-    # "discover.py",   # MIGRATED - 8 prints → CommandResult
-    # "validate.py",   # MIGRATED - 7 prints → CommandResult
-    # "run.py",        # MIGRATED - 6 prints → CommandResult
-    # Lower priority
-    # "scaffold.py",   # MIGRATED - 5 prints → CommandResult
-    "check.py",  # 5 prints
-    "ci.py",  # 4 prints
-    "preflight.py",  # 3 prints
-    # "detect.py",      # MIGRATED - 3 prints → CommandResult
-    "verify.py",  # 2 prints
-    "config_outputs.py",  # 2 prints
-}
+# Files pending migration - empty list means all commands follow the contract.
+PRINT_ALLOWLIST: set[str] = set()
 
-# Subpackages with their own allowlists
-SUBPACKAGE_ALLOWLISTS: dict[str, set[str]] = {
-    "report": {
-        "__init__.py",
-        "build.py",
-        "helpers.py",
-        "validate.py",
-        "dashboard.py",
-        "summary.py",
-        "aggregate.py",
-        "outputs.py",
-    },
-    # hub_ci commands are migrated, but __init__.py has infrastructure helpers
-    # (_write_outputs, _append_summary) that legitimately print for GitHub Actions
-    "hub_ci": {"__init__.py"},  # Infrastructure only - commands are migrated
-    # triage subpackage - watch.py needs real-time streaming output for --watch daemon mode
-    "triage": {"watch.py"},
-}
+# Subpackages with their own allowlists (empty when fully migrated).
+SUBPACKAGE_ALLOWLISTS: dict[str, set[str]] = {}
 
 
 def get_commands_dir() -> Path:
@@ -262,15 +217,121 @@ class TestCommandResultContract:
         ],
         ids=["adr", "check", "validate", "smoke", "docs"],
     )
-    def test_command_result_has_expected_fields(self, subcommand: str, expected_fields: list[str]) -> None:
+    def test_command_result_has_expected_fields(
+        self,
+        subcommand: str,
+        expected_fields: list[str],
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
         """Commands should populate expected CommandResult fields.
 
         This is a contract test - verifies commands return structured data
         appropriate to their category.
         """
-        # This test documents expected behavior - actual testing happens
-        # in individual command test files
-        pass  # Placeholder for future migration verification
+        from cihub.types import CommandResult
+
+        def assert_fields(result: CommandResult, fields: list[str]) -> None:
+            for field in fields:
+                assert hasattr(result, field), f"Missing CommandResult field: {field}"
+                value = getattr(result, field)
+                if field == "summary":
+                    assert isinstance(value, str) and value.strip(), "summary should be a non-empty string"
+                elif field == "data":
+                    assert isinstance(value, dict), "data should be a dict"
+                elif field == "problems":
+                    assert isinstance(value, list), "problems should be a list"
+
+        if subcommand == "adr":
+            from cihub.commands import adr as adr_cmd
+
+            adr_dir = Path(tmp_path) / "docs" / "adr"
+            adr_dir.mkdir(parents=True)
+            (adr_dir / "0001-test.md").write_text(
+                "# ADR-0001: Test\n\n**Status:** Accepted\n**Date:** 2024-01-01\n",
+                encoding="utf-8",
+            )
+            monkeypatch.setattr(adr_cmd, "hub_root", lambda: Path(tmp_path))
+            args = argparse.Namespace(subcommand="list", status=None, json=True)
+            result = adr_cmd.cmd_adr(args)
+            assert_fields(result, expected_fields)
+            assert isinstance(result.data.get("adrs"), list)
+            return
+
+        if subcommand == "check":
+            from cihub.commands import check as check_cmd
+
+            def _ok_result(*_args, **_kwargs):  # type: ignore[no-untyped-def]
+                return CommandResult(exit_code=0, summary="ok")
+
+            monkeypatch.setattr(check_cmd, "_run_process", _ok_result)
+            monkeypatch.setattr(check_cmd, "_run_optional", _ok_result)
+            monkeypatch.setattr(check_cmd, "cmd_preflight", _ok_result)
+            monkeypatch.setattr(check_cmd, "cmd_docs", _ok_result)
+            monkeypatch.setattr(check_cmd, "cmd_docs_links", _ok_result)
+            monkeypatch.setattr(check_cmd, "cmd_docs_audit", _ok_result)
+            monkeypatch.setattr(check_cmd, "cmd_adr", _ok_result)
+            monkeypatch.setattr(check_cmd, "check_schema_alignment", _ok_result)
+            monkeypatch.setattr(check_cmd, "cmd_smoke", _ok_result)
+
+            args = argparse.Namespace(json=True)
+            result = check_cmd.cmd_check(args)
+            assert_fields(result, expected_fields)
+            return
+
+        if subcommand == "validate":
+            from cihub.commands.validate import cmd_validate
+
+            config = {
+                "version": "1.0",
+                "language": "python",
+                "repo": {"owner": "acme", "name": "demo"},
+                "python": {},
+            }
+            config_path = Path(tmp_path) / ".ci-hub.yml"
+            config_path.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+
+            args = argparse.Namespace(repo=str(tmp_path), json=True, strict=False)
+            result = cmd_validate(args)
+            assert_fields(result, expected_fields)
+            return
+
+        if subcommand == "smoke":
+            from cihub.commands import smoke as smoke_cmd
+
+            def _fake_run_case(case, *_args, **_kwargs):  # type: ignore[no-untyped-def]
+                step = smoke_cmd.SmokeStep(name="detect", exit_code=0, summary="ok", problems=[])
+                return [step], "python"
+
+            monkeypatch.setattr(smoke_cmd, "_run_case", _fake_run_case)
+
+            args = argparse.Namespace(
+                repo=str(tmp_path),
+                subdir="",
+                all=False,
+                type=None,
+                keep=False,
+                full=False,
+                install_deps=False,
+                relax=False,
+                force=False,
+            )
+            result = smoke_cmd.cmd_smoke(args)
+            assert_fields(result, expected_fields)
+            assert isinstance(result.data.get("cases"), list)
+            return
+
+        if subcommand == "docs":
+            from cihub.commands.docs import cmd_docs
+
+            output_dir = Path(tmp_path) / "docs"
+            args = argparse.Namespace(subcommand="generate", output=str(output_dir), check=False)
+            result = cmd_docs(args)
+            assert_fields(result, expected_fields)
+            assert isinstance(result.data.get("items"), list)
+            return
+
+        raise AssertionError(f"Unknown subcommand for contract test: {subcommand}")
 
 
 class TestPrintPatternDetection:
@@ -345,15 +406,13 @@ class TestPrintPatternDetection:
 class TestAllowlistManagement:
     """Tests for allowlist hygiene."""
 
-    def test_allowlist_not_empty_until_migration_complete(self) -> None:
-        """Allowlist should shrink as migration progresses."""
+    def test_allowlist_empty_after_migration_complete(self) -> None:
+        """Allowlist should be empty once migration is complete."""
         total_allowlisted = len(PRINT_ALLOWLIST)
         for files in SUBPACKAGE_ALLOWLISTS.values():
             total_allowlisted += len(files)
 
-        # This will fail when migration is complete (good!)
-        # Update this assertion as migration progresses
-        assert total_allowlisted > 0, "All commands migrated! Remove this test and the allowlist."
+        assert total_allowlisted == 0, "Allowlist should be empty after migration."
 
     def test_no_duplicate_entries(self) -> None:
         """Allowlist should have no duplicates."""

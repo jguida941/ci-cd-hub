@@ -392,7 +392,7 @@ def cmd_smoke(args: argparse.Namespace) -> CommandResult:
             relax=bool(args.relax),
             force=bool(args.force),
         )
-        success = all(step.exit_code == 0 for step in steps)
+        success = all(step.exit_code == EXIT_SUCCESS for step in steps)
         failures += 0 if success else 1
         results.append(
             {
@@ -416,7 +416,7 @@ def cmd_smoke(args: argparse.Namespace) -> CommandResult:
         status = "OK" if success else "FAIL"
         items.append(f"[{status}] {case.name}")
         for step in steps:
-            step_status = "OK" if step.exit_code == 0 else "FAIL"
+            step_status = "OK" if step.exit_code == EXIT_SUCCESS else "FAIL"
             items.append(f"  - {step_status} {step.name}: {step.summary}")
 
     if temp_dir and args.keep:

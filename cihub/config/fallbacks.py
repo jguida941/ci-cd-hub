@@ -92,11 +92,13 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
                 "enabled": True,
                 "fail_on_violation": True,
                 "max_errors": 0,
+                "require_run_or_fail": True,
             },
             "codeql": {
                 "enabled": False,
                 "fail_on_error": True,
                 "languages": ['java'],
+                "require_run_or_fail": True,
             },
             "docker": {
                 "compose_file": "docker-compose.yml",
@@ -106,22 +108,27 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
                 "fail_on_missing_compose": False,
                 "health_endpoint": "/actuator/health",
                 "health_timeout": 300,
+                "require_run_or_fail": False,
             },
             "jacoco": {
                 "enabled": True,
                 "min_coverage": 70,
+                "require_run_or_fail": True,
             },
             "jqwik": {
                 "enabled": False,
+                "require_run_or_fail": False,
             },
             "owasp": {
                 "enabled": True,
                 "fail_on_cvss": 7,
+                "require_run_or_fail": False,
                 "use_nvd_api_key": True,
             },
             "pitest": {
                 "enabled": True,
                 "min_mutation_score": 70,
+                "require_run_or_fail": False,
                 "threads": 4,
                 "timeout_multiplier": 2,
             },
@@ -129,21 +136,25 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
                 "enabled": True,
                 "fail_on_violation": False,
                 "max_violations": 0,
+                "require_run_or_fail": False,
             },
             "semgrep": {
                 "enabled": False,
                 "fail_on_findings": False,
                 "max_findings": 0,
+                "require_run_or_fail": False,
             },
             "sbom": {
                 "enabled": False,
                 "format": "cyclonedx",
+                "require_run_or_fail": False,
             },
             "spotbugs": {
                 "effort": "max",
                 "enabled": True,
                 "fail_on_error": True,
                 "max_bugs": 0,
+                "require_run_or_fail": True,
                 "threshold": "medium",
             },
             "trivy": {
@@ -151,6 +162,7 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
                 "fail_on_critical": False,
                 "fail_on_cvss": 7,
                 "fail_on_high": False,
+                "require_run_or_fail": True,
             },
         },
     },
@@ -183,16 +195,19 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
                 "fail_on_high": True,
                 "fail_on_low": False,
                 "fail_on_medium": False,
+                "require_run_or_fail": True,
             },
             "black": {
                 "enabled": True,
                 "fail_on_format_issues": False,
                 "max_issues": 0,
+                "require_run_or_fail": False,
             },
             "codeql": {
                 "enabled": False,
                 "fail_on_error": True,
                 "languages": ['python'],
+                "require_run_or_fail": True,
             },
             "docker": {
                 "compose_file": "docker-compose.yml",
@@ -201,51 +216,62 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
                 "fail_on_missing_compose": False,
                 "health_endpoint": "/actuator/health",
                 "health_timeout": 300,
+                "require_run_or_fail": False,
             },
             "hypothesis": {
                 "enabled": True,
+                "require_run_or_fail": False,
             },
             "isort": {
                 "enabled": True,
                 "fail_on_issues": False,
                 "max_issues": 0,
+                "require_run_or_fail": False,
             },
             "mutmut": {
                 "enabled": False,
                 "min_mutation_score": 70,
+                "require_run_or_fail": False,
                 "timeout_minutes": 15,
             },
             "mypy": {
                 "enabled": False,
+                "require_run_or_fail": False,
             },
             "pip_audit": {
                 "enabled": True,
                 "fail_on_vuln": True,
+                "require_run_or_fail": True,
             },
             "pytest": {
                 "enabled": True,
                 "fail_fast": False,
                 "min_coverage": 70,
+                "require_run_or_fail": True,
             },
             "ruff": {
                 "enabled": True,
                 "fail_on_error": True,
                 "max_errors": 0,
+                "require_run_or_fail": True,
             },
             "sbom": {
                 "enabled": False,
                 "format": "cyclonedx",
+                "require_run_or_fail": False,
             },
             "semgrep": {
                 "enabled": False,
                 "fail_on_findings": False,
                 "max_findings": 0,
+                "require_run_or_fail": False,
             },
             "trivy": {
                 "enabled": False,
                 "fail_on_critical": False,
                 "fail_on_cvss": 7,
                 "fail_on_high": False,
+                "require_run_or_fail": True,
             },
         },
     },
@@ -264,6 +290,9 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
         "debug_context": False,
         "emit_triage": False,
     },
+    "install": {
+        "source": "pypi",
+    },
     "reports": {
         "badges": {
             "branch": "main",
@@ -278,6 +307,9 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
             "include_metrics": True,
         },
         "retention_days": 30,
+    },
+    "harden_runner": {
+        "policy": "audit",
     },
     "runner_isolation": {
         "enabled": False,

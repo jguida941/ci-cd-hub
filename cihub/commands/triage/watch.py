@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 
 from cihub.exit_codes import EXIT_SUCCESS
+from cihub.output.events import emit_event, get_event_sink
 from cihub.types import CommandResult
 from cihub.utils.exec_utils import (
     TIMEOUT_NETWORK,
@@ -49,14 +50,24 @@ def watch_for_failures(
     """
     triaged_runs: set[str] = set()
     triage_count = 0
+    problems: list[dict[str, str]] = []
+    output_lines: list[str] = []
+    json_mode = bool(getattr(args, "json", False))
+    streaming = get_event_sink() is not None and not json_mode
     output_dir = Path(args.output_dir or ".cihub")
 
-    print(f"Watching for failed runs (interval: {interval}s, Ctrl+C to stop)")
+    def emit(line: str = "") -> None:
+        if streaming:
+            emit_event("line", {"text": line})
+        else:
+            output_lines.append(line)
+
+    emit(f"Watching for failed runs (interval: {interval}s, Ctrl+C to stop)")
     if workflow:
-        print(f"   Filtering: workflow={workflow}")
+        emit(f"   Filtering: workflow={workflow}")
     if branch:
-        print(f"   Filtering: branch={branch}")
-    print()
+        emit(f"   Filtering: branch={branch}")
+    emit()
 
     try:
         while True:
@@ -90,7 +101,7 @@ def watch_for_failures(
                             # New failure found - triage it
                             name = run.get("name", "Unknown")
                             branch_name = run.get("headBranch", "")
-                            print(f"[FAILURE] {name} (branch: {branch_name}, run: {run_id})")
+                            emit(f"[FAILURE] {name} (branch: {branch_name}, run: {run_id})")
 
                             # Run triage
                             try:
@@ -103,25 +114,45 @@ def watch_for_failures(
                                 triage_count += 1
 
                                 if triage_result:
-                                    print(f"   [OK] Triaged: {triage_result}")
+                                    emit(f"   [OK] Triaged: {triage_result}")
                                 else:
-                                    print("   [WARN] Triage completed (no artifacts)")
+                                    emit("   [WARN] Triage completed (no artifacts)")
                             except Exception as e:
-                                print(f"   [ERROR] Triage failed: {e}")
+                                problems.append(
+                                    {
+                                        "severity": "error",
+                                        "message": f"Triage failed: {e}",
+                                    }
+                                )
+                                emit(f"   [ERROR] Triage failed: {e}")
                                 triaged_runs.add(run_id)  # Don't retry
 
-                            print()
+                            emit()
             except (CommandNotFoundError, CommandTimeoutError, json.JSONDecodeError) as e:
-                print(f"[WARN] Poll error: {e}", file=sys.stderr)
+                problems.append(
+                    {
+                        "severity": "warning",
+                        "message": f"Poll error: {e}",
+                    }
+                )
+                if streaming:
+                    emit_event("line", {"text": f"[WARN] Poll error: {e}", "stream": "stderr"})
+                else:
+                    emit(f"[WARN] Poll error: {e}")
 
             time.sleep(interval)
 
     except KeyboardInterrupt:
-        print(f"\nStopped. Triaged {triage_count} run(s).")
+        emit(f"\nStopped. Triaged {triage_count} run(s).")
         return CommandResult(
             exit_code=EXIT_SUCCESS,
             summary=f"Watch stopped. Triaged {triage_count} run(s).",
-            data={"triaged_count": triage_count, "triaged_runs": list(triaged_runs)},
+            problems=problems,
+            data={
+                "triaged_count": triage_count,
+                "triaged_runs": list(triaged_runs),
+                **({"raw_output": "\n".join(output_lines)} if output_lines and not json_mode and not streaming else {}),
+            },
         )
 
 

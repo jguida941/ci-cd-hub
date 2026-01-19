@@ -11,7 +11,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import pytest
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
@@ -24,7 +23,6 @@ from cihub.exit_codes import (
     EXIT_USAGE,
 )
 from cihub.types import CommandResult, ToolResult
-
 
 # =============================================================================
 # Strategy Definitions
@@ -344,7 +342,7 @@ class TestReportStructureProperties:
     @settings(max_examples=50)
     def test_metrics_are_numeric(self, metrics: dict[str, float]) -> None:
         """Property: All metrics values should be numeric."""
-        for key, value in metrics.items():
+        for _key, value in metrics.items():
             assert isinstance(value, (int, float))
             assert value >= 0
 

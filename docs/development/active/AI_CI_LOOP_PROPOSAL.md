@@ -5,6 +5,8 @@
 **Source-of-truth:** manual  
 **Last-reviewed:** 2026-01-15  
 **State:** Draft  
+**Priority:** **#7** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))  
+**Depends On:** Stable CLI output + triage bundles (CLEAN_CODE.md archived)  
 
 ---
 
@@ -948,7 +950,7 @@ _AI_FORMATTERS: dict[str, tuple[str, str]] = {
 
 | Task | Files | Effort | Priority |
 |------|-------|--------|----------|
-| [x] Add Prompt Contract (Critical Skill) | `docs/development/AI_CI_LOOP_PROPOSAL.md` | Low | P1 |
+| [x] Add Prompt Contract (Critical Skill) | `docs/development/active/AI_CI_LOOP_PROPOSAL.md` | Low | P1 |
 | [x] Align loop to `cihub ci` + triage bundle emission | `cihub/commands/ai_loop.py` | Low | P1 |
 | [x] Add iteration tracking field to triage history | `cihub/services/triage_service.py` | Low | P1 |
 | [x] Define AI loop safety config location (CLI flags first) | `cihub/commands/ai_loop.py` | Low | P1 |
@@ -1029,7 +1031,7 @@ Goal: allow the wizard to select a repo, configure loop settings, and launch the
 
 | Task | Files | Effort | Priority |
 |------|-------|--------|----------|
-| [ ] Define wizard contract for loop setup (flags + profile mapping) | `docs/development/AI_CI_LOOP_PROPOSAL.md` | Low | P3 |
+| [ ] Define wizard contract for loop setup (flags + profile mapping) | `docs/development/active/AI_CI_LOOP_PROPOSAL.md` | Low | P3 |
 | [ ] Expose loop config in wizard UI (calls `cihub ai-loop --json`) | Wizard repo | Medium | P3 |
 | [ ] Add "remote loop" presets (branch, provider, timeouts) | Wizard repo | Medium | P3 |
 | [ ] Wizard can install Claude hook + set review command (Codex) | Wizard repo | Medium | P3 |

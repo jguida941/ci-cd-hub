@@ -991,9 +991,7 @@
       "description": "Primary language of the repository",
       "enum": [
         "java",
-        "python",
-        "node",
-        "go"
+        "python"
       ],
       "type": "string"
     },

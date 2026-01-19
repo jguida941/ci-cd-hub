@@ -45,5 +45,5 @@ The overrides map defaults to an empty object.
 
 ## References
 
-- [TEST_REORGANIZATION.md](../development/active/TEST_REORGANIZATION.md)
+- [TEST_REORGANIZATION.md](../development/archive/TEST_REORGANIZATION.md)
 - [ADR-0053: Schema-Derived Defaults and Fallbacks](0053-schema-derived-defaults.md)

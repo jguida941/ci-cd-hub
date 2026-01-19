@@ -7,9 +7,9 @@
 
 > Reference only - the canonical execution plan lives in `docs/development/MASTER_PLAN.md`.
 
-**Priority:** **#5 - DEFERRED** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))  
+**Priority:** **#8 - DEFERRED** (See [MASTER_PLAN.md](../MASTER_PLAN.md#active-design-docs---priority-order))  
 **Status:** Concept only  
-**Depends On:** CLEAN_CODE.md (archived), TEST_REORGANIZATION.md, TYPESCRIPT_CLI_DESIGN.md (all complete)  
+**Depends On:** CLEAN_CODE.md (archived), TEST_REORGANIZATION.md (archived), TYPESCRIPT_CLI_DESIGN.md, AI_CI_LOOP_PROPOSAL.md  
 
 ---
 
@@ -388,8 +388,8 @@ Execution order (avoid rework):
 │ ┌────────────┐  ┌──────────────────────────────────────────────┐ │
 │ │   REPOS    │  │  REPO: myorg/my-service                      │ │
 │ │            │  │  ┌────────────────────────────────────────┐  │ │
-│ │ ▸ myorg/   │  │  │ Language: [Python ▼]  Version: [3.12] │   │ │
-│ │   my-svc   │  │  │ Branch:   [main    ]  Monorepo: [ ]   │   │ │
+│ │ ▸ myorg/   │  │  │ Language: [Python ▼]  Version: [3.12]  │  │ │
+│ │   my-svc   │  │  │ Branch:   [main    ]  Monorepo: [ ]    │  │ │
 │ │   other    │  │  └────────────────────────────────────────┘  │ │
 │ │ ▸ fixtures │  │  ┌────────────────────────────────────────┐  │ │
 │ │   java-pass│  │  │ TOOLS                                  │  │ │
@@ -665,9 +665,9 @@ UI Layout (Final Vision):
 │ ┌─────────────────────────────────────────────────────────────┐ │
 │ │ REPO SETTINGS                                               │ │
 │ │ Owner: [____________]        Name: [____________]           │ │
-│ │ Branch: [main      ▼]        Language: [Python ▼]          │ │
+│ │ Branch: [main      ▼]        Language: [Python ▼]           │ │
 │ │ [ ] Monorepo                 Subdir: [____________]         │ │
-│ │ Run Group: [full   ▼]        Mode: [Central    ▼]          │ │
+│ │ Run Group: [full   ▼]        Mode: [Central    ▼]           │ │
 │ └─────────────────────────────────────────────────────────────┘ │
 │ ┌─────────────────────────────────────────────────────────────┐ │
 │ │ TOOLS                                   Profile: [quality ▼]│ │

@@ -66,13 +66,31 @@ from .summary import (
 from .validate import _validate_report
 
 
+def _report_ai_mode(subcommand: str) -> str:
+    return "analyze" if subcommand in {"aggregate", "validate", "build"} else "explain"
+
+
+def _maybe_enhance(
+    args: argparse.Namespace,
+    result: CommandResult,
+    *,
+    mode: str,
+) -> CommandResult:
+    if getattr(args, "ai", False):
+        from cihub.ai import enhance_result
+
+        return enhance_result(result, mode=mode)
+    return result
+
+
 def cmd_report(args: argparse.Namespace) -> CommandResult:
     """Main router for report subcommands."""
+    ai_mode = _report_ai_mode(args.subcommand)
     if args.subcommand == "aggregate":
-        return _aggregate_report(args)
+        return _maybe_enhance(args, _aggregate_report(args), mode=ai_mode)
 
     if args.subcommand == "outputs":
-        return _report_outputs(args)
+        return _maybe_enhance(args, _report_outputs(args), mode=ai_mode)
 
     if args.subcommand == "summary":
         report_path = Path(args.report)
@@ -85,11 +103,15 @@ def cmd_report(args: argparse.Namespace) -> CommandResult:
         if github_summary:
             github_summary.write_text(summary_text, encoding="utf-8")
         # Return CommandResult with summary text for display
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary="Summary rendered",
-            artifacts={"summary": str(output_path) if output_path else ""},
-            data={"raw_output": summary_text} if write_summary and not output_path else {},
+        return _maybe_enhance(
+            args,
+            CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary="Summary rendered",
+                artifacts={"summary": str(output_path) if output_path else ""},
+                data={"raw_output": summary_text} if write_summary and not output_path else {},
+            ),
+            mode=ai_mode,
         )
 
     if args.subcommand == "security-summary":
@@ -102,11 +124,16 @@ def cmd_report(args: argparse.Namespace) -> CommandResult:
             summary_text = _security_overall_summary(args)
         write_summary = _resolve_write_summary(args.write_github_summary)
         summary_path = _resolve_summary_path(args.summary, write_summary)
-        _append_summary(summary_text, summary_path, print_stdout=write_summary)
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=f"Security summary generated ({mode} mode)",
-            data={"raw_output": summary_text} if not write_summary else {},
+        stdout_text = _append_summary(summary_text, summary_path, emit_stdout=write_summary)
+        raw_output = summary_text if not write_summary else stdout_text
+        return _maybe_enhance(
+            args,
+            CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=f"Security summary generated ({mode} mode)",
+                data={"raw_output": raw_output} if raw_output else {},
+            ),
+            mode=ai_mode,
         )
 
     if args.subcommand == "smoke-summary":
@@ -117,22 +144,32 @@ def cmd_report(args: argparse.Namespace) -> CommandResult:
             summary_text = _smoke_overall_summary(args)
         write_summary = _resolve_write_summary(args.write_github_summary)
         summary_path = _resolve_summary_path(args.summary, write_summary)
-        _append_summary(summary_text, summary_path, print_stdout=write_summary)
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=f"Smoke summary generated ({mode} mode)",
-            data={"raw_output": summary_text} if not write_summary else {},
+        stdout_text = _append_summary(summary_text, summary_path, emit_stdout=write_summary)
+        raw_output = summary_text if not write_summary else stdout_text
+        return _maybe_enhance(
+            args,
+            CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=f"Smoke summary generated ({mode} mode)",
+                data={"raw_output": raw_output} if raw_output else {},
+            ),
+            mode=ai_mode,
         )
 
     if args.subcommand == "kyverno-summary":
         summary_text = _kyverno_summary(args)
         write_summary = _resolve_write_summary(args.write_github_summary)
         summary_path = _resolve_summary_path(args.summary, write_summary)
-        _append_summary(summary_text, summary_path, print_stdout=write_summary)
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary="Kyverno summary generated",
-            data={"raw_output": summary_text} if not write_summary else {},
+        stdout_text = _append_summary(summary_text, summary_path, emit_stdout=write_summary)
+        raw_output = summary_text if not write_summary else stdout_text
+        return _maybe_enhance(
+            args,
+            CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary="Kyverno summary generated",
+                data={"raw_output": raw_output} if raw_output else {},
+            ),
+            mode=ai_mode,
         )
 
     if args.subcommand == "orchestrator-summary":
@@ -142,15 +179,20 @@ def cmd_report(args: argparse.Namespace) -> CommandResult:
             summary_text = _orchestrator_trigger_summary(args)
         write_summary = _resolve_write_summary(args.write_github_summary)
         summary_path = _resolve_summary_path(args.summary, write_summary)
-        _append_summary(summary_text, summary_path, print_stdout=write_summary)
-        return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=f"Orchestrator summary generated ({args.mode} mode)",
-            data={"raw_output": summary_text} if not write_summary else {},
+        stdout_text = _append_summary(summary_text, summary_path, emit_stdout=write_summary)
+        raw_output = summary_text if not write_summary else stdout_text
+        return _maybe_enhance(
+            args,
+            CommandResult(
+                exit_code=EXIT_SUCCESS,
+                summary=f"Orchestrator summary generated ({args.mode} mode)",
+                data={"raw_output": raw_output} if raw_output else {},
+            ),
+            mode=ai_mode,
         )
 
     if args.subcommand == "validate":
-        return _validate_report(args)
+        return _maybe_enhance(args, _validate_report(args), mode=ai_mode)
 
     if args.subcommand == "dashboard":
         reports_dir = Path(args.reports_dir)
@@ -181,20 +223,28 @@ def cmd_report(args: argparse.Namespace) -> CommandResult:
         if skipped > 0:
             summary_parts.append(f"Skipped {skipped} reports with non-2.0 schema")
 
-        return CommandResult(
-            exit_code=exit_code,
-            summary="\n".join(summary_parts),
-            artifacts={"dashboard": str(output_path)},
-            problems=[{"severity": "warning", "message": w} for w in warnings],
-            data={"reports_loaded": len(reports), "reports_skipped": skipped},
+        return _maybe_enhance(
+            args,
+            CommandResult(
+                exit_code=exit_code,
+                summary="\n".join(summary_parts),
+                artifacts={"dashboard": str(output_path)},
+                problems=[{"severity": "warning", "message": w} for w in warnings],
+                data={"reports_loaded": len(reports), "reports_skipped": skipped},
+            ),
+            mode=ai_mode,
         )
 
     if args.subcommand == "build":
-        return _build_report(args)
+        return _maybe_enhance(args, _build_report(args), mode=ai_mode)
 
-    return CommandResult(
-        exit_code=EXIT_USAGE,
-        summary=f"Unknown report subcommand: {args.subcommand}",
+    return _maybe_enhance(
+        args,
+        CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=f"Unknown report subcommand: {args.subcommand}",
+        ),
+        mode=ai_mode,
     )
 
 

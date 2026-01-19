@@ -10,12 +10,12 @@ and are consolidated here to avoid duplication.
 
 from __future__ import annotations
 
-import os
 import re
 from pathlib import Path
 from typing import Any
 
 from cihub.utils.git import get_git_remote, parse_repo_from_remote
+from cihub.utils.github_context import GitHubContext
 
 
 def get_repo_name(config: dict[str, Any], repo_path: Path) -> str:
@@ -34,9 +34,9 @@ def get_repo_name(config: dict[str, Any], repo_path: Path) -> str:
         Repository name in "owner/repo" format, or empty string if not found
     """
     # 1. Environment variable (GitHub Actions)
-    repo_env = os.environ.get("GITHUB_REPOSITORY")
-    if repo_env:
-        return repo_env
+    ctx = GitHubContext.from_env()
+    if ctx.repository:
+        return ctx.repository
 
     # 2. Config file
     repo_info = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}

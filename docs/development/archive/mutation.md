@@ -1,7 +1,7 @@
 # Mutation Testing & Test Framework Guide
 > **Superseded by:** [MASTER_PLAN.md](../MASTER_PLAN.md)  
 
-> **WARNING: SUPERSEDED:** This guide is archived. Current mutation testing documentation is in the main test documentation and `docs/development/active/TEST_REORGANIZATION.md`.
+> **WARNING: SUPERSEDED:** This guide is archived. Current mutation testing documentation is in the main test documentation and `docs/development/archive/TEST_REORGANIZATION.md`.
 >
 > **Status:** Archived  
 > **Last Updated:** 2025-12-26  

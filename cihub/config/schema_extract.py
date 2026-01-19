@@ -177,8 +177,8 @@ def _extract_defaults_from_properties(
     return result
 
 
-# Skip deprecated aliases and gate-policy knobs in tool defaults.
-TOOL_DEFAULT_SKIP_KEYS = {"min_score", "require_run_or_fail"}
+# Skip deprecated aliases in tool defaults.
+TOOL_DEFAULT_SKIP_KEYS = {"min_score"}
 
 # Optional feature blocks are defined in schema but remain minimal in defaults.yaml.
 OPTIONAL_FEATURE_KEYS = {
@@ -335,6 +335,20 @@ def extract_all_defaults(schema: dict[str, Any] | None = None) -> dict[str, Any]
             )
             if notifications_defaults:
                 defaults["notifications"] = notifications_defaults
+
+        # Handle install defaults (oneOf: string or object)
+        elif prop_name == "install":
+            one_of = prop_schema.get("oneOf", [])
+            install_defaults = _extract_oneOf_defaults(schema, one_of)
+            if install_defaults is not None:
+                defaults["install"] = install_defaults
+
+        # Handle harden_runner defaults (oneOf: boolean or object)
+        elif prop_name == "harden_runner":
+            one_of = prop_schema.get("oneOf", [])
+            harden_defaults = _extract_oneOf_defaults(schema, one_of)
+            if harden_defaults is not None:
+                defaults["harden_runner"] = harden_defaults
 
         # Handle optional features (minimal enabled flag from schema defaults).
         elif prop_name in OPTIONAL_FEATURE_KEYS:

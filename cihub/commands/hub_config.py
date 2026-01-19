@@ -144,11 +144,10 @@ def cmd_hub(args) -> CommandResult:
     # hub config show
     if config_sub == "show":
         output = yaml.dump(settings, default_flow_style=False, sort_keys=False)
-        print(output)
         return CommandResult(
             exit_code=EXIT_SUCCESS,
             summary="Hub operational settings (config/hub-settings.yaml)",
-            data={"settings": settings},
+            data={"settings": settings, "raw_output": output},
         )
 
     # hub config set <path> <value>
@@ -235,23 +234,23 @@ def cmd_hub(args) -> CommandResult:
                     data={"settings": flat},
                 )
             else:
-                # Print to stdout in GitHub output format for testing
+                # Emit key=value output for local testing
+                lines: list[str] = []
                 for key, value in flat.items():
                     if isinstance(value, bool):
                         value = str(value).lower()
-                    print(f"{key}={value}")
+                    lines.append(f"{key}={value}")
                 return CommandResult(
                     exit_code=EXIT_SUCCESS,
                     summary="Hub settings (GITHUB_OUTPUT format)",
-                    data={"settings": flat},
+                    data={"settings": flat, "raw_output": "\n".join(lines)},
                 )
         else:
             output = yaml.dump(settings, default_flow_style=False, sort_keys=False)
-            print(output)
             return CommandResult(
                 exit_code=EXIT_SUCCESS,
                 summary="Hub settings loaded",
-                data={"settings": settings},
+                data={"settings": settings, "raw_output": output},
             )
 
     return CommandResult(

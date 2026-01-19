@@ -20,6 +20,8 @@ import json
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Sequence
 
+from cihub.exit_codes import EXIT_SUCCESS
+
 if TYPE_CHECKING:
     from cihub.types import CommandResult
 
@@ -245,7 +247,7 @@ class JsonRenderer(OutputRenderer):
 
     def render(self, result: "CommandResult", command: str, duration_ms: int) -> str:
         """Render CommandResult as JSON string."""
-        status = "success" if result.exit_code == 0 else "failure"
+        status = "success" if result.exit_code == EXIT_SUCCESS else "failure"
         payload = result.to_payload(command, status, duration_ms)
         return json.dumps(payload, indent=2, default=str)
 

@@ -312,8 +312,9 @@ class TimestampInfo:
 # Planning docs to scan for duplicates and checklists
 PLANNING_DOCS = [
     "docs/development/MASTER_PLAN.md",
-    "docs/development/active/DOC_AUTOMATION_AUDIT.md",
-    "docs/development/active/TEST_REORGANIZATION.md",
+    "docs/development/active/TYPESCRIPT_CLI_DESIGN.md",
+    "docs/development/active/AI_CI_LOOP_PROPOSAL.md",
+    "docs/development/active/PYQT_PLAN.md",
 ]
 
 # Timestamp header patterns (Part 13.T)

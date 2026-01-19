@@ -6,6 +6,7 @@ import argparse
 from typing import Callable
 
 from cihub.cli_parsers.common import (
+    add_ai_flags,
     add_repo_args,
     add_report_args,
     add_summary_args,
@@ -155,6 +156,7 @@ def add_core_commands(
 
     check = subparsers.add_parser("check", help="Run local validation checks", epilog=see_also_epilog("check"))
     add_json_flag(check)
+    add_ai_flags(check)
     check.add_argument(
         "--smoke-repo",
         help="Path to repo for smoke test (omit to scaffold fixtures)",

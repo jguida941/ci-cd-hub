@@ -27,6 +27,7 @@ def _default_handlers() -> CommandHandlers:
         cmd_run=_noop_handler,
         cmd_report=_noop_handler,
         cmd_triage=_noop_handler,
+        cmd_commands=_noop_handler,
         cmd_docs=_noop_handler,
         cmd_docs_links=_noop_handler,
         cmd_docs_stale=_noop_handler,

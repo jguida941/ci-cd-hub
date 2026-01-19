@@ -60,7 +60,7 @@ def count_tests(tests_dir: Path) -> dict[str, int]:
                 counts["e2e"] += test_count
             elif rel_path.startswith("property/"):
                 counts["property"] += test_count
-            elif rel_path.startswith("contract/"):
+            elif rel_path.startswith("contracts/"):
                 counts["contract"] += test_count
             else:
                 # Flat structure - count as unit

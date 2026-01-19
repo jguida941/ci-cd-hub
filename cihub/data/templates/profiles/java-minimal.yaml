@@ -6,6 +6,12 @@
 # Expected runtime: ~3-6 minutes
 # ============================================================================
 
+# Metadata for wizard display (CLI as source of truth)
+_metadata:
+  description: Baseline signal, no heavy scanners
+  tools: none (compile/tests only)
+  runtime: "~3-6 min"
+
 java:
   tools:
     jacoco:

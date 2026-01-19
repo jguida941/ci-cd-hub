@@ -2,6 +2,113 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-19 - CLI/Wizard Alignment (Phase 1)
+
+### Fix: Wizard advanced prompts emit schema-valid keys
+
+- Gates now configure `require_run_or_fail` and per-tool defaults instead of non-schema `required/optional`.
+- Reports now configure `badges`, `codecov`, `github_summary`, and `retention_days`.
+- Notifications now configure `slack` and `email` fields defined in schema.
+- Harden-runner now uses `harden_runner.policy` instead of `egress_policy`.
+
+### Change: Schema defaults now fully reflected in defaults/fallbacks
+
+- Added `install.source` and `harden_runner.policy` defaults to generated defaults.
+- Added per-tool `require_run_or_fail` defaults for Java/Python tools.
+
+### Change: `cihub init` install default aligns to PyPI
+
+- `--install-from` now defaults to `pypi` (help text and behavior aligned with schema).
+
+### Change: TypeScript CLI respects JSON/runtime support
+
+- TypeScript CLI checks command registry metadata before appending `--json` and blocks interactive-only commands.
+- Parent command groups render subcommand help instead of executing.
+
+### Change: Command registry metadata expanded
+
+- `cihub commands list --json` now includes `supports_interactive` and `supports_json_runtime`.
+
+### Change: Report summary commands support JSON
+
+- Added `--json` to `report security-summary`, `report smoke-summary`, `report kyverno-summary`, and `report orchestrator-summary`.
+
+### Change: v1.0 languages constrained to Java/Python
+
+- Schema now limits `language` to `java` and `python` (Node/Go deferred).
+- Detection uses the confidence-based language strategies across CLI commands.
+
+## 2026-01-19 - CLI/Wizard Alignment (Phase 5)
+
+### Change: Profile metadata sourced from templates
+
+- Added `_metadata` blocks (description/tools/runtime) to all profile templates.
+- Corrected Python fast profile metadata to include `isort`.
+
+### Change: GitHub context reads centralized
+
+- Replaced direct `GITHUB_*` environment lookups with `GitHubContext.from_env()` in report helpers, gates, badges, and release parsing.
+
+### Change: Exit code constants enforced
+
+- Replaced magic exit code numbers with `EXIT_*` constants in command registry, check/smoke summaries, and JSON render status.
+
+## 2026-01-18 - Python CLI AI Enhancement (Phase 1)
+
+### New: Optional AI enhancement in the CLI
+
+- Added `cihub/ai/` module with Claude CLI integration and context builder.
+- Added `--ai/--no-ai` flags for `triage`, `check`, and `report` commands.
+- Added `CIHUB_AI_PROVIDER` (default: claude) and `CIHUB_DEV_MODE` env vars.
+- AI enhancement is optional; missing Claude CLI yields a structured suggestion.
+
+### Change: AI output selection
+
+- `--ai` triggers the AI renderer only for commands with an AI formatter (e.g., `docs stale`), preserving JSON output for other commands.
+
+### Tests
+
+- Added unit tests for the AI module and integration coverage for AI enhancement wiring.
+
+## 2026-01-18 - TypeScript CLI Foundation (Phase 2)
+
+### New: TypeScript CLI scaffolding
+
+- Added `cihub-cli/` project scaffold with `tsconfig.json`, `tsup.config.ts`, and `vitest.config.ts`.
+- Added CLI entrypoint and version/health checks against the Python CLI.
+- Added initial Vitest coverage for Python CLI version parsing.
+
+## 2026-01-18 - TypeScript CLI Core Components (Phase 3)
+
+### New: Core Ink components
+
+- Added `src/app.tsx` and core UI components (Header, Input, Output, Problems, Suggestions, Table, Spinner, ErrorBoundary).
+- Wired the interactive CLI entrypoint to render the Ink app after Python CLI preflight.
+
+## 2026-01-18 - TypeScript CLI Bridge (Phase 4)
+
+### New: Python CLI bridge + parsing
+
+- Added subprocess wrapper, input parser, timeout handling, and error classes.
+- Added Zod CommandResult schema and exit code constants.
+- Added contract tests for CommandResult payloads.
+- Wired the app to execute Python CLI commands and render results.
+
+## 2026-01-18 - TypeScript CLI Slash Commands (Phase 5)
+
+### New: Slash command registry + meta commands
+
+- Added slash command registry with meta command routing and help tables.
+- Implemented `/help`, `/clear`, and `/exit` handlers.
+- Added mappings for top-level, report, config, docs, adr, and hub-ci subcommands.
+
+## 2026-01-18 - CLI Command Registry (ADR-0059)
+
+### New: CLI command registry for frontends
+
+- Added `cihub commands list --json` to expose CLI command metadata for interactive clients.
+- TypeScript CLI now builds its slash registry from the Python CLI command list.
+
 ## 2026-01-17 - CLI Workflow Dispatch Watch + Wizard
 
 ### New: Dispatch watch + wizard wrapper
@@ -17,6 +124,13 @@ All notable changes to this project will be documented in this file.
 - Filtered false positives in plain-text `docs/...` reference scanning.
 - Added `scripts/docs_inventory_summary.py` to print inventory counts from `--inventory` output.
 - Normalized doc header metadata line breaks (two-space markdown line breaks).
+
+### Change: Command output purity (print-free handlers)
+
+- Removed `print()` usage in command handlers (triage, check, hub config, report summaries, hub-ci helpers, triage watch).
+- Hub config and report summary commands now emit output via CommandResult `raw_output`.
+- Hub CI config load warnings surface as CommandResult warnings instead of stdout prints.
+- `cihub hub-ci command-result` now enforces zero print() calls by default.
 
 ### New: Test metrics automation (hub-ci)
 
@@ -854,7 +968,7 @@ bin_path = resolve_flag(args.bin, "ZIZMOR_BIN", default="zizmor")
 
 ### TEST_REORGANIZATION.md Plan Created
 
-**New Design Doc:** `docs/development/active/TEST_REORGANIZATION.md`
+**New Design Doc:** `docs/development/archive/TEST_REORGANIZATION.md`
 
 Comprehensive plan for restructuring 2100+ tests from flat `tests/` into organized hierarchy:
 - `tests/unit/` - Fast, isolated, no I/O

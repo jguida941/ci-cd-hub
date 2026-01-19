@@ -25,6 +25,7 @@ class CommandHandlers:
     cmd_run: CommandHandler
     cmd_report: CommandHandler
     cmd_triage: CommandHandler
+    cmd_commands: CommandHandler
     cmd_docs: CommandHandler
     cmd_docs_links: CommandHandler
     cmd_docs_stale: CommandHandler

@@ -112,7 +112,7 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
 
     branch = args.branch or get_git_branch(repo_path) or "main"
 
-    install_from = getattr(args, "install_from", "git")
+    install_from = getattr(args, "install_from", "pypi")
     detected_config = build_repo_config(
         language, owner, name, branch,
         subdir=subdir, repo_path=effective_repo_path,

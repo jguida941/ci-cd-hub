@@ -327,32 +327,15 @@ def cmd_enforce_command_result(args: argparse.Namespace) -> CommandResult:
 
     ADR-0042: All commands should return CommandResult instead of printing directly.
     This check enforces a maximum allowance for print() calls in cihub/commands/.
-
-    Allowlisted files (may use print() for interactive/GitHub output):
-      - triage.py: deprecated, kept for backwards compat
-      - hub_config.py: hub config show/load prints YAML or key=value for GitHub Actions
-      - watch.py: --watch daemon mode needs real-time streaming output
-      - triage_cmd.py: prints auto-selection info during triage flow
-
-    Allowed exceptions in non-allowlisted files (documented in CLEAN_CODE.md Part 2.2):
-      - check.py: 3 progress indicators
-      - hub_ci/__init__.py: 4 helpers (github-output, config warnings)
-      - report/helpers.py: 1 fallback
-
-    Total allowed in non-allowlisted files: 8 prints
     """
     from cihub.utils.paths import project_root
 
     root = Path(getattr(args, "path", None) or project_root())
     commands_dir = root / "cihub" / "commands"
-    max_allowed = getattr(args, "max_allowed", 8)
+    max_allowed = getattr(args, "max_allowed", 0)
 
-    # Files allowed to use print() for interactive/streaming output
-    # - triage.py: deprecated, kept for backwards compat
-    # - hub_config.py: prints YAML or key=value for GitHub Actions
-    # - watch.py: --watch daemon mode needs real-time output
-    # - triage_cmd.py: prints auto-selection info during triage
-    allowlisted_files = {"triage.py", "hub_config.py", "watch.py", "triage_cmd.py"}
+    # No command files are allowlisted for print() usage.
+    allowlisted_files: set[str] = set()
 
     if not commands_dir.exists():
         return CommandResult(

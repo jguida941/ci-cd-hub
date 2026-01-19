@@ -9,6 +9,12 @@
 # Expected runtime: ~15-30 minutes
 # ============================================================================
 
+# Metadata for wizard display (CLI as source of truth)
+_metadata:
+  description: Comprehensive quality analysis for releases
+  tools: jacoco, checkstyle, spotbugs, pmd, pitest, owasp
+  runtime: "~15-30 min"
+
 java:
   tools:
     # Core quality tools

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +11,7 @@ from cihub.core.gate_specs import (
     get_threshold_spec_by_key,
 )
 from cihub.utils import get_git_branch, get_repo_name
+from cihub.utils.github_context import GitHubContext
 
 from .helpers import _get_git_commit, _tool_gate_enabled
 
@@ -94,16 +94,17 @@ def _build_context(
     docker_health_endpoint: str | None = None,
 ) -> RunContext:
     repo_info = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
-    branch = os.environ.get("GITHUB_REF_NAME") or repo_info.get("default_branch")
+    ctx = GitHubContext.from_env()
+    branch = ctx.ref_name or repo_info.get("default_branch")
     branch = branch or get_git_branch(repo_path) or ""
     return RunContext(
         repository=get_repo_name(config, repo_path),
         branch=branch,
-        run_id=os.environ.get("GITHUB_RUN_ID"),
-        run_number=os.environ.get("GITHUB_RUN_NUMBER"),
-        commit=os.environ.get("GITHUB_SHA") or _get_git_commit(repo_path),
+        run_id=ctx.run_id,
+        run_number=ctx.run_number,
+        commit=ctx.sha or _get_git_commit(repo_path),
         correlation_id=correlation_id,
-        workflow_ref=os.environ.get("GITHUB_WORKFLOW_REF"),
+        workflow_ref=ctx.workflow_ref,
         workdir=workdir,
         build_tool=build_tool,
         retention_days=config.get("reports", {}).get("retention_days"),

@@ -70,6 +70,13 @@ _ENV_VARS: list[EnvVarDef] = [
         category="Debug",
         description="Generate triage bundles for CI failure analysis.",
     ),
+    EnvVarDef(
+        name="CIHUB_DEV_MODE",
+        var_type="bool",
+        default="false",
+        category="Debug",
+        description="Auto-run AI enhancement on failures for local debugging.",
+    ),
     # ---------------------------------------------------------------------
     # Report settings
     # ---------------------------------------------------------------------
@@ -141,6 +148,13 @@ _ENV_VARS: list[EnvVarDef] = [
         default="0",
         category="Context",
         description="AI loop max iterations (hook/internal use).",
+    ),
+    EnvVarDef(
+        name="CIHUB_AI_PROVIDER",
+        var_type="string",
+        default="claude",
+        category="Context",
+        description="AI provider for optional enhancements (default: claude).",
     ),
     # ---------------------------------------------------------------------
     # Notifications

@@ -11,7 +11,7 @@ from pathlib import Path
 from cihub import badges as badge_tools
 from cihub.types import CommandResult
 from cihub.utils.env import resolve_flag
-from cihub.utils.github_context import OutputContext
+from cihub.utils.github_context import GitHubContext, OutputContext
 from cihub.utils.paths import hub_root
 
 from . import (
@@ -24,13 +24,22 @@ from . import (
 )
 
 
+def _config_warning_problems(warnings: list[str]) -> list[dict[str, str]]:
+    return [{"severity": "warning", "message": warning} for warning in warnings]
+
+
+def _with_error(summary: str, warnings: list[dict[str, str]]) -> list[dict[str, str]]:
+    return [{"severity": "error", "message": summary}, *warnings]
+
+
 def cmd_badges(args: argparse.Namespace) -> CommandResult:
     root = hub_root()
     config_path = Path(args.config).resolve() if args.config else root / "config" / "defaults.yaml"
-    config = _load_config(config_path)
+    config, config_warnings = _load_config(config_path)
+    config_problems = _config_warning_problems(config_warnings)
     badges_cfg = config.get("reports", {}).get("badges", {}) or {}
     if badges_cfg.get("enabled") is False:
-        return result_ok("Badges disabled via reports.badges.enabled")
+        return result_ok("Badges disabled via reports.badges.enabled", problems=config_problems)
     tools_cfg = config.get("hub_ci", {}).get("tools", {}) if isinstance(config.get("hub_ci"), dict) else {}
 
     def tool_enabled(name: str, default: bool = True) -> bool:
@@ -82,23 +91,30 @@ def cmd_badges(args: argparse.Namespace) -> CommandResult:
             env["BADGE_OUTPUT_DIR"] = tmpdir
             gen_result = badge_tools.main(env=env, root=root, disabled_tools=disabled_tools)
             if gen_result != 0:
-                return result_fail("Badge generation failed")
+                return result_fail(
+                    "Badge generation failed",
+                    problems=_with_error("Badge generation failed", config_problems),
+                )
             issues = _compare_badges(root / "badges", Path(tmpdir))
             if issues:
                 problems = [{"severity": "error", "message": issue} for issue in issues]
                 return result_fail(
                     "Badge drift detected",
-                    problems=problems,
+                    problems=config_problems + problems,
                     data={"drift_issues": issues},
                 )
-            return result_ok("Badges are up to date")
+            return result_ok("Badges are up to date", problems=config_problems)
 
     gen_result = badge_tools.main(env=env, root=root, disabled_tools=disabled_tools)
     if gen_result != 0:
-        return result_fail("Badge generation failed")
+        return result_fail(
+            "Badge generation failed",
+            problems=_with_error("Badge generation failed", config_problems),
+        )
     return result_ok(
         "Badges updated successfully",
         data={"disabled_tools": list(disabled_tools)},
+        problems=config_problems,
     )
 
 
@@ -170,7 +186,8 @@ def cmd_outputs(args: argparse.Namespace) -> CommandResult:
     if args.config:
         # Direct config path override (legacy mode)
         config_path = Path(args.config).resolve()
-        config = _load_config(config_path)
+        config, config_warnings = _load_config(config_path)
+        config_problems = _config_warning_problems(config_warnings)
     else:
         # Canonical: load via repo name using loader/core.py
         from cihub.config.loader import load_config
@@ -178,7 +195,7 @@ def cmd_outputs(args: argparse.Namespace) -> CommandResult:
         root = hub_root()
         repo_name = resolve_flag(getattr(args, "repo", None), "CIHUB_REPO")
         if not repo_name:
-            repo_env = os.environ.get("GITHUB_REPOSITORY", "")
+            repo_env = GitHubContext.from_env().repository or ""
             if repo_env and "/" in repo_env:
                 repo_name = repo_env.split("/", 1)[1]
         if repo_name and "/" in repo_name:
@@ -187,11 +204,14 @@ def cmd_outputs(args: argparse.Namespace) -> CommandResult:
         if repo_name:
             try:
                 config = load_config(repo_name, root, exit_on_validation_error=False)
+                config_problems = []
             except Exception:  # noqa: BLE001
                 # Fall back to defaults if repo config not found
-                config = _load_config(root / "config" / "defaults.yaml")
+                config, config_warnings = _load_config(root / "config" / "defaults.yaml")
+                config_problems = _config_warning_problems(config_warnings)
         else:
-            config = _load_config(root / "config" / "defaults.yaml")
+            config, config_warnings = _load_config(root / "config" / "defaults.yaml")
+            config_problems = _config_warning_problems(config_warnings)
 
     hub_cfg = config.get("hub_ci", {}) if isinstance(config.get("hub_ci"), dict) else {}
     enabled = hub_cfg.get("enabled", True)
@@ -230,4 +250,5 @@ def cmd_outputs(args: argparse.Namespace) -> CommandResult:
     return result_ok(
         "Configuration outputs written",
         data={"outputs": outputs},
+        problems=config_problems,
     )

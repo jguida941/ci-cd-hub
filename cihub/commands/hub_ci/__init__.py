@@ -46,24 +46,23 @@ from cihub.utils.progress import _bar  # noqa: F401 - re-export
 # ============================================================================
 
 
-def _write_outputs(values: dict[str, str], output_path: Path | None) -> None:
+def _write_outputs(values: dict[str, str], output_path: Path | None) -> str | None:
     if output_path is None:
-        for key, value in values.items():
-            print(f"{key}={value}")
-        return
+        return "\n".join(f"{key}={value}" for key, value in values.items())
     with open(output_path, "a", encoding="utf-8") as handle:
         for key, value in values.items():
             handle.write(f"{key}={value}\n")
+    return None
 
 
-def _append_summary(text: str, summary_path: Path | None) -> None:
+def _append_summary(text: str, summary_path: Path | None) -> str | None:
     if summary_path is None:
-        print(text)
-        return
+        return text
     with open(summary_path, "a", encoding="utf-8") as handle:
         handle.write(text)
         if not text.endswith("\n"):
             handle.write("\n")
+    return None
 
 
 def _resolve_output_path(path_value: str | None, github_output: bool) -> Path | None:
@@ -105,7 +104,7 @@ def write_github_outputs(
     values: dict[str, str],
     output_path: str | None = None,
     github_output: bool = False,
-) -> None:
+) -> str | None:
     """Write key=value pairs to GitHub Actions output.
 
     Combines _resolve_output_path + _write_outputs into a single call.
@@ -125,14 +124,14 @@ def write_github_outputs(
         write_github_outputs({"key": "value"}, args.output, args.github_output)
     """
     resolved_path = _resolve_output_path(output_path, github_output)
-    _write_outputs(values, resolved_path)
+    return _write_outputs(values, resolved_path)
 
 
 def write_github_summary(
     text: str,
     summary_path: str | None = None,
     github_summary: bool = False,
-) -> None:
+) -> str | None:
     """Append text to GitHub Actions step summary.
 
     Combines _resolve_summary_path + _append_summary into a single call.
@@ -151,7 +150,7 @@ def write_github_summary(
         write_github_summary(md_text, args.summary, args.github_summary)
     """
     resolved_path = _resolve_summary_path(summary_path, github_summary)
-    _append_summary(text, resolved_path)
+    return _append_summary(text, resolved_path)
 
 
 # ============================================================================
@@ -335,23 +334,23 @@ def run_tool_with_json_report(
     )
 
 
-def _load_config(path: Path | None) -> dict[str, Any]:
+def _load_config(path: Path | None) -> tuple[dict[str, Any], list[str]]:
     if path is None:
-        return {}
+        return {}, []
     try:
         raw = load_yaml_file(path)
         config = normalize_config(raw)
+        warnings: list[str] = []
 
         # Validate config against schema (fixes Part 7.5.1 schema validation bypass)
         paths = PathConfig(str(hub_root()))
         errors = validate_config(config, paths)
         if errors:
-            print(f"Config validation warnings: {', '.join(errors)}")
+            warnings.extend(errors)
 
-        return config
+        return config, warnings
     except Exception as exc:  # noqa: BLE001
-        print(f"Failed to load config: {exc}")
-        return {}
+        return {}, [f"Failed to load config: {exc}"]
 
 
 def _run_command(

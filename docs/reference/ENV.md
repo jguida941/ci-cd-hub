@@ -15,10 +15,12 @@
 | `HUB_DISPATCH_TOKEN` | string | - | Auth | Token for hub workflow dispatch operations. |
 | `CIHUB_AI_LOOP_ITERATION` | int | 0 | Context | Current AI loop iteration number (hook/internal use). |
 | `CIHUB_AI_LOOP_MAX_ITERATIONS` | int | 0 | Context | AI loop max iterations (hook/internal use). |
+| `CIHUB_AI_PROVIDER` | string | claude | Context | AI provider for optional enhancements (default: claude). |
 | `CIHUB_OWNER` | string | - | Context | Default repository owner (fallback for --owner flag). |
 | `CIHUB_REPO` | string | - | Context | Default repository name (fallback for --repo/--name flag). |
 | `CIHUB_DEBUG` | bool | false | Debug | Enable tracebacks and verbose error output. |
 | `CIHUB_DEBUG_CONTEXT` | bool | false | Debug | Emit decision/context debug blocks to stderr. |
+| `CIHUB_DEV_MODE` | bool | false | Debug | Auto-run AI enhancement on failures for local debugging. |
 | `CIHUB_EMIT_TRIAGE` | bool | false | Debug | Generate triage bundles for CI failure analysis. |
 | `CIHUB_VERBOSE` | bool | false | Debug | Stream tool stdout/stderr to console. |
 | `CIHUB_EMAIL_TO` | string | - | Notify | Email recipients for CI notifications. |
@@ -49,6 +51,13 @@ Enable tracebacks and verbose error output.
 **Default:** false
 
 Emit decision/context debug blocks to stderr.
+
+### `CIHUB_DEV_MODE`
+
+**Type:** bool  
+**Default:** false
+
+Auto-run AI enhancement on failures for local debugging.
 
 ### `CIHUB_EMIT_TRIAGE`
 
@@ -118,6 +127,13 @@ Current AI loop iteration number (hook/internal use).
 **Default:** 0
 
 AI loop max iterations (hook/internal use).
+
+### `CIHUB_AI_PROVIDER`
+
+**Type:** string  
+**Default:** claude
+
+AI provider for optional enhancements (default: claude).
 
 ### `CIHUB_OWNER`
 

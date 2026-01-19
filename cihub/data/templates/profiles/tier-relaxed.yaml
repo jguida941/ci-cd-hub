@@ -8,6 +8,12 @@
 # Pairs with: python-minimal, java-minimal profiles
 # ============================================================================
 
+# Metadata for wizard display (CLI as source of truth)
+_metadata:
+  description: Permissive quality gates for legacy code
+  tools: thresholds only
+  runtime: "n/a"
+
 thresholds:
   # Coverage requirements - minimal bar
   coverage_min: 50

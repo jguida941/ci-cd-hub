@@ -59,6 +59,11 @@ The CLI manages configs, initializes repos, and runs CI/reporting locally and in
 - **Examples**: `docs/guides/CLI_EXAMPLES.md`
 - **Maintainer smoke guide**: `docs/guides/INTEGRATION_SMOKE_TEST.md`
 
+### Doc Automation
+
+- **Guide**: `docs/guides/DOC_AUTOMATION.md`
+- **Required gates after doc changes**: `cihub docs generate`, `cihub docs check`, `cihub docs stale`, `cihub docs audit`
+
 ### Config Subcommands
 
 ```bash
@@ -97,16 +102,16 @@ command-specific payloads.
 
 Located in `scripts/` - legacy utilities kept for one release.
 
-| Script | Purpose | Replacement |
-|-------------------------------|-------------------------------|--------------------------------------------------------------------------------------------------|
-| `load_config.py` | Load & display merged config | `python -m cihub config show --repo fixtures-python-passing --effective` |
-| `validate_config.py` | Validate against schema | `python -m cihub hub-ci validate-configs [--repo NAME]` |
-| `apply_profile.py` | Merge profile onto config | `python -m cihub config apply-profile --profile templates/profiles/python-fast.yaml --target config/repos/my-repo.yaml` |
-| `aggregate_reports.py` | Build dashboard from reports | `python -m cihub report dashboard --reports-dir reports --output dashboard.html` |
-| `run_aggregation.py` | Deprecated shim for aggregation | `python -m cihub report aggregate` |
-| `run_cli_integration.py` | CLI integration tests | `python scripts/run_cli_integration.py --fixtures-path /path/to/ci-cd-hub-fixtures` |
-| `check_quarantine_imports.py` | Ensure no quarantine imports | `python -m cihub hub-ci quarantine-check` |
-| `verify_hub_matrix_keys.py` | Validate workflow matrices | `python -m cihub hub-ci verify-matrix-keys` |
+| Script                        | Purpose                         | Replacement                                                                                                             |
+|-------------------------------|---------------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| `load_config.py`              | Load & display merged config    | `python -m cihub config show --repo fixtures-python-passing --effective`                                                |
+| `validate_config.py`          | Validate against schema         | `python -m cihub hub-ci validate-configs [--repo NAME]`                                                                 |
+| `apply_profile.py`            | Merge profile onto config       | `python -m cihub config apply-profile --profile templates/profiles/python-fast.yaml --target config/repos/my-repo.yaml` |
+| `aggregate_reports.py`        | Build dashboard from reports    | `python -m cihub report dashboard --reports-dir reports --output dashboard.html`                                        |
+| `run_aggregation.py`          | Deprecated shim for aggregation | `python -m cihub report aggregate`                                                                                      |
+| `run_cli_integration.py`      | CLI integration tests           | `python scripts/run_cli_integration.py --fixtures-path /path/to/ci-cd-hub-fixtures`                                     |
+| `check_quarantine_imports.py` | Ensure no quarantine imports    | `python -m cihub hub-ci quarantine-check`                                                                               |
+| `verify_hub_matrix_keys.py`   | Validate workflow matrices      | `python -m cihub hub-ci verify-matrix-keys`                                                                             |
 
 ---
 
@@ -118,25 +123,25 @@ Located in `.github/workflows/` - what actually runs.
 
 ### Hub Workflows (run on hub-release itself)
 
-| Workflow | Purpose | Trigger |
+| Workflow                | Purpose                                    | Trigger          |
 |-------------------------|--------------------------------------------|------------------|
-| `hub-production-ci.yml` | Full CI for the hub (lint, test, security) | Push/PR to main |
-| `hub-run-all.yml` | **Central mode** - clone repos & run tools | Manual dispatch |
-| `hub-orchestrator.yml` | **Distributed mode** - dispatch to repos | Manual dispatch |
-| `hub-security.yml` | Security scanning (SBOM, scorecard) | Push/PR |
-| `config-validate.yml` | Validate config files | Config changes |
-| `smoke-test.yml` | Quick integration check | PR |
-| `sync-templates.yml` | Push templates to repos | Manual/scheduled |
-| `template-guard.yml` | Check for template drift | Nightly |
-| `release.yml` | Create releases | Tag push |
+| `hub-production-ci.yml` | Full CI for the hub (lint, test, security) | Push/PR to main  |
+| `hub-run-all.yml`       | **Central mode** - clone repos & run tools | Manual dispatch  |
+| `hub-orchestrator.yml`  | **Distributed mode** - dispatch to repos   | Manual dispatch  |
+| `hub-security.yml`      | Security scanning (SBOM, scorecard)        | Push/PR          |
+| `config-validate.yml`   | Validate config files                      | Config changes   |
+| `smoke-test.yml`        | Quick integration check                    | PR               |
+| `sync-templates.yml`    | Push templates to repos                    | Manual/scheduled |
+| `template-guard.yml`    | Check for template drift                   | Nightly          |
+| `release.yml`           | Create releases                            | Tag push         |
 
 ### Reusable Workflows (called by other repos)
 
-| Workflow | Purpose | Inputs |
+| Workflow         | Purpose                      | Inputs                                             |
 |------------------|------------------------------|----------------------------------------------------|
-| `java-ci.yml` | Java pipeline (Maven/Gradle) | `run_jacoco`, `run_checkstyle`, `run_pitest`, etc. |
-| `python-ci.yml` | Python pipeline | `run_pytest`, `run_ruff`, `run_bandit`, etc. |
-| `kyverno-ci.yml` | Kubernetes policy validation | Policy paths |
+| `java-ci.yml`    | Java pipeline (Maven/Gradle) | `run_jacoco`, `run_checkstyle`, `run_pitest`, etc. |
+| `python-ci.yml`  | Python pipeline              | `run_pytest`, `run_ruff`, `run_bandit`, etc.       |
+| `kyverno-ci.yml` | Kubernetes policy validation | Policy paths                                       |
 
 ---
 
@@ -176,27 +181,27 @@ hub-release/
 ## Key Files
 
 ### Status & Planning
-| File | What It Is |
-|-------------------------------|------------------------------------------------|
-| [STATUS.md](status/STATUS.md) | Current blockers, v1.0 progress, what's broken |
+| File                                     | What It Is                                        |
+|------------------------------------------|---------------------------------------------------|
+| [STATUS.md](status/STATUS.md)            | Current blockers, v1.0 progress, what's broken    |
 | [REQUIREMENTS.md](specs/REQUIREMENTS.md) | Consolidated requirements (P0/P1 + nonfunctional) |
 
 ### Configuration
-| File | What It Is |
-|---------------------------------------------------------------------|--------------------------------------------------|
-| [defaults.yaml](../../cihub/data/config/defaults.yaml) | **Master config** - all tool toggles, thresholds |
-| [config/repos/](../../cihub/data/config/repos/) | Per-repo overrides (one YAML per repo) |
-| [ci-hub-config.schema.json](../../cihub/data/schema/ci-hub-config.schema.json) | JSON Schema that validates all configs |
-| [templates/profiles/](../../cihub/data/templates/profiles/) | Pre-built profiles (fast, quality, security) |
+| File                                                                           | What It Is                                       |
+|--------------------------------------------------------------------------------|--------------------------------------------------|
+| [defaults.yaml](../../cihub/data/config/defaults.yaml)                         | **Master config** - all tool toggles, thresholds |
+| [config/repos/](../../cihub/data/config/repos/)                                | Per-repo overrides (one YAML per repo)           |
+| [ci-hub-config.schema.json](../../cihub/data/schema/ci-hub-config.schema.json) | JSON Schema that validates all configs           |
+| [templates/profiles/](../../cihub/data/templates/profiles/)                    | Pre-built profiles (fast, quality, security)     |
 
 ### Workflows
-| File | What It Is |
+| File                                                                   | What It Is                                                           |
 |------------------------------------------------------------------------|----------------------------------------------------------------------|
-| [hub-run-all.yml](../../.github/workflows/hub-run-all.yml) | **Central mode** - hub clones repo, runs all tools |
-| [hub-orchestrator.yml](../../.github/workflows/hub-orchestrator.yml) | **Distributed mode** - dispatches to repo's workflow |
-| [java-ci.yml](../../.github/workflows/java-ci.yml) | Reusable Java workflow (JaCoCo, Checkstyle, SpotBugs, PITest, OWASP) |
-| [python-ci.yml](../../.github/workflows/python-ci.yml) | Reusable Python workflow (pytest, Ruff, Bandit, mutmut, pip-audit) |
-| [hub-production-ci.yml](../../.github/workflows/hub-production-ci.yml) | CI for the hub itself |
+| [hub-run-all.yml](../../.github/workflows/hub-run-all.yml)             | **Central mode** - hub clones repo, runs all tools                   |
+| [hub-orchestrator.yml](../../.github/workflows/hub-orchestrator.yml)   | **Distributed mode** - dispatches to repo's workflow                 |
+| [java-ci.yml](../../.github/workflows/java-ci.yml)                     | Reusable Java workflow (JaCoCo, Checkstyle, SpotBugs, PITest, OWASP) |
+| [python-ci.yml](../../.github/workflows/python-ci.yml)                 | Reusable Python workflow (pytest, Ruff, Bandit, mutmut, pip-audit)   |
+| [hub-production-ci.yml](../../.github/workflows/hub-production-ci.yml) | CI for the hub itself                                                |
 
 ### Architecture
 | File | What It Is |
@@ -206,18 +211,18 @@ hub-release/
 | [docs/adr/](../adr/) | Architecture Decision Records |
 
 ### Reference
-| File | What It Is |
-|------|------------|
-| [CONFIG.md](../reference/CONFIG.md) | Every config field explained |
-| [TOOLS.md](../reference/TOOLS.md) | All 24+ quality tools documented |
-| [example.ci-hub.yml](../reference/example.ci-hub.yml) | Example repo-side config |
+| File                                                  | What It Is                       |
+|-------------------------------------------------------|----------------------------------|
+| [CONFIG.md](../reference/CONFIG.md)                   | Every config field explained     |
+| [TOOLS.md](../reference/TOOLS.md)                     | All 24+ quality tools documented |
+| [example.ci-hub.yml](../reference/example.ci-hub.yml) | Example repo-side config         |
 
 ### Governance
-| File | What It Is |
-|------|------------|
-| [CONTRIBUTING.md](../../.github/CONTRIBUTING.md) | How to contribute, PR process |
-| [SECURITY.md](../../.github/SECURITY.md) | Vulnerability reporting policy |
-| [CODE_OF_CONDUCT.md](../../.github/CODE_OF_CONDUCT.md) | Community standards |
+| File                                                   | What It Is                     |
+|--------------------------------------------------------|--------------------------------|
+| [CONTRIBUTING.md](../../.github/CONTRIBUTING.md)       | How to contribute, PR process  |
+| [SECURITY.md](../../.github/SECURITY.md)               | Vulnerability reporting policy |
+| [CODE_OF_CONDUCT.md](../../.github/CODE_OF_CONDUCT.md) | Community standards            |
 
 ---
 
@@ -244,14 +249,14 @@ python scripts/cli_command_matrix.py --format markdown
 ```
 
 ### Test Files
-| File | What It Tests |
+| File                           | What It Tests                       |
 |--------------------------------|-------------------------------------|
-| `test_commands.py` | All CLI commands |
-| `test_config_module.py` | Config loading, merging, validation |
-| `test_aggregate_reports.py` | Report aggregation |
-| `test_templates.py` | Template rendering |
-| `test_pom_tools.py` | Maven POM parsing |
-| `test_contract_consistency.py` | Schema contracts |
+| `test_commands.py`             | All CLI commands                    |
+| `test_config_module.py`        | Config loading, merging, validation |
+| `test_aggregate_reports.py`    | Report aggregation                  |
+| `test_templates.py`            | Template rendering                  |
+| `test_pom_tools.py`            | Maven POM parsing                   |
+| `test_contract_consistency.py` | Schema contracts                    |
 
 ---
 
@@ -307,25 +312,25 @@ cihub setup-secrets --all --verify # Setup dispatch token
 
 ## Execution Modes
 
-| Mode | How It Works | Workflow | When to Use |
+| Mode            | How It Works                          | Workflow               | When to Use                     |
 |-----------------|---------------------------------------|------------------------|---------------------------------|
-| **Central** | Hub clones repo, runs tools directly | `hub-run-all.yml` | Default, simplest, most control |
-| **Distributed** | Hub dispatches to repo's own workflow | `hub-orchestrator.yml` | When repo needs custom steps |
+| **Central**     | Hub clones repo, runs tools directly  | `hub-run-all.yml`      | Default, simplest, most control |
+| **Distributed** | Hub dispatches to repo's own workflow | `hub-orchestrator.yml` | When repo needs custom steps    |
 
 ---
 
 ## Tool Matrix
 
-| Category | Java Tools | Python Tools |
+| Category            | Java Tools             | Python Tools       |
 |---------------------|------------------------|--------------------|
-| **Coverage** | JaCoCo | pytest-cov |
-| **Linting** | Checkstyle, PMD | Ruff, Black, isort |
-| **Static Analysis** | SpotBugs | mypy |
-| **Security (code)** | CodeQL, Semgrep | Bandit, Semgrep |
-| **Security (deps)** | OWASP Dependency-Check | pip-audit |
-| **Mutation** | PITest | mutmut |
-| **Property-Based** | jqwik | Hypothesis |
-| **Container** | Trivy | Trivy |
+| **Coverage**        | JaCoCo                 | pytest-cov         |
+| **Linting**         | Checkstyle, PMD        | Ruff, Black, isort |
+| **Static Analysis** | SpotBugs               | mypy               |
+| **Security (code)** | CodeQL, Semgrep        | Bandit, Semgrep    |
+| **Security (deps)** | OWASP Dependency-Check | pip-audit          |
+| **Mutation**        | PITest                 | mutmut             |
+| **Property-Based**  | jqwik                  | Hypothesis         |
+| **Container**       | Trivy                  | Trivy              |
 
 ---
 
@@ -333,14 +338,14 @@ cihub setup-secrets --all --verify # Setup dispatch token
 
 **Target:** v1.0.0
 
-| Component | Status |
-|-------------------------------------------|---------------|
-| Central mode (`hub-run-all.yml`) | [x] Working |
-| Reusable workflows (java-ci, python-ci) | [x] Working |
-| CLI tool (`cihub`) | [x] Command surface tracked in `docs/reference/CLI.md` |
-| Unit tests | [x] Count tracked in STATUS.md |
-| Distributed mode (`hub-orchestrator.yml`) | [ ] Failing |
-| Security workflow (`hub-security.yml`) | [ ] Failing |
+| Component                                 | Status                                                 |
+|-------------------------------------------|--------------------------------------------------------|
+| Central mode (`hub-run-all.yml`)          | [x] Working                                            |
+| Reusable workflows (java-ci, python-ci)   | [x] Working                                            |
+| CLI tool (`cihub`)                        | [x] Command surface tracked in `docs/reference/CLI.md` |
+| Unit tests                                | [x] Count tracked in STATUS.md                         |
+| Distributed mode (`hub-orchestrator.yml`) | [ ] Failing                                            |
+| Security workflow (`hub-security.yml`)    | [ ] Failing                                            |
 
 **Blockers for v1.0:**
 1. Fix `hub-orchestrator.yml` failures

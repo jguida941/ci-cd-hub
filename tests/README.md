@@ -2,25 +2,25 @@
 
 > **Auto-generated** - Do not edit manually. Run `python scripts/generate_test_readme.py` to regenerate.
 >
-> Last updated: 2026-01-17 09:36:28
+> Last updated: 2026-01-18 19:11:18
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 3188 |
-| Test Files | 155 |
+| Total Tests | 3342 |
+| Test Files | 165 |
 | Overall Coverage | 75.4% |
 
 ## Test Categories
 
 | Category | Count | Description |
 |----------|-------|-------------|
-| Unit | 2931 | Fast, isolated tests |
-| Integration | 172 | Tests with external dependencies |
+| Unit | 2811 | Fast, isolated tests |
+| Integration | 175 | Tests with external dependencies |
 | E2E | 32 | End-to-end workflow tests |
-| Property | 53 | Hypothesis property-based tests |
-| Contract | 0 | API/schema contract tests |
+| Property | 196 | Hypothesis property-based tests |
+| Contract | 128 | API/schema contract tests |
 
 ## Running Tests
 

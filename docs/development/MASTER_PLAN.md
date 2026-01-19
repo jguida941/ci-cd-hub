@@ -3,35 +3,36 @@
 **Status:** active  
 **Owner:** Development Team  
 **Source-of-truth:** manual   
-**Last-reviewed:** 2026-01-17  
-**Last Updated:** 2026-01-17 (test metrics CI wiring, doc automation complete)  
+**Last-reviewed:** 2026-01-19  
+**Last Updated:** 2026-01-19 (CLI/Wizard Phase 5 cleanup complete; audit closed)  
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
 
 ---
 
-## AI CI Loop Proposal (In Progress)
+## AI CI Loop Proposal (Active Design Doc)
 
-See [AI_CI_LOOP_PROPOSAL.md](docs/development/AI_CI_LOOP_PROPOSAL.md). This is a draft initiative and
-will be promoted into an active design doc when scope and sequencing are finalized.
+See [AI_CI_LOOP_PROPOSAL.md](docs/development/active/AI_CI_LOOP_PROPOSAL.md). This is a draft internal initiative now tracked in the active priority list.
 
-**Status update:** Wizard/CLI validation complete; Test Reorg CI wiring done.
-**Current focus:** Finish Test Reorg Phase 5 docs, then resume AI loop work.
+**Status update:** CLI_WIZARD_SYNC_AUDIT archived; TEST_REORGANIZATION + DOC_AUTOMATION_AUDIT archived.
+**Current focus:** TYPESCRIPT_CLI_DESIGN Phase 6 (interactive CLI wizard).
 
 ---
 
 ## CURRENT PRIORITY AT A GLANCE
 
-> Current priority is **#3** (first non-archived doc). Phase 0-4 complete; next: Phase 5 docs + metrics seeding.
+> Current priority is **#6** (first non-archived doc). TYPESCRIPT_CLI_DESIGN in progress (Phase 6).
 
-| Priority | Document | Status | Next Action |
-|----------|----------|--------|-------------|
-| **#1 ** | CLEAN_CODE.md | ARCHIVED | Complete (archived) |
-| **#2 ** | [SYSTEM_INTEGRATION_PLAN.md](docs/development/archive/SYSTEM_INTEGRATION_PLAN.md) | ARCHIVED | Complete (archived) |
-| **#3 ** | TEST_REORGANIZATION.md | CURRENT | Phase 0-4 ✓; Phase 1 CI wiring done; next: Phase 5 docs |
-| **#4 ** | DOC_AUTOMATION_AUDIT.md | COMPLETE | Optional: duplicate task detection cleanup |
-| **#5 ** | TYPESCRIPT_CLI_DESIGN.md | Planning | Wait for TEST_REORGANIZATION.md complete |
-| **#6 ** | PYQT_PLAN.md | DEFERRED | Wait for all above |
+| Priority | Document                                                                          | Status   | Next Action                                      |
+|----------|-----------------------------------------------------------------------------------|----------|--------------------------------------------------|
+| **#1 **  | CLEAN_CODE.md                                                                     | ARCHIVED | Complete (archived)                              |
+| **#2 **  | [SYSTEM_INTEGRATION_PLAN.md](docs/development/archive/SYSTEM_INTEGRATION_PLAN.md) | ARCHIVED | Complete (archived)                              |
+| **#3 **  | [TEST_REORGANIZATION.md](docs/development/archive/TEST_REORGANIZATION.md)         | ARCHIVED | Complete (Phase 4 property tests + Phase 5 docs) |
+| **#4 **  | [DOC_AUTOMATION_AUDIT.md](docs/development/archive/DOC_AUTOMATION_AUDIT.md)        | ARCHIVED | Complete (archived)                              |
+| **#5 **  | CLI_WIZARD_SYNC_AUDIT.md                                                          | Archived | Phase 5 cleanup complete (archived 2026-01-19)  |
+| **#6 **  | TYPESCRIPT_CLI_DESIGN.md                                                          | In Progress | Start Phase 6 (Interactive wizard)              |
+| **#7 **  | AI_CI_LOOP_PROPOSAL.md                                                            | Draft    | Define scope and sequencing                      |
+| **#8 **  | PYQT_PLAN.md                                                                      | DEFERRED | Wait for TypeScript CLI                          |
 
 ---
 
@@ -45,41 +46,40 @@ MASTER_PLAN is the canonical coordination point. All agents must read this file 
 
 ### Parallel Workstreams (Internal)
 
-| Workstream | Source Doc | Checklist Location | Notes |
-|------------|------------|--------------------|-------|
-| Remediation Plan | `docs/development/archive/remediation.md` | Remediation phases and findings | Archived intake log; follow-ups tracked in BACKLOG.md |
-| AI CI Loop Proposal | `docs/development/AI_CI_LOOP_PROPOSAL.md` | Proposal phases | Internal-only; workflow changes require approval |
+| Workstream          | Source Doc                                | Checklist Location              | Notes                                                 |
+|---------------------|-------------------------------------------|---------------------------------|-------------------------------------------------------|
+| Remediation Plan    | `docs/development/archive/remediation.md` | Remediation phases and findings | Archived intake log; follow-ups tracked in BACKLOG.md |
 
 ### Agent Assignment (Operational)
 
 Use this table to keep parallel agents in scope and avoid overlapping edits.
 
-| Agent | Scope | Primary Docs | Notes |
-|-------|-------|--------------|-------|
-| Coordinator | Orchestrate scopes, resolve conflicts | `docs/development/MASTER_PLAN.md`, `AGENTS.md` | Owns file ownership map |
-| Remediation Phase 1 (Code) | R-001/R-002 fixes + tests | `docs/development/archive/remediation.md` | Archived (complete) |
-| Remediation Phase 2 (Docs/ADR) | R-012/R-024/R-023 alignment | `docs/development/archive/remediation.md` | Archived (complete) |
-| CI Stabilization | R-033 triage/parser + snapshot drift | `docs/development/archive/remediation.md` | Archived (complete) |
-| CLEAN_CODE Reconciliation | Status accuracy cleanup | `docs/development/archive/CLEAN_CODE.md` | Archived (complete) |
-| AI Loop Proposal | Proposal + internal tooling doc | `docs/development/AI_CI_LOOP_PROPOSAL.md` | CLI surface + workflow wrapper approved |
-| Test Reorg Blockers | Validate blocker list | `docs/development/active/TEST_REORGANIZATION.md` | Report only |
-| Doc Automation Refs | TOOLS/WORKFLOWS gaps | `docs/development/active/DOC_AUTOMATION_AUDIT.md` | Report only |
+| Agent                          | Scope                                 | Primary Docs                                      | Notes                                   |
+|--------------------------------|---------------------------------------|---------------------------------------------------|-----------------------------------------|
+| Coordinator                    | Orchestrate scopes, resolve conflicts | `docs/development/MASTER_PLAN.md`, `AGENTS.md`    | Owns file ownership map                 |
+| Remediation Phase 1 (Code)     | R-001/R-002 fixes + tests             | `docs/development/archive/remediation.md`         | Archived (complete)                     |
+| Remediation Phase 2 (Docs/ADR) | R-012/R-024/R-023 alignment           | `docs/development/archive/remediation.md`         | Archived (complete)                     |
+| CI Stabilization               | R-033 triage/parser + snapshot drift  | `docs/development/archive/remediation.md`         | Archived (complete)                     |
+| CLEAN_CODE Reconciliation      | Status accuracy cleanup               | `docs/development/archive/CLEAN_CODE.md`          | Archived (complete)                     |
+| AI Loop Proposal               | Proposal + internal tooling doc       | `docs/development/active/AI_CI_LOOP_PROPOSAL.md`  | CLI surface + workflow wrapper approved |
+| Test Reorg Blockers            | Validate blocker list                 | `docs/development/archive/TEST_REORGANIZATION.md` | Archived (complete)                     |
+| Doc Automation Refs            | TOOLS/WORKFLOWS gaps                  | `docs/development/archive/DOC_AUTOMATION_AUDIT.md` | Report only                             |
 
 ### File Ownership Map (Authoritative)
 
 > **This table is authoritative.** Agents may only edit files in their "Exclusive Edit" column.
 > Read-only access is unrestricted. Conflicts require Coordinator resolution.
 
-| Agent | Exclusive Edit Rights | Read-Only | Notes |
-|-------|----------------------|-----------|-------|
-| **Coordinator (0)** | `docs/development/MASTER_PLAN.md`, `AGENTS.md`, `docs/development/status/STATUS.md` | All | Updates ownership map, resolves conflicts |
-| **Remediation Code (1)** | `cihub/commands/setup.py`, `cihub/commands/init.py`, `tests/test_init_override.py`, `tests/test_setup_flow.py` | `docs/development/archive/remediation.md` | Archived (no active edits) |
-| **Remediation Docs (2)** | `docs/adr/0051-wizard-profile-first-design.md`, `docs/reference/TOOLS.md` | `docs/development/archive/remediation.md` | Archived (no active edits) |
-| **CI Stabilization (3)** | `cihub/commands/triage_cmd.py`, `tests/test_triage*.py`, snapshot files | `docs/development/archive/remediation.md` | Archived (no active edits) |
-| **CLEAN_CODE Reconcile (4)** | `docs/development/archive/CLEAN_CODE.md` (status sections only) | `docs/development/MASTER_PLAN.md` | Archived (complete) |
-| **AI Loop Proposal (5)** | `docs/development/AI_CI_LOOP_PROPOSAL.md`, `cihub/commands/ai_loop.py`, `templates/hooks/`, `tests/test_ai_loop.py`, `cihub/commands/ci.py`, `cihub/utils/env_registry.py`, `tests/test_commands_ci.py`, `cihub/services/ai/`, `cihub/cli.py`, `cihub/cli_parsers/core.py`, `cihub/cli_parsers/types.py`, `cihub/cli_parsers/builder.py`, `.github/workflows/ai-ci-loop.yml`, `tests/test_cli_snapshots.py`, `tests/__snapshots__/test_cli_snapshots.ambr`, `tests/snapshots/cli_help.txt` | None | CLI surface approved; includes workflow wrapper |
-| **Test Reorg (6)** | *(report only)* | `TEST_REORGANIZATION.md` | Validate blockers; no edits |
-| **Doc Automation (7)** | *(report only)* | `DOC_AUTOMATION_AUDIT.md` | Validate gaps; no edits |
+| Agent                        | Exclusive Edit Rights                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Read-Only                                 | Notes                                           |
+|------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------|-------------------------------------------------|
+| **Coordinator (0)**          | `docs/development/MASTER_PLAN.md`, `AGENTS.md`, `docs/development/status/STATUS.md`                                                                                                                                                                                                                                                                                                                                                                                                        | All                                       | Updates ownership map, resolves conflicts       |
+| **Remediation Code (1)**     | `cihub/commands/setup.py`, `cihub/commands/init.py`, `tests/test_init_override.py`, `tests/test_setup_flow.py`                                                                                                                                                                                                                                                                                                                                                                             | `docs/development/archive/remediation.md` | Archived (no active edits)                      |
+| **Remediation Docs (2)**     | `docs/adr/0051-wizard-profile-first-design.md`, `docs/reference/TOOLS.md`                                                                                                                                                                                                                                                                                                                                                                                                                  | `docs/development/archive/remediation.md` | Archived (no active edits)                      |
+| **CI Stabilization (3)**     | `cihub/commands/triage_cmd.py`, `tests/test_triage*.py`, snapshot files                                                                                                                                                                                                                                                                                                                                                                                                                    | `docs/development/archive/remediation.md` | Archived (no active edits)                      |
+| **CLEAN_CODE Reconcile (4)** | `docs/development/archive/CLEAN_CODE.md` (status sections only)                                                                                                                                                                                                                                                                                                                                                                                                                            | `docs/development/MASTER_PLAN.md`         | Archived (complete)                             |
+| **AI Loop Proposal (5)**     | `docs/development/active/AI_CI_LOOP_PROPOSAL.md`, `cihub/commands/ai_loop.py`, `templates/hooks/`, `tests/test_ai_loop.py`, `cihub/commands/ci.py`, `cihub/utils/env_registry.py`, `tests/test_commands_ci.py`, `cihub/services/ai/`, `cihub/cli.py`, `cihub/cli_parsers/core.py`, `cihub/cli_parsers/types.py`, `cihub/cli_parsers/builder.py`, `.github/workflows/ai-ci-loop.yml`, `tests/test_cli_snapshots.py`, `tests/__snapshots__/test_cli_snapshots.ambr`, `tests/snapshots/cli_help.txt` | None                                      | CLI surface approved; includes workflow wrapper |
+| **Test Reorg (6)**           | *(archived)*                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `archive/TEST_REORGANIZATION.md`          | Archived (complete)                             |
+| **Doc Automation (7)**       | *(report only)*                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `archive/DOC_AUTOMATION_AUDIT.md`         | Archived; validate gaps only                    |
 
 ### Coordination Rules
 
@@ -88,11 +88,11 @@ Use this table to keep parallel agents in scope and avoid overlapping edits.
 - When a change affects shared docs, update them together: `docs/development/MASTER_PLAN.md`, `docs/development/status/STATUS.md`, `AGENTS.md`, `docs/development/CHANGELOG.md`.
 - Major design decisions require ADR updates and a MASTER_PLAN “Current Decisions” update.
 
-### Test Count Policy (Temporary)
+### Test Count Policy
 
-- Test counts in docs are paused to reduce churn; do not update numeric totals unless you ran a verified full test run and can cite the command/date. Owner will refresh counts after the next full run.
+- Test counts in docs are tool-generated; update via `cihub hub-ci test-metrics --write` after a verified pytest+coverage run (no manual edits).
 
-### Document Hierarchy (Updated 2026-01-06)
+### Document Hierarchy (Updated 2026-01-19)
 
 ```
 MASTER_PLAN.md
@@ -103,10 +103,12 @@ MASTER_PLAN.md
 Individual Planning Docs (Priority Order)
 ├── #1 CLEAN_CODE.md (ARCHIVED) → HOW to implement architecture improvements
 ├── #2 SYSTEM_INTEGRATION_PLAN.md (ARCHIVED) → HOW to fix registry/wizard disconnect
-├── #3 TEST_REORGANIZATION.md (CURRENT - blocked) → HOW to restructure 2100+ tests
-├── #4 DOC_AUTOMATION_AUDIT.md → HOW to implement doc automation
-├── #5 TYPESCRIPT_CLI_DESIGN.md → HOW to build TypeScript CLI
-└── #6 PYQT_PLAN.md → HOW to build GUI (deferred)
+├── #3 TEST_REORGANIZATION.md (ARCHIVED) → HOW to restructure 2100+ tests
+├── #4 DOC_AUTOMATION_AUDIT.md (ARCHIVED) → HOW to implement doc automation
+├── #5 CLI_WIZARD_SYNC_AUDIT.md (ARCHIVED) → HOW to align wizard/CLI/schema/TS
+├── #6 TYPESCRIPT_CLI_DESIGN.md (ACTIVE) → HOW to build TypeScript CLI
+├── #7 AI_CI_LOOP_PROPOSAL.md (DRAFT) → HOW to build autonomous CI loop
+└── #8 PYQT_PLAN.md (DEFERRED) → HOW to build GUI
 ```
 
 **Rule:** When MASTER_PLAN.md and an individual doc conflict on implementation details, the **individual doc wins**. MASTER_PLAN.md may be stale on details but should be current on priorities.
@@ -115,7 +117,7 @@ Individual Planning Docs (Priority Order)
 
 ## Active Design Docs - Priority Order
 
-> **Work on these IN ORDER. Each doc blocks the next.** Updated 2026-01-15.
+> **Work on these IN ORDER. Each doc blocks the next.** Updated 2026-01-19.
 
 ### Priority 1: CLEAN_CODE.md (ARCHIVED)
 
@@ -163,26 +165,28 @@ Core implementation needed:
 
 **Status:** 100% complete (2026-01-12). All phases implemented with 102 new tests.  
 
-### Priority 3: TEST_REORGANIZATION.md (CURRENT)
+### Priority 3: TEST_REORGANIZATION.md (ARCHIVED)
 
-**Status:** Phase 0-4 COMPLETE; Phase 1 CI wiring done; Phase 5 docs pending | **Depends on:** CommandResult migration + Registry fix (both complete)  
-
-```
-docs/development/active/TEST_REORGANIZATION.md
-```
-
-Blockers resolved:
-- [x] Schema allows per-module overrides (`additionalProperties: false` addressed)
-- [x] 3 automation scripts created (`scripts/update_test_metrics.py`, `scripts/generate_test_readme.py`, `scripts/check_test_drift.py`)
-
-**Why third:** Tests need to validate registry integration alongside command outputs.
-
-### Priority 4: DOC_AUTOMATION_AUDIT.md (Can parallel with TEST_REORGANIZATION)
-
-**Status:** COMPLETE (Part 12.J/L/N/Q + Part 13.R/S/T/U/V/W/X done; inventory + guide validation done; duplicate task detection remains disabled) | **Depends on:** Stable CLI surface  
+**Status:** ARCHIVED (2026-01-17) | Phase 4 property tests complete (11/11 critical modules); Phase 5 Test Architecture section added to MASTER_PLAN.md  
 
 ```
-docs/development/active/DOC_AUTOMATION_AUDIT.md
+docs/development/archive/TEST_REORGANIZATION.md
+```
+
+Completed:
+- [x] Phase 4: Property tests for all 11 critical modules (196 tests passing)
+- [x] Phase 5: Test Architecture section added to MASTER_PLAN.md
+- [x] Dynamic schema key loading to prevent drift
+- [x] 3 automation scripts (`scripts/update_test_metrics.py`, `scripts/generate_test_readme.py`, `scripts/check_test_drift.py`)
+
+**Superseded by:** Test Architecture section in MASTER_PLAN.md  
+
+### Priority 4: DOC_AUTOMATION_AUDIT.md (ARCHIVED)
+
+**Status:** Archived (complete; duplicate task detection remains disabled) | **Depends on:** Stable CLI surface  
+
+```
+docs/development/archive/DOC_AUTOMATION_AUDIT.md
 ```
 
 Core MVP:
@@ -205,20 +209,41 @@ Core MVP:
 
 **Why fourth:** Documentation automation needs stable command signatures.
 
-### Priority 5: TYPESCRIPT_CLI_DESIGN.md (After TEST_REORGANIZATION complete)
+### Priority 5: CLI_WIZARD_SYNC_AUDIT.md (ARCHIVED)
 
-**Status:** Planning | **Depends on:** CLEAN_CODE.md (complete) + TEST_REORGANIZATION.md  
+**Status:** Archived (2026-01-19) | **Depends on:** CLEAN_CODE.md (archived) + TEST_REORGANIZATION.md (archived) | **Unblocks:** TYPESCRIPT_CLI_DESIGN.md Phase 6
+
+```
+docs/development/archive/CLI_WIZARD_SYNC_AUDIT.md
+```
+
+**Why fifth:** Align wizard/CLI/schema/TypeScript before building interactive wizard flows.
+
+### Priority 6: TYPESCRIPT_CLI_DESIGN.md (ACTIVE)
+
+**Status:** Phase 5 complete (slash commands); Phase 6 ready to start | **Depends on:** CLEAN_CODE.md (archived) + TEST_REORGANIZATION.md (archived) - both complete  
 
 ```
 docs/development/active/TYPESCRIPT_CLI_DESIGN.md
 ```
 
-Explicit prerequisite in doc:
-> "DO NOT START THIS UNTIL CLEAN_CODE.md IS COMPLETE."
+Prerequisites satisfied:
+- [x] CLEAN_CODE.md complete (CommandResult migration, stdout/stderr cleanup)
+- [x] TEST_REORGANIZATION.md complete (property tests, test architecture docs)
 
-**Why fifth:** TypeScript CLI consumes Python CLI JSON; needs clean output.
+**Why sixth:** TypeScript CLI consumes Python CLI JSON; needs clean output.
 
-### Priority 6: PYQT_PLAN.md (Deferred)
+### Priority 7: AI_CI_LOOP_PROPOSAL.md (DRAFT)
+
+**Status:** Draft (internal) | **Depends on:** Stable CLI output + triage bundles (CLEAN_CODE and TEST_REORGANIZATION archived)  
+
+```
+docs/development/active/AI_CI_LOOP_PROPOSAL.md
+```
+
+**Why seventh:** Autonomous loop depends on clean CLI contracts and deterministic triage outputs.
+
+### Priority 8: PYQT_PLAN.md (Deferred)
 
 **Status:** Reference only | **Depends on:** Everything above  
 
@@ -297,13 +322,11 @@ docs/development/active/PYQT_PLAN.md
  - cli.py: Error output routes to stderr (CLI best practice)
  - [x] ~~TODO: Migrate remaining 45 print() calls in 12 files~~ [x] **DONE** (45→7, 84% reduction)
 
-**Test Reorganization:** *(See `active/TEST_REORGANIZATION.md` for design)*
-- [ ] 2100+ tests currently in flat `tests/` directory need restructuring
-- [ ] 5-agent audit identified ~10-12 days blockers before Phase 1 can start:
- - `cihub hub-ci thresholds` CLI command not implemented
- - Schema blocks per-module overrides (`additionalProperties: false`)
- - 3 automation scripts must be created
- - 35/78 (45%) test files need new categories beyond proposed structure
+**Test Reorganization:** *(See `archive/TEST_REORGANIZATION.md` for historical design; superseded by Test Architecture section below)*
+- [x] Phase 4: Property tests for 11 critical modules (196 tests)
+- [x] Phase 5: Test Architecture section added to MASTER_PLAN.md
+- [x] 3 automation scripts created (`scripts/update_test_metrics.py`, `scripts/generate_test_readme.py`, `scripts/check_test_drift.py`)
+- [x] Dynamic schema key loading to prevent drift
 
 **Quality Gate Consistency:**
 - [ ] Summary vs report validator: compare `summary.md` gate rows to `report.json` + `tools_ran/tools_success`
@@ -400,15 +423,57 @@ docs/development/active/PYQT_PLAN.md
 >
 > **Until fixed:** Follow `docs/development/archive/REGISTRY_AUDIT_AND_PLAN.md` (archived) for registry architecture reference.
 
+## Test Architecture
+
+> See `tests/README.md` (auto-generated via `cihub hub-ci test-metrics --write`) for current counts.
+
+### Test Categories
+
+| Category    | Directory            | Purpose                                                | Run Command                 |
+|-------------|----------------------|--------------------------------------------------------|-----------------------------|
+| Unit        | `tests/unit/`        | Fast, isolated tests for individual functions          | `pytest tests/unit/`        |
+| Integration | `tests/integration/` | Tests with external dependencies (filesystem, network) | `pytest tests/integration/` |
+| E2E         | `tests/e2e/`         | End-to-end workflow tests                              | `pytest tests/e2e/`         |
+| Property    | `tests/property/`    | Hypothesis property-based tests for invariants         | `pytest tests/property/`    |
+| Contract    | `tests/contracts/`   | API/schema contract tests                              | `pytest tests/contracts/`   |
+| Regression  | `tests/regression/`  | Bug-specific regression tests                          | `pytest tests/regression/`  |
+
+### Property Test Coverage (Critical Modules)
+
+Property tests verify invariants that must hold for all inputs. All critical modules have invariant coverage:
+
+| Module                        | Test File                                  | Key Invariants                            |
+|-------------------------------|--------------------------------------------|-------------------------------------------|
+| `config/loader/core.py`       | `test_registry_roundtrip_invariant.py`     | load_config roundtrip                     |
+| `config/loader/inputs.py`     | `test_property_based.py`                   | generate_workflow_inputs                  |
+| `config/normalize.py`         | `test_config_normalize_properties.py`      | idempotency, type preservation            |
+| `config/merge.py`             | `test_config_merge_properties.py`          | deep_merge identity, overlay wins         |
+| `report_validator/content.py` | `test_report_validation_properties.py`     | _get_nested, _parse_bool, validate_report |
+| `report_validator/schema.py`  | `test_schema_validation_properties.py`     | validate_against_schema                   |
+| `core/aggregation/status.py`  | `test_aggregation_status_properties.py`    | create_run_status, _status_from_report    |
+| `core/gate_specs.py`          | `test_gate_specs_properties.py`            | threshold specs, comparators              |
+| `utils/paths.py`              | `test_paths_utils_properties.py`           | validate_subdir security                  |
+| `types.py`                    | `test_cli_output_properties.py`            | CommandResult, ToolResult contracts       |
+| `services/triage/`            | `tests/property/test_triage_properties.py` | log parser, severity ordering             |
+
+### Test Conventions
+
+1. **Naming**: Use descriptive test IDs with `pytest.mark.parametrize` ids
+2. **Markers**: Use `@pytest.mark.slow` for tests > 5s, `@pytest.mark.integration` for external deps
+3. **Metrics**: Run `cihub hub-ci test-metrics --write` to regenerate `tests/README.md`
+4. **Coverage**: Targets defined in `config/defaults.yaml` under `thresholds`
+
 ## References (Background Only)
 
-**Active Design Docs** (in-progress designs, listed in `status/STATUS.md`):
-- `docs/development/archive/CLEAN_CODE.md` (architecture improvements: polymorphism, encapsulation)
-- `docs/development/archive/REGISTRY_AUDIT_AND_PLAN.md` (wizard↔registry integration, schema expansion - **archived**)
-- `docs/development/active/TEST_REORGANIZATION.md` (test suite restructuring: 2100+ tests → unit/integration/e2e)
-- `docs/development/active/DOC_AUTOMATION_AUDIT.md` (doc automation design: `cihub docs stale`, `cihub docs audit`)
+**Design Docs (Active + Archived references):**
+- `docs/development/archive/CLI_WIZARD_SYNC_AUDIT.md` (wizard/CLI/schema/TS alignment audit)
 - `docs/development/active/TYPESCRIPT_CLI_DESIGN.md` (TypeScript interactive CLI - consumes Python CLI as backend)
+- `docs/development/active/AI_CI_LOOP_PROPOSAL.md` (autonomous AI CI loop proposal)
 - `docs/development/active/PYQT_PLAN.md` (PyQt concept scope)
+- `docs/development/archive/CLEAN_CODE.md` (architecture improvements: polymorphism, encapsulation)
+- `docs/development/archive/REGISTRY_AUDIT_AND_PLAN.md` (wizard↔registry integration, schema expansion - archived)
+- `docs/development/archive/TEST_REORGANIZATION.md` (test suite restructuring - archived)
+- `docs/development/archive/DOC_AUTOMATION_AUDIT.md` (doc automation design: `cihub docs stale`, `cihub docs audit`)
 
 **Architecture:**
 - `docs/development/architecture/ARCH_OVERVIEW.md` (current architecture overview)
@@ -421,8 +486,13 @@ These are references, not competing plans.
 ## Current Decisions
 
 - **CLI is the execution engine**; workflows are thin wrappers.
+- **AI enhancement is optional and CLI-local** (`cihub/ai`, `--ai`, `CIHUB_AI_PROVIDER`, `CIHUB_DEV_MODE`) (ADR-0058).
+- **Interactive clients consume the CLI command registry** (`cihub commands list --json`) (ADR-0059).
 - **Workflow dispatch/watch lives in the CLI** (`cihub dispatch`) with wizard wrappers (ADR-0055).
 - **Schema is the source of truth for defaults**; defaults.yaml and fallbacks.py are generated and audited in `cihub check --audit`.
+- **Canonical install default is PyPI**; align CLI defaults and templates to schema `install.source`.
+- **v1.0 languages are Java/Python only**; defer Node/Go until strategies exist (schema must reflect supported languages).
+- **Command registry exposes interactive + runtime JSON support** (e.g., `supports_interactive`, `supports_json_runtime`) so clients do not rely on argparse flags.
 - **Hub CI supports per-module threshold overrides** under `hub_ci.thresholds.overrides` (ADR-0054).
 - **Docs audit inventory + guide command validation** live in the CLI (`cihub docs audit --inventory`) (ADR-0056).
 - **Single entrypoint workflow is `hub-ci.yml`**; it routes to `python-ci.yml`/`java-ci.yml` internally.
@@ -437,7 +507,7 @@ The Python CLI is designed as a **headless API backend** for future frontends:
 1. **TypeScript CLI** (`docs/development/active/TYPESCRIPT_CLI_DESIGN.md`) maps slash commands to Python commands:
  - `/fix-pom` → `cihub fix-pom --json`
  - `/setup-secrets` → `cihub setup-secrets --json`
- - `/config outputs` → `cihub config-outputs --json`
+ - `/config-outputs` → `cihub config-outputs --json`
 
 2. **PyQt6 GUI** (`docs/development/active/PYQT_PLAN.md`) calls Python CLI programmatically:
  - `cihub fix-pom`, `cihub fix-deps`, `cihub setup-secrets`, `cihub setup-nvd`
@@ -535,7 +605,7 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
 - [x] `cihub hub-ci badges` - Generate/validate CI badges from workflow artifacts.
 - [ ] `cihub config validate` (or `cihub validate --hub`) - Validate hub configs (resolves validate ambiguity)
 - [ ] `cihub audit` - Umbrella: docs check + links + adr check + config validate
-- [x] `cihub docs stale` - [x] **COMPLETE** (2026-01-06) Modularized package, 63 tests. Design: `active/DOC_AUTOMATION_AUDIT.md`
+- [x] `cihub docs stale` - [x] **COMPLETE** (2026-01-06) Modularized package, 63 tests. Design: `archive/DOC_AUTOMATION_AUDIT.md`
 - [ ] `cihub docs workflows` - Generate workflow tables from `.github/workflows/*.yml` (replaces manual guides/WORKFLOWS.md)
 - [x] `cihub docs audit` - [x] **COMPLETE** (2026-01-10) Wired into `cihub check --audit`:
  - [x] Every doc in `status/STATUS.md` Active Design Docs table must exist under `development/active/` [x]
@@ -560,9 +630,9 @@ See `CLEAN_CODE.md` Part 5.4 for full audit details.
  - [x] Remote sync check (`sync-templates --check`) in `cihub check --full` (skips gracefully if no GH_TOKEN)
  - [x] All 5 scaffold types tested (python-pyproject, python-setup, java-maven, java-gradle, monorepo)
 
-### 6b) Documentation Automation (Design: `active/DOC_AUTOMATION_AUDIT.md`)
+### 6b) Documentation Automation (Design: `archive/DOC_AUTOMATION_AUDIT.md`)
 
-> **Design doc:** Full requirements and architecture in `docs/development/active/DOC_AUTOMATION_AUDIT.md`
+> **Design doc:** Full requirements and architecture in `docs/development/archive/DOC_AUTOMATION_AUDIT.md`
 > **Status:** ~98% complete (Priority #4)  
 
 - [x] `cihub docs stale` - [x] **COMPLETE** (2026-01-06) Modularized package (6 modules, 63 tests including 15 Hypothesis)

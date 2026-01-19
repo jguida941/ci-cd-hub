@@ -584,7 +584,8 @@ def cmd_kyverno_test(args: argparse.Namespace) -> CommandResult:
 
 
 def cmd_release_parse_tag(args: argparse.Namespace) -> CommandResult:
-    ref = args.ref or os.environ.get("GITHUB_REF", "")
+    ctx_env = OutputContext.from_env()
+    ref = args.ref or ctx_env.ref or ""
     if not ref.startswith("refs/tags/"):
         return CommandResult(
             exit_code=EXIT_FAILURE,

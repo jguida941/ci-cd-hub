@@ -6,6 +6,12 @@
 # Expected runtime: ~20-40 minutes
 # ============================================================================
 
+# Metadata for wizard display (CLI as source of truth)
+_metadata:
+  description: Security and compliance focus
+  tools: spotbugs, owasp, semgrep, trivy, codeql
+  runtime: "~20-40 min"
+
 java:
   tools:
     jacoco:

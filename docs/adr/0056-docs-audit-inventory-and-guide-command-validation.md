@@ -60,5 +60,5 @@ instead of workflows or ad-hoc scripts.
 
 ## References
 
-- [DOC_AUTOMATION_AUDIT.md](../development/active/DOC_AUTOMATION_AUDIT.md)
+- [DOC_AUTOMATION_AUDIT.md](../development/archive/DOC_AUTOMATION_AUDIT.md)
 - [ADR-0048: Documentation Automation Strategy](0048-documentation-automation-strategy.md)

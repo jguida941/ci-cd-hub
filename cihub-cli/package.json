@@ -1,0 +1,33 @@
+{
+  "name": "@yourorg/cihub-cli",
+  "version": "1.0.0",
+  "description": "Interactive CLI for CIHub",
+  "type": "module",
+  "bin": {
+    "cihub-interactive": "./bin/cihub.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.tsx --format esm --dts",
+    "dev": "tsup src/index.tsx --watch",
+    "start": "node bin/cihub.js",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "ink": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "ink-spinner": "^5.0.0",
+    "react": "^19.0.0",
+    "execa": "^9.0.0",
+    "commander": "^12.0.0",
+    "chalk": "^5.3.0",
+    "figures": "^6.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^19.0.0",
+    "typescript": "^5.5.0",
+    "tsup": "^8.0.0",
+    "vitest": "^2.0.0"
+  }
+}

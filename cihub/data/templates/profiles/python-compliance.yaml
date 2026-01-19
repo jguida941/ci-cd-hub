@@ -6,6 +6,12 @@
 # Expected runtime: ~15-30 minutes
 # ============================================================================
 
+# Metadata for wizard display (CLI as source of truth)
+_metadata:
+  description: Security and supply-chain compliance focus
+  tools: bandit, pip-audit, semgrep, trivy, codeql
+  runtime: "~15-30 min"
+
 python:
   tools:
     pytest:
