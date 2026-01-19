@@ -168,20 +168,13 @@ class TestLifecycleValidation:
 
         master_path = tmp_path / "docs" / "development" / "MASTER_PLAN.md"
         master_path.parent.mkdir(parents=True, exist_ok=True)
-        master_path.write_text(
-            "## Active Design Docs - Priority Order\n\n"
-            "```\n"
-            "docs/development/active/FOO.md\n"
-            "```\n"
-        )
+        master_path.write_text("## Active Design Docs - Priority Order\n\n```\ndocs/development/active/FOO.md\n```\n")
 
         active_docs = get_active_docs(tmp_path)
         master_entries = parse_master_plan_active_docs(tmp_path)
         findings = check_master_plan_active_sync(active_docs, master_entries)
 
-        assert any(
-            f.code == "CIHUB-AUDIT-MISSING-IN-MASTER-PLAN" and "BAR.md" in f.message for f in findings
-        )
+        assert any(f.code == "CIHUB-AUDIT-MISSING-IN-MASTER-PLAN" and "BAR.md" in f.message for f in findings)
 
     def test_check_master_plan_active_sync_stale_entry(self, tmp_path: Path) -> None:
         """Test when MASTER_PLAN.md lists a non-existent active doc."""
@@ -855,9 +848,8 @@ This document explains something important.
 """
         headers = parse_doc_header(doc_with_intro_then_header)
         # The Status appearing after ANY content should NOT be captured
-        assert "Status" not in headers, (
-            "Header parsing should stop at first non-header line; found 'Status' after intro paragraph"
-        )
+        message = "Header parsing should stop at first non-header line; found 'Status' after intro paragraph"
+        assert "Status" not in headers, message
 
     def test_parse_header_block_finds_headers_at_top(self, tmp_path: Path) -> None:
         """Verify headers at the top of the document ARE found."""

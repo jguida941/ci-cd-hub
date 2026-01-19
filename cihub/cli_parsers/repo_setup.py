@@ -37,6 +37,15 @@ def add_repo_setup_commands(
         action="store_true",
         help="Run interactive wizard (requires cihub[wizard])",
     )
+    new_config = new.add_mutually_exclusive_group()
+    new_config.add_argument(
+        "--config-json",
+        help="Inline JSON config override (TypeScript wizard handoff)",
+    )
+    new_config.add_argument(
+        "--config-file",
+        help="Path to YAML/JSON config override (TypeScript wizard handoff)",
+    )
     new.add_argument(
         "--dry-run",
         action="store_true",
@@ -82,6 +91,15 @@ def add_repo_setup_commands(
         action="store_true",
         help="Run interactive wizard (requires cihub[wizard])",
     )
+    init_config = init.add_mutually_exclusive_group()
+    init_config.add_argument(
+        "--config-json",
+        help="Inline JSON config override (TypeScript wizard handoff)",
+    )
+    init_config.add_argument(
+        "--config-file",
+        help="Path to YAML/JSON config override (TypeScript wizard handoff)",
+    )
     init.add_argument(
         "--dry-run",
         action="store_true",
@@ -92,6 +110,20 @@ def add_repo_setup_commands(
         choices=["pypi", "git", "local"],
         default="pypi",
         help="How cihub should be installed in CI: pypi (default), git, or local",
+    )
+    init.add_argument(
+        "--hub-repo",
+        help="Hub repo (owner/name) for setting HUB_REPO (default: CIHUB_HUB_REPO or template)",
+    )
+    init.add_argument(
+        "--hub-ref",
+        help="Hub ref (tag/sha/branch) for setting HUB_REF (default: CIHUB_HUB_REF or template)",
+    )
+    init.add_argument(
+        "--set-hub-vars",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Set HUB_REPO/HUB_REF repo variables via gh (default: true)",
     )
     init.set_defaults(func=handlers.cmd_init)
 
@@ -167,6 +199,20 @@ def add_repo_setup_commands(
         "--skip-github",
         action="store_true",
         help="Skip GitHub repository setup steps",
+    )
+    setup.add_argument(
+        "--hub-repo",
+        help="Hub repo (owner/name) for setting HUB_REPO (default: CIHUB_HUB_REPO or template)",
+    )
+    setup.add_argument(
+        "--hub-ref",
+        help="Hub ref (tag/sha/branch) for setting HUB_REF (default: CIHUB_HUB_REF or template)",
+    )
+    setup.add_argument(
+        "--set-hub-vars",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Set HUB_REPO/HUB_REF repo variables via gh (default: true)",
     )
     setup.add_argument(
         "--hub-mode",

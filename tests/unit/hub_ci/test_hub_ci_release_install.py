@@ -156,9 +156,7 @@ class TestCmdKyvernoInstall:
         assert "kyverno installed" in result.summary
 
     @patch("cihub.commands.hub_ci.release._download_file")
-    def test_install_download_failure(
-        self, mock_download: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_install_download_failure(self, mock_download: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test installation failure when download fails."""
         mock_download.side_effect = OSError("Download failed")
 
@@ -204,9 +202,7 @@ class TestCmdTrivyInstall:
         assert "trivy installed" in result.summary
 
     @patch("cihub.commands.hub_ci.release._trivy_asset_name")
-    def test_install_unsupported_platform(
-        self, mock_asset: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_install_unsupported_platform(self, mock_asset: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test installation failure on unsupported platform."""
         mock_asset.side_effect = ValueError("Unsupported platform")
 

@@ -129,12 +129,15 @@ ignore = ["S101"]  # Allow assert in tests
 "cihub/commands/report/__init__.py" = ["E402"]
 "cihub/services/ci_engine/__init__.py" = ["E402"]
 "scripts/validate_config.py" = ["E402"]
+"cihub/commands/triage/__init__.py" = ["I001"]
+"cihub/services/triage_service.py" = ["I001"]
 # S603/S105/S106/S108: Security warnings are false positives in test code
 "tests/test_fix_command.py" = ["S603"]
 "tests/test_migrated_commands_contract.py" = ["S106"]
 "tests/test_output_context.py" = ["S105"]
 "tests/test_schema_contract.py" = ["S108"]
 "tests/test_services_ci.py" = ["B017"]
+"tests/**" = ["S102", "S105", "S106", "S108", "S603", "S607"]
 
 [tool.ruff.format]
 # Black-compatible formatting
@@ -147,6 +150,7 @@ python_version = "3.10"
 warn_return_any = true
 warn_unused_ignores = true
 ignore_missing_imports = true
+exclude = "cihub/data/templates/scaffold/.*"
 
 [tool.black]
 line-length = 120
@@ -156,7 +160,7 @@ extend-exclude = "_quarantine"
 [tool.isort]
 profile = "black"
 line_length = 120
-skip = ["_quarantine"]
+skip = ["_quarantine", ".venv", "cihub-cli/node_modules"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

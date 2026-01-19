@@ -6,8 +6,8 @@ import argparse
 from typing import Callable
 
 from cihub.cli_parsers.adr import add_adr_commands
-from cihub.cli_parsers.config import add_config_commands, add_config_outputs_command
 from cihub.cli_parsers.commands_cmd import add_commands_commands
+from cihub.cli_parsers.config import add_config_commands, add_config_outputs_command
 from cihub.cli_parsers.core import add_core_commands
 from cihub.cli_parsers.discover import add_discover_command
 from cihub.cli_parsers.dispatch import add_dispatch_commands

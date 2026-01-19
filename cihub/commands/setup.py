@@ -16,6 +16,7 @@ memorizing individual commands.
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 from pathlib import Path
 
@@ -26,6 +27,9 @@ from cihub.exit_codes import (
     EXIT_USAGE,
 )
 from cihub.types import CommandResult
+from cihub.services.templates import resolve_hub_repo_ref
+from cihub.utils.github import set_repo_variables
+from cihub.utils.git import get_git_remote, parse_repo_from_remote
 from cihub.wizard import HAS_WIZARD, WizardCancelled
 
 # Step definitions for the complete setup wizard
@@ -50,9 +54,7 @@ def _check_cancelled(value, ctx: str):
     return value
 
 
-def _run_command(
-    cmd: list[str], cwd: Path | None = None, timeout: int = 120
-) -> tuple[int, str, str]:
+def _run_command(cmd: list[str], cwd: Path | None = None, timeout: int = 120) -> tuple[int, str, str]:
     """Run a subprocess and return (exit_code, stdout, stderr).
 
     Note: Commands run by this function are trusted (git, gh CLI) - S603 suppressed.
@@ -197,10 +199,10 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
                 type=project_type,
                 path=str(target_path),  # R-001: was 'dest', scaffold expects 'path'
                 name=project_name,
-                list=False,    # R-001: required flag
+                list=False,  # R-001: required flag
                 github=False,  # R-001: required flag
                 wizard=False,  # R-001: required flag
-                force=False,   # R-001: required per code review (scaffold.py:169)
+                force=False,  # R-001: required per code review (scaffold.py:169)
                 json=False,
             )
             scaffold_result = cmd_scaffold(scaffold_args)
@@ -510,6 +512,49 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
                     steps_completed.append("push")
             else:
                 console.print("  [dim]Skipped[/dim]")
+
+            if github_choice in {"create", "existing"} and getattr(args, "set_hub_vars", True):
+                template_repo, template_ref = resolve_hub_repo_ref(language)
+                hub_repo_value = getattr(args, "hub_repo", None) or os.environ.get("CIHUB_HUB_REPO") or template_repo
+                hub_ref_value = getattr(args, "hub_ref", None) or os.environ.get("CIHUB_HUB_REF") or template_ref
+                remote = get_git_remote(repo_path)
+                target_repo = ""
+                if remote:
+                    git_owner, git_name = parse_repo_from_remote(remote)
+                    if git_owner and git_name:
+                        target_repo = f"{git_owner}/{git_name}"
+                if not target_repo:
+                    problems.append(
+                        {
+                            "severity": "warning",
+                            "message": "Unable to resolve remote repo for setting HUB_REPO/HUB_REF",
+                            "code": "CIHUB-HUB-VARS-NO-REMOTE",
+                        }
+                    )
+                elif not hub_repo_value or not hub_ref_value:
+                    problems.append(
+                        {
+                            "severity": "warning",
+                            "message": "Unable to resolve hub repo/ref for GitHub variables",
+                            "code": "CIHUB-HUB-VARS-NO-DEFAULT",
+                        }
+                    )
+                else:
+                    ok, messages, hub_problems = set_repo_variables(
+                        target_repo,
+                        {"HUB_REPO": hub_repo_value, "HUB_REF": hub_ref_value},
+                    )
+                    problems.extend(hub_problems)
+                    if ok:
+                        for message in messages:
+                            console.print(f"  [green]✓[/green] {message}")
+                        steps_completed.append("hub_vars")
+                    else:
+                        suggestions.append(
+                            {
+                                "message": "Set HUB_REPO/HUB_REF repo variables to enable hub-ci installs",
+                            }
+                        )
         else:
             console.print("\n[bold]Step 8:[/bold] GitHub Setup [dim](skipped via --skip-github)[/dim]")
 

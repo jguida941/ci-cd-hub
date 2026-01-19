@@ -266,7 +266,7 @@ jobs:
           CIHUB_HUB_REPO: ${{ inputs.hub_repo }}
           CIHUB_HUB_REF: ${{ inputs.hub_ref }}
         run: |
-          curl -sSL "https://raw.githubusercontent.com/${{ inputs.hub_repo }}/${{ inputs.hub_ref }}/scripts/install.py" | python
+          curl -sSL "https://raw.githubusercontent.com/${CIHUB_HUB_REPO}/${CIHUB_HUB_REF}/scripts/install.py" | python
 
       - name: Install Trivy
         if: ${{ inputs.run_trivy }}

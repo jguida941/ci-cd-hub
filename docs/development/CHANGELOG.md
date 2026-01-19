@@ -2,6 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-19 - TypeScript Wizard Handoff (Phase 6)
+
+### New: TypeScript interactive wizard flows
+
+- Added Ink-based wizard scaffolding with step definitions and profile helpers.
+- Implemented `/new`, `/init`, and `/config edit` wizard flows in the TypeScript CLI.
+
+### Change: CLI config payload handoff
+
+- Added `--config-json` / `--config-file` to `cihub init`, `cihub new`, and `cihub config edit` for headless wizard handoff.
+- `cihub config edit` now supports JSON runtime when a config payload is supplied.
+- Recorded decision in ADR-0060.
+
+## 2026-01-19 - Onboarding Hub Vars
+
+### Fix: Auto-set HUB_REPO/HUB_REF in setup/init
+
+- `cihub setup` and `cihub init` now set HUB_REPO/HUB_REF repo variables via `gh` when available.
+- Added `--set-hub-vars/--no-set-hub-vars` and hub override flags for setup/init.
+- Documented `CIHUB_HUB_REPO` / `CIHUB_HUB_REF` in the env registry.
+
+## 2026-01-19 - TypeScript CLI Configuration (Phase 7)
+
+### New: Config loader + first-run setup
+
+- Added `~/.cihubrc` loading with XDG and project overrides plus `CIHUB_CONFIG` support.
+- Added environment overrides for AI keys, Python path, debug, and no-color settings.
+- Added first-run setup flow that writes a starter config file.
+
+## 2026-01-19 - Workflow Security & Check Hygiene
+
+### Fix: workflow input hardening (zizmor)
+
+- Route workflow inputs through env variables to avoid template injection in ai-ci-loop, python-ci, and java-ci.
+- Annotated release checkout credentials with zizmor suppression for the floating-tag push path.
+
+### Change: local check reliability
+
+- `cihub check` now validates templates via `tests/integration/test_templates.py`.
+- `yamllint` ignores legacy templates in `cihub/data/templates/legacy`.
+- `isort` skips `.venv` and `cihub-cli/node_modules` during checks.
+- `cihub check` now runs against the current working directory when invoked outside the hub repo.
+
 ## 2026-01-19 - CLI/Wizard Alignment (Phase 1)
 
 ### Fix: Wizard advanced prompts emit schema-valid keys

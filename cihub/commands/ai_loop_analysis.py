@@ -55,8 +55,7 @@ def should_break(state: LoopState, result: CommandResult) -> bool:
 
 def failure_signature(result: CommandResult) -> frozenset[str]:
     return frozenset(
-        f"{problem.get('tool', 'unknown')}:{problem.get('message', '')[:50]}"
-        for problem in (result.problems or [])
+        f"{problem.get('tool', 'unknown')}:{problem.get('message', '')[:50]}" for problem in (result.problems or [])
     )
 
 
@@ -105,11 +104,7 @@ def problems_from_failures(failures: list[dict[str, Any]]) -> list[dict[str, Any
 def is_test_only_failures(failures: list[dict[str, Any]]) -> bool:
     if not failures:
         return False
-    categories = {
-        str(item.get("category", "")).lower()
-        for item in failures
-        if item.get("category")
-    }
+    categories = {str(item.get("category", "")).lower() for item in failures if item.get("category")}
     return bool(categories) and categories.issubset({"test"})
 
 

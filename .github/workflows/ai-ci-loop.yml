@@ -41,4 +41,6 @@ jobs:
       - name: Run AI CI loop
         env:
           CIHUB_EMIT_TRIAGE: "true"
-        run: cihub ai-loop --max-iterations "${{ inputs.max_iterations }}" --fix-mode "${{ inputs.fix_mode }}"
+          CIHUB_MAX_ITERATIONS: ${{ inputs.max_iterations }}
+          CIHUB_FIX_MODE: ${{ inputs.fix_mode }}
+        run: cihub ai-loop --max-iterations "$CIHUB_MAX_ITERATIONS" --fix-mode "$CIHUB_FIX_MODE"

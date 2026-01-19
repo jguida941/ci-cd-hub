@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from cihub.commands.ai_loop_analysis import (
     extract_failures,
@@ -66,7 +66,10 @@ def run_remote_loop(
     from cihub.commands.triage.remote import generate_remote_triage_bundle
 
     if settings.remote_provider != "gh":
-        return CommandResult(exit_code=EXIT_FAILURE, summary=f"Remote provider not supported: {settings.remote_provider}")
+        return CommandResult(
+            exit_code=EXIT_FAILURE,
+            summary=f"Remote provider not supported: {settings.remote_provider}",
+        )
 
     gh_ok, gh_err = check_gh_installed()
     if not gh_ok:
@@ -436,7 +439,7 @@ def run_remote_triage(generate_remote_triage_bundle, run_id: str, repo: str, out
         _artifacts, data = result
         data_path = output_dir / "multi-triage.json"
         data_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
-        return data
+        return cast(dict[str, Any], data)
 
     triage = result.triage
     priority = result.priority
@@ -444,7 +447,7 @@ def run_remote_triage(generate_remote_triage_bundle, run_id: str, repo: str, out
     (output_dir / "triage.json").write_text(json.dumps(triage, indent=2), encoding="utf-8")
     (output_dir / "priority.json").write_text(json.dumps(priority, indent=2), encoding="utf-8")
     (output_dir / "triage.md").write_text(markdown, encoding="utf-8")
-    return triage
+    return cast(dict[str, Any], triage)
 
 
 def run_local_fallback_triage(
@@ -465,5 +468,5 @@ def run_local_fallback_triage(
     snapshot_ci_outputs(session_paths.ci_output_dir, iteration_dir)
     triage_path = session_paths.ci_output_dir / "triage.json"
     if triage_path.exists():
-        return json.loads(triage_path.read_text(encoding="utf-8"))
+        return cast(dict[str, Any], json.loads(triage_path.read_text(encoding="utf-8")))
     return {}

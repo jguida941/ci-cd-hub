@@ -8,9 +8,9 @@ All functionality has been moved to the cihub.services.registry package.
 
 from __future__ import annotations
 
-# Re-export everything from the registry package for backward compatibility
+# Re-export everything from the registry package for backward compatibility.
+# Covers thresholds, diffs, normalization, path utilities, query, I/O, and sync helpers.
 from cihub.services.registry import (
-    # Thresholds
     _DEFAULT_THRESHOLDS,
     _FLOAT_THRESHOLD_KEYS,
     _as_int,
@@ -26,10 +26,8 @@ from cihub.services.registry import (
     _get_registry_path,
     _get_threshold_value,
     _merge_config_layers,
-    # Diff
     _normalize_config_fragment,
     _normalize_registry_inplace,
-    # Normalization
     _normalize_repo_metadata_inplace,
     _normalize_threshold_dict_inplace,
     _resolve_repo_language,
@@ -37,16 +35,12 @@ from cihub.services.registry import (
     bootstrap_from_configs,
     compute_diff,
     get_repo_config,
-    # Path utilities (for test monkeypatching)
     hub_root,
-    # Query
     list_repos,
-    # I/O
     load_registry,
     save_registry,
     set_repo_override,
     set_repo_tier,
-    # Sync
     sync_to_configs,
 )
 

@@ -69,7 +69,7 @@ def test_docs_check_detects_drift(tmp_path: Path) -> None:
 def test_internal_links_valid(tmp_path: Path) -> None:
     """Test that valid internal links pass."""
 
-# TEST-METRICS:
+    # TEST-METRICS:
     (tmp_path / "README.md").write_text("See [guide](guide.md) for details.", encoding="utf-8")
     (tmp_path / "guide.md").write_text("# Guide", encoding="utf-8")
 

@@ -10,7 +10,7 @@ import json
 import os
 import shutil
 import subprocess
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 
 AI_TIMEOUT = 60
 DEFAULT_PROVIDER = "claude"
@@ -52,10 +52,13 @@ def invoke_claude(
     """
     if not is_ai_available("claude"):
         return None
+    claude_path = shutil.which("claude")
+    if not claude_path:
+        return None
 
     try:
-        result = subprocess.run(
-            ["claude", "-p", prompt, "--output-format", output_format],
+        result = subprocess.run(  # noqa: S603 - prompt is passed as an argument to a trusted CLI (no shell)
+            [claude_path, "-p", prompt, "--output-format", output_format],
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -64,7 +67,8 @@ def invoke_claude(
             return None
 
         if output_format == "json":
-            return json.loads(result.stdout)
+            payload = json.loads(result.stdout)
+            return cast(dict[str, Any], payload)
         return {"result": result.stdout}
     except (subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError, OSError):
         return None

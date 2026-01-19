@@ -9,9 +9,6 @@ Tests the schema extraction, defaults/fallbacks generation, and alignment checki
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
-
-import pytest
 
 OPTIONAL_FEATURE_KEYS = [
     "chaos",
@@ -132,9 +129,9 @@ class TestSchemaExtraction:
         schema = load_schema()
         defaults = extract_all_defaults(schema)
 
-        overrides_default = (
-            schema["definitions"]["hubCi"]["oneOf"][1]["properties"]["thresholds"]["properties"]["overrides"]["default"]
-        )
+        overrides_default = schema["definitions"]["hubCi"]["oneOf"][1]["properties"]["thresholds"]["properties"][
+            "overrides"
+        ]["default"]
         assert defaults["hub_ci"]["thresholds"]["overrides"] == overrides_default
 
     def test_fallbacks_defaults_follow_schema(self) -> None:
@@ -150,9 +147,9 @@ class TestSchemaExtraction:
         reports_default = schema["definitions"]["reports"]["properties"]["retention_days"]["default"]
         assert fallbacks["reports"]["retention_days"] == reports_default
 
-        overrides_default = (
-            schema["definitions"]["hubCi"]["oneOf"][1]["properties"]["thresholds"]["properties"]["overrides"]["default"]
-        )
+        overrides_default = schema["definitions"]["hubCi"]["oneOf"][1]["properties"]["thresholds"]["properties"][
+            "overrides"
+        ]["default"]
         assert fallbacks["hub_ci"]["thresholds"]["overrides"] == overrides_default
 
         for key in OPTIONAL_FEATURE_KEYS:

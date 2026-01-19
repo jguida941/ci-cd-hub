@@ -60,6 +60,7 @@ Existing:
 - [ADR-0056: Docs Audit Inventory and Guide Command Validation](0056-docs-audit-inventory-and-guide-command-validation.md)
 - [ADR-0057: Test Metrics Automation via hub-ci](0057-test-metrics-automation-via-hub-ci.md)
 - [ADR-0058: Python CLI AI Enhancement Module](0058-python-cli-ai-enhancement.md)
+- [ADR-0060: CLI Config Handoff for Interactive Wizards](0060-cli-config-handoff-for-wizard.md)
 
 Template starter:
 ```markdown

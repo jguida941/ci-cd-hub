@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from argparse import Namespace
-from dataclasses import replace
+from dataclasses import FrozenInstanceError, replace
 from pathlib import Path
 from unittest import mock
 
@@ -29,7 +29,7 @@ def test_run_ci_writes_report_and_summary(tmp_path: Path) -> None:
     Validation behavior is tested in test_ci_self_validate.py.
     """
 
-# TEST-METRICS:
+    # TEST-METRICS:
     output_dir = tmp_path / ".cihub"
     config = {
         "language": "python",
@@ -132,7 +132,7 @@ class TestRunCIOptions:
         """RunCIOptions should be immutable (frozen dataclass)."""
         opts = RunCIOptions()
 
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(FrozenInstanceError):
             opts.install_deps = True  # type: ignore[misc]
 
     def test_replace_creates_copy(self) -> None:

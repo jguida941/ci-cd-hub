@@ -17,8 +17,8 @@ existing code is migrated incrementally.
 
 from __future__ import annotations
 
-import ast
 import argparse
+import ast
 from pathlib import Path
 
 import pytest

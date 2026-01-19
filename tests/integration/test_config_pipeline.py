@@ -160,7 +160,7 @@ def test_validate_config_sorts_paths():
 def test_normalize_tool_configs_python():
     """Test that shorthand booleans are normalized to full format."""
 
-# TEST-METRICS:
+    # TEST-METRICS:
     config = {
         "python": {
             "tools": {

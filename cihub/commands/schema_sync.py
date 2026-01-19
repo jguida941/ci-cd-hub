@@ -25,6 +25,13 @@ from cihub.types import CommandResult
 from cihub.utils.paths import hub_root
 
 
+class _IndentDumper(yaml.SafeDumper):
+    """YAML dumper that indents sequences to satisfy yamllint rules."""
+
+    def increase_indent(self, flow: bool = False, indentless: bool = False) -> None:
+        return super().increase_indent(flow, False)
+
+
 def _format_python_dict(data: dict[str, Any], indent: int = 0) -> str:
     """Format a dict as Python code with proper indentation.
 
@@ -94,6 +101,7 @@ def generate_defaults_yaml(
 
         yaml_content = yaml.dump(
             defaults,
+            Dumper=_IndentDumper,
             default_flow_style=False,
             sort_keys=False,
             allow_unicode=True,
@@ -229,8 +237,8 @@ def check_schema_alignment() -> CommandResult:
                     {
                         "message": (
                             "Run: python -c "
-                            "\"from cihub.commands.schema_sync import generate_defaults_yaml; "
-                            "generate_defaults_yaml()\""
+                            '"from cihub.commands.schema_sync import generate_defaults_yaml; '
+                            'generate_defaults_yaml()"'
                         ),
                     }
                 )
@@ -239,8 +247,8 @@ def check_schema_alignment() -> CommandResult:
                     {
                         "message": (
                             "Run: python -c "
-                            "\"from cihub.commands.schema_sync import generate_fallbacks_py; "
-                            "generate_fallbacks_py()\""
+                            '"from cihub.commands.schema_sync import generate_fallbacks_py; '
+                            'generate_fallbacks_py()"'
                         ),
                     }
                 )

@@ -29,9 +29,7 @@ repo_strategy = st.from_regex(r"[a-z][a-z0-9_-]*/[a-z][a-z0-9_-]*", fullmatch=Tr
 language_strategy = st.sampled_from(["python", "java", "unknown"])
 
 # Strategy for tool names
-tool_name_strategy = st.sampled_from(
-    ["pytest", "ruff", "bandit", "mypy", "jacoco", "checkstyle", "spotbugs", "trivy"]
-)
+tool_name_strategy = st.sampled_from(["pytest", "ruff", "bandit", "mypy", "jacoco", "checkstyle", "spotbugs", "trivy"])
 
 # Strategy for tool boolean maps
 tool_bool_map_strategy = st.dictionaries(
@@ -158,9 +156,7 @@ class TestEvaluateToolFailuresProperties:
         language=st.sampled_from(["python", "java"]),
     )
     @settings(max_examples=50)
-    def test_test_failures_detected(
-        self, tests_passed: int, tests_failed: int, language: str
-    ) -> None:
+    def test_test_failures_detected(self, tests_passed: int, tests_failed: int, language: str) -> None:
         """Property: test failures produce failure messages."""
         report_data = {
             "results": {

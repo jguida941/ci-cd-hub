@@ -24,14 +24,34 @@ export type RunResult = {
   context?: CliContext;
 };
 
+type ResolvedCli = {
+  command: string;
+  args: string[];
+};
+
 export function parsePythonVersion(output: string): string | null {
   const match = output.match(/cihub\s+([0-9A-Za-z.+-]+)/);
   return match ? match[1] : null;
 }
 
+export function resolvePythonCliCommand(): ResolvedCli {
+  const explicit = process.env.CIHUB_PATH;
+  if (explicit) {
+    return { command: explicit, args: [] };
+  }
+
+  const pythonPath = process.env.CIHUB_PYTHON_PATH ?? process.env.PYTHON_PATH;
+  if (pythonPath) {
+    return { command: pythonPath, args: ["-m", "cihub"] };
+  }
+
+  return { command: "cihub", args: [] };
+}
+
 export async function getPythonCliVersion(): Promise<PythonCliCheck> {
   try {
-    const { stdout } = await execa("cihub", ["--version"]);
+    const resolved = resolvePythonCliCommand();
+    const { stdout } = await execa(resolved.command, [...resolved.args, "--version"]);
     const version = parsePythonVersion(stdout);
     return {
       version: version ?? undefined,

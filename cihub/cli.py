@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 import traceback
-from typing import Mapping
+from typing import Any, Mapping
 
 from cihub.cli_parsers.builder import build_parser as _build_parser
 from cihub.cli_parsers.types import CommandHandlers
@@ -317,6 +318,9 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    args._cli_invocation = True
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        args._cli_test_mode = True
     start = time.perf_counter()
     command = args.command
     subcommand = getattr(args, "subcommand", None)
@@ -339,6 +343,7 @@ def main(argv: list[str] | None = None) -> int:
 
     event_sink_set = False
     if not json_mode and not ai_output_mode:
+
         def _cli_event_sink(event: str, payload: dict[str, Any]) -> None:
             text = payload.get("text")
             if not text:

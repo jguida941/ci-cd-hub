@@ -10,10 +10,7 @@ Tests cover:
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-
-import pytest
 
 from cihub.services.triage.detection import (
     detect_flaky_patterns,
@@ -21,7 +18,6 @@ from cihub.services.triage.detection import (
     detect_test_count_regression,
 )
 from cihub.services.triage.types import TEST_COUNT_DROP_THRESHOLD
-
 
 # =============================================================================
 # detect_test_count_regression Tests

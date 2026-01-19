@@ -162,15 +162,13 @@ class TestDetectJavaProjectType:
     def test_maven_multi_module_with_count(self, tmp_path: Path) -> None:
         """Detects Maven multi-module project with module count."""
         pom = tmp_path / "pom.xml"
-        pom.write_text(
-            """<project>
+        pom.write_text("""<project>
             <modules>
                 <module>core</module>
                 <module>api</module>
                 <module>web</module>
             </modules>
-            </project>"""
-        )
+            </project>""")
         result = detect_java_project_type(tmp_path)
         assert result == "Multi-module (3 modules)"
 

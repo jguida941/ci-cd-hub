@@ -66,12 +66,10 @@ class TestRunJavaBuild:
         # Create jacoco report
         jacoco_dir = tmp_path / "target" / "site" / "jacoco"
         jacoco_dir.mkdir(parents=True)
-        (jacoco_dir / "jacoco.xml").write_text(
-            """<?xml version="1.0"?>
+        (jacoco_dir / "jacoco.xml").write_text("""<?xml version="1.0"?>
             <report name="test">
               <counter type="LINE" missed="20" covered="80"/>
-            </report>"""
-        )
+            </report>""")
 
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -98,12 +96,10 @@ class TestRunJacoco:
         # Create jacoco.xml
         target_dir = tmp_path / "target" / "site" / "jacoco"
         target_dir.mkdir(parents=True)
-        (target_dir / "jacoco.xml").write_text(
-            """<?xml version="1.0"?>
+        (target_dir / "jacoco.xml").write_text("""<?xml version="1.0"?>
             <report name="test">
               <counter type="LINE" missed="20" covered="80"/>
-            </report>"""
-        )
+            </report>""")
 
         result = run_jacoco(tmp_path, output_dir)
 
@@ -124,15 +120,13 @@ class TestRunCheckstyle:
 
         target_dir = tmp_path / "target"
         target_dir.mkdir(parents=True)
-        (target_dir / "checkstyle-result.xml").write_text(
-            """<?xml version="1.0"?>
+        (target_dir / "checkstyle-result.xml").write_text("""<?xml version="1.0"?>
             <checkstyle>
               <file name="Test.java">
                 <error severity="error" message="Missing Javadoc"/>
                 <error severity="error" message="Another error"/>
               </file>
-            </checkstyle>"""
-        )
+            </checkstyle>""")
 
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -159,13 +153,11 @@ class TestRunSpotbugs:
 
         target_dir = tmp_path / "target"
         target_dir.mkdir(parents=True)
-        (target_dir / "spotbugsXml.xml").write_text(
-            """<?xml version="1.0"?>
+        (target_dir / "spotbugsXml.xml").write_text("""<?xml version="1.0"?>
             <BugCollection>
               <BugInstance type="NP_NULL_ON_SOME_PATH" priority="1"/>
               <BugInstance type="DM_DEFAULT_ENCODING" priority="2"/>
-            </BugCollection>"""
-        )
+            </BugCollection>""")
 
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -192,15 +184,13 @@ class TestRunPmd:
 
         target_dir = tmp_path / "target"
         target_dir.mkdir(parents=True)
-        (target_dir / "pmd.xml").write_text(
-            """<?xml version="1.0"?>
+        (target_dir / "pmd.xml").write_text("""<?xml version="1.0"?>
             <pmd>
               <file name="Test.java">
                 <violation priority="1">Issue 1</violation>
                 <violation priority="3">Issue 2</violation>
               </file>
-            </pmd>"""
-        )
+            </pmd>""")
 
         mock_proc = MagicMock()
         mock_proc.returncode = 0

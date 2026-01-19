@@ -135,12 +135,8 @@ class TestBackwardCompatibility:
     def test_registry_constants_are_same_objects(self):
         """Registry constants should be the exact same objects as in registry."""
         from cihub.services.report_validator import JAVA_TOOL_METRICS, PYTHON_TOOL_METRICS
-        from cihub.tools.registry import (
-            JAVA_TOOL_METRICS as ORIGINAL_JAVA,
-        )
-        from cihub.tools.registry import (
-            PYTHON_TOOL_METRICS as ORIGINAL_PYTHON,
-        )
+        from cihub.tools.registry import JAVA_TOOL_METRICS as ORIGINAL_JAVA
+        from cihub.tools.registry import PYTHON_TOOL_METRICS as ORIGINAL_PYTHON
 
         assert PYTHON_TOOL_METRICS is ORIGINAL_PYTHON
         assert JAVA_TOOL_METRICS is ORIGINAL_JAVA

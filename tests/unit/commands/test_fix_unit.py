@@ -15,8 +15,6 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from cihub.commands.fix import (
     TOOL_CATEGORIES,
     _generate_ai_report,
@@ -27,7 +25,6 @@ from cihub.commands.fix import (
     cmd_fix,
 )
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
-
 
 # =============================================================================
 # Test _tool_installed
@@ -84,9 +81,7 @@ class TestRunTool:
     def test_run_tool_returns_success_tuple(self, tmp_path: Path):
         """Test successful tool execution returns correct tuple."""
         with patch("cihub.commands.fix.safe_run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=0, stdout="success output", stderr=""
-            )
+            mock_run.return_value = MagicMock(returncode=0, stdout="success output", stderr="")
             rc, stdout, stderr = _run_tool(["echo", "test"], tmp_path)
             assert rc == 0
             assert stdout == "success output"
@@ -95,9 +90,7 @@ class TestRunTool:
     def test_run_tool_returns_failure_tuple(self, tmp_path: Path):
         """Test failed tool execution returns correct tuple."""
         with patch("cihub.commands.fix.safe_run") as mock_run:
-            mock_run.return_value = MagicMock(
-                returncode=1, stdout="", stderr="error message"
-            )
+            mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="error message")
             rc, stdout, stderr = _run_tool(["false"], tmp_path)
             assert rc == 1
             assert stderr == "error message"
@@ -140,9 +133,10 @@ class TestRunSafeFixes:
 
     def test_safe_fixes_python_with_tools_installed(self, tmp_path: Path):
         """Test Python fixes with mocked tool execution."""
-        with patch("cihub.commands.fix._tool_installed") as mock_installed, patch(
-            "cihub.commands.fix._run_tool"
-        ) as mock_run:
+        with (
+            patch("cihub.commands.fix._tool_installed") as mock_installed,
+            patch("cihub.commands.fix._run_tool") as mock_run,
+        ):
             mock_installed.return_value = True
             mock_run.return_value = (0, "", "")
 
@@ -163,9 +157,10 @@ class TestRunSafeFixes:
 
     def test_safe_fixes_python_tool_fails(self, tmp_path: Path):
         """Test Python fixes when tool execution fails."""
-        with patch("cihub.commands.fix._tool_installed") as mock_installed, patch(
-            "cihub.commands.fix._run_tool"
-        ) as mock_run:
+        with (
+            patch("cihub.commands.fix._tool_installed") as mock_installed,
+            patch("cihub.commands.fix._run_tool") as mock_run,
+        ):
             mock_installed.return_value = True
             mock_run.return_value = (1, "", "ruff error: something bad")
 
@@ -227,9 +222,10 @@ class TestRunReport:
 
     def test_run_report_python_mypy_issues(self, tmp_path: Path):
         """Test Python report with mypy findings."""
-        with patch("cihub.commands.fix._tool_installed") as mock_installed, patch(
-            "cihub.commands.fix._run_tool"
-        ) as mock_run:
+        with (
+            patch("cihub.commands.fix._tool_installed") as mock_installed,
+            patch("cihub.commands.fix._run_tool") as mock_run,
+        ):
             mock_installed.return_value = True
             mock_run.return_value = (
                 1,
@@ -254,9 +250,10 @@ class TestRunReport:
                 ]
             }
         )
-        with patch("cihub.commands.fix._tool_installed") as mock_installed, patch(
-            "cihub.commands.fix._run_tool"
-        ) as mock_run:
+        with (
+            patch("cihub.commands.fix._tool_installed") as mock_installed,
+            patch("cihub.commands.fix._run_tool") as mock_run,
+        ):
             mock_installed.side_effect = lambda t: t == "bandit"
             mock_run.return_value = (0, bandit_output, "")
             issues = _run_report(tmp_path, "python")
@@ -266,24 +263,24 @@ class TestRunReport:
 
     def test_run_report_python_bandit_invalid_json(self, tmp_path: Path):
         """Test Python report handles invalid bandit JSON."""
-        with patch("cihub.commands.fix._tool_installed") as mock_installed, patch(
-            "cihub.commands.fix._run_tool"
-        ) as mock_run:
+        with (
+            patch("cihub.commands.fix._tool_installed") as mock_installed,
+            patch("cihub.commands.fix._run_tool") as mock_run,
+        ):
             mock_installed.side_effect = lambda t: t == "bandit"
             mock_run.return_value = (0, "not valid json {{{", "")
             issues = _run_report(tmp_path, "python")
             if "bandit" in issues:
                 # Should have a parse error entry
-                assert any(
-                    issue.get("parse_error", False) for issue in issues["bandit"]
-                )
+                assert any(issue.get("parse_error", False) for issue in issues["bandit"])
 
     def test_run_report_java_maven(self, tmp_path: Path):
         """Test Java Maven report."""
         (tmp_path / "pom.xml").write_text("<project></project>")
-        with patch("cihub.commands.fix._tool_installed") as mock_installed, patch(
-            "cihub.commands.fix._run_tool"
-        ) as mock_run:
+        with (
+            patch("cihub.commands.fix._tool_installed") as mock_installed,
+            patch("cihub.commands.fix._run_tool") as mock_run,
+        ):
             mock_installed.return_value = True
             # Simulate spotbugs failure (issues found)
             mock_run.return_value = (1, "", "SpotBugs found issues")
@@ -360,27 +357,21 @@ class TestCmdFix:
 
     def test_cmd_fix_requires_mode(self):
         """Test that cmd_fix requires --safe or --report."""
-        args = argparse.Namespace(
-            repo=None, safe=False, report=False, ai=False, dry_run=False
-        )
+        args = argparse.Namespace(repo=None, safe=False, report=False, ai=False, dry_run=False)
         result = cmd_fix(args)
         assert result.exit_code == EXIT_USAGE
         assert "--safe" in result.summary or "--report" in result.summary
 
     def test_cmd_fix_ai_requires_report(self):
         """Test that --ai requires --report mode."""
-        args = argparse.Namespace(
-            repo=None, safe=True, report=False, ai=True, dry_run=False
-        )
+        args = argparse.Namespace(repo=None, safe=True, report=False, ai=True, dry_run=False)
         result = cmd_fix(args)
         assert result.exit_code == EXIT_USAGE
         assert "--ai" in result.problems[0]["message"]
 
     def test_cmd_fix_dry_run_requires_safe(self):
         """Test that --dry-run requires --safe mode."""
-        args = argparse.Namespace(
-            repo=None, safe=False, report=True, ai=False, dry_run=True
-        )
+        args = argparse.Namespace(repo=None, safe=False, report=True, ai=False, dry_run=True)
         result = cmd_fix(args)
         assert result.exit_code == EXIT_USAGE
         assert "--dry-run" in result.problems[0]["message"]
@@ -403,9 +394,7 @@ class TestCmdFix:
         # Empty directory - no language markers
         with patch("cihub.commands.fix.detect_language") as mock_detect:
             mock_detect.return_value = (None, ["No markers found"])
-            args = argparse.Namespace(
-                repo=str(tmp_path), safe=True, report=False, ai=False, dry_run=False
-            )
+            args = argparse.Namespace(repo=str(tmp_path), safe=True, report=False, ai=False, dry_run=False)
             result = cmd_fix(args)
             assert result.exit_code == EXIT_FAILURE
             assert "language" in result.summary.lower()
@@ -414,9 +403,10 @@ class TestCmdFix:
         """Test cmd_fix in safe mode with mocked detection and execution."""
         (tmp_path / "pyproject.toml").write_text('[project]\nname = "test"\n')
 
-        with patch("cihub.commands.fix.detect_language") as mock_detect, patch(
-            "cihub.commands.fix._run_safe_fixes"
-        ) as mock_fixes:
+        with (
+            patch("cihub.commands.fix.detect_language") as mock_detect,
+            patch("cihub.commands.fix._run_safe_fixes") as mock_fixes,
+        ):
             mock_detect.return_value = ("python", ["pyproject.toml found"])
             mock_fixes.return_value = MagicMock(
                 exit_code=EXIT_SUCCESS,
@@ -424,9 +414,7 @@ class TestCmdFix:
                 problems=[],
                 data={"fixes": ["ruff", "black"], "language": "python"},
             )
-            args = argparse.Namespace(
-                repo=str(tmp_path), safe=True, report=False, ai=False, dry_run=False
-            )
+            args = argparse.Namespace(repo=str(tmp_path), safe=True, report=False, ai=False, dry_run=False)
             result = cmd_fix(args)
             # Should return the mock result
             assert result.exit_code == EXIT_SUCCESS
@@ -435,14 +423,13 @@ class TestCmdFix:
         """Test cmd_fix in report mode."""
         (tmp_path / "pyproject.toml").write_text('[project]\nname = "test"\n')
 
-        with patch("cihub.commands.fix.detect_language") as mock_detect, patch(
-            "cihub.commands.fix._run_report"
-        ) as mock_report:
+        with (
+            patch("cihub.commands.fix.detect_language") as mock_detect,
+            patch("cihub.commands.fix._run_report") as mock_report,
+        ):
             mock_detect.return_value = ("python", ["pyproject.toml found"])
             mock_report.return_value = {"mypy": [{"message": "test", "severity": "low"}]}
-            args = argparse.Namespace(
-                repo=str(tmp_path), safe=False, report=True, ai=False, dry_run=False
-            )
+            args = argparse.Namespace(repo=str(tmp_path), safe=False, report=True, ai=False, dry_run=False)
             result = cmd_fix(args)
             # Should have issues in data
             assert "issues" in result.data
@@ -452,14 +439,13 @@ class TestCmdFix:
         """Test cmd_fix in report --ai mode creates file."""
         (tmp_path / "pyproject.toml").write_text('[project]\nname = "test"\n')
 
-        with patch("cihub.commands.fix.detect_language") as mock_detect, patch(
-            "cihub.commands.fix._run_report"
-        ) as mock_report:
+        with (
+            patch("cihub.commands.fix.detect_language") as mock_detect,
+            patch("cihub.commands.fix._run_report") as mock_report,
+        ):
             mock_detect.return_value = ("python", ["pyproject.toml found"])
             mock_report.return_value = {}
-            args = argparse.Namespace(
-                repo=str(tmp_path), safe=False, report=True, ai=True, dry_run=False
-            )
+            args = argparse.Namespace(repo=str(tmp_path), safe=False, report=True, ai=True, dry_run=False)
             result = cmd_fix(args)
             # Should create the AI report file
             ai_report = tmp_path / ".cihub" / "fix-report.md"

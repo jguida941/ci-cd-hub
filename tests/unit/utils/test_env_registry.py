@@ -12,6 +12,8 @@ Tests cover:
 
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
+
 import pytest
 
 from cihub.utils.env_registry import (
@@ -22,7 +24,6 @@ from cihub.utils.env_registry import (
     get_env_var,
     get_env_vars_by_category,
 )
-
 
 # =============================================================================
 # EnvVarDef Dataclass Tests
@@ -42,7 +43,7 @@ class TestEnvVarDef:
             description="Test variable",
         )
 
-        with pytest.raises(Exception):  # FrozenInstanceError
+        with pytest.raises(FrozenInstanceError):
             env_var.name = "NEW_NAME"  # type: ignore[misc]
 
     def test_envvardef_has_required_fields(self) -> None:
@@ -335,17 +336,13 @@ class TestDocumentationCompatibility:
     def test_all_vars_have_valid_category(self) -> None:
         """All variables have valid categories."""
         for env_var in get_all_env_vars():
-            assert env_var.category in CATEGORY_ORDER, (
-                f"{env_var.name} has invalid category: {env_var.category}"
-            )
+            assert env_var.category in CATEGORY_ORDER, f"{env_var.name} has invalid category: {env_var.category}"
 
     def test_all_vars_have_valid_type(self) -> None:
         """All variables have valid var_type."""
         valid_types = {"bool", "string", "int"}
         for env_var in get_all_env_vars():
-            assert env_var.var_type in valid_types, (
-                f"{env_var.name} has invalid type: {env_var.var_type}"
-            )
+            assert env_var.var_type in valid_types, f"{env_var.name} has invalid type: {env_var.var_type}"
 
     def test_env_var_names_follow_convention(self) -> None:
         """Environment variable names follow UPPERCASE_WITH_UNDERSCORES convention."""
@@ -353,7 +350,5 @@ class TestDocumentationCompatibility:
             # Skip wildcard pattern vars like CIHUB_RUN_*
             if "*" in env_var.name:
                 continue
-            assert env_var.name == env_var.name.upper(), (
-                f"{env_var.name} should be uppercase"
-            )
+            assert env_var.name == env_var.name.upper(), f"{env_var.name} should be uppercase"
             assert " " not in env_var.name, f"{env_var.name} should not contain spaces"

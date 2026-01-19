@@ -26,7 +26,6 @@ from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE  # noqa: E40
 from cihub.types import CommandResult  # noqa: E402
 from cihub.commands.templates import cmd_sync_templates  # noqa: E402
 
-
 # =============================================================================
 # Helper Fixtures
 # =============================================================================

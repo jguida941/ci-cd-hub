@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import inspect
+from typing import Any
 
 from cihub import __version__
 from cihub.cli_parsers.registry import register_parser_groups
@@ -60,7 +62,10 @@ def _default_handlers() -> CommandHandlers:
 
 
 def build_parser(handlers: CommandHandlers | None = None) -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="cihub", description="CI/CD Hub CLI")
+    parser_kwargs: dict[str, Any] = {"prog": "cihub", "description": "CI/CD Hub CLI"}
+    if "color" in inspect.signature(argparse.ArgumentParser).parameters:
+        parser_kwargs["color"] = False
+    parser = argparse.ArgumentParser(**parser_kwargs)
     parser.add_argument("--version", action="version", version=f"cihub {__version__}")
     subparsers = parser.add_subparsers(dest="command", required=True)
 

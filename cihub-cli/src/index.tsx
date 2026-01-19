@@ -3,6 +3,7 @@ import { render } from "ink";
 
 import { run } from "./cli.js";
 import { App } from "./app.js";
+import { ConfigProvider } from "./context/ConfigContext.js";
 
 run()
   .then((result) => {
@@ -12,12 +13,14 @@ run()
     }
 
     render(
-      <App
-        cwd={result.context.cwd}
-        version={result.context.version}
-        pythonVersion={result.context.python.version ?? "unknown"}
-        warnings={result.context.warnings}
-      />
+      <ConfigProvider cwd={result.context.cwd}>
+        <App
+          cwd={result.context.cwd}
+          version={result.context.version}
+          pythonVersion={result.context.python.version ?? "unknown"}
+          warnings={result.context.warnings}
+        />
+      </ConfigProvider>
     );
     process.exitCode = result.exitCode;
   })

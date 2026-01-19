@@ -117,11 +117,7 @@ class TestRunPythonTools:
         output_dir = tmp_path / "output"
         output_dir.mkdir()
 
-        config = {
-            "python": {
-                "tools": {"codeql": {"enabled": True}}  # codeql has no runner
-            }
-        }
+        config = {"python": {"tools": {"codeql": {"enabled": True}}}}  # codeql has no runner
         problems: list = []
 
         _run_python_tools(config, tmp_path, "repo", output_dir, problems, PYTHON_RUNNERS)

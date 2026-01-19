@@ -106,13 +106,9 @@ def configure_reports(defaults: dict[str, Any]) -> dict[str, Any]:
     # Badges
     badges_defaults = reports_defaults.get("badges", {})
     badges_enabled_default = (
-        bool(badges_defaults.get("enabled", True))
-        if isinstance(badges_defaults, dict)
-        else bool(badges_defaults)
+        bool(badges_defaults.get("enabled", True)) if isinstance(badges_defaults, dict) else bool(badges_defaults)
     )
-    badges_branch_default = (
-        badges_defaults.get("branch", "main") if isinstance(badges_defaults, dict) else "main"
-    )
+    badges_branch_default = badges_defaults.get("branch", "main") if isinstance(badges_defaults, dict) else "main"
     badges_enabled = questionary.confirm(
         "Enable badge generation?",
         default=badges_enabled_default,
@@ -134,14 +130,10 @@ def configure_reports(defaults: dict[str, Any]) -> dict[str, Any]:
     # Codecov
     codecov_defaults = reports_defaults.get("codecov", {})
     codecov_enabled_default = (
-        bool(codecov_defaults.get("enabled", True))
-        if isinstance(codecov_defaults, dict)
-        else bool(codecov_defaults)
+        bool(codecov_defaults.get("enabled", True)) if isinstance(codecov_defaults, dict) else bool(codecov_defaults)
     )
     codecov_fail_default = (
-        bool(codecov_defaults.get("fail_ci_on_error", False))
-        if isinstance(codecov_defaults, dict)
-        else False
+        bool(codecov_defaults.get("fail_ci_on_error", False)) if isinstance(codecov_defaults, dict) else False
     )
     codecov_enabled = questionary.confirm(
         "Enable Codecov reporting?",
@@ -161,14 +153,10 @@ def configure_reports(defaults: dict[str, Any]) -> dict[str, Any]:
     # GitHub summary
     summary_defaults = reports_defaults.get("github_summary", {})
     summary_enabled_default = (
-        bool(summary_defaults.get("enabled", True))
-        if isinstance(summary_defaults, dict)
-        else bool(summary_defaults)
+        bool(summary_defaults.get("enabled", True)) if isinstance(summary_defaults, dict) else bool(summary_defaults)
     )
     summary_include_default = (
-        bool(summary_defaults.get("include_metrics", True))
-        if isinstance(summary_defaults, dict)
-        else True
+        bool(summary_defaults.get("include_metrics", True)) if isinstance(summary_defaults, dict) else True
     )
     summary_enabled = questionary.confirm(
         "Enable GitHub summary output?",
@@ -229,9 +217,7 @@ def configure_notifications(defaults: dict[str, Any]) -> dict[str, Any]:
     # Slack configuration
     slack_defaults = notifications_defaults.get("slack", {})
     slack_enabled_default = (
-        bool(slack_defaults.get("enabled", False))
-        if isinstance(slack_defaults, dict)
-        else bool(slack_defaults)
+        bool(slack_defaults.get("enabled", False)) if isinstance(slack_defaults, dict) else bool(slack_defaults)
     )
     slack_enabled = questionary.confirm(
         "Enable Slack notifications?",
@@ -273,9 +259,7 @@ def configure_notifications(defaults: dict[str, Any]) -> dict[str, Any]:
     # Email configuration
     email_defaults = notifications_defaults.get("email", {})
     email_enabled_default = (
-        bool(email_defaults.get("enabled", False))
-        if isinstance(email_defaults, dict)
-        else bool(email_defaults)
+        bool(email_defaults.get("enabled", False)) if isinstance(email_defaults, dict) else bool(email_defaults)
     )
     email_enabled = questionary.confirm(
         "Enable email notifications?",

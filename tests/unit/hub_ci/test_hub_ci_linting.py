@@ -11,8 +11,6 @@ from __future__ import annotations
 import argparse
 from unittest import mock
 
-import pytest
-
 
 class TestCmdRuff:
     """Tests for cmd_ruff command."""

@@ -56,8 +56,7 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
         "thresholds": {
             "coverage_min": 70,
             "mutation_score_min": 70,
-            "overrides": {
-            },
+            "overrides": {},
         },
         "tools": {
             "actionlint": True,
@@ -97,7 +96,7 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
             "codeql": {
                 "enabled": False,
                 "fail_on_error": True,
-                "languages": ['java'],
+                "languages": ["java"],
                 "require_run_or_fail": True,
             },
             "docker": {
@@ -206,7 +205,7 @@ FALLBACK_DEFAULTS: dict[str, Any] = {
             "codeql": {
                 "enabled": False,
                 "fail_on_error": True,
-                "languages": ['python'],
+                "languages": ["python"],
                 "require_run_or_fail": True,
             },
             "docker": {

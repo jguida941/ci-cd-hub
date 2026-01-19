@@ -9,9 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -26,7 +24,6 @@ from cihub.commands.hub_ci.security import (
     cmd_security_ruff,
 )
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
-
 
 # =============================================================================
 # Fixtures
@@ -297,16 +294,18 @@ class TestCmdBandit:
 
         output_file = tmp_path / "bandit.json"
         output_file.write_text(
-            json.dumps({
-                "results": [
-                    {"issue_severity": "HIGH"},
-                    {"issue_severity": "HIGH"},
-                    {"issue_severity": "MEDIUM"},
-                    {"issue_severity": "LOW"},
-                    {"issue_severity": "LOW"},
-                    {"issue_severity": "LOW"},
-                ]
-            }),
+            json.dumps(
+                {
+                    "results": [
+                        {"issue_severity": "HIGH"},
+                        {"issue_severity": "HIGH"},
+                        {"issue_severity": "MEDIUM"},
+                        {"issue_severity": "LOW"},
+                        {"issue_severity": "LOW"},
+                        {"issue_severity": "LOW"},
+                    ]
+                }
+            ),
             encoding="utf-8",
         )
 
@@ -335,9 +334,7 @@ class TestCmdPipAudit:
     """Tests for the cmd_pip_audit function."""
 
     @patch("cihub.commands.hub_ci.security._run_command")
-    def test_pip_audit_no_vulns(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_pip_audit_no_vulns(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test pip-audit returns success when no vulnerabilities found."""
         output_file = tmp_path / "pip-audit.json"
         output_file.write_text("[]", encoding="utf-8")
@@ -360,10 +357,12 @@ class TestCmdPipAudit:
         output_file = tmp_path / "pip-audit.json"
         # Proper pip-audit JSON format
         output_file.write_text(
-            json.dumps([
-                {"name": "package1", "vulns": [{"id": "CVE-1"}]},
-                {"name": "package2", "vulns": [{"id": "CVE-2"}, {"id": "CVE-3"}]},
-            ]),
+            json.dumps(
+                [
+                    {"name": "package1", "vulns": [{"id": "CVE-1"}]},
+                    {"name": "package2", "vulns": [{"id": "CVE-2"}, {"id": "CVE-3"}]},
+                ]
+            ),
             encoding="utf-8",
         )
 
@@ -378,9 +377,7 @@ class TestCmdPipAudit:
         assert result.data["vulnerabilities"] == 3
 
     @patch("cihub.commands.hub_ci.security._run_command")
-    def test_pip_audit_invalid_json(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_pip_audit_invalid_json(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test pip-audit handles invalid JSON gracefully."""
         output_file = tmp_path / "pip-audit.json"
         output_file.write_text("not json", encoding="utf-8")
@@ -394,9 +391,7 @@ class TestCmdPipAudit:
         assert result.data["vulnerabilities"] == 0
 
     @patch("cihub.commands.hub_ci.security._run_command")
-    def test_pip_audit_missing_output_file(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_pip_audit_missing_output_file(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test pip-audit handles missing output file."""
         mock_args.requirements = ["requirements.txt"]
         mock_args.output = str(tmp_path / "nonexistent.json")
@@ -416,9 +411,7 @@ class TestCmdSecurityPipAudit:
     """Tests for the cmd_security_pip_audit function."""
 
     @patch("cihub.commands.hub_ci.security._run_command")
-    def test_security_pip_audit_success(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_security_pip_audit_success(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test security pip-audit returns success."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -465,9 +458,7 @@ class TestCmdSecurityPipAudit:
         assert result.exit_code == EXIT_SUCCESS
 
     @patch("cihub.commands.hub_ci.security._run_command")
-    def test_security_pip_audit_tool_failed(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_security_pip_audit_tool_failed(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test security pip-audit handles tool failure."""
         mock_proc = MagicMock()
         mock_proc.returncode = 1
@@ -517,9 +508,7 @@ class TestCmdSecurityBandit:
     """Tests for the cmd_security_bandit function."""
 
     @patch("cihub.commands.hub_ci.security._run_command")
-    def test_security_bandit_success(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_security_bandit_success(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test security bandit returns success with no high issues."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -540,9 +529,7 @@ class TestCmdSecurityBandit:
         assert result.data["tool_status"] == "success"
 
     @patch("cihub.commands.hub_ci.security._run_command")
-    def test_security_bandit_with_high_issues(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_security_bandit_with_high_issues(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test security bandit counts high severity issues."""
         mock_proc = MagicMock()
         mock_proc.returncode = 1
@@ -593,9 +580,7 @@ class TestCmdSecurityRuff:
     """Tests for the cmd_security_ruff function."""
 
     @patch("cihub.commands.hub_ci.security._run_command")
-    def test_security_ruff_success(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_security_ruff_success(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test security ruff returns success with no issues."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -613,9 +598,7 @@ class TestCmdSecurityRuff:
         assert result.data["tool_status"] == "success"
 
     @patch("cihub.commands.hub_ci.security._run_command")
-    def test_security_ruff_with_issues(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_security_ruff_with_issues(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test security ruff counts issues correctly."""
         mock_proc = MagicMock()
         mock_proc.returncode = 1
@@ -632,9 +615,7 @@ class TestCmdSecurityRuff:
         assert result.data["issues"] == 3
 
     @patch("cihub.commands.hub_ci.security._run_command")
-    def test_security_ruff_invalid_json(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_security_ruff_invalid_json(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test security ruff handles invalid JSON output."""
         mock_proc = MagicMock()
         mock_proc.returncode = 1
@@ -710,12 +691,14 @@ class TestCmdSecurityOwasp:
         report_path = tmp_path / "target" / "dependency-check-report.json"
         report_path.parent.mkdir(parents=True)
         report_path.write_text(
-            json.dumps({
-                "dependencies": [
-                    {"vulnerabilities": [{"severity": "CRITICAL"}, {"severity": "HIGH"}]},
-                    {"vulnerabilities": [{"severity": "HIGH"}]},
-                ]
-            }),
+            json.dumps(
+                {
+                    "dependencies": [
+                        {"vulnerabilities": [{"severity": "CRITICAL"}, {"severity": "HIGH"}]},
+                        {"vulnerabilities": [{"severity": "HIGH"}]},
+                    ]
+                }
+            ),
             encoding="utf-8",
         )
 
@@ -801,9 +784,7 @@ class TestSecurityEdgeCases:
         assert result.data["total"] == 0
 
     @patch("cihub.commands.hub_ci.security._run_command")
-    def test_pip_audit_empty_vulns(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_pip_audit_empty_vulns(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test pip-audit handles packages with no vulns."""
         output_file = tmp_path / "pip-audit.json"
         output_file.write_text(

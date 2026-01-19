@@ -4,7 +4,7 @@
 **Owner:** Development Team  
 **Source-of-truth:** manual   
 **Last-reviewed:** 2026-01-19  
-**Last Updated:** 2026-01-19 (CLI/Wizard Phase 5 cleanup complete; audit closed)  
+**Last Updated:** 2026-01-19 (TypeScript CLI Phase 7 configuration complete)  
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
 
@@ -15,13 +15,13 @@
 See [AI_CI_LOOP_PROPOSAL.md](docs/development/active/AI_CI_LOOP_PROPOSAL.md). This is a draft internal initiative now tracked in the active priority list.
 
 **Status update:** CLI_WIZARD_SYNC_AUDIT archived; TEST_REORGANIZATION + DOC_AUTOMATION_AUDIT archived.
-**Current focus:** TYPESCRIPT_CLI_DESIGN Phase 6 (interactive CLI wizard).
+**Current focus:** TYPESCRIPT_CLI_DESIGN Phase 8 (AI Enhancement).
 
 ---
 
 ## CURRENT PRIORITY AT A GLANCE
 
-> Current priority is **#6** (first non-archived doc). TYPESCRIPT_CLI_DESIGN in progress (Phase 6).
+> Current priority is **#6** (first non-archived doc). TYPESCRIPT_CLI_DESIGN in progress (Phase 8).
 
 | Priority | Document                                                                          | Status   | Next Action                                      |
 |----------|-----------------------------------------------------------------------------------|----------|--------------------------------------------------|
@@ -30,7 +30,7 @@ See [AI_CI_LOOP_PROPOSAL.md](docs/development/active/AI_CI_LOOP_PROPOSAL.md). Th
 | **#3 **  | [TEST_REORGANIZATION.md](docs/development/archive/TEST_REORGANIZATION.md)         | ARCHIVED | Complete (Phase 4 property tests + Phase 5 docs) |
 | **#4 **  | [DOC_AUTOMATION_AUDIT.md](docs/development/archive/DOC_AUTOMATION_AUDIT.md)        | ARCHIVED | Complete (archived)                              |
 | **#5 **  | CLI_WIZARD_SYNC_AUDIT.md                                                          | Archived | Phase 5 cleanup complete (archived 2026-01-19)  |
-| **#6 **  | TYPESCRIPT_CLI_DESIGN.md                                                          | In Progress | Start Phase 6 (Interactive wizard)              |
+| **#6 **  | TYPESCRIPT_CLI_DESIGN.md                                                          | In Progress | Start Phase 8 (AI Enhancement)                  |
 | **#7 **  | AI_CI_LOOP_PROPOSAL.md                                                            | Draft    | Define scope and sequencing                      |
 | **#8 **  | PYQT_PLAN.md                                                                      | DEFERRED | Wait for TypeScript CLI                          |
 
@@ -221,7 +221,7 @@ docs/development/archive/CLI_WIZARD_SYNC_AUDIT.md
 
 ### Priority 6: TYPESCRIPT_CLI_DESIGN.md (ACTIVE)
 
-**Status:** Phase 5 complete (slash commands); Phase 6 ready to start | **Depends on:** CLEAN_CODE.md (archived) + TEST_REORGANIZATION.md (archived) - both complete  
+**Status:** Phase 6 complete (interactive wizard); Phase 7 complete (configuration); Phase 8 ready to start | **Depends on:** CLEAN_CODE.md (archived) + TEST_REORGANIZATION.md (archived) - both complete  
 
 ```
 docs/development/active/TYPESCRIPT_CLI_DESIGN.md
@@ -488,6 +488,7 @@ These are references, not competing plans.
 - **CLI is the execution engine**; workflows are thin wrappers.
 - **AI enhancement is optional and CLI-local** (`cihub/ai`, `--ai`, `CIHUB_AI_PROVIDER`, `CIHUB_DEV_MODE`) (ADR-0058).
 - **Interactive clients consume the CLI command registry** (`cihub commands list --json`) (ADR-0059).
+- **Wizard handoff uses CLI config payload flags** (`--config-json`/`--config-file` on `init`, `new`, `config edit`) (ADR-0060).
 - **Workflow dispatch/watch lives in the CLI** (`cihub dispatch`) with wizard wrappers (ADR-0055).
 - **Schema is the source of truth for defaults**; defaults.yaml and fallbacks.py are generated and audited in `cihub check --audit`.
 - **Canonical install default is PyPI**; align CLI defaults and templates to schema `install.source`.

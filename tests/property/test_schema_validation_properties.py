@@ -48,9 +48,7 @@ invalid_commit_strategy = st.one_of(
 datetime_strategy = st.datetimes().map(lambda dt: dt.isoformat() + "Z")
 
 # Strategy for tool names
-tool_name_strategy = st.sampled_from(
-    ["pytest", "ruff", "bandit", "mypy", "black", "trivy", "jacoco", "checkstyle"]
-)
+tool_name_strategy = st.sampled_from(["pytest", "ruff", "bandit", "mypy", "black", "trivy", "jacoco", "checkstyle"])
 
 # Strategy for tool boolean maps
 tool_bool_map_strategy = st.dictionaries(
@@ -160,9 +158,7 @@ class TestValidateAgainstSchemaProperties:
         errors = validate_against_schema(report)
         assert len(errors) > 0, f"Expected errors for invalid commit: {commit}"
 
-    @given(
-        coverage=st.floats(min_value=101.0, max_value=200.0, allow_nan=False, allow_infinity=False)
-    )
+    @given(coverage=st.floats(min_value=101.0, max_value=200.0, allow_nan=False, allow_infinity=False))
     @settings(max_examples=20)
     def test_coverage_out_of_range_returns_errors(self, coverage: float) -> None:
         """Property: coverage > 100 produces errors."""
@@ -171,9 +167,7 @@ class TestValidateAgainstSchemaProperties:
         errors = validate_against_schema(report)
         assert len(errors) > 0, f"Expected errors for coverage: {coverage}"
 
-    @given(
-        coverage=st.floats(min_value=-100.0, max_value=-0.1, allow_nan=False, allow_infinity=False)
-    )
+    @given(coverage=st.floats(min_value=-100.0, max_value=-0.1, allow_nan=False, allow_infinity=False))
     @settings(max_examples=20)
     def test_negative_coverage_returns_errors(self, coverage: float) -> None:
         """Property: negative coverage produces errors."""

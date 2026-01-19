@@ -8,6 +8,10 @@ const COMMAND_TIMEOUTS: Record<string, number> = {
   smoke: 180_000
 };
 
-export function resolveTimeout(command: string) {
-  return COMMAND_TIMEOUTS[command] ?? DEFAULT_TIMEOUT_MS;
+export function resolveTimeout(command: string, defaultTimeoutMs?: number) {
+  const fallback =
+    typeof defaultTimeoutMs === "number" && defaultTimeoutMs > 0
+      ? defaultTimeoutMs
+      : DEFAULT_TIMEOUT_MS;
+  return COMMAND_TIMEOUTS[command] ?? fallback;
 }

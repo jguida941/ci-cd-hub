@@ -21,9 +21,7 @@ def maybe_run_review(settings: LoopSettings, iteration_dir: Path, state: LoopSta
     try:
         result = safe_run(cmd, cwd=settings.repo_path, timeout=TIMEOUT_NETWORK, env=env)
     except (CommandNotFoundError, CommandTimeoutError) as exc:
-        iteration_dir.joinpath("review.md").write_text(
-            f"Review command failed: {exc}\n", encoding="utf-8"
-        )
+        iteration_dir.joinpath("review.md").write_text(f"Review command failed: {exc}\n", encoding="utf-8")
         return
     content = (result.stdout or "") + (result.stderr or "")
     if not content.strip():

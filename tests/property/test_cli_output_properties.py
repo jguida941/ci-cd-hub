@@ -217,9 +217,7 @@ class TestCommandResultPayloadProperties:
         problems=st.lists(problem_strategy, min_size=0, max_size=3),
     )
     @settings(max_examples=50)
-    def test_payload_has_required_keys(
-        self, exit_code: int, summary: str, problems: list[dict[str, Any]]
-    ) -> None:
+    def test_payload_has_required_keys(self, exit_code: int, summary: str, problems: list[dict[str, Any]]) -> None:
         """Property: payload has required keys."""
         result = CommandResult(exit_code=exit_code, summary=summary, problems=problems)
         payload = result.to_payload(command="test", status="success", duration_ms=100)
@@ -290,9 +288,7 @@ class TestToolResultProperties:
         ),
     )
     @settings(max_examples=50)
-    def test_tool_result_metrics_preserved(
-        self, tool: str, success: bool, metrics: dict[str, Any]
-    ) -> None:
+    def test_tool_result_metrics_preserved(self, tool: str, success: bool, metrics: dict[str, Any]) -> None:
         """Property: ToolResult metrics are preserved."""
         result = ToolResult(tool=tool, success=success, metrics=metrics)
         assert result.metrics == metrics

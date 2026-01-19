@@ -15,10 +15,8 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
 
 import pytest
-
 
 # =============================================================================
 # Fixture Factories
@@ -29,31 +27,25 @@ import pytest
 def python_simple_repo(tmp_path: Path) -> Path:
     """Create a simple single-package Python repository."""
     (tmp_path / ".git").mkdir()
-    (tmp_path / "pyproject.toml").write_text(
-        """[project]
+    (tmp_path / "pyproject.toml").write_text("""[project]
 name = "simple-python"
 version = "1.0.0"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-"""
-    )
+""")
     (tmp_path / "src").mkdir()
     (tmp_path / "src" / "__init__.py").write_text("")
-    (tmp_path / "src" / "main.py").write_text(
-        """def hello() -> str:
+    (tmp_path / "src" / "main.py").write_text("""def hello() -> str:
     return "Hello, World!"
-"""
-    )
+""")
     (tmp_path / "tests").mkdir()
     (tmp_path / "tests" / "__init__.py").write_text("")
-    (tmp_path / "tests" / "test_main.py").write_text(
-        """from src.main import hello
+    (tmp_path / "tests" / "test_main.py").write_text("""from src.main import hello
 
 def test_hello():
     assert hello() == "Hello, World!"
-"""
-    )
+""")
     return tmp_path
 
 
@@ -61,15 +53,13 @@ def test_hello():
 def python_monorepo(tmp_path: Path) -> Path:
     """Create a Python monorepo with multiple packages."""
     (tmp_path / ".git").mkdir()
-    (tmp_path / "pyproject.toml").write_text(
-        """[project]
+    (tmp_path / "pyproject.toml").write_text("""[project]
 name = "monorepo-root"
 version = "1.0.0"
 
 [tool.pytest.ini_options]
 testpaths = ["packages/*/tests"]
-"""
-    )
+""")
 
     # Package A
     pkg_a = tmp_path / "packages" / "pkg_a"
@@ -98,8 +88,7 @@ testpaths = ["packages/*/tests"]
 def java_maven_repo(tmp_path: Path) -> Path:
     """Create a Java Maven repository."""
     (tmp_path / ".git").mkdir()
-    (tmp_path / "pom.xml").write_text(
-        """<?xml version="1.0" encoding="UTF-8"?>
+    (tmp_path / "pom.xml").write_text("""<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -109,22 +98,18 @@ def java_maven_repo(tmp_path: Path) -> Path:
     <version>1.0.0</version>
     <packaging>jar</packaging>
 </project>
-"""
-    )
+""")
     (tmp_path / "src" / "main" / "java" / "com" / "example").mkdir(parents=True)
-    (tmp_path / "src" / "main" / "java" / "com" / "example" / "App.java").write_text(
-        """package com.example;
+    (tmp_path / "src" / "main" / "java" / "com" / "example" / "App.java").write_text("""package com.example;
 
 public class App {
     public static void main(String[] args) {
         System.out.println("Hello, World!");
     }
 }
-"""
-    )
+""")
     (tmp_path / "src" / "test" / "java" / "com" / "example").mkdir(parents=True)
-    (tmp_path / "src" / "test" / "java" / "com" / "example" / "AppTest.java").write_text(
-        """package com.example;
+    (tmp_path / "src" / "test" / "java" / "com" / "example" / "AppTest.java").write_text("""package com.example;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -135,8 +120,7 @@ class AppTest {
         assertTrue(true);
     }
 }
-"""
-    )
+""")
     return tmp_path
 
 
@@ -144,8 +128,7 @@ class AppTest {
 def java_gradle_repo(tmp_path: Path) -> Path:
     """Create a Java Gradle repository."""
     (tmp_path / ".git").mkdir()
-    (tmp_path / "build.gradle").write_text(
-        """plugins {
+    (tmp_path / "build.gradle").write_text("""plugins {
     id 'java'
     id 'application'
 }
@@ -165,20 +148,17 @@ application {
 test {
     useJUnitPlatform()
 }
-"""
-    )
+""")
     (tmp_path / "settings.gradle").write_text("rootProject.name = 'gradle-project'\n")
     (tmp_path / "src" / "main" / "java" / "com" / "example").mkdir(parents=True)
-    (tmp_path / "src" / "main" / "java" / "com" / "example" / "App.java").write_text(
-        """package com.example;
+    (tmp_path / "src" / "main" / "java" / "com" / "example" / "App.java").write_text("""package com.example;
 
 public class App {
     public static void main(String[] args) {
         System.out.println("Hello, Gradle!");
     }
 }
-"""
-    )
+""")
     return tmp_path
 
 
@@ -186,8 +166,7 @@ public class App {
 def java_gradle_kts_repo(tmp_path: Path) -> Path:
     """Create a Java Gradle Kotlin DSL repository."""
     (tmp_path / ".git").mkdir()
-    (tmp_path / "build.gradle.kts").write_text(
-        """plugins {
+    (tmp_path / "build.gradle.kts").write_text("""plugins {
     java
     application
 }
@@ -199,20 +178,17 @@ repositories {
 application {
     mainClass.set("com.example.App")
 }
-"""
-    )
+""")
     (tmp_path / "settings.gradle.kts").write_text('rootProject.name = "gradle-kts-project"\n')
     (tmp_path / "src" / "main" / "java" / "com" / "example").mkdir(parents=True)
-    (tmp_path / "src" / "main" / "java" / "com" / "example" / "App.java").write_text(
-        """package com.example;
+    (tmp_path / "src" / "main" / "java" / "com" / "example" / "App.java").write_text("""package com.example;
 
 public class App {
     public static void main(String[] args) {
         System.out.println("Hello, Gradle KTS!");
     }
 }
-"""
-    )
+""")
     return tmp_path
 
 
@@ -228,16 +204,14 @@ def mixed_python_java_repo(tmp_path: Path) -> Path:
 
     # Java part
     (tmp_path / "java").mkdir()
-    (tmp_path / "java" / "pom.xml").write_text(
-        """<?xml version="1.0"?>
+    (tmp_path / "java" / "pom.xml").write_text("""<?xml version="1.0"?>
 <project>
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.example</groupId>
     <artifactId>java-part</artifactId>
     <version>1.0.0</version>
 </project>
-"""
-    )
+""")
 
     return tmp_path
 
@@ -467,6 +441,7 @@ class TestInitOnShapes:
             cwd=python_simple_repo,
         )
         # Config file may or may not be created depending on init behavior
+        assert result.returncode is not None
 
 
 # =============================================================================

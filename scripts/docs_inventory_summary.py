@@ -12,7 +12,7 @@ import argparse
 import json
 import subprocess
 import sys
-from typing import Any
+from typing import Any, cast
 
 from cihub.commands.docs_audit.inventory import CATEGORY_ORDER
 
@@ -36,7 +36,7 @@ def _run_docs_audit(python_bin: str) -> dict[str, Any]:
         raise RuntimeError("No JSON output received from docs audit")
 
     try:
-        return json.loads(result.stdout)
+        return cast(dict[str, Any], json.loads(result.stdout))
     except json.JSONDecodeError as exc:
         raise RuntimeError(f"Invalid JSON from docs audit: {exc}") from exc
 

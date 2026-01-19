@@ -102,14 +102,12 @@ class TestDiscoverRepositories:
         repos_dir.mkdir(parents=True)
 
         # Create a minimal config
-        (repos_dir / "test-repo.yaml").write_text(
-            """
+        (repos_dir / "test-repo.yaml").write_text("""
 repo:
   owner: test-owner
   name: test-repo
   language: python
-"""
-        )
+""")
 
         result = discover_repositories(tmp_path)
 
@@ -244,9 +242,7 @@ repo:
         )
 
         # Config with validation error (missing required fields)
-        (repos_dir / "invalid.yaml").write_text(
-            "repo:\n  owner: o\n  name: invalid"  # Missing language
-        )
+        (repos_dir / "invalid.yaml").write_text("repo:\n  owner: o\n  name: invalid")  # Missing language
 
         result = discover_repositories(tmp_path)
         captured = capsys.readouterr()

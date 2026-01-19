@@ -11,13 +11,9 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
-
-import pytest
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.types import CommandResult, ToolResult
-
 
 # =============================================================================
 # CommandResult Contract Tests
@@ -329,7 +325,6 @@ class TestExitCodeContract:
             EXIT_INTERNAL_ERROR,
             EXIT_INTERRUPTED,
             EXIT_SUCCESS,
-            EXIT_USAGE,
         )
 
         codes = [EXIT_SUCCESS, EXIT_FAILURE, EXIT_USAGE, EXIT_DECLINED, EXIT_INTERNAL_ERROR, EXIT_INTERRUPTED]
@@ -344,7 +339,6 @@ class TestExitCodeContract:
             EXIT_INTERNAL_ERROR,
             EXIT_INTERRUPTED,
             EXIT_SUCCESS,
-            EXIT_USAGE,
         )
 
         codes = [EXIT_SUCCESS, EXIT_FAILURE, EXIT_USAGE, EXIT_DECLINED, EXIT_INTERNAL_ERROR, EXIT_INTERRUPTED]
@@ -371,7 +365,6 @@ class TestExitCodeContract:
             EXIT_INTERNAL_ERROR,
             EXIT_INTERRUPTED,
             EXIT_SUCCESS,
-            EXIT_USAGE,
         )
 
         codes = [EXIT_SUCCESS, EXIT_FAILURE, EXIT_USAGE, EXIT_DECLINED, EXIT_INTERNAL_ERROR, EXIT_INTERRUPTED]

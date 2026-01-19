@@ -79,10 +79,10 @@ class TestPromptRepo:
 
     def test_prompt_repo_preserves_defaults(self) -> None:
         """Prompt preserves existing repo fields like subdir."""
-        from rich.console import Console  # noqa: WPS433
+        from rich.console import Console
 
-        from cihub.config.paths import PathConfig  # noqa: WPS433
-        from cihub.wizard.core import WizardRunner  # noqa: WPS433
+        from cihub.config.paths import PathConfig
+        from cihub.wizard.core import WizardRunner
 
         runner = WizardRunner(Console(), PathConfig(str(ROOT)))
         base = {"repo": {"subdir": "java", "dispatch_workflow": "hub-ci.yml"}}

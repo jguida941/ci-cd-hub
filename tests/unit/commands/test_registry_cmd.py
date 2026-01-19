@@ -41,7 +41,6 @@ from cihub.commands.registry.query import _cmd_list, _cmd_show
 from cihub.commands.registry.sync import _cmd_bootstrap, _cmd_diff, _cmd_sync
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
@@ -155,9 +154,7 @@ class TestCmdRegistryDispatcher:
 
     @patch("cihub.commands.registry.query.load_registry")
     @patch("cihub.commands.registry.query.list_repos")
-    def test_routes_to_list_handler(
-        self, mock_list_repos: MagicMock, mock_load: MagicMock
-    ) -> None:
+    def test_routes_to_list_handler(self, mock_list_repos: MagicMock, mock_load: MagicMock) -> None:
         """Routes 'list' subcommand to _cmd_list handler."""
         mock_load.return_value = {}
         mock_list_repos.return_value = []
@@ -171,15 +168,13 @@ class TestCmdRegistryDispatcher:
 
     @patch("cihub.commands.registry.query.load_registry")
     @patch("cihub.commands.registry.query.get_repo_config")
-    def test_routes_to_show_handler(
-        self, mock_get: MagicMock, mock_load: MagicMock
-    ) -> None:
+    def test_routes_to_show_handler(self, mock_get: MagicMock, mock_load: MagicMock) -> None:
         """Routes 'show' subcommand to _cmd_show handler."""
         mock_load.return_value = {}
         mock_get.return_value = None
         args = argparse.Namespace(subcommand="show", repo="test")
 
-        result = cmd_registry(args)
+        cmd_registry(args)
 
         # Verify it routed to _cmd_show by checking the expected behavior
         mock_get.assert_called_once()
@@ -302,9 +297,7 @@ class TestCmdList:
 
     @patch("cihub.commands.registry.query.load_registry")
     @patch("cihub.commands.registry.query.list_repos")
-    def test_empty_list_returns_success(
-        self, mock_list_repos: MagicMock, mock_load: MagicMock
-    ) -> None:
+    def test_empty_list_returns_success(self, mock_list_repos: MagicMock, mock_load: MagicMock) -> None:
         """Empty repo list returns SUCCESS with zero count."""
         mock_load.return_value = {}
         mock_list_repos.return_value = []
@@ -385,9 +378,7 @@ class TestCmdSet:
     ) -> None:
         """Sets tier for repo."""
         mock_load.return_value = {"repos": {"test": {"tier": "standard"}}}
-        args = argparse.Namespace(
-            repo="test", tier="critical", coverage=None, mutation=None, vulns_max=None
-        )
+        args = argparse.Namespace(repo="test", tier="critical", coverage=None, mutation=None, vulns_max=None)
 
         result = _cmd_set(args)
 
@@ -399,9 +390,7 @@ class TestCmdSet:
     def test_no_changes_returns_usage_error(self, mock_load: MagicMock) -> None:
         """Returns USAGE error when no changes specified."""
         mock_load.return_value = {"repos": {"test": {"tier": "standard"}}}
-        args = argparse.Namespace(
-            repo="test", tier=None, coverage=None, mutation=None, vulns_max=None
-        )
+        args = argparse.Namespace(repo="test", tier=None, coverage=None, mutation=None, vulns_max=None)
 
         result = _cmd_set(args)
 
@@ -543,9 +532,7 @@ class TestCmdRemove:
         """Removes repo when --yes is provided."""
         mock_hub_root.return_value = tmp_path
         mock_load.return_value = {"repos": {"test": {"tier": "standard"}}}
-        args = argparse.Namespace(
-            repo="test", delete_config=False, yes=True
-        )
+        args = argparse.Namespace(repo="test", delete_config=False, yes=True)
 
         result = _cmd_remove(args)
 
@@ -558,9 +545,7 @@ class TestCmdRemove:
         """Requires --yes for confirmation."""
         mock_hub_root.return_value = tmp_path
         mock_load.return_value = {"repos": {"test": {"tier": "standard"}}}
-        args = argparse.Namespace(
-            repo="test", delete_config=False, yes=False
-        )
+        args = argparse.Namespace(repo="test", delete_config=False, yes=False)
 
         result = _cmd_remove(args)
 
@@ -630,9 +615,7 @@ class TestCmdImport:
         """Rejects --merge and --replace together."""
         import_file = tmp_path / "import.json"
         import_file.write_text("{}")
-        args = argparse.Namespace(
-            file=str(import_file), merge=True, replace=True, dry_run=False
-        )
+        args = argparse.Namespace(file=str(import_file), merge=True, replace=True, dry_run=False)
 
         result = _cmd_import(args)
 
@@ -643,9 +626,7 @@ class TestCmdImport:
         """Requires either --merge or --replace."""
         import_file = tmp_path / "import.json"
         import_file.write_text("{}")
-        args = argparse.Namespace(
-            file=str(import_file), merge=False, replace=False, dry_run=False
-        )
+        args = argparse.Namespace(file=str(import_file), merge=False, replace=False, dry_run=False)
 
         result = _cmd_import(args)
 
@@ -670,9 +651,7 @@ class TestCmdImport:
         """Returns FAILURE for invalid JSON."""
         import_file = tmp_path / "invalid.json"
         import_file.write_text("not json {")
-        args = argparse.Namespace(
-            file=str(import_file), merge=True, replace=False, dry_run=False
-        )
+        args = argparse.Namespace(file=str(import_file), merge=True, replace=False, dry_run=False)
 
         result = _cmd_import(args)
 
@@ -683,9 +662,7 @@ class TestCmdImport:
         """Replace mode requires schema_version, tiers, repos."""
         import_file = tmp_path / "incomplete.json"
         import_file.write_text('{"repos": {}}')  # Missing schema_version and tiers
-        args = argparse.Namespace(
-            file=str(import_file), merge=False, replace=True, dry_run=False
-        )
+        args = argparse.Namespace(file=str(import_file), merge=False, replace=True, dry_run=False)
 
         result = _cmd_import(args)
 
@@ -694,9 +671,7 @@ class TestCmdImport:
 
     @patch("cihub.commands.registry.io.save_registry")
     @patch("cihub.commands.registry.io.load_registry")
-    def test_merge_adds_new_repos(
-        self, mock_load: MagicMock, mock_save: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_merge_adds_new_repos(self, mock_load: MagicMock, mock_save: MagicMock, tmp_path: Path) -> None:
         """Merge mode adds new repos."""
         mock_load.return_value = {
             "schema_version": "v1",
@@ -704,12 +679,8 @@ class TestCmdImport:
             "repos": {"existing": {"tier": "standard"}},
         }
         import_file = tmp_path / "import.json"
-        import_file.write_text(
-            json.dumps({"repos": {"new-repo": {"tier": "standard"}}})
-        )
-        args = argparse.Namespace(
-            file=str(import_file), merge=True, replace=False, dry_run=False
-        )
+        import_file.write_text(json.dumps({"repos": {"new-repo": {"tier": "standard"}}}))
+        args = argparse.Namespace(file=str(import_file), merge=True, replace=False, dry_run=False)
 
         result = _cmd_import(args)
 

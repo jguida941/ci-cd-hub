@@ -188,16 +188,14 @@ class TestParseAdr:
 
     def test_parses_complete_adr(self, tmp_path: Path) -> None:
         adr_path = tmp_path / "0001-test.md"
-        adr_path.write_text(
-            """# ADR-0001: Test Decision
+        adr_path.write_text("""# ADR-0001: Test Decision
 
 **Status:** Accepted
 **Date:** 2024-01-15
 
 ## Context
 Some context here.
-"""
-        )
+""")
 
         result = _parse_adr(adr_path)
         assert result["file"] == "0001-test.md"

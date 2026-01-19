@@ -7,6 +7,7 @@ from pathlib import Path
 
 import yaml
 
+from cihub.config.inputs import ConfigInputError, load_config_override
 from cihub.config.io import (
     ConfigParseError,
     ensure_dirs,
@@ -76,8 +77,27 @@ def cmd_new(args: argparse.Namespace) -> CommandResult:
         )
 
     defaults = load_defaults(paths)
+    try:
+        config_override = load_config_override(
+            getattr(args, "config_json", None),
+            getattr(args, "config_file", None),
+        )
+    except ConfigInputError as exc:
+        message = str(exc)
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-NEW-CONFIG-INPUT"}],
+        )
 
     if args.interactive:
+        if config_override:
+            message = "--config-json/--config-file is not supported with --interactive"
+            return CommandResult(
+                exit_code=EXIT_USAGE,
+                summary=message,
+                problems=[{"severity": "error", "message": message, "code": "CIHUB-NEW-CONFIG-INTERACTIVE"}],
+            )
         if not HAS_WIZARD:
             message = "Install wizard deps: pip install cihub[wizard]"
             return CommandResult(
@@ -86,6 +106,7 @@ def cmd_new(args: argparse.Namespace) -> CommandResult:
                 problems=[{"severity": "error", "message": message, "code": "CIHUB-NEW-NO-WIZARD"}],
             )
         from rich.console import Console  # noqa: I001
+
         from cihub.wizard.core import WizardRunner  # noqa: I001
 
         runner = WizardRunner(Console(), paths)
@@ -112,40 +133,85 @@ def cmd_new(args: argparse.Namespace) -> CommandResult:
             name = wizard_result.repo_name
             repo_file = Path(paths.repo_file(name))
     else:
-        if not args.owner or not args.language:
-            message = "--owner and --language are required unless --interactive is set"
-            return CommandResult(
-                exit_code=EXIT_USAGE,
-                summary=message,
-                problems=[{"severity": "error", "message": message, "code": "CIHUB-NEW-MISSING-ARGS"}],
-            )
-        # Validate subdir to prevent path traversal
-        subdir = validate_subdir(args.subdir or "")
-        config = build_repo_config(
-            args.language,
-            args.owner,
-            name,
-            args.branch or "main",
-            subdir=subdir,
-        )
-        config = _apply_repo_defaults(config, defaults)
-        if args.profile:
-            try:
-                profile_cfg = load_profile_strict(paths, args.profile)
-            except FileNotFoundError as exc:
+        if config_override:
+            # If owner/language provided, build base config and merge overrides.
+            if args.owner and args.language:
+                subdir = validate_subdir(args.subdir or "")
+                base = build_repo_config(
+                    args.language,
+                    args.owner,
+                    name,
+                    args.branch or "main",
+                    subdir=subdir,
+                )
+                base = _apply_repo_defaults(base, defaults)
+                config = deep_merge(base, config_override)
+            else:
+                config = _apply_repo_defaults(config_override, defaults)
+
+            if args.profile:
+                profile_language = None
+                if isinstance(config.get("language"), str):
+                    profile_language = config.get("language")
+                profile_language = profile_language or args.language
+                if not profile_language:
+                    message = "--profile requires --language or config.language"
+                    return CommandResult(
+                        exit_code=EXIT_USAGE,
+                        summary=message,
+                        problems=[{"severity": "error", "message": message, "code": "CIHUB-NEW-PROFILE-NO-LANGUAGE"}],
+                    )
+                try:
+                    profile_cfg = load_profile_strict(paths, args.profile)
+                except FileNotFoundError as exc:
+                    return CommandResult(
+                        exit_code=EXIT_USAGE,
+                        summary=str(exc),
+                        problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-NEW-PROFILE-NOT-FOUND"}],
+                    )
+                except ConfigParseError as exc:
+                    return CommandResult(
+                        exit_code=EXIT_FAILURE,
+                        summary=f"Invalid YAML in profile: {args.profile}",
+                        problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-NEW-PROFILE-INVALID-YAML"}],
+                    )
+                _validate_profile_language(profile_cfg, profile_language)
+                config = deep_merge(config, profile_cfg)
+        else:
+            if not args.owner or not args.language:
+                message = "--owner and --language are required unless --interactive is set"
                 return CommandResult(
                     exit_code=EXIT_USAGE,
-                    summary=str(exc),
-                    problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-NEW-PROFILE-NOT-FOUND"}],
+                    summary=message,
+                    problems=[{"severity": "error", "message": message, "code": "CIHUB-NEW-MISSING-ARGS"}],
                 )
-            except ConfigParseError as exc:
-                return CommandResult(
-                    exit_code=EXIT_FAILURE,
-                    summary=f"Invalid YAML in profile: {args.profile}",
-                    problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-NEW-PROFILE-INVALID-YAML"}],
-                )
-            _validate_profile_language(profile_cfg, args.language)
-            config = deep_merge(config, profile_cfg)
+            # Validate subdir to prevent path traversal
+            subdir = validate_subdir(args.subdir or "")
+            config = build_repo_config(
+                args.language,
+                args.owner,
+                name,
+                args.branch or "main",
+                subdir=subdir,
+            )
+            config = _apply_repo_defaults(config, defaults)
+            if args.profile:
+                try:
+                    profile_cfg = load_profile_strict(paths, args.profile)
+                except FileNotFoundError as exc:
+                    return CommandResult(
+                        exit_code=EXIT_USAGE,
+                        summary=str(exc),
+                        problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-NEW-PROFILE-NOT-FOUND"}],
+                    )
+                except ConfigParseError as exc:
+                    return CommandResult(
+                        exit_code=EXIT_FAILURE,
+                        summary=f"Invalid YAML in profile: {args.profile}",
+                        problems=[{"severity": "error", "message": str(exc), "code": "CIHUB-NEW-PROFILE-INVALID-YAML"}],
+                    )
+                _validate_profile_language(profile_cfg, args.language)
+                config = deep_merge(config, profile_cfg)
         # Get tier from args for non-interactive mode (interactive mode gets it from wizard)
         tier = getattr(args, "tier", None) or "standard"
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Mapping
 
 from cihub.utils.exec_utils import (
     TIMEOUT_NETWORK,
@@ -200,6 +201,84 @@ def create_github_repo(
         return False, "", "GitHub operation timed out (network issue?)"
     except Exception as exc:
         return False, "", f"GitHub operation failed: {exc}"
+
+
+def set_repo_variables(
+    repo: str,
+    variables: Mapping[str, str],
+) -> tuple[bool, list[str], list[dict[str, str]]]:
+    """Set GitHub Actions repo variables via gh CLI."""
+    messages: list[str] = []
+    problems: list[dict[str, str]] = []
+    if not repo:
+        problems.append(
+            {
+                "severity": "warning",
+                "message": "Repo is required to set GitHub variables",
+                "code": "CIHUB-HUB-VARS-NO-REPO",
+            }
+        )
+        return False, messages, problems
+
+    ok, err = check_gh_auth()
+    if not ok:
+        problems.append(
+            {
+                "severity": "warning",
+                "message": err,
+                "code": "CIHUB-HUB-VARS-NO-GH",
+            }
+        )
+        return False, messages, problems
+
+    success = True
+    for name, value in variables.items():
+        if not name or not value:
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"Skipping empty variable: {name or '<missing>'}",
+                    "code": "CIHUB-HUB-VARS-EMPTY",
+                }
+            )
+            success = False
+            continue
+        try:
+            result = safe_run(
+                ["gh", "variable", "set", name, "-R", repo, "-b", value],
+                timeout=TIMEOUT_NETWORK,
+            )
+        except CommandNotFoundError:
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": "gh CLI not found. Install from https://cli.github.com",
+                    "code": "CIHUB-HUB-VARS-NO-GH",
+                }
+            )
+            return False, messages, problems
+        except CommandTimeoutError as exc:
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"gh variable set timed out: {exc}",
+                    "code": "CIHUB-HUB-VARS-TIMEOUT",
+                }
+            )
+            success = False
+            continue
+        if result.returncode != 0:
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": f"gh variable set failed for {name}: {result.stderr.strip()}",
+                    "code": "CIHUB-HUB-VARS-FAILED",
+                }
+            )
+            success = False
+            continue
+        messages.append(f"Set {name} on {repo}")
+    return success, messages, problems
 
 
 def push_to_github(path: Path, branch: str = "main") -> tuple[bool, str]:

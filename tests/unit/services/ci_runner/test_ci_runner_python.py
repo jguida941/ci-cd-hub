@@ -17,8 +17,8 @@ from cihub.ci_runner import (
     _detect_mutmut_paths,
     run_black,
     run_isort,
-    run_mypy,
     run_mutmut,
+    run_mypy,
     run_ruff,
 )
 
@@ -86,8 +86,9 @@ class TestRunMutmut:
             assert config_path.exists()
             return MagicMock(stdout="killed\nsurvived\n", stderr="")
 
-        with patch("cihub.core.ci_runner.shared._run_tool_command", return_value=mock_proc), patch(
-            "cihub.core.ci_runner.shared._run_command", side_effect=_fake_results
+        with (
+            patch("cihub.core.ci_runner.shared._run_tool_command", return_value=mock_proc),
+            patch("cihub.core.ci_runner.shared._run_command", side_effect=_fake_results),
         ):
             result = run_mutmut(tmp_path, output_dir, 60)
 
@@ -101,17 +102,16 @@ class TestRunMutmut:
         (tmp_path / "mypackage" / "__init__.py").write_text("")
         mutants_dir = tmp_path / "mutants"
         mutants_dir.mkdir()
-        (mutants_dir / "app.py.meta").write_text(
-            json.dumps({"exit_code_by_key": {"a": 1, "b": 1, "c": 0}})
-        )
+        (mutants_dir / "app.py.meta").write_text(json.dumps({"exit_code_by_key": {"a": 1, "b": 1, "c": 0}}))
 
         mock_proc = MagicMock()
         mock_proc.returncode = 0
         mock_proc.stdout = "run ok"
         mock_proc.stderr = ""
 
-        with patch("cihub.core.ci_runner.shared._run_tool_command", return_value=mock_proc), patch(
-            "cihub.core.ci_runner.shared._run_command", return_value=MagicMock(stdout="", stderr="")
+        with (
+            patch("cihub.core.ci_runner.shared._run_tool_command", return_value=mock_proc),
+            patch("cihub.core.ci_runner.shared._run_command", return_value=MagicMock(stdout="", stderr="")),
         ):
             result = run_mutmut(tmp_path, output_dir, 60)
 

@@ -92,21 +92,21 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Implement meta commands (`/help`, `/clear`, `/exit`, etc.)
 
 ### Phase 6: Interactive Wizard
-- [ ] Create `src/components/Wizard.tsx`
-- [ ] Create `src/lib/wizard-steps.ts` - Step definitions with conditionals
-- [ ] Create `src/lib/profiles.ts` - Profile definitions
-- [ ] Implement `/new` wizard flow
-- [ ] Implement `/init` wizard flow
-- [ ] Implement `/config edit` wizard flow
+- [x] Create `src/components/Wizard.tsx`
+- [x] Create `src/lib/wizard-steps.ts` - Step definitions with conditionals
+- [x] Create `src/lib/profiles.ts` - Profile definitions
+- [x] Implement `/new` wizard flow
+- [x] Implement `/init` wizard flow
+- [x] Implement `/config edit` wizard flow
 - [x] Architecture sync audit (CLI/wizard/schema) documented in `docs/development/archive/CLI_WIZARD_SYNC_AUDIT.md`
 - [x] Second-pass alignment audit consolidated in `docs/development/archive/CLI_WIZARD_SYNC_AUDIT.md` (supersedes `docs/development/archive/CLI_WIZARD_SYNC_FINDINGS.md`)
 
 ### Phase 7: Configuration
-- [ ] Create `src/lib/config.ts` - Config loader
-- [ ] Create `src/context/ConfigContext.tsx`
-- [ ] Define `~/.cihubrc` schema
-- [ ] Implement environment variable overrides
-- [ ] Create `src/components/FirstRunSetup.tsx`
+- [x] Create `src/lib/config.ts` - Config loader
+- [x] Create `src/context/ConfigContext.tsx`
+- [x] Define `~/.cihubrc` schema
+- [x] Implement environment variable overrides
+- [x] Create `src/components/FirstRunSetup.tsx`
 
 ### Phase 8: AI Enhancement (TypeScript Inherits from Python)
 - [ ] Verify `--ai` flag passes through to Python CLI correctly
@@ -122,6 +122,8 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [ ] Write E2E tests (`test/e2e/`)
 - [ ] Achieve 80% code coverage
 - [ ] Set up CI workflow for TypeScript CLI
+- [ ] Validate `cihub setup/init` auto-sets `HUB_REPO/HUB_REF` on a real repo
+- [ ] Run full manual command audit across repo shapes; log in `docs/development/research/TS_CLI_FULL_AUDIT_2026-01-19.md`
 
 ### Phase 10: Accessibility (Critical)
 - [ ] Honor `NO_COLOR` environment variable

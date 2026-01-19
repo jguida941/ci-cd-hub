@@ -26,9 +26,7 @@ path_segment_strategy = st.text(
     min_size=1,
     max_size=10,
 )
-dot_path_strategy = st.lists(path_segment_strategy, min_size=1, max_size=4).map(
-    lambda parts: ".".join(parts)
-)
+dot_path_strategy = st.lists(path_segment_strategy, min_size=1, max_size=4).map(lambda parts: ".".join(parts))
 
 # Strategy for boolean-like strings
 bool_string_strategy = st.sampled_from(

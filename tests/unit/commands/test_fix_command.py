@@ -56,16 +56,14 @@ def test_fix_safe_dry_run_java(tmp_path: Path):
     """Test fix --safe --dry-run on a Java repo."""
     # Create a minimal Java project
     pom = tmp_path / "pom.xml"
-    pom.write_text(
-        """<?xml version="1.0" encoding="UTF-8"?>
+    pom.write_text("""<?xml version="1.0" encoding="UTF-8"?>
 <project>
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.example</groupId>
   <artifactId>test</artifactId>
   <version>1.0</version>
 </project>
-"""
-    )
+""")
 
     result = subprocess.run(
         [sys.executable, "-m", "cihub", "fix", "--safe", "--dry-run", "--json", "--repo", str(tmp_path)],

@@ -68,9 +68,11 @@ def _emit_aggregate_debug_context(
         ),
         (
             "threshold_exceeded",
-            str(getattr(result, "threshold_exceeded", ""))
-            if result and hasattr(result, "threshold_exceeded")
-            else None,
+            (
+                str(getattr(result, "threshold_exceeded", ""))
+                if result and hasattr(result, "threshold_exceeded")
+                else None
+            ),
         ),
         (
             "success",

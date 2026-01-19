@@ -176,7 +176,7 @@ def test_check_pytest_command_includes_coverage_gate(monkeypatch) -> None:
     catching the issue where CI failed but local check passed.
     """
 
-# TEST-METRICS:
+    # TEST-METRICS:
     captured_cmds: list[list[str]] = []
 
     def capture_run_process(name: str, cmd: list[str], cwd) -> CommandResult:

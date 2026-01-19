@@ -91,9 +91,7 @@ def update_metrics_block(
 
     # Pattern to match TEST-METRICS block
     metrics_pattern = re.compile(
-        r"(# TEST-METRICS:.*?\n)"
-        r"(#\s*Coverage:\s*[\d.]+%.*?\n)?"
-        r"(#\s*Mutation:\s*[\d.]+%.*?\n)?",
+        r"(# TEST-METRICS:.*?\n)" r"(#\s*Coverage:\s*[\d.]+%.*?\n)?" r"(#\s*Mutation:\s*[\d.]+%.*?\n)?",
         re.MULTILINE,
     )
 

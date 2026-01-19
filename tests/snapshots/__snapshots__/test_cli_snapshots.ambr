@@ -190,8 +190,7 @@
 # name: TestHelpSnapshots.test_hub_ci_help_snapshot
   list([
     'usage: cihub hub-ci [-h] [--json]',
-    '{actionlint-install,actionlint,release-parse-tag,release-update-tag,kyverno-install,kyverno-validate,kyverno-test,trivy-install,trivy-summary,zizmor-run,zizmor-check,license-check,gitleaks-summary,pytest-summary,summary,enforce,syntax-check,yamllint,repo-check,source-check,docker-compose-check,validate-configs,validate-profiles,validate-triage,verify-matrix-keys,quarantine-check,enforce-command-result,security-pip-audit,security-bandit,security-ruff,security-owasp,bandit,pip-audit,codeql-build,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,ruff,ruff-format,black,mypy,mutmut,coverage-verify,test-metrics,badges,badges-commit,outputs,thresholds}',
-    '...',
+    '{actionlint-install,actionlint,release-parse-tag,release-update-tag,kyverno-install,kyverno-validate,kyverno-test,trivy-install,trivy-summary,zizmor-run,zizmor-check,license-check,gitleaks-summary,pytest-summary,summary,enforce,syntax-check,yamllint,repo-check,source-check,docker-compose-check,validate-configs,validate-profiles,validate-triage,verify-matrix-keys,quarantine-check,enforce-command-result,security-pip-audit,security-bandit,security-ruff,security-owasp,bandit,pip-audit,codeql-build,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,ruff,ruff-format,black,mypy,mutmut,coverage-verify,test-metrics,badges,badges-commit,outputs,thresholds} ...',
     'positional arguments:',
     '{actionlint-install,actionlint,release-parse-tag,release-update-tag,kyverno-install,kyverno-validate,kyverno-test,trivy-install,trivy-summary,zizmor-run,zizmor-check,license-check,gitleaks-summary,pytest-summary,summary,enforce,syntax-check,yamllint,repo-check,source-check,docker-compose-check,validate-configs,validate-profiles,validate-triage,verify-matrix-keys,quarantine-check,enforce-command-result,security-pip-audit,security-bandit,security-ruff,security-owasp,bandit,pip-audit,codeql-build,smoke-java-build,smoke-java-tests,smoke-java-coverage,smoke-java-checkstyle,smoke-java-spotbugs,smoke-python-install,smoke-python-tests,smoke-python-ruff,smoke-python-black,ruff,ruff-format,black,mypy,mutmut,coverage-verify,test-metrics,badges,badges-commit,outputs,thresholds}',
     'actionlint-install  Download the actionlint binary',
@@ -269,7 +268,8 @@
     'usage: cihub init [-h] [--json] --repo REPO [--language {java,python}]',
     '[--owner OWNER] [--name NAME] [--branch BRANCH]',
     '[--subdir SUBDIR] [--workdir SUBDIR] [--fix-pom] [--apply]',
-    '[--force] [--wizard] [--dry-run]',
+    '[--force] [--wizard] [--config-json CONFIG_JSON |',
+    '--config-file CONFIG_FILE] [--dry-run]',
     '[--install-from {pypi,git,local}]',
     'options:',
     '-h, --help            show this help message and exit',
@@ -287,6 +287,12 @@
     '--apply               Write files (default: dry-run)',
     '--force               Override repo_side_execution guardrails',
     '--wizard              Run interactive wizard (requires cihub[wizard])',
+    '--config-json CONFIG_JSON',
+    'Inline JSON config override (TypeScript wizard',
+    'handoff)',
+    '--config-file CONFIG_FILE',
+    'Path to YAML/JSON config override (TypeScript wizard',
+    'handoff)',
     '--dry-run             Print output instead of writing',
     '--install-from {pypi,git,local}',
     'How cihub should be installed in CI: pypi (default),',
@@ -297,8 +303,7 @@
 # name: TestHelpSnapshots.test_main_help_snapshot
   list([
     'usage: cihub [-h] [--version]',
-    '{detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,ai-loop,run,commands,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo}',
-    '...',
+    '{detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,ai-loop,run,commands,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo} ...',
     'CI/CD Hub CLI',
     'positional arguments:',
     '{detect,preflight,doctor,scaffold,smoke,smoke-validate,check,verify,ci,ai-loop,run,commands,report,triage,fix,docs,adr,config-outputs,discover,dispatch,hub,hub-ci,new,init,update,validate,setup,setup-secrets,setup-nvd,fix-pom,fix-deps,fix-gradle,sync-templates,config,registry,profile,tool,threshold,repo}',
@@ -377,8 +382,7 @@
 # name: TestHelpSnapshots.test_registry_help_snapshot
   list([
     'usage: cihub registry [-h] [--json]',
-    '{list,show,set,diff,sync,add,remove,bootstrap,export,import}',
-    '...',
+    '{list,show,set,diff,sync,add,remove,bootstrap,export,import} ...',
     'positional arguments:',
     '{list,show,set,diff,sync,add,remove,bootstrap,export,import}',
     'list                List all repos with their tiers',
@@ -400,8 +404,7 @@
 # name: TestHelpSnapshots.test_report_help_snapshot
   list([
     'usage: cihub report [-h] [--json] [--ai] [--no-ai]',
-    '{build,summary,outputs,aggregate,validate,dashboard,security-summary,smoke-summary,kyverno-summary,orchestrator-summary}',
-    '...',
+    '{build,summary,outputs,aggregate,validate,dashboard,security-summary,smoke-summary,kyverno-summary,orchestrator-summary} ...',
     'positional arguments:',
     '{build,summary,outputs,aggregate,validate,dashboard,security-summary,smoke-summary,kyverno-summary,orchestrator-summary}',
     'build               Build report.json from tool outputs',
@@ -449,9 +452,8 @@
 # ---
 # name: TestHelpSnapshots.test_tool_enable_help_snapshot
   list([
-    'usage: cihub tool enable [-h] [--wizard]',
-    '[--for-repo NAME | --all-repos | --profile NAME]',
-    '[--json]',
+    'usage: cihub tool enable [-h] [--wizard] [--for-repo NAME | --all-repos |',
+    '--profile NAME] [--json]',
     '[tool]',
     'positional arguments:',
     'tool             Tool name (e.g., mypy, mutmut, trivy)',

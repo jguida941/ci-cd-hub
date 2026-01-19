@@ -48,9 +48,7 @@ class TestCmdActionlint:
 
     @patch("cihub.commands.hub_ci.release.safe_run")
     @patch("shutil.which")
-    def test_actionlint_success(
-        self, mock_which: MagicMock, mock_safe_run: MagicMock, mock_args: argparse.Namespace
-    ):
+    def test_actionlint_success(self, mock_which: MagicMock, mock_safe_run: MagicMock, mock_args: argparse.Namespace):
         """Test successful actionlint run with no issues."""
         mock_which.return_value = "/usr/local/bin/actionlint"
         mock_proc = MagicMock()
@@ -156,18 +154,20 @@ class TestCmdTrivySummary:
         """Test trivy summary parses vulnerabilities correctly."""
         fs_json = tmp_path / "trivy-fs.json"
         fs_json.write_text(
-            json.dumps({
-                "Results": [
-                    {
-                        "Vulnerabilities": [
-                            {"Severity": "CRITICAL"},
-                            {"Severity": "HIGH"},
-                            {"Severity": "HIGH"},
-                            {"Severity": "MEDIUM"},
-                        ]
-                    }
-                ]
-            }),
+            json.dumps(
+                {
+                    "Results": [
+                        {
+                            "Vulnerabilities": [
+                                {"Severity": "CRITICAL"},
+                                {"Severity": "HIGH"},
+                                {"Severity": "HIGH"},
+                                {"Severity": "MEDIUM"},
+                            ]
+                        }
+                    ]
+                }
+            ),
             encoding="utf-8",
         )
 
@@ -185,17 +185,19 @@ class TestCmdTrivySummary:
         """Test trivy summary parses misconfigurations correctly."""
         config_json = tmp_path / "trivy-config.json"
         config_json.write_text(
-            json.dumps({
-                "Results": [
-                    {
-                        "Misconfigurations": [
-                            {"Severity": "CRITICAL"},
-                            {"Severity": "CRITICAL"},
-                            {"Severity": "HIGH"},
-                        ]
-                    }
-                ]
-            }),
+            json.dumps(
+                {
+                    "Results": [
+                        {
+                            "Misconfigurations": [
+                                {"Severity": "CRITICAL"},
+                                {"Severity": "CRITICAL"},
+                                {"Severity": "HIGH"},
+                            ]
+                        }
+                    ]
+                }
+            ),
             encoding="utf-8",
         )
 
@@ -245,9 +247,7 @@ class TestCmdKyvernoValidate:
         assert "no policies found" in result.summary.lower()
 
     @patch("cihub.commands.hub_ci.release._kyverno_apply")
-    def test_validate_success(
-        self, mock_apply: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_validate_success(self, mock_apply: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test successful policy validation."""
         policies_dir = tmp_path / "policies"
         policies_dir.mkdir()
@@ -265,9 +265,7 @@ class TestCmdKyvernoValidate:
         assert result.data["validated"] >= 1
 
     @patch("cihub.commands.hub_ci.release._kyverno_apply")
-    def test_validate_with_failures(
-        self, mock_apply: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_validate_with_failures(self, mock_apply: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test validation with policy failures."""
         policies_dir = tmp_path / "policies"
         policies_dir.mkdir()
@@ -306,9 +304,7 @@ class TestCmdKyvernoTest:
         assert "skipped" in result.summary.lower()
 
     @patch("cihub.commands.hub_ci.release._kyverno_apply")
-    def test_test_pass(
-        self, mock_apply: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_test_pass(self, mock_apply: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test policy test with passing results."""
         policies_dir = tmp_path / "policies"
         policies_dir.mkdir()

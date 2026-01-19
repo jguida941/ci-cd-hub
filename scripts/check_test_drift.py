@@ -23,11 +23,12 @@ import argparse
 import ast
 import sys
 from pathlib import Path
+from typing import Any, cast
 
 import yaml
 
 
-def load_thresholds() -> dict:
+def load_thresholds() -> dict[str, Any]:
     """Load thresholds from config/defaults.yaml."""
     defaults_path = Path("config/defaults.yaml")
     if not defaults_path.exists():
@@ -36,7 +37,7 @@ def load_thresholds() -> dict:
     try:
         with open(defaults_path, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
-        return data.get("thresholds", {})
+        return cast(dict[str, Any], data.get("thresholds", {}))
     except yaml.YAMLError:
         return {"coverage_min": 70, "mutation_score_min": 70}
 
@@ -47,7 +48,7 @@ def check_metrics_block(test_file: Path) -> list[str]:
     Returns:
         List of issues found.
     """
-    issues = []
+    issues: list[str] = []
     content = test_file.read_text(encoding="utf-8")
 
     if "# TEST-METRICS:" not in content:
@@ -62,7 +63,7 @@ def check_naming_convention(test_file: Path) -> list[str]:
     Returns:
         List of issues found.
     """
-    issues = []
+    issues: list[str] = []
 
     # Check file name
     if not test_file.name.startswith("test_"):
@@ -120,7 +121,7 @@ def check_structure_compliance(tests_dir: Path) -> list[str]:
     Returns:
         List of issues found.
     """
-    issues = []
+    issues: list[str] = []
 
     # Expected directories for organized tests
     expected_dirs = ["unit", "integration", "e2e", "property", "contract"]
@@ -172,8 +173,8 @@ def run_checks(tests_dir: Path, strict: bool = False) -> tuple[list[str], list[s
     Returns:
         Tuple of (errors, warnings).
     """
-    errors = []
-    warnings = []
+    errors: list[str] = []
+    warnings: list[str] = []
 
     test_files = list(tests_dir.glob("**/test_*.py"))
 

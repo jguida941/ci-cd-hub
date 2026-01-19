@@ -33,38 +33,30 @@ def build_context(
     """
     sections: list[str] = []
 
-    sections.append(
-        f"""## Command Result
+    sections.append(f"""## Command Result
 - Command: {result.artifacts.get("command", "unknown")}
 - Exit Code: {result.exit_code}
 - Summary: {result.summary}
-"""
-    )
+""")
 
     if result.problems:
         problems_text = json.dumps(result.problems, indent=2)
-        sections.append(
-            f"""## Problems Found
+        sections.append(f"""## Problems Found
 ```json
 {problems_text}
 ```
-"""
-        )
+""")
 
     if include_tool_registry:
-        sections.append(
-            f"""## Tool Categorization (Reference)
+        sections.append(f"""## Tool Categorization (Reference)
 Categories: {json.dumps(CATEGORY_BY_TOOL, indent=2)}
 Severity Mapping: {json.dumps(SEVERITY_BY_CATEGORY, indent=2)}
-"""
-        )
+""")
 
     if include_suggestions and result.suggestions:
         suggestions_text = "\n".join(f"- {s.get('message', '')}" for s in result.suggestions)
-        sections.append(
-            f"""## Existing Suggestions
+        sections.append(f"""## Existing Suggestions
 {suggestions_text}
-"""
-        )
+""")
 
     return "\n".join(sections)

@@ -14,7 +14,7 @@ from .types import AuditFinding, FindingCategory, FindingSeverity
 CODE_FENCE_RE = re.compile(r"^\s*(```|~~~)")
 INLINE_CODE_RE = re.compile(r"`([^`]+)`")
 SEGMENT_SPLIT_RE = re.compile(r"\s*(?:&&|\|\||;)\s*")
-TOKEN_STRIP_CHARS = ".,:;)]}"
+TRAILING_STRIP_CHARS = ".,:;)]}"
 OUTPUT_TOKEN_RE = re.compile(r"^[vV]?\d")
 GENERIC_TOKENS = {
     "cli",
@@ -42,7 +42,7 @@ def _build_command_tree(parser: argparse.ArgumentParser) -> dict[str, dict[str, 
 
 
 def _strip_trailing_punct(token: str) -> str:
-    return token.rstrip(TOKEN_STRIP_CHARS)
+    return token.rstrip(TRAILING_STRIP_CHARS)
 
 
 def _is_placeholder(token: str) -> bool:
@@ -62,9 +62,10 @@ def _extract_cihub_tokens(tokens: list[str]) -> list[str] | None:
         cleaned = _strip_trailing_punct(token)
         if cleaned == "cihub":
             return tokens[idx + 1 :]
-        if cleaned in {"python", "python3"} and [
-            _strip_trailing_punct(t) for t in tokens[idx + 1 : idx + 3]
-        ] == ["-m", "cihub"]:
+        if cleaned in {"python", "python3"} and [_strip_trailing_punct(t) for t in tokens[idx + 1 : idx + 3]] == [
+            "-m",
+            "cihub",
+        ]:
             return tokens[idx + 3 :]
     return None
 

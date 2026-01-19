@@ -19,10 +19,7 @@ Tests cover:
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-
-import pytest
 
 from cihub.services.triage.evidence import (
     _check_tool_has_artifacts,
@@ -39,7 +36,6 @@ from cihub.services.triage.evidence import (
     validate_artifact_evidence,
 )
 from cihub.services.triage.types import ToolStatus
-
 
 # =============================================================================
 # _load_json Tests
@@ -700,7 +696,5 @@ class TestValidateArtifactEvidence:
 
         issues = validate_artifact_evidence(report, output_dir, run_schema_validation=True)
 
-        # May have schema violations
-        schema_issues = [i for i in issues if i["tool"] == "schema"]
         # The exact behavior depends on schema strictness
         assert isinstance(issues, list)

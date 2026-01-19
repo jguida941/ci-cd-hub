@@ -156,8 +156,8 @@ class TestVerifyMatrixKeys:
             encoding="utf-8",
         )
 
-        # Patch hub_root in the validation module where it's used
-        monkeypatch.setattr(validation, "hub_root", lambda: hub)
+        # Patch project_root in the validation module where it's used
+        monkeypatch.setattr(validation, "project_root", lambda: hub)
         result = hub_ci.cmd_verify_matrix_keys(argparse.Namespace())
         # CommandResult migration: check exit_code
         assert isinstance(result, CommandResult)
@@ -176,8 +176,8 @@ class TestVerifyMatrixKeys:
             encoding="utf-8",
         )
 
-        # Patch hub_root in the validation module where it's used
-        monkeypatch.setattr(validation, "hub_root", lambda: hub)
+        # Patch project_root in the validation module where it's used
+        monkeypatch.setattr(validation, "project_root", lambda: hub)
         result = hub_ci.cmd_verify_matrix_keys(argparse.Namespace())
         # CommandResult migration: check exit_code
         assert isinstance(result, CommandResult)

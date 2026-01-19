@@ -8,10 +8,7 @@ This module tests Python linting and mutation testing commands.
 from __future__ import annotations
 
 import argparse
-import json
-import os
 from pathlib import Path
-from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -29,7 +26,6 @@ from cihub.commands.hub_ci.python_tools import (
     cmd_ruff_format,
 )
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
-
 
 # =============================================================================
 # Fixtures
@@ -69,9 +65,7 @@ class TestCmdRuff:
 
     @patch("cihub.commands.hub_ci.python_tools._run_command")
     @patch("cihub.commands.hub_ci.python_tools.safe_run")
-    def test_ruff_no_issues(
-        self, mock_safe_run: MagicMock, mock_run: MagicMock, mock_args: argparse.Namespace
-    ):
+    def test_ruff_no_issues(self, mock_safe_run: MagicMock, mock_run: MagicMock, mock_args: argparse.Namespace):
         """Test ruff returns success when no issues found."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -90,9 +84,7 @@ class TestCmdRuff:
 
     @patch("cihub.commands.hub_ci.python_tools._run_command")
     @patch("cihub.commands.hub_ci.python_tools.safe_run")
-    def test_ruff_with_issues(
-        self, mock_safe_run: MagicMock, mock_run: MagicMock, mock_args: argparse.Namespace
-    ):
+    def test_ruff_with_issues(self, mock_safe_run: MagicMock, mock_run: MagicMock, mock_args: argparse.Namespace):
         """Test ruff returns failure when issues found."""
         mock_proc = MagicMock()
         mock_proc.returncode = 1
@@ -142,7 +134,7 @@ class TestCmdRuff:
         mock_args.force_exclude = True
         mock_args.json = False
 
-        result = cmd_ruff(mock_args)
+        cmd_ruff(mock_args)
 
         # Verify --force-exclude was in the command
         call_args = mock_run.call_args[0][0]
@@ -259,9 +251,7 @@ class TestCmdMypy:
         mock_proc = MagicMock()
         mock_proc.returncode = 1
         mock_proc.stdout = (
-            "file.py:10: error: Incompatible types\n"
-            "file.py:20: error: Missing return type\n"
-            "Found 2 errors"
+            "file.py:10: error: Incompatible types\nfile.py:20: error: Missing return type\nFound 2 errors"
         )
         mock_proc.stderr = ""
         mock_run.return_value = mock_proc
@@ -306,7 +296,7 @@ class TestCmdMypy:
         mock_args.ignore_missing_imports = True
         mock_args.show_error_codes = True
 
-        result = cmd_mypy(mock_args)
+        cmd_mypy(mock_args)
 
         call_args = mock_run.call_args[0][0]
         assert "--ignore-missing-imports" in call_args
@@ -629,9 +619,7 @@ class TestCmdMutmut:
     """Tests for cmd_mutmut function."""
 
     @patch("cihub.commands.hub_ci.python_tools._run_mutmut")
-    def test_mutmut_success(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_mutmut_success(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test mutmut returns success with good score."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -651,9 +639,7 @@ class TestCmdMutmut:
         assert result.data["survived"] == 10
 
     @patch("cihub.commands.hub_ci.python_tools._run_mutmut")
-    def test_mutmut_below_threshold(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_mutmut_below_threshold(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test mutmut fails when score below threshold."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -672,9 +658,7 @@ class TestCmdMutmut:
         assert "below" in result.summary.lower()
 
     @patch("cihub.commands.hub_ci.python_tools._run_mutmut")
-    def test_mutmut_run_failed(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_mutmut_run_failed(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test mutmut handles run failure."""
         mock_proc = MagicMock()
         mock_proc.returncode = 1
@@ -692,9 +676,7 @@ class TestCmdMutmut:
         assert "failed" in result.summary.lower()
 
     @patch("cihub.commands.hub_ci.python_tools._run_mutmut")
-    def test_mutmut_no_mutations_tested(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_mutmut_no_mutations_tested(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test mutmut fails when no mutants tested."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -712,9 +694,7 @@ class TestCmdMutmut:
         assert "No mutants" in result.summary
 
     @patch("cihub.commands.hub_ci.python_tools._run_mutmut")
-    def test_mutmut_missing_final_counts(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_mutmut_missing_final_counts(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test mutmut fails when final counts missing."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -731,9 +711,7 @@ class TestCmdMutmut:
         assert result.exit_code == EXIT_FAILURE
 
     @patch("cihub.commands.hub_ci.python_tools._run_mutmut")
-    def test_mutmut_did_not_complete(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_mutmut_did_not_complete(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test mutmut fails when it doesn't complete properly (no rate info)."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -752,9 +730,7 @@ class TestCmdMutmut:
         assert "did not complete" in result.summary.lower()
 
     @patch("cihub.commands.hub_ci.python_tools._run_mutmut")
-    def test_mutmut_fallback_on_empty_output(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_mutmut_fallback_on_empty_output(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test mutmut tries fallback when initial run produces empty output."""
         # First call returns failure with empty output
         first_proc = MagicMock()
@@ -791,9 +767,7 @@ class TestPythonToolsIntegration:
 
     @patch("cihub.commands.hub_ci.python_tools._run_command")
     @patch("cihub.commands.hub_ci.python_tools.safe_run")
-    def test_ruff_full_workflow(
-        self, mock_safe_run: MagicMock, mock_run: MagicMock, mock_args: argparse.Namespace
-    ):
+    def test_ruff_full_workflow(self, mock_safe_run: MagicMock, mock_run: MagicMock, mock_args: argparse.Namespace):
         """Test ruff complete workflow."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -811,9 +785,7 @@ class TestPythonToolsIntegration:
         assert result.data["passed"] is True
 
     @patch("cihub.commands.hub_ci.python_tools._run_command")
-    def test_mypy_counts_multiple_error_types(
-        self, mock_run: MagicMock, mock_args: argparse.Namespace
-    ):
+    def test_mypy_counts_multiple_error_types(self, mock_run: MagicMock, mock_args: argparse.Namespace):
         """Test mypy counts different error types."""
         mock_proc = MagicMock()
         mock_proc.returncode = 1

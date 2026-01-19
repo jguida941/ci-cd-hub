@@ -13,31 +13,34 @@ describe("resolveCommand", () => {
   it("maps config-outputs", () => {
     const parsed = parseInput("/config-outputs --json");
     const resolved = resolveCommand(parsed, registry);
-    expect(resolved).toEqual({
+    expect(resolved).toEqual(expect.objectContaining({
       kind: "python",
       command: "config-outputs",
       args: ["--json"]
-    });
+    }));
+    expect(resolved).toHaveProperty("entry");
   });
 
   it("maps report subcommands", () => {
     const parsed = parseInput("/report build");
     const resolved = resolveCommand(parsed, registry);
-    expect(resolved).toEqual({
+    expect(resolved).toEqual(expect.objectContaining({
       kind: "python",
       command: "report",
       args: ["build"]
-    });
+    }));
+    expect(resolved).toHaveProperty("entry");
   });
 
   it("maps hub-ci subcommands", () => {
     const parsed = parseInput("/hub-ci ruff --path .");
     const resolved = resolveCommand(parsed, registry);
-    expect(resolved).toEqual({
+    expect(resolved).toEqual(expect.objectContaining({
       kind: "python",
       command: "hub-ci",
       args: ["ruff", "--path", "."]
-    });
+    }));
+    expect(resolved).toHaveProperty("entry");
   });
 
   it("returns meta commands", () => {

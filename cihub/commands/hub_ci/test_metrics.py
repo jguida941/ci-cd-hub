@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 from pathlib import Path
+from typing import Any
 
 from cihub.types import CommandResult
 from cihub.utils.github_context import GitHubContext
@@ -29,11 +30,7 @@ def _branch_name(ctx: GitHubContext) -> str | None:
 
 
 def _normalize_readme(content: str) -> str:
-    lines = [
-        line
-        for line in content.splitlines()
-        if not line.strip().startswith("> Last updated:")
-    ]
+    lines = [line for line in content.splitlines() if not line.strip().startswith("> Last updated:")]
     return "\n".join(lines).strip()
 
 
@@ -74,7 +71,7 @@ def cmd_test_metrics(args: argparse.Namespace) -> CommandResult:
 
     errors: list[dict[str, str]] = []
     warnings: list[dict[str, str]] = []
-    data: dict[str, object] = {
+    data: dict[str, Any] = {
         "coverage_file": str(coverage_file),
         "coverage_db": str(coverage_db),
         "mutation_file": str(mutation_file),
@@ -83,7 +80,7 @@ def cmd_test_metrics(args: argparse.Namespace) -> CommandResult:
         "steps": {},
     }
 
-    for name, path in scripts.items():
+    for _name, path in scripts.items():
         if not path.exists():
             errors.append(
                 {
@@ -279,11 +276,7 @@ def cmd_test_metrics(args: argparse.Namespace) -> CommandResult:
             str(scripts["check_test_drift"]),
             "--tests-dir",
             str(tests_dir),
-            *(
-                ["--strict"]
-                if getattr(args, "strict", False)
-                else []
-            ),
+            *(["--strict"] if getattr(args, "strict", False) else []),
         ],
         cwd=repo_root,
         tool_name="check-test-drift",

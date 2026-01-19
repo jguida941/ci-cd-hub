@@ -20,7 +20,7 @@ from cihub.utils.exec_utils import (
     safe_run,
 )
 from cihub.utils.github_context import OutputContext
-from cihub.utils.paths import hub_root
+from cihub.utils.paths import hub_root, project_root
 
 from . import _bool_str
 
@@ -282,7 +282,7 @@ def _expected_matrix_keys() -> set[str]:
 
 def cmd_verify_matrix_keys(args: argparse.Namespace) -> CommandResult:
     """Verify that all matrix.<key> references in hub-run-all.yml are emitted by cihub discover."""
-    hub = hub_root()
+    hub = project_root()
     wf_path = hub / ".github" / "workflows" / "hub-run-all.yml"
 
     if not wf_path.exists():

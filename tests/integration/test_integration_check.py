@@ -13,11 +13,8 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
-from unittest.mock import MagicMock, patch
 
 import pytest
-
 
 # =============================================================================
 # CLI Integration Tests
@@ -197,10 +194,12 @@ class TestReportGeneration:
             timeout=120,
             cwd=tmp_python_repo,
         )
+        assert result.returncode is not None
 
         # Check for report file (may or may not exist depending on config)
         report_path = tmp_python_repo / ".cihub" / "report.json"
         # Report may or may not be generated depending on check mode
+        assert report_path.name == "report.json"
 
     def test_check_json_output_matches_exit_code(self, tmp_python_repo: Path):
         """Test that JSON output status matches process exit code."""
@@ -272,7 +271,8 @@ class TestCheckErrorHandling:
                 cwd=tmp_path,
             )
         except subprocess.TimeoutExpired:
-            pass  # Timeout is acceptable
+            return  # Timeout is acceptable
+        assert result.returncode is not None
 
 
 # =============================================================================
@@ -293,6 +293,7 @@ class TestCheckIntegrationWithOtherCommands:
             timeout=30,
             cwd=tmp_path,
         )
+        assert init_result.returncode is not None
 
         # Then run check
         check_result = subprocess.run(
@@ -355,6 +356,7 @@ class TestCheckTiers:
 
         # Base tier should be relatively fast (< 60s)
         assert elapsed < 60
+        assert result.returncode is not None
 
     def test_audit_tier_runs_additional_checks(self, tmp_python_repo: Path):
         """Test that --audit tier runs additional checks."""

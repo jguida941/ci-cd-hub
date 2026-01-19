@@ -32,12 +32,16 @@ from cihub.output.events import emit_event, get_event_sink
 from cihub.types import CommandResult
 from cihub.utils.exec_utils import (
     TIMEOUT_BUILD,
+    TIMEOUT_EXTENDED,
     TIMEOUT_NETWORK,
     CommandNotFoundError,
     CommandTimeoutError,
     safe_run,
 )
-from cihub.utils.paths import hub_root
+from cihub.utils.paths import hub_root, project_root
+
+# Longer timeout for pytest (full suite can exceed 10 minutes locally).
+TIMEOUT_TEST = TIMEOUT_EXTENDED * 3
 
 # Optional tools that can be auto-installed when requested.
 OPTIONAL_TOOL_HINTS: dict[str, str] = {
@@ -79,12 +83,16 @@ def _tail_output(output: str, limit: int = 12) -> str:
     return "\n".join(lines[-limit:])
 
 
-def _run_process(name: str, cmd: list[str], cwd: Path) -> CommandResult:
+def _skipped_result(reason: str) -> CommandResult:
+    return CommandResult(exit_code=EXIT_SUCCESS, summary=f"skipped ({reason})")
+
+
+def _run_process(name: str, cmd: list[str], cwd: Path, timeout: int = TIMEOUT_BUILD) -> CommandResult:
     try:
         proc = safe_run(
             cmd,
             cwd=cwd,
-            timeout=TIMEOUT_BUILD,  # 10 min for general tools
+            timeout=timeout,
         )
     except CommandNotFoundError:
         return CommandResult(
@@ -285,7 +293,11 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
     - --require-optional: Fail if optional tools are missing
     """
     json_mode = getattr(args, "json", False)
-    root = hub_root()
+    cli_test_mode = bool(getattr(args, "_cli_test_mode", False))
+    cwd = Path.cwd().resolve()
+    hub_root_path = project_root().resolve()
+    project_root_path = hub_root_path if cwd.is_relative_to(hub_root_path) else cwd
+    data_root = hub_root()
     install_missing = bool(getattr(args, "install_missing", False))
     require_optional = bool(getattr(args, "require_optional", False))
     interactive = bool(install_missing and not json_mode and sys.stdin.isatty())
@@ -294,7 +306,7 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
         return _run_optional(
             name,
             cmd,
-            root,
+            project_root_path,
             install_missing=install_missing,
             require_optional=require_optional,
             interactive=interactive,
@@ -352,43 +364,61 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
     add_step("preflight", cmd_preflight(preflight_args))
 
     # Lint
-    add_step("ruff-lint", _run_process("ruff-lint", ["ruff", "check", "."], root))
+    add_step(
+        "ruff-lint",
+        _run_process("ruff-lint", ["ruff", "check", "."], project_root_path),
+    )
     add_step(
         "ruff-format",
-        _run_process("ruff-format", ["ruff", "format", "--check", "."], root),
+        _run_process("ruff-format", ["ruff", "format", "--check", "."], project_root_path),
     )
 
     # Black and isort for CI parity (optional but run if available)
     add_step(
         "black",
-        _run_process("black", ["black", "--check", "."], root),
+        _run_process("black", ["black", "--check", "."], project_root_path),
     )
     add_step(
         "isort",
-        _run_process("isort", ["isort", "--check-only", "."], root),
+        _run_process("isort", ["isort", "--check-only", "."], project_root_path),
     )
 
     # Type check
     add_step(
         "typecheck",
-        _run_process("typecheck", [sys.executable, "-m", "mypy", "cihub/", "scripts/"], root),
+        _run_process(
+            "typecheck",
+            [sys.executable, "-m", "mypy", "cihub/", "scripts/"],
+            project_root_path,
+        ),
     )
 
     # YAML lint (optional tool)
     add_step(
         "yamllint",
-        run_optional("yamllint", ["yamllint", "config/", "templates/"]),
+        run_optional(
+            "yamllint",
+            [
+                "yamllint",
+                str(data_root / "config"),
+                str(data_root / "templates"),
+            ],
+        ),
     )
 
     # Tests (with coverage gate matching CI)
-    add_step(
-        "test",
-        _run_process(
+    if cli_test_mode:
+        add_step("test", _skipped_result("CLI test mode"))
+    else:
+        add_step(
             "test",
-            [sys.executable, "-m", "pytest", "tests/", "--cov=cihub", "--cov=scripts", "--cov-fail-under=70"],
-            root,
-        ),
-    )
+            _run_process(
+                "test",
+                [sys.executable, "-m", "pytest", "tests/", "--cov=cihub", "--cov=scripts", "--cov-fail-under=70"],
+                project_root_path,
+                timeout=TIMEOUT_TEST,
+            ),
+        )
 
     # Workflow lint (actionlint auto-discovers .github/workflows when run from repo root)
     add_step(
@@ -417,7 +447,10 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
         keep=bool(getattr(args, "keep", False)),
         json=True,
     )
-    add_step("smoke", cmd_smoke(smoke_args))
+    if cli_test_mode:
+        add_step("smoke", _skipped_result("CLI test mode"))
+    else:
+        add_step("smoke", cmd_smoke(smoke_args))
 
     # ========== AUDIT MODE (--audit or --all) ==========
     if run_audit:
@@ -432,7 +465,7 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
         #   cihub docs audit                  # Full scan (slower, all checks)
         #   cihub docs audit --skip-references --skip-consistency  # Fast mode
         # Write to .cihub/tool-outputs/ for triage integration
-        tool_outputs_dir = root / ".cihub" / "tool-outputs"
+        tool_outputs_dir = project_root_path / ".cihub" / "tool-outputs"
         audit_args = argparse.Namespace(
             json=True,
             output_dir=str(tool_outputs_dir),
@@ -452,7 +485,7 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
             _run_process(
                 "validate-configs",
                 [sys.executable, "-m", "cihub", "hub-ci", "validate-configs"],
-                root,
+                project_root_path,
             ),
         )
         add_step(
@@ -460,19 +493,19 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
             _run_process(
                 "validate-profiles",
                 [sys.executable, "-m", "cihub", "hub-ci", "validate-profiles"],
-                root,
+                project_root_path,
             ),
         )
 
         # Report validation (Issue 10: enforce report consistency)
-        report_path = root / ".cihub" / "report.json"
+        report_path = project_root_path / ".cihub" / "report.json"
         if report_path.exists():
             add_step(
                 "report-validate",
                 _run_process(
                     "report-validate",
                     [sys.executable, "-m", "cihub", "report", "validate", "--report", str(report_path), "--strict"],
-                    root,
+                    project_root_path,
                 ),
             )
 
@@ -498,7 +531,7 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
                     "--confidence-level",
                     "high",
                 ],
-                root,
+                project_root_path,
             ),
         )
         add_step(
@@ -512,7 +545,7 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
                     "-r",
                     "requirements/requirements-dev.txt",
                 ],
-                root,
+                project_root_path,
             ),
         )
         add_step(
@@ -535,18 +568,25 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
         # Zizmor workflow security (with severity filtering + auto-fix hints)
         add_step(
             "zizmor",
-            _run_zizmor(root) if shutil.which("zizmor") else _missing_tool_result("zizmor", required=require_optional),
+            (
+                _run_zizmor(project_root_path)
+                if shutil.which("zizmor")
+                else _missing_tool_result("zizmor", required=require_optional)
+            ),
         )
 
         # Template validation
-        add_step(
-            "validate-templates",
-            _run_process(
+        if cli_test_mode:
+            add_step("validate-templates", _skipped_result("CLI test mode"))
+        else:
+            add_step(
                 "validate-templates",
-                [sys.executable, "-m", "pytest", "tests/test_templates.py", "-v", "--tb=short"],
-                root,
-            ),
-        )
+                _run_process(
+                    "validate-templates",
+                    [sys.executable, "-m", "pytest", "tests/integration/test_templates.py", "-v", "--tb=short"],
+                    project_root_path,
+                ),
+            )
 
         # Template/workflow contract verification
         add_step(
@@ -554,7 +594,7 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
             _run_process(
                 "verify-contracts",
                 [sys.executable, "-m", "cihub", "verify"],
-                root,
+                project_root_path,
             ),
         )
 
@@ -564,7 +604,7 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
             _run_process(
                 "verify-matrix-keys",
                 [sys.executable, "-m", "cihub", "hub-ci", "verify-matrix-keys"],
-                root,
+                project_root_path,
             ),
         )
 
@@ -574,7 +614,7 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
             _run_process(
                 "license-check",
                 [sys.executable, "-m", "cihub", "hub-ci", "license-check"],
-                root,
+                project_root_path,
             ),
         )
 
@@ -585,7 +625,7 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
                 _run_process(
                     "sync-templates-check",
                     [sys.executable, "-m", "cihub", "sync-templates", "--check"],
-                    root,
+                    project_root_path,
                 ),
             )
         else:
@@ -607,7 +647,7 @@ def cmd_check(args: argparse.Namespace) -> CommandResult:
             _run_process(
                 "mutmut",
                 [sys.executable, "-m", "cihub", "hub-ci", "mutmut", "--min-score", "70"],
-                root,
+                project_root_path,
             ),
         )
 

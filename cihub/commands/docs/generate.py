@@ -596,9 +596,7 @@ def render_tools_reference() -> str:
             tool_metrics = _format_code_list(metrics.get(tool, []))
             tool_artifacts = _format_code_list(artifacts.get(tool, []))
             gate_keys = _format_gate_keys(tool, language)
-            lines.append(
-                f"| `{tool}` | {toggle} | {inputs} | {tool_metrics} | {tool_artifacts} | {gate_keys} |"
-            )
+            lines.append(f"| `{tool}` | {toggle} | {inputs} | {tool_metrics} | {tool_artifacts} | {gate_keys} |")
         lines.append("")
         return lines
 

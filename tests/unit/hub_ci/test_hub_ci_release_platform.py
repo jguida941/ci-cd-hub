@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import platform
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -23,7 +22,6 @@ from cihub.commands.hub_ci.release import (
     _resolve_actionlint_version,
     _trivy_asset_name,
 )
-
 
 # =============================================================================
 # Fixtures (shared with other test_hub_ci_release_* files)

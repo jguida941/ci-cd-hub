@@ -11,3 +11,5 @@ rules:
 
 ignore: |
   templates/legacy/**
+  cihub/data/templates/legacy/**
+  **/cihub/data/templates/legacy/**

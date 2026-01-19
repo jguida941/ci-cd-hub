@@ -21,7 +21,6 @@ from cihub.config.normalize import (
 )
 from cihub.utils.paths import hub_root
 
-
 # =============================================================================
 # get_fail_on_flag Tests
 # =============================================================================
@@ -59,9 +58,7 @@ class TestGetFailOnFlag:
             "docker_missing_java",
         ],
     )
-    def test_defaults_align_with_schema(
-        self, tool: str, language: str, flag: str, expected: bool
-    ) -> None:
+    def test_defaults_align_with_schema(self, tool: str, language: str, flag: str, expected: bool) -> None:
         """Default values should match schema defaults."""
         config: dict = {}  # Empty config uses defaults
         result = get_fail_on_flag(config, tool, language, flag)
@@ -100,9 +97,7 @@ class TestGetFailOnFlag:
             "pip_audit_python",
         ],
     )
-    def test_canonical_mapping_defaults(
-        self, tool: str, language: str, expected: bool
-    ) -> None:
+    def test_canonical_mapping_defaults(self, tool: str, language: str, expected: bool) -> None:
         """Canonical mapping should return correct defaults."""
         config: dict = {}
         result = get_fail_on_flag(config, tool, language)
@@ -126,9 +121,7 @@ class TestGetFailOnFlag:
     def test_explicit_default_override(self) -> None:
         """Explicit default parameter should override schema default."""
         config: dict = {}
-        result = get_fail_on_flag(
-            config, "trivy", "python", "fail_on_critical", default=True
-        )
+        result = get_fail_on_flag(config, "trivy", "python", "fail_on_critical", default=True)
         assert result is True  # Explicit default wins over schema default (False)
 
     def test_boolean_tool_config(self) -> None:
@@ -174,9 +167,7 @@ class TestGetFailOnCvss:
         ],
         ids=["owasp_java", "trivy_java", "trivy_python"],
     )
-    def test_default_cvss_threshold(
-        self, tool: str, language: str, expected: float
-    ) -> None:
+    def test_default_cvss_threshold(self, tool: str, language: str, expected: float) -> None:
         """Default CVSS threshold should be 7.0 (aligned with schema)."""
         config: dict = {}
         result = get_fail_on_cvss(config, tool, language)
@@ -281,16 +272,11 @@ class TestSchemaCodeAlignment:
             "trivy_high",
         ],
     )
-    def test_python_tools_schema_alignment(
-        self, schema: dict, tool: str, field: str, code_default: bool
-    ) -> None:
+    def test_python_tools_schema_alignment(self, schema: dict, tool: str, field: str, code_default: bool) -> None:
         """Python tool fail_on_* defaults should match schema."""
-        schema_default = self._get_schema_tool_default(
-            schema, "pythonTools", tool, field
-        )
-        assert (
-            schema_default == code_default
-        ), f"Schema default for {tool}.{field} ({schema_default}) != code default ({code_default})"
+        schema_default = self._get_schema_tool_default(schema, "pythonTools", tool, field)
+        message = f"Schema default for {tool}.{field} ({schema_default}) != code default ({code_default})"
+        assert schema_default == code_default, message
 
     @pytest.mark.parametrize(
         "tool,field,code_default",
@@ -311,16 +297,11 @@ class TestSchemaCodeAlignment:
             "owasp_cvss",
         ],
     )
-    def test_java_tools_schema_alignment(
-        self, schema: dict, tool: str, field: str, code_default: bool | int
-    ) -> None:
+    def test_java_tools_schema_alignment(self, schema: dict, tool: str, field: str, code_default: bool | int) -> None:
         """Java tool fail_on_* defaults should match schema."""
-        schema_default = self._get_schema_tool_default(
-            schema, "javaTools", tool, field
-        )
-        assert (
-            schema_default == code_default
-        ), f"Schema default for {tool}.{field} ({schema_default}) != code default ({code_default})"
+        schema_default = self._get_schema_tool_default(schema, "javaTools", tool, field)
+        message = f"Schema default for {tool}.{field} ({schema_default}) != code default ({code_default})"
+        assert schema_default == code_default, message
 
 
 # =============================================================================
@@ -335,10 +316,7 @@ class TestMappingCompleteness:
         """Every tool in _FAIL_ON_KEY_MAP should have a corresponding default."""
         for tool, flag_key in _FAIL_ON_KEY_MAP.items():
             # Either general default or tool-specific default should exist
-            has_default = (
-                flag_key in _FAIL_ON_DEFAULTS
-                or tool in _TOOL_FAIL_ON_DEFAULTS
-            )
+            has_default = flag_key in _FAIL_ON_DEFAULTS or tool in _TOOL_FAIL_ON_DEFAULTS
             assert has_default, f"Tool {tool} (flag: {flag_key}) has no default"
 
     def test_fail_on_defaults_keys_are_valid(self) -> None:

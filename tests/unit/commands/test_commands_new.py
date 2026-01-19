@@ -29,7 +29,6 @@ from cihub.commands.new import (  # isort: skip # noqa: E402
 from cihub.config.paths import PathConfig  # noqa: E402
 from cihub.types import CommandResult  # noqa: E402
 
-
 # =============================================================================
 # Helper Functions
 # =============================================================================

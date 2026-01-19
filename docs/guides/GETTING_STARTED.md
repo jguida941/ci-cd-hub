@@ -684,7 +684,8 @@ python -m cihub setup-secrets --hub-repo your-org/ci-cd-hub --all --verify
 
 ### 3. Set Repo Variables (Target Repos)
 
-In each target repo, set these variables:
+`cihub setup` (interactive) and `cihub init --apply` will set these automatically
+via `gh` when authenticated. If you need to set them manually, run:
 
 ```bash
 gh variable set HUB_REPO --repo your-org/target-repo --body "your-org/ci-cd-hub"

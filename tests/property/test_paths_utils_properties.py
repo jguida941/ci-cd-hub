@@ -32,9 +32,9 @@ safe_segment_strategy = st.text(
 traversal_segment_strategy = st.sampled_from(["..", ".", "../..", "./..", "..\\.."])
 
 # Strategy for valid relative paths
-valid_relative_path_strategy = st.lists(
-    safe_segment_strategy, min_size=1, max_size=4
-).map(lambda parts: "/".join(parts))
+valid_relative_path_strategy = st.lists(safe_segment_strategy, min_size=1, max_size=4).map(
+    lambda parts: "/".join(parts)
+)
 
 # Strategy for paths with different separators
 path_with_separator_strategy = st.tuples(

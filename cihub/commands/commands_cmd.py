@@ -104,7 +104,7 @@ def _is_interactive_command(path: list[str]) -> bool:
 def _json_runtime_supported(path: list[str], supports_json: bool) -> bool:
     if not supports_json:
         return False
-    return _command_key(path) not in {"setup", "config edit"}
+    return _command_key(path) not in {"setup"}
 
 
 def _collect_commands(

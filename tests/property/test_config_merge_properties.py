@@ -43,6 +43,7 @@ nested_dict_strategy = st.recursive(
     max_leaves=10,
 )
 
+
 # Strategy for disjoint key dictionaries
 @st.composite
 def disjoint_dicts(draw: st.DrawFn) -> tuple[dict[str, Any], dict[str, Any]]:

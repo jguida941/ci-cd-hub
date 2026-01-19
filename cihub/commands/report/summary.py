@@ -125,9 +125,11 @@ def _smoke_repo_summary(args: argparse.Namespace) -> str:
             f"**Coverage Details:** {args.coverage_lines} instructions covered",
             "",
             "### Smoke Test Status",
-            "**PASS** - Core Java tools executed successfully"
-            if args.tests_total > 0 and cov > 0
-            else "**FAIL** - Missing test execution or coverage data",
+            (
+                "**PASS** - Core Java tools executed successfully"
+                if args.tests_total > 0 and cov > 0
+                else "**FAIL** - Missing test execution or coverage data"
+            ),
         ]
         return "\n".join(header + lines)
 
@@ -149,9 +151,11 @@ def _smoke_repo_summary(args: argparse.Namespace) -> str:
         f"**Security:** {args.ruff_security} security-related issues",
         "",
         "### Smoke Test Status",
-        "**PASS** - Core Python tools executed successfully"
-        if args.tests_total > 0 and cov > 0
-        else "**FAIL** - Missing test execution or coverage data",
+        (
+            "**PASS** - Core Python tools executed successfully"
+            if args.tests_total > 0 and cov > 0
+            else "**FAIL** - Missing test execution or coverage data"
+        ),
     ]
     return "\n".join(header + lines)
 

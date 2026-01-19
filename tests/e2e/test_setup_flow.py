@@ -121,10 +121,7 @@ class TestSetupWizardConfigPersistence:
         result = cmd_setup(args)
 
         assert result.exit_code == EXIT_FAILURE
-        assert any(
-            problem.get("code") == "CIHUB-SETUP-002"
-            for problem in (result.problems or [])
-        )
+        assert any(problem.get("code") == "CIHUB-SETUP-002" for problem in (result.problems or []))
 
 
 class TestSetupScaffoldPath:
@@ -213,6 +210,7 @@ class TestSetupScaffoldPath:
         )
 
         result = cmd_setup(args)
+        assert result.exit_code == EXIT_SUCCESS
 
         # Verify scaffold was called
         assert len(scaffold_calls) == 1, "Scaffold should be called once for --new"

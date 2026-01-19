@@ -7,7 +7,9 @@ import { resolveTimeout } from "./timeouts.js";
 type RunOptions = {
   cwd: string;
   timeoutMs?: number;
+  defaultTimeoutMs?: number;
   json?: boolean;
+  pythonPath?: string;
 };
 
 type ResolvedCihub = {
@@ -15,15 +17,16 @@ type ResolvedCihub = {
   baseArgs: string[];
 };
 
-function resolveCihubCommand(): ResolvedCihub {
+function resolveCihubCommand(pythonPath?: string): ResolvedCihub {
   const explicit = process.env.CIHUB_PATH;
   if (explicit) {
     return { command: explicit, baseArgs: [] };
   }
 
-  const pythonPath = process.env.PYTHON_PATH;
-  if (pythonPath) {
-    return { command: pythonPath, baseArgs: ["-m", "cihub"] };
+  const envPythonPath = process.env.CIHUB_PYTHON_PATH ?? process.env.PYTHON_PATH;
+  const resolvedPythonPath = envPythonPath ?? pythonPath;
+  if (resolvedPythonPath) {
+    return { command: resolvedPythonPath, baseArgs: ["-m", "cihub"] };
   }
 
   return { command: "cihub", baseArgs: [] };
@@ -43,12 +46,12 @@ export async function runCihub(
   args: string[],
   options: RunOptions
 ): Promise<CommandResult> {
-  const resolved = resolveCihubCommand();
+  const resolved = resolveCihubCommand(options.pythonPath);
   const runArgs = [...resolved.baseArgs, command, ...args];
   const jsonEnabled = options.json ?? true;
   ensureJsonFlag(runArgs, jsonEnabled);
 
-  const timeoutMs = options.timeoutMs ?? resolveTimeout(command);
+  const timeoutMs = options.timeoutMs ?? resolveTimeout(command, options.defaultTimeoutMs);
 
   try {
     const result = await execa(resolved.command, runArgs, {

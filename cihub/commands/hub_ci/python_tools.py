@@ -379,9 +379,7 @@ def cmd_mutmut(args: argparse.Namespace) -> CommandResult:
             error_summary += f"### Cleaned Log\n\n```\n{cleaned_log[:1000]}\n```\n"
         if fallback_used:
             error_summary += (
-                "\n### Fallback Run\n\n"
-                f"- exit_code: {fallback_exit_code}\n"
-                f"- log_path: {fallback_log_path}\n"
+                f"\n### Fallback Run\n\n- exit_code: {fallback_exit_code}\n- log_path: {fallback_log_path}\n"
             )
 
         ctx.write_summary(error_summary)

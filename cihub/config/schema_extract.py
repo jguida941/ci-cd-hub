@@ -11,7 +11,7 @@ The schema is the single source of truth for default values.
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, cast
 
 from cihub.utils.paths import hub_root
 
@@ -29,7 +29,7 @@ def load_schema() -> dict[str, Any]:
         FileNotFoundError: If schema file doesn't exist.
     """
     with SCHEMA_PATH.open(encoding="utf-8") as f:
-        return json.load(f)
+        return cast(dict[str, Any], json.load(f))
 
 
 def _resolve_ref(schema: dict[str, Any], ref: str) -> dict[str, Any]:
@@ -284,17 +284,13 @@ def extract_all_defaults(schema: dict[str, Any] | None = None) -> dict[str, Any]
         elif prop_name == "thresholds":
             thresholds_def = definitions.get("thresholds", {})
             thresholds_props = thresholds_def.get("properties", {})
-            defaults["thresholds"] = _extract_defaults_from_properties(
-                schema, thresholds_props
-            )
+            defaults["thresholds"] = _extract_defaults_from_properties(schema, thresholds_props)
 
         # Handle reports
         elif prop_name == "reports":
             reports_def = definitions.get("reports", {})
             reports_props = reports_def.get("properties", {})
-            defaults["reports"] = _extract_defaults_from_properties(
-                schema, reports_props
-            )
+            defaults["reports"] = _extract_defaults_from_properties(schema, reports_props)
 
         # Handle gates
         elif prop_name == "gates":
@@ -412,9 +408,7 @@ def compare_with_current(
                 if key not in schema_val:
                     drifts.append(f"Extra in {label} (not in schema): {path}.{key}")
         elif schema_val != current_val:
-            drifts.append(
-                f"Value mismatch at {path}: schema={schema_val!r}, {label}={current_val!r}"
-            )
+            drifts.append(f"Value mismatch at {path}: schema={schema_val!r}, {label}={current_val!r}")
 
     _compare("root", schema_defaults, current_fallbacks)
     return drifts

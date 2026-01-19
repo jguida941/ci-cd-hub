@@ -1073,9 +1073,8 @@ def test_compute_diff_repo_fragment_overrides_tier_thresholds(tmp_path: Path) ->
     # Should NOT report coverage_min diff because repo fragment (85) wins over tier (90)
     # and .ci-hub.yml also has 85
     coverage_diffs = [d for d in diffs if "coverage_min" in d.get("field", "")]
-    assert len(coverage_diffs) == 0, (
-        f"Expected no coverage_min diff (repo fragment should override tier), got {coverage_diffs}"
-    )
+    message = f"Expected no coverage_min diff (repo fragment should override tier), got {coverage_diffs}"
+    assert len(coverage_diffs) == 0, message
 
 
 # =============================================================================

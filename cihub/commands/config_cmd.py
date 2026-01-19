@@ -8,6 +8,7 @@ from typing import Any
 
 import yaml
 
+from cihub.config.inputs import ConfigInputError, load_config_override
 from cihub.config.io import (
     ensure_dirs,
     load_defaults,
@@ -98,6 +99,7 @@ def _apply_wizard(paths: PathConfig, existing: dict[str, Any]) -> dict[str, Any]
     if not HAS_WIZARD:
         raise ConfigError("Install wizard deps: pip install cihub[wizard]")
     from rich.console import Console  # noqa: I001
+
     from cihub.wizard.core import WizardRunner  # noqa: I001
 
     runner = WizardRunner(Console(), paths)
@@ -125,8 +127,36 @@ def cmd_config(args: argparse.Namespace) -> CommandResult:
     defaults = load_defaults(paths)
 
     try:
+        config_override = load_config_override(
+            getattr(args, "config_json", None),
+            getattr(args, "config_file", None),
+        )
+    except ConfigInputError as exc:
+        message = str(exc)
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-CONFIG-INPUT"}],
+        )
+
+    try:
         if args.subcommand in (None, "edit"):
             json_mode = getattr(args, "json", False)
+            if config_override:
+                if args.dry_run:
+                    return CommandResult(
+                        exit_code=EXIT_SUCCESS,
+                        summary="Dry run complete",
+                        data={"raw_output": _format_config(config_override), "config": config_override},
+                    )
+                save_repo_config(paths, repo, config_override, dry_run=False)
+                return CommandResult(
+                    exit_code=EXIT_SUCCESS,
+                    summary=f"Updated {paths.repo_file(repo)}",
+                    data={"config": config_override},
+                    files_modified=[str(paths.repo_file(repo))],
+                )
+
             if json_mode:
                 message = "config edit is not supported with --json"
                 return CommandResult(

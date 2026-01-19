@@ -136,6 +136,20 @@ _ENV_VARS: list[EnvVarDef] = [
         description="Default repository name (fallback for --repo/--name flag).",
     ),
     EnvVarDef(
+        name="CIHUB_HUB_REPO",
+        var_type="string",
+        default="",
+        category="Context",
+        description="Hub repo (owner/name) for workflow installs and setup.",
+    ),
+    EnvVarDef(
+        name="CIHUB_HUB_REF",
+        var_type="string",
+        default="",
+        category="Context",
+        description="Hub ref (tag/branch/sha) for workflow installs and setup.",
+    ),
+    EnvVarDef(
         name="CIHUB_AI_LOOP_ITERATION",
         var_type="int",
         default="0",

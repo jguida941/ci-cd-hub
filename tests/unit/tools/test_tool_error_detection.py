@@ -26,7 +26,7 @@ class TestPythonToolErrorDetection:
         scaffold_fixture("python-pyproject", dest)
 
         # Inject bad code with lint errors
-        bad_code = '''\
+        bad_code = """\
 import os  # F401: unused import
 import sys  # F401: unused import
 
@@ -35,7 +35,7 @@ def bad_function( x,y ):  # E201, E231: whitespace issues
     if True:
         pass
     return x+y
-'''
+"""
         (dest / "bad_code.py").write_text(bad_code)
 
         # Run ruff
@@ -67,14 +67,14 @@ def bad_function( x,y ):  # E201, E231: whitespace issues
         scaffold_fixture("python-pyproject", dest)
 
         # Inject badly formatted code
-        bad_format = '''\
+        bad_format = """\
 def ugly_function(x,y,z):
     return x+y+z
 
 class BadClass:
     def method(self,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z):
         pass
-'''
+"""
         (dest / "bad_format.py").write_text(bad_format)
 
         output_dir = tmp_path / "output"
@@ -102,7 +102,7 @@ class BadClass:
         scaffold_fixture("python-pyproject", dest)
 
         # Inject code with bad import order
-        bad_imports = '''\
+        bad_imports = """\
 import sys
 import os
 from pathlib import Path
@@ -112,7 +112,7 @@ import re
 
 def func():
     pass
-'''
+"""
         (dest / "bad_imports.py").write_text(bad_imports)
 
         output_dir = tmp_path / "output"

@@ -29,14 +29,16 @@ from cihub.types import CommandResult, ToolResult
 # =============================================================================
 
 # Strategy for valid exit codes
-exit_code_strategy = st.sampled_from([
-    EXIT_SUCCESS,
-    EXIT_FAILURE,
-    EXIT_USAGE,
-    EXIT_DECLINED,
-    EXIT_INTERNAL_ERROR,
-    EXIT_INTERRUPTED,
-])
+exit_code_strategy = st.sampled_from(
+    [
+        EXIT_SUCCESS,
+        EXIT_FAILURE,
+        EXIT_USAGE,
+        EXIT_DECLINED,
+        EXIT_INTERNAL_ERROR,
+        EXIT_INTERRUPTED,
+    ]
+)
 
 # Strategy for severity levels
 severity_strategy = st.sampled_from(["error", "warning", "info", "low", "medium", "high", "critical"])
@@ -48,10 +50,25 @@ problem_code_strategy = st.from_regex(r"CIHUB-[A-Z]+-[A-Z0-9-]+", fullmatch=True
 safe_path_strategy = st.from_regex(r"/[a-z][a-z0-9_/]{0,50}", fullmatch=True)
 
 # Strategy for tool names (built-in)
-builtin_tool_strategy = st.sampled_from([
-    "pytest", "ruff", "black", "isort", "mypy", "bandit", "pip_audit",
-    "mutmut", "trivy", "semgrep", "jacoco", "checkstyle", "spotbugs", "pmd", "owasp",
-])
+builtin_tool_strategy = st.sampled_from(
+    [
+        "pytest",
+        "ruff",
+        "black",
+        "isort",
+        "mypy",
+        "bandit",
+        "pip_audit",
+        "mutmut",
+        "trivy",
+        "semgrep",
+        "jacoco",
+        "checkstyle",
+        "spotbugs",
+        "pmd",
+        "owasp",
+    ]
+)
 
 # Strategy for custom tool names
 custom_tool_strategy = st.from_regex(r"x-[a-z][a-z0-9-]{0,20}", fullmatch=True)
@@ -63,17 +80,21 @@ tool_name_strategy = st.one_of(builtin_tool_strategy, custom_tool_strategy)
 language_strategy = st.sampled_from(["python", "java"])
 
 # Strategy for problem dicts
-problem_strategy = st.fixed_dictionaries({
-    "severity": severity_strategy,
-    "message": st.text(min_size=1, max_size=200),
-    "code": problem_code_strategy,
-})
+problem_strategy = st.fixed_dictionaries(
+    {
+        "severity": severity_strategy,
+        "message": st.text(min_size=1, max_size=200),
+        "code": problem_code_strategy,
+    }
+)
 
 # Strategy for suggestion dicts
-suggestion_strategy = st.fixed_dictionaries({
-    "message": st.text(min_size=1, max_size=200),
-    "code": problem_code_strategy,
-})
+suggestion_strategy = st.fixed_dictionaries(
+    {
+        "message": st.text(min_size=1, max_size=200),
+        "code": problem_code_strategy,
+    }
+)
 
 
 # =============================================================================
@@ -106,9 +127,7 @@ class TestCommandResultProperties:
         problems=st.lists(problem_strategy, max_size=5),
     )
     @settings(max_examples=50)
-    def test_command_result_with_problems(
-        self, exit_code: int, summary: str, problems: list[dict[str, Any]]
-    ) -> None:
+    def test_command_result_with_problems(self, exit_code: int, summary: str, problems: list[dict[str, Any]]) -> None:
         """Property: CommandResult correctly stores problems list."""
         result = CommandResult(exit_code=exit_code, summary=summary, problems=problems)
         assert len(result.problems) == len(problems)
@@ -122,9 +141,7 @@ class TestCommandResultProperties:
         files=st.lists(safe_path_strategy, max_size=10, unique=True),
     )
     @settings(max_examples=50)
-    def test_command_result_with_files(
-        self, exit_code: int, summary: str, files: list[str]
-    ) -> None:
+    def test_command_result_with_files(self, exit_code: int, summary: str, files: list[str]) -> None:
         """Property: CommandResult correctly stores file lists."""
         result = CommandResult(
             exit_code=exit_code,
@@ -145,9 +162,7 @@ class TestCommandResultProperties:
         ),
     )
     @settings(max_examples=50)
-    def test_command_result_data_roundtrip(
-        self, exit_code: int, summary: str, data: dict[str, Any]
-    ) -> None:
+    def test_command_result_data_roundtrip(self, exit_code: int, summary: str, data: dict[str, Any]) -> None:
         """Property: CommandResult data survives to_payload conversion."""
         result = CommandResult(exit_code=exit_code, summary=summary, data=data)
         payload = result.to_payload(command="test", status="success", duration_ms=100)
@@ -305,7 +320,7 @@ class TestReportStructureProperties:
         """Property: tools_ran keys should be subset of tools_configured keys."""
         # Build a valid report structure
         tools_configured = {tool: True for tool in tools}
-        tools_ran = {tool: True for tool in tools[:len(tools) // 2]}  # Only half ran
+        tools_ran = {tool: True for tool in tools[: len(tools) // 2]}  # Only half ran
 
         report = {
             "tools_configured": tools_configured,

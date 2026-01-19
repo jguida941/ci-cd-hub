@@ -13,8 +13,8 @@ from cihub.utils import (
     _get_repo_name,
     get_git_branch,
 )
-from cihub.utils.github_context import GitHubContext
 from cihub.utils.env import _parse_env_bool, env_bool
+from cihub.utils.github_context import GitHubContext
 
 
 def _tool_enabled(config: dict[str, Any], tool: str, language: str, *, default: bool = False) -> bool:

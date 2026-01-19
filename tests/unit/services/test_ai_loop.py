@@ -19,13 +19,11 @@ import os
 import time
 from pathlib import Path
 
-import pytest
-
 from cihub.commands.ai_loop import (
     AI_LOOP_CONFIG,
     LoopState,
-    _build_ci_args,
     _break_reason,
+    _build_ci_args,
     _resolve_settings,
     _run_ci_with_triage,
     _save_iteration_state,
@@ -34,7 +32,6 @@ from cihub.commands.ai_loop import (
 )
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
-
 
 # =============================================================================
 # LoopState Tests
@@ -630,9 +627,7 @@ class TestCmdAiLoop:
         assert result.data["stop_reason"] == "flaky"
         assert any(item["code"] == "CIHUB-AI-FLAKY-DETECTED" for item in result.suggestions)
 
-    def test_report_only_mode_calls_fix_with_report_flag(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_report_only_mode_calls_fix_with_report_flag(self, tmp_path: Path, monkeypatch) -> None:
         """cmd_ai_loop in report-only mode calls fix with report=True."""
         output_dir = tmp_path / ".cihub" / "ai-loop"
         output_dir.mkdir(parents=True)

@@ -18,9 +18,8 @@ from cihub.services.templates import (  # noqa: E402
     build_repo_config,
     render_caller_workflow,
     render_dispatch_workflow,
+    resolve_hub_repo_ref,
 )
-from cihub.utils.exec_utils import TIMEOUT_QUICK  # noqa: E402
-from cihub.utils.filesystem import MemoryFileSystem  # noqa: E402
 from cihub.utils import (  # noqa: E402
     get_git_branch,
     get_git_remote,
@@ -28,6 +27,8 @@ from cihub.utils import (  # noqa: E402
     validate_repo_path,
     validate_subdir,
 )
+from cihub.utils.exec_utils import TIMEOUT_QUICK  # noqa: E402
+from cihub.utils.filesystem import MemoryFileSystem  # noqa: E402
 from cihub.utils.net import safe_urlopen  # noqa: E402
 
 
@@ -91,6 +92,12 @@ def test_render_dispatch_workflow_java_template():
     assert "secrets: inherit" in content
 
 
+def test_resolve_hub_repo_ref_from_template():
+    repo, ref = resolve_hub_repo_ref("python")
+    assert repo == "jguida941/ci-cd-hub"
+    assert ref == "v1"
+
+
 def test_render_dispatch_workflow_hub_ci_renders_caller():
     content = render_dispatch_workflow("python", "hub-ci.yml")
     assert "hub-ci.yml" in content
@@ -114,7 +121,7 @@ def test_render_dispatch_workflow_rejects_unknown():
 class TestValidateRepoPath:
     """Tests for validate_repo_path security function."""
 
-# TEST-METRICS:
+    # TEST-METRICS:
 
     def test_valid_directory_returns_resolved_path(self, tmp_path: Path) -> None:
         """Valid directory path returns the resolved path."""

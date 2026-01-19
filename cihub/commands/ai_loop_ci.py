@@ -7,6 +7,7 @@ import os
 import shutil
 import time
 from pathlib import Path
+from typing import Callable
 
 from cihub.commands.ai_loop_types import LoopSettings
 from cihub.exit_codes import EXIT_SUCCESS
@@ -39,7 +40,7 @@ def build_ci_args(
 
 
 def run_ci_with_triage(
-    cmd_ci,
+    cmd_ci: Callable[[argparse.Namespace], CommandResult],
     ci_args: argparse.Namespace,
 ) -> CommandResult:
     """Run cmd_ci with triage emission forced on for this call."""

@@ -559,9 +559,8 @@ class TestSchemaCompleteness:
         report_schema: dict[str, Any],
     ) -> None:
         """tools_require_run must exist in schema."""
-        assert "tools_require_run" in report_schema["properties"], (
-            "Schema missing tools_require_run - require_run_or_fail policy won't work!"
-        )
+        message = "Schema missing tools_require_run - require_run_or_fail policy won't work!"
+        assert "tools_require_run" in report_schema["properties"], message
 
     def test_cvss_fields_exist_in_schema(
         self,
@@ -588,9 +587,8 @@ class TestConfigSchemaContract:
         config_schema: dict[str, Any],
     ) -> None:
         """gates section must exist for require_run_or_fail policy."""
-        assert "gates" in config_schema["properties"], (
-            "Config schema missing 'gates' section - require_run_or_fail won't work!"
-        )
+        message = "Config schema missing 'gates' section - require_run_or_fail won't work!"
+        assert "gates" in config_schema["properties"], message
 
     def test_gates_has_require_run_or_fail(
         self,
@@ -633,9 +631,8 @@ class TestHardenRunnerSchemaContract:
         config_schema: dict[str, Any],
     ) -> None:
         """harden_runner section must exist in schema."""
-        assert "harden_runner" in config_schema["properties"], (
-            "Config schema missing 'harden_runner' section for workflow security"
-        )
+        message = "Config schema missing 'harden_runner' section for workflow security"
+        assert "harden_runner" in config_schema["properties"], message
 
     def test_harden_runner_accepts_boolean(
         self,

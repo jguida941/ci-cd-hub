@@ -121,10 +121,10 @@ class WizardRunner:
         repo_config = dict(repo_defaults) if isinstance(repo_defaults, dict) else {}
         repo_config.update(
             {
-            "owner": str(owner),
-            "name": str(repo_name),
-            "use_central_runner": bool(use_central_runner),
-            "repo_side_execution": bool(repo_side_execution),
+                "owner": str(owner),
+                "name": str(repo_name),
+                "use_central_runner": bool(use_central_runner),
+                "repo_side_execution": bool(repo_side_execution),
             }
         )
         return repo_config

@@ -130,10 +130,7 @@ def _get_latest_run_id(
     branch: str | None,
     token: str,
 ) -> GitHubRequestResult:
-    url = (
-        f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/"
-        f"{workflow_id}/runs?per_page=1"
-    )
+    url = f"https://api.github.com/repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs?per_page=1"
     if branch:
         url = f"{url}&branch={branch}"
     return _github_request(url, token)
@@ -257,7 +254,21 @@ def _cmd_dispatch_trigger(args: argparse.Namespace) -> CommandResult:
                 }
             ],
         )
-    inputs: dict[str, str] = inputs_result["parsed"]
+    parsed_inputs = inputs_result["parsed"]
+    if not isinstance(parsed_inputs, dict):
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary="Invalid workflow inputs; use key=value format",
+            problems=[
+                {
+                    "severity": "error",
+                    "message": "Invalid workflow inputs; use key=value format",
+                    "detail": ", ".join(inputs_result["invalid"]),
+                    "code": "CIHUB-DISPATCH-BAD-INPUT",
+                }
+            ],
+        )
+    inputs: dict[str, str] = parsed_inputs
     if correlation_id:
         inputs["hub_correlation_id"] = correlation_id
 

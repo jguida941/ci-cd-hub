@@ -84,9 +84,7 @@ class TestScaffoldGitHubFlags:
         assert not (dest / ".ci-hub.yml").exists()
 
     @patch("cihub.commands.scaffold.check_gh_auth")
-    def test_scaffold_github_auth_failure(
-        self, mock_auth: MagicMock, tmp_path: Path
-    ) -> None:
+    def test_scaffold_github_auth_failure(self, mock_auth: MagicMock, tmp_path: Path) -> None:
         """Scaffold --github fails early if not authenticated."""
         mock_auth.return_value = (False, "gh CLI not authenticated")
 

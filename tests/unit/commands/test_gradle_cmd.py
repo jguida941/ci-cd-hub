@@ -11,9 +11,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from cihub.commands.gradle import (
     GradleFixResult,
@@ -21,7 +19,6 @@ from cihub.commands.gradle import (
     cmd_fix_gradle,
 )
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
-
 
 # =============================================================================
 # Test GradleFixResult dataclass
@@ -90,9 +87,7 @@ class TestApplyGradleFixes:
 
         with patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect:
             mock_collect.return_value = ([], [])  # No warnings, no missing plugins
-            result = apply_gradle_fixes(
-                tmp_path, config, apply=False, include_configs=False
-            )
+            result = apply_gradle_fixes(tmp_path, config, apply=False, include_configs=False)
             # Should succeed since we're looking in the right subdir
             assert result.exit_code == EXIT_SUCCESS
 
@@ -103,9 +98,7 @@ class TestApplyGradleFixes:
 
         with patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect:
             mock_collect.return_value = ([], [])  # No warnings, no missing plugins
-            result = apply_gradle_fixes(
-                tmp_path, config, apply=False, include_configs=False
-            )
+            result = apply_gradle_fixes(tmp_path, config, apply=False, include_configs=False)
             assert result.exit_code == EXIT_SUCCESS
             assert any("no" in m.lower() and "change" in m.lower() for m in result.messages)
 
@@ -119,9 +112,7 @@ class TestApplyGradleFixes:
                 ["Plugin X is outdated", "Missing dependency Y"],
                 [],
             )
-            result = apply_gradle_fixes(
-                tmp_path, config, apply=False, include_configs=False
-            )
+            result = apply_gradle_fixes(tmp_path, config, apply=False, include_configs=False)
             assert len(result.warnings) == 2
             assert "Plugin X is outdated" in result.warnings
 
@@ -134,11 +125,11 @@ class TestApplyGradleFixes:
         (tmp_path / "build.gradle").write_text(build_content)
         config: dict[str, Any] = {}
 
-        with patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect, patch(
-            "cihub.commands.gradle.load_gradle_plugin_snippets"
-        ) as mock_plugins, patch(
-            "cihub.commands.gradle.insert_plugins_into_gradle"
-        ) as mock_insert:
+        with (
+            patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect,
+            patch("cihub.commands.gradle.load_gradle_plugin_snippets") as mock_plugins,
+            patch("cihub.commands.gradle.insert_plugins_into_gradle") as mock_insert,
+        ):
             mock_collect.return_value = ([], ["checkstyle"])
             mock_plugins.return_value = {"checkstyle": "id 'checkstyle'"}
             mock_insert.return_value = (
@@ -146,9 +137,7 @@ class TestApplyGradleFixes:
                 True,
             )
 
-            result = apply_gradle_fixes(
-                tmp_path, config, apply=False, include_configs=False
-            )
+            result = apply_gradle_fixes(tmp_path, config, apply=False, include_configs=False)
             # Should have diff output
             assert result.diff != "" or result.exit_code == EXIT_SUCCESS
 
@@ -160,18 +149,16 @@ class TestApplyGradleFixes:
 
         updated_content = "plugins {\n    id 'java'\n    id 'checkstyle'\n}\n"
 
-        with patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect, patch(
-            "cihub.commands.gradle.load_gradle_plugin_snippets"
-        ) as mock_plugins, patch(
-            "cihub.commands.gradle.insert_plugins_into_gradle"
-        ) as mock_insert:
+        with (
+            patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect,
+            patch("cihub.commands.gradle.load_gradle_plugin_snippets") as mock_plugins,
+            patch("cihub.commands.gradle.insert_plugins_into_gradle") as mock_insert,
+        ):
             mock_collect.return_value = ([], ["checkstyle"])
             mock_plugins.return_value = {"checkstyle": "id 'checkstyle'"}
             mock_insert.return_value = (updated_content, True)
 
-            result = apply_gradle_fixes(
-                tmp_path, config, apply=True, include_configs=False
-            )
+            result = apply_gradle_fixes(tmp_path, config, apply=True, include_configs=False)
 
             # File should be modified
             assert result.exit_code == EXIT_SUCCESS
@@ -182,18 +169,16 @@ class TestApplyGradleFixes:
         (tmp_path / "build.gradle").write_text("// malformed gradle file")
         config: dict[str, Any] = {}
 
-        with patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect, patch(
-            "cihub.commands.gradle.load_gradle_plugin_snippets"
-        ) as mock_plugins, patch(
-            "cihub.commands.gradle.insert_plugins_into_gradle"
-        ) as mock_insert:
+        with (
+            patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect,
+            patch("cihub.commands.gradle.load_gradle_plugin_snippets") as mock_plugins,
+            patch("cihub.commands.gradle.insert_plugins_into_gradle") as mock_insert,
+        ):
             mock_collect.return_value = ([], ["checkstyle"])
             mock_plugins.return_value = {"checkstyle": "id 'checkstyle'"}
             mock_insert.return_value = ("// malformed gradle file", False)  # Insertion failed
 
-            result = apply_gradle_fixes(
-                tmp_path, config, apply=False, include_configs=False
-            )
+            result = apply_gradle_fixes(tmp_path, config, apply=False, include_configs=False)
             assert result.exit_code == EXIT_FAILURE
             assert any("insertion point" in w.lower() or "failed" in w.lower() for w in result.warnings)
 
@@ -203,24 +188,20 @@ class TestApplyGradleFixes:
         (tmp_path / "build.gradle").write_text(build_content)
         config: dict[str, Any] = {}
 
-        with patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect, patch(
-            "cihub.commands.gradle.load_gradle_plugin_snippets"
-        ) as mock_plugins, patch(
-            "cihub.commands.gradle.load_gradle_config_snippets"
-        ) as mock_configs, patch(
-            "cihub.commands.gradle.insert_plugins_into_gradle"
-        ) as mock_insert_plugins, patch(
-            "cihub.commands.gradle.insert_configs_into_gradle"
-        ) as mock_insert_configs:
+        with (
+            patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect,
+            patch("cihub.commands.gradle.load_gradle_plugin_snippets") as mock_plugins,
+            patch("cihub.commands.gradle.load_gradle_config_snippets") as mock_configs,
+            patch("cihub.commands.gradle.insert_plugins_into_gradle") as mock_insert_plugins,
+            patch("cihub.commands.gradle.insert_configs_into_gradle") as mock_insert_configs,
+        ):
             mock_collect.return_value = ([], ["checkstyle"])
             mock_plugins.return_value = {"checkstyle": "id 'checkstyle'"}
             mock_configs.return_value = {"checkstyle": "checkstyle { }"}
             mock_insert_plugins.return_value = (build_content + "id 'checkstyle'\n", True)
             mock_insert_configs.return_value = (build_content + "checkstyle { }\n", True)
 
-            result = apply_gradle_fixes(
-                tmp_path, config, apply=False, include_configs=True
-            )
+            apply_gradle_fixes(tmp_path, config, apply=False, include_configs=True)
             # Config insertion should have been called
             mock_insert_configs.assert_called_once()
 
@@ -271,9 +252,10 @@ class TestCmdFixGradle:
         (tmp_path / ".ci-hub.yml").write_text("language: java\njava:\n  build_tool: gradle\n")
         (tmp_path / "build.gradle").write_text("plugins { id 'java' }")
 
-        with patch("cihub.commands.gradle.load_ci_config") as mock_load, patch(
-            "cihub.commands.gradle.apply_gradle_fixes"
-        ) as mock_apply:
+        with (
+            patch("cihub.commands.gradle.load_ci_config") as mock_load,
+            patch("cihub.commands.gradle.apply_gradle_fixes") as mock_apply,
+        ):
             mock_load.return_value = {"language": "java", "java": {"build_tool": "gradle"}}
             mock_apply.return_value = GradleFixResult(
                 exit_code=EXIT_SUCCESS,
@@ -290,9 +272,10 @@ class TestCmdFixGradle:
         (tmp_path / ".ci-hub.yml").write_text("language: java\njava:\n  build_tool: gradle\n")
         (tmp_path / "build.gradle").write_text("plugins { id 'java' }")
 
-        with patch("cihub.commands.gradle.load_ci_config") as mock_load, patch(
-            "cihub.commands.gradle.apply_gradle_fixes"
-        ) as mock_apply:
+        with (
+            patch("cihub.commands.gradle.load_ci_config") as mock_load,
+            patch("cihub.commands.gradle.apply_gradle_fixes") as mock_apply,
+        ):
             mock_load.return_value = {"language": "java", "java": {"build_tool": "gradle"}}
             mock_apply.return_value = GradleFixResult(exit_code=EXIT_SUCCESS)
 
@@ -308,9 +291,10 @@ class TestCmdFixGradle:
         (tmp_path / ".ci-hub.yml").write_text("language: java\njava:\n  build_tool: gradle\n")
         (tmp_path / "build.gradle").write_text("plugins { id 'java' }")
 
-        with patch("cihub.commands.gradle.load_ci_config") as mock_load, patch(
-            "cihub.commands.gradle.apply_gradle_fixes"
-        ) as mock_apply:
+        with (
+            patch("cihub.commands.gradle.load_ci_config") as mock_load,
+            patch("cihub.commands.gradle.apply_gradle_fixes") as mock_apply,
+        ):
             mock_load.return_value = {"language": "java", "java": {"build_tool": "gradle"}}
             mock_apply.return_value = GradleFixResult(exit_code=EXIT_SUCCESS)
 
@@ -326,9 +310,10 @@ class TestCmdFixGradle:
         (tmp_path / ".ci-hub.yml").write_text("language: java\njava:\n  build_tool: gradle\n")
         (tmp_path / "build.gradle").write_text("plugins { id 'java' }")
 
-        with patch("cihub.commands.gradle.load_ci_config") as mock_load, patch(
-            "cihub.commands.gradle.apply_gradle_fixes"
-        ) as mock_apply:
+        with (
+            patch("cihub.commands.gradle.load_ci_config") as mock_load,
+            patch("cihub.commands.gradle.apply_gradle_fixes") as mock_apply,
+        ):
             mock_load.return_value = {"language": "java", "java": {"build_tool": "gradle"}}
             mock_apply.return_value = GradleFixResult(
                 exit_code=EXIT_SUCCESS,
@@ -346,9 +331,10 @@ class TestCmdFixGradle:
         (tmp_path / ".ci-hub.yml").write_text("language: java\njava:\n  build_tool: gradle\n")
         (tmp_path / "build.gradle").write_text("plugins { id 'java' }")
 
-        with patch("cihub.commands.gradle.load_ci_config") as mock_load, patch(
-            "cihub.commands.gradle.apply_gradle_fixes"
-        ) as mock_apply:
+        with (
+            patch("cihub.commands.gradle.load_ci_config") as mock_load,
+            patch("cihub.commands.gradle.apply_gradle_fixes") as mock_apply,
+        ):
             mock_load.return_value = {"language": "java", "java": {"build_tool": "gradle"}}
             mock_apply.return_value = GradleFixResult(exit_code=EXIT_FAILURE)
 
@@ -363,9 +349,10 @@ class TestCmdFixGradle:
         (tmp_path / ".ci-hub.yml").write_text("language: java\njava:\n  build_tool: gradle\n")
         (tmp_path / "build.gradle").write_text("plugins { id 'java' }")
 
-        with patch("cihub.commands.gradle.load_ci_config") as mock_load, patch(
-            "cihub.commands.gradle.apply_gradle_fixes"
-        ) as mock_apply:
+        with (
+            patch("cihub.commands.gradle.load_ci_config") as mock_load,
+            patch("cihub.commands.gradle.apply_gradle_fixes") as mock_apply,
+        ):
             mock_load.return_value = {"language": "java", "java": {"build_tool": "gradle"}}
             mock_apply.return_value = GradleFixResult(
                 exit_code=EXIT_SUCCESS,
@@ -383,9 +370,10 @@ class TestCmdFixGradle:
         (tmp_path / ".ci-hub.yml").write_text("language: java\njava:\n  build_tool: gradle\n")
         (tmp_path / "build.gradle").write_text("plugins { id 'java' }")
 
-        with patch("cihub.commands.gradle.load_ci_config") as mock_load, patch(
-            "cihub.commands.gradle.apply_gradle_fixes"
-        ) as mock_apply:
+        with (
+            patch("cihub.commands.gradle.load_ci_config") as mock_load,
+            patch("cihub.commands.gradle.apply_gradle_fixes") as mock_apply,
+        ):
             mock_load.return_value = {"language": "java", "java": {"build_tool": "gradle"}}
             mock_apply.return_value = GradleFixResult(
                 exit_code=EXIT_SUCCESS,
@@ -410,25 +398,22 @@ class TestGradleIntegration:
     def test_full_flow_no_changes(self, tmp_path: Path):
         """Test full flow when no changes are needed."""
         # Setup
-        (tmp_path / ".ci-hub.yml").write_text(
-            """
+        (tmp_path / ".ci-hub.yml").write_text("""
 language: java
 java:
   build_tool: gradle
-"""
-        )
-        (tmp_path / "build.gradle").write_text(
-            """plugins {
+""")
+        (tmp_path / "build.gradle").write_text("""plugins {
     id 'java'
     id 'checkstyle'
     id 'com.github.spotbugs' version '5.0.0'
 }
-"""
-        )
+""")
 
-        with patch("cihub.commands.gradle.load_ci_config") as mock_load, patch(
-            "cihub.commands.gradle.collect_gradle_warnings"
-        ) as mock_collect:
+        with (
+            patch("cihub.commands.gradle.load_ci_config") as mock_load,
+            patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect,
+        ):
             mock_load.return_value = {"language": "java", "java": {"build_tool": "gradle"}}
             mock_collect.return_value = ([], [])  # No warnings, no missing plugins
 
@@ -440,31 +425,26 @@ java:
     def test_full_flow_with_missing_plugins(self, tmp_path: Path):
         """Test full flow when plugins need to be added."""
         # Setup
-        (tmp_path / ".ci-hub.yml").write_text(
-            """
+        (tmp_path / ".ci-hub.yml").write_text("""
 language: java
 java:
   build_tool: gradle
-"""
-        )
-        (tmp_path / "build.gradle").write_text(
-            """plugins {
+""")
+        (tmp_path / "build.gradle").write_text("""plugins {
     id 'java'
 }
 
 repositories {
     mavenCentral()
 }
-"""
-        )
+""")
 
-        with patch("cihub.commands.gradle.load_ci_config") as mock_load, patch(
-            "cihub.commands.gradle.collect_gradle_warnings"
-        ) as mock_collect, patch(
-            "cihub.commands.gradle.load_gradle_plugin_snippets"
-        ) as mock_plugins, patch(
-            "cihub.commands.gradle.insert_plugins_into_gradle"
-        ) as mock_insert:
+        with (
+            patch("cihub.commands.gradle.load_ci_config") as mock_load,
+            patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect,
+            patch("cihub.commands.gradle.load_gradle_plugin_snippets") as mock_plugins,
+            patch("cihub.commands.gradle.insert_plugins_into_gradle") as mock_insert,
+        ):
             mock_load.return_value = {"language": "java", "java": {"build_tool": "gradle"}}
             mock_collect.return_value = (["Missing checkstyle"], ["checkstyle"])
             mock_plugins.return_value = {"checkstyle": "id 'checkstyle'"}
@@ -501,13 +481,12 @@ class TestGradleEdgeCases:
         (tmp_path / ".ci-hub.yml").write_text("language: java\njava:\n  build_tool: gradle\n")
         (tmp_path / "build.gradle").write_text("")
 
-        with patch("cihub.commands.gradle.load_ci_config") as mock_load, patch(
-            "cihub.commands.gradle.collect_gradle_warnings"
-        ) as mock_collect, patch(
-            "cihub.commands.gradle.load_gradle_plugin_snippets"
-        ) as mock_plugins, patch(
-            "cihub.commands.gradle.insert_plugins_into_gradle"
-        ) as mock_insert:
+        with (
+            patch("cihub.commands.gradle.load_ci_config") as mock_load,
+            patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect,
+            patch("cihub.commands.gradle.load_gradle_plugin_snippets") as mock_plugins,
+            patch("cihub.commands.gradle.insert_plugins_into_gradle") as mock_insert,
+        ):
             mock_load.return_value = {"language": "java", "java": {"build_tool": "gradle"}}
             mock_collect.return_value = ([], ["checkstyle"])
             mock_plugins.return_value = {"checkstyle": "id 'checkstyle'"}
@@ -523,9 +502,10 @@ class TestGradleEdgeCases:
         (tmp_path / ".ci-hub.yml").write_text("language: java\njava:\n  build_tool: gradle\n")
         (tmp_path / "build.gradle").write_text("plugins { id 'java' }")
 
-        with patch("cihub.commands.gradle.load_ci_config") as mock_load, patch(
-            "cihub.commands.gradle.apply_gradle_fixes"
-        ) as mock_apply:
+        with (
+            patch("cihub.commands.gradle.load_ci_config") as mock_load,
+            patch("cihub.commands.gradle.apply_gradle_fixes") as mock_apply,
+        ):
             mock_load.return_value = {"language": "java", "java": {"build_tool": "gradle"}}
             mock_apply.return_value = GradleFixResult(exit_code=EXIT_SUCCESS)
 

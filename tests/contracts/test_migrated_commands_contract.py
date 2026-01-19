@@ -46,7 +46,8 @@ adr_title_strategy = st.text(
     ),
     min_size=1,
     max_size=50,
-).filter(lambda x: x.strip())  # Filter empty after strip
+)
+adr_title_strategy = adr_title_strategy.filter(lambda x: x.strip())  # Filter empty after strip
 
 # Valid status filters
 adr_status_strategy = st.sampled_from([None, "Proposed", "Accepted", "Superseded", "Deprecated"])
@@ -396,16 +397,17 @@ class TestSecretsCommandContracts:
         assert isinstance(result, CommandResult)
         assert result.exit_code == expected_exit
 
-    @given(
-        token=st.text(
-            alphabet=st.characters(
-                blacklist_categories=("C", "Z"),  # Exclude control chars and whitespace
-                blacklist_characters="\t\n\r ",
-            ),
-            min_size=1,
-            max_size=50,
-        ).filter(lambda x: x.strip()),
+    token_strategy = st.text(
+        alphabet=st.characters(
+            blacklist_categories=("C", "Z"),  # Exclude control chars and whitespace
+            blacklist_characters="\t\n\r ",
+        ),
+        min_size=1,
+        max_size=50,
     )
+    token_strategy = token_strategy.filter(lambda x: x.strip())
+
+    @given(token=token_strategy)
     @settings(max_examples=20)
     def test_valid_tokens_accepted(self, token: str) -> None:
         """Property: Tokens without whitespace are accepted."""

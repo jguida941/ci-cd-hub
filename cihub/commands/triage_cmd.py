@@ -20,45 +20,19 @@ from pathlib import Path
 from typing import Any
 
 # Import from submodules
-from cihub.commands.triage.artifacts import (
-    find_report_in_artifacts as _find_report_in_artifacts,
-)
-from cihub.commands.triage.github import (
-    download_artifacts as _download_artifacts,
-)
-from cihub.commands.triage.github import (
-    get_latest_failed_run as _get_latest_failed_run,
-)
-from cihub.commands.triage.github import (
-    list_runs as _list_runs,
-)
-from cihub.commands.triage.output import (
-    format_flaky_output as _format_flaky_output,
-)
-from cihub.commands.triage.output import (
-    format_gate_history_output as _format_gate_history_output,
-)
-from cihub.commands.triage.remote import (
-    generate_multi_report_triage as _generate_multi_report_triage,
-)
-from cihub.commands.triage.remote import (
-    generate_remote_triage_bundle as _generate_remote_triage_bundle,
-)
-from cihub.commands.triage.types import (
-    build_meta as _build_meta,
-)
-from cihub.commands.triage.types import (
-    filter_bundle as _filter_bundle,
-)
-from cihub.commands.triage.verification import (
-    format_verify_tools_output as _format_verify_tools_output,
-)
-from cihub.commands.triage.verification import (
-    verify_tools_from_report as _verify_tools_from_report,
-)
-from cihub.commands.triage.watch import (
-    watch_for_failures as _watch_for_failures,
-)
+from cihub.commands.triage.artifacts import find_report_in_artifacts as _find_report_in_artifacts
+from cihub.commands.triage.github import download_artifacts as _download_artifacts
+from cihub.commands.triage.github import get_latest_failed_run as _get_latest_failed_run
+from cihub.commands.triage.github import list_runs as _list_runs
+from cihub.commands.triage.output import format_flaky_output as _format_flaky_output
+from cihub.commands.triage.output import format_gate_history_output as _format_gate_history_output
+from cihub.commands.triage.remote import generate_multi_report_triage as _generate_multi_report_triage
+from cihub.commands.triage.remote import generate_remote_triage_bundle as _generate_remote_triage_bundle
+from cihub.commands.triage.types import build_meta as _build_meta
+from cihub.commands.triage.types import filter_bundle as _filter_bundle
+from cihub.commands.triage.verification import format_verify_tools_output as _format_verify_tools_output
+from cihub.commands.triage.verification import verify_tools_from_report as _verify_tools_from_report
+from cihub.commands.triage.watch import watch_for_failures as _watch_for_failures
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services.triage_service import (
     detect_flaky_patterns,
@@ -195,7 +169,9 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
             CommandResult(
                 exit_code=EXIT_SUCCESS,
                 summary=(
-                    f"Flaky analysis: score={flaky_result['flakiness_score']}%, suspected={flaky_result['suspected_flaky']}"
+                    "Flaky analysis: "
+                    f"score={flaky_result['flakiness_score']}%, "
+                    f"suspected={flaky_result['suspected_flaky']}"
                 ),
                 data={
                     **flaky_result,
@@ -268,12 +244,14 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
                             str(artifacts_out.get("multi_triage", "")),
                             str(artifacts_out.get("multi_markdown", "")),
                         ],
-                        data={
-                            **result_data,
-                            "run_note": run_note,
-                        }
-                        if run_note
-                        else result_data,
+                        data=(
+                            {
+                                **result_data,
+                                "run_note": run_note,
+                            }
+                            if run_note
+                            else result_data
+                        ),
                     ),
                 )
 

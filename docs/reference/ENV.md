@@ -16,6 +16,8 @@
 | `CIHUB_AI_LOOP_ITERATION` | int | 0 | Context | Current AI loop iteration number (hook/internal use). |
 | `CIHUB_AI_LOOP_MAX_ITERATIONS` | int | 0 | Context | AI loop max iterations (hook/internal use). |
 | `CIHUB_AI_PROVIDER` | string | claude | Context | AI provider for optional enhancements (default: claude). |
+| `CIHUB_HUB_REF` | string | - | Context | Hub ref (tag/branch/sha) for workflow installs and setup. |
+| `CIHUB_HUB_REPO` | string | - | Context | Hub repo (owner/name) for workflow installs and setup. |
 | `CIHUB_OWNER` | string | - | Context | Default repository owner (fallback for --owner flag). |
 | `CIHUB_REPO` | string | - | Context | Default repository name (fallback for --repo/--name flag). |
 | `CIHUB_DEBUG` | bool | false | Debug | Enable tracebacks and verbose error output. |
@@ -134,6 +136,20 @@ AI loop max iterations (hook/internal use).
 **Default:** claude
 
 AI provider for optional enhancements (default: claude).
+
+### `CIHUB_HUB_REF`
+
+**Type:** string  
+**Default:** (none)
+
+Hub ref (tag/branch/sha) for workflow installs and setup.
+
+### `CIHUB_HUB_REPO`
+
+**Type:** string  
+**Default:** (none)
+
+Hub repo (owner/name) for workflow installs and setup.
 
 ### `CIHUB_OWNER`
 

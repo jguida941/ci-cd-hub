@@ -85,7 +85,7 @@ java:
       enabled: false
       fail_on_error: true
       languages:
-      - java
+        - java
       require_run_or_fail: true
     docker:
       compose_file: docker-compose.yml
@@ -176,7 +176,7 @@ python:
       enabled: false
       fail_on_error: true
       languages:
-      - python
+        - python
       require_run_or_fail: true
     docker:
       compose_file: docker-compose.yml

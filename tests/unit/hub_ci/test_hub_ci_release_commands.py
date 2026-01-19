@@ -111,9 +111,7 @@ class TestCmdReleaseUpdateTag:
     """Tests for cmd_release_update_tag function."""
 
     @patch("cihub.commands.hub_ci.release._run_command")
-    def test_update_tag_success(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_update_tag_success(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test successful tag update."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -129,9 +127,7 @@ class TestCmdReleaseUpdateTag:
         assert result.exit_code == EXIT_SUCCESS
 
     @patch("cihub.commands.hub_ci.release._run_command")
-    def test_update_tag_failure(
-        self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_update_tag_failure(self, mock_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test tag update failure."""
         mock_proc = MagicMock()
         mock_proc.returncode = 1
@@ -158,9 +154,7 @@ class TestCmdZizmorRun:
     """Tests for cmd_zizmor_run function."""
 
     @patch("cihub.commands.hub_ci.release.safe_run")
-    def test_zizmor_run_success(
-        self, mock_safe_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_zizmor_run_success(self, mock_safe_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test successful zizmor run."""
         mock_proc = MagicMock()
         mock_proc.returncode = 0
@@ -176,9 +170,7 @@ class TestCmdZizmorRun:
         assert "SARIF written" in result.summary
 
     @patch("cihub.commands.hub_ci.release.safe_run")
-    def test_zizmor_run_with_findings(
-        self, mock_safe_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_zizmor_run_with_findings(self, mock_safe_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test zizmor run with findings (non-zero exit but valid SARIF)."""
         mock_proc = MagicMock()
         mock_proc.returncode = 1
@@ -193,11 +185,10 @@ class TestCmdZizmorRun:
         assert result.exit_code == EXIT_SUCCESS  # Still success, SARIF preserved
 
     @patch("cihub.commands.hub_ci.release.safe_run")
-    def test_zizmor_run_not_found(
-        self, mock_safe_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace
-    ):
+    def test_zizmor_run_not_found(self, mock_safe_run: MagicMock, tmp_path: Path, mock_args: argparse.Namespace):
         """Test zizmor run when command not found."""
         from cihub.utils.exec_utils import CommandNotFoundError
+
         mock_safe_run.side_effect = CommandNotFoundError("zizmor")
 
         mock_args.workflows = ".github/workflows/"
@@ -258,7 +249,14 @@ class TestCmdZizmorCheck:
                             "ruleId": "note-rule",
                             "level": "note",
                             "message": {"text": "Informational"},
-                            "locations": [{"physicalLocation": {"artifactLocation": {"uri": "test.yml"}, "region": {"startLine": 1}}}],
+                            "locations": [
+                                {
+                                    "physicalLocation": {
+                                        "artifactLocation": {"uri": "test.yml"},
+                                        "region": {"startLine": 1},
+                                    }
+                                }
+                            ],
                         }
                     ]
                 }
@@ -307,9 +305,7 @@ class TestCmdLicenseCheck:
         assert result.data["copyleft"] == 1
 
     @patch("cihub.commands.hub_ci.release._run_command")
-    def test_license_check_pip_licenses_not_found(
-        self, mock_run: MagicMock, mock_args: argparse.Namespace
-    ):
+    def test_license_check_pip_licenses_not_found(self, mock_run: MagicMock, mock_args: argparse.Namespace):
         """Test license check when pip-licenses not installed."""
         mock_run.side_effect = FileNotFoundError("pip-licenses not found")
 

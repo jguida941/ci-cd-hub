@@ -535,9 +535,7 @@ class TestMutantKillers:
         for sev, expected_val in test_cases:
             diag = Diagnostic(message="Test", severity=sev)
             result = format_editor([diag])
-            assert result[0]["severity"] == expected_val, (
-                f"{sev.value} should map to {expected_val}"
-            )
+            assert result[0]["severity"] == expected_val, f"{sev.value} should map to {expected_val}"
 
     def test_format_console_exact_format_without_file(self) -> None:
         """Verify exact output format when no file/location info."""

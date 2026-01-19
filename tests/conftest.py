@@ -8,11 +8,17 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Callable
 from unittest.mock import MagicMock
 
 import pytest
+
+# Ensure repo root is on sys.path for script-module imports under pytest importlib mode.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 # =============================================================================
 # Hypothesis Configuration for Deterministic Testing

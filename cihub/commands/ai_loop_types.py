@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-import time
 
 # Safety configuration for AI loop (Section 4.1 of proposal)
 # Keep in ai_loop_types.py initially; extract to config module later if needed
@@ -14,22 +14,19 @@ AI_LOOP_CONFIG: dict[str, Any] = {
     "max_iterations": 10,
     "max_duration_seconds": 600,  # 10 minutes
     "no_change_threshold": 2,
-
     # File protection
     "max_files_per_iteration": 20,
     "forbidden_paths": [
-        ".github/workflows/*",      # No workflow self-modification
-        "*.env*",                   # No secrets
-        "pyproject.toml",           # No dependency changes (without approval)
+        ".github/workflows/*",  # No workflow self-modification
+        "*.env*",  # No secrets
+        "pyproject.toml",  # No dependency changes (without approval)
         "setup.py",
         "requirements*.txt",
     ],
-
     # Validation requirements
     "require_test_pass": True,
     "require_lint_pass": True,
     "auto_rollback_on_regression": False,  # Disabled until Phase 3
-
     # Circuit breaker
     "circuit_breaker": {
         "consecutive_failures": 3,
@@ -41,7 +38,6 @@ AI_LOOP_CONFIG: dict[str, Any] = {
             "authentication failed",
         ],
     },
-
     # Audit trail
     "log_all_changes": True,
     "require_commit_per_iteration": False,  # Disabled by default

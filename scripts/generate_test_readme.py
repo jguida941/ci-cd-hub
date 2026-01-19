@@ -15,16 +15,17 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any, cast
 
 
-def load_coverage_data(coverage_file: Path) -> dict:
+def load_coverage_data(coverage_file: Path) -> dict[str, Any]:
     """Load coverage data from coverage.json."""
     if not coverage_file.exists():
         return {}
 
     try:
         with open(coverage_file, encoding="utf-8") as f:
-            return json.load(f)
+            return cast(dict[str, Any], json.load(f))
     except (json.JSONDecodeError, KeyError):
         return {}
 

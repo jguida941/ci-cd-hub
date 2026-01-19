@@ -55,6 +55,15 @@ def add_config_commands(
 
     config_edit = config_sub.add_parser("edit", help="Edit config via wizard")
     add_json_flag(config_edit)
+    config_edit_input = config_edit.add_mutually_exclusive_group()
+    config_edit_input.add_argument(
+        "--config-json",
+        help="Inline JSON config override (TypeScript wizard handoff)",
+    )
+    config_edit_input.add_argument(
+        "--config-file",
+        help="Path to YAML/JSON config override (TypeScript wizard handoff)",
+    )
     config_edit.set_defaults(func=handlers.cmd_config)
 
     config_show = config_sub.add_parser("show", help="Show config")

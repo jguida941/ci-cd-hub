@@ -20,6 +20,7 @@ from datetime import date
 from difflib import SequenceMatcher
 from pathlib import Path
 
+from .guides import validate_guide_commands
 from .types import (
     DUPLICATE_SIMILARITY_THRESHOLD,
     PLANNING_DOCS,
@@ -32,7 +33,6 @@ from .types import (
     FindingSeverity,
     TaskEntry,
 )
-from .guides import validate_guide_commands
 
 
 def _normalize_task_text(text: str) -> str:
@@ -692,9 +692,11 @@ def _register_checklist_verifications(repo_root: Path) -> dict[str, tuple[str, C
         ),
         "github context": (
             "GitHubContext helper exists",
-            lambda: _file_contains(repo_root / "cihub/utils/github_context.py", "class GitHubContext")
-            if (repo_root / "cihub/utils/github_context.py").is_file()
-            else False,
+            lambda: (
+                _file_contains(repo_root / "cihub/utils/github_context.py", "class GitHubContext")
+                if (repo_root / "cihub/utils/github_context.py").is_file()
+                else False
+            ),
         ),
     }
 

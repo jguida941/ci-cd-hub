@@ -311,9 +311,8 @@ class TestHubRunAllSummary:
 
     def test_summary_does_not_force_true(self) -> None:
         content = self.HUB_RUN_ALL.read_text(encoding="utf-8")
-        assert not re.search(r"matrix\.run_[A-Za-z0-9_]+\s*\|\|", content), (
-            "hub-run-all.yml should not force matrix.run_* values with '||' fallbacks"
-        )
+        message = "hub-run-all.yml should not force matrix.run_* values with '||' fallbacks"
+        assert not re.search(r"matrix\.run_[A-Za-z0-9_]+\s*\|\|", content), message
 
 
 class TestActualConfigs:
@@ -337,9 +336,7 @@ class TestActualConfigs:
         [
             pytest.param(p, id=p.stem)
             for p in (
-                (hub_root() / "config" / "repos").glob("*.yaml")
-                if (hub_root() / "config" / "repos").exists()
-                else []
+                (hub_root() / "config" / "repos").glob("*.yaml") if (hub_root() / "config" / "repos").exists() else []
             )
         ],
     )

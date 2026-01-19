@@ -227,9 +227,7 @@ class TestWorkflowInputsProperties:
         run_pytest=st.booleans(),
     )
     @settings(max_examples=50)
-    def test_python_global_thresholds_override(
-        self, coverage: int, mutation: int, run_pytest: bool
-    ) -> None:
+    def test_python_global_thresholds_override(self, coverage: int, mutation: int, run_pytest: bool) -> None:
         """Property: global thresholds override tool thresholds for Python."""
         config = {
             "language": "python",

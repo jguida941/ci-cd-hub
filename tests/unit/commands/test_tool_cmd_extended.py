@@ -15,8 +15,6 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from cihub.commands.tool_cmd import (
     TOOL_METADATA,
     _cmd_configure,
@@ -26,10 +24,8 @@ from cihub.commands.tool_cmd import (
     _cmd_list,
     _cmd_status,
     _cmd_validate,
-    _configure_for_repo,
     _configure_in_profile,
     _disable_for_all_repos,
-    _disable_for_repo,
     _disable_in_profile,
     _enable_for_all_repos,
     _enable_for_repo,
@@ -42,7 +38,6 @@ from cihub.commands.tool_cmd import (
     cmd_tool,
 )
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
-
 
 # =============================================================================
 # Helper functions for tests
@@ -214,18 +209,14 @@ class TestCmdList:
 
     def test_list_all_tools(self):
         """Test listing all tools (no filters)."""
-        args = argparse.Namespace(
-            language=None, category=None, repo=None, enabled_only=False
-        )
+        args = argparse.Namespace(language=None, category=None, repo=None, enabled_only=False)
         result = _cmd_list(args)
         assert result.exit_code == EXIT_SUCCESS
         assert result.data["count"] > 0
 
     def test_list_python_tools(self):
         """Test listing Python tools only."""
-        args = argparse.Namespace(
-            language="python", category=None, repo=None, enabled_only=False
-        )
+        args = argparse.Namespace(language="python", category=None, repo=None, enabled_only=False)
         result = _cmd_list(args)
         assert result.exit_code == EXIT_SUCCESS
         # All tools should be python or both
@@ -234,9 +225,7 @@ class TestCmdList:
 
     def test_list_java_tools(self):
         """Test listing Java tools only."""
-        args = argparse.Namespace(
-            language="java", category=None, repo=None, enabled_only=False
-        )
+        args = argparse.Namespace(language="java", category=None, repo=None, enabled_only=False)
         result = _cmd_list(args)
         assert result.exit_code == EXIT_SUCCESS
         # All tools should be java or both
@@ -245,9 +234,7 @@ class TestCmdList:
 
     def test_list_by_category(self):
         """Test listing tools by category."""
-        args = argparse.Namespace(
-            language=None, category="security", repo=None, enabled_only=False
-        )
+        args = argparse.Namespace(language=None, category="security", repo=None, enabled_only=False)
         result = _cmd_list(args)
         assert result.exit_code == EXIT_SUCCESS
         # All tools should be security category
@@ -256,9 +243,7 @@ class TestCmdList:
 
     def test_list_enabled_only_requires_repo(self):
         """Test that --enabled-only requires --repo."""
-        args = argparse.Namespace(
-            language=None, category=None, repo=None, enabled_only=True
-        )
+        args = argparse.Namespace(language=None, category=None, repo=None, enabled_only=True)
         result = _cmd_list(args)
         assert result.exit_code == EXIT_USAGE
         assert result.problems[0]["code"] == "CIHUB-TOOL-REQUIRES-REPO"
@@ -268,9 +253,7 @@ class TestCmdList:
         _write_registry(tmp_path, {"schema_version": "cihub-registry-v1", "tiers": {}, "repos": {}})
         monkeypatch.setattr("cihub.services.registry_service.hub_root", lambda: tmp_path)
 
-        args = argparse.Namespace(
-            language=None, category=None, repo="nonexistent", enabled_only=False
-        )
+        args = argparse.Namespace(language=None, category=None, repo="nonexistent", enabled_only=False)
         result = _cmd_list(args)
         assert result.exit_code == EXIT_FAILURE
         assert result.problems[0]["code"] == "CIHUB-TOOL-REPO-NOT-FOUND"
@@ -286,9 +269,7 @@ class TestCmdEnableDisable:
 
     def test_enable_no_tool_no_wizard(self):
         """Test enable without tool or wizard."""
-        args = argparse.Namespace(
-            tool=None, wizard=False, for_repo=None, all_repos=False, profile=None, json=False
-        )
+        args = argparse.Namespace(tool=None, wizard=False, for_repo=None, all_repos=False, profile=None, json=False)
         result = _cmd_enable(args)
         assert result.exit_code == EXIT_USAGE
         assert result.problems[0]["code"] == "CIHUB-TOOL-NO-NAME"
@@ -304,27 +285,21 @@ class TestCmdEnableDisable:
 
     def test_enable_no_target(self):
         """Test enable without specifying target."""
-        args = argparse.Namespace(
-            tool="ruff", wizard=False, for_repo=None, all_repos=False, profile=None, json=False
-        )
+        args = argparse.Namespace(tool="ruff", wizard=False, for_repo=None, all_repos=False, profile=None, json=False)
         result = _cmd_enable(args)
         assert result.exit_code == EXIT_USAGE
         assert result.problems[0]["code"] == "CIHUB-TOOL-NO-TARGET"
 
     def test_disable_no_tool_no_wizard(self):
         """Test disable without tool or wizard."""
-        args = argparse.Namespace(
-            tool=None, wizard=False, for_repo=None, all_repos=False, profile=None, json=False
-        )
+        args = argparse.Namespace(tool=None, wizard=False, for_repo=None, all_repos=False, profile=None, json=False)
         result = _cmd_disable(args)
         assert result.exit_code == EXIT_USAGE
         assert result.problems[0]["code"] == "CIHUB-TOOL-NO-NAME"
 
     def test_wizard_with_json_rejected(self):
         """Test that --wizard with --json is rejected."""
-        args = argparse.Namespace(
-            tool=None, wizard=True, for_repo=None, all_repos=False, profile=None, json=True
-        )
+        args = argparse.Namespace(tool=None, wizard=True, for_repo=None, all_repos=False, profile=None, json=True)
         result = _cmd_enable(args)
         assert result.exit_code == EXIT_USAGE
         assert result.problems[0]["code"] == "CIHUB-TOOL-WIZARD-JSON"
@@ -340,9 +315,7 @@ class TestCmdConfigure:
 
     def test_configure_missing_args(self):
         """Test configure without required args."""
-        args = argparse.Namespace(
-            tool=None, param=None, value=None, repo=None, profile=None, wizard=False, json=False
-        )
+        args = argparse.Namespace(tool=None, param=None, value=None, repo=None, profile=None, wizard=False, json=False)
         result = _cmd_configure(args)
         assert result.exit_code == EXIT_USAGE
         assert result.problems[0]["code"] == "CIHUB-TOOL-MISSING-ARGS"

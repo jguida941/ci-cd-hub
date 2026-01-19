@@ -20,7 +20,16 @@
       "tier": "standard",
       "language": "python",
       "description": "Python canary repo for CI validation",
-      "dispatch_enabled": true
+      "dispatch_enabled": true,
+      "config": {
+        "python": {
+          "tools": {
+            "ruff": {
+              "enabled": false
+            }
+          }
+        }
+      }
     },
     "canary-java": {
       "tier": "standard",

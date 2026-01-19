@@ -127,8 +127,8 @@ def main() -> int:
                 changed_files.append(str(file_path))
 
     if changed_files:
-        for file_path in changed_files:
-            print(file_path)
+        for changed_path in changed_files:
+            print(changed_path)
         return 1 if args.check else 0
 
     return 0

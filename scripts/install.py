@@ -23,13 +23,14 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 TIMEOUT_QUICK = 30
 TIMEOUT_NETWORK = 120
 TIMEOUT_BUILD = 600
 
 
-def load_config() -> dict:
+def load_config() -> dict[str, Any]:
     """Load .ci-hub.yml if it exists."""
     config_path = Path(".ci-hub.yml")
     if not config_path.exists():
@@ -38,6 +39,7 @@ def load_config() -> dict:
     try:
         # Try to use PyYAML if available
         import yaml
+
         with open(config_path) as f:
             return yaml.safe_load(f) or {}
     except ImportError:
@@ -53,7 +55,7 @@ def load_config() -> dict:
         return config
 
 
-def get_install_source(config: dict) -> str:
+def get_install_source(config: dict[str, Any]) -> str:
     """Get install source from env var or config."""
     # Environment variable takes precedence
     env_source = os.environ.get("CIHUB_INSTALL_SOURCE", "").lower()
@@ -64,7 +66,7 @@ def get_install_source(config: dict) -> str:
     install_config = config.get("install", {})
     if isinstance(install_config, dict):
         source = install_config.get("source", "git")
-        if source in ("pypi", "git", "local"):
+        if isinstance(source, str) and source in ("pypi", "git", "local"):
             return source
 
     # Default to git (PyPI package doesn't include schema/config/templates yet)

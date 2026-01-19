@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import os
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
@@ -11,6 +12,7 @@ import yaml
 
 from cihub.ci_config import load_ci_config
 from cihub.commands.pom import apply_dependency_fixes, apply_pom_fixes
+from cihub.config.inputs import ConfigInputError, load_config_override
 from cihub.config.io import load_yaml_file, save_yaml_file
 from cihub.config.merge import deep_merge
 from cihub.config.paths import PathConfig
@@ -21,7 +23,7 @@ from cihub.exit_codes import (
     EXIT_USAGE,
 )
 from cihub.services.detection import resolve_language
-from cihub.services.templates import build_repo_config, render_caller_workflow
+from cihub.services.templates import build_repo_config, render_caller_workflow, resolve_hub_repo_ref
 from cihub.types import CommandResult
 from cihub.utils import (
     collect_java_dependency_warnings,
@@ -30,6 +32,7 @@ from cihub.utils import (
     get_git_remote,
     parse_repo_from_remote,
 )
+from cihub.utils.github import set_repo_variables
 from cihub.utils.fs import write_text
 from cihub.utils.paths import hub_root, validate_subdir
 from cihub.wizard import HAS_WIZARD, WizardCancelled
@@ -51,6 +54,27 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
             exit_code=EXIT_USAGE,
             summary=message,
             problems=[{"severity": "error", "message": message}],
+        )
+
+    try:
+        cli_override = load_config_override(
+            getattr(args, "config_json", None),
+            getattr(args, "config_file", None),
+        )
+    except ConfigInputError as exc:
+        message = str(exc)
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-INIT-CONFIG-INPUT"}],
+        )
+
+    if args.wizard and cli_override:
+        message = "--config-json/--config-file is not supported with --wizard"
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-INIT-CONFIG-WIZARD"}],
         )
 
     if force and not apply:
@@ -114,8 +138,12 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
 
     install_from = getattr(args, "install_from", "pypi")
     detected_config = build_repo_config(
-        language, owner, name, branch,
-        subdir=subdir, repo_path=effective_repo_path,
+        language,
+        owner,
+        name,
+        branch,
+        subdir=subdir,
+        repo_path=effective_repo_path,
         install_from=install_from,
     )
 
@@ -148,6 +176,11 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
     else:
         # R-002: Handle config_override (internal, no CLI surface change)
         config_override = getattr(args, "config_override", None)
+        if cli_override:
+            if isinstance(config_override, dict):
+                config_override = deep_merge(config_override, cli_override)
+            else:
+                config_override = cli_override
         if config_override and isinstance(config_override, dict):
             # Merge override into detected config
             config = deep_merge(detected_config, config_override)
@@ -187,9 +220,42 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
     workflow_content = render_caller_workflow(language)
     write_text(workflow_path, workflow_content, dry_run, emit=False)
 
+    hub_vars_set = False
+    hub_vars_messages: list[str] = []
+    hub_vars_problems: list[dict[str, str]] = []
+    hub_repo_value: str | None = None
+    hub_ref_value: str | None = None
+    if apply and getattr(args, "set_hub_vars", False):
+        template_repo, template_ref = resolve_hub_repo_ref(language)
+        hub_repo_value = getattr(args, "hub_repo", None) or os.environ.get("CIHUB_HUB_REPO") or template_repo
+        hub_ref_value = getattr(args, "hub_ref", None) or os.environ.get("CIHUB_HUB_REF") or template_ref
+        if not hub_repo_value or not hub_ref_value:
+            hub_vars_problems.append(
+                {
+                    "severity": "warning",
+                    "message": "Unable to resolve hub repo/ref for GitHub variables",
+                    "code": "CIHUB-HUB-VARS-NO-DEFAULT",
+                }
+            )
+        else:
+            if final_owner and final_name and final_owner != "unknown":
+                target_repo = f"{final_owner}/{final_name}"
+            else:
+                target_repo = ""
+            hub_vars_set, hub_vars_messages, hub_vars_problems = set_repo_variables(
+                target_repo,
+                {"HUB_REPO": hub_repo_value, "HUB_REF": hub_ref_value},
+            )
+
     pom_warning_problems: list[dict[str, str]] = []
     suggestions: list[dict[str, str]] = []
     pom_fix_data: dict = {}
+    if apply and getattr(args, "set_hub_vars", False) and hub_vars_problems:
+        suggestions.append(
+            {
+                "message": "Set HUB_REPO/HUB_REF repo variables to enable hub-ci installs",
+            }
+        )
 
     if language == "java" and not dry_run:
         effective = load_ci_config(repo_path)
@@ -270,6 +336,7 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
         for warning in owner_warnings
     ]
     problems.extend(pom_warning_problems)
+    problems.extend(hub_vars_problems)
 
     data = {
         "language": language,
@@ -280,6 +347,15 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
         "dry_run": dry_run,
         "bootstrap": bootstrap,
     }
+    if apply and getattr(args, "set_hub_vars", False):
+        data.update(
+            {
+                "hub_repo": hub_repo_value,
+                "hub_ref": hub_ref_value,
+                "hub_vars_set": hub_vars_set,
+                "hub_vars_messages": hub_vars_messages,
+            }
+        )
     if dry_run:
         data["raw_output"] = payload
     # R-002: Include config in data when wizard was used (so setup can capture it)
