@@ -63,6 +63,24 @@ Commands and results:
 - `git -C /tmp/gitui commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
 - `git -C /tmp/gitui push` -> ok
 - `python -m cihub dispatch trigger --owner jguida941 --repo gitui --ref main --workflow hub-ci.yml` -> failed; missing token (set GH_TOKEN/GITHUB_TOKEN/HUB_DISPATCH_TOKEN)
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21162422877 --verify-tools` -> failed; pytest/hypothesis/bandit failed per tool verification
+- `ls -la .cihub/runs/21162422877` -> ok; artifacts downloaded
+- `ls -la .cihub/runs/21162422877/artifacts` -> ok; ci-report artifact present
+- `ls -la .cihub/runs/21162422877/artifacts/ci-report` -> ok; report.json + summary.md present
+- `sed -n '1,200p' .cihub/runs/21162422877/artifacts/ci-report/summary.md` -> ok; pytest/hypothesis failed, coverage 0%
+- `sed -n '1,200p' .cihub/runs/21162422877/artifacts/ci-report/tool-outputs/pytest.stdout.log` -> ok; PySide6 import errors (libEGL.so.1 missing)
+- `git tag -f v1` -> ok; moved v1 tag to latest hub commit (schema match)
+- `git push -f origin v1` -> ok; updated remote tag
+- `git -C /tmp/gitui rm -f .github/workflows/hub-ci.yml` -> ok; removed workflow for regen after tool fix
+- `git -C /tmp/gitui status -sb` -> ok; workflow deletion staged
+- `git -C /tmp/gitui commit -am "chore: remove hub-ci workflow for cihub regen"` -> ok
+- `git -C /tmp/gitui push` -> ok
+- `python -m cihub init --repo /tmp/gitui --apply --force --config-file /tmp/gitui/.ci-hub.override.json` -> ok; regenerated workflow with updated hub tag
+- `git -C /tmp/gitui add .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/gitui commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/gitui push` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch trigger --owner jguida941 --repo gitui --ref main --workflow hub-ci.yml` -> ok; run ID 21162833415
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21162833415` -> ok; 0 failures
 
 ## 2026-01-20 - hub-release (CLI/PyPI update)
 
@@ -204,6 +222,18 @@ Commands and results:
 - `apply_patch (docs/adr/0063-isort-black-profile-default.md)` -> ok; normalized ADR Status/Date formatting
 - `apply_patch (docs/adr/0060-cli-config-handoff-for-wizard.md)` -> ok; normalized ADR Status/Date formatting
 - `rg -n "aggregate_reports|apply_profile|check_quarantine_imports|validate_config|validate_summary|verify_hub_matrix_keys|run_aggregation|render_summary|python_ci_badges" pyproject.toml setup.py setup.cfg` -> error; setup.py/setup.cfg missing (expected)
+- `rg -n "pip install|cihub install|cihub" cihub/data/templates -g"*.yml"` -> ok; reviewed template install paths
+- `sed -n '1,200p' .github/workflows/hub-ci.yml` -> ok; validated hub install step uses git+${HUB_REPO}@${HUB_REF}
+- `git rev-parse v1 HEAD` -> ok; v1 tag previously behind HEAD before update
+- `git status -sb` -> ok; repo dirty with Qt deps fix pending
+- `python -m cihub docs check` -> ok; docs up to date
+- `python -m cihub docs stale` -> ok; no stale references found
+- `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated dates
+- `git add cihub/services/ci_engine/python_tools.py tests/unit/services/ci_engine/test_ci_engine_runners.py docs/development/CHANGELOG.md docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok
+- `git commit -m "fix: install Qt system deps for headless pytest"` -> ok
+- `git push` -> ok
+- `git tag -f v1` -> ok; updated tag to new HEAD
+- `git push -f origin v1` -> ok; moved v1 tag on remote
 - `git status -sb` -> ok; audit log modified after gitui workflow regen steps
 - `git add docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok
 - `git commit -m "chore: update tool run audit log"` -> ok
