@@ -123,7 +123,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [ ] Write E2E tests (`test/e2e/`)
 - [ ] Achieve 80% code coverage
 - [ ] Set up CI workflow for TypeScript CLI
-- [ ] Validate `cihub setup/init` auto-sets `HUB_REPO/HUB_REF` on a real repo
+- [x] Validate `cihub setup/init` auto-sets `HUB_REPO/HUB_REF` on a real repo
 - [ ] Run full manual command audit across repo shapes; log in `docs/development/research/TS_CLI_FULL_AUDIT_2026-01-19.md`
 
 ### Phase 10: Accessibility (Critical)

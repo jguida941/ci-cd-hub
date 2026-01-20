@@ -66,6 +66,33 @@ class TestInstallPythonDependencies:
             _install_python_dependencies(config, tmp_path, problems)
         assert len(problems) == 0
 
+    def test_installs_qt_system_deps_when_qt_dependency_present(self, tmp_path: Path) -> None:
+        (tmp_path / "pyproject.toml").write_text(
+            "[project]\nname = 'test'\ndependencies = ['PySide6']\n"
+        )
+        config: dict = {}
+        problems: list = []
+        calls: list[list[str]] = []
+
+        def fake_run(cmd, workdir, label, problems):
+            calls.append(cmd)
+            return True
+
+        def fake_which(name: str):
+            if name == "apt-get":
+                return "/usr/bin/apt-get"
+            if name == "sudo":
+                return "/usr/bin/sudo"
+            return None
+
+        with patch("cihub.services.ci_engine.python_tools._run_dep_command", side_effect=fake_run), patch(
+            "cihub.services.ci_engine.python_tools.shutil.which",
+            side_effect=fake_which,
+        ), patch("cihub.services.ci_engine.python_tools.sys.platform", "linux"):
+            _install_python_dependencies(config, tmp_path, problems)
+
+        assert any("libegl1" in part for cmd in calls for part in cmd)
+
     def test_installs_requirements_txt(self, tmp_path: Path) -> None:
         (tmp_path / "requirements.txt").write_text("pytest\n")
         config: dict = {}

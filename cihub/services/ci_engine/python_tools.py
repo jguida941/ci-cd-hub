@@ -60,6 +60,49 @@ def _run_dep_command(
     return False
 
 
+def _file_mentions_qt_deps(path: Path) -> bool:
+    if not path.exists():
+        return False
+    try:
+        content = path.read_text(encoding="utf-8", errors="ignore").lower()
+    except OSError:
+        return False
+    return "pyside" in content or "pyqt" in content
+
+
+def _should_install_qt_deps(workdir: Path) -> bool:
+    if not sys.platform.startswith("linux"):
+        return False
+    for filename in ("pyproject.toml", "requirements.txt", "requirements-dev.txt"):
+        if _file_mentions_qt_deps(workdir / filename):
+            return True
+    return False
+
+
+def _install_qt_system_deps(workdir: Path, problems: list[dict[str, Any]]) -> None:
+    if not _should_install_qt_deps(workdir):
+        return
+    apt_get = shutil.which("apt-get")
+    if not apt_get:
+        problems.append(
+            {
+                "severity": "warning",
+                "message": "apt-get not available; skipping Qt system deps",
+                "code": "CIHUB-CI-QT-DEPS",
+            }
+        )
+        return
+    sudo = shutil.which("sudo")
+    prefix = [sudo] if sudo else []
+    _run_dep_command(prefix + [apt_get, "update"], workdir, "apt-get update", problems)
+    _run_dep_command(
+        prefix + [apt_get, "install", "-y", "libegl1"],
+        workdir,
+        "apt-get install libegl1",
+        problems,
+    )
+
+
 def _install_python_dependencies(
     config: dict[str, Any],
     workdir: Path,
@@ -72,6 +115,8 @@ def _install_python_dependencies(
         commands = deps_cfg.get("commands")
     else:
         commands = None
+
+    _install_qt_system_deps(workdir, problems)
 
     python_bin = sys.executable or resolve_executable("python")
     if commands:
