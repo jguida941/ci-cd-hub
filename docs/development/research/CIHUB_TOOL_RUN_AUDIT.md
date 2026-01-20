@@ -437,3 +437,49 @@ Commands and results:
 - `rg -n "tags:" .github/workflows` -> ok; found publish-pypi.yml and release.yml tag triggers
 - `sed -n '1,80p' .github/workflows/publish-pypi.yml` -> ok; publish runs on release + tags v*
 - `sed -n '1,80p' .github/workflows/release.yml` -> ok; release runs only on v*.*.* tags
+- `sed -n '1,140p' docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok; reviewed audit log format for new entries
+- `rg -n "^version\s*=|__version__" pyproject.toml cihub/__init__.py` -> ok; current version is 1.0.14
+- `sed -n '1,220p' .github/workflows/publish-pypi.yml` -> ok; reviewed publish workflow contents
+- `apply_patch (.github/workflows/publish-pypi.yml)` -> ok; added v1 retag job after PyPI publish
+- `apply_patch (pyproject.toml)` -> ok; version bumped to 1.0.15
+- `apply_patch (cihub/__init__.py)` -> ok; version bumped to 1.0.15
+- `git status -sb` -> ok; modified publish workflow, version files, and audit log
+- `git add .github/workflows/publish-pypi.yml pyproject.toml cihub/__init__.py` -> ok; staged release changes (workflow + version bump)
+- `git commit -m "release: 1.0.15 and retag v1 automation"` -> ok; commit 3332fa0e
+- `git tag v1.0.15` -> ok; created release tag
+- `git tag -f v1` -> ok; moved v1 to 1.0.15 commit
+- `git push` -> ok; pushed main to origin
+- `git push origin v1.0.15` -> ok; pushed release tag
+- `git push -f origin v1` -> ok; updated moving v1 tag on origin
+- `gh run list --workflow publish-pypi.yml -L 1` -> ok; publish run in progress (run 21167542745)
+- `gh run watch 21167542745` -> ok; PyPI publish and v1 retag jobs succeeded
+- `ls -la /tmp/ci-cd-hub-fixtures/.github/workflows` -> ok; fixture repo has hub workflows
+- `git -C /tmp/ci-cd-hub-fixtures rm -f .github/workflows/hub-ci.yml` -> ok; removed workflow for regen
+- `git -C /tmp/ci-cd-hub-fixtures status -sb` -> ok; hub-ci.yml deleted
+- `git -C /tmp/ci-cd-hub-fixtures commit -am "chore: remove hub-ci workflow for cihub regen"` -> ok; commit 1004dbf
+- `git -C /tmp/ci-cd-hub-fixtures push` -> ok; pushed workflow removal
+- `python -m cihub init --repo /tmp/ci-cd-hub-fixtures --apply --force --language python --subdir python-passing` -> ok; regenerated .ci-hub.yml and hub-ci.yml
+- `git -C /tmp/ci-cd-hub-fixtures status -sb` -> ok; regenerated hub-ci.yml untracked
+- `git -C /tmp/ci-cd-hub-fixtures add .github/workflows/hub-ci.yml` -> ok; staged regenerated workflow
+- `git -C /tmp/ci-cd-hub-fixtures commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok; commit fa64eed
+- `git -C /tmp/ci-cd-hub-fixtures push` -> ok; pushed regenerated workflow
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch trigger --owner jguida941 --repo ci-cd-hub-fixtures --ref main --workflow hub-ci.yml` -> ok; run ID 21167644983
+- `sleep 20` -> ok; waited for fixtures workflow run to start
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/ci-cd-hub-fixtures --run 21167644983 --verify-tools` -> failed; no report.json found (run may be in progress)
+- `gh run watch 21167644983 -R jguida941/ci-cd-hub-fixtures` -> ok; workflow completed (Python CI job finished)
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/ci-cd-hub-fixtures --run 21167644983 --verify-tools` -> ok; all configured tools verified
+- `ls -la /tmp/gitui/.github/workflows` -> ok; gitui has hub-ci.yml
+- `git -C /tmp/gitui rm -f .github/workflows/hub-ci.yml` -> ok; removed workflow for regen
+- `git -C /tmp/gitui status -sb` -> ok; hub-ci.yml deleted, untracked local artifacts present
+- `git -C /tmp/gitui commit -am "chore: remove hub-ci workflow for cihub regen"` -> ok; commit 1b0cbcc
+- `git -C /tmp/gitui push` -> ok; pushed workflow removal
+- `python -m cihub init --repo /tmp/gitui --apply --force --config-file /tmp/gitui/.ci-hub.override.json` -> ok; regenerated .ci-hub.yml and hub-ci.yml
+- `git -C /tmp/gitui status -sb` -> ok; .ci-hub.yml modified and hub-ci.yml untracked after regen
+- `git -C /tmp/gitui diff -- .ci-hub.yml` -> ok; pytest args/env added for headless run
+- `git -C /tmp/gitui add .ci-hub.yml .github/workflows/hub-ci.yml` -> ok; staged config + workflow
+- `git -C /tmp/gitui commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok; commit 72f19de
+- `git -C /tmp/gitui push` -> ok; pushed regenerated config + workflow
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch trigger --owner jguida941 --repo gitui --ref main --workflow hub-ci.yml` -> ok; run ID 21167764758
+- `gh run watch 21167764758 -R jguida941/gitui` -> ok; workflow completed (Python CI job finished)
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21167764758 --verify-tools` -> ok; all configured tools verified
+- `git status -sb` -> ok; audit log pending commit
