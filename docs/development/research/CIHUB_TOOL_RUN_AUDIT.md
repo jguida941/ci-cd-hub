@@ -278,6 +278,13 @@ Commands and results:
 - `git add -A` -> ok
 - `git commit -m "chore: update tool run audit log"` -> ok
 - `git push` -> ok
+- `git rev-parse HEAD && git rev-parse v1 && git rev-parse v1.0.14` -> ok; v1/v1.0.14 lagged behind HEAD
+- `git tag -f v1` -> ok; advanced floating tag to HEAD
+- `git push -f origin v1` -> ok; updated remote v1 tag
+- `git status -sb` -> ok; audit log modified after tag update
+- `git add -A` -> ok
+- `git commit -m "chore: update tool run audit log"` -> ok
+- `git push` -> ok
 - `git status -sb` -> ok; recorded modified files after docs generation
 - `rg -n "Phase 9: Testing" docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok; located Phase 9 section
 - `sed -n '118,150p' docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok; reviewed Phase 9 checklist
