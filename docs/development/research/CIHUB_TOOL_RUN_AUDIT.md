@@ -204,3 +204,9 @@ Commands and results:
 - `apply_patch (docs/adr/0063-isort-black-profile-default.md)` -> ok; normalized ADR Status/Date formatting
 - `apply_patch (docs/adr/0060-cli-config-handoff-for-wizard.md)` -> ok; normalized ADR Status/Date formatting
 - `rg -n "aggregate_reports|apply_profile|check_quarantine_imports|validate_config|validate_summary|verify_hub_matrix_keys|run_aggregation|render_summary|python_ci_badges" pyproject.toml setup.py setup.cfg` -> error; setup.py/setup.cfg missing (expected)
+- `git status -sb` -> ok; audit log modified after gitui workflow regen steps
+- `git add docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok
+- `git commit -m "chore: update tool run audit log"` -> ok
+- `git push` -> rejected; remote ahead (needed rebase)
+- `git pull --rebase` -> ok; fast-forwarded on origin/main
+- `git push` -> ok; audit log update pushed
