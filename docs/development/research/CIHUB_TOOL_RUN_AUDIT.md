@@ -43,6 +43,26 @@ Commands and results:
 - `python -m cihub ci --repo /tmp/gitui --install-deps --output-dir .cihub-run7` -> ok; gates pass; warning: Codecov uploader missing
 - `git -C /tmp/gitui status -sb` -> ok; no tracked changes (only untracked .cihub-run artifacts)
 - `python -m cihub ci --repo /tmp/gitui --install-deps --output-dir .cihub-run8` -> failed; pip could not fetch build deps (setuptools>=68) due to network resolution
+- `rg -n "dispatch" cihub/commands` -> ok; located dispatch command implementation
+- `ls -la /tmp/gitui/.github/workflows` -> ok; only `hub-ci.yml` present before deletion/regeneration
+- `rg -n "pytest|args|env" /tmp/gitui/.ci-hub.yml` -> ok; confirmed pytest args/env present
+- `sed -n '1,120p' /tmp/gitui/.ci-hub.yml` -> ok; confirmed QT_QPA_PLATFORM and pytest -k filter
+- `git -C /tmp/gitui status -sb` -> ok; saw pending workflow deletions and untracked tool artifacts
+- `git -C /tmp/gitui ls-files .ci-hub.yml` -> ok; confirmed tracked config file
+- `git -C /tmp/gitui diff -- .ci-hub.yml` -> ok; no config drift
+- `rg -n "HUB_REPO|HUB_REF" /tmp/gitui/.github/workflows/hub-ci.yml` -> ok; uses repo vars
+- `git -C /tmp/gitui rm -f .github/workflows/hub-ci.yml` -> ok; removed workflow for clean regen
+- `git -C /tmp/gitui rm -f .github/workflows/ci.yml` -> ok; removed legacy workflow
+- `git -C /tmp/gitui status -sb` -> ok; staged deletions
+- `git -C /tmp/gitui commit -am "chore: remove workflows for cihub regen"` -> ok
+- `git -C /tmp/gitui push` -> ok
+- `python -m cihub init --repo /tmp/gitui --apply --force --config-file /tmp/gitui/.ci-hub.override.json` -> ok; hub vars set; regenerated `.ci-hub.yml` + `hub-ci.yml`
+- `git -C /tmp/gitui status -sb` -> ok; `.github/workflows/hub-ci.yml` untracked
+- `git -C /tmp/gitui add .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/gitui status -sb` -> ok; staged regenerated workflow
+- `git -C /tmp/gitui commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/gitui push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo gitui --ref main --workflow hub-ci.yml` -> failed; missing token (set GH_TOKEN/GITHUB_TOKEN/HUB_DISPATCH_TOKEN)
 
 ## 2026-01-20 - hub-release (CLI/PyPI update)
 
