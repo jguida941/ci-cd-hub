@@ -283,6 +283,8 @@ Commands and results:
 - `git add -A` -> ok
 - `git commit -m "chore: update tool run audit log"` -> ok
 - `git push` -> ok
+- `git tag -f v1` -> ok; moved v1 to latest HEAD after audit commit
+- `git push -f origin v1` -> ok; updated remote v1 tag
 - `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --latest --verify-tools` -> failed; pytest/hypothesis/bandit failed
 - `ls -lt .cihub/runs | head -10` -> ok; located latest run 21164657190
 - `ls -la .cihub/runs/21164657190` -> ok; triage + artifacts present
