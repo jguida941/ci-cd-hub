@@ -483,3 +483,8 @@ Commands and results:
 - `gh run watch 21167764758 -R jguida941/gitui` -> ok; workflow completed (Python CI job finished)
 - `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21167764758 --verify-tools` -> ok; all configured tools verified
 - `git status -sb` -> ok; audit log pending commit
+- `git add docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok; staged audit log
+- `git commit -m "chore: update tool run audit log"` -> ok; commit ccf26fc0 (rebased later)
+- `git push` -> failed; remote ahead (required pull --rebase)
+- `git pull --rebase` -> ok; rebased audit log commit onto origin/main
+- `git push` -> ok; pushed audit log commit after rebase
