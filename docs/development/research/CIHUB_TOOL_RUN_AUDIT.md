@@ -285,6 +285,52 @@ Commands and results:
 - `git push` -> ok
 - `git tag -f v1` -> ok; moved v1 to latest HEAD after audit commit
 - `git push -f origin v1` -> ok; updated remote v1 tag
+- `rg -n "dispatch_workflow|repo_side_execution" cihub/data/config/repos/fixtures-*.yaml` -> ok; fixture configs use hub-python-ci.yml/hub-java-ci.yml
+- `rg -n "hub-python-ci|hub-java-ci|hub-ci.yml" cihub/commands/init.py cihub/services/templates.py` -> ok; init always writes hub-ci.yml
+- `sed -n '1,140p' cihub/commands/init.py` -> ok; reviewed workflow path logic
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --latest --verify-tools` -> failed; pytest/hypothesis/bandit failed
+- `ls -lt .cihub/runs | head -10` -> ok; located run directories
+- `ls -la .cihub/runs/21164657190` -> ok; artifacts present
+- `ls -la .cihub/runs/21164657190/artifacts` -> ok; ci-report present
+- `ls -la .cihub/runs/21164657190/artifacts/ci-report` -> ok; report.json + summary.md
+- `sed -n '1,200p' .cihub/runs/21164657190/artifacts/ci-report/summary.md` -> ok; tests 0 executed
+- `ls -la .cihub/runs/21164657190/artifacts/ci-report/tool-outputs | head -40` -> ok; pytest logs present
+- `cat .cihub/runs/21164657190/artifacts/ci-report/tool-outputs/pytest.stdout.log` -> ok; xvfb-run command logged
+- `cat .cihub/runs/21164657190/artifacts/ci-report/tool-outputs/pytest.stderr.log` -> ok; xvfb-run timeout
+- `rg -n "pytest\\.mark|@pytest\\.mark" /tmp/gitui/tests` -> ok; qprocess markers present
+- `sed -n '1,240p' /tmp/gitui/tests/test_ui_panels.py` -> ok; QMenu exec patched in tests
+- `sed -n '240,520p' /tmp/gitui/tests/test_ui_panels.py` -> ok; QMenu exec patched in tests
+- `sed -n '1,240p' /tmp/gitui/tests/test_dialogs.py` -> ok; QDialog exec patched
+- `sed -n '1,220p' /tmp/gitui/tests/test_command_runner.py` -> ok; qprocess tests marked
+- `rg -n "QMenu\\.exec|exec\\(" /tmp/gitui/app | head -40` -> ok; exec callsites located
+- `cat .cihub/runs/21164657190/artifacts/ci-report/tool-outputs/pytest.json` -> ok; timeout recorded with 0 tests
+- `ls -la /tmp/ci-cd-hub-fixtures 2>/dev/null || echo "no fixtures clone"` -> ok; no fixtures clone
+- `git clone https://github.com/jguida941/ci-cd-hub-fixtures /tmp/ci-cd-hub-fixtures` -> ok; cloned fixtures repo
+- `ls -la /tmp/ci-cd-hub-fixtures/.github/workflows` -> ok; hub-ci.yml + hub-python-ci.yml + hub-java-ci.yml present
+- `sed -n '1,80p' /tmp/ci-cd-hub-fixtures/.ci-hub.yml` -> error; file missing
+- `ls -la /tmp/ci-cd-hub-fixtures` -> ok; repo contents listed
+- `git -C /tmp/ci-cd-hub-fixtures rm -f .github/workflows/hub-ci.yml` -> ok; removed workflow
+- `git -C /tmp/ci-cd-hub-fixtures status -sb` -> ok; workflow deletion staged
+- `git -C /tmp/ci-cd-hub-fixtures commit -m "chore: remove hub-ci workflow for cihub regen"` -> ok
+- `git -C /tmp/ci-cd-hub-fixtures push` -> ok; workflow deletion pushed
+- `python -m cihub init --repo /tmp/ci-cd-hub-fixtures --apply --force --language python --subdir python-passing --owner jguida941 --name ci-cd-hub-fixtures` -> ok; regenerated .ci-hub.yml + hub-ci.yml
+- `git -C /tmp/ci-cd-hub-fixtures add .ci-hub.yml .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/ci-cd-hub-fixtures status -sb` -> ok; staged new config + workflow
+- `git -C /tmp/ci-cd-hub-fixtures commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/ci-cd-hub-fixtures push` -> ok; regenerated workflow pushed
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch trigger --owner jguida941 --repo ci-cd-hub-fixtures --ref main --workflow hub-ci.yml` -> ok; run ID 21165668426
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch watch --owner jguida941 --repo ci-cd-hub-fixtures --run-id 21165668426 --interval 5 --timeout 900` -> completed; conclusion success
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/ci-cd-hub-fixtures --run 21165668426 --verify-tools` -> failed; bandit failed
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/ci-cd-hub-fixtures --run 21165668426` -> ok; triage bundle generated (0 failures)
+- `ls -la .cihub/runs/21165668426` -> ok; artifacts directory present
+- `ls -la .cihub/runs/21165668426/artifacts` -> ok; ci-report present
+- `sed -n '1,200p' .cihub/runs/21165668426/artifacts/ci-report/summary.md` -> ok; pytest/coverage passed, bandit low findings
+- `cat .cihub/runs/21165668426/artifacts/ci-report/report.json` -> ok; tools_success shows bandit false
+- `rg -n "bandit" cihub/data/schema/ci-hub-config.schema.json | head -40` -> ok; located hub_ci bandit gates
+- `rg -n "bandit_fail|max_bandit" cihub/data/schema/ci-hub-config.schema.json` -> ok; no python bandit thresholds
+- `rg -n "bandit" cihub/tools/registry.py` -> ok; located bandit tool adapter
+- `sed -n '380,460p' cihub/tools/registry.py` -> ok; bandit gate defaults (fail_on_high true)
+- `sed -n '1,120p' /tmp/ci-cd-hub-fixtures/.ci-hub.yml` -> ok; generated config (workdir python-passing, bandit enabled)
 - `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --latest --verify-tools` -> failed; pytest/hypothesis/bandit failed
 - `ls -lt .cihub/runs | head -10` -> ok; located latest run 21164657190
 - `ls -la .cihub/runs/21164657190` -> ok; triage + artifacts present
