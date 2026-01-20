@@ -130,6 +130,11 @@ Commands and results:
 - `git add -A` -> error; unable to create .git/index.lock (sandbox permission)
 - `git add -A` -> ok (required escalated permissions for .git/index.lock)
 - `git status -sb` -> ok; staged changes with audit log modified
+- `git add -A` -> ok (re-staged audit log; required escalated permissions)
+- `git commit -m "feat: headless pytest config + remove deprecated shims"` -> error; unable to create .git/index.lock (sandbox permission)
+- `git commit -m "feat: headless pytest config + remove deprecated shims"` -> ok (required escalated permissions)
+- `git push` -> error; could not resolve host github.com
+- `git push` -> rejected; remote contains newer commits (needs pull/rebase)
 - `ls -la .git/index.lock` -> ok; lock file not present
 - `git add -A` -> ok (required escalated permissions for .git/index.lock)
 - `git add -A` -> error; unable to create .git/index.lock (sandbox permission)
