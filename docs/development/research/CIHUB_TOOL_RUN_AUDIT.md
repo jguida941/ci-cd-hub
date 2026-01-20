@@ -488,3 +488,51 @@ Commands and results:
 - `git push` -> failed; remote ahead (required pull --rebase)
 - `git pull --rebase` -> ok; rebased audit log commit onto origin/main
 - `git push` -> ok; pushed audit log commit after rebase
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21167764758` -> ok; triage bundle generated (0 failures)
+- `ls -la .cihub/runs/21167764758/artifacts/ci-report` -> ok; report + summary + tool-outputs present
+- `ls -la .cihub/runs/21167764758/artifacts/ci-report/tool-outputs` -> ok; pytest.json and logs present
+- `python - <<'PY' ... pytest.json summary` -> ok; summary missing (fields None)
+- `python - <<'PY' ... pytest.json keys` -> ok; metrics present in tool payload
+- `python - <<'PY' ... pytest.json metrics` -> ok; tests_passed=201, tests_failed=0, tests_skipped=1, coverage=89
+- `rg -n "collected|test session starts|=+" .cihub/runs/21167764758/artifacts/ci-report/tool-outputs/pytest.stdout.log` -> ok; pytest collected 205, selected 202, 201 passed, 1 skipped
+- `rg -n "report validate|validate_report|verify-tools|no proof|tools_success|tools_ran|tools_configured" cihub` -> ok; located report validator and tool status logic
+- `sed -n '1,220p' cihub/services/report_validator/content.py` -> ok; reviewed summary vs report validation
+- `sed -n '220,520p' cihub/services/report_validator/content.py` -> ok; reviewed tool proof validation logic
+- `sed -n '1,200p' cihub/services/ci_engine/validation.py` -> ok; reviewed self-validate report behavior
+- `sed -n '1,200p' cihub/commands/report/validate.py` -> ok; reviewed report validate CLI
+- `sed -n '1,220p' cihub/commands/triage/verification.py` -> ok; reviewed verify-tools logic
+- `sed -n '1,220p' cihub/services/report_validator/artifact.py` -> ok; reviewed artifact existence and non-empty checks
+- `rg -n "PYTHON_TOOL_METRICS|PYTHON_ARTIFACTS|JAVA_TOOL_METRICS|JAVA_ARTIFACTS" cihub/tools/registry.py` -> ok; located metrics/artifacts maps
+- `sed -n '120,260p' cihub/tools/registry.py` -> ok; reviewed metrics and artifact patterns
+- `rg -n "verify-tools" -n cihub/commands/triage_cmd.py` -> ok; located verify-tools handler
+- `sed -n '420,520p' cihub/commands/triage_cmd.py` -> ok; reviewed report path resolution and verification
+- `sed -n '520,640p' cihub/commands/triage_cmd.py` -> ok; reviewed verify-tools exit code behavior
+- `rg -n "tool-outputs|tool_outputs|write_tool" cihub/core cihub/services` -> ok; located tool output writing and loading
+- `sed -n '1,220p' cihub/core/ci_runner/shared.py` -> ok; reviewed tool log writing to tool-outputs
+- `sed -n '200,420p' cihub/services/ci_engine/python_tools.py` -> ok; reviewed tool output payload writing and tool status population
+- `ls -la .github/workflows` -> ok; listed hub workflows
+- `rg -n "Upload CI report|ci-report|tool-outputs|\\.cihub" .github/workflows/python-ci.yml` -> ok; found artifact upload paths
+- `rg -n "Upload CI report|ci-report|tool-outputs|\\.cihub" .github/workflows/hub-python-ci.yml` -> failed; file not found
+- `rg -n "Tools Enabled|tools_configured|tools_ran|tools_success" cihub/core/reporting.py` -> ok; located summary table generation
+- `sed -n '80,160p' cihub/core/reporting.py` -> ok; summary table uses report tools_configured/ran/success
+- `sed -n '1,200p' cihub/services/report_validator/types.py` -> ok; reviewed ValidationRules fields
+
+## 2026-01-20 - Proof Validation Audit (hub repo)
+
+Repo type: Hub CLI (Python)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Enforce artifact-vs-claim validation in workflows and reduce false warnings when metrics exist.
+
+Commands and results:
+- `rg -n "report_validator|validate_report|verify-tools|no proof|empty output" tests` -> ok; located report validator tests
+- `sed -n '220,320p' tests/unit/services/test_services_report_validator.py` -> ok; reviewed empty artifact expectations
+- `apply_patch (cihub/services/report_validator/content.py)` -> ok; empty artifact warnings downgraded to debug when metrics exist
+- `apply_patch (tests/unit/services/test_services_report_validator.py)` -> ok; updated empty-artifact-with-metrics test expectation
+- `sed -n '280,360p' .github/workflows/python-ci.yml` -> ok; reviewed report output/upload steps
+- `sed -n '260,340p' .github/workflows/java-ci.yml` -> ok; reviewed report output/upload steps
+- `apply_patch (.github/workflows/python-ci.yml)` -> ok; added verify-tools step after report outputs
+- `apply_patch (.github/workflows/java-ci.yml)` -> ok; added verify-tools step after report outputs
+- `python -m pytest tests/unit/services/test_services_report_validator.py::TestValidateReport::test_empty_artifact_triggers_warning tests/unit/services/test_services_report_validator.py::TestValidateReport::test_empty_artifact_with_metrics_is_debug_only` -> ok; 2 passed
+- `rg -n "class Test" tests/unit/services/test_services_report_validator.py` -> ok; located test class names
+- `git status -sb` -> ok; workflow + validator + tests + audit log modified
+- `git add .github/workflows/python-ci.yml .github/workflows/java-ci.yml cihub/services/report_validator/content.py tests/unit/services/test_services_report_validator.py docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok; staged proof validation changes

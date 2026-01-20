@@ -252,8 +252,8 @@ class TestValidateReport:
         result = validate_report(report, reports_dir=reports_dir)
         assert any("empty output files" in w for w in result.warnings)
 
-    def test_empty_artifact_with_metrics_still_warns(self, tmp_path: Path):
-        """Empty artifacts are warned about even when metrics exist."""
+    def test_empty_artifact_with_metrics_is_debug_only(self, tmp_path: Path):
+        """Empty artifacts are ignored when metrics exist."""
         report = make_valid_python_report()
         report["tool_metrics"]["ruff_errors"] = 0  # Has metrics
         report["tools_ran"]["ruff"] = True
@@ -264,8 +264,7 @@ class TestValidateReport:
         (reports_dir / "ruff-report.json").write_text("")  # Empty file
 
         result = validate_report(report, reports_dir=reports_dir)
-        # Should still warn about empty files
-        assert any("empty output files" in w for w in result.warnings)
+        assert not any("empty output files" in w for w in result.warnings)
 
 
 class TestValidateReportFile:

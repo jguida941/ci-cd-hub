@@ -327,6 +327,10 @@ jobs:
         id: report
         run: cihub report outputs --report .cihub/report.json
 
+      - name: Verify tool proof
+        if: always()
+        run: cihub triage --verify-tools --report .cihub/report.json --reports-dir .cihub
+
       - name: Upload CI report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

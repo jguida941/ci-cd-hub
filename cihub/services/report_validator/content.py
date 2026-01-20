@@ -255,7 +255,9 @@ def _validate_tool_execution(
                         # Check artifacts are non-empty even if metrics exist
                         non_empty, empty_files = check_artifacts_non_empty(reports_dir, patterns)
                         if empty_files:
-                            warnings.append(f"tool '{tool}' has empty output files: {', '.join(empty_files)}")
+                            debug.append(
+                                f"Debug: {tool} has metrics but empty output files: {', '.join(empty_files)}"
+                            )
             continue
 
         if artifact_map and reports_dir and tool in artifact_map:
