@@ -96,9 +96,9 @@ def _install_qt_system_deps(workdir: Path, problems: list[dict[str, Any]]) -> No
     prefix = [sudo] if sudo else []
     _run_dep_command(prefix + [apt_get, "update"], workdir, "apt-get update", problems)
     _run_dep_command(
-        prefix + [apt_get, "install", "-y", "libegl1"],
+        prefix + [apt_get, "install", "-y", "libegl1", "xvfb"],
         workdir,
-        "apt-get install libegl1",
+        "apt-get install libegl1 xvfb",
         problems,
     )
 

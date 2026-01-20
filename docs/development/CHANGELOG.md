@@ -17,7 +17,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fix: Install libEGL for PySide/PyQt on Linux
 
-- `cihub ci --install-deps` installs `libegl1` when Qt GUI deps are detected (PySide/PyQt) to prevent headless import errors.
+- `cihub ci --install-deps` installs `libegl1` and `xvfb` when Qt GUI deps are detected (PySide/PyQt) to prevent headless import errors.
+- `cihub ci` runs pytest under `xvfb-run` on Linux when Qt deps are detected and no display is available.
 
 ## 2026-01-19 - TypeScript Wizard Handoff (Phase 6)
 

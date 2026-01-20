@@ -5,13 +5,37 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
 from . import shared
 from .base import ToolResult
 from .parsers import _parse_coverage, _parse_junit
+
+
+def _qt_dependency_present(workdir: Path) -> bool:
+    for filename in ("pyproject.toml", "requirements.txt", "requirements-dev.txt"):
+        path = workdir / filename
+        if not path.exists():
+            continue
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore").lower()
+        except OSError:
+            continue
+        if "pyside" in content or "pyqt" in content:
+            return True
+    return False
+
+
+def _should_use_xvfb(workdir: Path, env: dict[str, str]) -> bool:
+    if not sys.platform.startswith("linux"):
+        return False
+    if env.get("DISPLAY") or env.get("WAYLAND_DISPLAY"):
+        return False
+    return _qt_dependency_present(workdir)
 
 
 def run_pytest(
@@ -38,6 +62,14 @@ def run_pytest(
     merged_env = os.environ.copy()
     if env:
         merged_env.update(env)
+
+    if _should_use_xvfb(workdir, merged_env):
+        xvfb_bin = shutil.which("xvfb-run")
+        if xvfb_bin:
+            cmd = [xvfb_bin, "-a"] + cmd
+            platform_value = merged_env.get("QT_QPA_PLATFORM", "")
+            if platform_value.lower() == "offscreen":
+                merged_env["QT_QPA_PLATFORM"] = "xcb"
 
     proc = shared._run_tool_command("pytest", cmd, workdir, output_dir, env=merged_env)
     metrics = {}
