@@ -153,6 +153,41 @@ class TestRunPythonTools:
         unsupported_warnings = [p for p in problems if "not supported" in p["message"]]
         assert len(unsupported_warnings) == 1
 
+    def test_bandit_success_respects_fail_on_flags(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import ToolResult
+
+        workdir = tmp_path / "repo"
+        workdir.mkdir()
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        config = {
+            "python": {
+                "tools": {
+                    "bandit": {
+                        "enabled": True,
+                        "fail_on_high": True,
+                        "fail_on_medium": False,
+                        "fail_on_low": False,
+                    }
+                }
+            }
+        }
+        problems: list = []
+
+        mock_result = ToolResult(
+            tool="bandit",
+            ran=True,
+            success=False,
+            metrics={"bandit_high": 0, "bandit_medium": 0, "bandit_low": 5, "parse_error": False},
+        )
+        mock_runners = dict(PYTHON_RUNNERS)
+        mock_runners["bandit"] = lambda *args, **kwargs: mock_result
+        _, ran, success = _run_python_tools(config, tmp_path, "repo", output_dir, problems, mock_runners)
+
+        assert ran.get("bandit") is True
+        assert success.get("bandit") is True
+
     def test_raises_for_missing_workdir(self, tmp_path: Path) -> None:
         output_dir = tmp_path / "output"
         output_dir.mkdir()

@@ -26,6 +26,7 @@ All notable changes to this project will be documented in this file.
 - `cihub ci` runs pytest under `xvfb-run` on Linux when Qt deps are detected and no display is available.
 - `cihub ci` skips `qprocess`-marked tests automatically in headless Qt runs when no explicit `-m` marker filter is provided.
 - If `xvfb-run` times out, `cihub ci` retries pytest without xvfb while keeping headless Qt env defaults.
+- Bandit tool success now respects `fail_on_*` settings to avoid false failures when only low/medium issues are allowed.
 
 ## 2026-01-19 - TypeScript Wizard Handoff (Phase 6)
 

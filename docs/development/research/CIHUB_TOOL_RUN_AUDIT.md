@@ -331,6 +331,19 @@ Commands and results:
 - `rg -n "bandit" cihub/tools/registry.py` -> ok; located bandit tool adapter
 - `sed -n '380,460p' cihub/tools/registry.py` -> ok; bandit gate defaults (fail_on_high true)
 - `sed -n '1,120p' /tmp/ci-cd-hub-fixtures/.ci-hub.yml` -> ok; generated config (workdir python-passing, bandit enabled)
+- `rg -n "bandit" cihub/services/ci_engine` -> ok; located gates + tools_success usage
+- `sed -n '200,320p' cihub/services/ci_engine/python_tools.py` -> ok; reviewed tool execution loop
+- `sed -n '320,420p' cihub/services/ci_engine/python_tools.py` -> ok; reviewed tools_success assignment
+- `rg -n "pythonTools" cihub/data/schema/ci-hub-config.schema.json | head -40` -> ok; located pythonTools schema
+- `sed -n '401,520p' cihub/data/schema/ci-hub-config.schema.json` -> ok; bandit fail_on_* defaults confirmed
+- `apply_patch (cihub/services/ci_engine/python_tools.py)` -> ok; bandit success respects fail_on_* settings
+- `apply_patch (tests/unit/services/ci_engine/test_ci_engine_runners.py)` -> ok; added bandit success test
+- `apply_patch (docs/development/CHANGELOG.md)` -> ok; documented bandit success behavior
+- `python -m pytest tests/unit/services/ci_engine/test_ci_engine_runners.py::TestRunPythonTools::test_bandit_success_respects_fail_on_flags` -> ok
+- `python -m cihub docs generate` -> ok; updated reference docs
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok; no stale references found
+- `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated CHANGELOG dates
 - `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --latest --verify-tools` -> failed; pytest/hypothesis/bandit failed
 - `ls -lt .cihub/runs | head -10` -> ok; located latest run 21164657190
 - `ls -la .cihub/runs/21164657190` -> ok; triage + artifacts present

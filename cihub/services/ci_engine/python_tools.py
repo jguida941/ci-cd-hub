@@ -244,6 +244,7 @@ def _run_python_tools(
         if not enabled:
             continue
         runner = runners.get(tool)
+        bandit_gate: dict[str, bool] | None = None
         if runner is None:
             if tool == "codeql":
                 external = _parse_env_bool(os.environ.get("CIHUB_CODEQL_RAN"))
@@ -277,6 +278,12 @@ def _run_python_tools(
         try:
             # Get tool-specific config from centralized registry (Part 5.3)
             tool_args = get_tool_runner_args(config, tool, "python")
+            if tool == "bandit":
+                bandit_gate = {
+                    "fail_on_high": bool(tool_args.get("fail_on_high", True)),
+                    "fail_on_medium": bool(tool_args.get("fail_on_medium", False)),
+                    "fail_on_low": bool(tool_args.get("fail_on_low", False)),
+                }
 
             if tool == "pytest":
                 pytest_args = tool_args.get("args") or []
@@ -320,7 +327,27 @@ def _run_python_tools(
             result = ToolResult(tool=tool, ran=False, success=False)
         tool_outputs[tool] = result.to_payload()
         tools_ran[tool] = result.ran
-        tools_success[tool] = result.success
+        if tool == "bandit" and bandit_gate is not None:
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                parse_error = bool(result.metrics.get("parse_error", False))
+                if parse_error:
+                    tools_success[tool] = False
+                else:
+                    bandit_high = int(result.metrics.get("bandit_high", 0))
+                    bandit_medium = int(result.metrics.get("bandit_medium", 0))
+                    bandit_low = int(result.metrics.get("bandit_low", 0))
+                    success = True
+                    if bandit_gate["fail_on_high"] and bandit_high > 0:
+                        success = False
+                    if bandit_gate["fail_on_medium"] and bandit_medium > 0:
+                        success = False
+                    if bandit_gate["fail_on_low"] and bandit_low > 0:
+                        success = False
+                    tools_success[tool] = success
+        else:
+            tools_success[tool] = result.success
         if tool == "docker" and result.metrics.get("docker_missing_compose"):
             docker_cfg = config.get("python", {}).get("tools", {}).get("docker", {}) or {}
             if not isinstance(docker_cfg, dict):
