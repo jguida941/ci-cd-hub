@@ -10,7 +10,7 @@
 #   3. Same for TestPyPI with environment=testpypi
 #
 # Usage:
-#   - Push a tag: git tag v1.0.0 && git push origin v1.0.0
+#   - Push a semver tag: git tag v1.0.0 && git push origin v1.0.0
 #   - Or create a GitHub Release via the UI
 #
 # The package will be available at: https://pypi.org/project/cihub/
@@ -24,7 +24,7 @@ on:
     types: [published]
   push:
     tags:
-      - 'v*'
+      - 'v*.*.*'
 
 permissions:
   contents: read

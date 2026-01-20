@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file.
 - Removed legacy shim scripts (aggregate_reports, apply_profile, validate_config, validate_summary, run_aggregation, verify-matrix-keys, quarantine-check, correlation, python_ci_badges, render_summary).
 - Use CLI commands instead (for example: `cihub report dashboard`, `cihub report validate`, `cihub config apply-profile`, `cihub hub-ci verify-matrix-keys`).
 
+### Fix: PyPI publish tag filter
+
+- Publish workflow now runs only on semver tags (`v*.*.*`) to avoid triggering on the floating `v1` tag.
+
 ## 2026-01-20 - Qt System Deps for Headless CI
 
 ### Fix: Install libEGL for PySide/PyQt on Linux

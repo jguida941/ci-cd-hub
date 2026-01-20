@@ -276,3 +276,27 @@ Commands and results:
 - `sed -n '470,520p' docs/development/MASTER_PLAN.md` -> ok; reviewed Current Decisions list
 - `apply_patch (docs/development/MASTER_PLAN.md)` -> ok; added ADR-0064 headless Qt decision
 - `git status -sb` -> ok; recorded modified files after checklist + master plan updates
+- `git add -A` -> ok
+- `git status -sb` -> ok; staged headless Qt changes + version bump
+- `git commit -m "fix: headless Qt CI defaults"` -> ok
+- `git push` -> ok; pushed headless Qt changes to origin/main
+- `git tag -f v1.0.14` -> ok; tagged release
+- `git push -f origin v1.0.14` -> ok; pushed release tag
+- `git tag -f v1` -> ok; moved floating tag to new HEAD
+- `git push -f origin v1` -> ok; updated remote v1 tag
+- `rg -n "install|cihub" cihub/data/templates/repo/hub-python-ci.yml | head -40` -> ok; located caller template inputs
+- `sed -n '1,200p' cihub/data/templates/repo/hub-python-ci.yml` -> ok; verified caller uses @v1 + HUB_REPO/HUB_REF
+- `rg -n "install|pip" .github/workflows/hub-ci.yml | head -40` -> ok; located install step
+- `sed -n '120,190p' .github/workflows/hub-ci.yml` -> ok; confirmed pip installs from git+HUB_REPO@HUB_REF
+- `git -C /tmp/gitui status -sb` -> ok; checked repo status before workflow deletion
+- `ls -la /tmp/gitui/.github/workflows` -> ok; confirmed hub-ci.yml present
+- `git -C /tmp/gitui rm -f .github/workflows/hub-ci.yml` -> ok; removed workflow for regen
+- `apply_patch (.github/workflows/publish-pypi.yml)` -> ok; restrict publish to v*.*.* tags
+- `apply_patch (docs/development/CHANGELOG.md)` -> ok; documented PyPI publish tag filter
+- `python -m cihub docs generate` -> ok; updated reference docs
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok; no stale references found
+- `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated CHANGELOG dates
+- `rg -n "tags:" .github/workflows` -> ok; found publish-pypi.yml and release.yml tag triggers
+- `sed -n '1,80p' .github/workflows/publish-pypi.yml` -> ok; publish runs on release + tags v*
+- `sed -n '1,80p' .github/workflows/release.yml` -> ok; release runs only on v*.*.* tags
