@@ -26,6 +26,9 @@ export type WizardMeta = {
   repoName?: string;
   apply?: boolean;
   profileName?: string;
+  hubRepo?: string;
+  hubRef?: string;
+  setHubVars?: boolean;
 };
 
 export type WizardResult = {

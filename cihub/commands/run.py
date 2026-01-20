@@ -21,6 +21,7 @@ from cihub.ci_runner import (
     run_trivy,
 )
 from cihub.config import tool_enabled as _tool_enabled_canonical
+from cihub.tools.registry import get_tool_runner_args
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.types import CommandResult
 from cihub.utils.paths import validate_subdir
@@ -101,9 +102,18 @@ def cmd_run(args: argparse.Namespace) -> CommandResult:
 
     try:
         if tool == "pytest":
-            pytest_cfg = config.get("python", {}).get("tools", {}).get("pytest", {}) or {}
-            fail_fast = bool(pytest_cfg.get("fail_fast", False))
-            result = runner(workdir_path, output_dir, fail_fast)
+            tool_args = get_tool_runner_args(config, "pytest", "python")
+            fail_fast = bool(tool_args.get("fail_fast", False))
+            pytest_args = tool_args.get("args") or []
+            pytest_env = tool_args.get("env")
+            if not isinstance(pytest_args, list):
+                pytest_args = []
+            if not isinstance(pytest_env, dict):
+                pytest_env = None
+            result = runner(workdir_path, output_dir, fail_fast, pytest_args, pytest_env)
+        elif tool == "isort":
+            use_black_profile = _tool_enabled(config, "black")
+            result = runner(workdir_path, output_dir, use_black_profile)
         elif tool == "mutmut":
             timeout = config.get("python", {}).get("tools", {}).get("mutmut", {}).get("timeout_minutes", 15)
             result = runner(workdir_path, output_dir, int(timeout) * 60)

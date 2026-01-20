@@ -1,4 +1,4 @@
-Status: In progress  
+Status: active  
 Owner: Codex CLI  
 Source-of-truth: manual  
 Last-reviewed: 2026-01-19  

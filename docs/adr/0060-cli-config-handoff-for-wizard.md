@@ -1,6 +1,6 @@
 # ADR-0060: CLI Config Handoff for Interactive Wizards
-Status: accepted
-Date: 2026-01-19
+**Status:** Accepted  
+**Date:** 2026-01-19  
 
 ## Context
 

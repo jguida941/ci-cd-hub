@@ -98,6 +98,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Implement `/new` wizard flow
 - [x] Implement `/init` wizard flow
 - [x] Implement `/config edit` wizard flow
+- [x] Pass `--hub-repo`/`--hub-ref`/`--set-hub-vars` through `/init` wizard meta
 - [x] Architecture sync audit (CLI/wizard/schema) documented in `docs/development/archive/CLI_WIZARD_SYNC_AUDIT.md`
 - [x] Second-pass alignment audit consolidated in `docs/development/archive/CLI_WIZARD_SYNC_AUDIT.md` (supersedes `docs/development/archive/CLI_WIZARD_SYNC_FINDINGS.md`)
 

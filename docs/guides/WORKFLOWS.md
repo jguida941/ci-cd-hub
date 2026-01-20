@@ -295,7 +295,7 @@ The hub produces JSON intended for dashboards and for custom visualization.
 |----------|-------------|----------|
 | `reports/<config_basename>/report.json` | hub-run-all and reusable workflows | Per-repo metrics: tool outcomes, coverage, mutation, vulnerability counts |
 | `reports/<config_basename>/summary.md` | hub-run-all | Per-repo summary snapshot used for validation |
-| `reports/hub-report.json` | `aggregate_reports.py` (hub job) | Hub-wide summary: totals, pass/fail counts, timestamps |
+| `reports/hub-report.json` | `cihub report aggregate` (hub job) | Hub-wide summary: totals, pass/fail counts, timestamps |
 | `dashboards/overview.json` | static file | Dashboard definition for an aggregated overview across repos |
 | `dashboards/repo-detail.json` | static file | Dashboard definition for per-repo deep dive |
 

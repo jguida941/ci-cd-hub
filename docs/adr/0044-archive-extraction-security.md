@@ -60,7 +60,7 @@ def _extract_tarball_member(tar_path: Path, member_name: str, dest_dir: Path) ->
 ### 3. Consistent Pattern
 
 The same `Path.relative_to()` technique is used everywhere:
-- ZIP extraction (`correlation.py`, `github_api.py`, `debug_orchestrator.py`)
+- ZIP extraction (`cihub/core/correlation.py`, `cihub/core/aggregation/github_api.py`, `scripts/debug_orchestrator.py`)
 - Tarball extraction (`hub_ci/__init__.py`)
 - POM module validation (`java_pom.py`)
 - Path validation utilities (`paths.py`)

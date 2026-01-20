@@ -98,20 +98,21 @@ command-specific payloads.
 
 ---
 
-## Scripts (Deprecated Shims)
+## Scripts (Legacy Utilities)
 
-Located in `scripts/` - legacy utilities kept for one release.
+Standalone scripts live in `scripts/` for dev helpers. Deprecated shim scripts were removed; use the CLI replacements below.
 
-| Script                        | Purpose                         | Replacement                                                                                                             |
-|-------------------------------|---------------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| `load_config.py`              | Load & display merged config    | `python -m cihub config show --repo fixtures-python-passing --effective`                                                |
-| `validate_config.py`          | Validate against schema         | `python -m cihub hub-ci validate-configs [--repo NAME]`                                                                 |
-| `apply_profile.py`            | Merge profile onto config       | `python -m cihub config apply-profile --profile templates/profiles/python-fast.yaml --target config/repos/my-repo.yaml` |
-| `aggregate_reports.py`        | Build dashboard from reports    | `python -m cihub report dashboard --reports-dir reports --output dashboard.html`                                        |
-| `run_aggregation.py`          | Deprecated shim for aggregation | `python -m cihub report aggregate`                                                                                      |
-| `run_cli_integration.py`      | CLI integration tests           | `python scripts/run_cli_integration.py --fixtures-path /path/to/ci-cd-hub-fixtures`                                     |
-| `check_quarantine_imports.py` | Ensure no quarantine imports    | `python -m cihub hub-ci quarantine-check`                                                                               |
-| `verify_hub_matrix_keys.py`   | Validate workflow matrices      | `python -m cihub hub-ci verify-matrix-keys`                                                                             |
+CLI replacements for removed shims:
+- Config show: `python -m cihub config show --repo fixtures-python-passing --effective`
+- Config validation: `python -m cihub hub-ci validate-configs [--repo NAME]`
+- Apply profile: `python -m cihub config apply-profile --profile templates/profiles/python-fast.yaml --target config/repos/my-repo.yaml`
+- Report dashboard: `python -m cihub report dashboard --reports-dir reports --output dashboard.html`
+- Report aggregate: `python -m cihub report aggregate`
+- Quarantine guard: `python -m cihub hub-ci quarantine-check`
+- Verify matrix keys: `python -m cihub hub-ci verify-matrix-keys`
+
+Scripts still used directly:
+- `python scripts/run_cli_integration.py --fixtures-path /path/to/ci-cd-hub-fixtures`
 
 ---
 

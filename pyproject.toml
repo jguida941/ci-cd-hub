@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cihub"
-version = "1.0.8"
+version = "1.0.9"
 description = "Centralized CI/CD orchestration hub for multi-repository pipelines"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -128,7 +128,6 @@ ignore = ["S101"]  # Allow assert in tests
 # E402: Late imports are intentional to avoid circular dependencies
 "cihub/commands/report/__init__.py" = ["E402"]
 "cihub/services/ci_engine/__init__.py" = ["E402"]
-"scripts/validate_config.py" = ["E402"]
 "cihub/commands/triage/__init__.py" = ["I001"]
 "cihub/services/triage_service.py" = ["I001"]
 # S603/S105/S106/S108: Security warnings are false positives in test code
@@ -173,12 +172,8 @@ markers = [
 [tool.coverage.run]
 source = ["cihub", "scripts"]
 omit = [
-    "scripts/run_aggregation.py",
     "scripts/debug_orchestrator.py",
-    "scripts/check_quarantine_imports.py",
     "scripts/run_cli_integration.py",
-    "scripts/validate_summary.py",
-    "scripts/verify_hub_matrix_keys.py",
     # Utility scripts not executed via CLI - exclude from coverage
     "scripts/check_test_drift.py",
     "scripts/generate_test_readme.py",

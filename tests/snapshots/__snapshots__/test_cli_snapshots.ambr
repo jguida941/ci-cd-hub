@@ -270,7 +270,8 @@
     '[--subdir SUBDIR] [--workdir SUBDIR] [--fix-pom] [--apply]',
     '[--force] [--wizard] [--config-json CONFIG_JSON |',
     '--config-file CONFIG_FILE] [--dry-run]',
-    '[--install-from {pypi,git,local}]',
+    '[--install-from {pypi,git,local}] [--hub-repo HUB_REPO]',
+    '[--hub-ref HUB_REF] [--set-hub-vars | --no-set-hub-vars]',
     'options:',
     '-h, --help            show this help message and exit',
     '--json                Output machine-readable JSON',
@@ -297,6 +298,13 @@
     '--install-from {pypi,git,local}',
     'How cihub should be installed in CI: pypi (default),',
     'git, or local',
+    '--hub-repo HUB_REPO   Hub repo (owner/name) for setting HUB_REPO (default:',
+    'CIHUB_HUB_REPO or template)',
+    '--hub-ref HUB_REF     Hub ref (tag/sha/branch) for setting HUB_REF (default:',
+    'CIHUB_HUB_REF or template)',
+    '--set-hub-vars, --no-set-hub-vars',
+    'Set HUB_REPO/HUB_REF repo variables via gh (default:',
+    'true)',
     'See also: detect, scaffold, update, setup',
   ])
 # ---

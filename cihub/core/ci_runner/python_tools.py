@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -13,7 +14,13 @@ from .base import ToolResult
 from .parsers import _parse_coverage, _parse_junit
 
 
-def run_pytest(workdir: Path, output_dir: Path, fail_fast: bool = False) -> ToolResult:
+def run_pytest(
+    workdir: Path,
+    output_dir: Path,
+    fail_fast: bool = False,
+    args: list[str] | None = None,
+    env: dict[str, str] | None = None,
+) -> ToolResult:
     junit_path = output_dir / "pytest-junit.xml"
     coverage_path = output_dir / "coverage.xml"
     cmd = [
@@ -25,7 +32,14 @@ def run_pytest(workdir: Path, output_dir: Path, fail_fast: bool = False) -> Tool
     ]
     if fail_fast:
         cmd.append("-x")
-    proc = shared._run_tool_command("pytest", cmd, workdir, output_dir)
+    if args:
+        cmd.extend([str(arg) for arg in args if str(arg)])
+
+    merged_env = os.environ.copy()
+    if env:
+        merged_env.update(env)
+
+    proc = shared._run_tool_command("pytest", cmd, workdir, output_dir, env=merged_env)
     metrics = {}
     metrics.update(_parse_junit(junit_path))
     metrics.update(_parse_coverage(coverage_path))
@@ -87,9 +101,12 @@ def run_black(workdir: Path, output_dir: Path) -> ToolResult:
     )
 
 
-def run_isort(workdir: Path, output_dir: Path) -> ToolResult:
+def run_isort(workdir: Path, output_dir: Path, use_black_profile: bool = True) -> ToolResult:
     log_path = output_dir / "isort-output.txt"
-    cmd = ["isort", "--check-only", "--diff", "."]
+    cmd = ["isort"]
+    if use_black_profile:
+        cmd.extend(["--profile", "black"])
+    cmd.extend(["--check-only", "--diff", "."])
     proc = shared._run_tool_command("isort", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
     issues = len(re.findall(r"^ERROR:", proc.stdout, flags=re.MULTILINE))

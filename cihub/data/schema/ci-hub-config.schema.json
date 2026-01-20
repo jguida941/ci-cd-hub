@@ -595,6 +595,16 @@
                 "enabled": { "default": true, "type": "boolean" },
                 "fail_fast": { "default": false, "type": "boolean" },
                 "min_coverage": { "default": 70, "maximum": 100, "minimum": 0, "type": "integer" },
+                "args": {
+                  "oneOf": [
+                    { "type": "string" },
+                    { "type": "array", "items": { "type": "string" } }
+                  ]
+                },
+                "env": {
+                  "type": "object",
+                  "additionalProperties": { "type": "string" }
+                },
                 "require_run_or_fail": { "default": true, "type": "boolean" }
               },
               "type": "object"

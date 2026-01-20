@@ -385,7 +385,7 @@ docs/development/active/PYQT_PLAN.md
 - [x] Implement triage bundles + priority output + LLM prompt pack (behind `CIHUB_EMIT_TRIAGE` env toggle).
 - [ ] Implement registry CLI + versioning/rollback.
 - [x] Make aggregate reports resilient to failed repos (render partial summaries instead of aborting).
-- [x] Implement `cihub report dashboard` (HTML + JSON output) replacing scripts/aggregate_reports.py.
+- [x] Implement `cihub report dashboard` (HTML + JSON output) replacing the legacy aggregate_reports shim.
 - [x] Add CLI env overrides for tool toggles and summary toggle (`CIHUB_RUN_*`, `CIHUB_WRITE_GITHUB_SUMMARY`).
 - [x] Add Java SBOM support (schema + CLI runner + workflow wiring).
 - [x] Toggle audit + enforcement:
@@ -489,6 +489,8 @@ These are references, not competing plans.
 - **AI enhancement is optional and CLI-local** (`cihub/ai`, `--ai`, `CIHUB_AI_PROVIDER`, `CIHUB_DEV_MODE`) (ADR-0058).
 - **Interactive clients consume the CLI command registry** (`cihub commands list --json`) (ADR-0059).
 - **Wizard handoff uses CLI config payload flags** (`--config-json`/`--config-file` on `init`, `new`, `config edit`) (ADR-0060).
+- **Pytest args/env are config-driven** (`python.tools.pytest.args`/`python.tools.pytest.env`) for headless/UI control (ADR-0062).
+- **isort uses the Black profile when Black is enabled** in config (ADR-0063).
 - **Workflow dispatch/watch lives in the CLI** (`cihub dispatch`) with wizard wrappers (ADR-0055).
 - **Schema is the source of truth for defaults**; defaults.yaml and fallbacks.py are generated and audited in `cihub check --audit`.
 - **Canonical install default is PyPI**; align CLI defaults and templates to schema `install.source`.

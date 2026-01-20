@@ -22,13 +22,21 @@ from cihub.config.io import load_yaml_file
 from cihub.config.loader import ConfigValidationError, load_config
 from cihub.config.merge import deep_merge
 
-# Allow importing scripts as modules (for validate_config which is not yet migrated)
-ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+from jsonschema import Draft7Validator
 
-from cihub.utils.paths import hub_root  # noqa: E402
-from scripts.validate_config import validate_config  # noqa: E402
+from cihub.utils.paths import hub_root
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def validate_config(config: dict, schema: dict) -> list[str]:
+    """Validate config against schema and return sorted error strings."""
+    validator = Draft7Validator(schema)
+    errors: list[str] = []
+    for err in validator.iter_errors(config):
+        path = ".".join(str(p) for p in err.path) or "<root>"
+        errors.append(f"{path}: {err.message}")
+    return sorted(errors)
 
 TEMPLATES_DIR = hub_root() / "templates"
 PROFILES_DIR = TEMPLATES_DIR / "profiles"

@@ -61,6 +61,9 @@ Existing:
 - [ADR-0057: Test Metrics Automation via hub-ci](0057-test-metrics-automation-via-hub-ci.md)
 - [ADR-0058: Python CLI AI Enhancement Module](0058-python-cli-ai-enhancement.md)
 - [ADR-0060: CLI Config Handoff for Interactive Wizards](0060-cli-config-handoff-for-wizard.md)
+- [ADR-0061: Auto-Set HUB_REPO/HUB_REF](0061-auto-set-hub-vars.md)
+- [ADR-0062: Configurable Pytest Args and Env](0062-pytest-args-env-headless.md)
+- [ADR-0063: Default isort Profile to Black](0063-isort-black-profile-default.md)
 
 Template starter:
 ```markdown

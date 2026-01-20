@@ -6,20 +6,26 @@ from pathlib import Path
 
 import pytest
 
-# Allow importing scripts as modules
-ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+from jsonschema import Draft7Validator
 
-from cihub.config.loader import (  # noqa: E402
+from cihub.config.loader import (
     ConfigValidationError,
     generate_workflow_inputs,
     load_config,
 )
-from cihub.config.merge import deep_merge  # noqa: E402
-from cihub.config.normalize import normalize_config, normalize_tool_configs  # noqa: E402
-from cihub.utils.paths import hub_root as get_hub_root  # noqa: E402
-from scripts.validate_config import validate_config  # noqa: E402
+from cihub.config.merge import deep_merge
+from cihub.config.normalize import normalize_config, normalize_tool_configs
+from cihub.utils.paths import hub_root as get_hub_root
+
+
+def validate_config(config: dict, schema: dict) -> list[str]:
+    """Validate config against schema and return sorted error strings."""
+    validator = Draft7Validator(schema)
+    errors: list[str] = []
+    for err in validator.iter_errors(config):
+        path = ".".join(str(p) for p in err.path) or "<root>"
+        errors.append(f"{path}: {err.message}")
+    return sorted(errors)
 
 
 def test_generate_workflow_inputs_java():

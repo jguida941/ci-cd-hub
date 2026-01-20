@@ -197,7 +197,22 @@ def _run_python_tools(
             tool_args = get_tool_runner_args(config, tool, "python")
 
             if tool == "pytest":
-                result = runner(workdir_path, output_dir, tool_args.get("fail_fast", False))
+                pytest_args = tool_args.get("args") or []
+                pytest_env = tool_args.get("env")
+                if not isinstance(pytest_args, list):
+                    pytest_args = []
+                if not isinstance(pytest_env, dict):
+                    pytest_env = None
+                result = runner(
+                    workdir_path,
+                    output_dir,
+                    tool_args.get("fail_fast", False),
+                    pytest_args,
+                    pytest_env,
+                )
+            elif tool == "isort":
+                use_black_profile = _tool_enabled(config, "black", "python")
+                result = runner(workdir_path, output_dir, use_black_profile)
             elif tool == "mutmut":
                 result = runner(workdir_path, output_dir, tool_args.get("timeout_seconds", 900))
             elif tool == "sbom":

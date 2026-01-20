@@ -10,7 +10,7 @@ from typing import Any
 
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.types import CommandResult
-from cihub.utils.paths import hub_root
+from cihub.utils.paths import project_root
 
 ADR_DIR = "docs/adr"
 ADR_PATTERN = re.compile(r"^(\d{4})-(.+)\.md$")
@@ -42,7 +42,7 @@ def _resolve_link(adr_path: Path, repo_root: Path, link_target: str) -> Path:
 
 def _get_adr_dir() -> Path:
     """Return the ADR directory path."""
-    return hub_root() / ADR_DIR
+    return project_root() / ADR_DIR
 
 
 def _get_next_number() -> int:

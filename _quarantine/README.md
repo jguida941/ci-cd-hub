@@ -53,7 +53,7 @@ Files will graduate to one of:
 
 ```bash
 # CI runs this - hard fail if ANY import from _quarantine
-python scripts/check_quarantine_imports.py
+python -m cihub hub-ci quarantine-check
 ```
 
 ## When Empty

@@ -30,7 +30,7 @@ Three-tier hierarchy (highest precedence wins):
 **Merge strategy:** Deep merge. Nested objects merge recursively; scalar values are replaced.
 
 **Schema validation:** Occurs in:
-- `cihub hub-ci validate-configs` (replaces deprecated `scripts/load_config.py`)
+- `cihub hub-ci validate-configs` (replaces the legacy load_config shim)
 - `hub-orchestrator.yml` load-config job before dispatch
 - `config-validate.yml` workflow on config/schema changes
 
@@ -55,7 +55,7 @@ Three-tier hierarchy (highest precedence wins):
 - Repo-local config requires target repo changes
 
 **Implementation notes:**
-- `cihub.config.loader` uses recursive dict merge (replaces deprecated `load_config.py`)
+- `cihub.config.loader` uses recursive dict merge (replaces the legacy load_config shim)
 - Validation runs on merged config, not individual sources
 - Config hierarchy documented in CONFIG.md
 

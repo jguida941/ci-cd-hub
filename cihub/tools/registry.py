@@ -21,6 +21,7 @@ Custom Tools (x- prefix):
 from __future__ import annotations
 
 import re
+import shlex
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
@@ -286,7 +287,28 @@ def _extract_tool_config(config: dict, language: str, tool: str) -> dict:
 def _pytest_config(config: dict, language: str) -> dict[str, Any]:
     """Extract pytest-specific runner arguments."""
     cfg = _extract_tool_config(config, language, "pytest")
-    return {"fail_fast": bool(cfg.get("fail_fast", False))}
+    if not isinstance(cfg, dict):
+        cfg = {}
+    args_value = cfg.get("args")
+    args: list[str] = []
+    if isinstance(args_value, str):
+        args = [part for part in shlex.split(args_value) if part]
+    elif isinstance(args_value, list):
+        args = [str(part) for part in args_value if str(part)]
+
+    env_value = cfg.get("env")
+    env: dict[str, str] = {}
+    if isinstance(env_value, dict):
+        for key, value in env_value.items():
+            if value is None:
+                continue
+            env[str(key)] = str(value)
+
+    return {
+        "fail_fast": bool(cfg.get("fail_fast", False)),
+        "args": args,
+        "env": env,
+    }
 
 
 def _mutmut_config(config: dict, language: str) -> dict[str, Any]:

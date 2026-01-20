@@ -194,6 +194,49 @@ class TestRunIsort:
         assert result.tool == "isort"
         assert result.metrics["isort_issues"] == 2
 
+    def test_uses_black_profile(self, tmp_path: Path) -> None:
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        captured: dict[str, object] = {}
+
+        def _fake_run(tool, cmd, workdir, output_dir, timeout=None, env=None):
+            captured["cmd"] = cmd
+            mock_proc = MagicMock()
+            mock_proc.returncode = 0
+            mock_proc.stdout = ""
+            mock_proc.stderr = ""
+            return mock_proc
+
+        with patch("cihub.core.ci_runner.python_tools.shared._run_tool_command", side_effect=_fake_run):
+            run_isort(tmp_path, output_dir, True)
+
+        cmd = captured.get("cmd")
+        assert isinstance(cmd, list)
+        assert "--profile" in cmd
+        assert cmd[cmd.index("--profile") + 1] == "black"
+
+    def test_skips_profile_when_disabled(self, tmp_path: Path) -> None:
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        captured: dict[str, object] = {}
+
+        def _fake_run(tool, cmd, workdir, output_dir, timeout=None, env=None):
+            captured["cmd"] = cmd
+            mock_proc = MagicMock()
+            mock_proc.returncode = 0
+            mock_proc.stdout = ""
+            mock_proc.stderr = ""
+            return mock_proc
+
+        with patch("cihub.core.ci_runner.python_tools.shared._run_tool_command", side_effect=_fake_run):
+            run_isort(tmp_path, output_dir, False)
+
+        cmd = captured.get("cmd")
+        assert isinstance(cmd, list)
+        assert "--profile" not in cmd
+
 
 class TestRunMypy:
     """Tests for run_mypy function."""
@@ -268,6 +311,43 @@ class TestRunPytest:
         assert result.tool == "pytest"
         assert result.success is False
         assert result.metrics["tests_failed"] == 2
+
+    def test_pytest_args_and_env_passed(self, tmp_path: Path) -> None:
+        from cihub.core.ci_runner import python_tools
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        (output_dir / "pytest-junit.xml").write_text(
+            '<?xml version="1.0"?><testsuite tests="1" failures="0" errors="0" skipped="0" time="1.0"/>'
+        )
+        (output_dir / "coverage.xml").write_text(
+            '<?xml version="1.0"?><coverage line-rate="1.0"><packages/></coverage>'
+        )
+
+        captured: dict[str, object] = {}
+
+        def _fake_run(tool, cmd, workdir, output_dir, timeout=None, env=None):
+            captured["cmd"] = cmd
+            captured["env"] = env
+            mock_proc = MagicMock()
+            mock_proc.returncode = 0
+            mock_proc.stdout = ""
+            mock_proc.stderr = ""
+            return mock_proc
+
+        with patch("cihub.core.ci_runner.python_tools.shared._run_tool_command", side_effect=_fake_run):
+            result = python_tools.run_pytest(
+                tmp_path,
+                output_dir,
+                False,
+                ["-k", "not ui"],
+                {"QT_QPA_PLATFORM": "offscreen"},
+            )
+
+        assert result.success is True
+        assert "-k" in captured["cmd"]
+        assert captured["env"]["QT_QPA_PLATFORM"] == "offscreen"
 
 
 class TestRunBandit:

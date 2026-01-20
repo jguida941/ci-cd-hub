@@ -268,6 +268,22 @@ export function App({ cwd, version, pythonVersion, warnings = [] }: AppProps) {
         if (repoPath) {
           meta.repoPath = repoPath;
         }
+
+        const hubRepo = getFlagValue(args, "--hub-repo");
+        if (hubRepo) {
+          meta.hubRepo = hubRepo;
+        }
+
+        const hubRef = getFlagValue(args, "--hub-ref");
+        if (hubRef) {
+          meta.hubRef = hubRef;
+        }
+
+        if (args.includes("--set-hub-vars")) {
+          meta.setHubVars = true;
+        } else if (args.includes("--no-set-hub-vars")) {
+          meta.setHubVars = false;
+        }
       }
 
       if (flow === "config-edit") {
@@ -313,6 +329,15 @@ export function App({ cwd, version, pythonVersion, warnings = [] }: AppProps) {
             args.push("--dry-run");
           } else {
             args.push("--apply");
+          }
+          if (wizardResult.meta.hubRepo) {
+            args.push("--hub-repo", wizardResult.meta.hubRepo);
+          }
+          if (wizardResult.meta.hubRef) {
+            args.push("--hub-ref", wizardResult.meta.hubRef);
+          }
+          if (typeof wizardResult.meta.setHubVars === "boolean") {
+            args.push(wizardResult.meta.setHubVars ? "--set-hub-vars" : "--no-set-hub-vars");
           }
         } else {
           const repoName = wizardResult.meta.repoName;

@@ -1,6 +1,6 @@
 # ADR-0061: Auto-Set HUB_REPO/HUB_REF Repo Variables
-Status: accepted
-Date: 2026-01-19
+**Status:** Accepted  
+**Date:** 2026-01-19  
 
 ## Context
 

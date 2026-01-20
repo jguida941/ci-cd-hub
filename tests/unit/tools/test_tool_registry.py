@@ -225,12 +225,36 @@ class TestToolAdapters:
         assert get_tool_adapter("pytest", "unknown_language") is None
 
     def test_get_tool_runner_args_pytest(self) -> None:
-        """pytest adapter extracts fail_fast from config."""
+        """pytest adapter extracts fail_fast, args, and env from config."""
         from cihub.tools.registry import get_tool_runner_args
 
-        config = {"python": {"tools": {"pytest": {"fail_fast": True}}}}
+        config = {
+            "python": {
+                "tools": {
+                    "pytest": {
+                        "fail_fast": True,
+                        "args": ["-k", "not ui"],
+                        "env": {"QT_QPA_PLATFORM": "offscreen"},
+                    }
+                }
+            }
+        }
         args = get_tool_runner_args(config, "pytest", "python")
-        assert args == {"fail_fast": True}
+        assert args == {
+            "fail_fast": True,
+            "args": ["-k", "not ui"],
+            "env": {"QT_QPA_PLATFORM": "offscreen"},
+        }
+
+    def test_get_tool_runner_args_pytest_string_args(self) -> None:
+        """pytest adapter splits string args with shlex."""
+        from cihub.tools.registry import get_tool_runner_args
+
+        config = {"python": {"tools": {"pytest": {"args": "-k 'not ui' --maxfail=1"}}}}
+        args = get_tool_runner_args(config, "pytest", "python")
+        assert args["fail_fast"] is False
+        assert args["args"] == ["-k", "not ui", "--maxfail=1"]
+        assert args["env"] == {}
 
     def test_get_tool_runner_args_mutmut(self) -> None:
         """mutmut adapter converts timeout_minutes to seconds."""

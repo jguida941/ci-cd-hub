@@ -149,7 +149,7 @@ Execution order (avoid rework):
  - Workflows: hub-ci.yml (create), python-ci.yml, java-ci.yml, hub-orchestrator.yml, hub-run-all.yml
  - Templates: hub-python-ci.yml, hub-java-ci.yml, .ci-hub.yml
  - Tests: test_contract_consistency.py, test_config_pipeline.py
- - Scripts: load_config.py
+ - CLI: cihub config-outputs
 
  Ready to execute Phase A on simplify-workflows branch.
 
@@ -272,7 +272,7 @@ Execution order (avoid rework):
  - Remove from python-ci.yml inputs
  - Remove from java-ci.yml inputs
  - Remove from hub-run-all.yml
- - Remove from load_config.py (if applicable)
+ - Remove from config-outputs output (if applicable)
 
  Step A8: Handle hub-run-all.yml
 
@@ -430,7 +430,7 @@ Execution order (avoid rework):
  | templates/repo/.ci-hub.yml | UPDATE - new format example |
  | tests/test_contract_consistency.py | UPDATE - remove threshold_overrides_yaml from WORKFLOW_ONLY_INPUTS |
  | tests/test_config_pipeline.py | UPDATE - adapt to new flow |
- | scripts/load_config.py | UPDATE - remove threshold_overrides_yaml output if present |
+ | cihub/commands/config_outputs.py | UPDATE - remove threshold_overrides_yaml output if present |
 
  NOT modified in Phase A:
  - cihub/cli.py - CLI uses templates, so updating templates = CLI "just works"

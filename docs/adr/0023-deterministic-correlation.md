@@ -83,7 +83,7 @@ Components:
 
 ### Implementation
 
-Correlation logic is extracted into a testable module: `scripts/correlation.py`
+Correlation logic is extracted into a testable module: `cihub/core/correlation.py`
 
 ```python
 def find_run_by_correlation_id(owner, repo, workflow_id, correlation_id, token):
@@ -143,7 +143,7 @@ Added `hub_correlation_id` to report schema (`schema/ci-report.v2.json`):
 - Self-healing - finds correct run even if initial time-based capture failed
 - Retry-safe - `run_attempt` in ID handles re-runs
 - Auditable - correlation chain visible in artifacts
-- Testable - logic extracted to `scripts/correlation.py` with unit tests
+- Testable - logic extracted to `cihub/core/correlation.py` with unit tests
 
 **Negative:**
 
@@ -159,7 +159,7 @@ Added `hub_correlation_id` to report schema (`schema/ci-report.v2.json`):
 
 ## Testing
 
-Unit tests in `tests/test_correlation.py`:
+Unit tests in `tests/unit/core/diagnostics/test_correlation.py`:
 
 - `TestGenerateCorrelationId`: Format and component handling
 - `TestValidateCorrelationId`: Match/mismatch/edge cases
@@ -172,8 +172,8 @@ Integration testing via hub orchestrator runs against canary repos.
 
 | Component | Location | Description |
 |-----------|----------|-------------|
-| Correlation module | `scripts/correlation.py` | Extracted testable functions |
-| Unit tests | `tests/test_correlation.py` | Correlation logic tests |
+| Correlation module | `cihub/core/correlation.py` | Extracted testable functions |
+| Unit tests | `tests/unit/core/diagnostics/test_correlation.py` | Correlation logic tests |
 | Orchestrator dispatch | `hub-orchestrator.yml:398` | Generate and pass correlation ID |
 | Orchestrator aggregation | `hub-orchestrator.yml:719-753` | `find_run_by_correlation_id()` |
 | Python workflow | `python-ci.yml` | Accept `hub_correlation_id` input |

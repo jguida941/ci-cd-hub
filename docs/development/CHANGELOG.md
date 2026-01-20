@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-20 - ADR + Deprecated Shim Cleanup
+
+### Fix: ADR tooling uses project root
+
+- `cihub adr list` now scans `docs/adr` from the repo root after the data path move.
+
+### Change: Remove deprecated shim scripts
+
+- Removed legacy shim scripts (aggregate_reports, apply_profile, validate_config, validate_summary, run_aggregation, verify-matrix-keys, quarantine-check, correlation, python_ci_badges, render_summary).
+- Use CLI commands instead (for example: `cihub report dashboard`, `cihub report validate`, `cihub config apply-profile`, `cihub hub-ci verify-matrix-keys`).
+
 ## 2026-01-19 - TypeScript Wizard Handoff (Phase 6)
 
 ### New: TypeScript interactive wizard flows
@@ -22,6 +33,21 @@ All notable changes to this project will be documented in this file.
 - `cihub setup` and `cihub init` now set HUB_REPO/HUB_REF repo variables via `gh` when available.
 - Added `--set-hub-vars/--no-set-hub-vars` and hub override flags for setup/init.
 - Documented `CIHUB_HUB_REPO` / `CIHUB_HUB_REF` in the env registry.
+
+## 2026-01-19 - Pytest Headless Config
+
+### New: Configurable pytest args/env
+
+- Added `python.tools.pytest.args` and `python.tools.pytest.env` for headless CI and UI test control.
+- `cihub ci` and `cihub run pytest` now pass pytest args/env from config.
+- Recorded decision in ADR-0062.
+
+## 2026-01-19 - isort Default Profile
+
+### Change: Align isort with Black by default
+
+- `cihub ci` and `cihub run isort` use `isort --profile black` when Black is enabled in config.
+- Recorded decision in ADR-0063.
 
 ## 2026-01-19 - TypeScript CLI Configuration (Phase 7)
 
@@ -1282,7 +1308,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - **python-ci.yml**: Fixed typo in artifact name (`arme tifact_prefix` → `artifact_prefix`).
 
 ### Scripts (Deprecated)
-- Converted `scripts/aggregate_reports.py` to deprecation shim → use `cihub report dashboard`.
+- Removed legacy aggregate_reports shim → use `cihub report dashboard`.
 
 ### Tests
 - Updated `test_aggregate_reports.py` to import from `cihub.commands.report` instead of deprecated shim.
@@ -1297,9 +1323,9 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - Added `cihub hub-ci quarantine-check [--path <dir>]` to fail if any file imports from `_quarantine`.
 
 ### Scripts (Deprecated)
-- Converted `scripts/apply_profile.py` to deprecation shim → use `cihub config apply-profile`.
-- Converted `scripts/verify_hub_matrix_keys.py` to deprecation shim → use `cihub hub-ci verify-matrix-keys`.
-- Converted `scripts/check_quarantine_imports.py` to deprecation shim → use `cihub hub-ci quarantine-check`.
+- Removed legacy apply_profile shim → use `cihub config apply-profile`.
+- Removed legacy verify-matrix-keys shim → use `cihub hub-ci verify-matrix-keys`.
+- Removed legacy quarantine-check shim → use `cihub hub-ci quarantine-check`.
 
 ### Workflows
 - Updated `hub-production-ci.yml` to use CLI commands instead of deprecated scripts.
@@ -1323,14 +1349,14 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - `python-ci.yml` and `java-ci.yml` pass `--write-github-summary`/`--no-write-github-summary` based on inputs.
 
 ### Scripts
-- Deprecated `scripts/validate_summary.py` now delegates to `cihub report validate`.
+- Replaced legacy validate_summary shim with `cihub report validate`.
 
 ### 2025-12-31 - Hub Aggregation Moved Into CLI
 
 ### CLI
 - Added `cihub report aggregate` for hub orchestrator aggregation.
 - Added `cihub report aggregate --reports-dir` for hub-run-all aggregation without GitHub API access.
-- Deprecated `scripts/run_aggregation.py` (shim now delegates to CLI).
+- Removed legacy run_aggregation shim (use `cihub report aggregate`).
 
 ### Workflows
 - `hub-orchestrator.yml` now calls `python -m cihub report aggregate` instead of inline Python.
@@ -1517,7 +1543,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 ### 2025-12-24 - Quarantine System, NEW_PLAN, and CLI/Validation Hardening
 
 ### Architecture & Governance
-- Added `_quarantine/` with phased graduation, `INTEGRATION_STATUS.md`, and `check_quarantine_imports.py` guardrail to prevent premature imports.
+- Added `_quarantine/` with phased graduation, `INTEGRATION_STATUS.md`, and `cihub hub-ci quarantine-check` guardrail to prevent premature imports.
 - Added `docs/development/archive/ARCHITECTURE_PLAN.md` (proposed self-validating CLI + manifest architecture); noted current blockers in the plan.
 
 ### CLI & Validation
@@ -1615,8 +1641,8 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - `docs/adr/0020-schema-backward-compatibility.md` - ADR documenting schema migration strategy and --schema-mode flag
 
 ### Unreleased (from CHANGES.md)
-- Replaced `hub-run-all.yml` matrix builder with `scripts/load_config.py` to honor `run_group`, dispatch toggles, and all tool flags/thresholds from schema-validated configs
-- Added `scripts/verify_hub_matrix_keys.py` to fail fast when workflows reference matrix keys that the builder does not emit
+- Replaced `hub-run-all.yml` matrix builder with CLI config outputs to honor `run_group`, dispatch toggles, and all tool flags/thresholds from schema-validated configs
+- Added `cihub hub-ci verify-matrix-keys` to fail fast when workflows reference matrix keys that the builder does not emit
 - Hardened reusable workflows: Java/Python CI now enforce coverage, mutation, dependency, SAST, and formatting gates based on run_* flags and threshold inputs
 - Stabilized smoke test verifier script (no early exit, no eval) and anchored checks for workflow/config presence
 - Added `hub-self-check` workflow (matrix verifier, smoke setup check, matrix dry-run) and unit tests for config loading/generation
@@ -1709,7 +1735,7 @@ Completed comprehensive audit of TEST_REORGANIZATION.md plan identifying critica
 - Added schema validation in orchestrator config load (jsonschema) to fail fast on bad repo configs; compiled scripts to ensure Python syntax.
 - Captured dispatch metadata as artifacts for downstream aggregation; summaries now include per-repo dispatch info.
 - Implemented aggregation pass to poll dispatched runs, fail on missing/failed runs, download `ci-report` artifacts when present, and roll up coverage/mutation into `hub-report.json`.
-- Added schema validation to `scripts/load_config.py`; added `jsonschema` dependency to `pyproject.toml`.
+- Added schema validation to the config loader and added `jsonschema` dependency to `pyproject.toml`.
 - Added copy/paste templates: `templates/repo/.ci-hub.yml` and `templates/hub/config/repos/repo-template.yaml`.
 - Added `config-validate` workflow to run schema validation on config/schema changes and PRs.
 - Added ADR-0001 (Central vs Distributed) and expanded docs (CONFIG.md, TOOLS, MODES, TROUBLESHOOTING, TEMPLATES).

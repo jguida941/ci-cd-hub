@@ -179,7 +179,7 @@ def test_check_pytest_command_includes_coverage_gate(monkeypatch) -> None:
     # TEST-METRICS:
     captured_cmds: list[list[str]] = []
 
-    def capture_run_process(name: str, cmd: list[str], cwd) -> CommandResult:
+    def capture_run_process(name: str, cmd: list[str], cwd, **kwargs) -> CommandResult:
         captured_cmds.append((name, cmd))
         return CommandResult(exit_code=0, summary="ok")
 

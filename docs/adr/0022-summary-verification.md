@@ -23,15 +23,15 @@ We need a repeatable way to validate that the summary matches the actual executi
  - Remove fallback expressions that coerce false to true in `hub-run-all.yml`.
  - Include `config_basename` and `run_group` in the summary environment table to identify which config produced the output.
 
-2. **Add a validation script**
- - Introduce `scripts/validate_summary.py` to compare:
+2. **Add a validation command**
+ - Use `cihub report validate` to compare:
  - Summary table entries vs `report.json` `tools_ran` booleans.
  - Artifact presence vs `tools_ran` for tools that generate reports.
- - Script returns non-zero in `--strict` mode.
+ - Command returns non-zero in `--strict` mode.
 
 3. **Capture summaries and validate in CI**
  - `hub-run-all.yml` stores `$GITHUB_STEP_SUMMARY` at `reports/<config_basename>/summary.md`.
- - `hub-run-all.yml` runs `validate_summary.py --strict` per repo against summary + artifacts.
+ - `hub-run-all.yml` runs `cihub report validate --strict` per repo against summary + artifacts.
 
 4. **Define the artifact contract**
  - Python tools must upload outputs when enabled:
@@ -55,7 +55,7 @@ We need a repeatable way to validate that the summary matches the actual executi
 ## Usage
 
 ```bash
-python scripts/validate_summary.py \
+python -m cihub report validate \
  --report report.json \
  --summary summary.md \
  --reports-dir all-reports \

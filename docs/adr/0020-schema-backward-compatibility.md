@@ -23,14 +23,14 @@ All new reports must include `schema_version: "2.0"` at the top level. This allo
 
 ### 2. Aggregator Schema Mode Flag
 
-The `aggregate_reports.py` script supports a `--schema-mode` flag:
+The `cihub report dashboard` command supports a `--schema-mode` flag:
 
 ```bash
 # Default: warn mode - include all reports, log warning for non-2.0
-python aggregate_reports.py --output dashboard.html --schema-mode warn
+python -m cihub report dashboard --reports-dir ./reports --output dashboard.html --schema-mode warn
 
 # Strict mode - skip non-2.0 reports, exit 1 if any skipped
-python aggregate_reports.py --output dashboard.html --schema-mode strict
+python -m cihub report dashboard --reports-dir ./reports --output dashboard.html --schema-mode strict
 ```
 
 **Modes:**
@@ -73,7 +73,7 @@ The `validate_report.sh` script always requires `schema_version: "2.0"`. This is
 ```yaml
 - name: Aggregate Reports
  run: |
- python scripts/aggregate_reports.py \
+ python -m cihub report dashboard \
  --reports-dir ./reports \
  --output dashboard.html \
  --schema-mode warn
@@ -84,7 +84,7 @@ The `validate_report.sh` script always requires `schema_version: "2.0"`. This is
 ```yaml
 - name: Aggregate Reports
  run: |
- python scripts/aggregate_reports.py \
+ python -m cihub report dashboard \
  --reports-dir ./reports \
  --output dashboard.html \
  --schema-mode strict

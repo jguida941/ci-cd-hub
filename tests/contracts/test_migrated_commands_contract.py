@@ -97,7 +97,7 @@ class TestAdrCommandContracts:
         """All ADR subcommands return CommandResult."""
         from cihub.commands.adr import cmd_adr
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(subcommand=subcommand, **extra_attrs)
             result = cmd_adr(args)
 
@@ -116,7 +116,7 @@ class TestAdrCommandContracts:
         """cmd_adr_new validates title and returns proper exit code."""
         from cihub.commands.adr import cmd_adr_new
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(title=title, dry_run=True, json=True)
             result = cmd_adr_new(args)
 
@@ -144,7 +144,7 @@ class TestAdrCommandContracts:
         adr_dir.mkdir(parents=True)
         (adr_dir / "0001-test.md").write_text(adr_content)
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(status=None, json=True)
             result = cmd_adr_list(args)
 
@@ -161,7 +161,7 @@ class TestAdrCommandContracts:
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
-            with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+            with patch("cihub.commands.adr.project_root", return_value=tmp_path):
                 args = argparse.Namespace(title=title, dry_run=True, json=True)
                 result = cmd_adr_new(args)
 
@@ -176,7 +176,7 @@ class TestAdrCommandContracts:
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
-            with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+            with patch("cihub.commands.adr.project_root", return_value=tmp_path):
                 args = argparse.Namespace(status=status, json=True)
                 result = cmd_adr_list(args)
 
@@ -584,7 +584,7 @@ class TestRegressionEdgeCases:
         """Regression: cmd_adr_check handles empty ADR directory."""
         from cihub.commands.adr import cmd_adr_check
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(json=True)
             result = cmd_adr_check(args)
 

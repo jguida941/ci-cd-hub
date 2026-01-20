@@ -114,12 +114,12 @@ class TestGetNextNumber:
     """Tests for _get_next_number function."""
 
     def test_returns_1_when_no_adr_dir(self, tmp_path: Path) -> None:
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             assert _get_next_number() == 1
 
     def test_returns_1_when_adr_dir_empty(self, tmp_path: Path) -> None:
         (tmp_path / "docs" / "adr").mkdir(parents=True)
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             assert _get_next_number() == 1
 
     def test_returns_next_after_existing(self, tmp_path: Path) -> None:
@@ -128,7 +128,7 @@ class TestGetNextNumber:
         (adr_dir / "0001-first.md").write_text("# ADR")
         (adr_dir / "0002-second.md").write_text("# ADR")
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             assert _get_next_number() == 3
 
     def test_ignores_non_adr_files(self, tmp_path: Path) -> None:
@@ -138,7 +138,7 @@ class TestGetNextNumber:
         (adr_dir / "README.md").write_text("# Index")
         (adr_dir / "notes.txt").write_text("notes")
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             assert _get_next_number() == 2
 
 
@@ -294,7 +294,7 @@ class TestCmdAdrNew:
     """Tests for cmd_adr_new command."""
 
     def test_creates_new_adr(self, tmp_path: Path) -> None:
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(
                 title="Use Python for CLI",
                 dry_run=False,
@@ -315,7 +315,7 @@ class TestCmdAdrNew:
         assert "**Status**: Proposed" in content
 
     def test_requires_title(self, tmp_path: Path) -> None:
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(title="", dry_run=False, json=True)
             result = cmd_adr_new(args)
 
@@ -324,7 +324,7 @@ class TestCmdAdrNew:
         assert "Title is required" in result.summary
 
     def test_dry_run_does_not_create_file(self, tmp_path: Path) -> None:
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(
                 title="Dry Run Test",
                 dry_run=True,
@@ -346,7 +346,7 @@ class TestCmdAdrNew:
         readme = adr_dir / "README.md"
         readme.write_text("# ADR Index\n\nTemplate starter:\n- Template\n")
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(
                 title="Test Entry",
                 dry_run=False,
@@ -359,7 +359,7 @@ class TestCmdAdrNew:
 
     def test_non_json_mode_returns_command_result(self, tmp_path: Path) -> None:
         """Non-JSON mode now returns CommandResult; CLI handles rendering."""
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(
                 title="Print Test",
                 dry_run=False,
@@ -383,7 +383,7 @@ class TestCmdAdrList:
         (adr_dir / "0001-first.md").write_text("# ADR-0001: First\n\n**Status:** Accepted\n**Date:** 2024-01-01\n")
         (adr_dir / "0002-second.md").write_text("# ADR-0002: Second\n\n**Status:** Proposed\n**Date:** 2024-02-01\n")
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(status=None, json=True)
             result = cmd_adr_list(args)
 
@@ -397,7 +397,7 @@ class TestCmdAdrList:
         (adr_dir / "0001-accepted.md").write_text("# ADR-0001: Accepted\n\n**Status:** Accepted\n")
         (adr_dir / "0002-proposed.md").write_text("# ADR-0002: Proposed\n\n**Status:** Proposed\n")
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(status="Accepted", json=True)
             result = cmd_adr_list(args)
 
@@ -405,7 +405,7 @@ class TestCmdAdrList:
         assert result.data["adrs"][0]["status"] == "Accepted"
 
     def test_returns_empty_when_no_adr_dir(self, tmp_path: Path) -> None:
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(status=None, json=True)
             result = cmd_adr_list(args)
 
@@ -419,7 +419,7 @@ class TestCmdAdrList:
         (adr_dir / "README.md").write_text("# Index")
         (adr_dir / "0001-test.md").write_text("# ADR-0001: Test\n\n**Status:** Proposed\n")
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(status=None, json=True)
             result = cmd_adr_list(args)
 
@@ -431,7 +431,7 @@ class TestCmdAdrList:
         adr_dir.mkdir(parents=True)
         (adr_dir / "0001-test.md").write_text("# ADR-0001: Test\n\n**Status:** Accepted\n**Date:** 2024-01-01\n")
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(status=None, json=False)
             result = cmd_adr_list(args)
 
@@ -452,7 +452,7 @@ class TestCmdAdrCheck:
         (adr_dir / "README.md").write_text("# Index")
         (adr_dir / "0001-valid.md").write_text("# ADR-0001: Valid\n\n**Status:** Accepted\n**Date:** 2024-01-01\n")
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(json=True)
             result = cmd_adr_check(args)
 
@@ -466,7 +466,7 @@ class TestCmdAdrCheck:
         (adr_dir / "README.md").write_text("# Index")
         (adr_dir / "0001-no-status.md").write_text("# ADR-0001: No Status\n\n**Date:** 2024-01-01\n")
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(json=True)
             result = cmd_adr_check(args)
 
@@ -480,7 +480,7 @@ class TestCmdAdrCheck:
         (adr_dir / "README.md").write_text("# Index")
         (adr_dir / "0001-no-date.md").write_text("# ADR-0001: No Date\n\n**Status:** Proposed\n")
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(json=True)
             result = cmd_adr_check(args)
 
@@ -492,7 +492,7 @@ class TestCmdAdrCheck:
         adr_dir.mkdir(parents=True)
         (adr_dir / "0001-test.md").write_text("# ADR-0001: Test\n\n**Status:** Proposed\n**Date:** 2024-01-01\n")
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(json=True)
             result = cmd_adr_check(args)
 
@@ -507,7 +507,7 @@ class TestCmdAdrCheck:
             "# ADR-0001: Broken\n\n**Status:** Proposed\n**Date:** 2024-01-01\n\nSee [missing](./nonexistent.md).\n"
         )
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(json=True)
             result = cmd_adr_check(args)
 
@@ -515,7 +515,7 @@ class TestCmdAdrCheck:
         assert result.data["errors"] == 1
 
     def test_returns_ok_when_no_adr_dir(self, tmp_path: Path) -> None:
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(json=True)
             result = cmd_adr_check(args)
 
@@ -529,7 +529,7 @@ class TestCmdAdrCheck:
         adr_dir.mkdir(parents=True)
         (adr_dir / "0001-test.md").write_text("# ADR-0001: Test\n\n")  # Missing fields
 
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(json=False)
             result = cmd_adr_check(args)
 
@@ -543,7 +543,7 @@ class TestCmdAdr:
     """Tests for cmd_adr router."""
 
     def test_routes_to_new(self, tmp_path: Path) -> None:
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(
                 subcommand="new",
                 title="Test",
@@ -556,7 +556,7 @@ class TestCmdAdr:
         assert "Would create" in result.summary
 
     def test_routes_to_list(self, tmp_path: Path) -> None:
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(subcommand="list", status=None, json=True)
             result = cmd_adr(args)
 
@@ -564,14 +564,14 @@ class TestCmdAdr:
         assert "adrs" in result.data
 
     def test_routes_to_check(self, tmp_path: Path) -> None:
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(subcommand="check", json=True)
             result = cmd_adr(args)
 
         assert isinstance(result, CommandResult)
 
     def test_defaults_to_list(self, tmp_path: Path) -> None:
-        with patch("cihub.commands.adr.hub_root", return_value=tmp_path):
+        with patch("cihub.commands.adr.project_root", return_value=tmp_path):
             args = argparse.Namespace(subcommand=None, status=None, json=True)
             result = cmd_adr(args)
 
