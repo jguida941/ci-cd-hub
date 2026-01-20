@@ -268,6 +268,11 @@ Commands and results:
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok; no stale references found
 - `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated CHANGELOG dates
+- `git add -A` -> ok
+- `git commit -m "fix: retry headless pytest when xvfb hangs"` -> ok
+- `git push` -> ok; pushed headless pytest retry fix
+- `git tag -f v1` -> ok; advanced floating tag to new fix
+- `git push -f origin v1` -> ok; updated remote v1 tag
 - `git status -sb` -> ok; publish-pypi + changelog + audit log modified
 - `git add -A` -> ok
 - `git commit -m "fix: restrict PyPI publish trigger to semver tags"` -> ok
