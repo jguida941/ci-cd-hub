@@ -96,3 +96,33 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
+
+  retag-v1:
+    name: Retag v1
+    needs: [publish-pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Retag v1 to release tag
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          if [ -z "$TAG_NAME" ]; then
+            TAG_NAME="${{ github.ref_name }}"
+          fi
+          case "$TAG_NAME" in
+            v[0-9]*.[0-9]*.[0-9]*)
+              ;;
+            *)
+              echo "Skipping v1 retag; not a semver tag: $TAG_NAME"
+              exit 0
+              ;;
+          esac
+          git fetch --tags
+          git tag -f v1 "$TAG_NAME"
+          git push -f origin v1

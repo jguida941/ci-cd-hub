@@ -331,6 +331,14 @@ Commands and results:
 - `rg -n "bandit" cihub/tools/registry.py` -> ok; located bandit tool adapter
 - `sed -n '380,460p' cihub/tools/registry.py` -> ok; bandit gate defaults (fail_on_high true)
 - `sed -n '1,120p' /tmp/ci-cd-hub-fixtures/.ci-hub.yml` -> ok; generated config (workdir python-passing, bandit enabled)
+- `rg -n "Install cihub|pip install" .github/workflows/python-ci.yml` -> ok; located bootstrap install
+- `sed -n '240,320p' .github/workflows/python-ci.yml` -> ok; bootstrap install uses install.py + CIHUB_HUB_REF
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch trigger --owner jguida941 --repo ci-cd-hub-fixtures --ref main --workflow hub-ci.yml` -> ok; run ID 21165942836
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch watch --owner jguida941 --repo ci-cd-hub-fixtures --run-id 21165942836 --interval 5 --timeout 900` -> running
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/ci-cd-hub-fixtures --run 21165942836 --verify-tools` -> failed; bandit failed
+- `ls -la .cihub/runs/21165942836` -> ok; artifacts directory present
+- `ls -la .cihub/runs/21165942836/artifacts` -> ok; ci-report present
+- `cat .cihub/runs/21165942836/artifacts/ci-report/report.json` -> ok; tools_success bandit false
 - `rg -n "bandit" cihub/services/ci_engine` -> ok; located gates + tools_success usage
 - `sed -n '200,320p' cihub/services/ci_engine/python_tools.py` -> ok; reviewed tool execution loop
 - `sed -n '320,420p' cihub/services/ci_engine/python_tools.py` -> ok; reviewed tools_success assignment
