@@ -268,6 +268,16 @@ Commands and results:
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok; no stale references found
 - `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated CHANGELOG dates
+- `git status -sb` -> ok; publish-pypi + changelog + audit log modified
+- `git add -A` -> ok
+- `git commit -m "fix: restrict PyPI publish trigger to semver tags"` -> ok
+- `git push` -> rejected; remote ahead (needed rebase)
+- `git pull --rebase` -> ok
+- `git push` -> ok; pushed publish trigger fix
+- `git status -sb` -> ok; audit log modified after push
+- `git add -A` -> ok
+- `git commit -m "chore: update tool run audit log"` -> ok
+- `git push` -> ok
 - `git status -sb` -> ok; recorded modified files after docs generation
 - `rg -n "Phase 9: Testing" docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok; located Phase 9 section
 - `sed -n '118,150p' docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok; reviewed Phase 9 checklist
