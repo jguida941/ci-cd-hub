@@ -536,3 +536,5 @@ Commands and results:
 - `rg -n "class Test" tests/unit/services/test_services_report_validator.py` -> ok; located test class names
 - `git status -sb` -> ok; workflow + validator + tests + audit log modified
 - `git add .github/workflows/python-ci.yml .github/workflows/java-ci.yml cihub/services/report_validator/content.py tests/unit/services/test_services_report_validator.py docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok; staged proof validation changes
+- `git add docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok; staged audit log update
+- `git commit -m "ci: enforce tool proof validation"` -> ok; commit c1c75287
