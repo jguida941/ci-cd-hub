@@ -20,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - `cihub ci --install-deps` installs `libegl1` and `xvfb` when Qt GUI deps are detected (PySide/PyQt) to prevent headless import errors.
 - `cihub ci --install-deps` also installs Qt/XCB runtime libraries for PySide/PyQt on Linux.
 - `cihub ci` runs pytest under `xvfb-run` on Linux when Qt deps are detected and no display is available.
+- `cihub ci` skips `qprocess`-marked tests automatically in headless Qt runs when no explicit `-m` marker filter is provided.
 
 ## 2026-01-19 - TypeScript Wizard Handoff (Phase 6)
 

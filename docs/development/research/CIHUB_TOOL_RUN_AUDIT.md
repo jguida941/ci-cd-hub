@@ -240,3 +240,39 @@ Commands and results:
 - `git push` -> rejected; remote ahead (needed rebase)
 - `git pull --rebase` -> ok; fast-forwarded on origin/main
 - `git push` -> ok; audit log update pushed
+- `sed -n '1,200p' docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok; reviewed audit log format
+- `git status -sb` -> ok; working tree shows headless Qt updates + ADR/changelog edits
+- `sed -n '1,240p' cihub/core/ci_runner/python_tools.py` -> ok; reviewed headless Qt pytest logic
+- `rg -n "xvfb|apt-get|qt" cihub/services/ci_engine/python_tools.py` -> ok; located Qt deps installer
+- `sed -n '1,220p' cihub/services/ci_engine/python_tools.py` -> ok; reviewed apt-get package list
+- `rg -n "def _pytest_config|args_value|env_value" cihub/tools/registry.py` -> ok; confirmed pytest args/env parsing
+- `sed -n '1,200p' docs/adr/0064-headless-qt-pytest-defaults.md` -> ok; reviewed ADR content
+- `sed -n '1,40p' docs/adr/0062-pytest-args-env-headless.md` -> ok; reviewed ADR header format
+- `sed -n '1,40p' docs/adr/0063-isort-black-profile-default.md` -> ok; reviewed ADR header format
+- `rg -n "0064" -n docs/adr/README.md && sed -n '1,80p' docs/adr/README.md` -> ok; verified ADR index entry
+- `rg -n "Headless|pytest|Qt|PySide" docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok; scanned checklist references
+- `rg -n "Master Checklist" docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok; located checklist section
+- `sed -n '25,120p' docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok; reviewed checklist
+- `rg -n "^version|__version__" pyproject.toml cihub/__init__.py` -> ok; confirmed version 1.0.13 pre-bump
+- `rg -n "Headless Qt|qprocess|pytest" docs/development/CHANGELOG.md | head -20` -> ok; located headless Qt changelog lines
+- `sed -n '1,80p' docs/development/CHANGELOG.md` -> ok; reviewed headless Qt section
+- `apply_patch (cihub/services/ci_engine/python_tools.py)` -> ok; added Qt/XCB system libs for headless CI
+- `apply_patch (docs/adr/0064-headless-qt-pytest-defaults.md)` -> ok; normalized Status/Date formatting
+- `apply_patch (pyproject.toml)` -> ok; bumped version to 1.0.14
+- `apply_patch (cihub/__init__.py)` -> ok; bumped __version__ to 1.0.14
+- `tail -n 10 docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok; confirmed latest audit entries
+- `apply_patch (docs/development/research/CIHUB_TOOL_RUN_AUDIT.md)` -> ok; appended command results
+- `apply_patch (cihub/core/ci_runner/python_tools.py)` -> ok; reuse headless xvfb detection once
+- `python -m pytest tests/unit/services/ci_runner/test_ci_runner_python.py::TestRunPytest::test_pytest_args_and_env_passed` -> ok
+- `python -m cihub docs generate` -> ok; updated reference docs (CLI/CONFIG/ENV/TOOLS/WORKFLOWS)
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok; no stale references found
+- `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated CHANGELOG dates
+- `git status -sb` -> ok; recorded modified files after docs generation
+- `rg -n "Phase 9: Testing" docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok; located Phase 9 section
+- `sed -n '118,150p' docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok; reviewed Phase 9 checklist
+- `apply_patch (docs/development/active/TYPESCRIPT_CLI_DESIGN.md)` -> ok; added headless Qt defaults checklist item
+- `rg -n "Current Decisions|Decisions" docs/development/MASTER_PLAN.md` -> ok; located decisions section
+- `sed -n '470,520p' docs/development/MASTER_PLAN.md` -> ok; reviewed Current Decisions list
+- `apply_patch (docs/development/MASTER_PLAN.md)` -> ok; added ADR-0064 headless Qt decision
+- `git status -sb` -> ok; recorded modified files after checklist + master plan updates

@@ -490,6 +490,7 @@ These are references, not competing plans.
 - **Interactive clients consume the CLI command registry** (`cihub commands list --json`) (ADR-0059).
 - **Wizard handoff uses CLI config payload flags** (`--config-json`/`--config-file` on `init`, `new`, `config edit`) (ADR-0060).
 - **Pytest args/env are config-driven** (`python.tools.pytest.args`/`python.tools.pytest.env`) for headless/UI control (ADR-0062).
+- **Headless Qt defaults are automatic** (xvfb + Qt env + optional `qprocess` skip) when Qt deps detected on Linux (ADR-0064).
 - **isort uses the Black profile when Black is enabled** in config (ADR-0063).
 - **Workflow dispatch/watch lives in the CLI** (`cihub dispatch`) with wizard wrappers (ADR-0055).
 - **Schema is the source of truth for defaults**; defaults.yaml and fallbacks.py are generated and audited in `cihub check --audit`.

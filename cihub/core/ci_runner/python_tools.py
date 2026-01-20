@@ -38,6 +38,28 @@ def _should_use_xvfb(workdir: Path, env: dict[str, str]) -> bool:
     return _qt_dependency_present(workdir)
 
 
+def _pytest_marker_declared(workdir: Path, marker: str) -> bool:
+    marker_value = marker.lower()
+    for filename in ("pyproject.toml", "pytest.ini", "setup.cfg", "tox.ini"):
+        path = workdir / filename
+        if not path.exists():
+            continue
+        try:
+            content = path.read_text(encoding="utf-8", errors="ignore").lower()
+        except OSError:
+            continue
+        if "markers" in content and marker_value in content:
+            return True
+    return False
+
+
+def _args_have_marker_expression(args: list[str]) -> bool:
+    for arg in args:
+        if arg == "-m" or arg.startswith("-m=") or arg.startswith("--markers"):
+            return True
+    return False
+
+
 def run_pytest(
     workdir: Path,
     output_dir: Path,
@@ -54,22 +76,37 @@ def run_pytest(
         f"--junitxml={junit_path}",
         "-v",
     ]
+    pytest_args = list(args) if args else []
     if fail_fast:
-        cmd.append("-x")
-    if args:
-        cmd.extend([str(arg) for arg in args if str(arg)])
+        pytest_args.append("-x")
 
     merged_env = os.environ.copy()
     if env:
         merged_env.update(env)
 
-    if _should_use_xvfb(workdir, merged_env):
+    use_xvfb = _should_use_xvfb(workdir, merged_env)
+    if use_xvfb:
+        if _pytest_marker_declared(workdir, "qprocess") and not _args_have_marker_expression(pytest_args):
+            pytest_args.extend(["-m", "not qprocess"])
+
+    if use_xvfb:
         xvfb_bin = shutil.which("xvfb-run")
         if xvfb_bin:
             cmd = [xvfb_bin, "-a"] + cmd
-            platform_value = merged_env.get("QT_QPA_PLATFORM", "").lower()
-            if platform_value in ("", "offscreen"):
-                merged_env["QT_QPA_PLATFORM"] = "xcb"
+        merged_env.setdefault("QT_QPA_PLATFORM", "offscreen")
+        merged_env.setdefault("QT_OPENGL", "software")
+        merged_env.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
+        merged_env.setdefault("QT_XCB_GL_INTEGRATION", "none")
+        merged_env.setdefault("QSG_RHI_BACKEND", "software")
+        merged_env.setdefault("QT_QUICK_BACKEND", "software")
+        runtime_dir = merged_env.setdefault("XDG_RUNTIME_DIR", "/tmp/xdg-runtime")
+        try:
+            Path(runtime_dir).mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
+
+    if pytest_args:
+        cmd.extend([str(arg) for arg in pytest_args if str(arg)])
 
     proc = shared._run_tool_command("pytest", cmd, workdir, output_dir, env=merged_env)
     metrics = {}

@@ -64,6 +64,7 @@ Existing:
 - [ADR-0061: Auto-Set HUB_REPO/HUB_REF](0061-auto-set-hub-vars.md)
 - [ADR-0062: Configurable Pytest Args and Env](0062-pytest-args-env-headless.md)
 - [ADR-0063: Default isort Profile to Black](0063-isort-black-profile-default.md)
+- [ADR-0064: Headless Qt Pytest Defaults](0064-headless-qt-pytest-defaults.md)
 
 Template starter:
 ```markdown
