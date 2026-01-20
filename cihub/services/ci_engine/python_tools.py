@@ -96,9 +96,37 @@ def _install_qt_system_deps(workdir: Path, problems: list[dict[str, Any]]) -> No
     prefix = [sudo] if sudo else []
     _run_dep_command(prefix + [apt_get, "update"], workdir, "apt-get update", problems)
     _run_dep_command(
-        prefix + [apt_get, "install", "-y", "libegl1", "xvfb"],
+        prefix
+        + [
+            apt_get,
+            "install",
+            "-y",
+            "libegl1",
+            "xvfb",
+            "libgl1",
+            "libx11-xcb1",
+            "libxcb1",
+            "libxcb-icccm4",
+            "libxcb-image0",
+            "libxcb-keysyms1",
+            "libxcb-randr0",
+            "libxcb-render-util0",
+            "libxcb-xinerama0",
+            "libxcb-xfixes0",
+            "libxkbcommon-x11-0",
+            "libxrender1",
+            "libxi6",
+            "libxtst6",
+            "libxrandr2",
+            "libxdamage1",
+            "libxcomposite1",
+            "libxcursor1",
+            "libglib2.0-0",
+            "libfontconfig1",
+            "libfreetype6",
+        ],
         workdir,
-        "apt-get install libegl1 xvfb",
+        "apt-get install qt libs",
         problems,
     )
 

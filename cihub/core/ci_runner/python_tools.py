@@ -67,6 +67,9 @@ def run_pytest(
         xvfb_bin = shutil.which("xvfb-run")
         if xvfb_bin:
             cmd = [xvfb_bin, "-a"] + cmd
+            platform_value = merged_env.get("QT_QPA_PLATFORM", "").lower()
+            if platform_value in ("", "offscreen"):
+                merged_env["QT_QPA_PLATFORM"] = "xcb"
 
     proc = shared._run_tool_command("pytest", cmd, workdir, output_dir, env=merged_env)
     metrics = {}
