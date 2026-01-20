@@ -251,7 +251,7 @@ class TestCommandResultContract:
                 "# ADR-0001: Test\n\n**Status:** Accepted\n**Date:** 2024-01-01\n",
                 encoding="utf-8",
             )
-            monkeypatch.setattr(adr_cmd, "hub_root", lambda: Path(tmp_path))
+            monkeypatch.setattr(adr_cmd, "project_root", lambda: Path(tmp_path))
             args = argparse.Namespace(subcommand="list", status=None, json=True)
             result = adr_cmd.cmd_adr(args)
             assert_fields(result, expected_fields)
