@@ -285,6 +285,25 @@ Commands and results:
 - `git add -A` -> ok
 - `git commit -m "chore: update tool run audit log"` -> ok
 - `git push` -> ok
+- `python -m cihub init --repo /tmp/gitui --apply --force` -> ok; regenerated `.ci-hub.yml` and `hub-ci.yml`
+- `git -C /tmp/gitui status -sb` -> ok; .ci-hub.yml modified, untracked artifacts present
+- `git -C /tmp/gitui add .ci-hub.yml .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/gitui status -sb` -> ok; .ci-hub.yml staged, workflow unchanged
+- `rg -n "pytest|args|env" /tmp/gitui/.ci-hub.yml` -> ok; no pytest args/env override
+- `sed -n '1,80p' /tmp/gitui/.ci-hub.yml` -> ok; confirmed default config
+- `git -C /tmp/gitui diff --cached --stat` -> ok; .ci-hub.yml staged (5 deletions)
+- `git -C /tmp/gitui commit -m "chore: regenerate cihub config via init"` -> ok
+- `git -C /tmp/gitui push` -> ok; pushed regenerated config
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch trigger --owner jguida941 --repo gitui --ref main --workflow hub-ci.yml` -> ok; run ID 21164657190
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch watch --owner jguida941 --repo gitui --run 21164657190` -> running; no output before switching to triage
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21164657190 --verify-tools` -> error; no report.json yet
+- `python -m cihub dispatch watch --help` -> ok; reviewed flags
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch watch --owner jguida941 --repo gitui --run-id 21164657190 --interval 5 --timeout 600` -> running; no output before triage completed
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21164657190` -> ok; triage bundle generated (0 failures)
+- `git status -sb` -> ok; audit log modified after gitui run
+- `git add -A` -> ok
+- `git commit -m "chore: update tool run audit log"` -> ok
+- `git push` -> ok
 - `git status -sb` -> ok; recorded modified files after docs generation
 - `rg -n "Phase 9: Testing" docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok; located Phase 9 section
 - `sed -n '118,150p' docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok; reviewed Phase 9 checklist
