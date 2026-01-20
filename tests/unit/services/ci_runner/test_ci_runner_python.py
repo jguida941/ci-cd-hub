@@ -10,6 +10,7 @@ Tests: _detect_mutmut_paths, run_mutmut, run_ruff, run_black, run_isort,
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -348,6 +349,44 @@ class TestRunPytest:
         assert result.success is True
         assert "-k" in captured["cmd"]
         assert captured["env"]["QT_QPA_PLATFORM"] == "offscreen"
+
+    def test_pytest_retries_without_xvfb_on_timeout(self, tmp_path: Path) -> None:
+        from cihub.core.ci_runner import python_tools
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        calls: list[list[str]] = []
+
+        def _fake_run(tool, cmd, workdir, output_dir, timeout=None, env=None):
+            calls.append(cmd)
+            if len(calls) == 1:
+                return subprocess.CompletedProcess(
+                    args=cmd,
+                    returncode=124,
+                    stdout="",
+                    stderr="Command timed out after 600s: xvfb-run pytest",
+                )
+
+            (output_dir / "pytest-junit.xml").write_text(
+                '<?xml version="1.0"?><testsuite tests="1" failures="0" errors="0" skipped="0" time="1.0"/>'
+            )
+            (output_dir / "coverage.xml").write_text(
+                '<?xml version="1.0"?><coverage line-rate="1.0"><packages/></coverage>'
+            )
+            return subprocess.CompletedProcess(args=cmd, returncode=0, stdout="", stderr="")
+
+        with (
+            patch("cihub.core.ci_runner.python_tools._should_use_xvfb", return_value=True),
+            patch("cihub.core.ci_runner.python_tools.shutil.which", return_value="/usr/bin/xvfb-run"),
+            patch("cihub.core.ci_runner.python_tools.shared._run_tool_command", side_effect=_fake_run),
+        ):
+            result = python_tools.run_pytest(tmp_path, output_dir)
+
+        assert len(calls) == 2
+        assert calls[0][0].endswith("xvfb-run")
+        assert calls[1][0] == "pytest"
+        assert result.success is True
 
 
 class TestRunBandit:

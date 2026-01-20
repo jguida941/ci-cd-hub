@@ -69,7 +69,7 @@ def run_pytest(
 ) -> ToolResult:
     junit_path = output_dir / "pytest-junit.xml"
     coverage_path = output_dir / "coverage.xml"
-    cmd = [
+    pytest_cmd = [
         "pytest",
         "--cov=.",
         f"--cov-report=xml:{coverage_path}",
@@ -90,9 +90,6 @@ def run_pytest(
             pytest_args.extend(["-m", "not qprocess"])
 
     if use_xvfb:
-        xvfb_bin = shutil.which("xvfb-run")
-        if xvfb_bin:
-            cmd = [xvfb_bin, "-a"] + cmd
         merged_env.setdefault("QT_QPA_PLATFORM", "offscreen")
         merged_env.setdefault("QT_OPENGL", "software")
         merged_env.setdefault("LIBGL_ALWAYS_SOFTWARE", "1")
@@ -106,9 +103,22 @@ def run_pytest(
             pass
 
     if pytest_args:
-        cmd.extend([str(arg) for arg in pytest_args if str(arg)])
+        pytest_cmd.extend([str(arg) for arg in pytest_args if str(arg)])
+
+    cmd = pytest_cmd
+    if use_xvfb:
+        xvfb_bin = shutil.which("xvfb-run")
+        if xvfb_bin:
+            cmd = [xvfb_bin, "-a"] + pytest_cmd
 
     proc = shared._run_tool_command("pytest", cmd, workdir, output_dir, env=merged_env)
+    if use_xvfb and proc.returncode == 124:
+        for path in (junit_path, coverage_path):
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                pass
+        proc = shared._run_tool_command("pytest", pytest_cmd, workdir, output_dir, env=merged_env)
     metrics = {}
     metrics.update(_parse_junit(junit_path))
     metrics.update(_parse_coverage(coverage_path))

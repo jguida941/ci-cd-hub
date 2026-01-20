@@ -278,6 +278,33 @@ Commands and results:
 - `git add -A` -> ok
 - `git commit -m "chore: update tool run audit log"` -> ok
 - `git push` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --latest --verify-tools` -> failed; pytest/hypothesis/bandit failed
+- `ls -lt .cihub/runs | head -10` -> ok; located latest run 21164657190
+- `ls -la .cihub/runs/21164657190` -> ok; triage + artifacts present
+- `ls -la .cihub/runs/21164657190/artifacts` -> ok; ci-report present
+- `ls -la .cihub/runs/21164657190/artifacts/ci-report` -> ok; report.json + summary.md + tool-outputs
+- `sed -n '1,200p' .cihub/runs/21164657190/artifacts/ci-report/summary.md` -> ok; tests 0 executed
+- `ls -la .cihub/runs/21164657190/artifacts/ci-report/tool-outputs | head -40` -> ok; pytest logs present
+- `cat .cihub/runs/21164657190/artifacts/ci-report/tool-outputs/pytest.stdout.log` -> ok; command line logged
+- `cat .cihub/runs/21164657190/artifacts/ci-report/tool-outputs/pytest.stderr.log` -> ok; timed out after 600s
+- `rg -n "pytest\\.mark|@pytest\\.mark" /tmp/gitui/tests` -> ok; only qprocess marker present
+- `sed -n '1,240p' /tmp/gitui/tests/test_ui_panels.py` -> ok; context menu patched in tests
+- `sed -n '240,520p' /tmp/gitui/tests/test_ui_panels.py` -> ok; QMenu.exec patched
+- `sed -n '1,240p' /tmp/gitui/tests/test_dialogs.py` -> ok; dialog exec patched
+- `sed -n '1,220p' /tmp/gitui/tests/test_command_runner.py` -> ok; qprocess tests marked
+- `rg -n "def _run_tool_command" -n cihub/core/ci_runner/shared.py && sed -n '1,160p' cihub/core/ci_runner/shared.py` -> ok; reviewed tool command handling
+- `rg -n "QMenu\\.exec|exec\\(" /tmp/gitui/app | head -40` -> ok; located exec callsites
+- `apply_patch (cihub/services/ci_engine/python_tools.py)` -> ok; added xauth + xfonts-base
+- `apply_patch (cihub/core/ci_runner/python_tools.py)` -> ok; retry pytest without xvfb on timeout
+- `apply_patch (cihub/core/ci_runner/python_tools.py)` -> ok; refactored pytest command assembly
+- `apply_patch (cihub/core/ci_runner/python_tools.py)` -> ok; removed unused xvfb cmd assignment
+- `apply_patch (tests/unit/services/ci_runner/test_ci_runner_python.py)` -> ok; added xvfb timeout retry test
+- `python -m pytest tests/unit/services/ci_runner/test_ci_runner_python.py::TestRunPytest::test_pytest_retries_without_xvfb_on_timeout` -> ok
+- `apply_patch (docs/development/CHANGELOG.md)` -> ok; documented pytest retry fallback
+- `python -m cihub docs generate` -> ok; updated reference docs
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok; no stale references found
+- `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated CHANGELOG dates
 - `git rev-parse HEAD && git rev-parse v1 && git rev-parse v1.0.14` -> ok; v1/v1.0.14 lagged behind HEAD
 - `git tag -f v1` -> ok; advanced floating tag to HEAD
 - `git push -f origin v1` -> ok; updated remote v1 tag

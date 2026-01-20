@@ -131,6 +131,8 @@ def _install_qt_system_deps(workdir: Path, problems: list[dict[str, Any]]) -> No
             "libglib2.0-0",
             "libfontconfig1",
             "libfreetype6",
+            "xauth",
+            "xfonts-base",
         ],
         workdir,
         "apt-get install qt libs",
