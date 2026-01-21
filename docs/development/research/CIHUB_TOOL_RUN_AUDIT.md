@@ -866,3 +866,10 @@ Commands and results:
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok
 - `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated CHANGELOG dates
+
+Follow-up commands:
+- `git add .github/workflows/java-ci.yml .github/workflows/python-ci.yml docs/adr/0067-upload-hidden-artifacts.md docs/development/CHANGELOG.md docs/development/MASTER_PLAN.md docs/development/active/TYPESCRIPT_CLI_DESIGN.md docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok
+- `git commit -m "fix: upload hidden ci artifacts"` -> ok
+- `git push` -> ok
+- `git tag -f v1` -> ok
+- `git push -f origin v1` -> ok
