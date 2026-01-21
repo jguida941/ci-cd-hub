@@ -65,6 +65,7 @@ Commands and results:
 - `git add -A` -> ok; staged all changes
 - `git status -sb` -> ok; all changes staged
 - `git add docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok; re-staged audit log
+- `git commit -m "feat: tool evidence + monorepo targets"` -> ok
 
 ## 2026-01-19 - gitui (python, PySide6 GUI)
 
