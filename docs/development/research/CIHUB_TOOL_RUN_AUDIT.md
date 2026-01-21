@@ -847,3 +847,10 @@ Commands and results:
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok
 - `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated CHANGELOG dates
+
+Follow-up commands:
+- `git add cihub/services/ci_engine/__init__.py tests/unit/services/ci_engine/test_ci_engine_output_mirror.py docs/adr/0066-ci-output-mirror-to-github-workspace.md docs/development/CHANGELOG.md docs/development/MASTER_PLAN.md docs/development/active/TYPESCRIPT_CLI_DESIGN.md docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok
+- `git commit -m "fix: mirror ci outputs to workspace"` -> ok
+- `git push` -> ok
+- `git tag -f v1` -> ok
+- `git push -f origin v1` -> ok
