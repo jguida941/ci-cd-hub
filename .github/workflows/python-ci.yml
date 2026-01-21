@@ -349,4 +349,3 @@ jobs:
             .cihub/history.jsonl
           retention-days: ${{ inputs.retention_days }}
           if-no-files-found: warn
-          include-hidden-files: true

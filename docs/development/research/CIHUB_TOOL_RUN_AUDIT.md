@@ -873,3 +873,7 @@ Follow-up commands:
 - `git push` -> ok
 - `git tag -f v1` -> ok
 - `git push -f origin v1` -> ok
+
+Dispatch failure note:
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref main --workflow hub-ci.yml --watch` -> failed; dispatch error
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref main --workflow hub-ci.yml --json` -> failed; workflow parse error (duplicate include-hidden-files)
