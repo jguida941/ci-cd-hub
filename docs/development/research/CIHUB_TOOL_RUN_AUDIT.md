@@ -877,3 +877,10 @@ Follow-up commands:
 Dispatch failure note:
 - `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref main --workflow hub-ci.yml --watch` -> failed; dispatch error
 - `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref main --workflow hub-ci.yml --json` -> failed; workflow parse error (duplicate include-hidden-files)
+
+Follow-up commands:
+- `git add .github/workflows/python-ci.yml docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok
+- `git commit -m "fix: remove duplicate hidden artifact flag"` -> ok
+- `git push` -> ok
+- `git tag -f v1` -> ok
+- `git push -f origin v1` -> ok
