@@ -626,6 +626,38 @@ class TestRequireRunOrFail:
 
         assert any("owasp configured but did not run" in f for f in failures)
 
+    def test_python_gates_fail_on_missing_report(self) -> None:
+        report = {
+            "results": {"tests_passed": 1, "tests_failed": 0},
+            "tools_ran": {"pytest": True},
+            "tools_success": {"pytest": True},
+            "tool_metrics": {},
+            "tool_evidence": {"pytest": False},
+        }
+        thresholds: dict = {}
+        tools_configured = {"pytest": True}
+        config: dict = {}
+
+        failures = _evaluate_python_gates(report, thresholds, tools_configured, config)
+
+        assert any("pytest ran but produced no report" in f for f in failures)
+
+    def test_java_gates_fail_on_missing_report(self) -> None:
+        report = {
+            "results": {"tests_passed": 1, "tests_failed": 0},
+            "tools_ran": {"checkstyle": True},
+            "tools_success": {"checkstyle": True},
+            "tool_metrics": {},
+            "tool_evidence": {"checkstyle": False},
+        }
+        thresholds: dict = {}
+        tools_configured = {"checkstyle": True}
+        config: dict = {}
+
+        failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
+
+        assert any("checkstyle ran but produced no report" in f for f in failures)
+
 
 class TestBackwardCompatRunnerImports:
     """Tests for run_* backward-compatibility imports via __getattr__.

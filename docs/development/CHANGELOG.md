@@ -21,6 +21,29 @@ All notable changes to this project will be documented in this file.
 
 - `cihub ci` runs `mvn -DskipTests install` before Maven plugin tools for multi-module projects (ADR-0068).
 
+## 2026-01-21 - Tool Evidence + Monorepo Targets
+
+### Fix: Verified tool evidence
+
+- Tool evidence now requires metrics or artifacts; tools that ran without evidence are reported as `NO REPORT`.
+- Java tool runners mark `ran=true` when invoked and require report evidence for success.
+
+### Fix: Checkstyle always runs
+
+- When a repo has no Checkstyle config, the hub default is injected so configured tools run without repo edits.
+
+### Fix: PITest report output
+
+- `pitest` now forces XML/HTML output formats to ensure report evidence exists.
+
+### Fix: OWASP without NVD key
+
+- OWASP Dependency-Check runs without NVD updates when no API key is set to avoid 403 failures; results are marked as no-report when missing.
+
+### New: Monorepo targets
+
+- Added `repo.targets` for multi-language, multi-subdir runs (monorepo support) with per-target summaries in reports.
+
 ## 2026-01-20 - ADR + Deprecated Shim Cleanup
 
 ### Fix: ADR tooling uses project root

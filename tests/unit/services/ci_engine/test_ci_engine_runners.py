@@ -295,7 +295,7 @@ class TestRunJavaTools:
 
         install_mock.assert_not_called()
 
-    def test_skips_checkstyle_without_config(self, tmp_path: Path) -> None:
+    def test_injects_checkstyle_config_when_missing(self, tmp_path: Path) -> None:
         from cihub.ci_runner import ToolResult
 
         workdir = tmp_path / "repo"
@@ -307,12 +307,14 @@ class TestRunJavaTools:
         config = {"java": {"tools": {"checkstyle": {"enabled": True}}}}
         problems: list = []
 
-        def _unexpected(*args, **kwargs):
-            raise AssertionError("checkstyle should be skipped when config is missing")
+        def _checkstyle_runner(workdir_path: Path, output_dir: Path, build_tool: str) -> ToolResult:
+            config_path = workdir_path / "config" / "checkstyle" / "checkstyle.xml"
+            assert config_path.exists()
+            return ToolResult(tool="checkstyle", ran=True, success=True, metrics={})
 
         mock_build = ToolResult(tool="build", ran=True, success=True, metrics={})
         runners = dict(JAVA_RUNNERS)
-        runners["checkstyle"] = _unexpected
+        runners["checkstyle"] = _checkstyle_runner
 
         with patch("cihub.services.ci_engine.java_tools.run_java_build", return_value=mock_build):
             outputs, ran, success = _run_java_tools(
@@ -325,10 +327,10 @@ class TestRunJavaTools:
                 runners,
             )
 
-        assert outputs["checkstyle"]["ran"] is False
-        assert ran.get("checkstyle") is False
-        assert success.get("checkstyle") is False
-        assert any("Checkstyle enabled but no config file found" in p["message"] for p in problems)
+        assert outputs["checkstyle"]["ran"] is True
+        assert ran.get("checkstyle") is True
+        assert success.get("checkstyle") is True
+        assert any("Checkstyle config not found" in p["message"] for p in problems)
 
     def test_raises_for_missing_workdir(self, tmp_path: Path) -> None:
         output_dir = tmp_path / "output"

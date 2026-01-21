@@ -5,6 +5,67 @@ Owner: Development Team
 Source-of-truth: manual
 Last-reviewed: 2026-01-19
 
+## 2026-01-21 - hub-release (tool evidence + monorepo targets)
+
+Repo type: Hub CLI (Python)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Add monorepo targets support, tighten tool evidence reporting, and update triage verification output.
+
+Changes:
+- Added repo.targets parsing and multi-target aggregation in CI engine
+- Added targets support to CI report schema
+- Tightened tool_evidence derivation (metrics/artifacts only)
+- Updated triage verify-tools output for targets
+- Added unit tests for targets and summary rendering
+
+Commands and results:
+- `git status -sb` -> ok; working tree shows modified files
+- `rg -n "pitest|checkstyle|owasp|report_found|ran =" cihub/core/ci_runner/java_tools.py` -> ok
+- `sed -n '100,220p' cihub/core/ci_runner/java_tools.py` -> ok
+- `cat cihub/data/schema/ci-report.v2.json` -> ok
+- `sed -n '1,240p' cihub/services/ci_engine/__init__.py` -> ok
+- `sed -n '240,520p' cihub/services/ci_engine/__init__.py` -> ok
+- `rg -n "def _self_validate_report|render_summary|targets" cihub -S` -> ok
+- `sed -n '1,220p' cihub/services/ci_engine/validation.py` -> ok
+- `rg -n "report evidence|tool_evidence|no proof" cihub/services/report_validator/content.py` -> ok
+- `sed -n '420,470p' cihub/services/report_validator/content.py` -> ok
+- `rg -n "repo.subdir|repo.targets|targets" tests -S` -> ok
+- `sed -n '1,240p' tests/unit/services/ci_engine/test_ci_engine_runners.py` -> ok
+- `rg -n "run_ci" tests/unit/services/ci_engine -S` -> ok; no matches
+- `ls tests/unit/services/ci_engine` -> ok
+- `sed -n '1,240p' tests/unit/services/ci_engine/test_ci_engine_project_detection.py` -> ok
+- `rg -n "def run_" cihub/core/ci_runner/python_tools.py` -> ok
+- `sed -n '120,260p' cihub/core/ci_runner/python_tools.py` -> ok
+- `rg -n "tool_evidence|report_found" tests -S` -> ok
+- `sed -n '1,120p' tests/unit/services/test_triage_evidence.py` -> ok
+- `rg -n "tool_evidence" cihub/services/triage/evidence.py` -> ok
+- `sed -n '140,260p' cihub/services/triage/evidence.py` -> ok
+- `rg -n "tool_evidence" tests/unit/reports/test_reporting.py` -> ok
+- `rg -n "ci-report.v2.json|report schema" tests -S` -> ok
+- `sed -n '250,360p' tests/contracts/test_schema_contract.py` -> ok
+- `rg -n "verify_tools_from_report" tests -S` -> ok
+- `sed -n '1,120p' tests/unit/services/test_triage_verification.py` -> ok
+- `sed -n '120,260p' tests/unit/services/test_triage_verification.py` -> ok
+- `sed -n '260,380p' tests/unit/services/test_triage_verification.py` -> ok
+- `sed -n '660,840p' tests/unit/services/test_triage_service.py` -> ok
+- `rg -n "hub-ci.yml" -S cihub/data/templates .github/workflows` -> ok
+- `sed -n '1,200p' .github/workflows/hub-ci.yml` -> ok
+- `rg -n "setup-java|java" .github/workflows/python-ci.yml` -> ok; no matches
+- `sed -n '1,200p' .github/workflows/python-ci.yml` -> ok
+- `ls docs/adr` -> ok
+- `cat docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok
+- `python -m pytest tests/unit/services/test_triage_verification.py tests/unit/services/ci_engine/test_ci_engine_project_detection.py tests/unit/reports/test_reporting.py` -> ok; 77 passed
+- `python -m pytest tests/unit/services/ci_engine/test_ci_engine_gates.py tests/unit/services/ci_engine/test_ci_engine_runners.py tests/contracts/test_schema_contract.py::TestReportSchemaContract::test_python_report_validates_against_schema tests/contracts/test_schema_contract.py::TestReportSchemaContract::test_java_report_validates_against_schema` -> failed; NameError in _build_report (tool_results missing)
+- `python -m pytest tests/contracts/test_schema_contract.py::TestReportSchemaContract::test_python_report_validates_against_schema tests/contracts/test_schema_contract.py::TestReportSchemaContract::test_java_report_validates_against_schema` -> ok; 2 passed
+- `python -m cihub docs generate` -> ok; updated CLI/CONFIG/ENV/TOOLS/WORKFLOWS references
+- `python -m cihub docs check` -> ok; docs up to date
+- `python -m cihub docs stale` -> ok; no stale references found
+- `python -m cihub docs audit` -> ok with warnings; placeholder paths + repeated CHANGELOG dates
+- `git status -sb` -> ok; working tree dirty with code + docs changes
+- `git add -A` -> ok; staged all changes
+- `git status -sb` -> ok; all changes staged
+- `git add docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok; re-staged audit log
+
 ## 2026-01-19 - gitui (python, PySide6 GUI)
 
 Repo type: Python GUI (PySide6)
@@ -991,3 +1052,33 @@ Commands and results:
 - `git -C /tmp/cihub-test-java-multi-module push` -> ok
 - `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-multi-module --ref main --workflow hub-ci.yml --watch` -> ok; run ID 21202856646, completed/success
 - `python -m cihub triage --repo jguida941/cihub-test-java-multi-module --run 21202856646 --verify-tools` -> ok; 3 tools verified, optional tools skipped
+
+## 2026-01-21 - cihub-test-python-setup
+
+Repo type: Python test (setup.py)
+Repo URL: https://github.com/jguida941/cihub-test-python-setup
+Goal: Regenerate workflow and verify tool proof.
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-python-setup /tmp/cihub-test-python-setup` -> ok
+- `python - <<'PY' (unlink /tmp/cihub-test-python-setup/.github/workflows/hub-ci.yml)` -> ok
+- `python -m cihub init --repo /tmp/cihub-test-python-setup --apply --force --set-hub-vars --install-from git` -> ok
+- `git -C /tmp/cihub-test-python-setup commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/cihub-test-python-setup push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-setup --ref main --workflow hub-ci.yml --watch` -> ok; run ID 21203575356, completed/success
+- `python -m cihub triage --repo jguida941/cihub-test-python-setup --run 21203575356 --verify-tools` -> ok; 7 tools verified
+
+## 2026-01-21 - cihub-test-monorepo (java subdir)
+
+Repo type: Monorepo (java subdir)
+Repo URL: https://github.com/jguida941/cihub-test-monorepo
+Goal: Regenerate workflow for java/ subdir and verify tool proof.
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-monorepo /tmp/cihub-test-monorepo` -> ok
+- `python - <<'PY' (unlink /tmp/cihub-test-monorepo/.github/workflows/hub-ci.yml)` -> ok
+- `python -m cihub init --repo /tmp/cihub-test-monorepo --apply --force --set-hub-vars --subdir java --install-from git` -> ok
+- `git -C /tmp/cihub-test-monorepo commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/cihub-test-monorepo push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-monorepo --ref main --workflow hub-ci.yml --watch` -> ok; run ID 21203680146, completed/success
+- `python -m cihub triage --repo jguida941/cihub-test-monorepo --run 21203680146 --verify-tools` -> ok; 3 tools verified, optional tools skipped

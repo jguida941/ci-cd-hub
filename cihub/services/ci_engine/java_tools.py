@@ -19,6 +19,7 @@ from cihub.utils.exec_utils import (
     CommandTimeoutError,
     safe_run,
 )
+from cihub.utils.paths import hub_root
 from cihub.utils.project import detect_java_project_type
 
 from .helpers import _parse_env_bool, _tool_enabled
@@ -55,24 +56,34 @@ def _checkstyle_config_exists(
     return False
 
 
-def _set_checkstyle_require_run(
+def _ensure_checkstyle_config(
     config: dict[str, Any],
-    require_run: bool,
+    repo_path: Path,
+    workdir_path: Path,
+    problems: list[dict[str, Any]],
 ) -> None:
-    java_cfg = config.get("java")
-    if not isinstance(java_cfg, dict):
+    if _checkstyle_config_exists(config, repo_path, workdir_path):
         return
-    tools_cfg = java_cfg.get("tools")
-    if not isinstance(tools_cfg, dict):
+    default_src = hub_root() / "templates" / "java" / "config" / "checkstyle" / "checkstyle.xml"
+    if not default_src.exists():
+        problems.append(
+            {
+                "severity": "error",
+                "message": "Checkstyle config missing from hub templates; cannot run checkstyle",
+                "code": "CIHUB-CI-CHECKSTYLE-DEFAULT-MISSING",
+            }
+        )
         return
-    checkstyle_cfg = tools_cfg.get("checkstyle")
-    if isinstance(checkstyle_cfg, dict):
-        checkstyle_cfg["require_run_or_fail"] = require_run
-    elif isinstance(checkstyle_cfg, bool):
-        tools_cfg["checkstyle"] = {
-            "enabled": checkstyle_cfg,
-            "require_run_or_fail": require_run,
+    target_path = workdir_path / "config" / "checkstyle" / "checkstyle.xml"
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    target_path.write_text(default_src.read_text(encoding="utf-8"), encoding="utf-8")
+    problems.append(
+        {
+            "severity": "warning",
+            "message": "Checkstyle config not found; copied hub default to config/checkstyle/checkstyle.xml",
+            "code": "CIHUB-CI-CHECKSTYLE-DEFAULT",
         }
+    )
 
 
 def _run_java_tools(
@@ -98,18 +109,8 @@ def _run_java_tools(
     tool_output_dir = output_dir / "tool-outputs"
     tool_output_dir.mkdir(parents=True, exist_ok=True)
 
-    skip_checkstyle = False
     if _tool_enabled(config, "checkstyle", "java"):
-        if not _checkstyle_config_exists(config, repo_path, workdir_path):
-            skip_checkstyle = True
-            _set_checkstyle_require_run(config, False)
-            problems.append(
-                {
-                    "severity": "warning",
-                    "message": "Checkstyle enabled but no config file found; skipping checkstyle run",
-                    "code": "CIHUB-CI-CHECKSTYLE-CONFIG",
-                }
-            )
+        _ensure_checkstyle_config(config, repo_path, workdir_path, problems)
 
     jacoco_enabled = _tool_enabled(config, "jacoco", "java")
     build_result = run_java_build(workdir_path, output_dir, build_tool, jacoco_enabled)
@@ -168,18 +169,6 @@ def _run_java_tools(
                 }
             )
             ToolResult(tool=tool, ran=False, success=False).write_json(tool_output_dir / f"{tool}.json")
-            continue
-        if tool == "checkstyle" and skip_checkstyle:
-            result = ToolResult(
-                tool=tool,
-                ran=False,
-                success=False,
-                metrics={"skipped_reason": "missing_config"},
-            )
-            tool_outputs[tool] = result.to_payload()
-            tools_ran[tool] = result.ran
-            tools_success[tool] = result.success
-            result.write_json(tool_output_dir / f"{tool}.json")
             continue
         try:
             # Get tool-specific config from centralized registry (Part 5.3)

@@ -263,6 +263,41 @@ class TestVerifyToolsFromReport:
 
         assert result["verified"] is True
 
+    def test_handles_targets(self, tmp_path: Path) -> None:
+        """Targets reports are aggregated with scoped messages."""
+        report = {
+            "targets": [
+                {
+                    "slug": "python-src",
+                    "language": "python",
+                    "subdir": "python",
+                    "report": {
+                        "tools_configured": {"pytest": True},
+                        "tools_ran": {"pytest": True},
+                        "tools_success": {"pytest": True},
+                    },
+                },
+                {
+                    "slug": "java-app",
+                    "language": "java",
+                    "subdir": "java",
+                    "report": {
+                        "tools_configured": {"checkstyle": True},
+                        "tools_ran": {"checkstyle": False},
+                        "tools_success": {"checkstyle": False},
+                    },
+                },
+            ]
+        }
+        report_path = tmp_path / "report.json"
+        report_path.write_text(json.dumps(report), encoding="utf-8")
+
+        result = verify_tools_from_report(report_path, tmp_path)
+
+        assert result["verified"] is False
+        assert result["targets"]
+        assert any("[java-app]" in item["message"] for item in result["drift"])
+
 
 class TestFormatVerifyToolsOutput:
     """Unit tests for format_verify_tools_output function."""
@@ -284,6 +319,32 @@ class TestFormatVerifyToolsOutput:
         assert "Tool Verification Report" in output
         assert "| Tool |" in output
         assert "pytest" in output
+
+    def test_formats_targets_table(self, tmp_path: Path) -> None:
+        """Target reports include scoped sections."""
+        report = {
+            "targets": [
+                {
+                    "slug": "python-src",
+                    "language": "python",
+                    "subdir": "python",
+                    "report": {
+                        "tools_configured": {"pytest": True},
+                        "tools_ran": {"pytest": True},
+                        "tools_success": {"pytest": True},
+                    },
+                }
+            ]
+        }
+        report_path = tmp_path / "report.json"
+        report_path.write_text(json.dumps(report), encoding="utf-8")
+
+        result = verify_tools_from_report(report_path)
+        lines = format_verify_tools_output(result)
+
+        output = "\n".join(lines)
+        assert "Target:" in output
+        assert "python-src" in output
 
     def test_shows_drift_section_when_present(self, tmp_path: Path) -> None:
         """Test drift section appears when tools have drift."""

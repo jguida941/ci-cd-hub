@@ -65,6 +65,12 @@ Existing:
 - [ADR-0062: Configurable Pytest Args and Env](0062-pytest-args-env-headless.md)
 - [ADR-0063: Default isort Profile to Black](0063-isort-black-profile-default.md)
 - [ADR-0064: Headless Qt Pytest Defaults](0064-headless-qt-pytest-defaults.md)
+- [ADR-0065: GH Auth Token Fallback](0065-gh-auth-token-fallback.md)
+- [ADR-0066: CI Output Mirror to GITHUB_WORKSPACE](0066-ci-output-mirror-to-github-workspace.md)
+- [ADR-0067: Upload Hidden CI Artifacts](0067-upload-hidden-artifacts.md)
+- [ADR-0068: Maven Multi-Module Tool Prep](0068-maven-multi-module-install.md)
+- [ADR-0069: Monorepo Targets in .ci-hub.yml](0069-monorepo-targets.md)
+- [ADR-0070: Tool Evidence in CI Reports](0070-tool-evidence-reporting.md)
 
 Template starter:
 ```markdown

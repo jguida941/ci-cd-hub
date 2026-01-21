@@ -140,6 +140,25 @@ class TestRunCheckstyle:
         assert result.ran is True
         assert result.metrics["checkstyle_issues"] == 2
 
+    def test_missing_report_marks_failure(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import run_checkstyle
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+        (tmp_path / "mvnw").write_text("#!/bin/sh\n")
+
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.stdout = ""
+        mock_proc.stderr = ""
+
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
+            result = run_checkstyle(tmp_path, output_dir, "maven")
+
+        assert result.ran is True
+        assert result.success is False
+        assert result.metrics["report_found"] is False
+
 
 class TestRunSpotbugs:
     """Tests for run_spotbugs function."""
@@ -170,6 +189,29 @@ class TestRunSpotbugs:
         assert result.tool == "spotbugs"
         assert result.ran is True
         assert result.metrics["spotbugs_issues"] == 2
+
+
+class TestRunPitest:
+    """Tests for run_pitest function."""
+
+    def test_missing_report_marks_failure(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import run_pitest
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+        (tmp_path / "mvnw").write_text("#!/bin/sh\n")
+
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.stdout = ""
+        mock_proc.stderr = ""
+
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
+            result = run_pitest(tmp_path, output_dir, "maven")
+
+        assert result.ran is True
+        assert result.success is False
+        assert result.metrics["report_found"] is False
 
 
 class TestRunPmd:

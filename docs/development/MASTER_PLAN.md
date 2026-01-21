@@ -496,6 +496,8 @@ These are references, not competing plans.
 - **CI outputs are mirrored to `GITHUB_WORKSPACE`** when needed for reusable workflow artifacts (ADR-0066).
 - **Hidden `.cihub` artifacts are uploaded** in reusable workflows (ADR-0067).
 - **Maven multi-module tool prep** runs `mvn -DskipTests install` before plugin tools (ADR-0068).
+- **Monorepo targets** use `repo.targets` for multi-language/subdir runs with per-target summaries (ADR-0069).
+- **Tool evidence is explicit** via `tool_evidence` in reports for proofed tool runs (ADR-0070).
 - **Workflow dispatch/watch lives in the CLI** (`cihub dispatch`) with wizard wrappers (ADR-0055).
 - **Schema is the source of truth for defaults**; defaults.yaml and fallbacks.py are generated and audited in `cihub check --audit`.
 - **Canonical install default is PyPI**; align CLI defaults and templates to schema `install.source`.

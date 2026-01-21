@@ -1153,6 +1153,32 @@
           "pattern": "^(?!/)(?!.*\\.\\.).+$",
           "type": "string"
         },
+        "targets": {
+          "description": "Multi-target config for monorepos (language + subdir pairs)",
+          "type": "array",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "language": {
+                "enum": [
+                  "python",
+                  "java"
+                ],
+                "type": "string"
+              },
+              "subdir": {
+                "description": "Target subdirectory within the repo",
+                "pattern": "^(?!/)(?!.*\\.\\.).+$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "language",
+              "subdir"
+            ],
+            "type": "object"
+          }
+        },
         "use_central_runner": {
           "default": true,
           "description": "Use central runner mode (hub clones and executes) vs distributed mode (dispatch to target repo workflow)",

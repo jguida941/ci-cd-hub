@@ -118,8 +118,14 @@ def run_pytest(
                 path.unlink()
             except FileNotFoundError:
                 pass
-        proc = shared._run_tool_command("pytest", pytest_cmd, workdir, output_dir, env=merged_env)
-    metrics = {}
+    proc = shared._run_tool_command("pytest", pytest_cmd, workdir, output_dir, env=merged_env)
+    junit_found = junit_path.exists()
+    coverage_found = coverage_path.exists()
+    metrics = {
+        "report_found": junit_found,
+        "junit_report_found": junit_found,
+        "coverage_report_found": coverage_found,
+    }
     metrics.update(_parse_junit(junit_path))
     metrics.update(_parse_coverage(coverage_path))
     return ToolResult(

@@ -114,11 +114,13 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [ ] Create `src/components/AIResponse.tsx` - AI response display
 - [ ] Handle AI timeout gracefully in UI
 - [ ] Show loading state during AI processing
-- [x] Harden Java CI gates and verify-tools proofing (skip checkstyle when config missing)
+- [x] Harden Java CI gates and verify-tools proofing (require report evidence; inject default checkstyle config)
 - [x] Dispatch/triage use `gh auth token` fallback when env tokens are missing (ADR-0065)
 - [x] Mirror CI outputs to `GITHUB_WORKSPACE` for reusable workflow artifacts (ADR-0066)
 - [x] Upload hidden `.cihub` artifacts in reusable workflows (ADR-0067)
 - [x] Run Maven install prep for multi-module tool runs (ADR-0068)
+- [x] Add tool evidence reporting (`tool_evidence`) and surface `NO REPORT` in summaries
+- [x] Add monorepo targets (`repo.targets`) with per-target summaries
 
 ### Phase 9: Testing
 - [ ] Write unit tests for parser (`test/unit/parser.test.ts`)

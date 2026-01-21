@@ -15,6 +15,7 @@ from unittest.mock import patch
 import pytest
 
 from cihub.services.ci_engine import (
+    _resolve_targets,
     _resolve_workdir,
     detect_java_project_type,
     get_repo_name,
@@ -118,3 +119,33 @@ class TestDetectJavaProjectType:
         """Empty directory returns Unknown."""
         result = detect_java_project_type(tmp_path)
         assert result == "Unknown"
+
+
+class TestResolveTargets:
+    """Tests for _resolve_targets helper."""
+
+    def test_override_workdir_creates_single_target(self) -> None:
+        config = {"language": "python"}
+        targets = _resolve_targets(config, "src")
+        assert len(targets) == 1
+        assert targets[0].language == "python"
+        assert targets[0].subdir == "src"
+
+    def test_targets_from_config(self) -> None:
+        config = {
+            "repo": {
+                "targets": [
+                    {"language": "python", "subdir": "python"},
+                    {"language": "java", "subdir": "java"},
+                ]
+            }
+        }
+        targets = _resolve_targets(config, None)
+        assert len(targets) == 2
+        assert targets[0].slug != targets[1].slug
+        assert {t.language for t in targets} == {"python", "java"}
+
+    def test_invalid_target_entry_raises(self) -> None:
+        config = {"repo": {"targets": ["bad"]}}
+        with pytest.raises(ValueError):
+            _resolve_targets(config, None)

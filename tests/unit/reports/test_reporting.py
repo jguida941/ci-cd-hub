@@ -471,6 +471,29 @@ class TestBuildQualityGates:
         # Make sure required tools have the (required) annotation
         assert "mutmut | NOT RUN (required)" not in table_text
 
+    def test_no_report_status_for_ran_tools(self) -> None:
+        report = {
+            "results": {"tests_passed": 1, "tests_failed": 0, "tests_skipped": 0},
+            "tool_metrics": {},
+            "thresholds": {"max_checkstyle_errors": 0},
+            "tools_configured": {"checkstyle": True},
+            "tools_ran": {"checkstyle": True},
+            "tools_success": {"checkstyle": False},
+            "tool_evidence": {"checkstyle": False},
+            "tools_require_run": {"checkstyle": True},
+        }
+        table_text = "".join(build_quality_gates(report, "java"))
+
+        assert "| Checkstyle | NO REPORT (required) |" in table_text
+
+        report["tools_configured"] = {"pytest": True}
+        report["tools_ran"] = {"pytest": True}
+        report["tool_evidence"] = {"pytest": False}
+        report["tools_require_run"] = {"pytest": True}
+        table_text = "".join(build_quality_gates(report, "python"))
+
+        assert "| pytest | NO REPORT (required) |" in table_text
+
 
 class TestRenderSummaryFromPath:
     """Tests for render_summary_from_path function."""
@@ -517,6 +540,49 @@ class TestRenderSummaryFromPath:
         result = render_summary_from_path(path)
 
         assert "## QA Metrics (Java)" in result
+
+    def test_renders_targets_summary(self, tmp_path: Path) -> None:
+        report = {
+            "targets": [
+                {
+                    "slug": "python-src",
+                    "language": "python",
+                    "subdir": "python",
+                    "report": {
+                        "tools_configured": {"pytest": True},
+                        "tools_ran": {"pytest": True},
+                        "tools_success": {"pytest": True},
+                        "tools_require_run": {"pytest": True},
+                        "results": {"tests_passed": 1, "tests_failed": 0, "tests_skipped": 0},
+                        "tool_metrics": {},
+                        "thresholds": {},
+                        "environment": {"workdir": "python"},
+                    },
+                },
+                {
+                    "slug": "java-app",
+                    "language": "java",
+                    "subdir": "java",
+                    "report": {
+                        "tools_configured": {"checkstyle": True},
+                        "tools_ran": {"checkstyle": True},
+                        "tools_success": {"checkstyle": True},
+                        "tools_require_run": {"checkstyle": True},
+                        "results": {"tests_passed": 1, "tests_failed": 0, "tests_skipped": 0},
+                        "tool_metrics": {},
+                        "thresholds": {},
+                        "environment": {"workdir": "java"},
+                    },
+                },
+            ]
+        }
+        path = tmp_path / "report.json"
+        path.write_text(json.dumps(report))
+
+        result = render_summary_from_path(path)
+
+        assert "Target: python (python)" in result
+        assert "Target: java (java)" in result
 
     def test_handles_unknown_language(self, tmp_path: Path) -> None:
         report = {

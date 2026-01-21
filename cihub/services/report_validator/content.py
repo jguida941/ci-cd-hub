@@ -306,6 +306,42 @@ def validate_report(
         ValidationResult with errors, warnings, and debug info.
     """
     rules = rules or ValidationRules()
+    targets = report.get("targets")
+    if isinstance(targets, list) and targets:
+        combined = ValidationResult(success=True)
+        combined.language = "multi"
+        for entry in targets:
+            if not isinstance(entry, dict):
+                combined.errors.append("targets entry is not an object")
+                continue
+            slug = entry.get("slug") or entry.get("subdir") or "target"
+            target_report = entry.get("report")
+            if not isinstance(target_report, dict):
+                combined.errors.append(f"[{slug}] target report is missing or invalid")
+                continue
+            target_reports_dir = reports_dir
+            if reports_dir and entry.get("slug"):
+                target_reports_dir = reports_dir / "targets" / str(entry.get("slug"))
+            target_result = validate_report(
+                target_report,
+                rules,
+                summary_text=None,
+                reports_dir=target_reports_dir,
+            )
+            for msg in target_result.errors:
+                combined.errors.append(f"[{slug}] {msg}")
+            for msg in target_result.warnings:
+                combined.warnings.append(f"[{slug}] {msg}")
+            for msg in target_result.schema_errors:
+                combined.schema_errors.append(f"[{slug}] {msg}")
+            for msg in target_result.threshold_violations:
+                combined.threshold_violations.append(f"[{slug}] {msg}")
+            for msg in target_result.tool_warnings:
+                combined.tool_warnings.append(f"[{slug}] {msg}")
+            for msg in target_result.debug_messages:
+                combined.debug_messages.append(f"[{slug}] {msg}")
+        combined.success = len(combined.errors) == 0
+        return combined
     errors: list[str] = []
     warnings: list[str] = []
     debug_messages: list[str] = []
@@ -401,6 +437,14 @@ def validate_report(
                         "(require_run_or_fail=true) but did not run"
                     )
                 )
+
+    tool_evidence = report.get("tool_evidence", {}) or {}
+    if tool_evidence:
+        for tool, configured in tools_configured.items():
+            if not configured:
+                continue
+            if tools_ran.get(tool, False) and not tool_evidence.get(tool, True):
+                warnings.append(f"tool '{tool}' ran but no report evidence found")
 
     # 5. Validate tool execution
     tool_metrics = report.get("tool_metrics", {}) or {}

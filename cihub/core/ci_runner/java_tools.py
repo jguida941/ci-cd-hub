@@ -114,12 +114,13 @@ def run_jacoco(workdir: Path, output_dir: Path) -> ToolResult:
             "build/reports/jacoco/test/jacocoTestReport.xml",
         ],
     )
+    report_found = bool(report_paths)
     metrics = _parse_jacoco_files(report_paths)
-    ran = bool(report_paths)
+    metrics["report_found"] = report_found
     return ToolResult(
         tool="jacoco",
-        ran=ran,
-        success=ran,
+        ran=True,
+        success=report_found,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
     )
@@ -128,12 +129,13 @@ def run_jacoco(workdir: Path, output_dir: Path) -> ToolResult:
 def run_pitest(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
     log_path = output_dir / "pitest-output.txt"
     if build_tool == "gradle":
-        cmd = _gradle_cmd(workdir) + ["pitest", "--continue"]
+        cmd = _gradle_cmd(workdir) + ["pitest", "--continue", "-Dpitest.outputFormats=XML,HTML"]
     else:
         cmd = _maven_cmd(workdir) + [
             "-B",
             "-ntp",
             "org.pitest:pitest-maven:mutationCoverage",
+            "-DoutputFormats=XML,HTML",
         ]
     proc = shared._run_tool_command("pitest", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
@@ -145,12 +147,13 @@ def run_pitest(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
             "build/reports/pitest/mutations.xml",
         ],
     )
+    report_found = bool(report_paths)
     metrics = _parse_pitest_files(report_paths)
-    ran = bool(report_paths)
+    metrics["report_found"] = report_found
     return ToolResult(
         tool="pitest",
-        ran=ran,
-        success=proc.returncode == 0 and ran,
+        ran=True,
+        success=proc.returncode == 0 and report_found,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
         stdout=proc.stdout,
@@ -182,12 +185,13 @@ def run_checkstyle(workdir: Path, output_dir: Path, build_tool: str) -> ToolResu
             "build/reports/checkstyle/*.xml",
         ],
     )
+    report_found = bool(report_paths)
     metrics = _parse_checkstyle_files(report_paths)
-    ran = bool(report_paths)
+    metrics["report_found"] = report_found
     return ToolResult(
         tool="checkstyle",
-        ran=ran,
-        success=proc.returncode == 0 and ran,
+        ran=True,
+        success=proc.returncode == 0 and report_found,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
         stdout=proc.stdout,
@@ -214,12 +218,13 @@ def run_spotbugs(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult
             "build/reports/spotbugs/*.xml",
         ],
     )
+    report_found = bool(report_paths)
     metrics = _parse_spotbugs_files(report_paths)
-    ran = bool(report_paths)
+    metrics["report_found"] = report_found
     return ToolResult(
         tool="spotbugs",
-        ran=ran,
-        success=proc.returncode == 0 and ran,
+        ran=True,
+        success=proc.returncode == 0 and report_found,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
         stdout=proc.stdout,
@@ -246,12 +251,13 @@ def run_pmd(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
             "build/reports/pmd/*.xml",
         ],
     )
+    report_found = bool(report_paths)
     metrics = _parse_pmd_files(report_paths)
-    ran = bool(report_paths)
+    metrics["report_found"] = report_found
     return ToolResult(
         tool="pmd",
-        ran=ran,
-        success=proc.returncode == 0 and ran,
+        ran=True,
+        success=proc.returncode == 0 and report_found,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
         stdout=proc.stdout,
@@ -274,8 +280,10 @@ def run_owasp(
     nvd_flags: list[str] = []
     if use_nvd_api_key and nvd_key:
         nvd_flags.append(f"-DnvdApiKey={nvd_key}")
+    else:
+        nvd_flags.extend(["-DautoUpdate=false", "-DfailOnError=false"])
     if build_tool == "gradle":
-        cmd = _gradle_cmd(workdir) + ["dependencyCheckAnalyze", "--continue"]
+        cmd = _gradle_cmd(workdir) + ["dependencyCheckAnalyze", "--continue", *nvd_flags]
     else:
         cmd = _maven_cmd(workdir) + [
             "-B",
@@ -285,6 +293,7 @@ def run_owasp(
             "-DnvdApiDelay=2500",
             "-DnvdMaxRetryCount=10",
             "-Ddependencycheck.failOnError=false",
+            "-DfailOnError=false",
             *nvd_flags,
         ]
     proc = shared._run_tool_command("owasp", cmd, workdir, output_dir, env=env)
@@ -298,6 +307,7 @@ def run_owasp(
             "build/reports/dependency-check-report.json",
         ],
     )
+    report_found = bool(report_paths)
     metrics = (
         _parse_dependency_check(report_paths[0])
         if report_paths
@@ -309,11 +319,11 @@ def run_owasp(
             "owasp_max_cvss": 0.0,
         }
     )
-    ran = bool(report_paths)
+    metrics["report_found"] = report_found
     return ToolResult(
         tool="owasp",
-        ran=ran,
-        success=proc.returncode == 0 and ran,
+        ran=True,
+        success=proc.returncode == 0 and report_found,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
         stdout=proc.stdout,

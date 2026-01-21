@@ -13,24 +13,10 @@ from typing import Any
 from cihub.services.report_validator import ValidationRules, validate_report
 
 
-def verify_tools_from_report(
-    report_path: Path,
+def _verify_tools_dict(
+    report: dict[str, Any],
     reports_dir: Path | None = None,
 ) -> dict[str, Any]:
-    """Verify that configured tools actually ran and have proof.
-
-    Uses report_validator to check:
-    - Tools configured but didn't run (DRIFT)
-    - Tools that ran but have no proof (metrics/artifacts)
-    - Tool failures vs success claims
-
-    Args:
-        report_path: Path to report.json
-        reports_dir: Optional directory containing tool artifacts
-
-    Returns:
-        Dict with verification results: drift, no_proof, failures, summary
-    """
     result: dict[str, Any] = {
         "verified": True,
         "drift": [],  # Tools configured but didn't run
@@ -43,19 +29,6 @@ def verify_tools_from_report(
         "tool_matrix": [],  # Full matrix for display
     }
 
-    if not report_path.exists():
-        result["verified"] = False
-        result["summary"] = f"Report not found: {report_path}"
-        return result
-
-    try:
-        with report_path.open(encoding="utf-8") as f:
-            report = json.load(f)
-    except json.JSONDecodeError as e:
-        result["verified"] = False
-        result["summary"] = f"Invalid JSON in report: {e}"
-        return result
-
     tools_configured = report.get("tools_configured", {}) or {}
     tools_ran = report.get("tools_ran", {}) or {}
     tools_success = report.get("tools_success", {}) or {}
@@ -66,11 +39,9 @@ def verify_tools_from_report(
             return bool(tools_require_run.get(tool_name, False))
         return True
 
-    # Run validation to get warnings about proof
     rules = ValidationRules(consistency_only=True)
     validation = validate_report(report, rules, reports_dir=reports_dir)
 
-    # Process each tool
     all_tools = set(tools_configured.keys()) | set(tools_ran.keys())
     for tool in sorted(all_tools):
         configured = tools_configured.get(tool, False)
@@ -110,22 +81,19 @@ def verify_tools_from_report(
 
         result["tool_matrix"].append(tool_entry)
 
-    # Check validation warnings for "no proof" issues
     for warning in validation.warnings:
-        if "no proof found" in warning.lower():
-            # Extract tool name from warning
+        warning_lower = warning.lower()
+        if "no proof found" in warning_lower or "no report evidence" in warning_lower:
             for tool in all_tools:
                 if f"'{tool}'" in warning:
                     result["no_proof"].append({"tool": tool, "message": warning})
                     result["verified"] = False
-                    # Update matrix entry
                     for entry in result["tool_matrix"]:
                         if entry["tool"] == tool and entry["status"] == "passed":
                             entry["status"] = "no_proof"
                             entry["issue"] = "Ran but no metrics/artifacts found"
                     break
 
-    # Also check for empty artifact warnings
     for warning in validation.warnings:
         if "empty output files" in warning.lower():
             for tool in all_tools:
@@ -135,38 +103,148 @@ def verify_tools_from_report(
                         result["verified"] = False
                     break
 
-    # Generate summary
     total = len(result["tool_matrix"])
-    passed = len(result["passed"])
     drift_count = len(result["drift"])
     no_proof_count = len(result["no_proof"])
-    fail_count = len(result["failures"])
+    failures_count = len(result["failures"])
+    passed = len(result["passed"])
     optional_count = len(result["optional"])
-    skip_count = len(result["skipped"])
+    skipped_count = len(result["skipped"])
 
-    if result["verified"]:
+    if total == 0:
+        result["summary"] = "No tools found in report"
+    elif drift_count == 0 and no_proof_count == 0 and failures_count == 0:
         result["summary"] = f"All {passed} configured tools verified (ran with proof)"
     else:
         issues = []
         if drift_count:
-            issues.append(f"{drift_count} configured but didn't run")
+            issues.append(f"{drift_count} configured but did not run")
         if no_proof_count:
             issues.append(f"{no_proof_count} ran but no proof")
-        if fail_count:
-            issues.append(f"{fail_count} failed")
-        result["summary"] = f"Tool verification: {', '.join(issues)}"
+        if failures_count:
+            issues.append(f"{failures_count} failed")
+        result["summary"] = f"Issues found: {', '.join(issues)}"
 
+    result["verified"] = result["verified"] and failures_count == 0 and drift_count == 0 and no_proof_count == 0
     result["counts"] = {
         "total": total,
         "passed": passed,
         "drift": drift_count,
         "no_proof": no_proof_count,
-        "failures": fail_count,
+        "failures": failures_count,
         "optional": optional_count,
-        "skipped": skip_count,
+        "skipped": skipped_count,
+    }
+    return result
+
+
+def verify_tools_from_report(
+    report_path: Path,
+    reports_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Verify that configured tools actually ran and have proof.
+
+    Uses report_validator to check:
+    - Tools configured but didn't run (DRIFT)
+    - Tools that ran but have no proof (metrics/artifacts)
+    - Tool failures vs success claims
+
+    Args:
+        report_path: Path to report.json
+        reports_dir: Optional directory containing tool artifacts
+
+    Returns:
+        Dict with verification results: drift, no_proof, failures, summary
+    """
+    base: dict[str, Any] = {
+        "verified": True,
+        "drift": [],
+        "no_proof": [],
+        "failures": [],
+        "optional": [],
+        "skipped": [],
+        "passed": [],
+        "summary": "",
+        "tool_matrix": [],
+        "targets": [],
+        "counts": {
+            "total": 0,
+            "passed": 0,
+            "drift": 0,
+            "no_proof": 0,
+            "failures": 0,
+            "optional": 0,
+            "skipped": 0,
+        },
     }
 
-    return result
+    if not report_path.exists():
+        base["verified"] = False
+        base["summary"] = f"Report not found: {report_path}"
+        return base
+
+    try:
+        with report_path.open(encoding="utf-8") as f:
+            report = json.load(f)
+    except json.JSONDecodeError as e:
+        base["verified"] = False
+        base["summary"] = f"Invalid JSON in report: {e}"
+        return base
+
+    targets = report.get("targets")
+    if isinstance(targets, list) and targets:
+        for entry in targets:
+            if not isinstance(entry, dict):
+                base["verified"] = False
+                base["failures"].append({"tool": "report", "message": "Invalid targets entry"})
+                continue
+            slug = entry.get("slug") or entry.get("subdir") or "target"
+            target_report = entry.get("report")
+            if not isinstance(target_report, dict):
+                base["verified"] = False
+                base["failures"].append({"tool": "report", "message": f"[{slug}] missing target report"})
+                continue
+            target_reports_dir = reports_dir
+            if reports_dir and entry.get("slug"):
+                target_reports_dir = reports_dir / "targets" / str(entry.get("slug"))
+            target_result = _verify_tools_dict(target_report, target_reports_dir)
+            target_result["slug"] = slug
+            target_result["language"] = entry.get("language")
+            target_result["subdir"] = entry.get("subdir")
+            base["targets"].append(target_result)
+            base["verified"] = base["verified"] and target_result.get("verified", False)
+
+            for key in ("drift", "no_proof", "failures", "optional", "skipped"):
+                for item in target_result.get(key, []):
+                    merged = dict(item)
+                    merged["target"] = slug
+                    msg = merged.get("message", "")
+                    merged["message"] = f"[{slug}] {msg}".strip()
+                    base[key].append(merged)
+
+            base["passed"].extend([f"{slug}:{tool}" for tool in target_result.get("passed", [])])
+
+            counts = target_result.get("counts", {})
+            for key in base["counts"]:
+                base["counts"][key] += int(counts.get(key, 0))
+
+        total = base["counts"]["total"]
+        if total == 0:
+            base["summary"] = "No tools found in report"
+        elif base["verified"]:
+            base["summary"] = f"All {base['counts']['passed']} configured tools verified across {len(base['targets'])} targets"
+        else:
+            issues = []
+            if base["counts"]["drift"]:
+                issues.append(f"{base['counts']['drift']} configured but didn't run")
+            if base["counts"]["no_proof"]:
+                issues.append(f"{base['counts']['no_proof']} ran but no proof")
+            if base["counts"]["failures"]:
+                issues.append(f"{base['counts']['failures']} failed")
+            base["summary"] = f"Tool verification: {', '.join(issues)}"
+        return base
+
+    return _verify_tools_dict(report, reports_dir)
 
 
 def format_verify_tools_output(verify_result: dict[str, Any]) -> list[str]:
@@ -183,16 +261,41 @@ def format_verify_tools_output(verify_result: dict[str, Any]) -> list[str]:
         "=" * 50,
     ]
 
-    # Tool matrix table
-    lines.append("")
-    lines.append("| Tool | Configured | Ran | Success | Status |")
-    lines.append("|------|------------|-----|---------|--------|")
-    for entry in verify_result.get("tool_matrix", []):
-        configured = "yes" if entry["configured"] else "no"
-        ran = "yes" if entry["ran"] else "no"
-        success = "yes" if entry["success"] else "no"
-        status = entry["status"].upper()
-        lines.append(f"| {entry['tool']} | {configured} | {ran} | {success} | {status} |")
+    def _append_matrix(matrix: list[dict[str, Any]]) -> None:
+        lines.append("")
+        lines.append("| Tool | Configured | Ran | Success | Status |")
+        lines.append("|------|------------|-----|---------|--------|")
+        for entry in matrix:
+            configured = "yes" if entry["configured"] else "no"
+            ran = "yes" if entry["ran"] else "no"
+            success = "yes" if entry["success"] else "no"
+            status = entry["status"].upper()
+            lines.append(f"| {entry['tool']} | {configured} | {ran} | {success} | {status} |")
+
+    targets = verify_result.get("targets", [])
+    if targets:
+        for target in targets:
+            slug = target.get("slug", "target")
+            subdir = target.get("subdir") or "."
+            label = f"{slug} ({subdir})"
+            lines.append("")
+            lines.append(f"Target: {label}")
+            _append_matrix(target.get("tool_matrix", []))
+            counts = target.get("counts", {})
+            lines.append("")
+            lines.append(f"Total: {counts.get('total', 0)} tools")
+            lines.append(f"  Passed: {counts.get('passed', 0)}")
+            lines.append(f"  Drift (configured but didn't run): {counts.get('drift', 0)}")
+            lines.append(f"  No proof (ran but no metrics/artifacts): {counts.get('no_proof', 0)}")
+            lines.append(f"  Failed: {counts.get('failures', 0)}")
+            lines.append(f"  Optional (configured but not required): {counts.get('optional', 0)}")
+            lines.append(f"  Skipped (not configured): {counts.get('skipped', 0)}")
+
+        lines.append("")
+        lines.append(f"Summary: {verify_result.get('summary', 'Unknown')}")
+        return lines
+
+    _append_matrix(verify_result.get("tool_matrix", []))
 
     lines.append("")
     counts = verify_result.get("counts", {})

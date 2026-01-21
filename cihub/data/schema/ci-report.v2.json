@@ -143,6 +143,10 @@
         "docker_health_ok": { "type": ["boolean", "null"] }
       }
     },
+    "tool_evidence": {
+      "description": "Evidence that a tool produced its expected report/output",
+      "allOf": [{ "$ref": "#/definitions/toolStatusMap" }]
+    },
     "tools_ran": {
       "description": "Which tools actually executed during the workflow run",
       "allOf": [{ "$ref": "#/definitions/toolStatusMap" }]
@@ -207,6 +211,21 @@
         "high": { "type": ["integer", "null"], "minimum": 0 },
         "medium": { "type": ["integer", "null"], "minimum": 0 },
         "low": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "targets": {
+      "description": "Per-target reports for monorepos",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["slug", "language", "subdir", "report"],
+        "properties": {
+          "slug": { "type": "string" },
+          "language": { "type": "string" },
+          "subdir": { "type": "string" },
+          "report": { "type": "object" }
+        }
       }
     }
   }

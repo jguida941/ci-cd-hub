@@ -188,6 +188,7 @@ def build_java_metrics(report: dict[str, Any]) -> Iterable[str]:
     results = report.get("results", {}) or {}
     tool_metrics = report.get("tool_metrics", {}) or {}
     tools_ran = report.get("tools_ran", {}) or {}
+    tool_evidence = report.get("tool_evidence", {}) or {}
 
     passed = format_number(results.get("tests_passed"))
     failed = format_number(results.get("tests_failed"))
@@ -229,15 +230,26 @@ def build_java_metrics(report: dict[str, Any]) -> Iterable[str]:
     trivy_ran = bool(tools_ran.get("trivy"))
 
     test_detail = f"Runtime: {runtime_display}, Failures: {failed}, Skipped: {skipped}"
-    coverage_value = render_bar(cov) if jacoco_ran else "-"
-    coverage_detail = cov_detail if jacoco_ran else "-"
-    mutation_value = render_bar(mut) if pitest_ran else "-"
-    mutation_detail = mut_detail if pitest_ran else "-"
-    owasp_status = "scan complete" if owasp_ran else "-"
-    owasp_detail = f"{owasp_crit} crit, {owasp_high} high, {owasp_med} med" if owasp_ran else "-"
-    spotbugs_detail = "Static analysis" if spotbugs_ran else "-"
-    pmd_detail = "Code analysis" if pmd_ran else "-"
-    checkstyle_detail = "Code style" if checkstyle_ran else "-"
+    jacoco_evidence = bool(tool_evidence.get("jacoco", True))
+    pitest_evidence = bool(tool_evidence.get("pitest", True))
+    owasp_evidence = bool(tool_evidence.get("owasp", True))
+    spotbugs_evidence = bool(tool_evidence.get("spotbugs", True))
+    pmd_evidence = bool(tool_evidence.get("pmd", True))
+    checkstyle_evidence = bool(tool_evidence.get("checkstyle", True))
+
+    coverage_value = render_bar(cov) if jacoco_ran and jacoco_evidence else "-"
+    coverage_detail = cov_detail if jacoco_ran and jacoco_evidence else ("No report" if jacoco_ran else "-")
+    mutation_value = render_bar(mut) if pitest_ran and pitest_evidence else "-"
+    mutation_detail = mut_detail if pitest_ran and pitest_evidence else ("No report" if pitest_ran else "-")
+    owasp_status = "scan complete" if owasp_ran and owasp_evidence else ("No report" if owasp_ran else "-")
+    owasp_detail = (
+        f"{owasp_crit} crit, {owasp_high} high, {owasp_med} med"
+        if owasp_ran and owasp_evidence
+        else ("No report" if owasp_ran else "-")
+    )
+    spotbugs_detail = "Static analysis" if spotbugs_ran and spotbugs_evidence else ("No report" if spotbugs_ran else "-")
+    pmd_detail = "Code analysis" if pmd_ran and pmd_evidence else ("No report" if pmd_ran else "-")
+    checkstyle_detail = "Code style" if checkstyle_ran and checkstyle_evidence else ("No report" if checkstyle_ran else "-")
     semgrep_detail = "SAST analysis" if semgrep_ran else "-"
     trivy_detail = "Container scan" if trivy_ran else "-"
 
@@ -263,6 +275,7 @@ def build_python_metrics(report: dict[str, Any]) -> Iterable[str]:
     results = report.get("results", {}) or {}
     tool_metrics = report.get("tool_metrics", {}) or {}
     tools_ran = report.get("tools_ran", {}) or {}
+    tool_evidence = report.get("tool_evidence", {}) or {}
 
     passed = format_number(results.get("tests_passed"))
     failed = format_number(results.get("tests_failed"))
@@ -306,9 +319,14 @@ def build_python_metrics(report: dict[str, Any]) -> Iterable[str]:
     semgrep_ran = bool(tools_ran.get("semgrep"))
     trivy_ran = bool(tools_ran.get("trivy"))
 
+    pytest_evidence = bool(tool_evidence.get("pytest", True))
+    coverage_has_report = pytest_ran and pytest_evidence and cov_lines_total > 0
+
     test_detail = f"Runtime: {runtime_display}, Failures: {failed}, Skipped: {skipped}"
-    coverage_value = render_bar(cov) if pytest_ran else "-"
-    coverage_detail = cov_detail if pytest_ran else "-"
+    if pytest_ran and not pytest_evidence:
+        test_detail = "No report"
+    coverage_value = render_bar(cov) if coverage_has_report else "-"
+    coverage_detail = cov_detail if coverage_has_report else ("No report" if pytest_ran else "-")
     mutation_value = render_bar(mut) if mutmut_ran else "-"
     mutation_detail = mut_detail if mutmut_ran else "-"
     ruff_detail = "Linting" if ruff_ran else "-"
@@ -370,6 +388,7 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
     tools_ran = report.get("tools_ran", {}) or {}
     tools_success = report.get("tools_success", {}) or {}
     tools_require_run = report.get("tools_require_run", {}) or {}
+    tool_evidence = report.get("tool_evidence", {}) or {}
 
     def gate_status(condition: bool, fail_label: str) -> str:
         """Return gate status indicator."""
@@ -380,11 +399,19 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
     def ran(tool: str) -> bool:
         return bool(tools_ran.get(tool, False))
 
+    def has_evidence(tool: str) -> bool:
+        return bool(tool_evidence.get(tool, True))
+
     def not_run_status(tool: str) -> str:
         """Return NOT RUN status with annotation for hard-fail vs soft-skip."""
         if tools_require_run.get(tool, False):
             return "NOT RUN (required)"  # Hard-fail: will cause CI to fail
         return "NOT RUN"  # Soft-skip: warning only
+
+    def no_report_status(tool: str) -> str:
+        if tools_require_run.get(tool, False):
+            return "NO REPORT (required)"
+        return "NO REPORT"
 
     def skip_status() -> str:
         """Return SKIP status."""
@@ -401,7 +428,10 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
     tests_skipped = format_number(results.get("tests_skipped"))
     tests_total = tests_failed + tests_passed + tests_skipped
     if tests_total == 0:
-        lines.append("| Unit Tests | NOT RUN |")
+        if language == "python" and ran("pytest") and not has_evidence("pytest"):
+            lines.append("| Unit Tests | NO REPORT |")
+        else:
+            lines.append("| Unit Tests | NOT RUN |")
     else:
         lines.append(f"| Unit Tests | {gate_status(tests_failed == 0, 'Failed')} |")
 
@@ -409,6 +439,8 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
         if tools_configured.get("jacoco", False):
             if not ran("jacoco"):
                 lines.append(f"| JaCoCo Coverage | {not_run_status('jacoco')} |")
+            elif not has_evidence("jacoco"):
+                lines.append(f"| JaCoCo Coverage | {no_report_status('jacoco')} |")
             else:
                 cov = format_number(results.get("coverage"))
                 min_cov = format_number(thresholds.get("coverage_min"))
@@ -420,6 +452,8 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
         if tools_configured.get("pitest", False):
             if not ran("pitest"):
                 lines.append(f"| PITest Mutation | {not_run_status('pitest')} |")
+            elif not has_evidence("pitest"):
+                lines.append(f"| PITest Mutation | {no_report_status('pitest')} |")
             else:
                 mut = format_number(results.get("mutation_score"))
                 min_mut = format_number(thresholds.get("mutation_score_min"))
@@ -431,6 +465,8 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
         if tools_configured.get("checkstyle", False):
             if not ran("checkstyle"):
                 lines.append(f"| Checkstyle | {not_run_status('checkstyle')} |")
+            elif not has_evidence("checkstyle"):
+                lines.append(f"| Checkstyle | {no_report_status('checkstyle')} |")
             else:
                 issues = format_number(tool_metrics.get("checkstyle_issues"))
                 max_issues = format_number(thresholds.get("max_checkstyle_errors"))
@@ -441,6 +477,8 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
         if tools_configured.get("spotbugs", False):
             if not ran("spotbugs"):
                 lines.append(f"| SpotBugs | {not_run_status('spotbugs')} |")
+            elif not has_evidence("spotbugs"):
+                lines.append(f"| SpotBugs | {no_report_status('spotbugs')} |")
             else:
                 issues = format_number(tool_metrics.get("spotbugs_issues"))
                 max_issues = format_number(thresholds.get("max_spotbugs_bugs"))
@@ -451,6 +489,8 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
         if tools_configured.get("pmd", False):
             if not ran("pmd"):
                 lines.append(f"| PMD | {not_run_status('pmd')} |")
+            elif not has_evidence("pmd"):
+                lines.append(f"| PMD | {no_report_status('pmd')} |")
             else:
                 issues = format_number(tool_metrics.get("pmd_violations"))
                 max_issues = format_number(thresholds.get("max_pmd_violations"))
@@ -461,6 +501,8 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
         if tools_configured.get("owasp", False):
             if not ran("owasp"):
                 lines.append(f"| OWASP Check | {not_run_status('owasp')} |")
+            elif not has_evidence("owasp"):
+                lines.append(f"| OWASP Check | {no_report_status('owasp')} |")
             else:
                 crit = format_number(tool_metrics.get("owasp_critical"))
                 high = format_number(tool_metrics.get("owasp_high"))
@@ -525,6 +567,8 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
         if tools_configured.get("pytest", False):
             if not ran("pytest"):
                 lines.append(f"| pytest | {not_run_status('pytest')} |")
+            elif not has_evidence("pytest"):
+                lines.append(f"| pytest | {no_report_status('pytest')} |")
             elif tests_total == 0:
                 lines.append(f"| pytest | {not_run_status('pytest')} |")
             else:
@@ -657,12 +701,9 @@ def build_quality_gates(report: dict[str, Any], language: str) -> Iterable[str]:
     return lines
 
 
-def render_summary(report: dict[str, Any], include_metrics: bool = True) -> str:
+def _build_summary_sections(report: dict[str, Any], include_metrics: bool) -> list[str]:
     language = detect_language(report)
-    sections: list[str] = [
-        "# Configuration Summary",
-        "",
-    ]
+    sections: list[str] = []
     sections.extend(build_tools_table(report, language))
     sections.extend(build_thresholds_table(report, language))
     sections.extend(build_environment_table(report))
@@ -673,6 +714,35 @@ def render_summary(report: dict[str, Any], include_metrics: bool = True) -> str:
             sections.extend(build_python_metrics(report))
     sections.extend(build_dependency_severity(report))
     sections.extend(build_quality_gates(report, language))
+    return sections
+
+
+def render_summary(report: dict[str, Any], include_metrics: bool = True) -> str:
+    targets = report.get("targets")
+    if isinstance(targets, list) and targets:
+        sections: list[str] = [
+            "# Configuration Summary",
+            "",
+        ]
+        for entry in targets:
+            if not isinstance(entry, dict):
+                continue
+            target_report = entry.get("report")
+            if not isinstance(target_report, dict):
+                continue
+            language = entry.get("language") or detect_language(target_report)
+            subdir = entry.get("subdir") or target_report.get("environment", {}).get("workdir") or "."
+            label = f"{language} ({subdir})" if language else str(subdir)
+            sections.append(f"## Target: {label}")
+            sections.append("")
+            sections.extend(_build_summary_sections(target_report, include_metrics))
+        return "\n".join(sections).strip() + "\n"
+
+    sections: list[str] = [
+        "# Configuration Summary",
+        "",
+    ]
+    sections.extend(_build_summary_sections(report, include_metrics))
     return "\n".join(sections).strip() + "\n"
 
 

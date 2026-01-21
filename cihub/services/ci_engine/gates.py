@@ -83,6 +83,21 @@ def _check_require_run_or_fail(
     return None  # Tool didn't run but require_run_or_fail is false
 
 
+def _check_report_evidence(
+    tool: str,
+    tools_configured: dict[str, bool],
+    tools_ran: dict[str, Any],
+    tool_evidence: dict[str, Any],
+) -> str | None:
+    if not tools_configured.get(tool):
+        return None
+    if not tools_ran.get(tool):
+        return None
+    if tool_evidence.get(tool, True):
+        return None
+    return f"{tool} ran but produced no report"
+
+
 def _build_context(
     repo_path: Path,
     config: dict[str, Any],
@@ -125,6 +140,7 @@ def _evaluate_python_gates(
     metrics = report.get("tool_metrics", {}) or {}
     tools_ran = report.get("tools_ran", {}) or {}
     tools_success = report.get("tools_success", {}) or {}
+    tool_evidence = report.get("tool_evidence", {}) or {}
 
     # Issue 12: Check test execution - fail if no tests ran
     tests_passed = int(results.get("tests_passed", 0))
@@ -260,6 +276,9 @@ def _evaluate_python_gates(
         failure = _check_require_run_or_fail(tool, tools_configured, tools_ran, config, "python")
         if failure:
             failures.append(failure)
+        evidence_failure = _check_report_evidence(tool, tools_configured, tools_ran, tool_evidence)
+        if evidence_failure:
+            failures.append(evidence_failure)
 
     return failures
 
@@ -275,6 +294,7 @@ def _evaluate_java_gates(
     metrics = report.get("tool_metrics", {}) or {}
     tools_ran = report.get("tools_ran", {}) or {}
     tools_success = report.get("tools_success", {}) or {}
+    tool_evidence = report.get("tool_evidence", {}) or {}
 
     # Issue 12: Check test execution - fail if no tests ran
     tests_passed = int(results.get("tests_passed", 0))
@@ -405,5 +425,8 @@ def _evaluate_java_gates(
         failure = _check_require_run_or_fail(tool, tools_configured, tools_ran, config, "java")
         if failure:
             failures.append(failure)
+        evidence_failure = _check_report_evidence(tool, tools_configured, tools_ran, tool_evidence)
+        if evidence_failure:
+            failures.append(evidence_failure)
 
     return failures

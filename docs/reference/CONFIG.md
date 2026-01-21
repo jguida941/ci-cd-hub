@@ -90,6 +90,9 @@ Source: `schema/ci-hub-config.schema.json`
 | `repo.repo_side_execution` | boolean | no | false | Enable workflow generation INTO target repos (opt-in, requires explicit --apply) |
 | `repo.run_group` | string | no | full | Grouping label for selective runs (e.g., full, fixtures, smoke) |
 | `repo.subdir` | string | no |  | Optional subdirectory within the repo |
+| `repo.targets` | array | no |  | Multi-target config for monorepos (language + subdir pairs) |
+| `repo.targets[].language` | string | yes |  |  |
+| `repo.targets[].subdir` | string | yes |  | Target subdirectory within the repo |
 | `repo.use_central_runner` | boolean | no | true | Use central runner mode (hub clones and executes) vs distributed mode (dispatch to target repo workflow) |
 | `cihub` | object | no |  | CLI behavior toggles used by workflows and triage (debug/verbose/context/triage bundle). |
 | `cihub.debug` | boolean | no | false |  |

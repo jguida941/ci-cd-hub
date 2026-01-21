@@ -194,6 +194,26 @@ def _get_metric(
     return default
 
 
+def _derive_tool_evidence(tool_results: dict[str, dict[str, Any]]) -> dict[str, bool]:
+    evidence: dict[str, bool] = {}
+    for tool, payload in tool_results.items():
+        metrics = payload.get("metrics")
+        if isinstance(metrics, dict) and "report_found" in metrics:
+            evidence[tool] = bool(metrics.get("report_found"))
+            continue
+        if isinstance(metrics, dict):
+            has_signal = any(key != "parse_error" for key in metrics)
+            if has_signal:
+                evidence[tool] = True
+                continue
+        artifacts = payload.get("artifacts")
+        if artifacts:
+            evidence[tool] = True
+            continue
+        evidence[tool] = False
+    return evidence
+
+
 def _get_docker_metrics(tool_results: dict[str, dict[str, Any]]) -> dict[str, bool]:
     """Extract docker metrics shared by both languages."""
     docker_data = tool_results.get("docker", {}).get("metrics", {})
@@ -394,6 +414,7 @@ def _extract_java_metrics(
 
 def _build_report(
     metrics: ReportMetrics,
+    tool_results: dict[str, dict[str, Any]],
     tools_configured: dict[str, bool],
     tools_ran: dict[str, bool],
     tools_success: dict[str, bool],
@@ -457,6 +478,7 @@ def _build_report(
         metrics.language_version_field: metrics.language_version,
         "results": results,
         "tool_metrics": metrics.tool_metrics,
+        "tool_evidence": _derive_tool_evidence(tool_results),
         "tools_configured": tools_configured,
         "tools_ran": tools_ran,
         "tools_success": tools_success,
@@ -487,6 +509,7 @@ def build_python_report(
     metrics = _extract_python_metrics(config, tool_results, tools_configured)
     return _build_report(
         metrics,
+        tool_results,
         tools_configured,
         tools_ran,
         tools_success,
@@ -515,6 +538,7 @@ def build_java_report(
     metrics = _extract_java_metrics(config, tool_results, context)
     return _build_report(
         metrics,
+        tool_results,
         tools_configured,
         tools_ran,
         tools_success,
