@@ -708,3 +708,68 @@ Commands and results:
 - `git add -A` -> ok
 - `git commit -m "fix: gate java tools by proof"` -> ok
 - `git push` -> ok
+
+## 2026-01-21 - cihub-test-java-maven (regen + verify-tools drift)
+
+Repo type: Java Maven
+Repo path: `/tmp/cihub-test-java-maven`
+Goal: Delete workflow, regenerate via cihub, dispatch run, verify tool proof.
+
+Initial failures:
+- verify-tools drift for pitest/checkstyle/owasp (configured but not run)
+- upload step warns no files found even though report/summary generated
+
+Current status:
+- Run 21199482552 fails verify-tools due to drift; tool fix in progress to respect tools_require_run.
+
+Commands and results:
+- `ls -la /tmp/cihub-test-java-maven/.github/workflows` -> ok
+- `git -C /tmp/cihub-test-java-maven rm -f .github/workflows/hub-ci.yml` -> ok; workflow removed
+- `git -C /tmp/cihub-test-java-maven status -sb` -> ok; workflow deletion staged, override file untracked
+- `rm -f /tmp/cihub-test-java-maven/.ci-hub.override.json` -> blocked by policy
+- `git -C /tmp/cihub-test-java-maven commit -m "chore: remove hub-ci workflow for cihub regen"` -> ok
+- `git -C /tmp/cihub-test-java-maven push` -> ok
+- `python -m cihub init --repo /tmp/cihub-test-java-maven --apply --force --config-file /tmp/cihub-test-java-maven/.ci-hub.yml` -> ok; regenerated workflow, hub vars set
+- `git -C /tmp/cihub-test-java-maven status -sb` -> ok; workflow untracked
+- `git -C /tmp/cihub-test-java-maven add .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-test-java-maven commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/cihub-test-java-maven push` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref main --workflow hub-ci.yml` -> ok; run ID 21199403397
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21199403397` -> failed; 4 errors (mutation score, checkstyle)
+- `cat .cihub/runs/21199403397/priority.json` -> ok; mutation/checkstyle gate failures
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21199403397 --verify-tools` -> failed; no report.json (no artifacts)
+- `sleep 30` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21199403397 --verify-tools` -> failed; no report.json (no artifacts)
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-java-maven --latest` -> ok; latest failed run was 21198749042
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-java-maven --watch --run 21199403397` -> started; no output (still running)
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21199403397` -> ok; triage bundle generated (1 failures)
+- `cat .cihub/runs/21199403397/priority.json` -> ok; verify-tools failure logged
+- `git tag -f v1` -> ok; moved v1 tag to latest hub commit
+- `git push -f origin v1` -> ok; updated remote tag
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref main --workflow hub-ci.yml` -> ok; run ID 21199482552
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21199482552` -> ok; triage bundle generated (0 failures)
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21199482552 --verify-tools` -> failed; no report.json (no artifacts)
+- `sleep 30` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21199482552 --verify-tools` -> failed; no report.json (no artifacts)
+- `ls -la .cihub/runs/21199482552` -> ok; artifacts dir empty
+- `ls -la .cihub/runs/21199482552/artifacts` -> ok; empty
+- `cat .cihub/runs/21199482552/triage.md` -> ok; status unknown
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21199482552 --json` -> ok; reports verify-tools failure
+- `cat .cihub/runs/21199482552/priority.json` -> ok; verify-tools failure logged
+- `gh run view 21199482552 --log-failed --repo jguida941/cihub-test-java-maven` -> ok; logs captured
+- `gh run view 21199482552 --log --repo jguida941/cihub-test-java-maven | rg -n "Run cihub ci|Generated:|report.json|Verify tool proof|report outputs|summary.md"` -> ok; report/summary generated but upload step warns no files found
+- `gh run view 21199482552 --log --repo jguida941/cihub-test-java-maven | rg -n "No report.json|CIHUB-VERIFY|verify-tools"` -> ok; verify-tools step logged
+- `gh run view 21199482552 --log --repo jguida941/cihub-test-java-maven | rg -n "Tool Verification|DRIFT|NO PROOF|No report|CIHUB-VERIFY"` -> ok; drift for pitest/checkstyle/owasp
+
+## 2026-01-21 - hub-release (verify-tools optional)
+
+Repo type: Hub CLI (Python)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Respect tools_require_run in verify-tools output and stop failing optional tools.
+
+Commands and results:
+- `python -m pytest tests/unit/services/test_triage_verification.py tests/unit/services/test_triage_service.py` -> ok; 60 passed
+- `python -m cihub docs generate` -> ok; updated reference docs
+- `python -m cihub docs check` -> ok; docs up to date
+- `python -m cihub docs stale` -> ok; no stale references found
+- `python -m cihub docs audit` -> ok with warnings; placeholder local paths, repeated CHANGELOG dates

@@ -36,6 +36,7 @@ def verify_tools_from_report(
         "drift": [],  # Tools configured but didn't run
         "no_proof": [],  # Tools ran but no metrics/artifacts
         "failures": [],  # Tools that failed
+        "optional": [],  # Tools configured but not required to run
         "skipped": [],  # Tools not configured
         "passed": [],  # Tools ran, have proof, and succeeded
         "summary": "",
@@ -58,6 +59,12 @@ def verify_tools_from_report(
     tools_configured = report.get("tools_configured", {}) or {}
     tools_ran = report.get("tools_ran", {}) or {}
     tools_success = report.get("tools_success", {}) or {}
+    tools_require_run = report.get("tools_require_run", {}) or {}
+
+    def _requires_run(tool_name: str) -> bool:
+        if tool_name in tools_require_run:
+            return bool(tools_require_run.get(tool_name, False))
+        return True
 
     # Run validation to get warnings about proof
     rules = ValidationRules(consistency_only=True)
@@ -83,10 +90,15 @@ def verify_tools_from_report(
             tool_entry["status"] = "skipped"
             result["skipped"].append(tool)
         elif configured and not ran:
-            tool_entry["status"] = "drift"
-            tool_entry["issue"] = "Configured but did not run"
-            result["drift"].append({"tool": tool, "message": "Configured but did not run"})
-            result["verified"] = False
+            if _requires_run(tool):
+                tool_entry["status"] = "drift"
+                tool_entry["issue"] = "Configured but did not run"
+                result["drift"].append({"tool": tool, "message": "Configured but did not run"})
+                result["verified"] = False
+            else:
+                tool_entry["status"] = "optional"
+                tool_entry["issue"] = "Configured but optional; did not run"
+                result["optional"].append({"tool": tool, "message": "Configured but optional; did not run"})
         elif ran and success:
             tool_entry["status"] = "passed"
             result["passed"].append(tool)
@@ -129,6 +141,7 @@ def verify_tools_from_report(
     drift_count = len(result["drift"])
     no_proof_count = len(result["no_proof"])
     fail_count = len(result["failures"])
+    optional_count = len(result["optional"])
     skip_count = len(result["skipped"])
 
     if result["verified"]:
@@ -149,6 +162,7 @@ def verify_tools_from_report(
         "drift": drift_count,
         "no_proof": no_proof_count,
         "failures": fail_count,
+        "optional": optional_count,
         "skipped": skip_count,
     }
 
@@ -187,6 +201,7 @@ def format_verify_tools_output(verify_result: dict[str, Any]) -> list[str]:
     lines.append(f"  Drift (configured but didn't run): {counts.get('drift', 0)}")
     lines.append(f"  No proof (ran but no metrics/artifacts): {counts.get('no_proof', 0)}")
     lines.append(f"  Failed: {counts.get('failures', 0)}")
+    lines.append(f"  Optional (configured but not required): {counts.get('optional', 0)}")
     lines.append(f"  Skipped (not configured): {counts.get('skipped', 0)}")
 
     if verify_result.get("drift"):
@@ -199,6 +214,12 @@ def format_verify_tools_output(verify_result: dict[str, Any]) -> list[str]:
         lines.append("")
         lines.append("NO PROOF - Tools ran but no metrics/artifacts:")
         for item in verify_result["no_proof"]:
+            lines.append(f"  - {item['tool']}: {item['message']}")
+
+    if verify_result.get("optional"):
+        lines.append("")
+        lines.append("OPTIONAL - Configured but not required to run:")
+        for item in verify_result["optional"]:
             lines.append(f"  - {item['tool']}: {item['message']}")
 
     if verify_result.get("failures"):

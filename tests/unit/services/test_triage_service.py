@@ -725,6 +725,26 @@ class TestToolVerification:
         assert result["drift"][0]["tool"] == "mypy"
         assert "configured but didn't run" in result["summary"].lower()
 
+    def test_verify_tools_optional_not_counted_as_drift(self, tmp_path: Path) -> None:
+        """Configured but optional tools should not fail verification."""
+        from cihub.commands.triage import _verify_tools_from_report
+
+        report_path = tmp_path / "report.json"
+        report = _make_report(
+            tools_configured={"ruff": True, "mypy": True},
+            tools_ran={"ruff": True, "mypy": False},
+            tools_success={"ruff": True},
+            tools_require_run={"mypy": False},
+            tool_metrics={"ruff_errors": 0},
+        )
+        _write_report(report_path, report)
+
+        result = _verify_tools_from_report(report_path, tmp_path)
+
+        assert result["verified"] is True
+        assert len(result["drift"]) == 0
+        assert result["optional"][0]["tool"] == "mypy"
+
     def test_verify_tools_failure_detected(self, tmp_path: Path) -> None:
         """Detect tool failures."""
         from cihub.commands.triage import _verify_tools_from_report
@@ -792,4 +812,5 @@ class TestToolVerification:
         assert counts["passed"] == 1  # ruff
         assert counts["failures"] == 1  # pytest
         assert counts["drift"] == 1  # mypy
+        assert counts["optional"] == 0
         assert counts["skipped"] == 1  # bandit

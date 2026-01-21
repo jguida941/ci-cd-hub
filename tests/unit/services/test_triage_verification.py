@@ -42,6 +42,16 @@ class TestVerifyToolsFromReport:
                 },
                 "drift",
             ),
+            # Tool configured but optional -> optional
+            (
+                {
+                    "tools_configured": {"pytest": True},
+                    "tools_ran": {"pytest": False},
+                    "tools_success": {"pytest": False},
+                    "tools_require_run": {"pytest": False},
+                },
+                "optional",
+            ),
             # Tool configured, ran, but failed -> failed
             (
                 {
@@ -108,6 +118,23 @@ class TestVerifyToolsFromReport:
         assert result["drift"][0]["tool"] == "mypy"
         assert "did not run" in result["drift"][0]["message"].lower()
 
+    def test_optional_tools_not_counted_as_drift(self, tmp_path: Path) -> None:
+        """Test configured-but-optional tools do not fail verification."""
+        report = {
+            "tools_configured": {"pytest": True, "mypy": True},
+            "tools_ran": {"pytest": True, "mypy": False},
+            "tools_success": {"pytest": True, "mypy": False},
+            "tools_require_run": {"mypy": False},
+        }
+        report_path = tmp_path / "report.json"
+        report_path.write_text(json.dumps(report), encoding="utf-8")
+
+        result = verify_tools_from_report(report_path)
+
+        assert result["verified"] is True
+        assert len(result["drift"]) == 0
+        assert result["optional"][0]["tool"] == "mypy"
+
     def test_verified_false_when_failure_detected(self, tmp_path: Path) -> None:
         """Test verified=False when tool ran but failed."""
         report = {
@@ -168,8 +195,14 @@ class TestVerifyToolsFromReport:
         assert counts["failures"] == 1  # ruff (ran but failed)
         assert counts["drift"] == 1  # mypy (configured but didn't run)
         assert counts["skipped"] == 1  # bandit (not configured)
+        assert counts["optional"] == 0
         assert (
-            counts["passed"] + counts["failures"] + counts["drift"] + counts["skipped"] + counts["no_proof"]
+            counts["passed"]
+            + counts["failures"]
+            + counts["drift"]
+            + counts["skipped"]
+            + counts["no_proof"]
+            + counts["optional"]
         ) == counts["total"]
 
     def test_report_not_found_returns_error(self, tmp_path: Path) -> None:
@@ -269,6 +302,24 @@ class TestFormatVerifyToolsOutput:
         assert "DRIFT" in output
         assert "mypy" in output
 
+    def test_shows_optional_section_when_present(self, tmp_path: Path) -> None:
+        """Test optional section appears when tools are optional."""
+        report = {
+            "tools_configured": {"mypy": True},
+            "tools_ran": {"mypy": False},
+            "tools_success": {"mypy": False},
+            "tools_require_run": {"mypy": False},
+        }
+        report_path = tmp_path / "report.json"
+        report_path.write_text(json.dumps(report), encoding="utf-8")
+
+        result = verify_tools_from_report(report_path)
+        lines = format_verify_tools_output(result)
+
+        output = "\n".join(lines)
+        assert "OPTIONAL" in output
+        assert "mypy" in output
+
     def test_shows_failures_section_when_present(self, tmp_path: Path) -> None:
         """Test failures section appears when tools failed."""
         report = {
@@ -317,11 +368,12 @@ class TestFormatVerifyToolsOutput:
                 "total": 0,
                 "passed": 0,
                 "drift": 0,
-                "no_proof": 0,
-                "failures": 0,
-                "skipped": 0,
-            },
-        }
+            "no_proof": 0,
+            "failures": 0,
+            "optional": 0,
+            "skipped": 0,
+        },
+    }
 
         lines = format_verify_tools_output(result)
 

@@ -41,6 +41,12 @@ All notable changes to this project will be documented in this file.
 - Java gates now evaluate checkstyle/spotbugs/pmd/pitest/jacoco only when the tool ran.
 - Checkstyle is skipped with a warning when no config file is present, avoiding false failures on default setups.
 
+## 2026-01-20 - Tool Proof Verification
+
+### Fix: Optional tools no longer fail verify-tools
+
+- `cihub triage --verify-tools` now respects `tools_require_run`; configured-but-optional tools that did not run are reported as optional instead of drift failures.
+
 ## 2026-01-19 - TypeScript Wizard Handoff (Phase 6)
 
 ### New: TypeScript interactive wizard flows
