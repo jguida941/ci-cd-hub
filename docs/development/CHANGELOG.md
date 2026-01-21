@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - `cihub dispatch`/`cihub triage` now fall back to `gh auth token` when no env token is set.
 - Token priority order recorded in ADR-0065.
 
+### Fix: Mirror CI outputs to workspace
+
+- `cihub ci` mirrors `.cihub` outputs to `GITHUB_WORKSPACE` when the output dir is outside the workspace (ADR-0066).
+
 ## 2026-01-20 - ADR + Deprecated Shim Cleanup
 
 ### Fix: ADR tooling uses project root

@@ -819,3 +819,31 @@ Follow-up commands:
 - `git push` -> ok
 - `git tag -f v1` -> ok
 - `git push -f origin v1` -> ok
+
+## 2026-01-21 - cihub-test-java-maven (dispatch via gh fallback)
+
+Repo type: Java fixture
+Repo URL: https://github.com/jguida941/cihub-test-java-maven
+Goal: Re-run workflow with gh token fallback and verify artifact upload.
+
+Commands and results:
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref main --workflow hub-ci.yml --watch` -> ok; run ID 21200561777, completed/success
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21200561777 --verify-tools` -> failed; no report.json found
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21200561777` -> ok; triage bundle generated (0 failures)
+- `ls -la .cihub/runs/21200561777` -> ok; artifacts dir empty
+- `ls -la .cihub/runs/21200561777/artifacts` -> ok; empty
+- `gh run view 21200561777 --log --repo jguida941/cihub-test-java-maven | rg -n "Run cihub ci|Generated:|report.json|summary.md|No files were found"` -> ok; upload-artifact warns no files found
+- `gh run view 21200561777 --log --repo jguida941/cihub-test-java-maven | sed -n '1200,1265p'` -> ok; report outputs and verify-tools succeeded before upload step
+
+## 2026-01-21 - hub-release (output mirror to GITHUB_WORKSPACE)
+
+Repo type: Hub CLI (Python)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Mirror .cihub outputs into GITHUB_WORKSPACE for artifact upload reliability.
+
+Commands and results:
+- `python -m pytest tests/unit/services/ci_engine/test_ci_engine_output_mirror.py` -> ok; 2 passed
+- `python -m cihub docs generate` -> ok; updated reference docs
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok
+- `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated CHANGELOG dates

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
@@ -85,6 +86,38 @@ class CiRunResult(ServiceResult):
     artifacts: dict[str, str] = field(default_factory=dict)
     data: dict[str, Any] = field(default_factory=dict)
     problems: list[dict[str, Any]] = field(default_factory=list)
+
+
+def _mirror_output_dir_to_workspace(
+    output_dir: Path,
+    env_map: Mapping[str, str],
+    problems: list[dict[str, Any]],
+) -> Path | None:
+    workspace = env_map.get("GITHUB_WORKSPACE")
+    if not workspace:
+        return None
+    workspace_path = Path(workspace).resolve()
+    output_dir_resolved = output_dir.resolve()
+    try:
+        output_dir_resolved.relative_to(workspace_path)
+        return None
+    except ValueError:
+        pass
+    target_dir = workspace_path / output_dir_resolved.name
+    if not output_dir_resolved.exists():
+        return None
+    try:
+        shutil.copytree(output_dir_resolved, target_dir, dirs_exist_ok=True)
+        return target_dir
+    except Exception as exc:
+        problems.append(
+            {
+                "severity": "warning",
+                "message": f"Failed to mirror CI outputs to workspace: {exc}",
+                "code": "CIHUB-CI-OUTPUT-MIRROR",
+            }
+        )
+        return None
 
 
 # Tool runner dictionaries (backward compatibility)
@@ -373,6 +406,19 @@ def run_ci(
             bool(codecov_cfg.get("fail_ci_on_error", False)),
             problems,
         )
+
+    mirror_dir = _mirror_output_dir_to_workspace(output_dir, env_map, problems)
+    if mirror_dir:
+        try:
+            resolved_report_path = mirror_dir / resolved_report_path.relative_to(output_dir)
+        except ValueError:
+            pass
+        if resolved_summary_path:
+            try:
+                resolved_summary_path = mirror_dir / resolved_summary_path.relative_to(output_dir)
+            except ValueError:
+                pass
+        output_dir = mirror_dir
 
     if gate_failures:
         problems.extend(
