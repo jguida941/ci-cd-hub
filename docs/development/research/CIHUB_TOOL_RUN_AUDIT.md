@@ -779,3 +779,23 @@ Commands and results:
 - `git push` -> ok
 - `git tag -f v1` -> ok; moved v1 tag to latest hub commit
 - `git push -f origin v1` -> ok; updated remote tag
+
+## 2026-01-21 - cihub-test-java-maven (regen workflow + dispatch blocked)
+
+Repo type: Java fixture
+Repo URL: https://github.com/jguida941/cihub-test-java-maven
+Goal: Delete and regenerate workflow via cihub, then re-run CI using tools-only.
+
+Commands and results:
+- `git push` -> ok; pushed hub-release commit 220f93ca
+- `git tag -f v1` -> ok; moved v1 tag to hub-release HEAD
+- `git push -f origin v1` -> ok; updated remote tag
+- `python - <<'PY' (shutil.rmtree /tmp/cihub-test-java-maven)` -> ok
+- `git clone https://github.com/jguida941/cihub-test-java-maven /tmp/cihub-test-java-maven` -> ok
+- `python - <<'PY' (unlink /tmp/cihub-test-java-maven/.github/workflows/hub-ci.yml)` -> ok
+- `python -m cihub init --repo /tmp/cihub-test-java-maven --apply --force --set-hub-vars` -> ok; hub vars set, workflow regenerated
+- `python - <<'PY' (write /tmp/cihub-test-java-maven/.ci-hub.override.json install.source=git)` -> ok
+- `python -m cihub init --repo /tmp/cihub-test-java-maven --apply --force --config-file /tmp/cihub-test-java-maven/.ci-hub.override.json --set-hub-vars` -> ok
+- `python - <<'PY' (unlink /tmp/cihub-test-java-maven/.ci-hub.override.json)` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref main --workflow hub-ci.yml --watch` -> failed; missing GH_TOKEN/GITHUB_TOKEN/HUB_DISPATCH_TOKEN
+- `python - <<'PY' (check env tokens)` -> ok; all unset
