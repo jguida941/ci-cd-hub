@@ -687,3 +687,20 @@ Commands and results:
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok; no stale references
 - `python -m cihub docs audit` -> ok with warnings (existing placeholders, repeated dates)
+
+## 2026-01-20 - hub-release (java gate + checkstyle skip)
+
+Repo type: Hub CLI (Python)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Fix Java gates to only evaluate tools that ran and skip checkstyle when config is missing.
+
+Fixes applied:
+- Java gates now evaluate checkstyle/spotbugs/pmd/pitest/jacoco only when the tool ran.
+- Checkstyle is skipped with a warning when no config file is found.
+
+Commands and results:
+- `python -m pytest tests/unit/services/ci_engine/test_ci_engine_gates.py tests/unit/services/ci_engine/test_ci_engine_runners.py` -> ok; 71 passed
+- `python -m cihub docs generate` -> ok; updated reference docs
+- `python -m cihub docs check` -> ok; docs up to date
+- `python -m cihub docs stale` -> ok; no stale references found
+- `python -m cihub docs audit` -> ok with warnings; placeholder local paths, repeated CHANGELOG dates

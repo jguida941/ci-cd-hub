@@ -34,6 +34,13 @@ All notable changes to this project will be documented in this file.
 
 - `cihub init` now uses language from existing `.ci-hub.yml` or config override when repo markers are missing.
 
+## 2026-01-20 - Java Gate Proofing
+
+### Fix: Only gate tools that actually ran
+
+- Java gates now evaluate checkstyle/spotbugs/pmd/pitest/jacoco only when the tool ran.
+- Checkstyle is skipped with a warning when no config file is present, avoiding false failures on default setups.
+
 ## 2026-01-19 - TypeScript Wizard Handoff (Phase 6)
 
 ### New: TypeScript interactive wizard flows

@@ -289,32 +289,40 @@ def _evaluate_java_gates(
 
     # Coverage gate - uses gate_specs for consistent evaluation
     # Use float() to avoid truncation (79.9% should not become 79%)
-    if tools_configured.get("jacoco"):
+    if tools_configured.get("jacoco") and tools_ran.get("jacoco"):
         coverage_min = float(thresholds.get("coverage_min", 0) or 0)
         coverage = float(results.get("coverage", 0))
         _check_threshold("coverage_min", "java", coverage_min, coverage, failures)
 
     # Mutation score gate - uses gate_specs for consistent evaluation
     # Use float() to avoid truncation
-    if tools_configured.get("pitest"):
+    if tools_configured.get("pitest") and tools_ran.get("pitest"):
         mut_min = float(thresholds.get("mutation_score_min", 0) or 0)
         mut_score = float(results.get("mutation_score", 0))
         _check_threshold("mutation_score_min", "java", mut_min, mut_score, failures)
 
     # Checkstyle gate - uses gate_specs for consistent evaluation
-    if tools_configured.get("checkstyle") and _tool_gate_enabled(config, "checkstyle", "java"):
+    if (
+        tools_configured.get("checkstyle")
+        and tools_ran.get("checkstyle")
+        and _tool_gate_enabled(config, "checkstyle", "java")
+    ):
         max_checkstyle = int(thresholds.get("max_checkstyle_errors", 0) or 0)
         checkstyle_issues = int(metrics.get("checkstyle_issues", 0))
         _check_threshold("max_checkstyle_errors", "java", max_checkstyle, checkstyle_issues, failures)
 
     # SpotBugs gate - uses gate_specs for consistent evaluation
-    if tools_configured.get("spotbugs") and _tool_gate_enabled(config, "spotbugs", "java"):
+    if (
+        tools_configured.get("spotbugs")
+        and tools_ran.get("spotbugs")
+        and _tool_gate_enabled(config, "spotbugs", "java")
+    ):
         max_spotbugs = int(thresholds.get("max_spotbugs_bugs", 0) or 0)
         spotbugs_issues = int(metrics.get("spotbugs_issues", 0))
         _check_threshold("max_spotbugs_bugs", "java", max_spotbugs, spotbugs_issues, failures)
 
     # PMD gate - uses gate_specs for consistent evaluation
-    if tools_configured.get("pmd") and _tool_gate_enabled(config, "pmd", "java"):
+    if tools_configured.get("pmd") and tools_ran.get("pmd") and _tool_gate_enabled(config, "pmd", "java"):
         max_pmd = int(thresholds.get("max_pmd_violations", 0) or 0)
         pmd_issues = int(metrics.get("pmd_violations", 0))
         _check_threshold("max_pmd_violations", "java", max_pmd, pmd_issues, failures)
@@ -323,7 +331,7 @@ def _evaluate_java_gates(
     max_high = int(thresholds.get("max_high_vulns", 0) or 0)
 
     # OWASP critical/high gates - uses gate_specs for consistent evaluation
-    if tools_configured.get("owasp"):
+    if tools_configured.get("owasp") and tools_ran.get("owasp"):
         owasp_critical = int(metrics.get("owasp_critical", 0))
         owasp_high = int(metrics.get("owasp_high", 0))
         _check_threshold("max_critical_vulns", "java", max_critical, owasp_critical, failures)
@@ -331,7 +339,7 @@ def _evaluate_java_gates(
 
     # Trivy critical/high gates - uses gate_specs with severity-level toggles
     trivy_cfg = config.get("java", {}).get("tools", {}).get("trivy", {}) or {}
-    if tools_configured.get("trivy"):
+    if tools_configured.get("trivy") and tools_ran.get("trivy"):
         if bool(trivy_cfg.get("fail_on_critical", True)):
             trivy_critical = int(metrics.get("trivy_critical", 0))
             _check_threshold("max_trivy_critical", "java", max_critical, trivy_critical, failures)

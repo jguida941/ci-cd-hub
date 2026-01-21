@@ -309,7 +309,7 @@ class TestEvaluateJavaGates:
         assert "test failures detected" in failures
 
     def test_detects_coverage_below_threshold(self) -> None:
-        report = {"results": {"coverage": 50}}
+        report = {"results": {"coverage": 50}, "tools_ran": {"jacoco": True}}
         thresholds = {"coverage_min": 70}
         tools_configured = {"jacoco": True}
         config: dict = {}
@@ -320,7 +320,7 @@ class TestEvaluateJavaGates:
         assert any("coverage 50" in f and "< 70" in f for f in failures)
 
     def test_detects_checkstyle_issues(self) -> None:
-        report = {"tool_metrics": {"checkstyle_issues": 15}}
+        report = {"tool_metrics": {"checkstyle_issues": 15}, "tools_ran": {"checkstyle": True}}
         thresholds = {"max_checkstyle_errors": 0}
         tools_configured = {"checkstyle": True}
         config = {"java": {"tools": {"checkstyle": {"fail_on_violation": True}}}}
@@ -330,7 +330,7 @@ class TestEvaluateJavaGates:
         assert any("checkstyle issues" in f for f in failures)
 
     def test_detects_spotbugs_issues(self) -> None:
-        report = {"tool_metrics": {"spotbugs_issues": 5}}
+        report = {"tool_metrics": {"spotbugs_issues": 5}, "tools_ran": {"spotbugs": True}}
         thresholds = {"max_spotbugs_bugs": 0}
         tools_configured = {"spotbugs": True}
         config = {"java": {"tools": {"spotbugs": {"fail_on_error": True}}}}
@@ -340,7 +340,10 @@ class TestEvaluateJavaGates:
         assert any("spotbugs issues" in f for f in failures)
 
     def test_detects_owasp_vulns(self) -> None:
-        report = {"tool_metrics": {"owasp_critical": 1, "owasp_high": 2}}
+        report = {
+            "tool_metrics": {"owasp_critical": 1, "owasp_high": 2},
+            "tools_ran": {"owasp": True},
+        }
         thresholds = {"max_critical_vulns": 0, "max_high_vulns": 0}
         tools_configured = {"owasp": True}
         config: dict = {}
@@ -435,7 +438,11 @@ class TestEvaluateJavaGates:
         assert "docker compose file missing" in failures
 
     def test_no_failures_when_all_pass(self) -> None:
-        report = {"results": {"coverage": 85, "tests_failed": 0, "tests_passed": 10}, "tool_metrics": {}}
+        report = {
+            "results": {"coverage": 85, "tests_failed": 0, "tests_passed": 10},
+            "tool_metrics": {},
+            "tools_ran": {"jacoco": True},
+        }
         thresholds = {"coverage_min": 70}
         tools_configured = {"jacoco": True}
         config: dict = {}
