@@ -777,3 +777,5 @@ Commands and results:
 - `git add -A` -> ok
 - `git commit -m "fix: verify-tools honors tools_require_run"` -> ok
 - `git push` -> ok
+- `git tag -f v1` -> ok; moved v1 tag to latest hub commit
+- `git push -f origin v1` -> ok; updated remote tag
