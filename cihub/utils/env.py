@@ -5,6 +5,12 @@ from __future__ import annotations
 import os
 from typing import Mapping
 
+from cihub.utils.exec_utils import (
+    TIMEOUT_QUICK,
+    CommandNotFoundError,
+    CommandTimeoutError,
+    safe_run,
+)
 
 def _parse_env_bool(value: str | None) -> bool | None:
     """Parse a string as a boolean, returning None if not recognized.
@@ -129,4 +135,26 @@ def get_github_token(
         if token:
             return token, env_name
 
+    gh_token = _get_gh_auth_token()
+    if gh_token:
+        return gh_token, "gh"
+
     return None, "missing"
+
+
+def _get_gh_auth_token() -> str | None:
+    """Attempt to read a GitHub token from `gh auth token`."""
+    try:
+        result = safe_run(["gh", "auth", "token"], timeout=TIMEOUT_QUICK)
+    except (CommandNotFoundError, CommandTimeoutError):
+        return None
+    except Exception:
+        return None
+
+    if result.returncode != 0:
+        return None
+
+    token = result.stdout.strip()
+    if not token:
+        return None
+    return token

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-21 - GitHub Auth Fallback
+
+### Fix: Dispatch token fallback via gh
+
+- `cihub dispatch`/`cihub triage` now fall back to `gh auth token` when no env token is set.
+- Token priority order recorded in ADR-0065.
+
 ## 2026-01-20 - ADR + Deprecated Shim Cleanup
 
 ### Fix: ADR tooling uses project root

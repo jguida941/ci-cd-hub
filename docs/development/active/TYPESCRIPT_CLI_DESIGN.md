@@ -115,6 +115,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [ ] Handle AI timeout gracefully in UI
 - [ ] Show loading state during AI processing
 - [x] Harden Java CI gates and verify-tools proofing (skip checkstyle when config missing)
+- [x] Dispatch/triage use `gh auth token` fallback when env tokens are missing (ADR-0065)
 
 ### Phase 9: Testing
 - [ ] Write unit tests for parser (`test/unit/parser.test.ts`)

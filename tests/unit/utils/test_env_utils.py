@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock, patch
+
 from cihub.utils.env import (
     _parse_env_bool,
     env_bool,
@@ -12,6 +14,7 @@ from cihub.utils.env import (
     get_github_token,
     resolve_flag,
 )
+from cihub.utils.exec_utils import CommandNotFoundError
 
 
 class TestParseEnvBool:
@@ -202,7 +205,8 @@ class TestGetGithubToken:
     def test_returns_missing_when_no_token(self) -> None:
         """Returns (None, 'missing') when no token found."""
         env: dict[str, str] = {}
-        token, source = get_github_token(env=env)
+        with patch("cihub.utils.env.safe_run", side_effect=CommandNotFoundError("gh")):
+            token, source = get_github_token(env=env)
         assert token is None
         assert source == "missing"
 
@@ -215,3 +219,16 @@ class TestGetGithubToken:
         token, source = get_github_token(token_env="MY_CUSTOM_TOKEN", env=env)  # noqa: S106
         assert token == "gh_token"  # noqa: S105
         assert source == "GH_TOKEN"
+
+    def test_gh_auth_token_fallback(self) -> None:
+        """Uses gh auth token when env tokens are missing."""
+        env: dict[str, str] = {}
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.stdout = "gh_token_value\n"
+        mock_proc.stderr = ""
+        with patch("cihub.utils.env.safe_run", return_value=mock_proc) as mock_run:
+            token, source = get_github_token(env=env)
+        assert token == "gh_token_value"  # noqa: S105
+        assert source == "gh"
+        mock_run.assert_called_once()

@@ -799,3 +799,16 @@ Commands and results:
 - `python - <<'PY' (unlink /tmp/cihub-test-java-maven/.ci-hub.override.json)` -> ok
 - `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref main --workflow hub-ci.yml --watch` -> failed; missing GH_TOKEN/GITHUB_TOKEN/HUB_DISPATCH_TOKEN
 - `python - <<'PY' (check env tokens)` -> ok; all unset
+
+## 2026-01-21 - hub-release (gh auth token fallback)
+
+Repo type: Hub CLI (Python)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Allow dispatch/triage to use `gh auth token` when env tokens are missing.
+
+Commands and results:
+- `python -m pytest tests/unit/utils/test_env_utils.py` -> ok; 30 passed
+- `python -m cihub docs generate` -> ok; updated CLI/CONFIG/ENV/TOOLS/WORKFLOWS refs
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok
+- `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated CHANGELOG dates

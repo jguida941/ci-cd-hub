@@ -492,6 +492,7 @@ These are references, not competing plans.
 - **Pytest args/env are config-driven** (`python.tools.pytest.args`/`python.tools.pytest.env`) for headless/UI control (ADR-0062).
 - **Headless Qt defaults are automatic** (xvfb + Qt env + optional `qprocess` skip) when Qt deps detected on Linux (ADR-0064).
 - **isort uses the Black profile when Black is enabled** in config (ADR-0063).
+- **GitHub auth tokens fall back to `gh auth token`** when env tokens are missing (ADR-0065).
 - **Workflow dispatch/watch lives in the CLI** (`cihub dispatch`) with wizard wrappers (ADR-0055).
 - **Schema is the source of truth for defaults**; defaults.yaml and fallbacks.py are generated and audited in `cihub check --audit`.
 - **Canonical install default is PyPI**; align CLI defaults and templates to schema `install.source`.
