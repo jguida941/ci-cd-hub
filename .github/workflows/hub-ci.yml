@@ -75,10 +75,14 @@ jobs:
     outputs:
       # Language
       language: ${{ steps.parse.outputs.language }}
+      run_python: ${{ steps.parse.outputs.run_python }}
+      run_java: ${{ steps.parse.outputs.run_java }}
       python_version: ${{ steps.parse.outputs.python_version }}
       java_version: ${{ steps.parse.outputs.java_version }}
       build_tool: ${{ steps.parse.outputs.build_tool }}
       workdir: ${{ steps.parse.outputs.workdir }}
+      python_workdir: ${{ steps.parse.outputs.python_workdir }}
+      java_workdir: ${{ steps.parse.outputs.java_workdir }}
       retention_days: ${{ steps.parse.outputs.retention_days }}
       write_github_summary: ${{ steps.parse.outputs.write_github_summary }}
       # Thresholds
@@ -154,11 +158,11 @@ jobs:
   python:
     name: Python CI
     needs: config
-    if: needs.config.outputs.language == 'python'
+    if: ${{ fromJson(needs.config.outputs.run_python) }}
     uses: jguida941/ci-cd-hub/.github/workflows/python-ci.yml@v1
     with:
       python_version: ${{ needs.config.outputs.python_version }}
-      workdir: ${{ needs.config.outputs.workdir }}
+      workdir: ${{ needs.config.outputs.python_workdir }}
       hub_correlation_id: ${{ inputs.hub_correlation_id }}
       hub_repo: ${{ inputs.hub_repo || vars.HUB_REPO }}
       hub_ref: ${{ inputs.hub_ref || vars.HUB_REF }}
@@ -209,12 +213,12 @@ jobs:
   java:
     name: Java CI
     needs: config
-    if: needs.config.outputs.language == 'java'
+    if: ${{ fromJson(needs.config.outputs.run_java) }}
     uses: jguida941/ci-cd-hub/.github/workflows/java-ci.yml@v1
     with:
       java_version: ${{ needs.config.outputs.java_version }}
       build_tool: ${{ needs.config.outputs.build_tool }}
-      workdir: ${{ needs.config.outputs.workdir }}
+      workdir: ${{ needs.config.outputs.java_workdir }}
       hub_correlation_id: ${{ inputs.hub_correlation_id }}
       hub_repo: ${{ inputs.hub_repo || vars.HUB_REPO }}
       hub_ref: ${{ inputs.hub_ref || vars.HUB_REF }}

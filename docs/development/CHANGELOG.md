@@ -43,6 +43,7 @@ All notable changes to this project will be documented in this file.
 ### New: Monorepo targets
 
 - Added `repo.targets` for multi-language, multi-subdir runs (monorepo support) with per-target summaries in reports.
+- `cihub config-outputs` now emits `run_python`, `run_java`, `python_workdir`, and `java_workdir` so hub-ci can run both languages.
 
 ## 2026-01-20 - ADR + Deprecated Shim Cleanup
 

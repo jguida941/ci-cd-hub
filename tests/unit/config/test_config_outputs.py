@@ -271,6 +271,47 @@ class TestCmdConfigOutputs:
 
         assert result.data["outputs"]["workdir"] == "."
 
+    def test_outputs_multi_target_flag(self, tmp_path: Path) -> None:
+        """Multi-target repos set multi_target output and shared toggles."""
+        args = argparse.Namespace(repo=str(tmp_path), json=True, workdir=None, github_output=False)
+
+        with patch("cihub.commands.config_outputs.load_ci_config") as mock_load:
+            mock_load.return_value = {
+                "language": "python",
+                "repo": {
+                    "targets": [
+                        {"language": "python", "subdir": "python"},
+                        {"language": "java", "subdir": "java"},
+                    ]
+                },
+                "python": {"tools": {"trivy": {"enabled": True}}},
+                "java": {"tools": {"codeql": {"enabled": True}}},
+            }
+            result = cmd_config_outputs(args)
+
+        outputs = result.data["outputs"]
+        assert outputs["multi_target"] == "true"
+        assert outputs["run_python"] == "true"
+        assert outputs["run_java"] == "true"
+        assert outputs["python_workdir"] == "python"
+        assert outputs["java_workdir"] == "java"
+        assert outputs["run_trivy"] == "true"
+        assert outputs["run_codeql"] == "true"
+
+    def test_single_language_run_flags(self, tmp_path: Path) -> None:
+        """Single-language repos expose run flags and workdir."""
+        args = argparse.Namespace(repo=str(tmp_path), json=True, workdir=None, github_output=False)
+
+        with patch("cihub.commands.config_outputs.load_ci_config") as mock_load:
+            mock_load.return_value = {"language": "python", "repo": {"subdir": "backend"}}
+            result = cmd_config_outputs(args)
+
+        outputs = result.data["outputs"]
+        assert outputs["run_python"] == "true"
+        assert outputs["run_java"] == "false"
+        assert outputs["python_workdir"] == "backend"
+        assert outputs["java_workdir"] == "backend"
+
     def test_extracts_python_tool_toggles(self, tmp_path: Path) -> None:
         """Test Python tool toggles are extracted."""
         args = argparse.Namespace(repo=str(tmp_path), json=True, workdir=None, github_output=False)

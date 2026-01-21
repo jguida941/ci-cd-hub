@@ -118,6 +118,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Dispatch/triage use `gh auth token` fallback when env tokens are missing (ADR-0065)
 - [x] Mirror CI outputs to `GITHUB_WORKSPACE` for reusable workflow artifacts (ADR-0066)
 - [x] Upload hidden `.cihub` artifacts in reusable workflows (ADR-0067)
+- [x] Route monorepo targets through hub-ci via config-outputs (`run_python`/`run_java`, per-language workdirs)
 - [x] Run Maven install prep for multi-module tool runs (ADR-0068)
 - [x] Add tool evidence reporting (`tool_evidence`) and surface `NO REPORT` in summaries
 - [x] Add monorepo targets (`repo.targets`) with per-target summaries

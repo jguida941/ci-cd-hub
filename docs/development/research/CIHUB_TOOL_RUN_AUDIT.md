@@ -3,7 +3,42 @@
 Status: active
 Owner: Development Team
 Source-of-truth: manual
-Last-reviewed: 2026-01-19
+Last-reviewed: 2026-01-21
+
+## 2026-01-21 - hub-release (hub-ci monorepo routing)
+
+Repo type: Hub CLI (Python)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Route monorepo targets through the existing hub-ci workflow (no new workflow files).
+
+Changes:
+- Added `run_python`/`run_java` and per-language workdir outputs in `cihub config-outputs`
+- Updated `hub-ci.yml` to gate on run flags and pass per-language workdirs
+- Updated config-outputs tests and refreshed generated docs
+
+Commands and results:
+- `rg -n "config-outputs|cihub ci|hub-ci" .github/workflows` -> ok
+- `sed -n '1,240p' .github/workflows/hub-ci.yml` -> ok
+- `sed -n '240,520p' .github/workflows/hub-ci.yml` -> ok
+- `rg -n "targets" cihub/data/schema/ci-hub-config.schema.json` -> ok
+- `sed -n '1130,1205p' cihub/data/schema/ci-hub-config.schema.json` -> ok
+- `sed -n '1,240p' cihub/commands/config_outputs.py` -> ok
+- `sed -n '240,520p' cihub/commands/config_outputs.py` -> ok
+- `sed -n '1,240p' tests/unit/config/test_config_outputs.py` -> ok
+- `sed -n '240,520p' tests/unit/config/test_config_outputs.py` -> ok
+- `python -m pytest tests/unit/config/test_config_outputs.py` -> ok; 54 passed
+- `python -m cihub docs generate` -> ok; updated CLI/CONFIG/ENV/TOOLS/WORKFLOWS references
+- `python -m cihub docs check` -> ok; docs up to date
+- `python -m cihub docs stale` -> ok; no stale references found
+- `python -m cihub docs audit` -> ok with warnings; placeholder paths + repeated CHANGELOG dates
+- `python -m cihub docs generate` -> ok; updated CLI/CONFIG/ENV/TOOLS/WORKFLOWS references (rerun after audit log update)
+- `python -m cihub docs check` -> ok; docs up to date
+- `python -m cihub docs stale` -> ok; no stale references found
+- `python -m cihub docs audit` -> ok with warnings; placeholder paths + repeated CHANGELOG dates
+- `python -m cihub docs generate` -> ok; updated CLI/CONFIG/ENV/TOOLS/WORKFLOWS references (final rerun after audit log update)
+- `python -m cihub docs check` -> ok; docs up to date
+- `python -m cihub docs stale` -> ok; no stale references found
+- `python -m cihub docs audit` -> ok with warnings; placeholder paths + repeated CHANGELOG dates
 
 ## 2026-01-21 - hub-release (tool evidence + monorepo targets)
 

@@ -40,6 +40,31 @@ def _bool_str(value: bool) -> str:
     return "true" if value else "false"
 
 
+def _normalize_subdir(value: Any) -> str:
+    if isinstance(value, str):
+        value = value.strip()
+        if value:
+            return value
+    return ""
+
+
+def _extract_targets(targets_cfg: Any) -> dict[str, str]:
+    targets: dict[str, str] = {}
+    if not isinstance(targets_cfg, list):
+        return targets
+    for entry in targets_cfg:
+        if not isinstance(entry, dict):
+            continue
+        language = entry.get("language")
+        if language not in {"python", "java"}:
+            continue
+        if language in targets:
+            continue
+        subdir = _normalize_subdir(entry.get("subdir"))
+        targets[language] = subdir or "."
+    return targets
+
+
 def _tool_entry(config: dict[str, Any], language: str, tool: str) -> Any:
     tools = config.get(language, {}).get("tools", {}) or {}
     if not isinstance(tools, dict):
@@ -90,12 +115,27 @@ def cmd_config_outputs(args: argparse.Namespace) -> CommandResult:
         )
 
     language = config.get("language") or _get_str(config, ["repo", "language"], "python") or "python"
+    repo_cfg = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
+    targets_cfg = repo_cfg.get("targets")
+    multi_target = isinstance(targets_cfg, list) and len(targets_cfg) > 0
+    targets = _extract_targets(targets_cfg)
 
     workdir = args.workdir or _get_str(config, ["workdir"], "")
     if not workdir:
         workdir = _get_str(config, ["repo", "subdir"], ".")
     if not workdir:
         workdir = "."
+
+    if multi_target:
+        run_python = "python" in targets
+        run_java = "java" in targets
+        python_workdir = targets.get("python", ".")
+        java_workdir = targets.get("java", ".")
+    else:
+        run_python = language == "python"
+        run_java = language == "java"
+        python_workdir = workdir
+        java_workdir = workdir
 
     python_thresholds = {
         "coverage_min": _tool_int(config, "python", "pytest", "min_coverage", 70),
@@ -161,10 +201,19 @@ def cmd_config_outputs(args: argparse.Namespace) -> CommandResult:
         run_harden_runner = True
         harden_runner_egress_policy = "audit"
 
-    lang_for_shared = "java" if language == "java" else "python"
+    def _shared_enabled(tool: str, default: bool) -> bool:
+        if multi_target:
+            return _tool_enabled(config, "python", tool, default) or _tool_enabled(config, "java", tool, default)
+        lang_for_shared = "java" if language == "java" else "python"
+        return _tool_enabled(config, lang_for_shared, tool, default)
 
     outputs: dict[str, str] = {
         "language": str(language),
+        "multi_target": _bool_str(multi_target),
+        "run_python": _bool_str(run_python),
+        "run_java": _bool_str(run_java),
+        "python_workdir": python_workdir,
+        "java_workdir": java_workdir,
         "python_version": _get_str(config, ["python", "version"], "3.12"),
         "java_version": _get_str(config, ["java", "version"], "21"),
         "build_tool": _get_str(config, ["java", "build_tool"], "maven"),
@@ -181,11 +230,11 @@ def cmd_config_outputs(args: argparse.Namespace) -> CommandResult:
         "run_isort": _bool_str(_tool_enabled(config, "python", "isort", True)),
         "run_mutmut": _bool_str(_tool_enabled(config, "python", "mutmut", True)),
         "run_hypothesis": _bool_str(_tool_enabled(config, "python", "hypothesis", True)),
-        "run_sbom": _bool_str(_tool_enabled(config, lang_for_shared, "sbom", False)),
-        "run_semgrep": _bool_str(_tool_enabled(config, lang_for_shared, "semgrep", False)),
-        "run_trivy": _bool_str(_tool_enabled(config, lang_for_shared, "trivy", False)),
-        "run_codeql": _bool_str(_tool_enabled(config, lang_for_shared, "codeql", False)),
-        "run_docker": _bool_str(_tool_enabled(config, lang_for_shared, "docker", False)),
+        "run_sbom": _bool_str(_shared_enabled("sbom", False)),
+        "run_semgrep": _bool_str(_shared_enabled("semgrep", False)),
+        "run_trivy": _bool_str(_shared_enabled("trivy", False)),
+        "run_codeql": _bool_str(_shared_enabled("codeql", False)),
+        "run_docker": _bool_str(_shared_enabled("docker", False)),
         # Java tool toggles
         "run_jacoco": _bool_str(_tool_enabled(config, "java", "jacoco", True)),
         "run_checkstyle": _bool_str(_tool_enabled(config, "java", "checkstyle", True)),
