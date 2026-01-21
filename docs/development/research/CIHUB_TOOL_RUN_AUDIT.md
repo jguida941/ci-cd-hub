@@ -704,3 +704,7 @@ Commands and results:
 - `python -m cihub docs check` -> ok; docs up to date
 - `python -m cihub docs stale` -> ok; no stale references found
 - `python -m cihub docs audit` -> ok with warnings; placeholder local paths, repeated CHANGELOG dates
+- `git status -sb` -> ok
+- `git add -A` -> ok
+- `git commit -m "fix: gate java tools by proof"` -> ok
+- `git push` -> ok
