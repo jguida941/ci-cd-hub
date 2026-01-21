@@ -64,6 +64,7 @@ personal_dev/
 
 # Remediation plans
 QUALITY_GATE_FIXES.md
+improvements.md
 node_modules/
 dist/
 cihub-cli/node_modules/
