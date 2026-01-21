@@ -812,3 +812,10 @@ Commands and results:
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok
 - `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated CHANGELOG dates
+
+Follow-up commands:
+- `git add cihub/utils/env.py tests/unit/utils/test_env_utils.py docs/adr/0065-gh-auth-token-fallback.md docs/development/CHANGELOG.md docs/development/MASTER_PLAN.md docs/development/active/TYPESCRIPT_CLI_DESIGN.md docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok
+- `git commit -m "fix: fallback to gh auth token for dispatch"` -> ok
+- `git push` -> ok
+- `git tag -f v1` -> ok
+- `git push -f origin v1` -> ok
