@@ -854,3 +854,15 @@ Follow-up commands:
 - `git push` -> ok
 - `git tag -f v1` -> ok
 - `git push -f origin v1` -> ok
+
+## 2026-01-21 - hub-release (upload hidden .cihub artifacts)
+
+Repo type: Hub CLI (Python)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Ensure reusable workflows upload hidden `.cihub` artifacts.
+
+Commands and results:
+- `python -m cihub docs generate` -> ok; updated reference docs
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok
+- `python -m cihub docs audit` -> ok with warnings; placeholder local paths + repeated CHANGELOG dates

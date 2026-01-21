@@ -117,6 +117,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Harden Java CI gates and verify-tools proofing (skip checkstyle when config missing)
 - [x] Dispatch/triage use `gh auth token` fallback when env tokens are missing (ADR-0065)
 - [x] Mirror CI outputs to `GITHUB_WORKSPACE` for reusable workflow artifacts (ADR-0066)
+- [x] Upload hidden `.cihub` artifacts in reusable workflows (ADR-0067)
 
 ### Phase 9: Testing
 - [ ] Write unit tests for parser (`test/unit/parser.test.ts`)

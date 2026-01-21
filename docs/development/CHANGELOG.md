@@ -13,6 +13,10 @@ All notable changes to this project will be documented in this file.
 
 - `cihub ci` mirrors `.cihub` outputs to `GITHUB_WORKSPACE` when the output dir is outside the workspace (ADR-0066).
 
+### Fix: Upload hidden CI artifacts
+
+- Reusable workflows now upload `.cihub` artifacts by enabling `include-hidden-files` (ADR-0067).
+
 ## 2026-01-20 - ADR + Deprecated Shim Cleanup
 
 ### Fix: ADR tooling uses project root
