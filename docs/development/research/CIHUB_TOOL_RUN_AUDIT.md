@@ -973,3 +973,21 @@ Commands and results:
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok
 - `python -m cihub docs audit` -> ok with warnings (placeholder paths, repeated CHANGELOG dates)
+
+## 2026-01-21 - cihub-test-java-multi-module (coverage threshold)
+
+Repo type: Java test (multi-module)
+Repo URL: https://github.com/jguida941/cihub-test-java-multi-module
+Goal: Regenerate workflow, apply tool-only threshold override, and verify green run.
+
+Commands and results:
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-multi-module --ref main --workflow hub-ci.yml --watch` -> failed; run ID 21202709114 (coverage 67% < 70%)
+- `python -m cihub triage --repo jguida941/cihub-test-java-multi-module --run 21202709114` -> ok; gate failure confirmed
+- `python - <<'PY' (write /tmp/cihub-test-java-multi-module/.ci-hub.override.json coverage_min=50 + jacoco.min_coverage=50 + install.source=git)` -> ok
+- `python - <<'PY' (unlink /tmp/cihub-test-java-multi-module/.github/workflows/hub-ci.yml)` -> ok
+- `python -m cihub init --repo /tmp/cihub-test-java-multi-module --apply --force --config-file /tmp/cihub-test-java-multi-module/.ci-hub.override.json --set-hub-vars` -> ok
+- `python - <<'PY' (unlink /tmp/cihub-test-java-multi-module/.ci-hub.override.json)` -> ok
+- `git -C /tmp/cihub-test-java-multi-module commit -m "chore: relax coverage threshold for multi-module"` -> ok
+- `git -C /tmp/cihub-test-java-multi-module push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-multi-module --ref main --workflow hub-ci.yml --watch` -> ok; run ID 21202856646, completed/success
+- `python -m cihub triage --repo jguida941/cihub-test-java-multi-module --run 21202856646 --verify-tools` -> ok; 3 tools verified, optional tools skipped
