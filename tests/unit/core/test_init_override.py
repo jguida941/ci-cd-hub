@@ -139,6 +139,40 @@ class TestInitConfigOverride:
         # Should use detected language
         assert result.data["language"] == "python"
 
+    def test_existing_config_language_used_when_markers_missing(self, tmp_path: Path) -> None:
+        """Existing .ci-hub.yml language is used when detection would fail."""
+        (tmp_path / ".ci-hub.yml").write_text(
+            "version: '1.0'\n"
+            "language: python\n"
+            "repo:\n"
+            "  owner: test-owner\n"
+            "  name: test-repo\n"
+            "  language: python\n"
+        )
+
+        args = argparse.Namespace(
+            repo=str(tmp_path),
+            apply=True,
+            force=True,
+            dry_run=False,
+            wizard=False,
+            json=False,
+            language=None,
+            owner="test-owner",
+            name="test-repo",
+            branch="main",
+            subdir="",
+            fix_pom=False,
+            install_from="pypi",
+            config_override=None,
+        )
+
+        result = cmd_init(args)
+
+        assert result.exit_code == EXIT_SUCCESS
+        assert result.data is not None
+        assert result.data["language"] == "python"
+
     def test_config_override_not_applied_when_wizard_true(self, tmp_path: Path, monkeypatch) -> None:
         """config_override is ignored when wizard=True."""
         (tmp_path / "pyproject.toml").write_text("[project]\nname = 'test'\n")

@@ -28,6 +28,12 @@ All notable changes to this project will be documented in this file.
 - If `xvfb-run` times out, `cihub ci` retries pytest without xvfb while keeping headless Qt env defaults.
 - Bandit tool success now respects `fail_on_*` settings to avoid false failures when only low/medium issues are allowed.
 
+## 2026-01-20 - Init Language Fallback
+
+### Fix: Use config language when markers are missing
+
+- `cihub init` now uses language from existing `.ci-hub.yml` or config override when repo markers are missing.
+
 ## 2026-01-19 - TypeScript Wizard Handoff (Phase 6)
 
 ### New: TypeScript interactive wizard flows

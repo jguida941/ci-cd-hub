@@ -38,6 +38,20 @@ from cihub.utils.paths import hub_root, validate_subdir
 from cihub.wizard import HAS_WIZARD, WizardCancelled
 
 
+def _extract_language_from_config(config: dict | None) -> str | None:
+    if not isinstance(config, dict):
+        return None
+    language = config.get("language")
+    if isinstance(language, str) and language.strip():
+        return language.strip()
+    repo_value = config.get("repo")
+    if isinstance(repo_value, dict):
+        repo_language = repo_value.get("language")
+        if isinstance(repo_language, str) and repo_language.strip():
+            return repo_language.strip()
+    return None
+
+
 def cmd_init(args: argparse.Namespace) -> CommandResult:
     """Initialize CI-Hub config in a repository.
 
@@ -91,8 +105,10 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
     existing_workflow = workflow_path.exists()
     bootstrap = not existing_config or not existing_workflow
     repo_side_execution = False
+    existing_config_data: dict | None = None
     if existing_config:
         existing = load_yaml_file(config_path)
+        existing_config_data = existing
         repo_value = existing.get("repo")
         repo_block = repo_value if isinstance(repo_value, dict) else {}
         repo_side_execution = bool(repo_block.get("repo_side_execution", False))
@@ -116,7 +132,10 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
     subdir = validate_subdir(args.subdir or "")
     effective_repo_path = repo_path / subdir if subdir else repo_path
 
-    language, _ = resolve_language(effective_repo_path, args.language)
+    override_language = _extract_language_from_config(cli_override)
+    existing_language = _extract_language_from_config(existing_config_data)
+    language_override = args.language or override_language or existing_language
+    language, _ = resolve_language(effective_repo_path, language_override)
 
     owner = args.owner or ""
     name = args.name or ""

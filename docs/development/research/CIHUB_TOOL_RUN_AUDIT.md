@@ -538,3 +538,152 @@ Commands and results:
 - `git add .github/workflows/python-ci.yml .github/workflows/java-ci.yml cihub/services/report_validator/content.py tests/unit/services/test_services_report_validator.py docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok; staged proof validation changes
 - `git add docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok; staged audit log update
 - `git commit -m "ci: enforce tool proof validation"` -> ok; commit c1c75287
+- `rg -n "^version\s*=|__version__" pyproject.toml cihub/__init__.py` -> ok; current version 1.0.15
+- `apply_patch (pyproject.toml)` -> ok; version bumped to 1.0.16
+- `apply_patch (cihub/__init__.py)` -> ok; version bumped to 1.0.16
+- `git status -sb` -> ok; version files and audit log modified
+- `git add pyproject.toml cihub/__init__.py` -> ok; staged 1.0.16 version bump
+- `git commit -m "release: 1.0.16"` -> ok; commit 013c1630
+- `git tag v1.0.16` -> ok; created release tag
+- `git tag -f v1` -> ok; moved v1 to 1.0.16 commit
+- `git push` -> ok; pushed main
+- `git push origin v1.0.16` -> ok; pushed release tag
+- `git push -f origin v1` -> ok; moved v1 tag on origin
+- `gh run list --workflow publish-pypi.yml -L 1` -> ok; publish run in progress (run 21186705518)
+- `gh run watch 21186705518` -> ok; PyPI publish and v1 retag jobs succeeded
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch trigger --owner jguida941 --repo ci-cd-hub-fixtures --ref main --workflow hub-ci.yml` -> ok; run ID 21186744065
+- `gh run watch 21186744065 -R jguida941/ci-cd-hub-fixtures` -> failed; Verify tool proof step failed
+- `sed -n '1,220p' scripts/install.py` -> ok; reviewed install source selection and pip install command
+- `rg -n "Installing cihub|Collecting cihub|cihub-" /tmp/fixtures_21186744065.log | head -n 50` -> ok; run installed cihub 1.0.15 from PyPI
+- `gh run view 21186744065 -R jguida941/ci-cd-hub-fixtures --log-failed | sed -n '1,200p'` -> ok; captured failed verify step log
+- `gh run view 21186744065 -R jguida941/ci-cd-hub-fixtures --log-failed | rg -n "Verify tool proof|CIHUB"` -> ok; found verify-tools invocation
+- `gh run view 21186744065 -R jguida941/ci-cd-hub-fixtures --log-failed > /tmp/fixtures_21186744065.log` -> ok; saved failed log for analysis
+- `rg -n "Verify tool proof|CIHUB-VERIFY|verify-tools|no proof" /tmp/fixtures_21186744065.log` -> ok; verify step reported 1 ran but no proof
+- `sed -n '900,940p' /tmp/fixtures_21186744065.log` -> ok; verify-tools output table start
+- `sed -n '940,1000p' /tmp/fixtures_21186744065.log` -> ok; failure due to empty isort-output.txt
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch trigger --owner jguida941 --repo ci-cd-hub-fixtures --ref main --workflow hub-ci.yml` -> ok; run ID 21186832330
+
+## 2026-01-20 - gitui (regen + tool proof)
+
+Repo type: Python GUI (PySide6)
+Repo path: `/tmp/gitui`
+Goal: Delete workflow, regenerate via cihub, dispatch run, verify tool proof.
+
+Initial failures:
+- triage --verify-tools returned no report while run was still in progress
+
+Current status:
+- Run 21187301301 succeeded; verify-tools shows 7 configured tools with proof.
+
+Commands and results:
+- `ls /tmp/gitui` -> ok
+- `ls -la /tmp/gitui/.github/workflows` -> ok
+- `git -C /tmp/gitui status -sb` -> ok; untracked .cihub-run artifacts only
+- `git -C /tmp/gitui rm -f .github/workflows/hub-ci.yml` -> ok; workflow removed
+- `git -C /tmp/gitui status -sb` -> ok; workflow deletion staged
+- `git -C /tmp/gitui commit -m "chore: remove hub-ci workflow for cihub regen"` -> ok
+- `git -C /tmp/gitui push` -> ok
+- `python -m cihub init --repo /tmp/gitui --apply --force --config-file /tmp/gitui/.ci-hub.override.json` -> ok; regenerated workflow, hub vars set
+- `git -C /tmp/gitui status -sb` -> ok; workflow untracked
+- `git -C /tmp/gitui add .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/gitui status -sb` -> ok; workflow staged
+- `git -C /tmp/gitui commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/gitui push` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch trigger --owner jguida941 --repo gitui --ref main --workflow hub-ci.yml` -> ok; run ID 21187301301
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21187301301 --verify-tools` -> failed; no report.json yet
+- `sleep 15` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21187301301 --verify-tools` -> failed; no report.json yet
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --latest` -> ok; latest completed run was 21165391150
+- `sleep 30` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21187301301 --verify-tools` -> failed; no report.json yet
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --latest` -> ok; latest completed run was 21165391150
+- `sed -n '1,200p' /tmp/gitui/.github/workflows/hub-ci.yml` -> ok; confirmed caller template
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --watch --run 21187301301` -> started; no output (still running)
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21187301301` -> ok; 0 failures
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21187301301 --verify-tools` -> ok; 7 configured tools verified
+- `ls -la .cihub/runs/21187301301` -> ok; run bundle present
+- `ls -la .cihub/runs/21187301301/artifacts` -> ok; ci-report artifact present
+- `ls -la .cihub/runs/21187301301/artifacts/ci-report` -> ok; report.json + summary.md present
+- `ls -la .cihub/runs/21187301301/artifacts/ci-report/tool-outputs` -> ok; pytest.json present
+- `sed -n '1,200p' .cihub/runs/21187301301/artifacts/ci-report/tool-outputs/pytest.json` -> ok; test counts confirmed
+
+## 2026-01-20 - ci-cd-hub-fixtures (regen + tool proof)
+
+Repo type: Python fixtures (subdir: python-passing)
+Repo path: `/tmp/ci-cd-hub-fixtures`
+Goal: Delete workflows, regenerate via cihub, dispatch run, verify tool proof.
+
+Initial failures:
+- init failed without `--language` (repo has no root language markers)
+- verify-tools failed before artifacts were available
+
+Current status:
+- Run 21187472987 succeeded; verify-tools shows 7 configured tools with proof.
+
+Commands and results:
+- `ls /tmp/ci-cd-hub-fixtures` -> ok
+- `ls -la /tmp/ci-cd-hub-fixtures/.github/workflows` -> ok
+- `git -C /tmp/ci-cd-hub-fixtures status -sb` -> ok; clean
+- `git -C /tmp/ci-cd-hub-fixtures rm -f .github/workflows/hub-ci.yml .github/workflows/hub-java-ci.yml .github/workflows/hub-python-ci.yml` -> ok; workflows removed
+- `git -C /tmp/ci-cd-hub-fixtures status -sb` -> ok; deletions staged
+- `git -C /tmp/ci-cd-hub-fixtures commit -m "chore: remove workflows for cihub regen"` -> ok
+- `git -C /tmp/ci-cd-hub-fixtures push` -> ok
+- `python -m cihub init --repo /tmp/ci-cd-hub-fixtures --apply --force` -> failed; no language markers found
+- `ls -la /tmp/ci-cd-hub-fixtures | rg '\\.ci-hub\\.yml|\\.ci-hub'` -> ok; config present
+- `sed -n '1,200p' /tmp/ci-cd-hub-fixtures/.ci-hub.yml` -> ok; language python, subdir python-passing
+- `python -m cihub init --repo /tmp/ci-cd-hub-fixtures --apply --force --config-file /tmp/ci-cd-hub-fixtures/.ci-hub.yml --language python` -> ok; regenerated workflow, hub vars set
+- `git -C /tmp/ci-cd-hub-fixtures status -sb` -> ok; workflow untracked
+- `git -C /tmp/ci-cd-hub-fixtures add .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/ci-cd-hub-fixtures status -sb` -> ok; workflow staged
+- `git -C /tmp/ci-cd-hub-fixtures commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/ci-cd-hub-fixtures push` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub dispatch trigger --owner jguida941 --repo ci-cd-hub-fixtures --ref main --workflow hub-ci.yml` -> ok; run ID 21187472987
+- `sleep 30` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/ci-cd-hub-fixtures --run 21187472987` -> ok; 0 failures
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/ci-cd-hub-fixtures --run 21187472987 --verify-tools` -> failed; no report.json yet
+- `ls -la .cihub/runs/21187472987` -> ok; artifacts dir empty
+- `ls -la .cihub/runs/21187472987/artifacts` -> ok; empty
+- `cat .cihub/runs/21187472987/triage.md` -> ok; no failures detected
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/ci-cd-hub-fixtures --watch --run 21187472987` -> started; no output (still running)
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/ci-cd-hub-fixtures --run 21187472987 --verify-tools` -> ok; 7 configured tools verified
+- `ls -la .cihub/runs/21187472987/artifacts` -> ok; ci-report artifact present
+- `ls -la .cihub/runs/21187472987/artifacts/ci-report` -> ok; report.json + summary.md present
+- `ls -la .cihub/runs/21187472987/artifacts/ci-report/tool-outputs` -> ok; pytest.json present
+- `sed -n '1,200p' .cihub/runs/21187472987/artifacts/ci-report/tool-outputs/pytest.json` -> ok; test counts confirmed
+
+## 2026-01-20 - hub-release (workflow artifact investigation)
+
+Repo type: Hub CLI (Python)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Confirm report/artifact steps exist in hub workflows when verify-tools lacked report.json.
+
+Commands and results:
+- `ls` -> ok
+- `sed -n '1,200p' docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok
+- `rg -n "upload-artifact|cihub report outputs|report outputs" .github/workflows/hub-ci.yml` -> no matches (exit 1)
+- `ls -la .github/workflows` -> ok
+- `sed -n '1,200p' .github/workflows/hub-ci.yml` -> ok
+- `rg -n "artifact_prefix" .github/workflows/python-ci.yml` -> ok
+- `sed -n '150,210p' .github/workflows/python-ci.yml` -> ok
+- `rg -n "workdir|working-directory" .github/workflows/python-ci.yml` -> ok
+
+## 2026-01-20 - hub-release (init language fallback)
+
+Repo type: Hub CLI (Python)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Allow `cihub init` to use existing `.ci-hub.yml` language when detection markers are missing.
+
+Commands and results:
+- `rg -n "def cmd_init|class Init|init" cihub/commands/init.py cihub/commands` -> ok
+- `sed -n '1,240p' cihub/commands/init.py` -> ok
+- `sed -n '240,520p' cihub/commands/init.py` -> ok
+- `sed -n '1,200p' cihub/services/detection.py` -> ok
+- `sed -n '1,200p' cihub/config/io.py` -> ok
+- `sed -n '1,200p' cihub/services/templates.py` -> ok
+- `rg -n "Master Checklist|Checklist|Phase 8" docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok
+- `sed -n '1,180p' docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok
+- `python -m pytest tests/unit/core/test_init_override.py -k existing_config_language_used_when_markers_missing` -> ok; 1 passed
+- `python -m cihub docs generate` -> ok; updated reference docs
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok; no stale references
+- `python -m cihub docs audit` -> ok with warnings (existing placeholders, repeated dates)
