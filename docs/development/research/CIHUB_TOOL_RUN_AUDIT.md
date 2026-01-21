@@ -884,3 +884,92 @@ Follow-up commands:
 - `git push` -> ok
 - `git tag -f v1` -> ok
 - `git push -f origin v1` -> ok
+
+## 2026-01-21 - cihub-test-java-maven (artifact upload fixed)
+
+Repo type: Java fixture
+Repo URL: https://github.com/jguida941/cihub-test-java-maven
+Goal: Confirm hidden artifact upload fix enables remote verify-tools.
+
+Commands and results:
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref main --workflow hub-ci.yml --watch` -> ok; run ID 21201463556, completed/success
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21201463556 --verify-tools` -> ok; artifacts downloaded, optional tools listed
+
+## 2026-01-21 - ci-cd-hub-fixtures
+
+Repo type: Python fixtures (subdir: python-passing)
+Repo URL: https://github.com/jguida941/ci-cd-hub-fixtures
+Goal: Delete and regenerate workflow via cihub, then dispatch and verify.
+
+Commands and results:
+- `git clone https://github.com/jguida941/ci-cd-hub-fixtures /tmp/ci-cd-hub-fixtures` -> ok
+- `python - <<'PY' (unlink /tmp/ci-cd-hub-fixtures/.github/workflows/hub-ci.yml)` -> ok
+- `python -m cihub init --repo /tmp/ci-cd-hub-fixtures --apply --force --set-hub-vars` -> ok; subdir removed
+- `python - <<'PY' (write /tmp/ci-cd-hub-fixtures/.ci-hub.override.json repo.subdir=python-passing)` -> ok
+- `python -m cihub init --repo /tmp/ci-cd-hub-fixtures --apply --force --config-file /tmp/ci-cd-hub-fixtures/.ci-hub.override.json --set-hub-vars` -> ok; subdir restored
+- `python - <<'PY' (unlink /tmp/ci-cd-hub-fixtures/.ci-hub.override.json)` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo ci-cd-hub-fixtures --ref main --workflow hub-ci.yml --watch` -> ok; run ID 21201563930, completed/success
+- `python -m cihub triage --repo jguida941/ci-cd-hub-fixtures --run 21201563930 --verify-tools` -> ok; 7 tools verified
+
+## 2026-01-21 - cihub-test-python-pyproject
+
+Repo type: Python test (pyproject)
+Repo URL: https://github.com/jguida941/cihub-test-python-pyproject
+Goal: Regenerate workflow and verify tool proof.
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-python-pyproject /tmp/cihub-test-python-pyproject` -> ok
+- `python - <<'PY' (unlink /tmp/cihub-test-python-pyproject/.github/workflows/hub-ci.yml)` -> ok
+- `python -m cihub init --repo /tmp/cihub-test-python-pyproject --apply --force --set-hub-vars` -> ok; install.source flipped to pypi
+- `python - <<'PY' (write /tmp/cihub-test-python-pyproject/.ci-hub.override.json install.source=git)` -> ok
+- `python -m cihub init --repo /tmp/cihub-test-python-pyproject --apply --force --config-file /tmp/cihub-test-python-pyproject/.ci-hub.override.json --set-hub-vars` -> ok; install.source restored
+- `python - <<'PY' (unlink /tmp/cihub-test-python-pyproject/.ci-hub.override.json)` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-pyproject --ref main --workflow hub-ci.yml --watch` -> ok; run ID 21201631481, completed/success
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21201631481 --verify-tools` -> ok; 7 tools verified
+
+## 2026-01-21 - cihub-test-python-src-layout
+
+Repo type: Python test (src layout)
+Repo URL: https://github.com/jguida941/cihub-test-python-src-layout
+Goal: Regenerate workflow and verify tool proof.
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-python-src-layout /tmp/cihub-test-python-src-layout` -> ok
+- `python - <<'PY' (unlink /tmp/cihub-test-python-src-layout/.github/workflows/hub-ci.yml)` -> ok
+- `python -m cihub init --repo /tmp/cihub-test-python-src-layout --apply --force --set-hub-vars` -> ok; install.source flipped to pypi
+- `python - <<'PY' (write /tmp/cihub-test-python-src-layout/.ci-hub.override.json install.source=git)` -> ok
+- `python -m cihub init --repo /tmp/cihub-test-python-src-layout --apply --force --config-file /tmp/cihub-test-python-src-layout/.ci-hub.override.json --set-hub-vars` -> ok; install.source restored
+- `python - <<'PY' (unlink /tmp/cihub-test-python-src-layout/.ci-hub.override.json)` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-src-layout --ref main --workflow hub-ci.yml --watch` -> ok; run ID 21201698663, completed/success
+- `python -m cihub triage --repo jguida941/cihub-test-python-src-layout --run 21201698663 --verify-tools` -> ok; 7 tools verified
+
+## 2026-01-21 - cihub-test-java-gradle
+
+Repo type: Java test (Gradle)
+Repo URL: https://github.com/jguida941/cihub-test-java-gradle
+Goal: Regenerate workflow and verify tool proof.
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-java-gradle /tmp/cihub-test-java-gradle` -> ok
+- `python - <<'PY' (unlink /tmp/cihub-test-java-gradle/.github/workflows/hub-ci.yml)` -> ok
+- `python -m cihub init --repo /tmp/cihub-test-java-gradle --apply --force --set-hub-vars` -> ok; owner corrected, install.source flipped to pypi
+- `python - <<'PY' (write /tmp/cihub-test-java-gradle/.ci-hub.override.json install.source=git)` -> ok
+- `python -m cihub init --repo /tmp/cihub-test-java-gradle --apply --force --config-file /tmp/cihub-test-java-gradle/.ci-hub.override.json --set-hub-vars` -> ok; install.source restored
+- `python - <<'PY' (unlink /tmp/cihub-test-java-gradle/.ci-hub.override.json)` -> ok
+- `git -C /tmp/cihub-test-java-gradle commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/cihub-test-java-gradle push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-gradle --ref main --workflow hub-ci.yml --watch` -> ok; run ID 21201789874, completed/success
+- `python -m cihub triage --repo jguida941/cihub-test-java-gradle --run 21201789874 --verify-tools` -> ok; optional owasp/pitest/pmd
+
+## 2026-01-21 - hub-release (Maven multi-module prep)
+
+Repo type: Hub core
+Repo URL: https://github.com/jguida941/ci-cd-hub
+Goal: Add Maven multi-module install prep for tool runs; update docs/tests.
+
+Commands and results:
+- `python -m pytest tests/unit/services/ci_engine/test_ci_engine_runners.py` -> ok (16 passed)
+- `python -m cihub docs generate` -> ok; updated reference docs
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok
+- `python -m cihub docs audit` -> ok with warnings (placeholder paths, repeated CHANGELOG dates)

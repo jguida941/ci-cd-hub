@@ -7,7 +7,7 @@ import shlex
 from pathlib import Path
 from typing import Any
 
-from cihub.ci_runner import ToolResult, run_java_build
+from cihub.ci_runner import ToolResult, run_java_build, run_maven_install
 from cihub.tools.registry import (
     JAVA_TOOLS,
     get_custom_tools_from_config,
@@ -19,6 +19,7 @@ from cihub.utils.exec_utils import (
     CommandTimeoutError,
     safe_run,
 )
+from cihub.utils.project import detect_java_project_type
 
 from .helpers import _parse_env_bool, _tool_enabled
 
@@ -114,6 +115,22 @@ def _run_java_tools(
     build_result = run_java_build(workdir_path, output_dir, build_tool, jacoco_enabled)
     tool_outputs["build"] = build_result.to_payload()
     build_result.write_json(tool_output_dir / "build.json")
+
+    if build_tool == "maven" and build_result.success:
+        project_type = detect_java_project_type(workdir_path)
+        if project_type.startswith("Multi-module"):
+            install_tools = {"checkstyle", "spotbugs", "pmd", "pitest", "owasp"}
+            if any(_tool_enabled(config, tool, "java") for tool in install_tools):
+                install_result = run_maven_install(workdir_path, output_dir)
+                install_result.write_json(tool_output_dir / "maven-install.json")
+                if not install_result.success:
+                    problems.append(
+                        {
+                            "severity": "error",
+                            "message": "Maven install failed for multi-module project; tool runs may be incomplete",
+                            "code": "CIHUB-CI-MAVEN-INSTALL",
+                        }
+                    )
 
     for tool in JAVA_TOOLS:
         if tool == "jqwik":

@@ -17,6 +17,10 @@ All notable changes to this project will be documented in this file.
 
 - Reusable workflows now upload `.cihub` artifacts by enabling `include-hidden-files` (ADR-0067).
 
+### Fix: Maven multi-module tool prep
+
+- `cihub ci` runs `mvn -DskipTests install` before Maven plugin tools for multi-module projects (ADR-0068).
+
 ## 2026-01-20 - ADR + Deprecated Shim Cleanup
 
 ### Fix: ADR tooling uses project root

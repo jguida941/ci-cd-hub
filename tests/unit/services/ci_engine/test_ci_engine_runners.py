@@ -227,6 +227,74 @@ class TestRunJavaTools:
 
         assert "build" in outputs
 
+    def test_runs_maven_install_for_multi_module(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import ToolResult
+
+        workdir = tmp_path / "repo"
+        workdir.mkdir()
+        (workdir / "pom.xml").write_text(
+            "<project><modules><module>core</module></modules></project>"
+        )
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        config = {"java": {"tools": {"pmd": {"enabled": True}}}}
+        problems: list = []
+
+        mock_build = ToolResult(tool="build", ran=True, success=True, metrics={})
+        mock_install = ToolResult(tool="maven-install", ran=True, success=True, metrics={})
+        mock_pmd = ToolResult(tool="pmd", ran=True, success=True, metrics={})
+        runners = {"pmd": lambda *args, **kwargs: mock_pmd}
+
+        with patch("cihub.services.ci_engine.java_tools.run_java_build", return_value=mock_build), patch(
+            "cihub.services.ci_engine.java_tools.run_maven_install",
+            return_value=mock_install,
+        ) as install_mock:
+            _run_java_tools(
+                config,
+                tmp_path,
+                "repo",
+                output_dir,
+                "maven",
+                problems,
+                runners,
+            )
+
+        install_mock.assert_called_once()
+
+    def test_skips_maven_install_for_single_module(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import ToolResult
+
+        workdir = tmp_path / "repo"
+        workdir.mkdir()
+        (workdir / "pom.xml").write_text("<project/>")
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        config = {"java": {"tools": {"pmd": {"enabled": True}}}}
+        problems: list = []
+
+        mock_build = ToolResult(tool="build", ran=True, success=True, metrics={})
+        mock_install = ToolResult(tool="maven-install", ran=True, success=True, metrics={})
+        mock_pmd = ToolResult(tool="pmd", ran=True, success=True, metrics={})
+        runners = {"pmd": lambda *args, **kwargs: mock_pmd}
+
+        with patch("cihub.services.ci_engine.java_tools.run_java_build", return_value=mock_build), patch(
+            "cihub.services.ci_engine.java_tools.run_maven_install",
+            return_value=mock_install,
+        ) as install_mock:
+            _run_java_tools(
+                config,
+                tmp_path,
+                "repo",
+                output_dir,
+                "maven",
+                problems,
+                runners,
+            )
+
+        install_mock.assert_not_called()
+
     def test_skips_checkstyle_without_config(self, tmp_path: Path) -> None:
         from cihub.ci_runner import ToolResult
 

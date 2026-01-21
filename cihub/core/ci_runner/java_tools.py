@@ -85,6 +85,27 @@ def run_java_build(
     )
 
 
+def run_maven_install(workdir: Path, output_dir: Path) -> ToolResult:
+    log_path = output_dir / "maven-install.log"
+    cmd = _maven_cmd(workdir) + [
+        "-B",
+        "-ntp",
+        "-DskipTests",
+        "install",
+    ]
+    proc = shared._run_tool_command("maven-install", cmd, workdir, output_dir)
+    log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
+    return ToolResult(
+        tool="maven-install",
+        ran=True,
+        success=proc.returncode == 0,
+        metrics={},
+        artifacts={"log": str(log_path)},
+        stdout=proc.stdout,
+        stderr=proc.stderr,
+    )
+
+
 def run_jacoco(workdir: Path, output_dir: Path) -> ToolResult:
     report_paths = shared._find_files(
         workdir,
