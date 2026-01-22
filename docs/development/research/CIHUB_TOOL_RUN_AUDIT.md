@@ -2118,3 +2118,20 @@ Commands and results:
 - `python -m pytest tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_maven_includes_json_format tests/unit/commands/test_commands_ci.py::test_cmd_ci_hub_ref_version_mismatch` -> ok (2 passed)
 - `rg -n "Master Checklist" -n docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok
 - `sed -n '20,120p' docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok
+
+## 2026-01-22 - TS CLI passthrough + Java config normalization
+
+Repo type: Hub CLI
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Review and commit pending TS CLI passthrough + Java Gradle/POM normalization fixes with tests.
+
+Commands and results:
+- `git diff --stat` -> ok
+- `git diff -U3 -- cihub-cli/src/cli.ts` -> ok
+- `git diff -U3 -- cihub/commands/triage/github.py` -> ok
+- `git diff -U3 -- cihub/utils/java_gradle.py` -> ok
+- `git diff -U3 -- cihub/utils/java_pom/apply.py` -> ok
+- `git diff -U3 -- tests/unit/core/languages/test_pom_parsing.py` -> ok
+- `git diff -U3 -- tests/unit/services/test_triage_github.py` -> ok
+- `git diff -U3 -- tests/unit/utils/test_java_gradle.py` -> ok
+- `python -m pytest tests/unit/utils/test_java_gradle.py tests/unit/core/languages/test_pom_parsing.py tests/unit/services/test_triage_github.py` -> ok (80 passed)
