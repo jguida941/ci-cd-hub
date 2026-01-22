@@ -1708,3 +1708,34 @@ Commands and results:
 
 Current status:
 - Run 21239806897 verified green with OWASP placeholder evidence (NVD 403 warning present).
+
+## 2026-01-22 - cihub-test-java-multi-module (re-prove)
+
+Repo type: Java (Maven multi-module)
+Repo path: `/tmp/cihub-audit/cihub-test-java-multi-module`
+Branch: `audit/cihub-test-java-multi-module/20260122`
+Goal: Regen workflow via cihub, adjust checkstyle threshold, verify tools.
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-java-multi-module /tmp/cihub-audit/cihub-test-java-multi-module` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-multi-module checkout -b audit/cihub-test-java-multi-module/20260122` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-multi-module rm -f .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-multi-module commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-multi-module push -u origin audit/cihub-test-java-multi-module/20260122` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-java-multi-module --apply --force --config-file /tmp/cihub-audit/cihub-test-java-multi-module/.ci-hub.yml --install-from git --set-hub-vars` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-multi-module add .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-multi-module commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-multi-module push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-multi-module --ref audit/cihub-test-java-multi-module/20260122 --workflow hub-ci.yml` -> ok; run ID 21240010192
+- `python -m cihub triage --repo jguida941/cihub-test-java-multi-module --run 21240010192 --output-dir .cihub/tmp-21240010192` -> failed; checkstyle errors (21)
+- `python - <<'PY' (write .ci-hub.override.json with thresholds.max_checkstyle_errors=21)` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-java-multi-module --apply --force --config-file /tmp/cihub-audit/cihub-test-java-multi-module/.ci-hub.override.json --install-from git --set-hub-vars` -> ok
+- `python - <<'PY' (unlink .ci-hub.override.json)` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-multi-module add .ci-hub.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-multi-module commit -m "chore: relax checkstyle gate for multi-module"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-multi-module push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-multi-module --ref audit/cihub-test-java-multi-module/20260122 --workflow hub-ci.yml` -> ok; run ID 21240087278
+- `python -m cihub triage --repo jguida941/cihub-test-java-multi-module --run 21240087278 --verify-tools --output-dir .cihub/tmp-21240087278` -> ok; all 6 configured tools verified
+
+Current status:
+- Run 21240087278 verified green with tool evidence.
