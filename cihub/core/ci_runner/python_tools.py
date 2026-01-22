@@ -132,6 +132,7 @@ def run_pytest(
         tool="pytest",
         ran=True,
         success=proc.returncode == 0,
+        returncode=proc.returncode,
         metrics=metrics,
         artifacts={
             "junit": str(junit_path),
@@ -158,6 +159,7 @@ def run_ruff(workdir: Path, output_dir: Path) -> ToolResult:
         tool="ruff",
         ran=True,
         success=proc.returncode == 0 and parse_ok,
+        returncode=proc.returncode,
         metrics={
             "ruff_errors": errors,
             "ruff_security": security,
@@ -179,6 +181,7 @@ def run_black(workdir: Path, output_dir: Path) -> ToolResult:
         tool="black",
         ran=True,
         success=proc.returncode == 0,
+        returncode=proc.returncode,
         metrics={"black_issues": issues},
         artifacts={"log": str(log_path)},
         stdout=proc.stdout,
@@ -199,6 +202,7 @@ def run_isort(workdir: Path, output_dir: Path, use_black_profile: bool = True) -
         tool="isort",
         ran=True,
         success=proc.returncode == 0,
+        returncode=proc.returncode,
         metrics={"isort_issues": issues},
         artifacts={"log": str(log_path)},
         stdout=proc.stdout,
@@ -216,6 +220,7 @@ def run_mypy(workdir: Path, output_dir: Path) -> ToolResult:
         tool="mypy",
         ran=True,
         success=proc.returncode == 0,
+        returncode=proc.returncode,
         metrics={"mypy_errors": errors},
         artifacts={"log": str(log_path)},
         stdout=proc.stdout,
@@ -237,6 +242,7 @@ def run_bandit(workdir: Path, output_dir: Path) -> ToolResult:
         tool="bandit",
         ran=True,
         success=proc.returncode == 0 and parse_ok,
+        returncode=proc.returncode,
         metrics={
             "bandit_high": high,
             "bandit_medium": medium,
@@ -270,6 +276,7 @@ def run_pip_audit(workdir: Path, output_dir: Path) -> ToolResult:
         tool="pip_audit",
         ran=True,
         success=proc.returncode == 0 and parse_ok,
+        returncode=proc.returncode,
         metrics={"pip_audit_vulns": vulns, "parse_error": not parse_ok},
         artifacts={"report": str(report_path)},
         stdout=proc.stdout,
@@ -341,6 +348,7 @@ def run_mutmut(workdir: Path, output_dir: Path, timeout_seconds: int) -> ToolRes
             tool="mutmut",
             ran=True,
             success=False,
+            returncode=124,
             metrics={"mutation_score": 0, "mutation_killed": 0, "mutation_survived": 0},
             artifacts={"log": str(log_path)},
         )
@@ -362,6 +370,7 @@ def run_mutmut(workdir: Path, output_dir: Path, timeout_seconds: int) -> ToolRes
             tool="mutmut",
             ran=True,
             success=proc.returncode == 0,
+            returncode=proc.returncode,
             metrics={
                 "mutation_score": score,
                 "mutation_killed": killed,

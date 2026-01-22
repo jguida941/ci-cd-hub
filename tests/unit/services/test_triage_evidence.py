@@ -262,7 +262,9 @@ class TestToolArtifacts:
         output_dir = tmp_path / ".cihub"
         tool_outputs = output_dir / "tool-outputs"
         tool_outputs.mkdir(parents=True)
-        (tool_outputs / "ruff.json").write_text("{}")
+        (tool_outputs / "ruff.json").write_text(
+            '{"tool": "ruff", "ran": true, "success": true, "returncode": 0, "metrics": {}}'
+        )
 
         result = _tool_artifacts(output_dir, "ruff", {})
 
@@ -412,7 +414,9 @@ class TestCheckToolHasArtifacts:
         output_dir = tmp_path / ".cihub"
         tool_outputs = output_dir / "tool-outputs"
         tool_outputs.mkdir(parents=True)
-        (tool_outputs / "ruff.json").write_text("{}")
+        (tool_outputs / "ruff.json").write_text(
+            '{"tool": "ruff", "ran": true, "success": true, "returncode": 0, "metrics": {}}'
+        )
 
         result = _check_tool_has_artifacts(output_dir, "ruff")
 
@@ -576,7 +580,9 @@ class TestBuildToolEvidence:
         output_dir = tmp_path / ".cihub"
         tool_outputs = output_dir / "tool-outputs"
         tool_outputs.mkdir(parents=True)
-        (tool_outputs / "ruff.json").write_text("{}")
+        (tool_outputs / "ruff.json").write_text(
+            '{"tool": "ruff", "ran": true, "success": true, "returncode": 0, "metrics": {}}'
+        )
 
         report = {
             "tools_configured": {"ruff": True},

@@ -10,6 +10,7 @@ This module contains the core validation logic for CI reports, including:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -181,6 +182,85 @@ def _check_metrics_exist(
     if found_metrics:
         return True, [f"Debug: {tool} verified via metrics: {', '.join(found_metrics)}"]
     return False, [f"Debug: {tool} missing expected metrics: {metric_paths}"]
+
+
+def _load_tool_output_payloads(reports_dir: Path) -> dict[str, dict[str, Any]]:
+    """Load tool output payloads from a reports directory."""
+    tool_dir = reports_dir / "tool-outputs"
+    outputs: dict[str, dict[str, Any]] = {}
+    if not tool_dir.exists():
+        return outputs
+    for path in tool_dir.glob("*.json"):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(data, dict):
+            continue
+        tool = str(data.get("tool") or path.stem)
+        outputs[tool] = data
+    return outputs
+
+
+def _artifact_exists(path: str, reports_dir: Path) -> bool:
+    candidate = Path(path)
+    if candidate.exists():
+        return True
+    if candidate.is_absolute():
+        return (reports_dir / candidate.name).exists()
+    return (reports_dir / candidate).exists()
+
+
+def _validate_tool_outputs(
+    report: dict[str, Any],
+    output_payloads: dict[str, dict[str, Any]],
+    reports_dir: Path,
+) -> tuple[list[str], list[str]]:
+    """Validate tool-outputs JSON against report claims."""
+    errors: list[str] = []
+    warnings: list[str] = []
+    tools_ran = report.get("tools_ran", {}) or {}
+    tools_success = report.get("tools_success", {}) or {}
+
+    for tool, payload in output_payloads.items():
+        output_ran = bool(payload.get("ran", False))
+        output_success = bool(payload.get("success", False))
+        output_returncode = payload.get("returncode")
+
+        if tool in tools_ran and output_ran != bool(tools_ran.get(tool, False)):
+            errors.append(
+                f"tool '{tool}' ran mismatch between report and tool-outputs "
+                f"(report={tools_ran.get(tool)}, tool-outputs={output_ran})"
+            )
+        if tool in tools_success and output_success != bool(tools_success.get(tool, False)):
+            errors.append(
+                f"tool '{tool}' success mismatch between report and tool-outputs "
+                f"(report={tools_success.get(tool)}, tool-outputs={output_success})"
+            )
+
+        if output_success and isinstance(output_returncode, int) and output_returncode != 0:
+            errors.append(
+                f"tool '{tool}' marked success but returncode={output_returncode} in tool-outputs"
+            )
+
+        metrics = payload.get("metrics") or {}
+        if isinstance(metrics, dict):
+            if metrics.get("report_placeholder") is True:
+                errors.append(f"tool '{tool}' used placeholder report (not real evidence)")
+            if metrics.get("report_found") is False and tools_success.get(tool, False):
+                errors.append(f"tool '{tool}' success true but report_found=false")
+            if metrics.get("owasp_fatal_errors") is True and tools_success.get(tool, False):
+                errors.append(f"tool '{tool}' success true but fatal errors reported")
+
+        artifacts = payload.get("artifacts") or {}
+        if output_success and isinstance(artifacts, dict):
+            missing = [path for path in artifacts.values() if path and not _artifact_exists(path, reports_dir)]
+            if missing:
+                warnings.append(
+                    f"tool '{tool}' missing artifact files: {', '.join(missing)}"
+                )
+
+    return errors, warnings
 
 
 def _compare_configured_vs_ran(
@@ -445,6 +525,17 @@ def validate_report(
                 continue
             if tools_ran.get(tool, False) and not tool_evidence.get(tool, True):
                 warnings.append(f"tool '{tool}' ran but no report evidence found")
+
+    if reports_dir:
+        tool_output_payloads = _load_tool_output_payloads(reports_dir)
+        if tool_output_payloads:
+            output_errors, output_warnings = _validate_tool_outputs(
+                report,
+                tool_output_payloads,
+                reports_dir,
+            )
+            errors.extend(output_errors)
+            warnings.extend(output_warnings)
 
     # 5. Validate tool execution
     tool_metrics = report.get("tool_metrics", {}) or {}

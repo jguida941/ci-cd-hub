@@ -29,6 +29,15 @@ All notable changes to this project will be documented in this file.
 
 - `cihub init`/`cihub setup` now fail when HUB_REPO/HUB_REF cannot be verified, preventing silent drift (ADR-0072).
 
+### Fix: Threshold precedence for tool overrides
+
+- Tool-specific threshold values now override default thresholds (e.g., `java.tools.checkstyle.max_errors` wins over defaults).
+
+### Fix: Report evidence integrity checks
+
+- Tool outputs now include `returncode`, and report validation cross-checks tool-outputs for mismatches and placeholder reports.
+- OWASP no longer creates placeholder reports; fatal analyzer errors now fail the tool.
+
 ## 2026-01-22 - Require Run Defaults
 
 ### Change: Configured tools must run

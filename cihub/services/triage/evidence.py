@@ -274,6 +274,7 @@ def validate_artifact_evidence(
                 consistency_only=True,
                 coverage_min=coverage_min_value,
             ),
+            reports_dir=output_dir,
         )
         for error in validation_result.errors:
             issues.append(

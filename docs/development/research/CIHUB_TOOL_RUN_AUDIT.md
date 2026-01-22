@@ -2048,3 +2048,11 @@ Results:
 
 Current status:
 - Proceeding with v1 retag and init/setup verification hard fail to stop drift.
+
+## 2026-01-23 - Tool evidence integrity (local)
+
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Make report claims verifiable (returncode capture, OWASP no placeholder, tool-outputs cross-check).
+
+Commands and results:
+- `python -m pytest tests/unit/core/test_ci_report.py tests/unit/services/ci_runner/test_ci_runner_java.py tests/unit/services/test_services_report_validator.py tests/unit/services/test_triage_evidence.py` -> ok; 161 passed

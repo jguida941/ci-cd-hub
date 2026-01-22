@@ -98,7 +98,7 @@ class TestResolveThresholds:
         }
         result = resolve_thresholds(config, "python")
 
-        assert result["coverage_min"] == 75  # From thresholds (not overwritten)
+        assert result["coverage_min"] == 80  # Tool-specific overrides defaults
         assert result["mutation_score_min"] == 65
         assert result["max_ruff_errors"] == 5
 

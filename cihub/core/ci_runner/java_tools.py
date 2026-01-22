@@ -79,6 +79,7 @@ def run_java_build(
         tool="build",
         ran=True,
         success=proc.returncode == 0,
+        returncode=proc.returncode,
         metrics=metrics,
         artifacts={"log": str(log_path)},
         stdout=proc.stdout,
@@ -100,6 +101,7 @@ def run_maven_install(workdir: Path, output_dir: Path) -> ToolResult:
         tool="maven-install",
         ran=True,
         success=proc.returncode == 0,
+        returncode=proc.returncode,
         metrics={},
         artifacts={"log": str(log_path)},
         stdout=proc.stdout,
@@ -156,6 +158,7 @@ def run_pitest(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
         tool="pitest",
         ran=True,
         success=proc.returncode == 0 and report_found,
+        returncode=proc.returncode,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
         stdout=proc.stdout,
@@ -194,6 +197,7 @@ def run_checkstyle(workdir: Path, output_dir: Path, build_tool: str) -> ToolResu
         tool="checkstyle",
         ran=True,
         success=proc.returncode == 0 and report_found,
+        returncode=proc.returncode,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
         stdout=proc.stdout,
@@ -227,6 +231,7 @@ def run_spotbugs(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult
         tool="spotbugs",
         ran=True,
         success=proc.returncode == 0 and report_found,
+        returncode=proc.returncode,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
         stdout=proc.stdout,
@@ -260,6 +265,7 @@ def run_pmd(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
         tool="pmd",
         ran=True,
         success=proc.returncode == 0 and report_found,
+        returncode=proc.returncode,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
         stdout=proc.stdout,
@@ -312,6 +318,7 @@ def run_owasp(
 
     output_text = f"{proc.stdout}\n{proc.stderr}".lower()
     nvd_access_failed = "nvd returned a 403" in output_text or "nvd returned a 404" in output_text
+    fatal_errors = "fatal exception(s) analyzing" in output_text or "fatal exception" in output_text
 
     report_paths = shared._find_files(
         workdir,
@@ -322,11 +329,6 @@ def run_owasp(
         ],
     )
     report_found = bool(report_paths)
-    if not report_paths and (proc.returncode == 0 or nvd_access_failed):
-        placeholder = output_dir / "dependency-check-report.json"
-        placeholder.write_text('{"dependencies": []}', encoding="utf-8")
-        report_paths = [placeholder]
-        report_found = True
     metrics = (
         _parse_dependency_check(report_paths[0])
         if report_paths
@@ -340,12 +342,12 @@ def run_owasp(
     )
     metrics["report_found"] = report_found
     metrics["owasp_data_missing"] = nvd_access_failed
-    if report_paths and report_paths[0].name == "dependency-check-report.json" and output_dir in report_paths[0].parents:
-        metrics["report_placeholder"] = True
+    metrics["owasp_fatal_errors"] = fatal_errors
     return ToolResult(
         tool="owasp",
         ran=True,
-        success=(proc.returncode == 0 or nvd_access_failed) and report_found,
+        success=proc.returncode == 0 and report_found and not fatal_errors,
+        returncode=proc.returncode,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
         stdout=proc.stdout,

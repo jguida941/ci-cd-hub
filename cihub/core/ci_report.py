@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from cihub import __version__
@@ -81,11 +82,21 @@ def _timestamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _set_threshold(thresholds: dict[str, Any], key: str, value: Any) -> None:
-    """Set a threshold if value is not None and key not already set."""
+def _set_threshold(
+    thresholds: dict[str, Any],
+    key: str,
+    value: Any,
+    *,
+    override: bool = False,
+) -> None:
+    """Set a threshold if value is not None.
+
+    When override is True, tool-specific settings replace defaults.
+    """
     if value is None:
         return
-    thresholds.setdefault(key, value)
+    if override or key not in thresholds:
+        thresholds[key] = value
 
 
 def _derive_trivy_fallbacks(thresholds: dict[str, Any]) -> None:
@@ -109,13 +120,48 @@ def _resolve_python_thresholds(config: dict[str, Any], thresholds: dict[str, Any
     tools = config.get("python", {}).get("tools", {}) or {}
 
     # Direct tool config mappings
-    _set_threshold(thresholds, "coverage_min", tools.get("pytest", {}).get("min_coverage"))
-    _set_threshold(thresholds, "mutation_score_min", tools.get("mutmut", {}).get("min_mutation_score"))
-    _set_threshold(thresholds, "max_ruff_errors", tools.get("ruff", {}).get("max_errors"))
-    _set_threshold(thresholds, "max_black_issues", tools.get("black", {}).get("max_issues"))
-    _set_threshold(thresholds, "max_isort_issues", tools.get("isort", {}).get("max_issues"))
-    _set_threshold(thresholds, "max_semgrep_findings", tools.get("semgrep", {}).get("max_findings"))
-    _set_threshold(thresholds, "trivy_cvss_fail", tools.get("trivy", {}).get("fail_on_cvss"))
+    _set_threshold(
+        thresholds,
+        "coverage_min",
+        tools.get("pytest", {}).get("min_coverage"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "mutation_score_min",
+        tools.get("mutmut", {}).get("min_mutation_score"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "max_ruff_errors",
+        tools.get("ruff", {}).get("max_errors"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "max_black_issues",
+        tools.get("black", {}).get("max_issues"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "max_isort_issues",
+        tools.get("isort", {}).get("max_issues"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "max_semgrep_findings",
+        tools.get("semgrep", {}).get("max_findings"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "trivy_cvss_fail",
+        tools.get("trivy", {}).get("fail_on_cvss"),
+        override=True,
+    )
 
     # Fallback: trivy_cvss_fail from owasp_cvss_fail (legacy compatibility)
     if "trivy_cvss_fail" not in thresholds and "owasp_cvss_fail" in thresholds:
@@ -147,14 +193,54 @@ def _resolve_java_thresholds(config: dict[str, Any], thresholds: dict[str, Any])
     tools = config.get("java", {}).get("tools", {}) or {}
 
     # Direct tool config mappings
-    _set_threshold(thresholds, "coverage_min", tools.get("jacoco", {}).get("min_coverage"))
-    _set_threshold(thresholds, "mutation_score_min", tools.get("pitest", {}).get("min_mutation_score"))
-    _set_threshold(thresholds, "max_checkstyle_errors", tools.get("checkstyle", {}).get("max_errors"))
-    _set_threshold(thresholds, "max_spotbugs_bugs", tools.get("spotbugs", {}).get("max_bugs"))
-    _set_threshold(thresholds, "max_pmd_violations", tools.get("pmd", {}).get("max_violations"))
-    _set_threshold(thresholds, "owasp_cvss_fail", tools.get("owasp", {}).get("fail_on_cvss"))
-    _set_threshold(thresholds, "trivy_cvss_fail", tools.get("trivy", {}).get("fail_on_cvss"))
-    _set_threshold(thresholds, "max_semgrep_findings", tools.get("semgrep", {}).get("max_findings"))
+    _set_threshold(
+        thresholds,
+        "coverage_min",
+        tools.get("jacoco", {}).get("min_coverage"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "mutation_score_min",
+        tools.get("pitest", {}).get("min_mutation_score"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "max_checkstyle_errors",
+        tools.get("checkstyle", {}).get("max_errors"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "max_spotbugs_bugs",
+        tools.get("spotbugs", {}).get("max_bugs"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "max_pmd_violations",
+        tools.get("pmd", {}).get("max_violations"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "owasp_cvss_fail",
+        tools.get("owasp", {}).get("fail_on_cvss"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "trivy_cvss_fail",
+        tools.get("trivy", {}).get("fail_on_cvss"),
+        override=True,
+    )
+    _set_threshold(
+        thresholds,
+        "max_semgrep_findings",
+        tools.get("semgrep", {}).get("max_findings"),
+        override=True,
+    )
 
     # Trivy fallbacks from general vuln limits
     _derive_trivy_fallbacks(thresholds)
@@ -198,17 +284,27 @@ def _derive_tool_evidence(tool_results: dict[str, dict[str, Any]]) -> dict[str, 
     evidence: dict[str, bool] = {}
     for tool, payload in tool_results.items():
         metrics = payload.get("metrics")
-        if isinstance(metrics, dict) and "report_found" in metrics:
-            evidence[tool] = bool(metrics.get("report_found"))
-            continue
         if isinstance(metrics, dict):
+            if metrics.get("report_placeholder") is True:
+                evidence[tool] = False
+                continue
+            if "report_found" in metrics:
+                evidence[tool] = bool(metrics.get("report_found"))
+                continue
             has_signal = any(key != "parse_error" for key in metrics)
             if has_signal:
                 evidence[tool] = True
                 continue
         artifacts = payload.get("artifacts")
         if artifacts:
-            evidence[tool] = True
+            has_artifact = False
+            for path in artifacts.values():
+                if not path:
+                    continue
+                if Path(path).exists():
+                    has_artifact = True
+                    break
+            evidence[tool] = has_artifact
             continue
         evidence[tool] = False
     return evidence

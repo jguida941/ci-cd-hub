@@ -266,6 +266,37 @@ class TestValidateReport:
         result = validate_report(report, reports_dir=reports_dir)
         assert not any("empty output files" in w for w in result.warnings)
 
+    def test_tool_outputs_mismatch_triggers_error(self, tmp_path: Path) -> None:
+        report = make_valid_python_report()
+        report["tools_ran"]["ruff"] = True
+        report["tools_success"]["ruff"] = True
+
+        reports_dir = tmp_path / "reports"
+        tool_outputs = reports_dir / "tool-outputs"
+        tool_outputs.mkdir(parents=True)
+        (tool_outputs / "ruff.json").write_text(
+            '{"tool": "ruff", "ran": false, "success": false, "returncode": 1, "metrics": {}}'
+        )
+
+        result = validate_report(report, reports_dir=reports_dir)
+        assert any("ran mismatch" in e for e in result.errors)
+
+    def test_tool_outputs_placeholder_triggers_error(self, tmp_path: Path) -> None:
+        report = make_valid_python_report()
+        report["tools_ran"]["ruff"] = True
+        report["tools_success"]["ruff"] = True
+
+        reports_dir = tmp_path / "reports"
+        tool_outputs = reports_dir / "tool-outputs"
+        tool_outputs.mkdir(parents=True)
+        (tool_outputs / "ruff.json").write_text(
+            '{"tool": "ruff", "ran": true, "success": true, "returncode": 0,'
+            ' "metrics": {"report_placeholder": true}}'
+        )
+
+        result = validate_report(report, reports_dir=reports_dir)
+        assert any("placeholder report" in e for e in result.errors)
+
 
 class TestValidateReportFile:
     """Tests for validate_report_file function."""

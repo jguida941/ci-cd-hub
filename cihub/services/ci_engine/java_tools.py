@@ -209,7 +209,7 @@ def _run_java_tools(
             problems.append(
                 {
                     "severity": "warning",
-                    "message": "OWASP NVD update failed (403/404); placeholder report generated",
+                    "message": "OWASP NVD update failed (403/404); results may be stale",
                     "code": "CIHUB-OWASP-NO-DATA",
                 }
             )
