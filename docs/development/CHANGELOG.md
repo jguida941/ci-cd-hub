@@ -25,6 +25,10 @@ All notable changes to this project will be documented in this file.
 
 - `cihub init`/`cihub update` now set `install.source: git` when configs use `repo.targets` or pytest `args/env` to ensure CI installs a compatible cihub build.
 
+### Fix: Monorepo workdir honors repo.targets language
+
+- `cihub ci` now matches `--workdir` to `repo.targets` and uses the target language (prevents Java tools running in Python subdirs).
+
 ## 2026-01-21 - Tool Evidence + Monorepo Targets
 
 ### Fix: Verified tool evidence

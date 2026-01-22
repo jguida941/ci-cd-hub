@@ -131,6 +131,21 @@ class TestResolveTargets:
         assert targets[0].language == "python"
         assert targets[0].subdir == "src"
 
+    def test_override_workdir_uses_target_language(self) -> None:
+        config = {
+            "language": "java",
+            "repo": {
+                "targets": [
+                    {"language": "python", "subdir": "python"},
+                    {"language": "java", "subdir": "java"},
+                ]
+            },
+        }
+        targets = _resolve_targets(config, "python")
+        assert len(targets) == 1
+        assert targets[0].language == "python"
+        assert targets[0].subdir == "python"
+
     def test_targets_from_config(self) -> None:
         config = {
             "repo": {

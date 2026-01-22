@@ -111,6 +111,22 @@ def _build_target_slug(language: str, subdir: str, used: set[str]) -> str:
 def _resolve_targets(config: dict[str, Any], override_workdir: str | None) -> list[TargetSpec]:
     if override_workdir:
         validate_subdir(override_workdir)
+        repo_cfg = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
+        targets_cfg = repo_cfg.get("targets")
+        if isinstance(targets_cfg, list):
+            for item in targets_cfg:
+                if not isinstance(item, dict):
+                    continue
+                subdir = item.get("subdir")
+                if isinstance(subdir, str) and subdir == override_workdir:
+                    language = str(item.get("language") or "")
+                    return [
+                        TargetSpec(
+                            language=language,
+                            subdir=override_workdir,
+                            slug=_build_target_slug(language, override_workdir, set()),
+                        )
+                    ]
         language = str(config.get("language") or "")
         return [TargetSpec(language=language, subdir=override_workdir, slug=_build_target_slug(language, override_workdir, set()))]
 

@@ -32,6 +32,7 @@ Commands and results:
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok
 - `python -m cihub docs audit` -> ok with warnings; placeholder paths + repeated CHANGELOG dates
+- `python -m pytest tests/unit/services/ci_engine/test_ci_engine_project_detection.py::TestResolveTargets::test_override_workdir_uses_target_language` -> ok; 1 passed
 
 ## 2026-01-21 - gitui (re-prove via cihub-only, CI failures)
 
@@ -58,9 +59,19 @@ Commands and results:
 - `sleep 30` -> ok
 - `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --latest --verify-tools` -> failed; bandit/hypothesis/pytest failed
 - `CIHUB_VERBOSE=True python -m cihub ci --repo .../gitui --install-deps --output-dir .../.cihub-local` -> ok; pytest passed, bandit passed; warning: Codecov uploader missing
+- `python -m cihub init --repo .../gitui --apply --force --config-file .../.ci-hub.override.json` -> ok; install.source forced to git
+- `rm .../gitui/.ci-hub.override.json` -> ok
+- `rm -rf .../gitui/.cihub-local` -> blocked by policy
+- `git -C .../gitui add .ci-hub.yml` -> ok
+- `git -C .../gitui commit -m "chore: switch install source to git"` -> ok
+- `git -C .../gitui push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo gitui --ref main --workflow hub-ci.yml` -> ok; run ID 21232565585
+- `sleep 30` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21232565585` -> ok; triage bundle generated
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --run 21232565585 --verify-tools` -> ok; all configured tools verified
 
 Current status:
-- CI run 21232146544 failed in verify-tools (bandit/hypothesis/pytest). Local run passes, suggesting PyPI install lag.
+- CI run 21232565585 verified green; previous failures were from older runs / PyPI lag.
 
 ## 2026-01-21 - cihub-test-monorepo (re-prove via cihub-only, config validation fail)
 
@@ -84,9 +95,18 @@ Commands and results:
 - `python -m cihub triage --repo jguida941/cihub-test-monorepo --run 21232198675` -> ok; triage bundle generated
 - `python -m cihub triage --repo jguida941/cihub-test-monorepo --run 21232198675 --verify-tools` -> failed; no report.json
 - `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-monorepo --latest` -> failed; config validation failed for merged-config
+- `python -m cihub init --repo .../cihub-test-monorepo --apply --force --config-file .../.ci-hub.override.json` -> ok; install.source forced to git; WARN pom.xml not found
+- `rm .../cihub-test-monorepo/.ci-hub.override.json` -> ok
+- `git -C .../cihub-test-monorepo add .ci-hub.yml` -> ok
+- `git -C .../cihub-test-monorepo commit -m "chore: switch install source to git"` -> ok
+- `git -C .../cihub-test-monorepo push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-monorepo --ref main --workflow hub-ci.yml` -> ok; run ID 21232660071
+- `sleep 30` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-monorepo --run 21232660071` -> ok; triage bundle generated
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-monorepo --run 21232660071 --verify-tools` -> failed; ran but no proof for Java tools
 
 Current status:
-- CI run 21232198675 failed due to config validation (likely PyPI install lag with repo.targets).
+- CI run 21232660071 failed verify-tools; Java tools ran without report evidence (workdir mismatch due to repo.targets + override workdir).
 
 ## 2026-01-21 - hub-release (hub-ci monorepo routing)
 
