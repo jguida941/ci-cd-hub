@@ -119,6 +119,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Dispatch/triage use `gh auth token` fallback when env tokens are missing (ADR-0065)
 - [x] Mirror CI outputs to `GITHUB_WORKSPACE` for reusable workflow artifacts (ADR-0066)
 - [x] OWASP writes reports to `.cihub` and `cihub ci` fails fast on hub ref/version mismatch
+- [x] OWASP disables NVD updates and enables OSS Index when no key is present; PITest/OWASP Maven runners use explicit plugin coordinates
 - [x] `cihub run` supports Java tool runners (OWASP/PITest/Checkstyle/etc) alongside Python
 - [x] Upload hidden `.cihub` artifacts in reusable workflows (ADR-0067)
 - [x] Route monorepo targets through hub-ci via config-outputs (`run_python`/`run_java`, per-language workdirs)

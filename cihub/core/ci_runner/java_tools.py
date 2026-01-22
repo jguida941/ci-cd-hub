@@ -17,6 +17,9 @@ from .parsers import (
     _parse_spotbugs_files,
 )
 
+DEFAULT_OWASP_VERSION = "9.0.9"
+DEFAULT_PITEST_VERSION = "1.15.3"
+
 
 def _maven_cmd(workdir: Path) -> list[str]:
     mvnw = workdir / "mvnw"
@@ -135,10 +138,11 @@ def run_pitest(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
     if build_tool == "gradle":
         cmd = _gradle_cmd(workdir) + ["pitest", "--continue", "-Dpitest.outputFormats=XML,HTML"]
     else:
+        pitest_goal = f"org.pitest:pitest-maven:{DEFAULT_PITEST_VERSION}:mutationCoverage"
         cmd = _maven_cmd(workdir) + [
             "-B",
             "-ntp",
-            "pitest:mutationCoverage",
+            pitest_goal,
             "-DoutputFormats=XML,HTML",
             "-DfailWhenNoMutations=false",
         ]
@@ -285,17 +289,17 @@ def run_owasp(
     data_dir = output_dir / "dependency-check-data"
     data_dir.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
-    nvd_key = env.get("NVD_API_KEY")
+    nvd_key = env.get("NVD_API_KEY") if use_nvd_api_key else None
     if not use_nvd_api_key:
         env.pop("NVD_API_KEY", None)
-        nvd_key = None
     nvd_flags: list[str] = []
-    if use_nvd_api_key:
-        if nvd_key:
-            nvd_flags.append(f"-DnvdApiKey={nvd_key}")
+    use_nvd_update = bool(nvd_key)
+    if use_nvd_update:
+        nvd_flags.append(f"-DnvdApiKey={nvd_key}")
     else:
-        # Explicitly disable NVD updates when configured off.
+        # Missing key: disable updates and use OSS Index to avoid long NVD fetches.
         nvd_flags.append("-DautoUpdate=false")
+        nvd_flags.append("-DossIndexAnalyzerEnabled=true")
     format_flag = "-Dformat=JSON"
     output_dir_flag = f"-DoutputDirectory={output_dir.resolve()}"
     data_dir_flag = f"-DdataDirectory={data_dir.resolve()}"
@@ -310,10 +314,11 @@ def run_owasp(
             *nvd_flags,
         ]
     else:
+        owasp_goal = f"org.owasp:dependency-check-maven:{DEFAULT_OWASP_VERSION}:check"
         cmd = _maven_cmd(workdir) + [
             "-B",
             "-ntp",
-            "dependency-check:check",
+            owasp_goal,
             "-DfailBuildOnCVSS=11",
             "-DnvdApiDelay=2500",
             "-DnvdMaxRetryCount=10",

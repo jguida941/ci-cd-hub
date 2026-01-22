@@ -357,8 +357,9 @@ options:
 ## cihub run
 
 ```
-usage: cihub run [-h] [--json] [--repo REPO] [--workdir WORKDIR]
-                 [--output-dir OUTPUT_DIR] [--output OUTPUT] [--force]
+usage: cihub run [-h] [--json] [--language {python,java}] [--repo REPO]
+                 [--workdir WORKDIR] [--output-dir OUTPUT_DIR]
+                 [--output OUTPUT] [--force]
                  tool
 
 positional arguments:
@@ -367,6 +368,9 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   --json                Output machine-readable JSON
+  --language {python,java}
+                        Language context for tools that exist in multiple
+                        runtimes
   --repo REPO           Path to repo (default: .)
   --workdir WORKDIR     Override workdir/subdir
   --output-dir OUTPUT_DIR

@@ -2160,3 +2160,14 @@ Commands and results:
 - `python -m cihub dispatch trigger --owner jguida941 --repo java-spring-tutorials --workflow hub-ci.yml --ref audit/java-spring-tutorials/20260123` -> ok; run ID 21255606886
 - `python -m cihub dispatch watch --owner jguida941 --repo java-spring-tutorials --run-id 21255606886 --interval 15 --timeout 300 --json` -> timeout (run not complete)
 - `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21255606886 --verify-tools --json` -> failed; no report.json (run still in progress)
+- `python -m cihub dispatch watch --owner jguida941 --repo java-spring-tutorials --run-id 21255606886 --interval 15 --timeout 300 --json` -> completed/failure (see run URL)
+- `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21255606886 --verify-tools --json` -> failed; owasp no proof (timeout), pitest failed (plugin missing)
+- `ls -la .cihub/runs/21255606886/artifacts/java-ci-report/tool-outputs` -> ok
+- `python - <<'PY' ... read owasp.json` -> owasp timed out after 1800s; no report
+- `rg -n "FAIL|ERROR" .cihub/runs/21255606886/artifacts/java-ci-report/tool-outputs/pitest.stdout.log` -> pitest plugin not found in module
+- `sed -n '40,240p' .cihub-audit/java-spring-tutorials/pom.xml` -> plugins present in parent only
+- `python -m pytest tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_maven_includes_json_format tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_missing_nvd_key_allows_update tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_use_nvd_api_key_false_disables_update tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunPitest::test_missing_report_marks_failure` -> ok (4 passed)
+- `python -m cihub docs generate` -> ok; updated docs/reference/CLI.md, docs/reference/CONFIG.md, docs/reference/ENV.md, docs/reference/TOOLS.md, docs/reference/WORKFLOWS.md
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok (no stale refs)
+- `python -m cihub docs audit` -> ok; warnings about local_path placeholders remain

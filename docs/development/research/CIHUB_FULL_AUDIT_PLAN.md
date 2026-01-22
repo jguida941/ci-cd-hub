@@ -1,6 +1,6 @@
 # CIHub Full Audit Plan
 
-**Status:** draft
+**Status:** active
 **Owner:** Development Team
 **Source-of-truth:** manual
 **Last-reviewed:** 2026-01-23
@@ -123,4 +123,3 @@ Each entry includes:
 - All tools produce evidence or fail with explicit reason
 - No placeholder reports counted as success
 - Reproducible green runs on the repo matrix
-
