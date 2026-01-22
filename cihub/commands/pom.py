@@ -14,10 +14,13 @@ from cihub.types import CommandResult
 from cihub.utils.java_pom import (
     collect_java_dependency_warnings,
     collect_java_pom_warnings,
+    collect_pom_plugin_warnings,
+    get_java_tool_flags,
     insert_dependencies_into_pom,
     insert_plugins_into_pom,
     load_dependency_snippets,
     load_plugin_snippets,
+    parse_pom_modules,
 )
 
 
@@ -54,56 +57,86 @@ def apply_pom_fixes(repo_path: Path, config: dict[str, Any], apply: bool) -> Pom
         result.warnings.append("pom.xml not found")
         return result
 
-    warnings, missing_plugins = collect_java_pom_warnings(repo_path, config)
+    warnings, _ = collect_java_pom_warnings(repo_path, config)
     if warnings:
         result.messages.append("POM warnings:")
         for warning in warnings:
             result.messages.append(f"  - {warning}")
             result.warnings.append(warning)
 
-    if not missing_plugins:
+    tool_flags = get_java_tool_flags(config)
+    snippets = load_plugin_snippets()
+    per_pom: dict[Path, list[str]] = {}
+
+    modules, error = parse_pom_modules(pom_path)
+    if error:
+        result.exit_code = EXIT_FAILURE
+        result.warnings.append(error)
+        return result
+
+    targets = [pom_path]
+    if modules:
+        for module in modules:
+            if ".." in module or module.startswith("/") or "\\" in module:
+                result.warnings.append(f"Invalid module path (traversal blocked): {module}")
+                continue
+            module_pom = root_path / module / "pom.xml"
+            try:
+                module_pom.resolve().relative_to(root_path.resolve())
+            except ValueError:
+                result.warnings.append(f"Module path escapes root directory: {module}")
+                continue
+            if module_pom.exists():
+                targets.append(module_pom)
+            else:
+                result.warnings.append(f"pom.xml not found for module: {module}")
+
+    for target in targets:
+        _, missing_plugins = collect_pom_plugin_warnings(target, tool_flags)
+        if not missing_plugins:
+            continue
+        for plugin_id in missing_plugins:
+            snippet = snippets.get(plugin_id)
+            if snippet:
+                per_pom.setdefault(target, []).append(snippet)
+            else:
+                group_id, artifact_id = plugin_id
+                msg = f"Missing snippet for plugin {group_id}:{artifact_id}"
+                result.warnings.append(msg)
+                result.messages.append(f"  - {msg}")
+
+    if not per_pom:
         result.messages.append("No pom.xml changes needed.")
         return result
 
-    snippets = load_plugin_snippets()
-    blocks = []
-    for plugin_id in missing_plugins:
-        snippet = snippets.get(plugin_id)
-        if snippet:
-            blocks.append(snippet)
+    diffs: list[str] = []
+    for target, blocks in per_pom.items():
+        pom_text = target.read_text(encoding="utf-8")
+        plugin_block = "\n\n".join(blocks)
+        updated_text, inserted = insert_plugins_into_pom(pom_text, plugin_block)
+
+        if not inserted:
+            result.exit_code = EXIT_FAILURE
+            result.warnings.append(f"Failed to update {target} - unable to find insertion point.")
+            return result
+
+        if not apply:
+            diff = difflib.unified_diff(
+                pom_text.splitlines(),
+                updated_text.splitlines(),
+                fromfile=str(target),
+                tofile=str(target),
+                lineterm="",
+            )
+            diffs.append("\n".join(diff))
         else:
-            group_id, artifact_id = plugin_id
-            msg = f"Missing snippet for plugin {group_id}:{artifact_id}"
-            result.warnings.append(msg)
-            result.messages.append(f"  - {msg}")
+            target.write_text(updated_text, encoding="utf-8")
+            result.messages.append(f"{target} updated.")
+            result.files_modified.append(str(target))
 
-    if not blocks:
-        result.exit_code = EXIT_FAILURE
-        return result
+    if diffs:
+        result.diff = "\n\n".join(diffs)
 
-    pom_text = pom_path.read_text(encoding="utf-8")
-    plugin_block = "\n\n".join(blocks)
-    updated_text, inserted = insert_plugins_into_pom(pom_text, plugin_block)
-
-    if not inserted:
-        result.exit_code = EXIT_FAILURE
-        result.warnings.append("Failed to update pom.xml - unable to find insertion point.")
-        return result
-
-    if not apply:
-        diff = difflib.unified_diff(
-            pom_text.splitlines(),
-            updated_text.splitlines(),
-            fromfile=str(pom_path),
-            tofile=str(pom_path),
-            lineterm="",
-        )
-        result.diff = "\n".join(diff)
-        return result
-
-    pom_path.write_text(updated_text, encoding="utf-8")
-    result.messages.append("pom.xml updated.")
-    result.files_modified.append(str(pom_path))
     return result
 
 

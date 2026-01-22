@@ -47,6 +47,37 @@ def get_java_tool_flags(config: dict[str, Any]) -> dict[str, bool]:
     return enabled
 
 
+def collect_pom_plugin_warnings(
+    pom_path: Path, tool_flags: dict[str, bool]
+) -> tuple[list[str], list[tuple[str, str]]]:
+    """Collect warnings and missing plugins for a specific POM file."""
+    warnings: list[str] = []
+    missing_plugins: list[tuple[str, str]] = []
+
+    plugins, plugins_mgmt, _, error = parse_pom_plugins(pom_path)
+    if error:
+        warnings.append(f"{pom_path}: {error}")
+        return warnings, missing_plugins
+
+    for tool, enabled in tool_flags.items():
+        if tool not in JAVA_TOOL_PLUGINS or not enabled:
+            continue
+        group_id, artifact_id = JAVA_TOOL_PLUGINS[tool]
+        if plugin_matches(plugins, group_id, artifact_id):
+            continue
+        if plugin_matches(plugins_mgmt, group_id, artifact_id):
+            warnings.append(
+                f"{pom_path}: {tool} plugin is only in <pluginManagement>; move to <build><plugins>"
+            )
+        else:
+            warnings.append(
+                f"{pom_path}: missing plugin for enabled tool '{tool}' ({group_id}:{artifact_id})"
+            )
+        missing_plugins.append((group_id, artifact_id))
+
+    return warnings, missing_plugins
+
+
 # ============================================================================
 # Warning Collection
 # ============================================================================
@@ -73,11 +104,6 @@ def collect_java_pom_warnings(repo_path: Path, config: dict[str, Any]) -> tuple[
         warnings.append("pom.xml not found")
         return warnings, missing_plugins
 
-    plugins, plugins_mgmt, has_modules, error = parse_pom_plugins(pom_path)
-    if error:
-        warnings.append(error)
-        return warnings, missing_plugins
-
     tool_flags = get_java_tool_flags(config)
     checkstyle_config = config.get("java", {}).get("tools", {}).get("checkstyle", {}).get("config_file")
     if checkstyle_config:
@@ -86,20 +112,38 @@ def collect_java_pom_warnings(repo_path: Path, config: dict[str, Any]) -> tuple[
             alt_path = root_path / checkstyle_config
             if not alt_path.exists():
                 warnings.append(f"checkstyle config file not found: {checkstyle_config}")
-    for tool, enabled in tool_flags.items():
-        if tool not in JAVA_TOOL_PLUGINS or not enabled:
-            continue
-        group_id, artifact_id = JAVA_TOOL_PLUGINS[tool]
-        if plugin_matches(plugins, group_id, artifact_id):
-            continue
-        if plugin_matches(plugins_mgmt, group_id, artifact_id):
-            warnings.append(f"pom.xml: {tool} plugin is only in <pluginManagement>; move to <build><plugins>")
-        else:
-            warnings.append(f"pom.xml: missing plugin for enabled tool '{tool}' ({group_id}:{artifact_id})")
-        missing_plugins.append((group_id, artifact_id))
+    root_warnings, root_missing = collect_pom_plugin_warnings(pom_path, tool_flags)
+    warnings.extend(root_warnings)
+    missing_plugins.extend(root_missing)
+
+    modules, error = parse_pom_modules(pom_path)
+    if error:
+        warnings.append(error)
+        return warnings, missing_plugins
+
+    has_modules = bool(modules)
+    if modules:
+        for module in modules:
+            if ".." in module or module.startswith("/") or "\\" in module:
+                warnings.append(f"Invalid module path (traversal blocked): {module}")
+                continue
+            module_pom = root_path / module / "pom.xml"
+            try:
+                module_pom.resolve().relative_to(root_path.resolve())
+            except ValueError:
+                warnings.append(f"Module path escapes root directory: {module}")
+                continue
+            if not module_pom.exists():
+                warnings.append(f"pom.xml not found for module: {module}")
+                continue
+            mod_warnings, mod_missing = collect_pom_plugin_warnings(module_pom, tool_flags)
+            warnings.extend(mod_warnings)
+            missing_plugins.extend(mod_missing)
 
     if has_modules and missing_plugins:
-        warnings.append("pom.xml: multi-module project detected; add plugins to parent <build><plugins>")
+        warnings.append(
+            "pom.xml: multi-module project detected; add plugins to parent <build><plugins> or module POMs"
+        )
 
     return warnings, missing_plugins
 

@@ -2183,3 +2183,13 @@ Commands and results:
 - `python -m cihub docs audit` -> ok; warnings about local_path placeholders remain
 - `unzip -p ~/.m2/repository/org/owasp/dependency-check-maven/9.0.9/dependency-check-maven-9.0.9.jar META-INF/maven/plugin.xml | rg -n "nvd|skip|oss" | head -n 40` -> ok; confirmed ossindexAnalyzerEnabled property name
 - `python -m pytest tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_maven_includes_json_format tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_missing_nvd_key_allows_update tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_use_nvd_api_key_false_disables_update` -> ok (3 passed)
+- `python -m pytest tests/unit/core/languages/test_pom_parsing.py::TestCollectJavaPomWarnings` -> ok (7 passed)
+- `python -m pytest tests/unit/core/languages/test_pom_tools.py` -> ok (7 passed)
+- `python -m cihub dispatch trigger --owner jguida941 --repo java-spring-tutorials --workflow hub-ci.yml --ref audit/java-spring-tutorials/20260123` -> ok; run ID 21260074116
+- `python -m cihub dispatch watch --owner jguida941 --repo java-spring-tutorials --run-id 21260074116 --interval 15 --timeout 300 --json` -> completed/failure
+- `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21260074116 --verify-tools --json` -> failed; owasp no report, pitest failed
+- `python - <<'PY' ... read owasp.json/pitest.json (run 21260074116)` -> owasp fatal errors, pitest test-plugin error
+- `python -m cihub docs generate` -> ok; updated docs/reference/CLI.md, docs/reference/CONFIG.md, docs/reference/ENV.md, docs/reference/TOOLS.md, docs/reference/WORKFLOWS.md
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok (no stale refs)
+- `python -m cihub docs audit` -> ok; warnings about local_path placeholders remain

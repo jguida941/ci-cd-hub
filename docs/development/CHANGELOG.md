@@ -25,6 +25,7 @@ All notable changes to this project will be documented in this file.
 
 - OWASP runner now disables NVD updates and enables OSS Index when no key is present, avoiding NVD 403s while still producing evidence.
 - OWASP and PITest Maven runners now use explicit plugin coordinates to avoid missing plugin-prefix errors in multi-module repos.
+- `cihub fix-pom` now applies missing plugin snippets to module POMs in multi-module Maven layouts.
 
 ### Fix: Hub vars verification on init/setup
 

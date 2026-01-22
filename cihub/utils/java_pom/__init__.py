@@ -41,6 +41,7 @@ from cihub.utils.java_pom.parse import (
 from cihub.utils.java_pom.rules import (
     collect_java_dependency_warnings,
     collect_java_pom_warnings,
+    collect_pom_plugin_warnings,
     get_java_tool_flags,
 )
 
@@ -65,6 +66,7 @@ __all__ = [
     # Rules layer
     "collect_java_dependency_warnings",
     "collect_java_pom_warnings",
+    "collect_pom_plugin_warnings",
     "get_java_tool_flags",
     # Apply layer
     "insert_dependencies_into_pom",
