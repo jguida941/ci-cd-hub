@@ -122,6 +122,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Run Maven install prep for multi-module tool runs (ADR-0068)
 - [x] Add tool evidence reporting (`tool_evidence`) and surface `NO REPORT` in summaries
 - [x] Add monorepo targets (`repo.targets`) with per-target summaries
+- [x] Normalize Gradle config blocks (PMD/PITest/OWASP) during `fix-gradle --with-configs` even without plugin inserts
 
 ### Phase 9: Testing
 - [ ] Write unit tests for parser (`test/unit/parser.test.ts`)

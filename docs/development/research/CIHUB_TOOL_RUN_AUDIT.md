@@ -3,7 +3,7 @@
 Status: active
 Owner: Development Team
 Source-of-truth: manual
-Last-reviewed: 2026-01-21
+Last-reviewed: 2026-01-22
 
 ## 2026-01-22 - Full Audit Plan (CLI/Wizard/TS CLI + Repo Matrix)
 
@@ -277,6 +277,11 @@ Commands and results:
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok
 - `python -m cihub docs audit` -> ok with warnings; placeholder paths + repeated CHANGELOG dates
+- `git add -A` -> ok
+- `git commit -m "fix: honor --install-from in init"` -> ok
+- `git push` -> ok
+- `git tag -f v1` -> ok
+- `git push -f origin v1` -> ok
 - `git add -A` -> ok
 - `git commit -m "feat: require configured tools to run by default"` -> ok
 - `git push` -> ok
@@ -1607,3 +1612,22 @@ Commands and results:
 - `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-monorepo --ref main --workflow hub-ci.yml --watch` -> ok; run ID 21235396465 (success)
 - `python -m cihub triage --repo jguida941/cihub-test-monorepo --run 21235396465` -> ok; multi-triage passed
 - `python -m cihub triage --repo jguida941/cihub-test-monorepo --run 21235396465 --verify-tools` -> ok; all configured tools verified across 2 targets
+
+## 2026-01-22 - hub-release gradle normalization fix (local)
+
+Repo type: Hub CLI (gradle toolchain)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Fix gradle config normalization when no plugins are missing; add tests.
+
+Commands and results:
+- `git status -sb` -> ok
+- `rg -n "apply_gradle_fixes|normalize_gradle_configs" cihub/commands/gradle.py cihub/utils/java_gradle.py` -> ok
+- `sed -n '1,220p' cihub/commands/gradle.py` -> ok
+- `sed -n '380,520p' cihub/utils/java_gradle.py` -> ok
+- `rg -n "fix-gradle|apply_gradle_fixes|gradle" tests/unit/commands/test_gradle_cmd.py tests/unit/utils/test_java_gradle.py` -> ok (no test_java_gradle.py)
+- `sed -n '50,220p' tests/unit/commands/test_gradle_cmd.py` -> ok
+- `python -m pytest tests/unit/commands/test_gradle_cmd.py` -> ok (26 passed)
+- `python -m cihub docs generate` -> ok (updated CLI/CONFIG/ENV/TOOLS/WORKFLOWS references)
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok
+- `python -m cihub docs audit` -> ok (warnings: placeholder paths, repeated CHANGELOG dates)

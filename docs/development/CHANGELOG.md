@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - Defaulted `require_run_or_fail` to true for all tools and the global gate.
 - Added ADR-0071 documenting the policy.
 
+## 2026-01-22 - Gradle Config Normalization
+
+### Fix: Normalize Gradle tool blocks
+
+- `cihub fix-gradle --with-configs` now normalizes existing PMD, PITest, and OWASP blocks even when no plugins are missing.
+
 ## 2026-01-21 - GitHub Auth Fallback
 
 ### Fix: Dispatch token fallback via gh

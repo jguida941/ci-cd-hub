@@ -396,3 +396,96 @@ def insert_configs_into_gradle(content: str, plugin_ids: list[str], snippets: di
 
     updated = content[:insert_pos] + config_text + content[insert_pos:]
     return updated, True
+
+
+def _find_block_span(content: str, block_name: str) -> tuple[int, int] | None:
+    match = re.search(rf"^\s*{re.escape(block_name)}\s*\{{", content, re.MULTILINE)
+    if not match:
+        return None
+    start = match.start()
+    pos = match.end()
+    depth = 1
+    while pos < len(content) and depth > 0:
+        if content[pos] == "{":
+            depth += 1
+        elif content[pos] == "}":
+            depth -= 1
+        pos += 1
+    if depth != 0:
+        return None
+    return (start, pos)
+
+
+def _replace_block(content: str, block_name: str, new_block: str) -> tuple[str, bool]:
+    span = _find_block_span(content, block_name)
+    if not span:
+        return content, False
+    start, end = span
+    updated = content[:start] + new_block.strip() + "\n" + content[end:]
+    return updated, True
+
+
+def _discover_java_packages(root_path: Path) -> list[str]:
+    packages: set[str] = set()
+    for java_file in root_path.rglob("src/main/java/**/*.java"):
+        try:
+            text = java_file.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        match = re.search(r"^\s*package\s+([a-zA-Z0-9_.]+)\s*;", text, re.MULTILINE)
+        if match:
+            packages.add(match.group(1))
+    return sorted(packages)
+
+
+def normalize_gradle_configs(
+    content: str,
+    repo_root: Path,
+    config_snippets: dict[str, str],
+) -> tuple[str, list[str]]:
+    warnings: list[str] = []
+    updated = content
+
+    # PMD: replace empty rulesets with default rules
+    span = _find_block_span(updated, "pmd")
+    if span:
+        block = updated[span[0] : span[1]]
+        if "ruleSets" in block and "[]" in block:
+            snippet = config_snippets.get("pmd")
+            if snippet:
+                updated, _ = _replace_block(updated, "pmd", snippet)
+
+    # OWASP: ensure autoUpdate guard and NVD config
+    span = _find_block_span(updated, "dependencyCheck")
+    if span:
+        block = updated[span[0] : span[1]]
+        if "autoUpdate" not in block:
+            snippet = config_snippets.get("org.owasp.dependencycheck")
+            if snippet:
+                updated, _ = _replace_block(updated, "dependencyCheck", snippet)
+
+    # PITest: avoid '*' target classes by inferring packages
+    span = _find_block_span(updated, "pitest")
+    if span:
+        block = updated[span[0] : span[1]]
+        if "targetClasses" in block and "*" in block or "targetTests" in block and "*" in block:
+            packages = _discover_java_packages(repo_root)
+            if not packages:
+                warnings.append("PITest targetClasses uses '*' but no packages found to replace")
+            else:
+                snippet = config_snippets.get("info.solidsoft.pitest", block.strip())
+                patterns = [f"'{pkg}.*'" for pkg in packages]
+                target_lines = [
+                    f"    targetClasses = [{', '.join(patterns)}]",
+                    f"    targetTests = [{', '.join(patterns)}]",
+                ]
+                lines = snippet.splitlines()
+                insert_at = 1
+                for idx, line in enumerate(lines):
+                    if "junit5PluginVersion" in line:
+                        insert_at = idx + 1
+                        break
+                lines[insert_at:insert_at] = target_lines
+                updated, _ = _replace_block(updated, "pitest", "\n".join(lines))
+
+    return updated, warnings

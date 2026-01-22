@@ -101,15 +101,17 @@ pitest {
 
 // @config:org.owasp.dependencycheck
 dependencyCheck {
+    def nvdKey = System.getenv('NVD_API_KEY')
     format = 'ALL'
     failBuildOnCVSS = 7  // Fail on high/critical CVEs (CVSS >= 7.0)
     // failOnError handles NVD API failures gracefully
     failOnError = false
+    autoUpdate = nvdKey ? true : false
     // Suppress false positives and build-time-only transitive deps
     suppressionFile = 'config/owasp/suppressions.xml'
     nvd {
         // Set NVD_API_KEY env var for faster updates (highly recommended)
-        apiKey = System.getenv('NVD_API_KEY') ?: ''
+        apiKey = nvdKey ?: ''
         delay = 3500  // Required delay between API calls (ms)
         validForHours = 24  // Cache NVD data for 24 hours
     }

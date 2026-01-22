@@ -17,6 +17,7 @@ from cihub.utils.java_gradle import (
     insert_plugins_into_gradle,
     load_gradle_config_snippets,
     load_gradle_plugin_snippets,
+    normalize_gradle_configs,
 )
 
 
@@ -70,29 +71,37 @@ def apply_gradle_fixes(repo_path: Path, config: dict[str, Any], apply: bool, inc
             result.messages.append(f"  - {warning}")
             result.warnings.append(warning)
 
-    if not missing_plugins:
-        result.messages.append("No build.gradle changes needed.")
-        return result
-
-    # Load snippets
-    plugin_snippets = load_gradle_plugin_snippets()
-    config_snippets = load_gradle_config_snippets()
-
     # Read current content
     build_text = build_path.read_text(encoding="utf-8")
+    updated_text = build_text
+
+    # Load snippets
+    plugin_snippets: dict[str, str] = {}
+    config_snippets: dict[str, str] = {}
 
     # Insert plugins
-    updated_text, inserted = insert_plugins_into_gradle(build_text, missing_plugins, plugin_snippets)
-    if not inserted:
-        result.exit_code = EXIT_FAILURE
-        result.warnings.append("Failed to update build.gradle - unable to find insertion point.")
-        return result
+    if missing_plugins:
+        plugin_snippets = load_gradle_plugin_snippets()
+        updated_text, inserted = insert_plugins_into_gradle(updated_text, missing_plugins, plugin_snippets)
+        if not inserted:
+            result.exit_code = EXIT_FAILURE
+            result.warnings.append("Failed to update build.gradle - unable to find insertion point.")
+            return result
 
     # Optionally insert configs
     if include_configs:
-        updated_text, configs_inserted = insert_configs_into_gradle(updated_text, missing_plugins, config_snippets)
-        if not configs_inserted:
-            result.warnings.append("Warning: Could not insert some configuration blocks.")
+        config_snippets = load_gradle_config_snippets()
+        if missing_plugins:
+            updated_text, configs_inserted = insert_configs_into_gradle(updated_text, missing_plugins, config_snippets)
+            if not configs_inserted:
+                result.warnings.append("Warning: Could not insert some configuration blocks.")
+
+        updated_text, normalize_warnings = normalize_gradle_configs(updated_text, root_path, config_snippets)
+        result.warnings.extend(normalize_warnings)
+
+    if updated_text == build_text:
+        result.messages.append("No build.gradle changes needed.")
+        return result
 
     if not apply:
         diff = difflib.unified_diff(

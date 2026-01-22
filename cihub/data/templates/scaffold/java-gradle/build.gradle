@@ -93,11 +93,13 @@ pitest {
 
 // OWASP Dependency Check - Vulnerability Scanning
 dependencyCheck {
+    def nvdKey = System.getenv('NVD_API_KEY')
     format = 'ALL'
     failBuildOnCVSS = 11
     failOnError = false
+    autoUpdate = nvdKey ? true : false
     nvd {
-        apiKey = System.getenv('NVD_API_KEY') ?: ''
+        apiKey = nvdKey ?: ''
         delay = 3500
         validForHours = 24
     }

@@ -205,6 +205,27 @@ class TestApplyGradleFixes:
             # Config insertion should have been called
             mock_insert_configs.assert_called_once()
 
+    def test_normalize_configs_without_missing_plugins(self, tmp_path: Path):
+        """Test that config normalization runs even if no plugins are missing."""
+        build_content = "plugins {\n    id 'java'\n}\n"
+        updated_content = build_content + "\npmd {\n    toolVersion = '7.0.0'\n}\n"
+        (tmp_path / "build.gradle").write_text(build_content)
+        config: dict[str, Any] = {}
+
+        with (
+            patch("cihub.commands.gradle.collect_gradle_warnings") as mock_collect,
+            patch("cihub.commands.gradle.load_gradle_config_snippets") as mock_configs,
+            patch("cihub.commands.gradle.normalize_gradle_configs") as mock_normalize,
+        ):
+            mock_collect.return_value = ([], [])
+            mock_configs.return_value = {"pmd": "pmd { toolVersion = '7.0.0' }"}
+            mock_normalize.return_value = (updated_content, ["normalized"])
+
+            result = apply_gradle_fixes(tmp_path, config, apply=False, include_configs=True)
+
+        assert result.diff
+        assert "normalized" in result.warnings
+
 
 # =============================================================================
 # Test cmd_fix_gradle
