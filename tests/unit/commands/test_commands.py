@@ -542,6 +542,44 @@ class TestCmdInit:
         config_text = (tmp_path / ".ci-hub.yml").read_text()
         assert "unknown" in config_text or tmp_path.name in config_text
 
+    def test_init_preserves_repo_targets(self, tmp_path: Path) -> None:
+        """Init should not drop existing repo.targets on re-run."""
+        config_content = """
+repo:
+  owner: test
+  name: example
+  default_branch: main
+  targets:
+    - language: python
+      subdir: python
+    - language: java
+      subdir: java
+language: java
+java:
+  version: '21'
+"""
+        (tmp_path / ".ci-hub.yml").write_text(config_content, encoding="utf-8")
+        (tmp_path / "pom.xml").write_text("<project></project>", encoding="utf-8")
+        args = argparse.Namespace(
+            repo=str(tmp_path),
+            language=None,
+            owner=None,
+            name=None,
+            branch=None,
+            subdir="",
+            wizard=False,
+            dry_run=False,
+            apply=True,
+            force=True,
+            fix_pom=False,
+        )
+        result = cmd_init(args)
+        assert result.exit_code == 0
+        data = yaml.safe_load((tmp_path / ".ci-hub.yml").read_text(encoding="utf-8"))
+        targets = data.get("repo", {}).get("targets")
+        assert isinstance(targets, list)
+        assert {item.get("language") for item in targets} == {"python", "java"}
+
 
 # ==============================================================================
 # Tests for cmd_update

@@ -211,6 +211,12 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
     config_path = repo_path / ".ci-hub.yml"
 
     repo_config = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
+    if "targets" not in repo_config and isinstance(existing_config_data, dict):
+        existing_repo = existing_config_data.get("repo")
+        if isinstance(existing_repo, dict):
+            existing_targets = existing_repo.get("targets")
+            if isinstance(existing_targets, list) and existing_targets:
+                repo_config["targets"] = existing_targets
     # Keep repo metadata aligned with the final language.
     if language:
         repo_config["language"] = language
