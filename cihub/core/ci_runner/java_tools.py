@@ -138,7 +138,7 @@ def run_pitest(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
         cmd = _maven_cmd(workdir) + [
             "-B",
             "-ntp",
-            "org.pitest:pitest-maven:mutationCoverage",
+            "pitest:mutationCoverage",
             "-DoutputFormats=XML,HTML",
         ]
     proc = shared._run_tool_command("pitest", cmd, workdir, output_dir)
@@ -286,10 +286,11 @@ def run_owasp(
         env.pop("NVD_API_KEY", None)
         nvd_key = None
     nvd_flags: list[str] = []
-    if use_nvd_api_key and nvd_key:
-        nvd_flags.append(f"-DnvdApiKey={nvd_key}")
+    if use_nvd_api_key:
+        if nvd_key:
+            nvd_flags.append(f"-DnvdApiKey={nvd_key}")
     else:
-        # Avoid NVD update if the key is missing or explicitly disabled.
+        # Explicitly disable NVD updates when configured off.
         nvd_flags.append("-DautoUpdate=false")
     format_flag = "-Dformat=JSON"
     if build_tool == "gradle":
@@ -304,7 +305,7 @@ def run_owasp(
         cmd = _maven_cmd(workdir) + [
             "-B",
             "-ntp",
-            "org.owasp:dependency-check-maven:check",
+            "dependency-check:check",
             "-DfailBuildOnCVSS=11",
             "-DnvdApiDelay=2500",
             "-DnvdMaxRetryCount=10",

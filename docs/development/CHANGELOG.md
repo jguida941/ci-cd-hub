@@ -23,7 +23,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fix: OWASP runs without NVD key
 
-- OWASP runner now disables NVD auto-update when no key is present, so dependency-check still runs and emits evidence.
+- OWASP runner now uses public NVD updates when no key is present, so dependency-check can still run and emit evidence.
 
 ### Fix: Hub vars verification on init/setup
 

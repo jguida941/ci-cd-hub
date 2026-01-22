@@ -2056,3 +2056,35 @@ Goal: Make report claims verifiable (returncode capture, OWASP no placeholder, t
 
 Commands and results:
 - `python -m pytest tests/unit/core/test_ci_report.py tests/unit/services/ci_runner/test_ci_runner_java.py tests/unit/services/test_services_report_validator.py tests/unit/services/test_triage_evidence.py` -> ok; 161 passed
+
+## 2026-01-23 - java-spring-tutorials reprovision (audit/20260123)
+
+Repo path: `/private/tmp/cihub-audit/java-spring-tutorials`
+Branch: `audit/java-spring-tutorials/20260123`
+Goal: Reprovision via CLI with updated hub tag and validate OWASP/checkstyle truth.
+
+Commands and results:
+- `git push` -> failed; GitHub 500 (remote internal server error)
+- `git push` -> ok
+- `git tag -f v1 e899975d` -> ok
+- `git push origin -f v1` -> ok
+- `git -C /private/tmp/cihub-audit/java-spring-tutorials fetch --all --prune` -> ok
+- `git -C /private/tmp/cihub-audit/java-spring-tutorials checkout main` -> ok
+- `git -C /private/tmp/cihub-audit/java-spring-tutorials pull --ff-only` -> ok
+- `git -C /private/tmp/cihub-audit/java-spring-tutorials checkout -b audit/java-spring-tutorials/20260123` -> ok
+- `git -C /private/tmp/cihub-audit/java-spring-tutorials rm -f .github/workflows/hub-ci.yml` -> ok
+- `git -C /private/tmp/cihub-audit/java-spring-tutorials commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `python -m cihub init --repo /private/tmp/cihub-audit/java-spring-tutorials --apply --force --install-from git --hub-ref v1 --config-json '{"java":{"tools":{"checkstyle":{"max_errors":48},"codeql":{"enabled":false}}}}'` -> ok; WARN missing plugins (suggested `cihub fix-pom --apply`)
+- `git -C /private/tmp/cihub-audit/java-spring-tutorials add .ci-hub.yml .github/workflows/hub-ci.yml` -> ok
+- `git -C /private/tmp/cihub-audit/java-spring-tutorials commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /private/tmp/cihub-audit/java-spring-tutorials push -u origin audit/java-spring-tutorials/20260123` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo java-spring-tutorials --workflow hub-ci.yml --ref audit/java-spring-tutorials/20260123` -> ok; run ID 21251791477
+- `python -m cihub dispatch watch --owner jguida941 --repo java-spring-tutorials --run-id 21251791477 --interval 15 --timeout 900 --json` -> completed/failure
+- `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21251791477 --verify-tools --json` -> failed; owasp no report evidence, pitest failed
+- `python -m cihub fix-pom --repo /private/tmp/cihub-audit/java-spring-tutorials --apply` -> ok; pom.xml updated
+- `git -C /private/tmp/cihub-audit/java-spring-tutorials add pom.xml` -> ok
+- `git -C /private/tmp/cihub-audit/java-spring-tutorials commit -m "chore: fix pom plugins via cihub"` -> ok
+- `git -C /private/tmp/cihub-audit/java-spring-tutorials push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo java-spring-tutorials --workflow hub-ci.yml --ref audit/java-spring-tutorials/20260123` -> ok; run ID 21252001252
+- `python -m cihub dispatch watch --owner jguida941 --repo java-spring-tutorials --run-id 21252001252 --interval 15 --timeout 900 --json` -> completed/failure
+- `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21252001252 --verify-tools --json` -> failed; owasp no report evidence, pitest failed

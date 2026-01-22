@@ -350,7 +350,7 @@ class TestRunOwasp:
         assert result.success is False
         assert result.metrics["owasp_fatal_errors"] is True
 
-    def test_missing_nvd_key_disables_update(self, tmp_path: Path) -> None:
+    def test_missing_nvd_key_allows_update(self, tmp_path: Path) -> None:
         from cihub.ci_runner import run_owasp
 
         output_dir = tmp_path / "output"
@@ -374,6 +374,33 @@ class TestRunOwasp:
         with patch.dict(os.environ, {}, clear=True):
             with patch("cihub.core.ci_runner.shared._run_tool_command", side_effect=_fake_run):
                 result = run_owasp(tmp_path, output_dir, "maven", use_nvd_api_key=True)
+
+        assert "-DautoUpdate=false" not in captured["cmd"]
+        assert result.success is True
+
+    def test_use_nvd_api_key_false_disables_update(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import run_owasp
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+        report_dir = tmp_path / "target"
+        report_dir.mkdir(parents=True)
+        (report_dir / "dependency-check-report.json").write_text(
+            '{"dependencies": []}', encoding="utf-8"
+        )
+
+        captured: dict[str, object] = {}
+
+        def _fake_run(tool, cmd, workdir, output_dir, timeout=None, env=None):
+            captured["cmd"] = cmd
+            mock_proc = MagicMock()
+            mock_proc.returncode = 0
+            mock_proc.stdout = ""
+            mock_proc.stderr = ""
+            return mock_proc
+
+        with patch("cihub.core.ci_runner.shared._run_tool_command", side_effect=_fake_run):
+            result = run_owasp(tmp_path, output_dir, "maven", use_nvd_api_key=False)
 
         assert "-DautoUpdate=false" in captured["cmd"]
         assert result.success is True
