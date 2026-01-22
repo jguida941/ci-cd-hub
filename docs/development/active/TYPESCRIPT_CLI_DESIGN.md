@@ -118,6 +118,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Harden Java CI gates and verify-tools proofing (require report evidence; inject default checkstyle config)
 - [x] Dispatch/triage use `gh auth token` fallback when env tokens are missing (ADR-0065)
 - [x] Mirror CI outputs to `GITHUB_WORKSPACE` for reusable workflow artifacts (ADR-0066)
+- [x] OWASP writes reports to `.cihub` and `cihub ci` fails fast on hub ref/version mismatch
 - [x] Upload hidden `.cihub` artifacts in reusable workflows (ADR-0067)
 - [x] Route monorepo targets through hub-ci via config-outputs (`run_python`/`run_java`, per-language workdirs)
 - [x] Run Maven install prep for multi-module tool runs (ADR-0068)

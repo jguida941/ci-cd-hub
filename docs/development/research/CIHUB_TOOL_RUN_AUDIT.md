@@ -2116,3 +2116,5 @@ Commands and results:
 - `rg -n "owasp" tests/unit/services/ci_runner/test_ci_runner_java.py` -> ok
 - `sed -n '250,430p' tests/unit/services/ci_runner/test_ci_runner_java.py` -> ok
 - `python -m pytest tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_maven_includes_json_format tests/unit/commands/test_commands_ci.py::test_cmd_ci_hub_ref_version_mismatch` -> ok (2 passed)
+- `rg -n "Master Checklist" -n docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok
+- `sed -n '20,120p' docs/development/active/TYPESCRIPT_CLI_DESIGN.md` -> ok
