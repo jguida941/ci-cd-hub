@@ -22,7 +22,7 @@ def _check_threshold(
     threshold_value: int | float,
     metric_value: int | float,
     failures: list[str],
-) -> None:
+) -> bool:
     """Check a threshold using gate_specs and append failure if any.
 
     Uses evaluate_threshold from gate_specs to avoid duplicating
@@ -34,6 +34,8 @@ def _check_threshold(
         passed, msg = evaluate_threshold(spec, metric_value, threshold_value)
         if not passed and msg:
             failures.append(msg)
+            return True
+    return False
 
 
 def _tool_requires_run_or_fail(tool: str, config: dict[str, Any], language: str) -> bool:
@@ -151,45 +153,53 @@ def _evaluate_python_gates(
     if tools_configured.get("pytest"):
         if tests_total == 0:
             failures.append("no tests ran - cannot verify quality")
+            tools_success["pytest"] = False
         elif tests_failed > 0:
             failures.append("pytest failures detected")
+            tools_success["pytest"] = False
 
     # Coverage gate - uses gate_specs for consistent evaluation
     # Use float() to avoid truncation (79.9% should not become 79%)
     if tools_configured.get("pytest"):
         coverage_min = float(thresholds.get("coverage_min", 0) or 0)
         coverage = float(results.get("coverage", 0))
-        _check_threshold("coverage_min", "python", coverage_min, coverage, failures)
+        if _check_threshold("coverage_min", "python", coverage_min, coverage, failures):
+            tools_success["pytest"] = False
 
     # Mutation score gate - uses gate_specs for consistent evaluation
     # Use float() to avoid truncation
     if tools_configured.get("mutmut"):
         mut_min = float(thresholds.get("mutation_score_min", 0) or 0)
         mut_score = float(results.get("mutation_score", 0))
-        _check_threshold("mutation_score_min", "python", mut_min, mut_score, failures)
+        if _check_threshold("mutation_score_min", "python", mut_min, mut_score, failures):
+            tools_success["mutmut"] = False
 
     # Ruff errors gate - uses gate_specs for consistent evaluation
     if tools_configured.get("ruff") and _tool_gate_enabled(config, "ruff", "python"):
         max_ruff = int(thresholds.get("max_ruff_errors", 0) or 0)
         ruff_errors = int(metrics.get("ruff_errors", 0))
-        _check_threshold("max_ruff_errors", "python", max_ruff, ruff_errors, failures)
+        if _check_threshold("max_ruff_errors", "python", max_ruff, ruff_errors, failures):
+            tools_success["ruff"] = False
 
     # Black issues gate - uses gate_specs for consistent evaluation
     if tools_configured.get("black") and _tool_gate_enabled(config, "black", "python"):
         max_black = int(thresholds.get("max_black_issues", 0) or 0)
         black_issues = int(metrics.get("black_issues", 0))
-        _check_threshold("max_black_issues", "python", max_black, black_issues, failures)
+        if _check_threshold("max_black_issues", "python", max_black, black_issues, failures):
+            tools_success["black"] = False
 
     # Isort issues gate - uses gate_specs for consistent evaluation
     if tools_configured.get("isort") and _tool_gate_enabled(config, "isort", "python"):
         max_isort = int(thresholds.get("max_isort_issues", 0) or 0)
         isort_issues = int(metrics.get("isort_issues", 0))
-        _check_threshold("max_isort_issues", "python", max_isort, isort_issues, failures)
+        if _check_threshold("max_isort_issues", "python", max_isort, isort_issues, failures):
+            tools_success["isort"] = False
 
     # Mypy gate - uses gate_specs for consistent evaluation (threshold always 0)
     if tools_configured.get("mypy"):
         mypy_errors = int(metrics.get("mypy_errors", 0))
-        _check_threshold("max_mypy_errors", "python", 0, mypy_errors, failures)
+        if _check_threshold("max_mypy_errors", "python", 0, mypy_errors, failures):
+            tools_success["mypy"] = False
 
     # Bandit gates - uses gate_specs with severity-level toggles
     max_high = int(thresholds.get("max_high_vulns", 0) or 0)
@@ -200,25 +210,30 @@ def _evaluate_python_gates(
     if tools_configured.get("bandit"):
         if fail_on_high:
             bandit_high = int(metrics.get("bandit_high", 0))
-            _check_threshold("max_high_vulns", "python", max_high, bandit_high, failures)
+            if _check_threshold("max_high_vulns", "python", max_high, bandit_high, failures):
+                tools_success["bandit"] = False
         if fail_on_medium:
             bandit_medium = int(metrics.get("bandit_medium", 0))
-            _check_threshold("max_bandit_medium", "python", 0, bandit_medium, failures)
+            if _check_threshold("max_bandit_medium", "python", 0, bandit_medium, failures):
+                tools_success["bandit"] = False
         if fail_on_low:
             bandit_low = int(metrics.get("bandit_low", 0))
-            _check_threshold("max_bandit_low", "python", 0, bandit_low, failures)
+            if _check_threshold("max_bandit_low", "python", 0, bandit_low, failures):
+                tools_success["bandit"] = False
 
     # pip-audit gate - uses gate_specs for consistent evaluation
     if tools_configured.get("pip_audit") and _tool_gate_enabled(config, "pip_audit", "python"):
         max_pip = int(thresholds.get("max_pip_audit_vulns", max_high) or 0)
         pip_vulns = int(metrics.get("pip_audit_vulns", 0))
-        _check_threshold("max_pip_audit_vulns", "python", max_pip, pip_vulns, failures)
+        if _check_threshold("max_pip_audit_vulns", "python", max_pip, pip_vulns, failures):
+            tools_success["pip_audit"] = False
 
     # Semgrep gate - uses gate_specs for consistent evaluation
     if tools_configured.get("semgrep") and _tool_gate_enabled(config, "semgrep", "python"):
         max_semgrep = int(thresholds.get("max_semgrep_findings", 0) or 0)
         semgrep_findings = int(metrics.get("semgrep_findings", 0))
-        _check_threshold("max_semgrep_findings", "python", max_semgrep, semgrep_findings, failures)
+        if _check_threshold("max_semgrep_findings", "python", max_semgrep, semgrep_findings, failures):
+            tools_success["semgrep"] = False
 
     # Trivy critical/high gates - uses gate_specs with severity-level toggles
     max_critical = int(thresholds.get("max_critical_vulns", 0) or 0)
@@ -226,25 +241,30 @@ def _evaluate_python_gates(
     if tools_configured.get("trivy"):
         if bool(trivy_cfg.get("fail_on_critical", True)):
             trivy_critical = int(metrics.get("trivy_critical", 0))
-            _check_threshold("max_trivy_critical", "python", max_critical, trivy_critical, failures)
+            if _check_threshold("max_trivy_critical", "python", max_critical, trivy_critical, failures):
+                tools_success["trivy"] = False
         if bool(trivy_cfg.get("fail_on_high", True)):
             trivy_high = int(metrics.get("trivy_high", 0))
-            _check_threshold("max_trivy_high", "python", max_high, trivy_high, failures)
+            if _check_threshold("max_trivy_high", "python", max_high, trivy_high, failures):
+                tools_success["trivy"] = False
 
     # CVSS enforcement for Trivy (Python) - uses gate_specs for consistent evaluation
     # Note: threshold=0 disables check (handled in evaluate_threshold)
     if tools_configured.get("trivy") and tools_ran.get("trivy"):
         trivy_cvss_fail = float(thresholds.get("trivy_cvss_fail", 0) or 0)
         trivy_max_cvss = float(metrics.get("trivy_max_cvss", 0) or 0)
-        _check_threshold("trivy_cvss_fail", "python", trivy_cvss_fail, trivy_max_cvss, failures)
+        if _check_threshold("trivy_cvss_fail", "python", trivy_cvss_fail, trivy_max_cvss, failures):
+            tools_success["trivy"] = False
 
     codeql_cfg = config.get("python", {}).get("tools", {}).get("codeql", {}) or {}
     fail_codeql = bool(codeql_cfg.get("fail_on_error", True))
     if tools_configured.get("codeql") and fail_codeql:
         if not tools_ran.get("codeql"):
             failures.append("codeql did not run")
+            tools_success["codeql"] = False
         elif not tools_success.get("codeql"):
             failures.append("codeql failed")
+            tools_success["codeql"] = False
 
     # Hypothesis gate - property-based testing via pytest
     # Hypothesis runs through pytest, so we check ran/success status rather than thresholds
@@ -253,8 +273,10 @@ def _evaluate_python_gates(
     if tools_configured.get("hypothesis") and fail_hypothesis:
         if not tools_ran.get("hypothesis"):
             failures.append("hypothesis did not run")
+            tools_success["hypothesis"] = False
         elif not tools_success.get("hypothesis"):
             failures.append("hypothesis failed")
+            tools_success["hypothesis"] = False
 
     docker_cfg = config.get("python", {}).get("tools", {}).get("docker", {}) or {}
     fail_docker = bool(docker_cfg.get("fail_on_error", True))
@@ -264,11 +286,14 @@ def _evaluate_python_gates(
         if docker_missing:
             if fail_missing:
                 failures.append("docker compose file missing")
+                tools_success["docker"] = False
         elif fail_docker:
             if not tools_ran.get("docker"):
                 failures.append("docker did not run")
+                tools_success["docker"] = False
             elif not tools_success.get("docker"):
                 failures.append("docker failed")
+                tools_success["docker"] = False
 
     # require_run_or_fail checks: configured tools that didn't run
     # Iterate tools_configured keys to include custom tools (x-* prefix)
@@ -312,14 +337,16 @@ def _evaluate_java_gates(
     if tools_configured.get("jacoco") and tools_ran.get("jacoco"):
         coverage_min = float(thresholds.get("coverage_min", 0) or 0)
         coverage = float(results.get("coverage", 0))
-        _check_threshold("coverage_min", "java", coverage_min, coverage, failures)
+        if _check_threshold("coverage_min", "java", coverage_min, coverage, failures):
+            tools_success["jacoco"] = False
 
     # Mutation score gate - uses gate_specs for consistent evaluation
     # Use float() to avoid truncation
     if tools_configured.get("pitest") and tools_ran.get("pitest"):
         mut_min = float(thresholds.get("mutation_score_min", 0) or 0)
         mut_score = float(results.get("mutation_score", 0))
-        _check_threshold("mutation_score_min", "java", mut_min, mut_score, failures)
+        if _check_threshold("mutation_score_min", "java", mut_min, mut_score, failures):
+            tools_success["pitest"] = False
 
     # Checkstyle gate - uses gate_specs for consistent evaluation
     if (
@@ -329,7 +356,8 @@ def _evaluate_java_gates(
     ):
         max_checkstyle = int(thresholds.get("max_checkstyle_errors", 0) or 0)
         checkstyle_issues = int(metrics.get("checkstyle_issues", 0))
-        _check_threshold("max_checkstyle_errors", "java", max_checkstyle, checkstyle_issues, failures)
+        if _check_threshold("max_checkstyle_errors", "java", max_checkstyle, checkstyle_issues, failures):
+            tools_success["checkstyle"] = False
 
     # SpotBugs gate - uses gate_specs for consistent evaluation
     if (
@@ -339,13 +367,15 @@ def _evaluate_java_gates(
     ):
         max_spotbugs = int(thresholds.get("max_spotbugs_bugs", 0) or 0)
         spotbugs_issues = int(metrics.get("spotbugs_issues", 0))
-        _check_threshold("max_spotbugs_bugs", "java", max_spotbugs, spotbugs_issues, failures)
+        if _check_threshold("max_spotbugs_bugs", "java", max_spotbugs, spotbugs_issues, failures):
+            tools_success["spotbugs"] = False
 
     # PMD gate - uses gate_specs for consistent evaluation
     if tools_configured.get("pmd") and tools_ran.get("pmd") and _tool_gate_enabled(config, "pmd", "java"):
         max_pmd = int(thresholds.get("max_pmd_violations", 0) or 0)
         pmd_issues = int(metrics.get("pmd_violations", 0))
-        _check_threshold("max_pmd_violations", "java", max_pmd, pmd_issues, failures)
+        if _check_threshold("max_pmd_violations", "java", max_pmd, pmd_issues, failures):
+            tools_success["pmd"] = False
 
     max_critical = int(thresholds.get("max_critical_vulns", 0) or 0)
     max_high = int(thresholds.get("max_high_vulns", 0) or 0)
@@ -354,46 +384,55 @@ def _evaluate_java_gates(
     if tools_configured.get("owasp") and tools_ran.get("owasp"):
         owasp_critical = int(metrics.get("owasp_critical", 0))
         owasp_high = int(metrics.get("owasp_high", 0))
-        _check_threshold("max_critical_vulns", "java", max_critical, owasp_critical, failures)
-        _check_threshold("max_high_vulns", "java", max_high, owasp_high, failures)
+        owasp_failed = _check_threshold("max_critical_vulns", "java", max_critical, owasp_critical, failures)
+        owasp_failed = _check_threshold("max_high_vulns", "java", max_high, owasp_high, failures) or owasp_failed
+        if owasp_failed:
+            tools_success["owasp"] = False
 
     # Trivy critical/high gates - uses gate_specs with severity-level toggles
     trivy_cfg = config.get("java", {}).get("tools", {}).get("trivy", {}) or {}
     if tools_configured.get("trivy") and tools_ran.get("trivy"):
         if bool(trivy_cfg.get("fail_on_critical", True)):
             trivy_critical = int(metrics.get("trivy_critical", 0))
-            _check_threshold("max_trivy_critical", "java", max_critical, trivy_critical, failures)
+            if _check_threshold("max_trivy_critical", "java", max_critical, trivy_critical, failures):
+                tools_success["trivy"] = False
         if bool(trivy_cfg.get("fail_on_high", True)):
             trivy_high = int(metrics.get("trivy_high", 0))
-            _check_threshold("max_trivy_high", "java", max_high, trivy_high, failures)
+            if _check_threshold("max_trivy_high", "java", max_high, trivy_high, failures):
+                tools_success["trivy"] = False
 
     # CVSS enforcement for OWASP (Java) - uses gate_specs for consistent evaluation
     # Note: threshold=0 disables check (handled in evaluate_threshold)
     if tools_configured.get("owasp") and tools_ran.get("owasp"):
         owasp_cvss_fail = float(thresholds.get("owasp_cvss_fail", 0) or 0)
         owasp_max_cvss = float(metrics.get("owasp_max_cvss", 0) or 0)
-        _check_threshold("owasp_cvss_fail", "java", owasp_cvss_fail, owasp_max_cvss, failures)
+        if _check_threshold("owasp_cvss_fail", "java", owasp_cvss_fail, owasp_max_cvss, failures):
+            tools_success["owasp"] = False
 
     # CVSS enforcement for Trivy (Java) - uses gate_specs for consistent evaluation
     # Note: threshold=0 disables check (handled in evaluate_threshold)
     if tools_configured.get("trivy") and tools_ran.get("trivy"):
         trivy_cvss_fail = float(thresholds.get("trivy_cvss_fail", 0) or 0)
         trivy_max_cvss = float(metrics.get("trivy_max_cvss", 0) or 0)
-        _check_threshold("trivy_cvss_fail", "java", trivy_cvss_fail, trivy_max_cvss, failures)
+        if _check_threshold("trivy_cvss_fail", "java", trivy_cvss_fail, trivy_max_cvss, failures):
+            tools_success["trivy"] = False
 
     # Semgrep gate - uses gate_specs for consistent evaluation
     if tools_configured.get("semgrep") and _tool_gate_enabled(config, "semgrep", "java"):
         max_semgrep = int(thresholds.get("max_semgrep_findings", 0) or 0)
         semgrep_findings = int(metrics.get("semgrep_findings", 0))
-        _check_threshold("max_semgrep_findings", "java", max_semgrep, semgrep_findings, failures)
+        if _check_threshold("max_semgrep_findings", "java", max_semgrep, semgrep_findings, failures):
+            tools_success["semgrep"] = False
 
     codeql_cfg = config.get("java", {}).get("tools", {}).get("codeql", {}) or {}
     fail_codeql = bool(codeql_cfg.get("fail_on_error", True))
     if tools_configured.get("codeql") and fail_codeql:
         if not tools_ran.get("codeql"):
             failures.append("codeql did not run")
+            tools_success["codeql"] = False
         elif not tools_success.get("codeql"):
             failures.append("codeql failed")
+            tools_success["codeql"] = False
 
     # jqwik gate - property-based testing for Java (equivalent to Hypothesis)
     # jqwik runs through the build tool's test runner, so we check ran/success status
@@ -402,8 +441,10 @@ def _evaluate_java_gates(
     if tools_configured.get("jqwik") and fail_jqwik:
         if not tools_ran.get("jqwik"):
             failures.append("jqwik did not run")
+            tools_success["jqwik"] = False
         elif not tools_success.get("jqwik"):
             failures.append("jqwik failed")
+            tools_success["jqwik"] = False
 
     docker_cfg = config.get("java", {}).get("tools", {}).get("docker", {}) or {}
     fail_docker = bool(docker_cfg.get("fail_on_error", True))
@@ -413,11 +454,14 @@ def _evaluate_java_gates(
         if docker_missing:
             if fail_missing:
                 failures.append("docker compose file missing")
+                tools_success["docker"] = False
         elif fail_docker:
             if not tools_ran.get("docker"):
                 failures.append("docker did not run")
+                tools_success["docker"] = False
             elif not tools_success.get("docker"):
                 failures.append("docker failed")
+                tools_success["docker"] = False
 
     # require_run_or_fail checks: configured tools that didn't run
     # Iterate tools_configured keys to include custom tools (x-* prefix)

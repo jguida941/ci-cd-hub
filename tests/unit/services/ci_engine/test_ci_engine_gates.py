@@ -69,7 +69,7 @@ class TestEvaluatePythonGates:
         assert "pytest failures detected" in failures
 
     def test_detects_coverage_below_threshold(self) -> None:
-        report = {"results": {"coverage": 60}}
+        report = {"results": {"coverage": 60}, "tools_success": {"pytest": True}}
         thresholds = {"coverage_min": 80}
         tools_configured = {"pytest": True}
         config: dict = {}
@@ -78,6 +78,7 @@ class TestEvaluatePythonGates:
 
         # float() conversion means 60 becomes 60.0
         assert any("coverage 60" in f and "< 80" in f for f in failures)
+        assert report["tools_success"]["pytest"] is False
 
     def test_detects_mutation_score_below_threshold(self) -> None:
         report = {"results": {"mutation_score": 50}}
@@ -320,7 +321,11 @@ class TestEvaluateJavaGates:
         assert any("coverage 50" in f and "< 70" in f for f in failures)
 
     def test_detects_checkstyle_issues(self) -> None:
-        report = {"tool_metrics": {"checkstyle_issues": 15}, "tools_ran": {"checkstyle": True}}
+        report = {
+            "tool_metrics": {"checkstyle_issues": 15},
+            "tools_ran": {"checkstyle": True},
+            "tools_success": {"checkstyle": True},
+        }
         thresholds = {"max_checkstyle_errors": 0}
         tools_configured = {"checkstyle": True}
         config = {"java": {"tools": {"checkstyle": {"fail_on_violation": True}}}}
@@ -328,6 +333,7 @@ class TestEvaluateJavaGates:
         failures = _evaluate_java_gates(report, thresholds, tools_configured, config)
 
         assert any("checkstyle issues" in f for f in failures)
+        assert report["tools_success"]["checkstyle"] is False
 
     def test_detects_spotbugs_issues(self) -> None:
         report = {"tool_metrics": {"spotbugs_issues": 5}, "tools_ran": {"spotbugs": True}}

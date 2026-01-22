@@ -42,6 +42,10 @@ All notable changes to this project will be documented in this file.
 
 - `cihub triage --verify-tools` now aggregates multiple report artifacts (e.g., Python + Java monorepos).
 
+### Fix: Gate failures reflect in tool success
+
+- Gate violations now flip `tools_success` to false so summaries/triage match quality-gate outcomes.
+
 ## 2026-01-21 - Tool Evidence + Monorepo Targets
 
 ### Fix: Verified tool evidence
