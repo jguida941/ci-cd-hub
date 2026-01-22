@@ -11,7 +11,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 from cihub.ci_runner import ToolResult
-from cihub.commands.run import RUNNERS, _tool_enabled, cmd_run
+from cihub.commands.run import _resolve_candidate_languages, _tool_enabled, cmd_run
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 
 
@@ -20,54 +20,46 @@ class TestToolEnabled:
 
     def test_returns_true_for_bool_true(self) -> None:
         config = {"python": {"tools": {"ruff": True}}}
-        assert _tool_enabled(config, "ruff") is True
+        assert _tool_enabled(config, "ruff", "python") is True
 
     def test_returns_false_for_bool_false(self) -> None:
         config = {"python": {"tools": {"ruff": False}}}
-        assert _tool_enabled(config, "ruff") is False
+        assert _tool_enabled(config, "ruff", "python") is False
 
     def test_returns_enabled_from_dict(self) -> None:
         config = {"python": {"tools": {"pytest": {"enabled": True}}}}
-        assert _tool_enabled(config, "pytest") is True
+        assert _tool_enabled(config, "pytest", "python") is True
 
     def test_returns_false_when_enabled_is_false(self) -> None:
         config = {"python": {"tools": {"pytest": {"enabled": False}}}}
-        assert _tool_enabled(config, "pytest") is False
+        assert _tool_enabled(config, "pytest", "python") is False
 
     def test_returns_false_for_missing_tool(self) -> None:
         config = {"python": {"tools": {}}}
-        assert _tool_enabled(config, "missing") is False
+        assert _tool_enabled(config, "missing", "python") is False
 
     def test_returns_false_for_non_dict_python_block(self) -> None:
         config: dict[str, Any] = {"python": "not_a_dict"}
-        assert _tool_enabled(config, "ruff") is False
+        assert _tool_enabled(config, "ruff", "python") is False
 
     def test_returns_false_for_non_dict_tools(self) -> None:
         config = {"python": {"tools": "not_a_dict"}}
-        assert _tool_enabled(config, "ruff") is False
+        assert _tool_enabled(config, "ruff", "python") is False
 
 
-class TestRunners:
-    """Tests for RUNNERS registry."""
+class TestCandidateLanguages:
+    """Tests for language resolution helper."""
 
-    def test_contains_all_supported_tools(self) -> None:
-        expected = {
-            "pytest",
-            "ruff",
-            "black",
-            "isort",
-            "mypy",
-            "bandit",
-            "pip_audit",
-            "pip-audit",
-            "mutmut",
-            "semgrep",
-            "trivy",
-        }
-        assert set(RUNNERS.keys()) == expected
+    def test_python_only_tool(self) -> None:
+        assert _resolve_candidate_languages("ruff") == ["python"]
 
-    def test_pip_audit_has_alias(self) -> None:
-        assert RUNNERS["pip_audit"] is RUNNERS["pip-audit"]
+    def test_java_only_tool(self) -> None:
+        assert _resolve_candidate_languages("owasp") == ["java"]
+
+    def test_multi_language_tool(self) -> None:
+        candidates = _resolve_candidate_languages("trivy")
+        assert "python" in candidates
+        assert "java" in candidates
 
 
 class TestCmdRun:
@@ -130,10 +122,16 @@ class TestCmdRun:
         mock_result = MagicMock(spec=ToolResult)
         mock_result.success = True
         mock_result.to_payload.return_value = {"tool": "ruff", "ran": True}
+        mock_runner = MagicMock(return_value=mock_result)
+
+        def _fake_get_runner(tool: str, language: str):
+            if tool == "ruff" and language == "python":
+                return mock_runner
+            return None
 
         with (
             patch("cihub.commands.run.load_ci_config") as mock_load,
-            patch.dict(RUNNERS, {"ruff": MagicMock(return_value=mock_result)}),
+            patch("cihub.commands.run.get_runner", side_effect=_fake_get_runner),
         ):
             mock_load.return_value = {
                 "language": "python",
@@ -159,10 +157,16 @@ class TestCmdRun:
         mock_result = MagicMock(spec=ToolResult)
         mock_result.success = True
         mock_result.to_payload.return_value = {"tool": "bandit"}
+        mock_runner = MagicMock(return_value=mock_result)
+
+        def _fake_get_runner(tool: str, language: str):
+            if tool == "bandit" and language == "python":
+                return mock_runner
+            return None
 
         with (
             patch("cihub.commands.run.load_ci_config") as mock_load,
-            patch.dict(RUNNERS, {"bandit": MagicMock(return_value=mock_result)}),
+            patch("cihub.commands.run.get_runner", side_effect=_fake_get_runner),
         ):
             mock_load.return_value = {
                 "language": "python",
@@ -187,10 +191,16 @@ class TestCmdRun:
         mock_result = MagicMock(spec=ToolResult)
         mock_result.success = False
         mock_result.to_payload.return_value = {"tool": "pytest", "ran": True}
+        mock_runner = MagicMock(return_value=mock_result)
+
+        def _fake_get_runner(tool: str, language: str):
+            if tool == "pytest" and language == "python":
+                return mock_runner
+            return None
 
         with (
             patch("cihub.commands.run.load_ci_config") as mock_load,
-            patch.dict(RUNNERS, {"pytest": MagicMock(return_value=mock_result)}),
+            patch("cihub.commands.run.get_runner", side_effect=_fake_get_runner),
         ):
             mock_load.return_value = {"language": "python"}
             result = cmd_run(args)
@@ -253,7 +263,7 @@ class TestCmdRun:
 
         with (
             patch("cihub.commands.run.load_ci_config") as mock_load,
-            patch.dict(RUNNERS, {"ruff": raise_not_found}),
+            patch("cihub.commands.run.get_runner", return_value=raise_not_found),
         ):
             mock_load.return_value = {"language": "python"}
             result = cmd_run(args)
@@ -278,9 +288,14 @@ class TestCmdRun:
         mock_result.to_payload.return_value = {"tool": "mutmut"}
         mock_runner = MagicMock(return_value=mock_result)
 
+        def _fake_get_runner(tool: str, language: str):
+            if tool == "mutmut" and language == "python":
+                return mock_runner
+            return None
+
         with (
             patch("cihub.commands.run.load_ci_config") as mock_load,
-            patch.dict(RUNNERS, {"mutmut": mock_runner}),
+            patch("cihub.commands.run.get_runner", side_effect=_fake_get_runner),
         ):
             mock_load.return_value = {
                 "language": "python",
@@ -290,7 +305,7 @@ class TestCmdRun:
 
         # Verify timeout was passed (30 min * 60 = 1800 seconds)
         mock_runner.assert_called_once()
-        _, call_args, _ = mock_runner.mock_calls[0]
+        call_args = mock_runner.call_args[0]
         assert call_args[2] == 1800  # timeout in seconds
 
     def test_uses_workdir_from_config(self, tmp_path: Path) -> None:
@@ -313,9 +328,14 @@ class TestCmdRun:
         mock_result.to_payload.return_value = {"tool": "ruff"}
         mock_runner = MagicMock(return_value=mock_result)
 
+        def _fake_get_runner(tool: str, language: str):
+            if tool == "ruff" and language == "python":
+                return mock_runner
+            return None
+
         with (
             patch("cihub.commands.run.load_ci_config") as mock_load,
-            patch.dict(RUNNERS, {"ruff": mock_runner}),
+            patch("cihub.commands.run.get_runner", side_effect=_fake_get_runner),
         ):
             mock_load.return_value = {
                 "language": "python",
@@ -345,10 +365,16 @@ class TestCmdRun:
         mock_result = MagicMock(spec=ToolResult)
         mock_result.success = True
         mock_result.to_payload.return_value = {"tool": "ruff"}
+        mock_runner = MagicMock(return_value=mock_result)
+
+        def _fake_get_runner(tool: str, language: str):
+            if tool == "ruff" and language == "python":
+                return mock_runner
+            return None
 
         with (
             patch("cihub.commands.run.load_ci_config") as mock_load,
-            patch.dict(RUNNERS, {"ruff": MagicMock(return_value=mock_result)}),
+            patch("cihub.commands.run.get_runner", side_effect=_fake_get_runner),
         ):
             mock_load.return_value = {"language": "python"}
             cmd_run(args)
@@ -373,10 +399,16 @@ class TestCmdRun:
         mock_result = MagicMock(spec=ToolResult)
         mock_result.success = True
         mock_result.to_payload.return_value = {"tool": "ruff", "ran": True, "success": True}
+        mock_runner = MagicMock(return_value=mock_result)
+
+        def _fake_get_runner(tool: str, language: str):
+            if tool == "ruff" and language == "python":
+                return mock_runner
+            return None
 
         with (
             patch("cihub.commands.run.load_ci_config") as mock_load,
-            patch.dict(RUNNERS, {"ruff": MagicMock(return_value=mock_result)}),
+            patch("cihub.commands.run.get_runner", side_effect=_fake_get_runner),
         ):
             mock_load.return_value = {"language": "python"}
             result = cmd_run(args)

@@ -43,6 +43,11 @@ All notable changes to this project will be documented in this file.
 - OWASP now writes JSON reports to `.cihub` with a dedicated data cache directory to reduce missing evidence.
 - `cihub ci` now fails fast when `HUB_REF` is a version tag that doesn't match the installed CLI version.
 
+### Fix: `cihub run` supports Java tools
+
+- `cihub run` now supports Java tool runners (OWASP, PITest, Checkstyle, SpotBugs, PMD, JaCoCo) alongside Python tools.
+- Added `--language` to disambiguate tools that exist in multiple runtimes.
+
 ## 2026-01-22 - Require Run Defaults
 
 ### Change: Configured tools must run

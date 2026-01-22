@@ -4,46 +4,70 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from cihub.ci_config import load_ci_config
-from cihub.ci_runner import (
-    ToolResult,
-    run_bandit,
-    run_black,
-    run_isort,
-    run_mutmut,
-    run_mypy,
-    run_pip_audit,
-    run_pytest,
-    run_ruff,
-    run_semgrep,
-    run_trivy,
-)
+from cihub.ci_runner import ToolResult
 from cihub.config import tool_enabled as _tool_enabled_canonical
-from cihub.tools.registry import get_tool_runner_args
+from cihub.tools.registry import get_runner, get_tool_runner_args
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS, EXIT_USAGE
 from cihub.types import CommandResult
 from cihub.utils.paths import validate_subdir
 
-RUNNERS: dict[str, Callable[..., ToolResult]] = {
-    "pytest": run_pytest,
-    "ruff": run_ruff,
-    "black": run_black,
-    "isort": run_isort,
-    "mypy": run_mypy,
-    "bandit": run_bandit,
-    "pip_audit": run_pip_audit,
-    "pip-audit": run_pip_audit,
-    "mutmut": run_mutmut,
-    "semgrep": run_semgrep,
-    "trivy": run_trivy,
-}
+SUPPORTED_LANGUAGES = ("python", "java")
 
 
-def _tool_enabled(config: dict[str, Any], tool: str) -> bool:
-    """Check if a Python tool is enabled. Delegates to canonical cihub.config.tool_enabled."""
-    return _tool_enabled_canonical(config, tool, "python")
+def _tool_enabled(config: dict[str, Any], tool: str, language: str) -> bool:
+    """Check if a tool is enabled for a specific language."""
+    return _tool_enabled_canonical(config, tool, language)
+
+
+def _resolve_candidate_languages(tool: str) -> list[str]:
+    candidates = []
+    for language in SUPPORTED_LANGUAGES:
+        if get_runner(tool, language):
+            candidates.append(language)
+    return candidates
+
+
+def _detect_build_tool(workdir_path: Path, config: dict[str, Any]) -> str:
+    build_tool = config.get("java", {}).get("build_tool", "").strip().lower()
+    if build_tool in {"maven", "gradle"}:
+        return build_tool
+    if (
+        (workdir_path / "build.gradle").exists()
+        or (workdir_path / "build.gradle.kts").exists()
+        or (workdir_path / "settings.gradle").exists()
+        or (workdir_path / "settings.gradle.kts").exists()
+    ):
+        return "gradle"
+    return "maven"
+
+
+def _resolve_language(
+    tool: str,
+    config: dict[str, Any],
+    candidates: list[str],
+    explicit: str | None,
+) -> tuple[str | None, str | None]:
+    if explicit:
+        if explicit not in candidates:
+            return None, f"Unsupported language '{explicit}' for tool '{tool}'."
+        return explicit, None
+    enabled_langs = [lang for lang in candidates if _tool_enabled(config, tool, lang)]
+    if len(enabled_langs) == 1:
+        return enabled_langs[0], None
+    repo_cfg = config.get("repo", {})
+    if not isinstance(repo_cfg, dict):
+        repo_cfg = {}
+    config_lang = config.get("language") or repo_cfg.get("language")
+    if isinstance(config_lang, str) and config_lang in candidates:
+        return config_lang, None
+    if len(candidates) == 1:
+        return candidates[0], None
+    if len(enabled_langs) > 1:
+        return None, f"Tool '{tool}' is enabled for multiple languages; specify --language."
+    return None, f"Tool '{tool}' is available for multiple languages; specify --language."
 
 
 def cmd_run(args: argparse.Namespace) -> CommandResult:
@@ -81,7 +105,30 @@ def cmd_run(args: argparse.Namespace) -> CommandResult:
             problems=[{"severity": "error", "message": message, "code": "CIHUB-RUN-002"}],
         )
 
-    runner = RUNNERS.get(tool)
+    candidates = _resolve_candidate_languages(tool_key)
+    if not candidates:
+        message = f"Unsupported tool: {tool}"
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-RUN-003"}],
+        )
+
+    language, language_error = _resolve_language(
+        tool_key,
+        config,
+        candidates,
+        getattr(args, "language", None),
+    )
+    if language is None:
+        message = language_error or f"Unsupported tool: {tool}"
+        return CommandResult(
+            exit_code=EXIT_USAGE,
+            summary=message,
+            problems=[{"severity": "error", "message": message, "code": "CIHUB-RUN-003"}],
+        )
+
+    runner = get_runner(tool_key, language)
     if runner is None:
         message = f"Unsupported tool: {tool}"
         return CommandResult(
@@ -90,7 +137,7 @@ def cmd_run(args: argparse.Namespace) -> CommandResult:
             problems=[{"severity": "error", "message": message, "code": "CIHUB-RUN-003"}],
         )
 
-    if not args.force and not _tool_enabled(config, tool_key):
+    if not args.force and not _tool_enabled(config, tool_key, language):
         result = ToolResult(tool=tool_key, ran=False, success=False)
         result.write_json(output_path)
         return CommandResult(
@@ -101,24 +148,64 @@ def cmd_run(args: argparse.Namespace) -> CommandResult:
         )
 
     try:
-        if tool == "pytest":
-            tool_args = get_tool_runner_args(config, "pytest", "python")
-            fail_fast = bool(tool_args.get("fail_fast", False))
-            pytest_args = tool_args.get("args") or []
-            pytest_env = tool_args.get("env")
-            if not isinstance(pytest_args, list):
-                pytest_args = []
-            if not isinstance(pytest_env, dict):
-                pytest_env = None
-            result = runner(workdir_path, output_dir, fail_fast, pytest_args, pytest_env)
-        elif tool == "isort":
-            use_black_profile = _tool_enabled(config, "black")
-            result = runner(workdir_path, output_dir, use_black_profile)
-        elif tool == "mutmut":
-            timeout = config.get("python", {}).get("tools", {}).get("mutmut", {}).get("timeout_minutes", 15)
-            result = runner(workdir_path, output_dir, int(timeout) * 60)
+        if language == "python":
+            if tool_key == "pytest":
+                tool_args = get_tool_runner_args(config, "pytest", "python")
+                fail_fast = bool(tool_args.get("fail_fast", False))
+                pytest_args = tool_args.get("args") or []
+                pytest_env = tool_args.get("env")
+                if not isinstance(pytest_args, list):
+                    pytest_args = []
+                if not isinstance(pytest_env, dict):
+                    pytest_env = None
+                result = runner(workdir_path, output_dir, fail_fast, pytest_args, pytest_env)
+            elif tool_key == "isort":
+                use_black_profile = _tool_enabled(config, "black", "python")
+                result = runner(workdir_path, output_dir, use_black_profile)
+            elif tool_key == "mutmut":
+                timeout = config.get("python", {}).get("tools", {}).get("mutmut", {}).get("timeout_minutes", 15)
+                result = runner(workdir_path, output_dir, int(timeout) * 60)
+            elif tool_key == "sbom":
+                tool_args = get_tool_runner_args(config, "sbom", "python")
+                result = runner(workdir_path, output_dir, tool_args.get("format"))
+            elif tool_key == "docker":
+                tool_args = get_tool_runner_args(config, "docker", "python")
+                result = runner(
+                    workdir_path,
+                    output_dir,
+                    tool_args.get("compose_file", "docker-compose.yml"),
+                    tool_args.get("health_endpoint"),
+                    int(tool_args.get("health_timeout", 300)),
+                )
+            else:
+                result = runner(workdir_path, output_dir)
         else:
-            result = runner(workdir_path, output_dir)
+            if tool_key in {"pitest", "checkstyle", "spotbugs", "pmd"}:
+                build_tool = _detect_build_tool(workdir_path, config)
+                result = runner(workdir_path, output_dir, build_tool)
+            elif tool_key == "owasp":
+                build_tool = _detect_build_tool(workdir_path, config)
+                tool_args = get_tool_runner_args(config, "owasp", "java")
+                result = runner(
+                    workdir_path,
+                    output_dir,
+                    build_tool,
+                    bool(tool_args.get("use_nvd_api_key", True)),
+                )
+            elif tool_key == "sbom":
+                tool_args = get_tool_runner_args(config, "sbom", "java")
+                result = runner(workdir_path, output_dir, tool_args.get("format"))
+            elif tool_key == "docker":
+                tool_args = get_tool_runner_args(config, "docker", "java")
+                result = runner(
+                    workdir_path,
+                    output_dir,
+                    tool_args.get("compose_file", "docker-compose.yml"),
+                    tool_args.get("health_endpoint"),
+                    int(tool_args.get("health_timeout", 300)),
+                )
+            else:
+                result = runner(workdir_path, output_dir)
     except FileNotFoundError as exc:
         message = f"Tool '{tool}' not found: {exc}"
         return CommandResult(

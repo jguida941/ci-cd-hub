@@ -2135,3 +2135,15 @@ Commands and results:
 - `git diff -U3 -- tests/unit/services/test_triage_github.py` -> ok
 - `git diff -U3 -- tests/unit/utils/test_java_gradle.py` -> ok
 - `python -m pytest tests/unit/utils/test_java_gradle.py tests/unit/core/languages/test_pom_parsing.py tests/unit/services/test_triage_github.py` -> ok (80 passed)
+
+## 2026-01-22 - `cihub run` Java tool support
+
+Repo type: Hub CLI
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Extend `cihub run` to support Java tools + add language disambiguation.
+
+Commands and results:
+- `sed -n '1,220p' cihub/commands/run.py` -> ok
+- `rg -n "build_tool|detect_build|gradle|maven" cihub/core/languages/java.py cihub/utils/java_* cihub/services/ci_engine -g'*.py'` -> ok
+- `python -m pytest tests/unit/commands/test_run.py` -> failed (mutmut timeout assertion)
+- `python -m pytest tests/unit/commands/test_run.py` -> ok (26 passed)

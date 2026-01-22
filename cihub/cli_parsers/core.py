@@ -448,6 +448,11 @@ def add_core_commands(
     run = subparsers.add_parser("run", help="Run one tool and emit JSON output", epilog=see_also_epilog("run"))
     add_json_flag(run)
     run.add_argument("tool", help="Tool name (pytest, ruff, bandit, etc.)")
+    run.add_argument(
+        "--language",
+        choices=["python", "java"],
+        help="Language context for tools that exist in multiple runtimes",
+    )
     add_repo_args(run)
     run.add_argument("--workdir", help="Override workdir/subdir")
     run.add_argument(
