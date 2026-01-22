@@ -20,29 +20,29 @@ dr_drill:
 egress_control:
   enabled: false
 gates:
-  require_run_or_fail: false
+  require_run_or_fail: true
   tool_defaults:
     pytest: true
     ruff: true
     bandit: true
     pip_audit: true
-    mypy: false
-    black: false
-    isort: false
-    mutmut: false
-    hypothesis: false
-    semgrep: false
+    mypy: true
+    black: true
+    isort: true
+    mutmut: true
+    hypothesis: true
+    semgrep: true
     trivy: true
     codeql: true
-    docker: false
-    sbom: false
+    docker: true
+    sbom: true
     jacoco: true
     checkstyle: true
     spotbugs: true
-    pmd: false
+    pmd: true
     owasp: true
-    pitest: false
-    jqwik: false
+    pitest: true
+    jqwik: true
 hub_ci:
   enabled: true
   thresholds:
@@ -95,39 +95,39 @@ java:
       fail_on_missing_compose: false
       health_endpoint: /actuator/health
       health_timeout: 300
-      require_run_or_fail: false
+      require_run_or_fail: true
     jacoco:
       enabled: true
       min_coverage: 70
       require_run_or_fail: true
     jqwik:
       enabled: false
-      require_run_or_fail: false
+      require_run_or_fail: true
     owasp:
       enabled: true
       fail_on_cvss: 7
-      require_run_or_fail: false
+      require_run_or_fail: true
       use_nvd_api_key: true
     pitest:
       enabled: true
       min_mutation_score: 70
-      require_run_or_fail: false
+      require_run_or_fail: true
       threads: 4
       timeout_multiplier: 2
     pmd:
       enabled: true
       fail_on_violation: false
       max_violations: 0
-      require_run_or_fail: false
+      require_run_or_fail: true
     semgrep:
       enabled: false
       fail_on_findings: false
       max_findings: 0
-      require_run_or_fail: false
+      require_run_or_fail: true
     sbom:
       enabled: false
       format: cyclonedx
-      require_run_or_fail: false
+      require_run_or_fail: true
     spotbugs:
       effort: max
       enabled: true
@@ -171,7 +171,7 @@ python:
       enabled: true
       fail_on_format_issues: false
       max_issues: 0
-      require_run_or_fail: false
+      require_run_or_fail: true
     codeql:
       enabled: false
       fail_on_error: true
@@ -185,23 +185,23 @@ python:
       fail_on_missing_compose: false
       health_endpoint: /actuator/health
       health_timeout: 300
-      require_run_or_fail: false
+      require_run_or_fail: true
     hypothesis:
       enabled: true
-      require_run_or_fail: false
+      require_run_or_fail: true
     isort:
       enabled: true
       fail_on_issues: false
       max_issues: 0
-      require_run_or_fail: false
+      require_run_or_fail: true
     mutmut:
       enabled: false
       min_mutation_score: 70
-      require_run_or_fail: false
+      require_run_or_fail: true
       timeout_minutes: 15
     mypy:
       enabled: false
-      require_run_or_fail: false
+      require_run_or_fail: true
     pip_audit:
       enabled: true
       fail_on_vuln: true
@@ -219,12 +219,12 @@ python:
     sbom:
       enabled: false
       format: cyclonedx
-      require_run_or_fail: false
+      require_run_or_fail: true
     semgrep:
       enabled: false
       fail_on_findings: false
       max_findings: 0
-      require_run_or_fail: false
+      require_run_or_fail: true
     trivy:
       enabled: false
       fail_on_critical: false

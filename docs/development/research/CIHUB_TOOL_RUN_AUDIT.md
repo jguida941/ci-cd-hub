@@ -5,6 +5,264 @@ Owner: Development Team
 Source-of-truth: manual
 Last-reviewed: 2026-01-21
 
+## 2026-01-22 - Full Audit Plan (CLI/Wizard/TS CLI + Repo Matrix)
+
+Goal: Prove every command surface works (Python CLI, TS CLI, wizard), and
+prove CI works across a representative repo matrix using only cihub tools.
+
+Principles:
+- No manual YAML edits; only `cihub init --apply`/`cihub update`/`cihub config-outputs`.
+- No direct `gh` usage; only cihub commands (gh may be used internally).
+- If a run fails, fix the CLI (not the repo) and re-prove.
+- Log every command with repo, result, and evidence.
+
+Evidence rules:
+- **Ran** means the command executed.
+- **Success** requires exit code 0 **and** report evidence (metrics or artifacts).
+- If a report is missing but the command ran, log as **ran-no-evidence** with a warning.
+- Always collect: `report.json`, `summary.md`, tool JSON/logs in `.cihub/tool-outputs/`.
+- Use `cihub triage --latest --verify-tools` to confirm evidence across artifacts.
+
+Audit command matrix (to be executed and logged):
+- **Core CLI**: `cihub detect`, `cihub init`, `cihub update`, `cihub check`,
+  `cihub validate`, `cihub verify`, `cihub config-outputs`, `cihub config validate`,
+  `cihub report validate`, `cihub report summary`, `cihub report aggregate`.
+- **Docs**: `cihub docs generate`, `cihub docs check`, `cihub docs stale`,
+  `cihub docs audit`.
+- **Run/CI**: `cihub ci`, `cihub run pytest`, `cihub run ruff`, `cihub run bandit`,
+  `cihub run pip-audit`, Java `cihub hub-ci smoke-java-*` as applicable.
+- **Dispatch/Triage**: `cihub dispatch trigger`, `cihub dispatch watch`,
+  `cihub triage --latest`, `cihub triage --latest --verify-tools`,
+  `cihub triage --detect-flaky`, `cihub triage --gate-history`.
+- **Wizard/TS CLI**:
+  - `cihub-cli --help`
+  - `cihub-cli init` (wizard flow)
+  - `cihub-cli detect`, `cihub-cli config-outputs`, `cihub-cli dispatch trigger`,
+    `cihub-cli triage --latest` (verify TS CLI wraps the same commands).
+
+Repo matrix (initial list; update as repos are added):
+- **Hub**: `jguida941/ci-cd-hub`
+- **Monorepo**: `jguida941/cihub-test-monorepo`
+- **Python**: `cihub-test-python-{pyproject,src-layout,setup}`, `ci-cd-bst-demo-github-actions`
+- **Java**: `cihub-test-java-{maven,gradle,multi-module}`, `java-spring-tutorials`
+- **Fixtures/Canaries**: `ci-cd-hub-fixtures`, `ci-cd-hub-canary-{java,python,java-fail,python-fail}`
+- **GUI/Qt**: `gitui`, `mkgui`, `disk-analyzer`, `learn-python-pyside6`, `XcodeFuckOff`
+
+Execution steps (per repo):
+1. Clone repo to a temp workdir.
+2. Create an audit branch (no mainline edits).
+3. Delete existing `.github/workflows/hub-ci.yml`, commit, push.
+4. Regenerate via `cihub init --apply` (with overrides only when required).
+5. Commit + push regenerated workflow + `.ci-hub.yml`.
+6. Trigger run with `cihub dispatch trigger`.
+7. Triage with `cihub triage --latest` and `--verify-tools`.
+8. If fail, fix CLI, re-run steps 4–7 before proceeding to the next repo.
+
+Audit gates:
+- Do not advance to the next repo until failures are fixed in the CLI and re-proved.
+- If a repo has no tests, add a minimal test (on the audit branch only) and re-run.
+
+User stories to validate (end-to-end):
+- New user onboarding via wizard (Python CLI + TS CLI) to generate config + workflow.
+- Monorepo onboarding with multiple targets (python + java in subdirs).
+- GUI repo with headless tests (PySide/PyQt).
+- Repo with existing lint violations and threshold overrides.
+- Centralized orchestrator/run-all dispatch for multiple repos.
+
+Logging format (append for each repo/run):
+- Repo + type
+- Commands executed (exact)
+- Results (exit code, run ID, report paths)
+- Evidence (report.json, tool outputs, triage verification)
+- Failures + fixes (CLI changes only)
+
+Commands and results:
+- `rg --files -g 'docs/development/research/CIHUB_TOOL_RUN_AUDIT.md'` -> ok
+- `sed -n '1,240p' docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` -> ok
+- `python -m cihub init --help | head -120` -> ok
+
+## 2026-01-22 - cihub-test-monorepo (re-prove via cihub-only)
+
+Repo type: Monorepo (Python + Java)
+Repo path: `/tmp/cihub-audit/cihub-test-monorepo`
+Goal: Delete workflow, regenerate via cihub, dispatch, triage, verify tools.
+
+Commands and results:
+- `mkdir -p /tmp/cihub-audit` -> ok
+- `git clone https://github.com/jguida941/cihub-test-monorepo /tmp/cihub-audit/cihub-test-monorepo` -> ok
+- `sed -n '1,240p' /tmp/cihub-audit/cihub-test-monorepo/.ci-hub.yml` -> ok; repo.targets present; install.source=git
+- `ls -la /tmp/cihub-audit/cihub-test-monorepo/.github/workflows` -> ok; hub-ci.yml present
+- `git -C /tmp/cihub-audit/cihub-test-monorepo rm -f .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-monorepo commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-monorepo push` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-monorepo --apply --force --config-file /tmp/cihub-audit/cihub-test-monorepo/.ci-hub.yml` -> ok; WARN pom.xml not found
+- `git -C /tmp/cihub-audit/cihub-test-monorepo status -sb` -> ok; hub-ci.yml untracked
+- `git -C /tmp/cihub-audit/cihub-test-monorepo add .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-monorepo commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-monorepo push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-monorepo --ref main --workflow hub-ci.yml` -> ok; run ID 21237236555
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-monorepo --latest` -> ok; returned older run 21235316698 (1 failure)
+- `python -m cihub triage --repo jguida941/cihub-test-monorepo --run 21237236555` -> ok; triage bundle generated (0 failures)
+- `python -m cihub triage --repo jguida941/cihub-test-monorepo --run 21237236555 --verify-tools` -> failed; no report.json yet
+- `python -m cihub triage --help | head -80` -> ok
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-monorepo --run 21237236555 --verify-tools` -> ok; all 13 configured tools verified across 2 targets
+
+Current status:
+- Run 21237236555 verified green across both targets.
+
+## 2026-01-22 - cihub-test-python-pyproject (re-prove via cihub-only)
+
+Repo type: Python (pyproject)
+Repo path: `/tmp/cihub-audit/cihub-test-python-pyproject`
+Goal: Delete workflow, regenerate via cihub, dispatch, triage, verify tools.
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-python-pyproject /tmp/cihub-audit/cihub-test-python-pyproject` -> ok
+- `ls -la /tmp/cihub-audit/cihub-test-python-pyproject/.github/workflows` -> ok; hub-ci.yml present
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject rm -f .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject push` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-python-pyproject --apply --force --config-file /tmp/cihub-audit/cihub-test-python-pyproject/.ci-hub.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject status -sb` -> ok; hub-ci.yml untracked
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject add .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-pyproject --ref main --workflow hub-ci.yml` -> ok; run ID 21237297440
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21237297440` -> ok; triage bundle generated (0 failures)
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21237297440 --verify-tools` -> failed; no report.json yet
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21237297440 --verify-tools` -> ok; all 7 configured tools verified
+
+Current status:
+- Run 21237297440 verified green with tool evidence.
+
+## 2026-01-22 - cihub-test-python-src-layout (re-prove via cihub-only)
+
+Repo type: Python (src layout)
+Repo path: `/tmp/cihub-audit/cihub-test-python-src-layout`
+Goal: Delete workflow, regenerate via cihub, dispatch, triage, verify tools.
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-python-src-layout /tmp/cihub-audit/cihub-test-python-src-layout` -> ok
+- `ls -la /tmp/cihub-audit/cihub-test-python-src-layout/.github/workflows` -> ok; hub-ci.yml present
+- `git -C /tmp/cihub-audit/cihub-test-python-src-layout rm -f .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-src-layout commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-src-layout push` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-python-src-layout --apply --force --config-file /tmp/cihub-audit/cihub-test-python-src-layout/.ci-hub.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-src-layout status -sb` -> ok; hub-ci.yml untracked
+- `git -C /tmp/cihub-audit/cihub-test-python-src-layout add .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-src-layout commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-src-layout push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-src-layout --ref main --workflow hub-ci.yml` -> ok; run ID 21237352792
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-python-src-layout --run 21237352792` -> ok; triage bundle generated (0 failures)
+- `python -m cihub triage --repo jguida941/cihub-test-python-src-layout --run 21237352792 --verify-tools` -> failed; no report.json yet
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-python-src-layout --run 21237352792 --verify-tools` -> ok; all 7 configured tools verified
+
+Current status:
+- Run 21237352792 verified green with tool evidence.
+
+## 2026-01-22 - cihub-test-python-setup (re-prove via cihub-only)
+
+Repo type: Python (setup.py)
+Repo path: `/tmp/cihub-audit/cihub-test-python-setup`
+Goal: Delete workflow, regenerate via cihub, dispatch, triage, verify tools.
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-python-setup /tmp/cihub-audit/cihub-test-python-setup` -> ok
+- `ls -la /tmp/cihub-audit/cihub-test-python-setup/.github/workflows` -> ok; hub-ci.yml present
+- `git -C /tmp/cihub-audit/cihub-test-python-setup rm -f .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-setup commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-setup push` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-python-setup --apply --force --config-file /tmp/cihub-audit/cihub-test-python-setup/.ci-hub.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-setup status -sb` -> ok; hub-ci.yml untracked
+- `git -C /tmp/cihub-audit/cihub-test-python-setup add .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-setup commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-setup push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-setup --ref main --workflow hub-ci.yml` -> ok; run ID 21237405905
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-python-setup --run 21237405905` -> ok; triage bundle generated (0 failures)
+- `python -m cihub triage --repo jguida941/cihub-test-python-setup --run 21237405905 --verify-tools` -> failed; no report.json yet
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-python-setup --run 21237405905 --verify-tools` -> ok; all 7 configured tools verified
+
+Current status:
+- Run 21237405905 verified green with tool evidence.
+
+## 2026-01-22 - cihub-test-java-maven (re-prove via cihub-only)
+
+Repo type: Java (Maven)
+Repo path: `/tmp/cihub-audit/cihub-test-java-maven`
+Goal: Delete workflow, regenerate via cihub, dispatch, triage, verify tools.
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-java-maven /tmp/cihub-audit/cihub-test-java-maven` -> ok
+- `ls -la /tmp/cihub-audit/cihub-test-java-maven/.github/workflows` -> ok; hub-ci.yml present
+- `git -C /tmp/cihub-audit/cihub-test-java-maven rm -f .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-maven commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-maven push` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-java-maven --apply --force --config-file /tmp/cihub-audit/cihub-test-java-maven/.ci-hub.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-maven status -sb` -> ok; hub-ci.yml untracked
+- `git -C /tmp/cihub-audit/cihub-test-java-maven add .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-maven commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-maven push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref main --workflow hub-ci.yml` -> ok; run ID 21237459219
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21237459219` -> ok; triage bundle generated (0 failures)
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21237459219 --verify-tools` -> failed; no report.json yet
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21237459219 --verify-tools` -> failed; no report.json yet
+- `sleep 60` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21237459219 --verify-tools` -> failed; checkstyle failed (3 issues)
+- `cat .cihub/runs/21237459219/triage.md` -> ok; no priority failures
+- `find .cihub/runs/21237459219 -maxdepth 3 -type f | head -80` -> ok
+- `python - <<'PY' ...` -> ok; checkstyle_errors None; tools_success.checkstyle False
+- `find .cihub/runs/21237459219/artifacts -maxdepth 3 -type f` -> ok
+- `cat .cihub/runs/21237459219/artifacts/java-ci-report/tool-outputs/checkstyle.json` -> ok; 3 checkstyle issues
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-java-maven --apply --force --config-file /tmp/cihub-audit/cihub-test-java-maven/.ci-hub.override.json` -> ok; set thresholds.max_checkstyle_errors=3
+- `rm /tmp/cihub-audit/cihub-test-java-maven/.ci-hub.override.json` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-maven add .ci-hub.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-maven commit -m "chore: relax checkstyle gate"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-maven push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref main --workflow hub-ci.yml` -> ok; run ID 21237551412
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21237551412` -> ok; triage bundle generated (0 failures)
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21237551412 --verify-tools` -> failed; no report.json yet
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21237551412 --verify-tools` -> failed; no report.json yet
+- `sleep 60` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21237551412 --verify-tools` -> ok; checkstyle/jacoco/pmd/spotbugs passed, owasp+pitest optional
+
+Current status:
+- Run 21237551412 verified green with tool evidence; owasp+pitest reported optional (configured but not required).
+
+## 2026-01-22 - hub-release (require_run_or_fail defaults)
+
+Repo type: Hub CLI (Python)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Make configured tools required by default; eliminate optional tools in verification.
+
+Commands and results:
+- `rg -n "optional|required|require_run_or_fail|verify-tools" cihub/services cihub/commands -S` -> ok
+- `sed -n '1,220p' cihub/commands/triage/verification.py` -> ok
+- `python - <<'PY' ...` -> ok; set all require_run_or_fail defaults + gates.tool_defaults to true in schema
+- `python -c "from cihub.commands.schema_sync import generate_defaults_yaml; generate_defaults_yaml()"` -> ok
+- `rg -n "require_run_or_fail" cihub/data/config/defaults.yaml | head -20` -> ok; defaults now true
+- `sed -n '1,80p' docs/development/CHANGELOG.md` -> ok
+- `sed -n '900,980p' cihub/data/schema/ci-hub-config.schema.json` -> ok
+- `python -m pytest tests/contracts/test_schema_contract.py tests/unit/services/ci_engine/test_ci_engine_gates.py` -> ok; 85 passed
+- `python -m cihub docs generate` -> ok; updated references
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok
+- `python -m cihub docs audit` -> ok with warnings; placeholder paths + repeated CHANGELOG dates
+
+Current status:
+- Schema + defaults updated to require configured tools to run by default.
+
 ## 2026-01-21 - hub-release (auto git install for new config features)
 
 Repo type: Hub CLI (Python)

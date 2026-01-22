@@ -36,14 +36,28 @@
     "customTool": {
       "description": "Custom tool definition (x- prefix). Allows extensibility for user-defined tools.",
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "type": "object",
           "properties": {
-            "enabled": { "default": true, "type": "boolean" },
-            "command": { "type": "string", "description": "Command to run for this tool" },
-            "fail_on_error": { "default": true, "type": "boolean" },
-            "require_run_or_fail": { "default": false, "type": "boolean" }
+            "enabled": {
+              "default": true,
+              "type": "boolean"
+            },
+            "command": {
+              "type": "string",
+              "description": "Command to run for this tool"
+            },
+            "fail_on_error": {
+              "default": true,
+              "type": "boolean"
+            },
+            "require_run_or_fail": {
+              "default": true,
+              "type": "boolean"
+            }
           },
           "additionalProperties": true
         }
@@ -52,13 +66,24 @@
     "sharedSbomTool": {
       "description": "SBOM generation tool (shared between Java and Python)",
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": false,
           "properties": {
-            "enabled": { "default": false, "type": "boolean" },
-            "format": { "default": "cyclonedx", "type": "string" },
-            "require_run_or_fail": { "default": false, "type": "boolean" }
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            },
+            "format": {
+              "default": "cyclonedx",
+              "type": "string"
+            },
+            "require_run_or_fail": {
+              "default": true,
+              "type": "boolean"
+            }
           },
           "type": "object"
         }
@@ -67,14 +92,29 @@
     "sharedSemgrepTool": {
       "description": "Semgrep SAST tool (shared between Java and Python)",
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": false,
           "properties": {
-            "enabled": { "default": false, "type": "boolean" },
-            "fail_on_findings": { "default": false, "type": "boolean" },
-            "max_findings": { "default": 0, "minimum": 0, "type": "integer" },
-            "require_run_or_fail": { "default": false, "type": "boolean" }
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            },
+            "fail_on_findings": {
+              "default": false,
+              "type": "boolean"
+            },
+            "max_findings": {
+              "default": 0,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "require_run_or_fail": {
+              "default": true,
+              "type": "boolean"
+            }
           },
           "type": "object"
         }
@@ -84,16 +124,30 @@
       "additionalProperties": false,
       "description": "CLI behavior toggles used by workflows and triage (debug/verbose/context/triage bundle).",
       "properties": {
-        "debug": { "default": false, "type": "boolean" },
-        "verbose": { "default": false, "type": "boolean" },
-        "debug_context": { "default": false, "type": "boolean" },
-        "emit_triage": { "default": false, "type": "boolean" }
+        "debug": {
+          "default": false,
+          "type": "boolean"
+        },
+        "verbose": {
+          "default": false,
+          "type": "boolean"
+        },
+        "debug_context": {
+          "default": false,
+          "type": "boolean"
+        },
+        "emit_triage": {
+          "default": false,
+          "type": "boolean"
+        }
       },
       "type": "object"
     },
     "hubCi": {
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": false,
           "description": "Configuration for hub's own CI pipeline (hub-production-ci.yml)",
@@ -122,9 +176,19 @@
                   "additionalProperties": {
                     "additionalProperties": false,
                     "properties": {
-                      "coverage_min": { "maximum": 100, "minimum": 0, "type": "integer" },
-                      "mutation_score_min": { "maximum": 100, "minimum": 0, "type": "integer" },
-                      "note": { "type": "string" }
+                      "coverage_min": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "mutation_score_min": {
+                        "maximum": 100,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "note": {
+                        "type": "string"
+                      }
                     },
                     "type": "object"
                   },
@@ -234,20 +298,42 @@
     "javaTools": {
       "additionalProperties": false,
       "patternProperties": {
-        "^x-[a-zA-Z0-9_-]+$": { "$ref": "#/definitions/customTool" }
+        "^x-[a-zA-Z0-9_-]+$": {
+          "$ref": "#/definitions/customTool"
+        }
       },
       "properties": {
         "checkstyle": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "config_file": { "type": ["string", "null"] },
-                "enabled": { "default": true, "type": "boolean" },
-                "fail_on_violation": { "default": true, "type": "boolean" },
-                "max_errors": { "default": 0, "minimum": 0, "type": "integer" },
-                "require_run_or_fail": { "default": true, "type": "boolean" }
+                "config_file": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "fail_on_violation": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "max_errors": {
+                  "default": 0,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -255,14 +341,33 @@
         },
         "codeql": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": false, "type": "boolean" },
-                "fail_on_error": { "default": true, "type": "boolean" },
-                "languages": { "default": ["java"], "items": { "type": "string" }, "type": "array" },
-                "require_run_or_fail": { "default": true, "type": "boolean" }
+                "enabled": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "fail_on_error": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "languages": {
+                  "default": [
+                    "java"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -270,18 +375,44 @@
         },
         "docker": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "compose_file": { "default": "docker-compose.yml", "type": "string" },
-                "dockerfile": { "default": "Dockerfile", "type": "string" },
-                "enabled": { "default": false, "type": "boolean" },
-                "fail_on_error": { "default": true, "type": "boolean" },
-                "fail_on_missing_compose": { "default": false, "type": "boolean" },
-                "health_endpoint": { "default": "/actuator/health", "type": "string" },
-                "health_timeout": { "default": 300, "type": "integer" },
-                "require_run_or_fail": { "default": false, "type": "boolean" }
+                "compose_file": {
+                  "default": "docker-compose.yml",
+                  "type": "string"
+                },
+                "dockerfile": {
+                  "default": "Dockerfile",
+                  "type": "string"
+                },
+                "enabled": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "fail_on_error": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "fail_on_missing_compose": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "health_endpoint": {
+                  "default": "/actuator/health",
+                  "type": "string"
+                },
+                "health_timeout": {
+                  "default": 300,
+                  "type": "integer"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -289,13 +420,26 @@
         },
         "jacoco": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": true, "type": "boolean" },
-                "min_coverage": { "default": 70, "maximum": 100, "minimum": 0, "type": "integer" },
-                "require_run_or_fail": { "default": true, "type": "boolean" }
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "min_coverage": {
+                  "default": 70,
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -303,12 +447,20 @@
         },
         "jqwik": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": false, "type": "boolean" },
-                "require_run_or_fail": { "default": false, "type": "boolean" }
+                "enabled": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -316,14 +468,30 @@
         },
         "owasp": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": true, "type": "boolean" },
-                "fail_on_cvss": { "default": 7, "maximum": 10, "minimum": 0, "type": "integer" },
-                "require_run_or_fail": { "default": false, "type": "boolean" },
-                "use_nvd_api_key": { "default": true, "type": "boolean" }
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "fail_on_cvss": {
+                  "default": 7,
+                  "maximum": 10,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "use_nvd_api_key": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -331,15 +499,34 @@
         },
         "pitest": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": true, "type": "boolean" },
-                "min_mutation_score": { "default": 70, "maximum": 100, "minimum": 0, "type": "integer" },
-                "require_run_or_fail": { "default": false, "type": "boolean" },
-                "threads": { "default": 4, "type": "integer" },
-                "timeout_multiplier": { "default": 2, "type": "integer" }
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "min_mutation_score": {
+                  "default": 70,
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "threads": {
+                  "default": 4,
+                  "type": "integer"
+                },
+                "timeout_multiplier": {
+                  "default": 2,
+                  "type": "integer"
+                }
               },
               "type": "object"
             }
@@ -347,33 +534,83 @@
         },
         "pmd": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": true, "type": "boolean" },
-                "fail_on_violation": { "default": false, "type": "boolean" },
-                "max_violations": { "default": 0, "minimum": 0, "type": "integer" },
-                "require_run_or_fail": { "default": false, "type": "boolean" }
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "fail_on_violation": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "max_violations": {
+                  "default": 0,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
           ]
         },
-        "semgrep": { "$ref": "#/definitions/sharedSemgrepTool" },
-        "sbom": { "$ref": "#/definitions/sharedSbomTool" },
+        "semgrep": {
+          "$ref": "#/definitions/sharedSemgrepTool"
+        },
+        "sbom": {
+          "$ref": "#/definitions/sharedSbomTool"
+        },
         "spotbugs": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "effort": { "default": "max", "enum": ["min", "default", "max"], "type": "string" },
-                "enabled": { "default": true, "type": "boolean" },
-                "fail_on_error": { "default": true, "type": "boolean" },
-                "max_bugs": { "default": 0, "minimum": 0, "type": "integer" },
-                "require_run_or_fail": { "default": true, "type": "boolean" },
-                "threshold": { "default": "medium", "enum": ["low", "medium", "high"], "type": "string" }
+                "effort": {
+                  "default": "max",
+                  "enum": [
+                    "min",
+                    "default",
+                    "max"
+                  ],
+                  "type": "string"
+                },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "fail_on_error": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "max_bugs": {
+                  "default": 0,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "threshold": {
+                  "default": "medium",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high"
+                  ],
+                  "type": "string"
+                }
               },
               "type": "object"
             }
@@ -381,15 +618,34 @@
         },
         "trivy": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": false, "type": "boolean" },
-                "fail_on_critical": { "default": false, "type": "boolean" },
-                "fail_on_cvss": { "default": 7, "maximum": 10, "minimum": 0, "type": "integer" },
-                "fail_on_high": { "default": false, "type": "boolean" },
-                "require_run_or_fail": { "default": true, "type": "boolean" }
+                "enabled": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "fail_on_critical": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "fail_on_cvss": {
+                  "default": 7,
+                  "maximum": 10,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "fail_on_high": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -401,12 +657,16 @@
     "pythonTools": {
       "additionalProperties": false,
       "patternProperties": {
-        "^x-[a-zA-Z0-9_-]+$": { "$ref": "#/definitions/customTool" }
+        "^x-[a-zA-Z0-9_-]+$": {
+          "$ref": "#/definitions/customTool"
+        }
       },
       "properties": {
         "bandit": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
@@ -437,7 +697,9 @@
         },
         "black": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
@@ -455,7 +717,7 @@
                   "type": "integer"
                 },
                 "require_run_or_fail": {
-                  "default": false,
+                  "default": true,
                   "type": "boolean"
                 }
               },
@@ -465,7 +727,9 @@
         },
         "codeql": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
@@ -478,8 +742,12 @@
                   "type": "boolean"
                 },
                 "languages": {
-                  "default": ["python"],
-                  "items": { "type": "string" },
+                  "default": [
+                    "python"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
                   "type": "array"
                 },
                 "require_run_or_fail": {
@@ -493,17 +761,40 @@
         },
         "docker": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "compose_file": { "default": "docker-compose.yml", "type": "string" },
-                "enabled": { "default": false, "type": "boolean" },
-                "fail_on_error": { "default": true, "type": "boolean" },
-                "fail_on_missing_compose": { "default": false, "type": "boolean" },
-                "health_endpoint": { "default": "/actuator/health", "type": "string" },
-                "health_timeout": { "default": 300, "type": "integer" },
-                "require_run_or_fail": { "default": false, "type": "boolean" }
+                "compose_file": {
+                  "default": "docker-compose.yml",
+                  "type": "string"
+                },
+                "enabled": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "fail_on_error": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "fail_on_missing_compose": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "health_endpoint": {
+                  "default": "/actuator/health",
+                  "type": "string"
+                },
+                "health_timeout": {
+                  "default": 300,
+                  "type": "integer"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -511,12 +802,20 @@
         },
         "hypothesis": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": true, "type": "boolean" },
-                "require_run_or_fail": { "default": false, "type": "boolean" }
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -524,14 +823,29 @@
         },
         "isort": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": true, "type": "boolean" },
-                "fail_on_issues": { "default": false, "type": "boolean" },
-                "max_issues": { "default": 0, "minimum": 0, "type": "integer" },
-                "require_run_or_fail": { "default": false, "type": "boolean" }
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "fail_on_issues": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "max_issues": {
+                  "default": 0,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -539,12 +853,22 @@
         },
         "mutmut": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": false, "type": "boolean" },
-                "min_mutation_score": { "default": 70, "maximum": 100, "minimum": 0, "type": "integer" },
+                "enabled": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "min_mutation_score": {
+                  "default": 70,
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "min_score": {
                   "default": 70,
                   "description": "DEPRECATED: alias for min_mutation_score (will be removed in a future schema version)",
@@ -552,8 +876,14 @@
                   "minimum": 0,
                   "type": "integer"
                 },
-                "require_run_or_fail": { "default": false, "type": "boolean" },
-                "timeout_minutes": { "default": 15, "type": "integer" }
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "timeout_minutes": {
+                  "default": 15,
+                  "type": "integer"
+                }
               },
               "type": "object"
             }
@@ -561,12 +891,20 @@
         },
         "mypy": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": false, "type": "boolean" },
-                "require_run_or_fail": { "default": false, "type": "boolean" }
+                "enabled": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -574,13 +912,24 @@
         },
         "pip_audit": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": true, "type": "boolean" },
-                "fail_on_vuln": { "default": true, "type": "boolean" },
-                "require_run_or_fail": { "default": true, "type": "boolean" }
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "fail_on_vuln": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -588,24 +937,49 @@
         },
         "pytest": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": true, "type": "boolean" },
-                "fail_fast": { "default": false, "type": "boolean" },
-                "min_coverage": { "default": 70, "maximum": 100, "minimum": 0, "type": "integer" },
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "fail_fast": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "min_coverage": {
+                  "default": 70,
+                  "maximum": 100,
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "args": {
                   "oneOf": [
-                    { "type": "string" },
-                    { "type": "array", "items": { "type": "string" } }
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
                   ]
                 },
                 "env": {
                   "type": "object",
-                  "additionalProperties": { "type": "string" }
+                  "additionalProperties": {
+                    "type": "string"
+                  }
                 },
-                "require_run_or_fail": { "default": true, "type": "boolean" }
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -613,32 +987,70 @@
         },
         "ruff": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": true, "type": "boolean" },
-                "fail_on_error": { "default": true, "type": "boolean" },
-                "max_errors": { "default": 0, "minimum": 0, "type": "integer" },
-                "require_run_or_fail": { "default": true, "type": "boolean" }
+                "enabled": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "fail_on_error": {
+                  "default": true,
+                  "type": "boolean"
+                },
+                "max_errors": {
+                  "default": 0,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
           ]
         },
-        "sbom": { "$ref": "#/definitions/sharedSbomTool" },
-        "semgrep": { "$ref": "#/definitions/sharedSemgrepTool" },
+        "sbom": {
+          "$ref": "#/definitions/sharedSbomTool"
+        },
+        "semgrep": {
+          "$ref": "#/definitions/sharedSemgrepTool"
+        },
         "trivy": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
-                "enabled": { "default": false, "type": "boolean" },
-                "fail_on_critical": { "default": false, "type": "boolean" },
-                "fail_on_cvss": { "default": 7, "maximum": 10, "minimum": 0, "type": "number" },
-                "fail_on_high": { "default": false, "type": "boolean" },
-                "require_run_or_fail": { "default": true, "type": "boolean" }
+                "enabled": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "fail_on_critical": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "fail_on_cvss": {
+                  "default": 7,
+                  "maximum": 10,
+                  "minimum": 0,
+                  "type": "number"
+                },
+                "fail_on_high": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "require_run_or_fail": {
+                  "default": true,
+                  "type": "boolean"
+                }
               },
               "type": "object"
             }
@@ -652,7 +1064,9 @@
       "properties": {
         "badges": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
@@ -671,7 +1085,9 @@
         },
         "codecov": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
@@ -690,7 +1106,9 @@
         },
         "github_summary": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
@@ -816,7 +1234,9 @@
     },
     "cache_sentinel": {
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": true,
           "properties": {
@@ -831,7 +1251,9 @@
     },
     "canary": {
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": true,
           "properties": {
@@ -846,7 +1268,9 @@
     },
     "chaos": {
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": true,
           "properties": {
@@ -861,7 +1285,9 @@
     },
     "dr_drill": {
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": true,
           "properties": {
@@ -876,7 +1302,9 @@
     },
     "egress_control": {
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": true,
           "properties": {
@@ -913,7 +1341,7 @@
       "description": "Gate policies for require_run_or_fail behavior",
       "properties": {
         "require_run_or_fail": {
-          "default": false,
+          "default": true,
           "description": "Global default: fail CI if configured tool didn't run",
           "type": "boolean"
         },
@@ -921,27 +1349,90 @@
           "additionalProperties": false,
           "description": "Per-tool require_run_or_fail defaults",
           "properties": {
-            "pytest": { "type": "boolean", "default": true },
-            "ruff": { "type": "boolean", "default": true },
-            "bandit": { "type": "boolean", "default": true },
-            "pip_audit": { "type": "boolean", "default": true },
-            "mypy": { "type": "boolean", "default": false },
-            "black": { "type": "boolean", "default": false },
-            "isort": { "type": "boolean", "default": false },
-            "mutmut": { "type": "boolean", "default": false },
-            "hypothesis": { "type": "boolean", "default": false },
-            "semgrep": { "type": "boolean", "default": false },
-            "trivy": { "type": "boolean", "default": true },
-            "codeql": { "type": "boolean", "default": true },
-            "docker": { "type": "boolean", "default": false },
-            "sbom": { "type": "boolean", "default": false },
-            "jacoco": { "type": "boolean", "default": true },
-            "checkstyle": { "type": "boolean", "default": true },
-            "spotbugs": { "type": "boolean", "default": true },
-            "pmd": { "type": "boolean", "default": false },
-            "owasp": { "type": "boolean", "default": true },
-            "pitest": { "type": "boolean", "default": false },
-            "jqwik": { "type": "boolean", "default": false }
+            "pytest": {
+              "type": "boolean",
+              "default": true
+            },
+            "ruff": {
+              "type": "boolean",
+              "default": true
+            },
+            "bandit": {
+              "type": "boolean",
+              "default": true
+            },
+            "pip_audit": {
+              "type": "boolean",
+              "default": true
+            },
+            "mypy": {
+              "type": "boolean",
+              "default": true
+            },
+            "black": {
+              "type": "boolean",
+              "default": true
+            },
+            "isort": {
+              "type": "boolean",
+              "default": true
+            },
+            "mutmut": {
+              "type": "boolean",
+              "default": true
+            },
+            "hypothesis": {
+              "type": "boolean",
+              "default": true
+            },
+            "semgrep": {
+              "type": "boolean",
+              "default": true
+            },
+            "trivy": {
+              "type": "boolean",
+              "default": true
+            },
+            "codeql": {
+              "type": "boolean",
+              "default": true
+            },
+            "docker": {
+              "type": "boolean",
+              "default": true
+            },
+            "sbom": {
+              "type": "boolean",
+              "default": true
+            },
+            "jacoco": {
+              "type": "boolean",
+              "default": true
+            },
+            "checkstyle": {
+              "type": "boolean",
+              "default": true
+            },
+            "spotbugs": {
+              "type": "boolean",
+              "default": true
+            },
+            "pmd": {
+              "type": "boolean",
+              "default": true
+            },
+            "owasp": {
+              "type": "boolean",
+              "default": true
+            },
+            "pitest": {
+              "type": "boolean",
+              "default": true
+            },
+            "jqwik": {
+              "type": "boolean",
+              "default": true
+            }
           },
           "type": "object"
         }
@@ -984,7 +1475,9 @@
     },
     "kyverno": {
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": true,
           "properties": {
@@ -1010,7 +1503,9 @@
       "properties": {
         "email": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
@@ -1053,7 +1548,9 @@
         },
         "slack": {
           "oneOf": [
-            { "type": "boolean" },
+            {
+              "type": "boolean"
+            },
             {
               "additionalProperties": false,
               "properties": {
@@ -1197,14 +1694,25 @@
     "install": {
       "description": "How cihub should be installed in CI workflows",
       "oneOf": [
-        { "type": "string", "enum": ["pypi", "git", "local"] },
+        {
+          "type": "string",
+          "enum": [
+            "pypi",
+            "git",
+            "local"
+          ]
+        },
         {
           "additionalProperties": false,
           "properties": {
             "source": {
               "default": "pypi",
               "description": "Install source: pypi (from PyPI, default), git (from git URL), local (editable checkout)",
-              "enum": ["pypi", "git", "local"],
+              "enum": [
+                "pypi",
+                "git",
+                "local"
+              ],
               "type": "string"
             }
           },
@@ -1218,14 +1726,20 @@
     "harden_runner": {
       "description": "StepSecurity harden-runner configuration for workflow security hardening",
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": false,
           "properties": {
             "policy": {
               "default": "audit",
               "description": "Harden-runner policy: audit (log only), block (deny unauthorized), or disabled",
-              "enum": ["audit", "block", "disabled"],
+              "enum": [
+                "audit",
+                "block",
+                "disabled"
+              ],
               "type": "string"
             }
           },
@@ -1235,7 +1749,9 @@
     },
     "runner_isolation": {
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": true,
           "properties": {
@@ -1250,7 +1766,9 @@
     },
     "supply_chain": {
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": true,
           "properties": {
@@ -1265,7 +1783,9 @@
     },
     "telemetry": {
       "oneOf": [
-        { "type": "boolean" },
+        {
+          "type": "boolean"
+        },
         {
           "additionalProperties": true,
           "properties": {

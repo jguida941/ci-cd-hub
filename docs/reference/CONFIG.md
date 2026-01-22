@@ -16,29 +16,29 @@ Source: `schema/ci-hub-config.schema.json`
 | `extra_tests[].command` | string | yes |  |  |
 | `extra_tests[].name` | string | yes |  |  |
 | `gates` | object | no |  | Gate policies for require_run_or_fail behavior |
-| `gates.require_run_or_fail` | boolean | no | false | Global default: fail CI if configured tool didn't run |
+| `gates.require_run_or_fail` | boolean | no | true | Global default: fail CI if configured tool didn't run |
 | `gates.tool_defaults` | object | no |  | Per-tool require_run_or_fail defaults |
 | `gates.tool_defaults.pytest` | boolean | no | true |  |
 | `gates.tool_defaults.ruff` | boolean | no | true |  |
 | `gates.tool_defaults.bandit` | boolean | no | true |  |
 | `gates.tool_defaults.pip_audit` | boolean | no | true |  |
-| `gates.tool_defaults.mypy` | boolean | no | false |  |
-| `gates.tool_defaults.black` | boolean | no | false |  |
-| `gates.tool_defaults.isort` | boolean | no | false |  |
-| `gates.tool_defaults.mutmut` | boolean | no | false |  |
-| `gates.tool_defaults.hypothesis` | boolean | no | false |  |
-| `gates.tool_defaults.semgrep` | boolean | no | false |  |
+| `gates.tool_defaults.mypy` | boolean | no | true |  |
+| `gates.tool_defaults.black` | boolean | no | true |  |
+| `gates.tool_defaults.isort` | boolean | no | true |  |
+| `gates.tool_defaults.mutmut` | boolean | no | true |  |
+| `gates.tool_defaults.hypothesis` | boolean | no | true |  |
+| `gates.tool_defaults.semgrep` | boolean | no | true |  |
 | `gates.tool_defaults.trivy` | boolean | no | true |  |
 | `gates.tool_defaults.codeql` | boolean | no | true |  |
-| `gates.tool_defaults.docker` | boolean | no | false |  |
-| `gates.tool_defaults.sbom` | boolean | no | false |  |
+| `gates.tool_defaults.docker` | boolean | no | true |  |
+| `gates.tool_defaults.sbom` | boolean | no | true |  |
 | `gates.tool_defaults.jacoco` | boolean | no | true |  |
 | `gates.tool_defaults.checkstyle` | boolean | no | true |  |
 | `gates.tool_defaults.spotbugs` | boolean | no | true |  |
-| `gates.tool_defaults.pmd` | boolean | no | false |  |
+| `gates.tool_defaults.pmd` | boolean | no | true |  |
 | `gates.tool_defaults.owasp` | boolean | no | true |  |
-| `gates.tool_defaults.pitest` | boolean | no | false |  |
-| `gates.tool_defaults.jqwik` | boolean | no | false |  |
+| `gates.tool_defaults.pitest` | boolean | no | true |  |
+| `gates.tool_defaults.jqwik` | boolean | no | true |  |
 | `hub_ci` | boolean|object | no |  |  |
 | `java` | object | no |  |  |
 | `java.build_tool` | string | no | maven |  |

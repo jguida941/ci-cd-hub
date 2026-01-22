@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-22 - Require Run Defaults
+
+### Change: Configured tools must run
+
+- Defaulted `require_run_or_fail` to true for all tools and the global gate.
+- Added ADR-0071 documenting the policy.
+
 ## 2026-01-21 - GitHub Auth Fallback
 
 ### Fix: Dispatch token fallback via gh
