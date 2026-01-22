@@ -33,6 +33,10 @@ All notable changes to this project will be documented in this file.
 
 - `cihub init` no longer drops `repo.targets` when re-running on an existing monorepo config.
 
+### Fix: OWASP JSON report output
+
+- OWASP dependency-check now forces JSON output so CI evidence is always generated.
+
 ## 2026-01-21 - Tool Evidence + Monorepo Targets
 
 ### Fix: Verified tool evidence

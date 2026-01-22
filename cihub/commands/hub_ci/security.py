@@ -371,7 +371,14 @@ def cmd_security_owasp(args: argparse.Namespace) -> CommandResult:
     proc = None
     if ensure_executable(mvnw):
         proc = _run_command(
-            ["./mvnw", "-B", "-ntp", "org.owasp:dependency-check-maven:check", "-DfailBuildOnCVSS=11"],
+            [
+                "./mvnw",
+                "-B",
+                "-ntp",
+                "org.owasp:dependency-check-maven:check",
+                "-DfailBuildOnCVSS=11",
+                "-Dformat=JSON",
+            ],
             repo_path,
         )
     else:

@@ -282,8 +282,9 @@ def run_owasp(
         nvd_flags.append(f"-DnvdApiKey={nvd_key}")
     else:
         nvd_flags.extend(["-DautoUpdate=false", "-DfailOnError=false"])
+    format_flag = "-Dformat=JSON"
     if build_tool == "gradle":
-        cmd = _gradle_cmd(workdir) + ["dependencyCheckAnalyze", "--continue", *nvd_flags]
+        cmd = _gradle_cmd(workdir) + ["dependencyCheckAnalyze", "--continue", format_flag, *nvd_flags]
     else:
         cmd = _maven_cmd(workdir) + [
             "-B",
@@ -294,6 +295,7 @@ def run_owasp(
             "-DnvdMaxRetryCount=10",
             "-Ddependencycheck.failOnError=false",
             "-DfailOnError=false",
+            format_flag,
             *nvd_flags,
         ]
     proc = shared._run_tool_command("owasp", cmd, workdir, output_dir, env=env)
