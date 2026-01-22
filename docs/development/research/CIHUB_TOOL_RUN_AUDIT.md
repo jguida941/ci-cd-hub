@@ -2147,3 +2147,4 @@ Commands and results:
 - `rg -n "build_tool|detect_build|gradle|maven" cihub/core/languages/java.py cihub/utils/java_* cihub/services/ci_engine -g'*.py'` -> ok
 - `python -m pytest tests/unit/commands/test_run.py` -> failed (mutmut timeout assertion)
 - `python -m pytest tests/unit/commands/test_run.py` -> ok (26 passed)
+- `python -m cihub run owasp --repo /Users/jguida941/new_github_projects/hub-release/.cihub-audit/java-spring-tutorials --language java --output-dir .cihub` -> ok; output `.cihub/tool-outputs/owasp.json`, report in `modules/01-spring-hello-rest/target/dependency-check-report.json`
