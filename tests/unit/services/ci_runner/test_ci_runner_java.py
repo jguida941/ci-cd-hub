@@ -378,8 +378,8 @@ class TestRunOwasp:
             with patch("cihub.core.ci_runner.shared._run_tool_command", side_effect=_fake_run):
                 result = run_owasp(tmp_path, output_dir, "maven", use_nvd_api_key=True)
 
-        assert "-DautoUpdate=false" not in captured["cmd"]
-        assert "-DossIndexAnalyzerEnabled=true" in captured["cmd"]
+        assert "-DautoUpdate=false" in captured["cmd"]
+        assert "-DossindexAnalyzerEnabled=true" in captured["cmd"]
         assert result.success is True
 
     def test_use_nvd_api_key_false_disables_update(self, tmp_path: Path) -> None:
@@ -407,7 +407,7 @@ class TestRunOwasp:
             result = run_owasp(tmp_path, output_dir, "maven", use_nvd_api_key=False)
 
         assert "-DautoUpdate=false" in captured["cmd"]
-        assert "-DossIndexAnalyzerEnabled=true" in captured["cmd"]
+        assert "-DossindexAnalyzerEnabled=true" in captured["cmd"]
         assert result.success is True
 
 

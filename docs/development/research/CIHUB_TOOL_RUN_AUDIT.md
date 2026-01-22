@@ -2181,3 +2181,5 @@ Commands and results:
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok (no stale refs)
 - `python -m cihub docs audit` -> ok; warnings about local_path placeholders remain
+- `unzip -p ~/.m2/repository/org/owasp/dependency-check-maven/9.0.9/dependency-check-maven-9.0.9.jar META-INF/maven/plugin.xml | rg -n "nvd|skip|oss" | head -n 40` -> ok; confirmed ossindexAnalyzerEnabled property name
+- `python -m pytest tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_maven_includes_json_format tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_missing_nvd_key_allows_update tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_use_nvd_api_key_false_disables_update` -> ok (3 passed)
