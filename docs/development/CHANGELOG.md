@@ -21,6 +21,10 @@ All notable changes to this project will be documented in this file.
 
 - `cihub ci` runs `mvn -DskipTests install` before Maven plugin tools for multi-module projects (ADR-0068).
 
+### Fix: Auto-select git install for new config features
+
+- `cihub init`/`cihub update` now set `install.source: git` when configs use `repo.targets` or pytest `args/env` to ensure CI installs a compatible cihub build.
+
 ## 2026-01-21 - Tool Evidence + Monorepo Targets
 
 ### Fix: Verified tool evidence

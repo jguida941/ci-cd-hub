@@ -11,6 +11,7 @@ from pathlib import Path
 import yaml
 
 from cihub.ci_config import load_ci_config
+from cihub.commands.config_policy import ensure_git_install_source
 from cihub.commands.pom import apply_dependency_fixes, apply_pom_fixes
 from cihub.config.inputs import ConfigInputError, load_config_override
 from cihub.config.io import load_yaml_file, save_yaml_file
@@ -214,10 +215,23 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
     if language:
         repo_config["language"] = language
     config["repo"] = repo_config
-    if language == "java":
-        config.pop("python", None)
-    elif language == "python":
-        config.pop("java", None)
+    targets_cfg = repo_config.get("targets")
+    multi_target = isinstance(targets_cfg, list) and len(targets_cfg) > 0
+    if not multi_target:
+        if language == "java":
+            config.pop("python", None)
+        elif language == "python":
+            config.pop("java", None)
+    install_warnings: list[dict[str, str]] = []
+    if ensure_git_install_source(config, install_from):
+        install_warnings.append(
+            {
+                "severity": "warning",
+                "message": "install.source set to git due to repo targets or pytest args/env usage",
+                "code": "CIHUB-INIT-INSTALL-GIT",
+                "file": str(config_path),
+            }
+        )
     final_owner = repo_config.get("owner", owner)
     final_name = repo_config.get("name", name)
     final_branch = repo_config.get("default_branch", repo_config.get("branch", branch))
@@ -356,6 +370,7 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
     ]
     problems.extend(pom_warning_problems)
     problems.extend(hub_vars_problems)
+    problems.extend(install_warnings)
 
     data = {
         "language": language,

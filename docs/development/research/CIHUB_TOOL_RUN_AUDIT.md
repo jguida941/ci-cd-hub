@@ -5,6 +5,89 @@ Owner: Development Team
 Source-of-truth: manual
 Last-reviewed: 2026-01-21
 
+## 2026-01-21 - hub-release (auto git install for new config features)
+
+Repo type: Hub CLI (Python)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Force `install.source=git` when config uses repo.targets or pytest args/env to avoid PyPI schema lag.
+
+Changes:
+- Added `ensure_git_install_source` policy helper for init/update
+- Init now preserves both language blocks for repo.targets
+- Update/init now auto-set install source to git when needed
+- Added init/update tests for the new install policy
+
+Commands and results:
+- `git push` -> failed; non-fast-forward (needed rebase)
+- `git pull --rebase` -> ok; rebased main
+- `git push` -> ok; pushed main
+- `git tag -f v1` -> ok; updated tag locally
+- `git push -f origin v1` -> ok; forced remote v1 update
+- `python -m pytest tests/unit/commands/test_commands.py::TestCmdInit::test_init_sets_install_git_for_targets tests/unit/commands/test_commands.py::TestCmdInit::test_init_sets_install_git_for_pytest_args tests/unit/commands/test_commands_extended.py::TestUpdateEdgeCases::test_update_sets_install_git_for_targets` -> ok; 3 passed
+- `python -m cihub docs generate` -> ok; updated reference docs
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok
+- `python -m cihub docs audit` -> ok with warnings; placeholder paths + repeated CHANGELOG dates
+- `python -m cihub docs generate` -> ok; updated reference docs (rerun after audit log update)
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok
+- `python -m cihub docs audit` -> ok with warnings; placeholder paths + repeated CHANGELOG dates
+
+## 2026-01-21 - gitui (re-prove via cihub-only, CI failures)
+
+Repo type: Python GUI (PySide6)
+Repo path: `/var/folders/6_/_15pvmxd7yq5qrnmzr92dkr00000gn/T/cihub-proof.t4tc2zPoS1/gitui`
+Goal: Delete workflow, regenerate via cihub, dispatch, triage.
+
+Commands and results:
+- `mktemp -d -t cihub-proof` -> ok; created `/var/folders/6_/_15pvmxd7yq5qrnmzr92dkr00000gn/T/cihub-proof.t4tc2zPoS1`
+- `git clone https://github.com/jguida941/gitui .../gitui` -> ok
+- `ls -la .../gitui/.github/workflows` -> ok; hub-ci.yml present
+- `git -C .../gitui rm -f .github/workflows/hub-ci.yml` -> ok
+- `git -C .../gitui commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `git -C .../gitui push` -> ok
+- `python - <<'PY' ...` -> ok; wrote `.ci-hub.override.json` (pytest args/env)
+- `python -m cihub init --repo .../gitui --apply --force --config-file .../.ci-hub.override.json` -> ok; hub vars set; hub-ci.yml generated
+- `rm .../gitui/.ci-hub.override.json` -> ok
+- `git -C .../gitui add .github/workflows/hub-ci.yml` -> ok
+- `git -C .../gitui commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C .../gitui push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo gitui --ref main --workflow hub-ci.yml` -> ok; run ID 21232146544
+- `python -m cihub triage --repo jguida941/gitui --run 21232146544` -> ok; triage bundle generated
+- `python -m cihub triage --repo jguida941/gitui --run 21232146544 --verify-tools` -> failed; no report.json
+- `sleep 30` -> ok
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/gitui --latest --verify-tools` -> failed; bandit/hypothesis/pytest failed
+- `CIHUB_VERBOSE=True python -m cihub ci --repo .../gitui --install-deps --output-dir .../.cihub-local` -> ok; pytest passed, bandit passed; warning: Codecov uploader missing
+
+Current status:
+- CI run 21232146544 failed in verify-tools (bandit/hypothesis/pytest). Local run passes, suggesting PyPI install lag.
+
+## 2026-01-21 - cihub-test-monorepo (re-prove via cihub-only, config validation fail)
+
+Repo type: Monorepo (Python + Java)
+Repo path: `/var/folders/6_/_15pvmxd7yq5qrnmzr92dkr00000gn/T/cihub-proof.t4tc2zPoS1/cihub-test-monorepo`
+Goal: Delete workflow, regenerate via cihub with repo.targets, dispatch, triage.
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-monorepo .../cihub-test-monorepo` -> ok
+- `ls -la .../cihub-test-monorepo/.github/workflows` -> ok; hub-ci.yml present
+- `git -C .../cihub-test-monorepo rm -f .github/workflows/hub-ci.yml` -> ok
+- `git -C .../cihub-test-monorepo commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `git -C .../cihub-test-monorepo push` -> ok
+- `python - <<'PY' ...` -> ok; wrote `.ci-hub.override.json` (repo.targets)
+- `python -m cihub init --repo .../cihub-test-monorepo --apply --force --config-file .../.ci-hub.override.json` -> ok; WARN pom.xml not found; hub-ci.yml generated
+- `rm .../cihub-test-monorepo/.ci-hub.override.json` -> ok
+- `git -C .../cihub-test-monorepo add .ci-hub.yml .github/workflows/hub-ci.yml` -> ok
+- `git -C .../cihub-test-monorepo commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C .../cihub-test-monorepo push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-monorepo --ref main --workflow hub-ci.yml` -> ok; run ID 21232198675
+- `python -m cihub triage --repo jguida941/cihub-test-monorepo --run 21232198675` -> ok; triage bundle generated
+- `python -m cihub triage --repo jguida941/cihub-test-monorepo --run 21232198675 --verify-tools` -> failed; no report.json
+- `GH_TOKEN=$(gh auth token) python -m cihub triage --repo jguida941/cihub-test-monorepo --latest` -> failed; config validation failed for merged-config
+
+Current status:
+- CI run 21232198675 failed due to config validation (likely PyPI install lag with repo.targets).
+
 ## 2026-01-21 - hub-release (hub-ci monorepo routing)
 
 Repo type: Hub CLI (Python)

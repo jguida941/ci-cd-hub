@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from unittest import mock
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -837,6 +839,58 @@ java:
         config_text = (tmp_path / ".ci-hub.yml").read_text()
         # Existing values should be preserved through merge
         assert "existing-owner" in config_text or "existing-name" in config_text
+
+    def test_update_sets_install_git_for_targets(self, tmp_path: Path) -> None:
+        """Update forces git install when repo targets are configured."""
+        config_content = """
+repo:
+  owner: test
+  name: example
+  default_branch: main
+  targets:
+  - language: python
+    subdir: python
+  - language: java
+    subdir: java
+language: java
+install:
+  source: pypi
+python:
+  version: '3.12'
+  tools:
+    pytest:
+      enabled: true
+java:
+  version: '21'
+  build_tool: maven
+  tools:
+    jacoco:
+      enabled: true
+"""
+        (tmp_path / ".ci-hub.yml").write_text(config_content, encoding="utf-8")
+        (tmp_path / "pyproject.toml").write_text("[project]\nname='example'\n", encoding="utf-8")
+        args = argparse.Namespace(
+            repo=str(tmp_path),
+            language=None,
+            owner=None,
+            name=None,
+            branch=None,
+            subdir="",
+            dry_run=False,
+            apply=True,
+            force=True,
+            fix_pom=False,
+            json=False,
+        )
+        result = cmd_update(args)
+        assert result.exit_code == 0
+        config = yaml.safe_load((tmp_path / ".ci-hub.yml").read_text(encoding="utf-8"))
+        install_cfg = config.get("install")
+        if isinstance(install_cfg, dict):
+            source = install_cfg.get("source")
+        else:
+            source = install_cfg
+        assert source == "git"
 
     def test_update_with_language_override(self, tmp_path: Path) -> None:
         """Update respects language override."""

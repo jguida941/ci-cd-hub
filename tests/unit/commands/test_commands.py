@@ -10,6 +10,8 @@ import json
 import sys
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -425,6 +427,74 @@ class TestCmdInit:
         assert config_path.exists()
         config_text = config_path.read_text()
         assert subdir in config_text
+
+    def test_init_sets_install_git_for_targets(self, tmp_path: Path) -> None:
+        """Init forces git install when repo targets are configured."""
+        (tmp_path / "pyproject.toml").write_text("[project]\nname='example'\n", encoding="utf-8")
+        args = argparse.Namespace(
+            repo=str(tmp_path),
+            language="python",
+            owner="testowner",
+            name="testrepo",
+            branch="main",
+            subdir="",
+            wizard=False,
+            dry_run=False,
+            apply=True,
+            force=False,
+            fix_pom=False,
+            install_from="pypi",
+            config_json=None,
+            config_file=None,
+            config_override={"repo": {"targets": [{"language": "python", "subdir": "python"}]}},
+            set_hub_vars=False,
+            hub_repo=None,
+            hub_ref=None,
+            json=False,
+        )
+        result = cmd_init(args)
+        assert result.exit_code == 0
+        config = yaml.safe_load((tmp_path / ".ci-hub.yml").read_text(encoding="utf-8"))
+        install_cfg = config.get("install")
+        if isinstance(install_cfg, dict):
+            source = install_cfg.get("source")
+        else:
+            source = install_cfg
+        assert source == "git"
+
+    def test_init_sets_install_git_for_pytest_args(self, tmp_path: Path) -> None:
+        """Init forces git install when pytest args/env are configured."""
+        (tmp_path / "pyproject.toml").write_text("[project]\nname='example'\n", encoding="utf-8")
+        args = argparse.Namespace(
+            repo=str(tmp_path),
+            language="python",
+            owner="testowner",
+            name="testrepo",
+            branch="main",
+            subdir="",
+            wizard=False,
+            dry_run=False,
+            apply=True,
+            force=False,
+            fix_pom=False,
+            install_from="pypi",
+            config_json=None,
+            config_file=None,
+            config_override={"python": {"tools": {"pytest": {"args": ["-k", "not ui"]}}}},
+            set_hub_vars=False,
+            hub_repo=None,
+            hub_ref=None,
+            json=False,
+        )
+        result = cmd_init(args)
+        assert result.exit_code == 0
+        config = yaml.safe_load((tmp_path / ".ci-hub.yml").read_text(encoding="utf-8"))
+        install_cfg = config.get("install")
+        if isinstance(install_cfg, dict):
+            source = install_cfg.get("source")
+        else:
+            source = install_cfg
+        assert source == "git"
 
     def test_init_detects_language_from_subdir(self, tmp_path: Path) -> None:
         """Init detects language using the subdir when provided."""

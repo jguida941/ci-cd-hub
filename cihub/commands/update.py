@@ -10,6 +10,7 @@ from pathlib import Path
 import yaml
 
 from cihub.ci_config import load_ci_config
+from cihub.commands.config_policy import ensure_git_install_source
 from cihub.commands.pom import apply_dependency_fixes, apply_pom_fixes
 from cihub.config.io import load_yaml_file, save_yaml_file
 from cihub.config.merge import deep_merge
@@ -99,6 +100,16 @@ def cmd_update(args: argparse.Namespace) -> CommandResult:
 
     base = build_repo_config(language, owner, name, branch, subdir=subdir)
     merged = deep_merge(base, existing)
+    install_warnings: list[dict[str, str]] = []
+    if ensure_git_install_source(merged):
+        install_warnings.append(
+            {
+                "severity": "warning",
+                "message": "install.source set to git due to repo targets or pytest args/env usage",
+                "code": "CIHUB-UPDATE-INSTALL-GIT",
+                "file": str(config_path),
+            }
+        )
 
     # Prepare output for dry run mode
     raw_output = ""
@@ -149,6 +160,7 @@ def cmd_update(args: argparse.Namespace) -> CommandResult:
     # Build final result
     summary = "Dry run complete" if dry_run else "Update complete"
     problems.extend(pom_warning_problems)
+    problems.extend(install_warnings)
     exit_code = EXIT_SUCCESS
     files_modified = [str(config_path), str(workflow_path)] if not dry_run else []
     data: dict[str, object] = {
