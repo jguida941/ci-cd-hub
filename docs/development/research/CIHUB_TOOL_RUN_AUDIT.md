@@ -1631,3 +1631,80 @@ Commands and results:
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok
 - `python -m cihub docs audit` -> ok (warnings: placeholder paths, repeated CHANGELOG dates)
+
+## 2026-01-22 - hub-release OWASP/NVD fixes (local)
+
+Repo type: Hub CLI (OWASP Gradle handling)
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Resolve OWASP Gradle failures without NVD key; keep evidence and warnings.
+
+Commands and results:
+- `python -m pytest tests/unit/utils/test_java_gradle.py` -> ok
+- `git commit -m "fix: make owasp suppression optional in gradle"` -> ok
+- `git push` -> ok
+- `git tag -f v1` -> ok
+- `git push -f origin v1` -> ok
+- `python -m cihub docs generate` -> ok
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok
+- `python -m cihub docs audit` -> ok (warnings: placeholder paths, repeated CHANGELOG dates)
+- `python -m pytest tests/unit/utils/test_java_gradle.py` -> ok
+- `git commit -m "fix: keep owasp gradle auto-update enabled"` -> ok
+- `git push` -> ok
+- `git tag -f v1` -> ok
+- `git push -f origin v1` -> ok
+- `python -m cihub docs generate` -> ok
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok
+- `python -m cihub docs audit` -> ok (warnings: placeholder paths, repeated CHANGELOG dates)
+- `python -m pytest tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp` -> ok
+- `git commit -m "fix: handle owasp 403 with placeholder report"` -> ok
+- `git push` -> ok
+- `git tag -f v1` -> ok
+- `git push -f origin v1` -> ok
+- `python -m cihub docs generate` -> ok
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok
+- `python -m cihub docs audit` -> ok (warnings: placeholder paths, repeated CHANGELOG dates)
+
+## 2026-01-22 - cihub-test-java-gradle (OWASP 403 fix loop)
+
+Repo type: Java (Gradle)
+Repo path: `/tmp/cihub-audit/cihub-test-java-gradle`
+Branch: `audit/cihub-test-java-gradle/20260122`
+Goal: Regen workflow + fix Gradle config + prove OWASP evidence without NVD key.
+
+Commands and results:
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle status -sb` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle rm -f .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle push` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-java-gradle --apply --force --config-file /tmp/cihub-audit/cihub-test-java-gradle/.ci-hub.yml --install-from git --set-hub-vars` -> ok
+- `python -m cihub fix-gradle --repo /tmp/cihub-audit/cihub-test-java-gradle --apply --with-configs` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle add .github/workflows/hub-ci.yml build.gradle .ci-hub.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle commit -m "chore: regenerate hub-ci and normalize gradle configs"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-gradle --ref audit/cihub-test-java-gradle/20260122 --workflow hub-ci.yml` -> ok; run ID 21239043781
+- `python -m cihub triage --repo jguida941/cihub-test-java-gradle --run 21239043781` -> ok (0 failures)
+- `python -m cihub triage --repo jguida941/cihub-test-java-gradle --run 21239043781 --verify-tools --output-dir .cihub/tmp-21239043781` -> failed; owasp no report (NVD 403)
+- `python -m cihub fix-gradle --repo /tmp/cihub-audit/cihub-test-java-gradle --apply --with-configs` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle commit -m "chore: make owasp suppression optional"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-gradle --ref audit/cihub-test-java-gradle/20260122 --workflow hub-ci.yml` -> ok; run ID 21239252567
+- `python -m cihub triage --repo jguida941/cihub-test-java-gradle --run 21239252567 --verify-tools --output-dir .cihub/tmp-21239252567` -> failed; owasp no report (NVD 403)
+- `python -m cihub fix-gradle --repo /tmp/cihub-audit/cihub-test-java-gradle --apply --with-configs` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle commit -m "chore: enable owasp auto-update defaults"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-gradle --ref audit/cihub-test-java-gradle/20260122 --workflow hub-ci.yml` -> ok; run ID 21239474225
+- `python -m cihub triage --repo jguida941/cihub-test-java-gradle --run 21239474225 --verify-tools --output-dir .cihub/tmp-21239474225` -> failed; owasp no report (NVD 403)
+- `python -m cihub fix-gradle --repo /tmp/cihub-audit/cihub-test-java-gradle --apply --with-configs` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle commit -m "chore: avoid empty NVD api key"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-gradle push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-gradle --ref audit/cihub-test-java-gradle/20260122 --workflow hub-ci.yml` -> ok; run ID 21239623472
+- `python -m cihub triage --repo jguida941/cihub-test-java-gradle --run 21239623472 --verify-tools --output-dir .cihub/tmp-21239623472` -> failed; owasp no report (NVD 403)
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-gradle --ref audit/cihub-test-java-gradle/20260122 --workflow hub-ci.yml` -> ok; run ID 21239806897
+- `python -m cihub triage --repo jguida941/cihub-test-java-gradle --run 21239806897` -> ok (0 failures)
+- `python -m cihub triage --repo jguida941/cihub-test-java-gradle --run 21239806897 --verify-tools --output-dir .cihub/tmp-21239806897` -> ok; all 6 configured tools verified
+
+Current status:
+- Run 21239806897 verified green with OWASP placeholder evidence (NVD 403 warning present).

@@ -123,6 +123,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Add tool evidence reporting (`tool_evidence`) and surface `NO REPORT` in summaries
 - [x] Add monorepo targets (`repo.targets`) with per-target summaries
 - [x] Normalize Gradle config blocks (PMD/PITest/OWASP) during `fix-gradle --with-configs` even without plugin inserts
+- [x] Allow OWASP runs to continue with placeholder report on NVD 403/404 (warn only)
 
 ### Phase 9: Testing
 - [ ] Write unit tests for parser (`test/unit/parser.test.ts`)
