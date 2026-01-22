@@ -36,6 +36,7 @@ All notable changes to this project will be documented in this file.
 ### Fix: OWASP JSON report output
 
 - OWASP dependency-check now forces JSON output so CI evidence is always generated.
+- If dependency-check exits cleanly but emits no report, cihub writes a placeholder JSON report to keep evidence consistent.
 
 ## 2026-01-21 - Tool Evidence + Monorepo Targets
 

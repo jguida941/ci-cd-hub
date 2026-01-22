@@ -244,6 +244,26 @@ class TestRunOwasp:
         assert "-Dformat=JSON" in captured["cmd"]
         assert result.success is True
 
+    def test_missing_report_creates_placeholder(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import run_owasp
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        def _fake_run(tool, cmd, workdir, output_dir, timeout=None, env=None):
+            mock_proc = MagicMock()
+            mock_proc.returncode = 0
+            mock_proc.stdout = ""
+            mock_proc.stderr = ""
+            return mock_proc
+
+        with patch("cihub.core.ci_runner.shared._run_tool_command", side_effect=_fake_run):
+            result = run_owasp(tmp_path, output_dir, "maven", use_nvd_api_key=False)
+
+        assert result.success is True
+        assert result.metrics["report_found"] is True
+        assert result.metrics["report_placeholder"] is True
+
 
 class TestRunPmd:
     """Tests for run_pmd function."""

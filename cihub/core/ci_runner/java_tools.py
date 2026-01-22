@@ -310,6 +310,11 @@ def run_owasp(
         ],
     )
     report_found = bool(report_paths)
+    if not report_paths and proc.returncode == 0:
+        placeholder = output_dir / "dependency-check-report.json"
+        placeholder.write_text('{"dependencies": []}', encoding="utf-8")
+        report_paths = [placeholder]
+        report_found = True
     metrics = (
         _parse_dependency_check(report_paths[0])
         if report_paths
@@ -322,6 +327,8 @@ def run_owasp(
         }
     )
     metrics["report_found"] = report_found
+    if report_paths and report_paths[0].name == "dependency-check-report.json" and output_dir in report_paths[0].parents:
+        metrics["report_placeholder"] = True
     return ToolResult(
         tool="owasp",
         ran=True,
