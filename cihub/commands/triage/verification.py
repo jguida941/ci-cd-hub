@@ -153,7 +153,10 @@ def _merge_target_result(
 
     for key in ("drift", "no_proof", "failures", "optional", "skipped"):
         for item in target_result.get(key, []):
-            merged = dict(item)
+            if isinstance(item, dict):
+                merged = dict(item)
+            else:
+                merged = {"tool": str(item), "message": ""}
             merged["target"] = slug
             msg = merged.get("message", "")
             merged["message"] = f"[{slug}] {msg}".strip()
