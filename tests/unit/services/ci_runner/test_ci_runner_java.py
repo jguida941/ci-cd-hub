@@ -378,7 +378,7 @@ class TestRunOwasp:
             with patch("cihub.core.ci_runner.shared._run_tool_command", side_effect=_fake_run):
                 result = run_owasp(tmp_path, output_dir, "maven", use_nvd_api_key=True)
 
-        assert "-DautoUpdate=false" in captured["cmd"]
+        assert "-DautoUpdate=false" not in captured["cmd"]
         assert "-DossIndexAnalyzerEnabled=true" in captured["cmd"]
         assert result.success is True
 

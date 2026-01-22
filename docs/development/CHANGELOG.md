@@ -23,7 +23,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fix: OWASP runs without NVD key
 
-- OWASP runner now disables NVD updates and enables OSS Index when no key is present, avoiding long NVD fetches while still producing evidence.
+- OWASP runner now enables OSS Index when no key is present and only disables NVD updates when cached data exists, avoiding long fetches while still producing evidence.
 - OWASP and PITest Maven runners now use explicit plugin coordinates to avoid missing plugin-prefix errors in multi-module repos.
 
 ### Fix: Hub vars verification on init/setup

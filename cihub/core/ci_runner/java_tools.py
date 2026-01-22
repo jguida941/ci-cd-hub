@@ -37,6 +37,15 @@ def _gradle_cmd(workdir: Path) -> list[str]:
     return ["gradle"]
 
 
+def _has_dependency_check_data(data_dir: Path) -> bool:
+    if not data_dir.exists():
+        return False
+    for path in data_dir.rglob("*"):
+        if path.is_file():
+            return True
+    return False
+
+
 def run_java_build(
     workdir: Path,
     output_dir: Path,
@@ -288,14 +297,20 @@ def run_owasp(
     output_dir.mkdir(parents=True, exist_ok=True)
     data_dir = output_dir / "dependency-check-data"
     data_dir.mkdir(parents=True, exist_ok=True)
+    has_data = _has_dependency_check_data(data_dir)
     env = os.environ.copy()
     nvd_key = env.get("NVD_API_KEY") if use_nvd_api_key else None
     if not use_nvd_api_key:
         env.pop("NVD_API_KEY", None)
     nvd_flags: list[str] = []
-    use_nvd_update = bool(nvd_key)
+    use_nvd_update = False
+    if use_nvd_api_key:
+        use_nvd_update = bool(nvd_key) or not has_data
     if use_nvd_update:
-        nvd_flags.append(f"-DnvdApiKey={nvd_key}")
+        if nvd_key:
+            nvd_flags.append(f"-DnvdApiKey={nvd_key}")
+        else:
+            nvd_flags.append("-DossIndexAnalyzerEnabled=true")
     else:
         # Missing key: disable updates and use OSS Index to avoid long NVD fetches.
         nvd_flags.append("-DautoUpdate=false")
@@ -329,7 +344,8 @@ def run_owasp(
             data_dir_flag,
             *nvd_flags,
         ]
-    proc = shared._run_tool_command("owasp", cmd, workdir, output_dir, env=env, timeout=1800)
+    timeout = 3600 if not nvd_key and not has_data else 1800
+    proc = shared._run_tool_command("owasp", cmd, workdir, output_dir, env=env, timeout=timeout)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
     output_text = f"{proc.stdout}\n{proc.stderr}".lower()
