@@ -1653,6 +1653,10 @@ Commands and results:
 - `git push` -> ok
 - `git tag -f v1` -> ok
 - `git push -f origin v1` -> ok
+- `git commit -m "fix: avoid owasp 403 without NVD key"` -> ok
+- `git push` -> ok
+- `git tag -f v1` -> ok
+- `git push -f origin v1` -> ok
 - `python -m cihub docs generate` -> ok
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok
