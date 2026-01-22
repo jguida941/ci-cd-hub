@@ -107,8 +107,11 @@ dependencyCheck {
     // failOnError handles NVD API failures gracefully
     failOnError = false
     autoUpdate = nvdKey ? true : false
-    // Suppress false positives and build-time-only transitive deps
-    suppressionFile = 'config/owasp/suppressions.xml'
+    // Suppress false positives and build-time-only transitive deps (optional)
+    def suppressionPath = file('config/owasp/suppressions.xml')
+    if (suppressionPath.exists()) {
+        suppressionFile = suppressionPath
+    }
     nvd {
         // Set NVD_API_KEY env var for faster updates (highly recommended)
         apiKey = nvdKey ?: ''

@@ -455,11 +455,15 @@ def normalize_gradle_configs(
             if snippet:
                 updated, _ = _replace_block(updated, "pmd", snippet)
 
-    # OWASP: ensure autoUpdate guard and NVD config
+    # OWASP: ensure autoUpdate guard and optional suppression handling
     span = _find_block_span(updated, "dependencyCheck")
     if span:
         block = updated[span[0] : span[1]]
-        if "autoUpdate" not in block:
+        suppression_path = repo_root / "config/owasp/suppressions.xml"
+        needs_refresh = "autoUpdate" not in block
+        if "suppressionFile" in block and not suppression_path.exists():
+            needs_refresh = True
+        if needs_refresh:
             snippet = config_snippets.get("org.owasp.dependencycheck")
             if snippet:
                 updated, _ = _replace_block(updated, "dependencyCheck", snippet)

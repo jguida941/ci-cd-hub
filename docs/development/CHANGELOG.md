@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 ### Fix: Normalize Gradle tool blocks
 
 - `cihub fix-gradle --with-configs` now normalizes existing PMD, PITest, and OWASP blocks even when no plugins are missing.
+- OWASP Gradle configs now treat `config/owasp/suppressions.xml` as optional to avoid failing when the file is absent.
 
 ## 2026-01-21 - GitHub Auth Fallback
 
