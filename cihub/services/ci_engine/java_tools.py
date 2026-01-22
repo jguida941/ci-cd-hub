@@ -205,6 +205,14 @@ def _run_java_tools(
         tool_outputs[tool] = result.to_payload()
         tools_ran[tool] = result.ran
         tools_success[tool] = result.success
+        if tool == "owasp" and result.metrics.get("owasp_data_missing"):
+            problems.append(
+                {
+                    "severity": "warning",
+                    "message": "OWASP NVD update failed (403/404); placeholder report generated",
+                    "code": "CIHUB-OWASP-NO-DATA",
+                }
+            )
         if tool == "docker" and result.metrics.get("docker_missing_compose"):
             docker_cfg = config.get("java", {}).get("tools", {}).get("docker", {}) or {}
             if not isinstance(docker_cfg, dict):

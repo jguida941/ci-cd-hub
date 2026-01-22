@@ -264,6 +264,26 @@ class TestRunOwasp:
         assert result.metrics["report_found"] is True
         assert result.metrics["report_placeholder"] is True
 
+    def test_nvd_403_creates_placeholder(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import run_owasp
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        def _fake_run(tool, cmd, workdir, output_dir, timeout=None, env=None):
+            mock_proc = MagicMock()
+            mock_proc.returncode = 1
+            mock_proc.stdout = ""
+            mock_proc.stderr = "Error updating the NVD Data; the NVD returned a 403 or 404 error"
+            return mock_proc
+
+        with patch("cihub.core.ci_runner.shared._run_tool_command", side_effect=_fake_run):
+            result = run_owasp(tmp_path, output_dir, "gradle", use_nvd_api_key=True)
+
+        assert result.success is True
+        assert result.metrics["report_found"] is True
+        assert result.metrics["owasp_data_missing"] is True
+
 
 class TestRunPmd:
     """Tests for run_pmd function."""

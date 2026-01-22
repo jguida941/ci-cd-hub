@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - OWASP Gradle configs now treat `config/owasp/suppressions.xml` as optional to avoid failing when the file is absent.
 - OWASP Gradle runs no longer disable auto-update by default when no NVD key is present.
 - OWASP Gradle configs now set `nvd.apiKey` only when `NVD_API_KEY` is provided to avoid 403 failures.
+- OWASP runs now emit a placeholder report with a warning when NVD update fails (403/404) so CI can proceed.
 
 ## 2026-01-21 - GitHub Auth Fallback
 

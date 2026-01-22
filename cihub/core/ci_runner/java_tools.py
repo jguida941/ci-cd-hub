@@ -307,6 +307,9 @@ def run_owasp(
     proc = shared._run_tool_command("owasp", cmd, workdir, output_dir, env=env)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
+    output_text = f"{proc.stdout}\n{proc.stderr}".lower()
+    nvd_access_failed = "nvd returned a 403" in output_text or "nvd returned a 404" in output_text
+
     report_paths = shared._find_files(
         workdir,
         [
@@ -316,7 +319,7 @@ def run_owasp(
         ],
     )
     report_found = bool(report_paths)
-    if not report_paths and proc.returncode == 0:
+    if not report_paths and (proc.returncode == 0 or nvd_access_failed):
         placeholder = output_dir / "dependency-check-report.json"
         placeholder.write_text('{"dependencies": []}', encoding="utf-8")
         report_paths = [placeholder]
@@ -333,12 +336,13 @@ def run_owasp(
         }
     )
     metrics["report_found"] = report_found
+    metrics["owasp_data_missing"] = nvd_access_failed
     if report_paths and report_paths[0].name == "dependency-check-report.json" and output_dir in report_paths[0].parents:
         metrics["report_placeholder"] = True
     return ToolResult(
         tool="owasp",
         ran=True,
-        success=proc.returncode == 0 and report_found,
+        success=(proc.returncode == 0 or nvd_access_failed) and report_found,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
         stdout=proc.stdout,
