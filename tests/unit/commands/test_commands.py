@@ -496,6 +496,40 @@ class TestCmdInit:
             source = install_cfg
         assert source == "git"
 
+    def test_init_install_from_git_overrides(self, tmp_path: Path) -> None:
+        """Init honors --install-from git by setting install.source."""
+        (tmp_path / "pyproject.toml").write_text("[project]\nname='example'\n", encoding="utf-8")
+        args = argparse.Namespace(
+            repo=str(tmp_path),
+            language="python",
+            owner="testowner",
+            name="testrepo",
+            branch="main",
+            subdir="",
+            wizard=False,
+            dry_run=False,
+            apply=True,
+            force=False,
+            fix_pom=False,
+            install_from="git",
+            config_json=None,
+            config_file=None,
+            config_override=None,
+            set_hub_vars=False,
+            hub_repo=None,
+            hub_ref=None,
+            json=False,
+        )
+        result = cmd_init(args)
+        assert result.exit_code == 0
+        config = yaml.safe_load((tmp_path / ".ci-hub.yml").read_text(encoding="utf-8"))
+        install_cfg = config.get("install")
+        if isinstance(install_cfg, dict):
+            source = install_cfg.get("source")
+        else:
+            source = install_cfg
+        assert source == "git"
+
     def test_init_detects_language_from_subdir(self, tmp_path: Path) -> None:
         """Init detects language using the subdir when provided."""
         subdir = "services/java"

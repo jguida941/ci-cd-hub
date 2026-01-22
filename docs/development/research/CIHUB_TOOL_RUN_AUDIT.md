@@ -240,6 +240,24 @@ Commands and results:
 Current status:
 - Run 21237551412 verified green with tool evidence; owasp+pitest reported optional (configured but not required).
 
+Audit branch re-prove (post toolchain fix):
+- `git -C /tmp/cihub-audit/cihub-test-java-maven checkout -b audit/cihub-test-java-maven/20260122` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-java-maven --apply --force --install-from git --config-file /tmp/cihub-audit/cihub-test-java-maven/.ci-hub.yml` -> ok; install.source=git
+- `git -C /tmp/cihub-audit/cihub-test-java-maven add .ci-hub.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-maven commit -m "chore: set install source to git (audit)"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-maven push -u origin audit/cihub-test-java-maven/20260122` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-java-maven --ref audit/cihub-test-java-maven/20260122 --workflow hub-ci.yml` -> ok; run ID 21238515860
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21238515860` -> ok; triage bundle generated (0 failures)
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21238515860 --verify-tools` -> failed; no report.json yet
+- `sleep 30` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21238515860 --verify-tools` -> failed; no report.json yet
+- `sleep 60` -> ok
+- `python -m cihub triage --repo jguida941/cihub-test-java-maven --run 21238515860 --verify-tools` -> ok; all 6 configured tools verified
+
+Audit branch status:
+- Run 21238515860 verified green; owasp/pitest now ran with proof (no optional tools).
+
 ## 2026-01-22 - hub-release (require_run_or_fail defaults)
 
 Repo type: Hub CLI (Python)
@@ -255,6 +273,27 @@ Commands and results:
 - `sed -n '1,80p' docs/development/CHANGELOG.md` -> ok
 - `sed -n '900,980p' cihub/data/schema/ci-hub-config.schema.json` -> ok
 - `python -m pytest tests/contracts/test_schema_contract.py tests/unit/services/ci_engine/test_ci_engine_gates.py` -> ok; 85 passed
+- `python -m cihub docs generate` -> ok; updated references
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok
+- `python -m cihub docs audit` -> ok with warnings; placeholder paths + repeated CHANGELOG dates
+- `git add -A` -> ok
+- `git commit -m "feat: require configured tools to run by default"` -> ok
+- `git push` -> ok
+- `git tag -f v1` -> ok
+- `git push -f origin v1` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-java-maven checkout -b audit/cihub-test-java-maven/20260122` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-java-maven --apply --force --install-from git --config-file /tmp/cihub-audit/cihub-test-java-maven/.ci-hub.yml` -> ok (note: install.source stayed pypi)
+- `rg -n "install" -n /tmp/cihub-audit/cihub-test-java-maven/.ci-hub.yml -n` -> ok
+- `sed -n '40,60p' /tmp/cihub-audit/cihub-test-java-maven/.ci-hub.yml` -> ok
+- `rg -n "install_from" -n cihub/commands/init.py` -> ok
+- `sed -n '210,260p' cihub/commands/init.py` -> ok
+- `rg -n "install_from" cihub/commands -S` -> ok
+- `apply_patch` -> ok; `--install-from` now writes install.source
+- `apply_patch` -> ok; added test for install_from override
+- `python -m pytest tests/unit/commands/test_commands.py::TestCmdInit::test_init_install_from_git_overrides` -> ok; 1 passed
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-java-maven --apply --force --install-from git --config-file /tmp/cihub-audit/cihub-test-java-maven/.ci-hub.yml` -> ok; install.source now git
+- `sed -n '40,60p' /tmp/cihub-audit/cihub-test-java-maven/.ci-hub.yml` -> ok; install.source=git
 - `python -m cihub docs generate` -> ok; updated references
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok

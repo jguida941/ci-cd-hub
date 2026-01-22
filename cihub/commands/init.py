@@ -228,6 +228,13 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
             config.pop("python", None)
         elif language == "python":
             config.pop("java", None)
+    if install_from and install_from != "pypi":
+        install_cfg = config.get("install")
+        if isinstance(install_cfg, dict):
+            install_cfg["source"] = install_from
+            config["install"] = install_cfg
+        else:
+            config["install"] = {"source": install_from}
     install_warnings: list[dict[str, str]] = []
     if ensure_git_install_source(config, install_from):
         install_warnings.append(
