@@ -7,6 +7,7 @@ listing runs, downloading artifacts, and fetching logs.
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,6 +22,7 @@ from cihub.utils.exec_utils import (
     resolve_executable,
     safe_run,
 )
+from cihub.utils.env import get_github_token
 
 
 @dataclass
@@ -85,6 +87,13 @@ class GitHubRunClient:
             repo: Repository in owner/repo format. If None, uses current repo.
         """
         self.repo = repo or self._detect_repo()
+        token, _source = get_github_token()
+        if token:
+            env = os.environ.copy()
+            env["GH_TOKEN"] = token
+            self._env = env
+        else:
+            self._env = None
 
     @staticmethod
     def _detect_repo() -> str | None:
@@ -122,7 +131,7 @@ class GitHubRunClient:
         if self.repo:
             cmd.extend(["--repo", self.repo])
 
-        result = safe_run(cmd, timeout=TIMEOUT_NETWORK)
+        result = safe_run(cmd, timeout=TIMEOUT_NETWORK, env=self._env)
         if result.returncode != 0:
             raise RuntimeError(f"Failed to fetch run info: {result.stderr.strip()}")
 
@@ -177,7 +186,7 @@ class GitHubRunClient:
         if status:
             cmd.extend(["--status", status])
 
-        result = safe_run(cmd, timeout=TIMEOUT_NETWORK)
+        result = safe_run(cmd, timeout=TIMEOUT_NETWORK, env=self._env)
         if result.returncode != 0:
             raise RuntimeError(f"Failed to list runs: {result.stderr.strip()}")
 
@@ -228,7 +237,7 @@ class GitHubRunClient:
         if self.repo:
             cmd.extend(["--repo", self.repo])
 
-        result = safe_run(cmd, timeout=TIMEOUT_BUILD)  # 600s for large artifacts
+        result = safe_run(cmd, timeout=TIMEOUT_BUILD, env=self._env)  # 600s for large artifacts
 
         # gh run download returns 0 even if no artifacts, check if anything was downloaded
         if result.returncode != 0:
@@ -251,7 +260,7 @@ class GitHubRunClient:
         if self.repo:
             cmd.extend(["--repo", self.repo])
 
-        result = safe_run(cmd, timeout=TIMEOUT_NETWORK)
+        result = safe_run(cmd, timeout=TIMEOUT_NETWORK, env=self._env)
         if result.returncode != 0:
             # May fail if no failures or other issue
             return ""

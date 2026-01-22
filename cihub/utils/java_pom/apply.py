@@ -78,12 +78,21 @@ def insert_plugins_into_pom(pom_text: str, plugin_block: str) -> tuple[str, bool
         if build_close == -1:
             return pom_text, False
         build_section = pom_text[build_match.end() : build_close]
-        plugins_match = re.search(r"<plugins[^>]*>", build_section)
+        plugin_mgmt_end = None
+        plugin_mgmt_match = re.search(r"<pluginManagement[^>]*>", build_section)
+        if plugin_mgmt_match:
+            plugin_mgmt_close = build_section.find("</pluginManagement>", plugin_mgmt_match.end())
+            if plugin_mgmt_close != -1:
+                plugin_mgmt_end = plugin_mgmt_close + len("</pluginManagement>")
+
+        search_start = plugin_mgmt_end or 0
+        plugins_match = re.search(r"<plugins[^>]*>", build_section[search_start:])
         if plugins_match:
-            plugins_close = build_section.find("</plugins>", plugins_match.end())
+            plugins_open = search_start + plugins_match.start()
+            plugins_close = build_section.find("</plugins>", plugins_open + plugins_match.end() - plugins_match.start())
             if plugins_close == -1:
                 return pom_text, False
-            plugins_index = build_match.end() + plugins_match.start()
+            plugins_index = build_match.end() + plugins_open
             plugins_indent = line_indent(pom_text, plugins_index)
             plugin_indent = plugins_indent + "  "
             block = indent_block(plugin_block, plugin_indent)

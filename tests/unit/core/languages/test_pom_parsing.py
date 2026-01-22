@@ -567,6 +567,54 @@ class TestInsertPluginsIntoPom:
         assert success is False
         assert result == pom_text
 
+    def test_insert_skips_plugin_management(self) -> None:
+        """Insert into <build><plugins> instead of <pluginManagement>."""
+        pom_text = """<project>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>managed-plugin</artifactId>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <artifactId>existing-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>"""
+        plugin_block = """<plugin>
+  <groupId>org.jacoco</groupId>
+  <artifactId>jacoco-maven-plugin</artifactId>
+</plugin>"""
+        result, success = insert_plugins_into_pom(pom_text, plugin_block)
+        assert success is True
+        assert result.index("jacoco-maven-plugin") > result.index("</pluginManagement>")
+
+    def test_insert_creates_plugins_after_plugin_management(self) -> None:
+        """Create <plugins> after <pluginManagement> when none exists."""
+        pom_text = """<project>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>managed-plugin</artifactId>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>"""
+        plugin_block = """<plugin>
+  <groupId>org.jacoco</groupId>
+  <artifactId>jacoco-maven-plugin</artifactId>
+</plugin>"""
+        result, success = insert_plugins_into_pom(pom_text, plugin_block)
+        assert success is True
+        assert "<plugins>" in result
+        assert result.index("jacoco-maven-plugin") > result.index("</pluginManagement>")
+
 
 # ==============================================================================
 # Tests for insert_dependencies_into_pom

@@ -25,6 +25,14 @@ from cihub.commands.triage.github import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _mock_get_github_token(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "cihub.commands.triage.github.get_github_token",
+        lambda *args, **kwargs: (None, "missing"),
+    )
+
+
 class TestRunInfo:
     """Unit tests for RunInfo dataclass."""
 

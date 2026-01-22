@@ -476,10 +476,18 @@ def normalize_gradle_configs(
     span = _find_block_span(updated, "pitest")
     if span:
         block = updated[span[0] : span[1]]
-        if "targetClasses" in block and "*" in block or "targetTests" in block and "*" in block:
+        has_target_classes = "targetClasses" in block
+        has_target_tests = "targetTests" in block
+        wildcard_targets = (
+            (has_target_classes and "*" in block)
+            or (has_target_tests and "*" in block)
+            or (has_target_classes and "[]" in block)
+            or (has_target_tests and "[]" in block)
+        )
+        if wildcard_targets or not (has_target_classes or has_target_tests):
             packages = _discover_java_packages(repo_root)
             if not packages:
-                warnings.append("PITest targetClasses uses '*' but no packages found to replace")
+                warnings.append("PITest targetClasses uses '*' or is missing; no packages found to replace")
             else:
                 snippet = config_snippets.get("info.solidsoft.pitest", block.strip())
                 patterns = [f"'{pkg}.*'" for pkg in packages]
@@ -487,7 +495,11 @@ def normalize_gradle_configs(
                     f"    targetClasses = [{', '.join(patterns)}]",
                     f"    targetTests = [{', '.join(patterns)}]",
                 ]
-                lines = snippet.splitlines()
+                lines = [
+                    line
+                    for line in snippet.splitlines()
+                    if "targetClasses" not in line and "targetTests" not in line
+                ]
                 insert_at = 1
                 for idx, line in enumerate(lines):
                     if "junit5PluginVersion" in line:

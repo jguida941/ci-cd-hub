@@ -90,3 +90,58 @@ def test_normalize_dependencycheck_replaces_empty_api_key(tmp_path: Path) -> Non
 
     assert warnings == []
     assert "if (nvdKey)" in updated
+
+
+def test_normalize_pmd_replaces_empty_rulesets(tmp_path: Path) -> None:
+    content = """pmd {
+    toolVersion = '7.0.0'
+    consoleOutput = true
+    ruleSets = []
+    ignoreFailures = false
+}
+"""
+    snippets = {"pmd": "pmd { ruleSets = ['category/java/quickstart.xml'] }"}
+
+    updated, warnings = normalize_gradle_configs(content, tmp_path, snippets)
+
+    assert warnings == []
+    assert "quickstart.xml" in updated
+
+
+def test_normalize_pitest_infers_targets_when_missing(tmp_path: Path) -> None:
+    java_path = tmp_path / "src" / "main" / "java" / "com" / "example"
+    java_path.mkdir(parents=True)
+    (java_path / "App.java").write_text("package com.example;\n")
+
+    content = """pitest {
+    junit5PluginVersion = '1.2.1'
+    threads = 4
+}
+"""
+    snippets = {"info.solidsoft.pitest": content}
+
+    updated, warnings = normalize_gradle_configs(content, tmp_path, snippets)
+
+    assert warnings == []
+    assert "targetClasses" in updated
+    assert "com.example.*" in updated
+
+
+def test_normalize_pitest_replaces_wildcards(tmp_path: Path) -> None:
+    java_path = tmp_path / "src" / "main" / "java" / "com" / "example"
+    java_path.mkdir(parents=True)
+    (java_path / "App.java").write_text("package com.example;\n")
+
+    content = """pitest {
+    junit5PluginVersion = '1.2.1'
+    targetClasses = ['*']
+    targetTests = ['*']
+}
+"""
+    snippets = {"info.solidsoft.pitest": content}
+
+    updated, warnings = normalize_gradle_configs(content, tmp_path, snippets)
+
+    assert warnings == []
+    assert "targetClasses" in updated
+    assert "com.example.*" in updated
