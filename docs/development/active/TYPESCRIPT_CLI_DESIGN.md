@@ -57,6 +57,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Set up Vitest for testing
 - [x] Create entry point (`src/index.tsx`)
 - [x] Create CLI argument parser (`src/cli.ts`)
+- [x] Add non-interactive passthrough for Python CLI commands
 - [x] Add version check between TypeScript and Python CLI
 - [x] Add health check for Python CLI availability
 
@@ -120,10 +121,12 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Upload hidden `.cihub` artifacts in reusable workflows (ADR-0067)
 - [x] Route monorepo targets through hub-ci via config-outputs (`run_python`/`run_java`, per-language workdirs)
 - [x] Run Maven install prep for multi-module tool runs (ADR-0068)
+- [x] Detect JaCoCo aggregate reports for multi-module coverage
 - [x] Add tool evidence reporting (`tool_evidence`) and surface `NO REPORT` in summaries
 - [x] Add monorepo targets (`repo.targets`) with per-target summaries
 - [x] Normalize Gradle config blocks (PMD/PITest/OWASP) during `fix-gradle --with-configs` even without plugin inserts
 - [x] Allow OWASP runs to continue with placeholder report on NVD 403/404 (warn only)
+- [x] Auto-disable OWASP updates when NVD key is missing (no config required)
 
 ### Phase 9: Testing
 - [ ] Write unit tests for parser (`test/unit/parser.test.ts`)

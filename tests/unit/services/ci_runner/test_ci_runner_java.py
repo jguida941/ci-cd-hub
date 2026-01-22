@@ -8,6 +8,7 @@ Tests: run_java_build, run_jacoco, run_checkstyle, run_spotbugs, run_pmd, run_do
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -83,6 +84,33 @@ class TestRunJavaBuild:
         assert result.success is True
         assert result.metrics["coverage"] == 80
 
+    def test_maven_build_with_jacoco_aggregate(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import run_java_build
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+        (tmp_path / "pom.xml").write_text("<project/>")
+        (tmp_path / "mvnw").write_text("#!/bin/sh\n")
+
+        jacoco_dir = tmp_path / "module-a" / "target" / "site" / "jacoco-aggregate"
+        jacoco_dir.mkdir(parents=True)
+        (jacoco_dir / "jacoco.xml").write_text("""<?xml version="1.0"?>
+            <report name="test">
+              <counter type="LINE" missed="10" covered="40"/>
+            </report>""")
+
+        mock_proc = MagicMock()
+        mock_proc.returncode = 0
+        mock_proc.stdout = "BUILD SUCCESS"
+        mock_proc.stderr = ""
+
+        with patch("cihub.core.ci_runner.shared._run_command", return_value=mock_proc):
+            result = run_java_build(tmp_path, output_dir, "maven", jacoco_enabled=True)
+
+        assert result.tool == "build"
+        assert result.success is True
+        assert result.metrics["coverage"] == 80
+
 
 class TestRunJacoco:
     """Tests for run_jacoco function."""
@@ -105,6 +133,26 @@ class TestRunJacoco:
 
         assert result.tool == "jacoco"
         assert result.ran is True
+        assert result.metrics["coverage"] == 80.0
+
+    def test_parses_nested_jacoco_aggregate_xml(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import run_jacoco
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        target_dir = tmp_path / "module-a" / "target" / "site" / "jacoco-aggregate"
+        target_dir.mkdir(parents=True)
+        (target_dir / "jacoco.xml").write_text("""<?xml version="1.0"?>
+            <report name="test">
+              <counter type="LINE" missed="10" covered="40"/>
+            </report>""")
+
+        result = run_jacoco(tmp_path, output_dir)
+
+        assert result.tool == "jacoco"
+        assert result.ran is True
+        assert result.success is True
         assert result.metrics["coverage"] == 80.0
 
 
@@ -283,6 +331,34 @@ class TestRunOwasp:
         assert result.success is True
         assert result.metrics["report_found"] is True
         assert result.metrics["owasp_data_missing"] is True
+
+    def test_missing_nvd_key_disables_update(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import run_owasp
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+        report_dir = tmp_path / "target"
+        report_dir.mkdir(parents=True)
+        (report_dir / "dependency-check-report.json").write_text(
+            '{"dependencies": []}', encoding="utf-8"
+        )
+
+        captured: dict[str, object] = {}
+
+        def _fake_run(tool, cmd, workdir, output_dir, timeout=None, env=None):
+            captured["cmd"] = cmd
+            mock_proc = MagicMock()
+            mock_proc.returncode = 0
+            mock_proc.stdout = ""
+            mock_proc.stderr = ""
+            return mock_proc
+
+        with patch.dict(os.environ, {}, clear=True):
+            with patch("cihub.core.ci_runner.shared._run_tool_command", side_effect=_fake_run):
+                result = run_owasp(tmp_path, output_dir, "maven", use_nvd_api_key=True)
+
+        assert "-DautoUpdate=false" in captured["cmd"]
+        assert result.success is True
 
 
 class TestRunPmd:

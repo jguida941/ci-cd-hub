@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-23 - TS CLI Passthrough + Gradle Target Fixes
+
+### Fix: TypeScript CLI passthrough
+
+- `cihub-cli` now passes subcommands directly to the Python CLI (e.g., `detect`, `config-outputs`, `dispatch`, `triage`).
+
+### Fix: Gradle PITest/PMD normalization
+
+- `cihub fix-gradle --with-configs` now infers PITest `targetClasses/targetTests` when missing or wildcarded.
+- PMD normalization replaces empty rulesets with quickstart defaults.
+
+### Fix: Triage artifact download auth
+
+- Triage gh client now injects `GH_TOKEN` from env or `gh auth token` so artifact downloads work without manual setup.
+
+### Fix: JaCoCo aggregate discovery
+
+- JaCoCo runner now scans `jacoco-aggregate` reports to detect coverage in multi-module layouts.
+
+### Fix: OWASP runs without NVD key
+
+- OWASP runner now disables NVD auto-update when no key is present, so dependency-check still runs and emits evidence.
+
 ## 2026-01-22 - Require Run Defaults
 
 ### Change: Configured tools must run

@@ -69,6 +69,7 @@ def run_java_build(
             workdir,
             [
                 "target/site/jacoco/jacoco.xml",
+                "target/site/jacoco-aggregate/jacoco.xml",
                 "build/reports/jacoco/test/jacocoTestReport.xml",
             ],
         )
@@ -111,6 +112,7 @@ def run_jacoco(workdir: Path, output_dir: Path) -> ToolResult:
         workdir,
         [
             "target/site/jacoco/jacoco.xml",
+            "target/site/jacoco-aggregate/jacoco.xml",
             "build/reports/jacoco/test/jacocoTestReport.xml",
         ],
     )
@@ -280,7 +282,8 @@ def run_owasp(
     nvd_flags: list[str] = []
     if use_nvd_api_key and nvd_key:
         nvd_flags.append(f"-DnvdApiKey={nvd_key}")
-    elif not use_nvd_api_key:
+    else:
+        # Avoid NVD update if the key is missing or explicitly disabled.
         nvd_flags.append("-DautoUpdate=false")
     format_flag = "-Dformat=JSON"
     if build_tool == "gradle":
