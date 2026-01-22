@@ -465,6 +465,8 @@ def normalize_gradle_configs(
             needs_refresh = True
         if "autoUpdate = nvdKey ? true : false" in block:
             needs_refresh = True
+        if "apiKey = nvdKey ?:" in block:
+            needs_refresh = True
         if needs_refresh:
             snippet = config_snippets.get("org.owasp.dependencycheck")
             if snippet:

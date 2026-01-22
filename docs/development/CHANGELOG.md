@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - `cihub fix-gradle --with-configs` now normalizes existing PMD, PITest, and OWASP blocks even when no plugins are missing.
 - OWASP Gradle configs now treat `config/owasp/suppressions.xml` as optional to avoid failing when the file is absent.
 - OWASP Gradle runs no longer disable auto-update by default when no NVD key is present.
+- OWASP Gradle configs now set `nvd.apiKey` only when `NVD_API_KEY` is provided to avoid 403 failures.
 
 ## 2026-01-21 - GitHub Auth Fallback
 

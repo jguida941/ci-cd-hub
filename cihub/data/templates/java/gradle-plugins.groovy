@@ -114,7 +114,9 @@ dependencyCheck {
     }
     nvd {
         // Set NVD_API_KEY env var for faster updates (highly recommended)
-        apiKey = nvdKey ?: ''
+        if (nvdKey) {
+            apiKey = nvdKey
+        }
         delay = 3500  // Required delay between API calls (ms)
         validForHours = 24  // Cache NVD data for 24 hours
     }

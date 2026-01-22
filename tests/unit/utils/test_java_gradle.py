@@ -62,3 +62,31 @@ def test_normalize_dependencycheck_replaces_auto_update_guard(tmp_path: Path) ->
 
     assert warnings == []
     assert "autoUpdate = true" in updated
+
+
+def test_normalize_dependencycheck_replaces_empty_api_key(tmp_path: Path) -> None:
+    content = """dependencyCheck {
+    def nvdKey = System.getenv('NVD_API_KEY')
+    autoUpdate = true
+    nvd {
+        apiKey = nvdKey ?: ''
+        delay = 3500
+    }
+}
+"""
+    snippets = {
+        "org.owasp.dependencycheck": """dependencyCheck {
+    autoUpdate = true
+    nvd {
+        if (nvdKey) {
+            apiKey = nvdKey
+        }
+        delay = 3500
+    }
+}""",
+    }
+
+    updated, warnings = normalize_gradle_configs(content, tmp_path, snippets)
+
+    assert warnings == []
+    assert "if (nvdKey)" in updated

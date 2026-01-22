@@ -103,7 +103,9 @@ dependencyCheck {
         suppressionFile = suppressionPath
     }
     nvd {
-        apiKey = nvdKey ?: ''
+        if (nvdKey) {
+            apiKey = nvdKey
+        }
         delay = 3500
         validForHours = 24
     }
