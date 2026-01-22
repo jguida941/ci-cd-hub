@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import os
 import sys
+from typing import Optional
 from pathlib import Path
 
+from cihub import __version__
+from cihub.exit_codes import EXIT_FAILURE
 from cihub.services.ci import CiRunResult, RunCIOptions, run_ci
 from cihub.services.triage_service import generate_triage_bundle, write_triage_bundle
 from cihub.types import CommandResult
@@ -158,9 +161,60 @@ def _emit_triage_bundle(args, result: CiRunResult | None, error: str | None = No
         sys.stderr.write(f"[triage] Failed to emit triage bundle: {exc}\n")
 
 
+def _parse_semver(ref: str) -> Optional[str]:
+    ref = ref.strip()
+    if ref.startswith("v"):
+        ref = ref[1:]
+    parts = ref.split(".")
+    if len(parts) != 3:
+        return None
+    if all(part.isdigit() for part in parts):
+        return ref
+    return None
+
+
+def _check_hub_ref_version() -> tuple[bool, list[dict[str, object]], list[dict[str, object]]]:
+    hub_ref = os.environ.get("HUB_REF") or os.environ.get("CIHUB_HUB_REF")
+    if not hub_ref:
+        return False, [], []
+    parsed = _parse_semver(hub_ref)
+    if parsed is None:
+        problems = [
+            {
+                "severity": "warning",
+                "message": f"Cannot verify hub ref '{hub_ref}' against installed cihub {__version__}.",
+                "code": "CIHUB-VERSION-UNVERIFIED",
+            }
+        ]
+        return False, problems, []
+    if parsed != __version__:
+        problems = [
+            {
+                "severity": "error",
+                "message": f"HUB_REF '{hub_ref}' does not match installed cihub {__version__}.",
+                "code": "CIHUB-VERSION-MISMATCH",
+            }
+        ]
+        suggestions = [
+            {
+                "message": "Update the hub ref/tag used by the workflow or install the matching cihub version.",
+            }
+        ]
+        return True, problems, suggestions
+    return False, [], []
+
+
 def cmd_ci(args) -> CommandResult:
     """Execute CI run and return structured result."""
     try:
+        mismatch, version_problems, version_suggestions = _check_hub_ref_version()
+        if mismatch:
+            return CommandResult(
+                exit_code=EXIT_FAILURE,
+                summary="Hub ref/version mismatch",
+                problems=version_problems,
+                suggestions=version_suggestions,
+            )
         options = RunCIOptions.from_args(args)
         result = run_ci(
             repo_path=Path(args.repo or "."),
@@ -169,6 +223,9 @@ def cmd_ci(args) -> CommandResult:
     except Exception as exc:  # noqa: BLE001 - re-raise after triage
         _emit_triage_bundle(args, None, error=str(exc))
         raise
+
+    if version_problems:
+        result.problems.extend(version_problems)
 
     _emit_ci_debug_context(args, result)
     _emit_triage_bundle(args, result)

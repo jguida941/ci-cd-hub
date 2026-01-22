@@ -310,6 +310,33 @@ def test_cmd_ci_java_non_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     assert result.exit_code == EXIT_SUCCESS
 
 
+def test_cmd_ci_hub_ref_version_mismatch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    output_dir = repo / ".cihub"
+
+    args = argparse.Namespace(
+        repo=str(repo),
+        json=False,
+        output_dir=str(output_dir),
+        summary=None,
+        report=None,
+        workdir=None,
+        install_deps=False,
+        correlation_id=None,
+        no_summary=False,
+        write_github_summary=None,
+        config_from_hub=None,
+    )
+
+    monkeypatch.setenv("HUB_REF", "v0.0.1")
+
+    result = ci_cmd.cmd_ci(args)
+
+    assert result.exit_code == EXIT_FAILURE
+    assert result.problems[0]["code"] == "CIHUB-VERSION-MISMATCH"
+
+
 def test_cmd_ci_unknown_language(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()

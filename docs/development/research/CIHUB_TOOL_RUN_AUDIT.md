@@ -2088,3 +2088,31 @@ Commands and results:
 - `python -m cihub dispatch trigger --owner jguida941 --repo java-spring-tutorials --workflow hub-ci.yml --ref audit/java-spring-tutorials/20260123` -> ok; run ID 21252001252
 - `python -m cihub dispatch watch --owner jguida941 --repo java-spring-tutorials --run-id 21252001252 --interval 15 --timeout 900 --json` -> completed/failure
 - `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21252001252 --verify-tools --json` -> failed; owasp no report evidence, pitest failed
+- `git push` -> ok
+- `git tag -f v1 110e74dc` -> ok
+- `git push origin -f v1` -> ok
+
+## 2026-01-22 - Hub CLI fixes (OWASP output/data dir + CI version guard)
+
+Repo type: Hub CLI
+Repo path: `/Users/jguida941/new_github_projects/hub-release`
+Goal: Ensure OWASP always writes reports to `.cihub`, cache data dir, add hub ref/version guard.
+
+Commands and results:
+- `git status -sb` -> ok; branch `audit/owasp-no-key`, multiple modified files
+- `rg -n "owasp|dependency-check" cihub/core/ci_runner/java_tools.py` -> ok
+- `sed -n '260,380p' cihub/core/ci_runner/java_tools.py` -> ok
+- `rg -n "use_nvd_api_key" -S cihub` -> ok
+- `rg -n "cveUrl|nvd" cihub/core/ci_runner/java_tools.py cihub -g'*.py'` -> ok
+- `rg -n "def _find_files" -n cihub/core/ci_runner/shared.py` -> ok
+- `sed -n '160,210p' cihub/core/ci_runner/shared.py` -> ok
+- `rg -n "aggregate" cihub/core/ci_runner/java_tools.py` -> ok
+- `rg -n "parse_pom|Pom" cihub/utils/java_pom cihub/core/languages -g'*.py'` -> ok
+- `rg -n "pitest|mutationCoverage" -n cihub/core/ci_runner/java_tools.py` -> ok
+- `sed -n '120,180p' cihub/core/ci_runner/java_tools.py` -> ok
+- `rg -n "report_placeholder|placeholder|dependency_check" cihub/core/ci_runner/java_tools.py cihub/core/ci_runner/security_tools.py` -> ok (no matches)
+- `rg -n "_parse_dependency_check" -S cihub/core/ci_runner` -> ok
+- `sed -n '150,220p' cihub/core/ci_runner/parsers.py` -> ok
+- `rg -n "owasp" tests/unit/services/ci_runner/test_ci_runner_java.py` -> ok
+- `sed -n '250,430p' tests/unit/services/ci_runner/test_ci_runner_java.py` -> ok
+- `python -m pytest tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_maven_includes_json_format tests/unit/commands/test_commands_ci.py::test_cmd_ci_hub_ref_version_mismatch` -> ok (2 passed)

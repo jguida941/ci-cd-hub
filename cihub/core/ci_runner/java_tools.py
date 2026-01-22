@@ -140,6 +140,7 @@ def run_pitest(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
             "-ntp",
             "pitest:mutationCoverage",
             "-DoutputFormats=XML,HTML",
+            "-DfailWhenNoMutations=false",
         ]
     proc = shared._run_tool_command("pitest", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
@@ -280,6 +281,9 @@ def run_owasp(
     use_nvd_api_key: bool,
 ) -> ToolResult:
     log_path = output_dir / "owasp-output.txt"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    data_dir = output_dir / "dependency-check-data"
+    data_dir.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
     nvd_key = env.get("NVD_API_KEY")
     if not use_nvd_api_key:
@@ -293,11 +297,15 @@ def run_owasp(
         # Explicitly disable NVD updates when configured off.
         nvd_flags.append("-DautoUpdate=false")
     format_flag = "-Dformat=JSON"
+    output_dir_flag = f"-DoutputDirectory={output_dir.resolve()}"
+    data_dir_flag = f"-DdataDirectory={data_dir.resolve()}"
     if build_tool == "gradle":
         cmd = _gradle_cmd(workdir) + [
             "dependencyCheckAnalyze",
             "--continue",
             format_flag,
+            output_dir_flag,
+            data_dir_flag,
             "-DfailOnError=false",
             *nvd_flags,
         ]
@@ -312,9 +320,11 @@ def run_owasp(
             "-Ddependencycheck.failOnError=false",
             "-DfailOnError=false",
             format_flag,
+            output_dir_flag,
+            data_dir_flag,
             *nvd_flags,
         ]
-    proc = shared._run_tool_command("owasp", cmd, workdir, output_dir, env=env)
+    proc = shared._run_tool_command("owasp", cmd, workdir, output_dir, env=env, timeout=1800)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
     output_text = f"{proc.stdout}\n{proc.stderr}".lower()

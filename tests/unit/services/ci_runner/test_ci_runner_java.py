@@ -290,6 +290,8 @@ class TestRunOwasp:
             result = run_owasp(tmp_path, output_dir, "maven", use_nvd_api_key=False)
 
         assert "-Dformat=JSON" in captured["cmd"]
+        assert f"-DoutputDirectory={output_dir.resolve()}" in captured["cmd"]
+        assert f"-DdataDirectory={(output_dir / 'dependency-check-data').resolve()}" in captured["cmd"]
         assert result.success is True
 
     def test_missing_report_fails_without_placeholder(self, tmp_path: Path) -> None:

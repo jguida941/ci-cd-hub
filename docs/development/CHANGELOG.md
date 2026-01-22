@@ -38,6 +38,11 @@ All notable changes to this project will be documented in this file.
 - Tool outputs now include `returncode`, and report validation cross-checks tool-outputs for mismatches and placeholder reports.
 - OWASP no longer creates placeholder reports; fatal analyzer errors now fail the tool.
 
+### Fix: OWASP report output + hub ref guard
+
+- OWASP now writes JSON reports to `.cihub` with a dedicated data cache directory to reduce missing evidence.
+- `cihub ci` now fails fast when `HUB_REF` is a version tag that doesn't match the installed CLI version.
+
 ## 2026-01-22 - Require Run Defaults
 
 ### Change: Configured tools must run
