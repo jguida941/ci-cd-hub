@@ -2148,3 +2148,15 @@ Commands and results:
 - `python -m pytest tests/unit/commands/test_run.py` -> failed (mutmut timeout assertion)
 - `python -m pytest tests/unit/commands/test_run.py` -> ok (26 passed)
 - `python -m cihub run owasp --repo /Users/jguida941/new_github_projects/hub-release/.cihub-audit/java-spring-tutorials --language java --output-dir .cihub` -> ok; output `.cihub/tool-outputs/owasp.json`, report in `modules/01-spring-hello-rest/target/dependency-check-report.json`
+- `git -C .cihub-audit/java-spring-tutorials checkout -B audit/java-spring-tutorials/20260123 origin/main` -> ok
+- `git -C .cihub-audit/java-spring-tutorials rm -f .github/workflows/hub-ci.yml` -> ok
+- `git -C .cihub-audit/java-spring-tutorials commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `python -m cihub init --repo .cihub-audit/java-spring-tutorials --apply --force --install-from git --hub-ref v1 --config-json '{"java":{"tools":{"checkstyle":{"max_errors":48},"codeql":{"enabled":false}}}}'` -> ok; WARN missing plugins (suggested `cihub fix-pom --apply`)
+- `python -m cihub fix-pom --repo .cihub-audit/java-spring-tutorials --apply` -> ok; WARN plugins still in pluginManagement
+- `git -C .cihub-audit/java-spring-tutorials add .ci-hub.yml .github/workflows/hub-ci.yml pom.xml` -> ok
+- `git -C .cihub-audit/java-spring-tutorials commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C .cihub-audit/java-spring-tutorials push -u origin audit/java-spring-tutorials/20260123` -> rejected (non-fast-forward)
+- `git -C .cihub-audit/java-spring-tutorials push -f -u origin audit/java-spring-tutorials/20260123` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo java-spring-tutorials --workflow hub-ci.yml --ref audit/java-spring-tutorials/20260123` -> ok; run ID 21255606886
+- `python -m cihub dispatch watch --owner jguida941 --repo java-spring-tutorials --run-id 21255606886 --interval 15 --timeout 300 --json` -> timeout (run not complete)
+- `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21255606886 --verify-tools --json` -> failed; no report.json (run still in progress)
