@@ -25,6 +25,10 @@ All notable changes to this project will be documented in this file.
 
 - OWASP runner now disables NVD auto-update when no key is present, so dependency-check still runs and emits evidence.
 
+### Fix: Hub vars verification on init/setup
+
+- `cihub init`/`cihub setup` now fail when HUB_REPO/HUB_REF cannot be verified, preventing silent drift (ADR-0072).
+
 ## 2026-01-22 - Require Run Defaults
 
 ### Change: Configured tools must run

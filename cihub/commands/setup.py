@@ -134,6 +134,7 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
     files_created: list[str] = []
     problems: list[dict] = []
     suggestions: list[dict] = []
+    hub_vars_required_failed = False
 
     try:
         # Welcome banner
@@ -526,19 +527,21 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
                 if not target_repo:
                     problems.append(
                         {
-                            "severity": "warning",
+                            "severity": "error",
                             "message": "Unable to resolve remote repo for setting HUB_REPO/HUB_REF",
                             "code": "CIHUB-HUB-VARS-NO-REMOTE",
                         }
                     )
+                    hub_vars_required_failed = True
                 elif not hub_repo_value or not hub_ref_value:
                     problems.append(
                         {
-                            "severity": "warning",
+                            "severity": "error",
                             "message": "Unable to resolve hub repo/ref for GitHub variables",
                             "code": "CIHUB-HUB-VARS-NO-DEFAULT",
                         }
                     )
+                    hub_vars_required_failed = True
                 else:
                     ok, messages, hub_problems = set_repo_variables(
                         target_repo,
@@ -550,6 +553,7 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
                             console.print(f"  [green]✓[/green] {message}")
                         steps_completed.append("hub_vars")
                     else:
+                        hub_vars_required_failed = True
                         suggestions.append(
                             {
                                 "message": "Set HUB_REPO/HUB_REF repo variables to enable hub-ci installs",
@@ -560,22 +564,34 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
 
         # Final summary
         console.print()
+        panel_title = "[bold green]Setup Complete![/bold green]"
+        panel_style = "green"
+        if hub_vars_required_failed:
+            panel_title = "[bold red]Setup Failed[/bold red]"
+            panel_style = "red"
         console.print(
             Panel.fit(
-                "[bold green]Setup Complete![/bold green]\n\n"
+                f"{panel_title}\n\n"
                 f"Steps completed: {', '.join(steps_completed)}\n"
                 f"Files created: {len(files_created)}\n\n"
                 "[bold]Next steps:[/bold]\n"
                 "  • Run [cyan]cihub ci --repo .[/cyan] to run CI locally\n"
                 "  • Run [cyan]cihub triage[/cyan] to investigate any failures\n"
                 "  • Push to GitHub to trigger GitHub Actions",
-                border_style="green",
+                border_style=panel_style,
             )
         )
 
+        exit_code = EXIT_SUCCESS if not hub_vars_required_failed else EXIT_FAILURE
+        summary = (
+            f"Setup complete. Steps: {', '.join(steps_completed)}"
+            if exit_code == EXIT_SUCCESS
+            else "Setup failed: HUB_REPO/HUB_REF verification required"
+        )
+
         return CommandResult(
-            exit_code=EXIT_SUCCESS,
-            summary=f"Setup complete. Steps: {', '.join(steps_completed)}",
+            exit_code=exit_code,
+            summary=summary,
             files_generated=files_created,
             problems=problems,
             suggestions=suggestions,

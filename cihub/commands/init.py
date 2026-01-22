@@ -271,14 +271,15 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
     hub_vars_problems: list[dict[str, str]] = []
     hub_repo_value: str | None = None
     hub_ref_value: str | None = None
-    if apply and getattr(args, "set_hub_vars", False):
+    hub_vars_required = apply and getattr(args, "set_hub_vars", False)
+    if hub_vars_required:
         template_repo, template_ref = resolve_hub_repo_ref(language)
         hub_repo_value = getattr(args, "hub_repo", None) or os.environ.get("CIHUB_HUB_REPO") or template_repo
         hub_ref_value = getattr(args, "hub_ref", None) or os.environ.get("CIHUB_HUB_REF") or template_ref
         if not hub_repo_value or not hub_ref_value:
             hub_vars_problems.append(
                 {
-                    "severity": "warning",
+                    "severity": "error",
                     "message": "Unable to resolve hub repo/ref for GitHub variables",
                     "code": "CIHUB-HUB-VARS-NO-DEFAULT",
                 }
@@ -293,10 +294,21 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
                 {"HUB_REPO": hub_repo_value, "HUB_REF": hub_ref_value},
             )
 
+    hub_vars_required_failed = False
+    if hub_vars_required and not hub_vars_set:
+        hub_vars_required_failed = True
+        hub_vars_problems.append(
+            {
+                "severity": "error",
+                "message": "Failed to verify HUB_REPO/HUB_REF repo variables",
+                "code": "CIHUB-HUB-VARS-VERIFY",
+            }
+        )
+
     pom_warning_problems: list[dict[str, str]] = []
     suggestions: list[dict[str, str]] = []
     pom_fix_data: dict = {}
-    if apply and getattr(args, "set_hub_vars", False) and hub_vars_problems:
+    if hub_vars_required and hub_vars_problems:
         suggestions.append(
             {
                 "message": "Set HUB_REPO/HUB_REF repo variables to enable hub-ci installs",
@@ -322,7 +334,9 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
                 with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
                     pom_result = apply_pom_fixes(repo_path, effective, apply=True)
                     dep_result = apply_dependency_fixes(repo_path, effective, apply=True)
-                    status = max(pom_result.exit_code, dep_result.exit_code)
+                status = max(pom_result.exit_code, dep_result.exit_code)
+                if hub_vars_required_failed:
+                    status = max(status, EXIT_FAILURE)
                 pom_path = root_path / "pom.xml"
                 files_modified = [str(pom_path)] if pom_path.exists() else []
                 summary = (
@@ -340,6 +354,7 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
                     for warning in owner_warnings
                 ]
                 problems.extend(pom_warning_problems)
+                problems.extend(hub_vars_problems)
                 if status != 0:
                     problems.append(
                         {
@@ -411,8 +426,12 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
         data["config"] = config
     data.update(pom_fix_data)
 
+    exit_code = EXIT_SUCCESS
+    if hub_vars_required_failed:
+        exit_code = EXIT_FAILURE
+
     return CommandResult(
-        exit_code=EXIT_SUCCESS,
+        exit_code=exit_code,
         summary=summary,
         problems=problems,
         suggestions=suggestions,

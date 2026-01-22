@@ -9,6 +9,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import yaml
 
@@ -20,6 +21,7 @@ from cihub.commands.detect import cmd_detect  # noqa: E402
 from cihub.commands.init import cmd_init  # noqa: E402
 from cihub.commands.update import cmd_update  # noqa: E402
 from cihub.commands.validate import cmd_validate  # noqa: E402
+from cihub.exit_codes import EXIT_FAILURE  # noqa: E402
 
 # ==============================================================================
 # Tests for cmd_detect
@@ -379,6 +381,35 @@ class TestCmdInit:
         assert result.exit_code == 0
         assert (tmp_path / ".ci-hub.yml").exists()
         assert (tmp_path / ".github" / "workflows" / "hub-ci.yml").exists()
+
+    def test_init_fails_when_hub_vars_unverified(self, tmp_path: Path) -> None:
+        """Init fails when hub vars cannot be verified and set_hub_vars is true."""
+        (tmp_path / "pyproject.toml").write_text("[project]\nname='example'\n", encoding="utf-8")
+        args = argparse.Namespace(
+            repo=str(tmp_path),
+            language="python",
+            owner="testowner",
+            name="testrepo",
+            branch="main",
+            subdir="",
+            wizard=False,
+            dry_run=False,
+            apply=True,
+            force=False,
+            fix_pom=False,
+            install_from="git",
+            config_json=None,
+            config_file=None,
+            config_override=None,
+            set_hub_vars=True,
+            hub_repo="owner/repo",
+            hub_ref="v1",
+            json=False,
+        )
+        with patch("cihub.commands.init.set_repo_variables", return_value=(False, [], [])):
+            result = cmd_init(args)
+        assert result.exit_code == EXIT_FAILURE
+        assert any(p.get("code") == "CIHUB-HUB-VARS-VERIFY" for p in (result.problems or []))
 
     def test_init_dry_run(self, tmp_path: Path) -> None:
         """Init dry run returns config in data without writing."""
