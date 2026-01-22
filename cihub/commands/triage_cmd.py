@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 # Import from submodules
+from cihub.commands.triage.artifacts import find_all_reports_in_artifacts as _find_all_reports_in_artifacts
 from cihub.commands.triage.artifacts import find_report_in_artifacts as _find_report_in_artifacts
 from cihub.commands.triage.github import download_artifacts as _download_artifacts
 from cihub.commands.triage.github import get_latest_failed_run as _get_latest_failed_run
@@ -32,6 +33,7 @@ from cihub.commands.triage.types import build_meta as _build_meta
 from cihub.commands.triage.types import filter_bundle as _filter_bundle
 from cihub.commands.triage.verification import format_verify_tools_output as _format_verify_tools_output
 from cihub.commands.triage.verification import verify_tools_from_report as _verify_tools_from_report
+from cihub.commands.triage.verification import verify_tools_from_reports as _verify_tools_from_reports
 from cihub.commands.triage.watch import watch_for_failures as _watch_for_failures
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 from cihub.services.triage_service import (
@@ -426,6 +428,7 @@ def _handle_verify_tools(
     # Find report.json (from args, latest run, or default location)
     report_path: Path | None = None
     reports_dir_path: Path | None = None
+    multi_report_paths: list[Path] | None = None
 
     if args.report:
         report_path = Path(args.report)
@@ -446,8 +449,14 @@ def _handle_verify_tools(
             if not artifacts_dir.exists() or not list(artifacts_dir.iterdir()):
                 artifacts_dir.mkdir(parents=True, exist_ok=True)
                 _download_artifacts(effective_run_id, repo, artifacts_dir)
-            report_path = _find_report_in_artifacts(artifacts_dir)
-            reports_dir_path = report_path.parent if report_path else None
+            report_paths = _find_all_reports_in_artifacts(artifacts_dir)
+            if len(report_paths) > 1:
+                multi_report_paths = report_paths
+                reports_dir_path = artifacts_dir
+                report_path = report_paths[0]
+            else:
+                report_path = report_paths[0] if report_paths else None
+                reports_dir_path = report_path.parent if report_path else None
     else:
         # Default: look in output_dir
         report_path = output_dir / "report.json"
@@ -466,7 +475,11 @@ def _handle_verify_tools(
             ],
         )
 
-    verify_result = _verify_tools_from_report(report_path, reports_dir_path)
+    verify_result = (
+        _verify_tools_from_reports(multi_report_paths, reports_dir_path)
+        if multi_report_paths
+        else _verify_tools_from_report(report_path, reports_dir_path)
+    )
 
     # Build problems from verification issues
     verify_problems: list[dict[str, Any]] = []

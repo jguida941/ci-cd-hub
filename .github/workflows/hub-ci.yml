@@ -163,6 +163,7 @@ jobs:
     with:
       python_version: ${{ needs.config.outputs.python_version }}
       workdir: ${{ needs.config.outputs.python_workdir }}
+      artifact_prefix: 'python-'
       hub_correlation_id: ${{ inputs.hub_correlation_id }}
       hub_repo: ${{ inputs.hub_repo || vars.HUB_REPO }}
       hub_ref: ${{ inputs.hub_ref || vars.HUB_REF }}
@@ -219,6 +220,7 @@ jobs:
       java_version: ${{ needs.config.outputs.java_version }}
       build_tool: ${{ needs.config.outputs.build_tool }}
       workdir: ${{ needs.config.outputs.java_workdir }}
+      artifact_prefix: 'java-'
       hub_correlation_id: ${{ inputs.hub_correlation_id }}
       hub_repo: ${{ inputs.hub_repo || vars.HUB_REPO }}
       hub_ref: ${{ inputs.hub_ref || vars.HUB_REF }}

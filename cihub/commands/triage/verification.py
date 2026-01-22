@@ -138,6 +138,52 @@ def _verify_tools_dict(
     return result
 
 
+def _merge_target_result(
+    base: dict[str, Any],
+    target_result: dict[str, Any],
+    slug: str,
+    language: str | None = None,
+    subdir: str | None = None,
+) -> None:
+    target_result["slug"] = slug
+    target_result["language"] = language
+    target_result["subdir"] = subdir
+    base["targets"].append(target_result)
+    base["verified"] = base["verified"] and target_result.get("verified", False)
+
+    for key in ("drift", "no_proof", "failures", "optional", "skipped"):
+        for item in target_result.get(key, []):
+            merged = dict(item)
+            merged["target"] = slug
+            msg = merged.get("message", "")
+            merged["message"] = f"[{slug}] {msg}".strip()
+            base[key].append(merged)
+
+    base["passed"].extend([f"{slug}:{tool}" for tool in target_result.get("passed", [])])
+
+    counts = target_result.get("counts", {})
+    for key in base["counts"]:
+        base["counts"][key] += int(counts.get(key, 0))
+
+
+def _finalize_summary(base: dict[str, Any]) -> None:
+    total = base["counts"]["total"]
+    if total == 0:
+        base["summary"] = "No tools found in report"
+        return
+    if base["verified"]:
+        base["summary"] = f"All {base['counts']['passed']} configured tools verified across {len(base['targets'])} targets"
+        return
+    issues = []
+    if base["counts"]["drift"]:
+        issues.append(f"{base['counts']['drift']} configured but didn't run")
+    if base["counts"]["no_proof"]:
+        issues.append(f"{base['counts']['no_proof']} ran but no proof")
+    if base["counts"]["failures"]:
+        issues.append(f"{base['counts']['failures']} failed")
+    base["summary"] = f"Tool verification: {', '.join(issues)}"
+
+
 def verify_tools_from_report(
     report_path: Path,
     reports_dir: Path | None = None,
@@ -208,43 +254,69 @@ def verify_tools_from_report(
             if reports_dir and entry.get("slug"):
                 target_reports_dir = reports_dir / "targets" / str(entry.get("slug"))
             target_result = _verify_tools_dict(target_report, target_reports_dir)
-            target_result["slug"] = slug
-            target_result["language"] = entry.get("language")
-            target_result["subdir"] = entry.get("subdir")
-            base["targets"].append(target_result)
-            base["verified"] = base["verified"] and target_result.get("verified", False)
+            _merge_target_result(
+                base,
+                target_result,
+                slug=slug,
+                language=entry.get("language"),
+                subdir=entry.get("subdir"),
+            )
 
-            for key in ("drift", "no_proof", "failures", "optional", "skipped"):
-                for item in target_result.get(key, []):
-                    merged = dict(item)
-                    merged["target"] = slug
-                    msg = merged.get("message", "")
-                    merged["message"] = f"[{slug}] {msg}".strip()
-                    base[key].append(merged)
-
-            base["passed"].extend([f"{slug}:{tool}" for tool in target_result.get("passed", [])])
-
-            counts = target_result.get("counts", {})
-            for key in base["counts"]:
-                base["counts"][key] += int(counts.get(key, 0))
-
-        total = base["counts"]["total"]
-        if total == 0:
-            base["summary"] = "No tools found in report"
-        elif base["verified"]:
-            base["summary"] = f"All {base['counts']['passed']} configured tools verified across {len(base['targets'])} targets"
-        else:
-            issues = []
-            if base["counts"]["drift"]:
-                issues.append(f"{base['counts']['drift']} configured but didn't run")
-            if base["counts"]["no_proof"]:
-                issues.append(f"{base['counts']['no_proof']} ran but no proof")
-            if base["counts"]["failures"]:
-                issues.append(f"{base['counts']['failures']} failed")
-            base["summary"] = f"Tool verification: {', '.join(issues)}"
+        _finalize_summary(base)
         return base
 
     return _verify_tools_dict(report, reports_dir)
+
+
+def verify_tools_from_reports(report_paths: list[Path], reports_dir: Path | None = None) -> dict[str, Any]:
+    """Verify tools across multiple report.json files."""
+    base: dict[str, Any] = {
+        "verified": True,
+        "drift": [],
+        "no_proof": [],
+        "failures": [],
+        "optional": [],
+        "skipped": [],
+        "passed": [],
+        "summary": "",
+        "tool_matrix": [],
+        "targets": [],
+        "counts": {
+            "total": 0,
+            "passed": 0,
+            "drift": 0,
+            "no_proof": 0,
+            "failures": 0,
+            "optional": 0,
+            "skipped": 0,
+        },
+    }
+
+    for report_path in report_paths:
+        if not report_path.exists():
+            continue
+        try:
+            with report_path.open(encoding="utf-8") as f:
+                report = json.load(f)
+        except json.JSONDecodeError:
+            base["verified"] = False
+            base["failures"].append({"tool": "report", "message": f"Invalid JSON in {report_path}"})
+            continue
+
+        environment = report.get("environment", {}) if isinstance(report.get("environment"), dict) else {}
+        slug = report_path.parent.name
+        target_reports_dir = report_path.parent
+        target_result = _verify_tools_dict(report, target_reports_dir)
+        _merge_target_result(
+            base,
+            target_result,
+            slug=slug,
+            language=environment.get("language"),
+            subdir=environment.get("workdir"),
+        )
+
+    _finalize_summary(base)
+    return base
 
 
 def format_verify_tools_output(verify_result: dict[str, Any]) -> list[str]:
@@ -345,6 +417,7 @@ _format_verify_tools_output = format_verify_tools_output
 __all__ = [
     "format_verify_tools_output",
     "verify_tools_from_report",
+    "verify_tools_from_reports",
     # Backward compatibility
     "_format_verify_tools_output",
     "_verify_tools_from_report",

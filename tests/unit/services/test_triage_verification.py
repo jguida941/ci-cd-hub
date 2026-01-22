@@ -15,6 +15,7 @@ import pytest
 from cihub.commands.triage.verification import (
     format_verify_tools_output,
     verify_tools_from_report,
+    verify_tools_from_reports,
 )
 
 
@@ -117,6 +118,40 @@ class TestVerifyToolsFromReport:
         assert len(result["drift"]) == 1
         assert result["drift"][0]["tool"] == "mypy"
         assert "did not run" in result["drift"][0]["message"].lower()
+
+
+class TestVerifyToolsFromReports:
+    """Unit tests for verify_tools_from_reports function."""
+
+    def test_combines_multiple_reports(self, tmp_path: Path) -> None:
+        python_dir = tmp_path / "python-ci-report"
+        java_dir = tmp_path / "java-ci-report"
+        python_dir.mkdir()
+        java_dir.mkdir()
+
+        python_report = {
+            "environment": {"workdir": "python", "language": "python"},
+            "tools_configured": {"pytest": True},
+            "tools_ran": {"pytest": True},
+            "tools_success": {"pytest": True},
+        }
+        java_report = {
+            "environment": {"workdir": "java", "language": "java"},
+            "tools_configured": {"checkstyle": True},
+            "tools_ran": {"checkstyle": False},
+            "tools_success": {"checkstyle": False},
+        }
+        python_path = python_dir / "report.json"
+        java_path = java_dir / "report.json"
+        python_path.write_text(json.dumps(python_report), encoding="utf-8")
+        java_path.write_text(json.dumps(java_report), encoding="utf-8")
+
+        result = verify_tools_from_reports([python_path, java_path], tmp_path)
+
+        assert len(result["targets"]) == 2
+        assert result["counts"]["passed"] == 1
+        assert result["counts"]["drift"] == 1
+        assert result["verified"] is False
 
     def test_optional_tools_not_counted_as_drift(self, tmp_path: Path) -> None:
         """Test configured-but-optional tools do not fail verification."""

@@ -38,6 +38,10 @@ All notable changes to this project will be documented in this file.
 - OWASP dependency-check now forces JSON output so CI evidence is always generated.
 - If dependency-check exits cleanly but emits no report, cihub writes a placeholder JSON report to keep evidence consistent.
 
+### Fix: Multi-report verify-tools
+
+- `cihub triage --verify-tools` now aggregates multiple report artifacts (e.g., Python + Java monorepos).
+
 ## 2026-01-21 - Tool Evidence + Monorepo Targets
 
 ### Fix: Verified tool evidence

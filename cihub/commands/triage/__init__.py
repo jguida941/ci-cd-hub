@@ -66,6 +66,7 @@ from .types import (
 from .verification import (
     format_verify_tools_output,
     verify_tools_from_report,
+    verify_tools_from_reports,
 )
 from .watch import (
     watch_for_failures,
@@ -119,6 +120,7 @@ __all__ = [
     # Verification
     "format_verify_tools_output",
     "verify_tools_from_report",
+    "verify_tools_from_reports",
     # Watch mode
     "watch_for_failures",
     # Backward compatibility (private functions used by tests)
