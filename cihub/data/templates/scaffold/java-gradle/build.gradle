@@ -97,7 +97,11 @@ dependencyCheck {
     format = 'ALL'
     failBuildOnCVSS = 11
     failOnError = false
-    autoUpdate = nvdKey ? true : false
+    autoUpdate = true
+    def suppressionPath = file('config/owasp/suppressions.xml')
+    if (suppressionPath.exists()) {
+        suppressionFile = suppressionPath
+    }
     nvd {
         apiKey = nvdKey ?: ''
         delay = 3500

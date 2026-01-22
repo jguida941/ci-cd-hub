@@ -463,6 +463,8 @@ def normalize_gradle_configs(
         needs_refresh = "autoUpdate" not in block
         if "suppressionFile" in block and not suppression_path.exists():
             needs_refresh = True
+        if "autoUpdate = nvdKey ? true : false" in block:
+            needs_refresh = True
         if needs_refresh:
             snippet = config_snippets.get("org.owasp.dependencycheck")
             if snippet:

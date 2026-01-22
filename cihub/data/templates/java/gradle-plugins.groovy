@@ -106,7 +106,7 @@ dependencyCheck {
     failBuildOnCVSS = 7  // Fail on high/critical CVEs (CVSS >= 7.0)
     // failOnError handles NVD API failures gracefully
     failOnError = false
-    autoUpdate = nvdKey ? true : false
+    autoUpdate = true
     // Suppress false positives and build-time-only transitive deps (optional)
     def suppressionPath = file('config/owasp/suppressions.xml')
     if (suppressionPath.exists()) {

@@ -280,11 +280,17 @@ def run_owasp(
     nvd_flags: list[str] = []
     if use_nvd_api_key and nvd_key:
         nvd_flags.append(f"-DnvdApiKey={nvd_key}")
-    else:
-        nvd_flags.extend(["-DautoUpdate=false", "-DfailOnError=false"])
+    elif not use_nvd_api_key:
+        nvd_flags.append("-DautoUpdate=false")
     format_flag = "-Dformat=JSON"
     if build_tool == "gradle":
-        cmd = _gradle_cmd(workdir) + ["dependencyCheckAnalyze", "--continue", format_flag, *nvd_flags]
+        cmd = _gradle_cmd(workdir) + [
+            "dependencyCheckAnalyze",
+            "--continue",
+            format_flag,
+            "-DfailOnError=false",
+            *nvd_flags,
+        ]
     else:
         cmd = _maven_cmd(workdir) + [
             "-B",
