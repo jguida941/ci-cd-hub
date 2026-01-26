@@ -13,28 +13,28 @@
 # =============================================================================
 # Stage 1: Linting & Type Checking
 # =============================================================================
-ruff==0.14.10                    # Python linting
-mypy==1.14.1                     # Type checking
-yamllint==1.35.1                 # YAML linting
-types-PyYAML==6.0.12.20241230    # Type stubs
+ruff==0.14.14                    # Python linting
+mypy==1.19.1                     # Type checking
+yamllint==1.38.0                 # YAML linting
+types-PyYAML==6.0.12.20250915    # Type stubs
 
 # =============================================================================
 # Stage 2: Testing
 # =============================================================================
-pytest==8.3.4                    # Test framework
-pytest-cov==6.0.0                # Coverage plugin
-pytest-benchmark==5.1.0          # Benchmark plugin
-syrupy==4.9.1                    # Snapshot testing
-hypothesis==6.130.0              # Property-based testing
+pytest==9.0.2                    # Test framework
+pytest-cov==7.0.0                # Coverage plugin
+pytest-benchmark==5.2.3          # Benchmark plugin
+syrupy==5.1.0                    # Snapshot testing
+hypothesis==6.151.1              # Property-based testing
 mutmut==3.4.0                    # Mutation testing
 
 # =============================================================================
 # Stage 3: Security
 # =============================================================================
-bandit[toml]==1.8.3              # SAST for Python
-pip-audit==2.8.0                 # Dependency vulnerability scanning
-semgrep==1.109.0                 # Advanced SAST
-zizmor==1.4.0                    # GitHub Actions security scanner
+bandit[toml]==1.9.3              # SAST for Python
+pip-audit==2.10.0                 # Dependency vulnerability scanning
+semgrep==1.149.0                 # Advanced SAST
+zizmor==1.22.0                    # GitHub Actions security scanner
 
 # =============================================================================
 # Stage 4: Workflow Security
@@ -44,6 +44,6 @@ zizmor==1.4.0                    # GitHub Actions security scanner
 # =============================================================================
 # Stage 5: Compliance
 # =============================================================================
-pip-licenses==5.0.0              # License compliance
-black==24.12.0                   # Formatter (CI parity check)
-isort==5.13.2                    # Import sorting (CI parity check)
+pip-licenses==5.5.0              # License compliance
+black==26.1.0                   # Formatter (CI parity check)
+isort==7.0.0                    # Import sorting (CI parity check)
