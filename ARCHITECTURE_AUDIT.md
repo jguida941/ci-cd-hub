@@ -92,7 +92,7 @@ behavior, then define a fix plan for the gaps found during tool audits.
 - Decide on fixture policy: allow vulnerabilities or pin dependencies.
 - Apply overrides in `cihub/data/config/repos/` (requires approval).
 - Add regression tests for fixture thresholds.
- - Interim: `cihub-test-python-pyproject` audit branch uses `max_pip_audit_vulns: 1` in repo `.ci-hub.yml` to pass `pip_audit` until a fix is available.
+ - Interim: `cihub-test-python-pyproject` uses `max_pip_audit_vulns: 1` in repo `.ci-hub.yml` (now on main) to pass `pip_audit` until a fix is available.
 
 ### Phase D: Re-run audit matrix
 

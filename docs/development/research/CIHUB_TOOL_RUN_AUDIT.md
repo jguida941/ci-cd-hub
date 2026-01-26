@@ -74,6 +74,11 @@ Re-run (hub_ref: audit/owasp-no-key, post alignment changes):
 - `python -m cihub dispatch watch --owner jguida941 --repo cihub-test-python-pyproject --run-id 21352173666` -> completed; conclusion success
 - `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21352173666` -> ok; 0 failures
 - `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21352173666 --verify-tools` -> ok; all configured tools verified
+- `git merge audit/pip-audit-allow-1` -> ok; `max_pip_audit_vulns: 1` now on main
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-pyproject --ref main --workflow hub-ci.yml` -> ok; run ID 21352458423
+- `python -m cihub dispatch watch --owner jguida941 --repo cihub-test-python-pyproject --run-id 21352458423` -> completed; conclusion success
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21352458423` -> ok; 0 failures
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21352458423 --verify-tools` -> ok; all configured tools verified
 
 Notes:
 - Artifact report path is still absolute (/home/runner/.../.cihub/pip-audit-report.json) and not present in downloaded artifacts.
@@ -81,6 +86,7 @@ Notes:
 - Local `cihub run pip-audit` now reports `pip_audit_vulns=1` with the dict-format parser.
 - Latest run with updated CLI shows `pip_audit_vulns=1`, confirming the vulnerability is real and no longer a parse issue.
 - `audit/pip-audit-allow-1` keeps the override in the test repo branch only; main is unchanged.
+- Override is now merged to `main` for the test repo; re-evaluate when a protobuf fix is available.
 
 ## 2026-01-22 - Full Audit Plan (CLI/Wizard/TS CLI + Repo Matrix)
 
