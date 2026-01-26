@@ -113,6 +113,31 @@ Commands and results:
 Notes:
 - Override is now merged to `main` for the test repo; re-evaluate when a protobuf fix is available.
 
+## 2026-01-26 - cihub-test-python-setup (tool audit)
+
+Repo type: Python (setup.py)
+Repo path: `/tmp/cihub-audit/cihub-test-python-setup`
+Goal: Re-run audit with updated CLI and resolve pip_audit vuln policy.
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-python-setup /tmp/cihub-audit/cihub-test-python-setup` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-python-setup --apply --force --config-file /tmp/cihub-audit/cihub-test-python-setup/.ci-hub.yml --hub-repo jguida941/ci-cd-hub --hub-ref audit/owasp-no-key` -> ok; no workflow diff
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-setup --ref main --workflow hub-ci.yml` -> ok; run ID 21353141894
+- `python -m cihub dispatch watch --owner jguida941 --repo cihub-test-python-setup --run-id 21353141894` -> completed; conclusion failure
+- `python -m cihub triage --repo jguida941/cihub-test-python-setup --run 21353141894 --verify-tools` -> failed; pip_audit failed, others passed
+- `git checkout -b audit/pip-audit-allow-1` -> ok; added `thresholds.max_pip_audit_vulns: 1` in `.ci-hub.yml`
+- `git push -u origin audit/pip-audit-allow-1` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-setup --ref audit/pip-audit-allow-1 --workflow hub-ci.yml` -> ok; run ID 21353203921
+- `python -m cihub dispatch watch --owner jguida941 --repo cihub-test-python-setup --run-id 21353203921` -> completed; conclusion success
+- `python -m cihub triage --repo jguida941/cihub-test-python-setup --run 21353203921 --verify-tools` -> ok; all configured tools verified
+- `git merge audit/pip-audit-allow-1` -> ok; `max_pip_audit_vulns: 1` now on main
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-setup --ref main --workflow hub-ci.yml` -> ok; run ID 21353271188
+- `python -m cihub dispatch watch --owner jguida941 --repo cihub-test-python-setup --run-id 21353271188` -> completed; conclusion success
+- `python -m cihub triage --repo jguida941/cihub-test-python-setup --run 21353271188 --verify-tools` -> ok; all configured tools verified
+
+Notes:
+- Override is now merged to `main` for the test repo; re-evaluate when a protobuf fix is available.
+
 ## 2026-01-22 - Full Audit Plan (CLI/Wizard/TS CLI + Repo Matrix)
 
 Goal: Prove every command surface works (Python CLI, TS CLI, wizard), and
