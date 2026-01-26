@@ -61,6 +61,7 @@ codeql, sbom, docker.
   - Regenerate via `cihub init --apply --force` (no manual YAML edits).
   - Use `--hub-workflow-ref <audit-ref>` (and `--hub-ref`) when validating
     workflow changes before a release tag is updated.
+  - Use `--install-from git` to ensure the audit branch CLI is installed.
   - Dispatch and triage (`cihub dispatch trigger/watch`, `cihub triage --verify-tools`).
   - If no artifacts, treat as a failure and fix the workflow/CLI before moving on.
 - Log every run in `docs/development/research/CIHUB_TOOL_RUN_AUDIT.md`.

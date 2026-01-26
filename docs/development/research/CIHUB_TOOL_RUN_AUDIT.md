@@ -175,6 +175,19 @@ Notes:
 - Failure reason: "Failed to load config: Validation failed for merged-config" (likely because hub branch does not yet include schema update for `repo.hub_workflow_ref`).
 - Next: push hub-release changes to `audit/owasp-no-key` and re-run to validate artifacts + `--verify-tools`.
 
+Re-run (hub branch updated, install.source=git):
+- `python -m cihub init --repo /tmp/cihub-audit/java-spring-tutorials --apply --force --config-file /tmp/cihub-audit/java-spring-tutorials/.ci-hub.yml --hub-repo jguida941/ci-cd-hub --hub-ref audit/owasp-no-key --hub-workflow-ref audit/owasp-no-key --install-from git` -> ok; set `install.source: git`
+- `git commit -m "chore: use git install for audit runs"` -> ok
+- `git push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo java-spring-tutorials --ref audit/cihub-audit-2026-01-26 --workflow hub-ci.yml` -> ok; run ID 21355250807
+- `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21355250807` -> 2 failures (checkstyle, owasp); artifacts downloaded
+- `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21355250807 --verify-tools` -> failed; checkstyle/owasp failed; codeql + owasp no proof
+
+Notes:
+- `--verify-tools` summary: Passed (jacoco, pitest, pmd, spotbugs), Failed (checkstyle, owasp), No proof (codeql, owasp).
+- Artifacts available under `.cihub/runs/21355250807/artifacts/java-ci-report/`.
+- Next: inspect tool outputs for checkstyle/owasp and fix CLI runners to emit evidence for codeql/owasp.
+
 ## 2026-01-22 - Full Audit Plan (CLI/Wizard/TS CLI + Repo Matrix)
 
 Goal: Prove every command surface works (Python CLI, TS CLI, wizard), and
