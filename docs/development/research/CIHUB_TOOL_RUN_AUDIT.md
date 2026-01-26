@@ -68,12 +68,19 @@ Re-run (hub_ref: audit/owasp-no-key, post alignment changes):
 - `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21352040640` -> ok; 1 failure
 - `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21352040640 --verify-tools` -> failed; pip_audit failed, others passed
 - `cat .cihub/runs/21352040640/artifacts/python-ci-report/tool-outputs/pip_audit.json` -> ok; returncode 1, stderr says 1 vuln, metrics pip_audit_vulns=1, success=false
+- `git checkout -b audit/pip-audit-allow-1` -> ok; added `thresholds.max_pip_audit_vulns: 1` in `.ci-hub.yml`
+- `git push -u origin audit/pip-audit-allow-1` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-pyproject --ref audit/pip-audit-allow-1 --workflow hub-ci.yml` -> ok; run ID 21352173666
+- `python -m cihub dispatch watch --owner jguida941 --repo cihub-test-python-pyproject --run-id 21352173666` -> completed; conclusion success
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21352173666` -> ok; 0 failures
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21352173666 --verify-tools` -> ok; all configured tools verified
 
 Notes:
 - Artifact report path is still absolute (/home/runner/.../.cihub/pip-audit-report.json) and not present in downloaded artifacts.
 - Tool output success is still false for pip_audit with 0 parsed vulns, indicating the remote audit branch likely does not include the latest gate-aligned success changes yet.
 - Local `cihub run pip-audit` now reports `pip_audit_vulns=1` with the dict-format parser.
 - Latest run with updated CLI shows `pip_audit_vulns=1`, confirming the vulnerability is real and no longer a parse issue.
+- `audit/pip-audit-allow-1` keeps the override in the test repo branch only; main is unchanged.
 
 ## 2026-01-22 - Full Audit Plan (CLI/Wizard/TS CLI + Repo Matrix)
 
