@@ -18,6 +18,7 @@ Tests check result.exit_code instead of comparing result to int.
 from __future__ import annotations
 
 import argparse
+import os
 import io
 import json
 import sys
@@ -617,24 +618,41 @@ class TestSecretsJsonMode:
 
     def test_setup_nvd_no_key_json_mode(self) -> None:
         """JSON mode requires --nvd-key argument."""
-        args = argparse.Namespace(nvd_key=None, verify=False, json=True)
-        result = cmd_setup_nvd(args)
+        with mock.patch.dict(os.environ, {}, clear=True):
+            args = argparse.Namespace(nvd_key=None, verify=False, json=True)
+            result = cmd_setup_nvd(args)
         assert isinstance(result, CommandResult)
         assert result.exit_code == 2  # EXIT_USAGE
         assert "--nvd-key" in result.summary
 
     def test_setup_nvd_empty_key_json_mode(self) -> None:
         """JSON mode requires --nvd-key (empty string triggers same path)."""
-        args = argparse.Namespace(nvd_key="", verify=False, json=True)
-        result = cmd_setup_nvd(args)
+        with mock.patch.dict(os.environ, {}, clear=True):
+            args = argparse.Namespace(nvd_key="", verify=False, json=True)
+            result = cmd_setup_nvd(args)
         assert isinstance(result, CommandResult)
         assert result.exit_code == 2  # EXIT_USAGE
         assert "--nvd-key" in result.summary
 
     def test_setup_nvd_whitespace_key_json_mode(self) -> None:
         """JSON mode returns CommandResult for whitespace NVD key."""
-        args = argparse.Namespace(nvd_key="key with space", verify=False, json=True)
-        result = cmd_setup_nvd(args)
+        with mock.patch.dict(os.environ, {}, clear=True):
+            args = argparse.Namespace(nvd_key="key with space", verify=False, json=True)
+            result = cmd_setup_nvd(args)
         assert isinstance(result, CommandResult)
         assert result.exit_code == EXIT_FAILURE
         assert "whitespace" in result.summary
+
+    def test_setup_nvd_env_key_json_mode(
+        self, mock_subprocess, mock_resolve_executable
+    ) -> None:
+        """JSON mode accepts NVD_API_KEY from env."""
+        with mock.patch.dict(os.environ, {"NVD_API_KEY": "env-nvd-key"}, clear=True):
+            with mock.patch("cihub.commands.secrets.get_connected_repos") as mock_repos:
+                mock_repos.return_value = ["owner/java-repo"]
+                args = argparse.Namespace(nvd_key=None, verify=False, json=True)
+                result = cmd_setup_nvd(args)
+        assert isinstance(result, CommandResult)
+        assert result.exit_code == EXIT_SUCCESS
+        items = result.data.get("items", [])
+        assert any("[OK] owner/java-repo" in item for item in items)

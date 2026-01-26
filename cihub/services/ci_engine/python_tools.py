@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from cihub.ci_runner import ToolResult
+from cihub.core.ci_report import resolve_thresholds
+from cihub.core.gate_specs import evaluate_threshold, get_threshold_spec_by_key
 from cihub.tools.registry import (
     PYTHON_TOOLS,
     get_custom_tools_from_config,
@@ -23,7 +25,15 @@ from cihub.utils.exec_utils import (
     safe_run,
 )
 
-from .helpers import _parse_env_bool, _tool_enabled
+from .helpers import _parse_env_bool, _tool_enabled, _tool_gate_enabled
+
+
+def _threshold_passed(language: str, key: str, value: int | float, threshold: int | float) -> bool:
+    spec = get_threshold_spec_by_key(language, key)
+    if not spec:
+        return True
+    passed, _ = evaluate_threshold(spec, value, threshold)
+    return passed
 
 
 def _run_dep_command(
@@ -236,6 +246,9 @@ def _run_python_tools(
 
     tool_output_dir = output_dir / "tool-outputs"
     tool_output_dir.mkdir(parents=True, exist_ok=True)
+    thresholds = resolve_thresholds(config, "python")
+    max_high_vulns = int(thresholds.get("max_high_vulns", 0) or 0)
+    max_critical_vulns = int(thresholds.get("max_critical_vulns", 0) or 0)
 
     for tool in PYTHON_TOOLS:
         if tool == "hypothesis":
@@ -325,9 +338,65 @@ def _run_python_tools(
                 }
             )
             result = ToolResult(tool=tool, ran=False, success=False)
-        tool_outputs[tool] = result.to_payload()
         tools_ran[tool] = result.ran
-        if tool == "bandit" and bandit_gate is not None:
+        if tool == "pytest":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                tests_passed = int(result.metrics.get("tests_passed", 0))
+                tests_failed = int(result.metrics.get("tests_failed", 0))
+                tests_skipped = int(result.metrics.get("tests_skipped", 0))
+                tests_total = tests_passed + tests_failed + tests_skipped
+                if tests_total == 0 or tests_failed > 0:
+                    tools_success[tool] = False
+                else:
+                    coverage_min = float(thresholds.get("coverage_min", 0) or 0)
+                    coverage = float(result.metrics.get("coverage", 0))
+                    tools_success[tool] = _threshold_passed("python", "coverage_min", coverage, coverage_min)
+            result.success = tools_success[tool]
+        elif tool == "ruff":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                parse_error = bool(result.metrics.get("parse_error", False))
+                if parse_error:
+                    tools_success[tool] = False
+                elif not _tool_gate_enabled(config, "ruff", "python"):
+                    tools_success[tool] = True
+                else:
+                    max_ruff = int(thresholds.get("max_ruff_errors", 0) or 0)
+                    ruff_errors = int(result.metrics.get("ruff_errors", 0))
+                    tools_success[tool] = _threshold_passed("python", "max_ruff_errors", ruff_errors, max_ruff)
+            result.success = tools_success[tool]
+        elif tool == "black":
+            if not result.ran:
+                tools_success[tool] = False
+            elif not _tool_gate_enabled(config, "black", "python"):
+                tools_success[tool] = True
+            else:
+                max_black = int(thresholds.get("max_black_issues", 0) or 0)
+                black_issues = int(result.metrics.get("black_issues", 0))
+                tools_success[tool] = _threshold_passed("python", "max_black_issues", black_issues, max_black)
+            result.success = tools_success[tool]
+        elif tool == "isort":
+            if not result.ran:
+                tools_success[tool] = False
+            elif not _tool_gate_enabled(config, "isort", "python"):
+                tools_success[tool] = True
+            else:
+                max_isort = int(thresholds.get("max_isort_issues", 0) or 0)
+                isort_issues = int(result.metrics.get("isort_issues", 0))
+                tools_success[tool] = _threshold_passed("python", "max_isort_issues", isort_issues, max_isort)
+            result.success = tools_success[tool]
+        elif tool == "mypy":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                max_mypy = int(thresholds.get("max_mypy_errors", 0) or 0)
+                mypy_errors = int(result.metrics.get("mypy_errors", 0))
+                tools_success[tool] = _threshold_passed("python", "max_mypy_errors", mypy_errors, max_mypy)
+            result.success = tools_success[tool]
+        elif tool == "bandit" and bandit_gate is not None:
             if not result.ran:
                 tools_success[tool] = False
             else:
@@ -339,15 +408,130 @@ def _run_python_tools(
                     bandit_medium = int(result.metrics.get("bandit_medium", 0))
                     bandit_low = int(result.metrics.get("bandit_low", 0))
                     success = True
-                    if bandit_gate["fail_on_high"] and bandit_high > 0:
-                        success = False
-                    if bandit_gate["fail_on_medium"] and bandit_medium > 0:
-                        success = False
-                    if bandit_gate["fail_on_low"] and bandit_low > 0:
-                        success = False
+                    if bandit_gate["fail_on_high"]:
+                        success = success and _threshold_passed(
+                            "python",
+                            "max_high_vulns",
+                            bandit_high,
+                            max_high_vulns,
+                        )
+                    if bandit_gate["fail_on_medium"]:
+                        success = success and _threshold_passed(
+                            "python",
+                            "max_bandit_medium",
+                            bandit_medium,
+                            0,
+                        )
+                    if bandit_gate["fail_on_low"]:
+                        success = success and _threshold_passed(
+                            "python",
+                            "max_bandit_low",
+                            bandit_low,
+                            0,
+                        )
                     tools_success[tool] = success
+            result.success = tools_success[tool]
+        elif tool == "pip_audit":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                parse_error = bool(result.metrics.get("parse_error", False))
+                if parse_error:
+                    tools_success[tool] = False
+                elif _tool_gate_enabled(config, "pip_audit", "python"):
+                    max_pip = int(thresholds.get("max_pip_audit_vulns", max_high_vulns) or 0)
+                    pip_vulns = int(result.metrics.get("pip_audit_vulns", 0))
+                    tools_success[tool] = _threshold_passed("python", "max_pip_audit_vulns", pip_vulns, max_pip)
+                else:
+                    tools_success[tool] = True
+            result.success = tools_success[tool]
+        elif tool == "mutmut":
+            if not result.ran:
+                tools_success[tool] = False
+            elif result.returncode == 124:
+                tools_success[tool] = False
+            else:
+                mut_min = float(thresholds.get("mutation_score_min", 0) or 0)
+                mut_score = float(result.metrics.get("mutation_score", 0))
+                tools_success[tool] = _threshold_passed("python", "mutation_score_min", mut_score, mut_min)
+            result.success = tools_success[tool]
+        elif tool == "semgrep":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                parse_error = bool(result.metrics.get("parse_error", False))
+                if parse_error:
+                    tools_success[tool] = False
+                elif not _tool_gate_enabled(config, "semgrep", "python"):
+                    tools_success[tool] = True
+                else:
+                    max_semgrep = int(thresholds.get("max_semgrep_findings", 0) or 0)
+                    semgrep_findings = int(result.metrics.get("semgrep_findings", 0))
+                    tools_success[tool] = _threshold_passed(
+                        "python",
+                        "max_semgrep_findings",
+                        semgrep_findings,
+                        max_semgrep,
+                    )
+            result.success = tools_success[tool]
+        elif tool == "trivy":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                parse_error = bool(result.metrics.get("parse_error", False))
+                if parse_error:
+                    tools_success[tool] = False
+                else:
+                    trivy_cfg = config.get("python", {}).get("tools", {}).get("trivy", {}) or {}
+                    if not _tool_gate_enabled(config, "trivy", "python"):
+                        tools_success[tool] = True
+                    else:
+                        critical = int(result.metrics.get("trivy_critical", 0))
+                        high = int(result.metrics.get("trivy_high", 0))
+                        max_critical = int(thresholds.get("max_trivy_critical", max_critical_vulns) or 0)
+                        max_high = int(thresholds.get("max_trivy_high", max_high_vulns) or 0)
+                        success = True
+                        if bool(trivy_cfg.get("fail_on_critical", True)):
+                            success = success and _threshold_passed(
+                                "python",
+                                "max_trivy_critical",
+                                critical,
+                                max_critical,
+                            )
+                        if bool(trivy_cfg.get("fail_on_high", True)):
+                            success = success and _threshold_passed(
+                                "python",
+                                "max_trivy_high",
+                                high,
+                                max_high,
+                            )
+                        trivy_cvss_fail = float(thresholds.get("trivy_cvss_fail", 0) or 0)
+                        if trivy_cvss_fail:
+                            max_cvss = float(result.metrics.get("trivy_max_cvss", 0))
+                            success = success and _threshold_passed(
+                                "python",
+                                "trivy_cvss_fail",
+                                max_cvss,
+                                trivy_cvss_fail,
+                            )
+                        tools_success[tool] = success
+            result.success = tools_success[tool]
+        elif tool == "docker":
+            if not result.ran:
+                docker_cfg = config.get("python", {}).get("tools", {}).get("docker", {}) or {}
+                fail_on_missing = bool(docker_cfg.get("fail_on_missing_compose", False))
+                tools_success[tool] = not fail_on_missing
+            else:
+                docker_cfg = config.get("python", {}).get("tools", {}).get("docker", {}) or {}
+                fail_on_error = bool(docker_cfg.get("fail_on_error", True))
+                if not fail_on_error:
+                    tools_success[tool] = True
+                else:
+                    tools_success[tool] = result.success
+            result.success = tools_success[tool]
         else:
             tools_success[tool] = result.success
+        tool_outputs[tool] = result.to_payload()
         if tool == "docker" and result.metrics.get("docker_missing_compose"):
             docker_cfg = config.get("python", {}).get("tools", {}).get("docker", {}) or {}
             if not isinstance(docker_cfg, dict):

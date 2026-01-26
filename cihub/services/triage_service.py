@@ -266,7 +266,7 @@ def aggregate_triage_bundles(
         repo_name = run_info.get("repo", "unknown")
         overall_status = summary.get("overall_status", "unknown")
 
-        if overall_status == "passed":
+        if overall_status in {"passed", "success"}:
             passed_count += 1
         else:
             failed_count += 1
@@ -328,7 +328,7 @@ def aggregate_triage_bundles(
     )
 
     for repo in repos:
-        status_text = "passed" if repo["status"] == "passed" else "failed"
+        status_text = "passed" if repo["status"] in {"passed", "success"} else "failed"
         failed_tools = ", ".join(repo["failed_tools"][:3]) or "-"
         if len(repo["failed_tools"]) > 3:
             failed_tools += "..."
@@ -373,6 +373,7 @@ def generate_triage_bundle(
     tool_outputs = _load_tool_outputs(output_dir / "tool-outputs")
     failures: list[dict[str, Any]] = []
     notes: list[str] = []
+    status_warnings: list[dict[str, Any]] = []
 
     repo_path = output_dir.parent
     workdir = None
@@ -393,10 +394,21 @@ def generate_triage_bundle(
             if not enabled:
                 continue
             ran = bool(tools_ran.get(tool, False))
-            success = bool(tools_success.get(tool, False))
-            if success:
+            success = tools_success.get(tool) if tool in tools_success else None
+            if success is True:
                 continue
             if ran:
+                if success is None:
+                    status_warnings.append(
+                        {
+                            "type": "missing_tool_success",
+                            "severity": "warning",
+                            "tool": tool,
+                            "message": f"Tool '{tool}' ran but did not report tools_success; outcome is unknown",
+                            "hint": "Re-run with a CLI version that emits tools_success to verify tool outcome",
+                        }
+                    )
+                    continue
                 status = "failed"
                 reason = "tool_failed"
                 message = f"Tool '{tool}' failed"
@@ -485,16 +497,14 @@ def generate_triage_bundle(
     }
 
     tool_counts: dict[str, int] = {
-        "configured": len(report.get("tools_configured", {})) if report else 0,
+        "configured": len([t for t in (report.get("tools_configured", {}) if report else {}).values() if t]),
         "ran": len([t for t in (report.get("tools_ran", {}) if report else {}).values() if t]),
         "passed": len([e for e in tool_evidence if e.get("status") == "passed"]),
         "failed": len([e for e in tool_evidence if e.get("status") == "failed"]),
     }
 
     summary: dict[str, Any] = {
-        "overall_status": (
-            "failed" if failures or required_not_run_count > 0 or evidence_error_count > 0 else "passed"
-        ),
+        "overall_status": "failed" if failure_count > 0 else "passed",
         "failure_count": failure_count,
         "warning_count": evidence_warning_count,
         "info_count": evidence_info_count,
@@ -514,6 +524,8 @@ def generate_triage_bundle(
     # Detect test count regressions (Issue 16)
     history_path = output_dir / "history.jsonl"
     regression_warnings = detect_test_count_regression(history_path, tests_total)
+    if status_warnings:
+        regression_warnings.extend(status_warnings)
 
     triage = {
         "schema_version": TRIAGE_SCHEMA_VERSION,
@@ -528,7 +540,7 @@ def generate_triage_bundle(
         "tool_evidence": tool_evidence,
         "evidence_issues": evidence_issues,
         "failures": priority,
-        "warnings": regression_warnings,  # Include test count drop warnings
+        "warnings": regression_warnings,  # Include test count drop + status warnings
         "notes": notes,
     }
 
@@ -542,11 +554,12 @@ def generate_triage_bundle(
     mutation_score = results.get("mutation_score", 0) or 0
 
     # Extract gate failures for historical tracking
+    gate_categories = set(CATEGORY_ORDER)
     gate_failures = [
         f.get("tool", f.get("id", "unknown"))
         for f in failures
-        if f.get("category") in {"gate", "test", "security", "lint"}
-        and f.get("status") in {"failed", "required_not_run"}
+        if f.get("category") in gate_categories
+        and f.get("status") in {"failed", "required_not_run", "missing_report"}
     ]
     gate_passed_count = tool_counts["passed"]
     gate_failed_count = len(gate_failures)

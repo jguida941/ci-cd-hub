@@ -121,6 +121,15 @@ class TestGitHubRunClient:
 
         assert repo == "owner/repo"
 
+    def test_detect_repo_handles_dotted_repo(self, monkeypatch) -> None:
+        """Test repo detection keeps dotted repo names."""
+        mock_result = MagicMock(returncode=0, stdout="git@github.com:owner/my.repo.git\n")
+        monkeypatch.setattr("cihub.commands.triage.github.safe_run", lambda *args, **kwargs: mock_result)
+
+        repo = GitHubRunClient._detect_repo()
+
+        assert repo == "owner/my.repo"
+
     def test_detect_repo_returns_none_on_failure(self, monkeypatch) -> None:
         """Test repo detection returns None when git fails."""
         mock_result = MagicMock(returncode=1, stdout="")

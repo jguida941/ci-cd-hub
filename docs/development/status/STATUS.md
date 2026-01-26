@@ -12,10 +12,10 @@
 > **Architecture:** See [ARCH_OVERVIEW.md](../architecture/ARCH_OVERVIEW.md)
 > **Test Counts:** Refresh via `cihub hub-ci test-metrics --write` after verified pytest+coverage (no manual edits).
 >
-> **Last Updated:** 2026-01-19 (CLI/Wizard Phase 5 cleanup complete; audit closed)  
+> **Last Updated:** 2026-01-26 (Tool success alignment expanded across Python/Java; audit execution in progress)  
 > **Version Target:** v1.0.0
 >
-> **Current focus:** TYPESCRIPT_CLI_DESIGN (Phase 6 interactive wizard).
+> **Current focus:** TYPESCRIPT_CLI_DESIGN (Phase 8 AI enhancement), tool audit execution, and architecture audit.
 
 ---
 

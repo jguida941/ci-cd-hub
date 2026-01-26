@@ -300,6 +300,8 @@ def cmd_setup_nvd(args: argparse.Namespace) -> CommandResult:
 
     nvd_key = args.nvd_key
     json_mode = getattr(args, "json", False)
+    if not nvd_key:
+        nvd_key = os.environ.get("NVD_API_KEY")
 
     # Non-interactive mode requires --nvd-key
     if json_mode and not nvd_key:

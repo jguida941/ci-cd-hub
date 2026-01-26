@@ -435,13 +435,18 @@ class TestRunPipAudit:
         output_dir = tmp_path / "output"
         output_dir.mkdir()
 
-        # pip_audit uses list format
+        # pip_audit uses dependency dict format
         (output_dir / "pip-audit-report.json").write_text(
             json.dumps(
-                [
-                    {"name": "requests", "vulns": [{"id": "CVE-2023-001"}]},
-                    {"name": "flask", "vulns": [{"id": "CVE-2023-002"}, {"id": "CVE-2023-003"}]},
-                ]
+                {
+                    "dependencies": [
+                        {"name": "requests", "vulns": [{"id": "CVE-2023-001"}]},
+                        {
+                            "name": "flask",
+                            "vulns": [{"id": "CVE-2023-002"}, {"id": "CVE-2023-003"}],
+                        },
+                    ]
+                }
             )
         )
 

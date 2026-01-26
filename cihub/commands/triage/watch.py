@@ -14,14 +14,9 @@ from pathlib import Path
 from cihub.exit_codes import EXIT_SUCCESS
 from cihub.output.events import emit_event, get_event_sink
 from cihub.types import CommandResult
-from cihub.utils.exec_utils import (
-    TIMEOUT_NETWORK,
-    CommandNotFoundError,
-    CommandTimeoutError,
-    resolve_executable,
-    safe_run,
-)
+from cihub.utils.exec_utils import CommandNotFoundError, CommandTimeoutError
 
+from .github import GitHubRunClient
 from .remote import triage_single_run
 
 
@@ -54,6 +49,7 @@ def watch_for_failures(
     json_mode = bool(getattr(args, "json", False))
     streaming = get_event_sink() is not None and not json_mode
     output_dir = Path(args.output_dir or ".cihub")
+    client = GitHubRunClient(repo=repo)
 
     def emit(line: str = "") -> None:
         if streaming:
@@ -70,64 +66,47 @@ def watch_for_failures(
 
     try:
         while True:
-            # Get recent failed runs
-            gh_bin = resolve_executable("gh")
-            cmd = [
-                gh_bin,
-                "run",
-                "list",
-                "--status",
-                "failure",
-                "--limit",
-                "5",
-                "--json",
-                "databaseId,name,headBranch,createdAt,conclusion",
-            ]
-            if repo:
-                cmd.extend(["--repo", repo])
-            if workflow:
-                cmd.extend(["--workflow", workflow])
-            if branch:
-                cmd.extend(["--branch", branch])
-
             try:
-                result = safe_run(cmd, timeout=TIMEOUT_NETWORK)
-                if result.returncode == 0:
-                    runs = json.loads(result.stdout)
-                    for run in runs:
-                        run_id = str(run.get("databaseId", ""))
-                        if run_id and run_id not in triaged_runs:
-                            # New failure found - triage it
-                            name = run.get("name", "Unknown")
-                            branch_name = run.get("headBranch", "")
-                            emit(f"[FAILURE] {name} (branch: {branch_name}, run: {run_id})")
+                runs = client.list_runs(
+                    workflow=workflow,
+                    branch=branch,
+                    status="failure",
+                    limit=5,
+                )
+                for run in runs:
+                    run_id = str(run.get("databaseId", ""))
+                    if run_id and run_id not in triaged_runs:
+                        # New failure found - triage it
+                        name = run.get("name", "Unknown")
+                        branch_name = run.get("headBranch", "")
+                        emit(f"[FAILURE] {name} (branch: {branch_name}, run: {run_id})")
 
-                            # Run triage
-                            try:
-                                triage_result = triage_single_run(
-                                    run_id=run_id,
-                                    repo=repo,
-                                    output_dir=output_dir,
-                                )
-                                triaged_runs.add(run_id)
-                                triage_count += 1
+                        # Run triage
+                        try:
+                            triage_result = triage_single_run(
+                                run_id=run_id,
+                                repo=repo,
+                                output_dir=output_dir,
+                            )
+                            triaged_runs.add(run_id)
+                            triage_count += 1
 
-                                if triage_result:
-                                    emit(f"   [OK] Triaged: {triage_result}")
-                                else:
-                                    emit("   [WARN] Triage completed (no artifacts)")
-                            except Exception as e:
-                                problems.append(
-                                    {
-                                        "severity": "error",
-                                        "message": f"Triage failed: {e}",
-                                    }
-                                )
-                                emit(f"   [ERROR] Triage failed: {e}")
-                                triaged_runs.add(run_id)  # Don't retry
+                            if triage_result:
+                                emit(f"   [OK] Triaged: {triage_result}")
+                            else:
+                                emit("   [WARN] Triage completed (no artifacts)")
+                        except Exception as e:
+                            problems.append(
+                                {
+                                    "severity": "error",
+                                    "message": f"Triage failed: {e}",
+                                }
+                            )
+                            emit(f"   [ERROR] Triage failed: {e}")
+                            triaged_runs.add(run_id)  # Don't retry
 
-                            emit()
-            except (CommandNotFoundError, CommandTimeoutError, json.JSONDecodeError) as e:
+                        emit()
+            except (CommandNotFoundError, CommandTimeoutError, json.JSONDecodeError, RuntimeError) as e:
                 problems.append(
                     {
                         "severity": "warning",

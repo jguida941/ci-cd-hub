@@ -1,0 +1,112 @@
+# CIHub Architecture Audit
+
+**Status:** active
+**Owner:** Development Team
+**Source-of-truth:** manual
+**Last-reviewed:** 2026-01-26
+
+## Purpose
+
+Audit CIHub architecture against the documented contract and current runtime
+behavior, then define a fix plan for the gaps found during tool audits.
+
+## Scope
+
+- Python CLI command surface and tool runners.
+- Report schema, tool evidence, and validator semantics.
+- Triage outputs and verification logic.
+- Workflow wrappers and artifact layout.
+- TypeScript CLI passthrough and wizard handoff.
+
+## Inputs
+
+- `docs/development/MASTER_PLAN.md`
+- `docs/development/architecture/ARCH_OVERVIEW.md`
+- `docs/development/architecture/DESIGN_JOURNEY.md`
+- `docs/development/active/TYPESCRIPT_CLI_DESIGN.md`
+- `TOOL_TEST_AUDIT_PLAN.md`
+- `docs/development/research/CIHUB_TOOL_RUN_AUDIT.md`
+
+## Architecture Contract (summary)
+
+- CLI is the product and headless API; command names are stable endpoints.
+- Schema is the config contract and single source of truth for defaults.
+- Workflows are thin wrappers that only call `cihub` commands.
+- Tool execution must emit evidence; success must match gates and reports.
+- All commands should support `--json` and return `CommandResult`.
+
+## Findings (ordered by severity)
+
+1. Tool success semantics diverge from gate semantics.
+   - Evidence: bandit tool-outputs reported `success=false` while report
+     `tools_success.bandit=true` for low findings.
+   - Impact: report validator errors and false failures in triage.
+   - Fix: align tool-output success with gate-derived `tools_success` for
+     tools whose exit codes represent findings (bandit, pip_audit, mutmut).
+   - Note: report validator should not fail when `success=true` and tool
+     returncodes are non-zero due to findings (warn instead).
+
+2. Tool artifact paths are recorded as absolute runner paths.
+   - Evidence: report validator warns about missing artifacts after download
+     because paths point to `/home/runner/...`.
+   - Impact: evidence verification warns even when artifacts exist in the
+     downloaded `.cihub/` directory.
+   - Fix: normalize tool artifact paths to be relative to `.cihub/` or
+     output_dir so artifacts remain resolvable after download.
+
+3. Fixture repos can fail security gates due to real vulnerabilities.
+   - Evidence: `pip_audit` failed in a passing fixture repo.
+   - Impact: fixture "passing" repos do not pass without repo-specific
+     threshold overrides.
+   - Fix: configure fixture repos to allow known vuln counts or pin deps
+     (requires approval to change repo config files).
+
+4. `init`/`setup` rely on gh auth for hub var verification.
+   - Evidence: `cihub init --apply` failed when gh was not authenticated.
+   - Impact: audit flow must use `--no-set-hub-vars` or ensure gh auth.
+   - Fix: document the requirement in audit steps and keep failure as
+     designed (ADR-0072).
+
+## Fix Plan (phased)
+
+### Phase A: Tool success alignment
+
+- Align `success` in tool-outputs with gate semantics.
+- Targets: bandit (respect `max_high_vulns`), pip_audit, mutmut, Python
+  lint/security tools (ruff/black/isort/semgrep/trivy), Java
+  lint/security/coverage tools (jacoco/pitest/checkstyle/spotbugs/pmd/owasp/trivy).
+- Tests: unit tests in `tests/unit/services/ci_engine/` and report validation.
+- Status: implemented (tool-outputs success now gate-derived across Python/Java;
+  validator warns on non-zero returncodes when success is gate-based).
+- Follow-up: add regression tests for ruff/black/isort/semgrep/trivy/jacoco/pitest/checkstyle/spotbugs/pmd/owasp.
+
+### Phase B: Artifact path normalization
+
+- Store artifact paths relative to `.cihub/` or output_dir.
+- Update report validator to resolve relative paths against report dir.
+- Add tests for artifact resolution in `tests/unit/services/report_validator/`.
+- ADR required if this changes report contract expectations.
+
+### Phase C: Fixture repo gating
+
+- Decide on fixture policy: allow vulnerabilities or pin dependencies.
+- Apply overrides in `cihub/data/config/repos/` (requires approval).
+- Add regression tests for fixture thresholds.
+
+### Phase D: Re-run audit matrix
+
+- Re-run repo matrix with `cihub dispatch` + `cihub triage --verify-tools`.
+- Log all runs in `docs/development/research/CIHUB_TOOL_RUN_AUDIT.md`.
+
+## Open Decisions
+
+- Should tool output artifacts be stored as relative paths or mapped during
+  report validation?
+- Should `pip_audit` treat exit code 1 as non-fatal when `fail_on_vuln=false`?
+- Should fixtures allow vulnerabilities by default or pin dependencies?
+
+## Verification
+
+- `cihub triage --verify-tools` reports zero unknown/no-report.
+- Report validator has zero mismatches for tools with findings.
+- TS CLI passthrough mirrors Python CLI output for audited commands.

@@ -62,6 +62,15 @@ class TestVerifyToolsFromReport:
                 },
                 "failed",
             ),
+            # Tool ran but tools_success missing -> unknown
+            (
+                {
+                    "tools_configured": {"pytest": True},
+                    "tools_ran": {"pytest": True},
+                    "tools_success": {},
+                },
+                "unknown",
+            ),
             # Tool not configured -> skipped
             (
                 {
@@ -216,7 +225,6 @@ class TestVerifyToolsFromReports:
                 "pytest": True,
                 "ruff": False,
                 "mypy": False,
-                "bandit": False,
             },
         }
         report_path = tmp_path / "report.json"
@@ -231,12 +239,14 @@ class TestVerifyToolsFromReports:
         assert counts["drift"] == 1  # mypy (configured but didn't run)
         assert counts["skipped"] == 1  # bandit (not configured)
         assert counts["optional"] == 0
+        assert counts["unknown"] == 0
         assert (
             counts["passed"]
             + counts["failures"]
             + counts["drift"]
             + counts["skipped"]
             + counts["no_proof"]
+            + counts["unknown"]
             + counts["optional"]
         ) == counts["total"]
 
@@ -456,6 +466,7 @@ class TestFormatVerifyToolsOutput:
             "drift": [],
             "no_proof": [],
             "failures": [],
+            "unknown": [],
             "passed": [],
             "skipped": [],
             "summary": "No tools to verify",
@@ -464,12 +475,13 @@ class TestFormatVerifyToolsOutput:
                 "total": 0,
                 "passed": 0,
                 "drift": 0,
-            "no_proof": 0,
-            "failures": 0,
-            "optional": 0,
-            "skipped": 0,
-        },
-    }
+                "no_proof": 0,
+                "failures": 0,
+                "unknown": 0,
+                "optional": 0,
+                "skipped": 0,
+            },
+        }
 
         lines = format_verify_tools_output(result)
 

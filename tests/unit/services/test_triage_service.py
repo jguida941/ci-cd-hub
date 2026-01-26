@@ -97,6 +97,24 @@ def test_generate_triage_missing_report(tmp_path: Path) -> None:
     assert failures[0]["reason"] in {"missing_report", "invalid_report"}
 
 
+def test_optional_skip_does_not_fail_summary(tmp_path: Path) -> None:
+    output_dir = tmp_path / ".cihub"
+    report_path = output_dir / "report.json"
+    report = _make_report(
+        tools_configured={"mypy": True},
+        tools_ran={"mypy": False},
+        tools_success={},
+        tools_require_run={"mypy": False},
+    )
+    _write_report(report_path, report)
+
+    bundle = generate_triage_bundle(output_dir, report_path=report_path)
+
+    assert bundle.triage["summary"]["overall_status"] == "passed"
+    assert bundle.triage["summary"]["failure_count"] == 0
+    assert bundle.triage["summary"]["skipped_count"] == 1
+
+
 def test_priority_ordering_prefers_security(tmp_path: Path) -> None:
     output_dir = tmp_path / ".cihub"
     report_path = output_dir / "report.json"
@@ -258,6 +276,29 @@ class TestToolEvidence:
         assert ruff_evidence.ran is True
         assert ruff_evidence.success is False
         assert "failed" in ruff_evidence.explanation.lower()
+
+    def test_unknown_tool_status_when_success_missing(self, tmp_path: Path) -> None:
+        """Tool that ran without tools_success should be UNKNOWN and not fail summary."""
+        output_dir = tmp_path / ".cihub"
+        report_path = output_dir / "report.json"
+        report = _make_report(
+            tools_configured={"ruff": True},
+            tools_ran={"ruff": True},
+            tools_success={},
+        )
+        _write_report(report_path, report)
+
+        bundle = generate_triage_bundle(output_dir, report_path=report_path)
+
+        ruff_evidence = next(e for e in bundle.triage["tool_evidence"] if e["tool"] == "ruff")
+        assert ruff_evidence["status"] == ToolStatus.UNKNOWN.value
+        assert ruff_evidence["success"] is None
+        assert bundle.triage["summary"]["overall_status"] == "passed"
+        assert bundle.triage["summary"]["failure_count"] == 0
+        assert any(
+            warning.get("type") == "missing_tool_success"
+            for warning in bundle.triage.get("warnings", [])
+        )
 
     def test_skipped_tool_has_correct_status(self) -> None:
         """Tool configured but not ran (no require_run) should be SKIPPED."""
@@ -435,6 +476,26 @@ class TestMultiTriageAggregation:
         assert result.failed_count == 1
         assert "acme/repo1" in [r["repo"] for r in result.repos]
         assert "acme/repo2" in [r["repo"] for r in result.repos]
+
+    def test_success_status_counts_as_passed(self, tmp_path: Path) -> None:
+        """Treat success status as passed in aggregation."""
+        repo_dir = tmp_path / "repo1" / ".cihub"
+        report = _make_report(
+            repo="acme/widgets",
+            tools_configured={"ruff": True},
+            tools_ran={"ruff": True},
+            tools_success={"ruff": True},
+        )
+        _write_report(repo_dir / "report.json", report)
+
+        bundle = generate_triage_bundle(repo_dir)
+        bundle.triage["summary"]["overall_status"] = "success"
+
+        result = aggregate_triage_bundles([bundle])
+
+        assert result.passed_count == 1
+        assert result.failed_count == 0
+        assert "| acme/widgets | passed |" in result.summary_markdown
 
     def test_failures_by_tool_aggregation(self, tmp_path: Path) -> None:
         """Tracks which repos failed for each tool."""
@@ -723,7 +784,8 @@ class TestToolVerification:
         assert result["verified"] is False
         assert len(result["drift"]) == 1
         assert result["drift"][0]["tool"] == "mypy"
-        assert "configured but didn't run" in result["summary"].lower()
+        assert result["counts"]["drift"] == 1
+        assert result["counts"]["no_proof"] == 1
 
     def test_verify_tools_optional_not_counted_as_drift(self, tmp_path: Path) -> None:
         """Configured but optional tools should not fail verification."""

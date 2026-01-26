@@ -3,7 +3,71 @@
 Status: active
 Owner: Development Team
 Source-of-truth: manual
-Last-reviewed: 2026-01-22
+Last-reviewed: 2026-01-26
+
+## 2026-01-26 - cihub-test-python-pyproject (tool audit)
+
+Repo type: Python (pyproject)
+Repo path: `/tmp/cihub-audit/cihub-test-python-pyproject`
+Goal: Regenerate workflow, dispatch, triage, verify tools.
+
+Doc gates:
+- `python -m cihub docs generate` -> ok; updated CLI/CONFIG/ENV/TOOLS/WORKFLOWS refs
+- `python -m cihub docs check` -> ok
+- `python -m cihub docs stale` -> ok (No stale references; git_range: HEAD~10)
+- `python -m cihub docs audit` -> ok; 76 warnings (Last Updated/Verified age, local_path placeholders)
+
+Commands and results:
+- `git clone https://github.com/jguida941/cihub-test-python-pyproject /tmp/cihub-audit/cihub-test-python-pyproject` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject rm -f .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject push` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-python-pyproject --apply --force --config-file /tmp/cihub-audit/cihub-test-python-pyproject/.ci-hub.yml` -> failed; gh auth missing, HUB_REPO/HUB_REF verify failed
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-python-pyproject --apply --force --config-file /tmp/cihub-audit/cihub-test-python-pyproject/.ci-hub.yml --no-set-hub-vars` -> ok; hub-ci.yml generated
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject add .github/workflows/hub-ci.yml` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git -C /tmp/cihub-audit/cihub-test-python-pyproject push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-pyproject --ref main --workflow hub-ci.yml` -> ok; run ID 21349749632
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21349749632` -> ok; 2 failures (pip_audit failed, bandit evidence mismatch)
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21349749632 --verify-tools` -> failed; pip_audit ran but failed
+- `cat .cihub/runs/21349749632/priority.json` -> ok; pip_audit tool_failed
+- `cat .cihub/runs/21349749632/artifacts/python-ci-report/tool-outputs/pip_audit.json` -> ok; returncode 1, "Found 1 known vulnerability in 1 package"
+- `cat .cihub/runs/21349749632/artifacts/python-ci-report/tool-outputs/bandit.json` -> ok; returncode 1, low findings; tool-outputs success false
+
+Evidence notes:
+- Report validator error: bandit success mismatch (report True vs tool-outputs False).
+- Report validator warnings: missing artifact files for black, ruff, isort, pytest (paths under /home/runner/.../.cihub/).
+
+Fixes applied (hub-release):
+- Align bandit tool-outputs success with gate-derived `tools_success` (pending re-run to confirm).
+- Align pip_audit/mutmut tool-outputs success with gate-derived `tools_success` (pending re-run to confirm).
+- Align tool-outputs success with gate semantics across Python/Java tools (ruff/black/isort/semgrep/trivy/jacoco/pitest/checkstyle/spotbugs/pmd/owasp); bandit high now respects `max_high_vulns`.
+- Report validator warns on non-zero returncodes when success is gate-based.
+- Fix pip-audit JSON parsing for dependency dict output (vuln counts now match stderr).
+
+Current status:
+- Run 21349749632 failed due to pip_audit vulnerability and bandit tool-outputs success mismatch.
+
+Re-run (hub_ref: audit/owasp-no-key):
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-python-pyproject --apply --force --config-file /tmp/cihub-audit/cihub-test-python-pyproject/.ci-hub.yml --hub-repo jguida941/ci-cd-hub --hub-ref audit/owasp-no-key` -> ok; hub vars set
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-pyproject --ref main --workflow hub-ci.yml` -> ok; run ID 21350502177
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21350502177` -> ok; initially no artifacts
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21350502177 --verify-tools` -> failed; pip_audit ran but failed (vuln still present)
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21350502177` -> ok; artifacts present, pip_audit failure confirmed
+
+Re-run (hub_ref: audit/owasp-no-key, post alignment changes):
+- `python -m cihub init --repo /tmp/cihub-audit/cihub-test-python-pyproject --apply --force --config-file /tmp/cihub-audit/cihub-test-python-pyproject/.ci-hub.yml --hub-repo jguida941/ci-cd-hub --hub-ref audit/owasp-no-key` -> ok; no workflow diff
+- `python -m cihub dispatch trigger --owner jguida941 --repo cihub-test-python-pyproject --ref main --workflow hub-ci.yml` -> ok; run ID 21351387381
+- `python -m cihub dispatch watch --owner jguida941 --repo cihub-test-python-pyproject --run-id 21351387381` -> completed; conclusion failure
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21351387381` -> ok; 2 failures
+- `python -m cihub triage --repo jguida941/cihub-test-python-pyproject --run 21351387381 --verify-tools` -> failed; pip_audit failed, others passed
+- `cat .cihub/runs/21351387381/priority.json` -> ok; pip_audit tool_failed
+- `cat .cihub/runs/21351387381/artifacts/python-ci-report/tool-outputs/pip_audit.json` -> ok; returncode 1, stderr says 1 vuln, metrics pip_audit_vulns=0, success=false
+
+Notes:
+- Artifact report path is still absolute (/home/runner/.../.cihub/pip-audit-report.json) and not present in downloaded artifacts.
+- Tool output success is still false for pip_audit with 0 parsed vulns, indicating the remote audit branch likely does not include the latest gate-aligned success changes yet.
+- Local `cihub run pip-audit` now reports `pip_audit_vulns=1` with the dict-format parser.
 
 ## 2026-01-22 - Full Audit Plan (CLI/Wizard/TS CLI + Repo Matrix)
 
@@ -2171,6 +2235,8 @@ Commands and results:
 - `python -m cihub docs check` -> ok
 - `python -m cihub docs stale` -> ok (no stale refs)
 - `python -m cihub docs audit` -> ok; warnings about local_path placeholders remain
+- `CIHUB_VERBOSE=True python -m cihub run owasp --repo .cihub-audit/java-spring-tutorials --language java --output-dir .cihub` -> failed; corrupt dependency-check DB ("Incompatible or corrupt database found"); wrote `.cihub/tool-outputs/owasp.json`
+- `python -m pytest tests/unit/services/ci_runner/test_ci_runner_java.py::TestRunOwasp::test_corrupt_db_triggers_purge_and_retry` -> ok (1 passed)
 - `python -m cihub dispatch trigger --owner jguida941 --repo java-spring-tutorials --workflow hub-ci.yml --ref audit/java-spring-tutorials/20260123` -> ok; run ID 21259535565
 - `python -m cihub dispatch watch --owner jguida941 --repo java-spring-tutorials --run-id 21259535565 --interval 15 --timeout 300 --json` -> completed/failure
 - `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21259535565 --verify-tools --json` -> failed; owasp no report, pitest failed

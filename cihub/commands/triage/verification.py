@@ -22,6 +22,7 @@ def _verify_tools_dict(
         "drift": [],  # Tools configured but didn't run
         "no_proof": [],  # Tools ran but no metrics/artifacts
         "failures": [],  # Tools that failed
+        "unknown": [],  # Tools ran but did not report tools_success
         "optional": [],  # Tools configured but not required to run
         "skipped": [],  # Tools not configured
         "passed": [],  # Tools ran, have proof, and succeeded
@@ -46,7 +47,7 @@ def _verify_tools_dict(
     for tool in sorted(all_tools):
         configured = tools_configured.get(tool, False)
         ran = tools_ran.get(tool, False)
-        success = tools_success.get(tool, False)
+        success = tools_success.get(tool) if tool in tools_success else None
 
         tool_entry = {
             "tool": tool,
@@ -70,10 +71,15 @@ def _verify_tools_dict(
                 tool_entry["status"] = "optional"
                 tool_entry["issue"] = "Configured but optional; did not run"
                 result["optional"].append({"tool": tool, "message": "Configured but optional; did not run"})
+        elif ran and success is None:
+            tool_entry["status"] = "unknown"
+            tool_entry["issue"] = "Ran but tools_success missing"
+            result["unknown"].append({"tool": tool, "message": "Ran but tools_success missing"})
+            result["verified"] = False
         elif ran and success:
             tool_entry["status"] = "passed"
             result["passed"].append(tool)
-        elif ran and not success:
+        elif ran and success is False:
             tool_entry["status"] = "failed"
             tool_entry["issue"] = "Ran but failed"
             result["failures"].append({"tool": tool, "message": "Ran but failed"})
@@ -107,13 +113,14 @@ def _verify_tools_dict(
     drift_count = len(result["drift"])
     no_proof_count = len(result["no_proof"])
     failures_count = len(result["failures"])
+    unknown_count = len(result["unknown"])
     passed = len(result["passed"])
     optional_count = len(result["optional"])
     skipped_count = len(result["skipped"])
 
     if total == 0:
         result["summary"] = "No tools found in report"
-    elif drift_count == 0 and no_proof_count == 0 and failures_count == 0:
+    elif drift_count == 0 and no_proof_count == 0 and failures_count == 0 and unknown_count == 0:
         result["summary"] = f"All {passed} configured tools verified (ran with proof)"
     else:
         issues = []
@@ -121,17 +128,26 @@ def _verify_tools_dict(
             issues.append(f"{drift_count} configured but did not run")
         if no_proof_count:
             issues.append(f"{no_proof_count} ran but no proof")
+        if unknown_count:
+            issues.append(f"{unknown_count} ran but tools_success missing")
         if failures_count:
             issues.append(f"{failures_count} failed")
         result["summary"] = f"Issues found: {', '.join(issues)}"
 
-    result["verified"] = result["verified"] and failures_count == 0 and drift_count == 0 and no_proof_count == 0
+    result["verified"] = (
+        result["verified"]
+        and failures_count == 0
+        and drift_count == 0
+        and no_proof_count == 0
+        and unknown_count == 0
+    )
     result["counts"] = {
         "total": total,
         "passed": passed,
         "drift": drift_count,
         "no_proof": no_proof_count,
         "failures": failures_count,
+        "unknown": unknown_count,
         "optional": optional_count,
         "skipped": skipped_count,
     }
@@ -151,7 +167,7 @@ def _merge_target_result(
     base["targets"].append(target_result)
     base["verified"] = base["verified"] and target_result.get("verified", False)
 
-    for key in ("drift", "no_proof", "failures", "optional", "skipped"):
+    for key in ("drift", "no_proof", "failures", "unknown", "optional", "skipped"):
         for item in target_result.get(key, []):
             if isinstance(item, dict):
                 merged = dict(item)
@@ -182,6 +198,8 @@ def _finalize_summary(base: dict[str, Any]) -> None:
         issues.append(f"{base['counts']['drift']} configured but didn't run")
     if base["counts"]["no_proof"]:
         issues.append(f"{base['counts']['no_proof']} ran but no proof")
+    if base["counts"]["unknown"]:
+        issues.append(f"{base['counts']['unknown']} ran but tools_success missing")
     if base["counts"]["failures"]:
         issues.append(f"{base['counts']['failures']} failed")
     base["summary"] = f"Tool verification: {', '.join(issues)}"
@@ -210,6 +228,7 @@ def verify_tools_from_report(
         "drift": [],
         "no_proof": [],
         "failures": [],
+        "unknown": [],
         "optional": [],
         "skipped": [],
         "passed": [],
@@ -222,6 +241,7 @@ def verify_tools_from_report(
             "drift": 0,
             "no_proof": 0,
             "failures": 0,
+            "unknown": 0,
             "optional": 0,
             "skipped": 0,
         },
@@ -278,6 +298,7 @@ def verify_tools_from_reports(report_paths: list[Path], reports_dir: Path | None
         "drift": [],
         "no_proof": [],
         "failures": [],
+        "unknown": [],
         "optional": [],
         "skipped": [],
         "passed": [],
@@ -290,6 +311,7 @@ def verify_tools_from_reports(report_paths: list[Path], reports_dir: Path | None
             "drift": 0,
             "no_proof": 0,
             "failures": 0,
+            "unknown": 0,
             "optional": 0,
             "skipped": 0,
         },
@@ -343,7 +365,10 @@ def format_verify_tools_output(verify_result: dict[str, Any]) -> list[str]:
         for entry in matrix:
             configured = "yes" if entry["configured"] else "no"
             ran = "yes" if entry["ran"] else "no"
-            success = "yes" if entry["success"] else "no"
+            if entry["success"] is None:
+                success = "?"
+            else:
+                success = "yes" if entry["success"] else "no"
             status = entry["status"].upper()
             lines.append(f"| {entry['tool']} | {configured} | {ran} | {success} | {status} |")
 
@@ -362,6 +387,7 @@ def format_verify_tools_output(verify_result: dict[str, Any]) -> list[str]:
             lines.append(f"  Passed: {counts.get('passed', 0)}")
             lines.append(f"  Drift (configured but didn't run): {counts.get('drift', 0)}")
             lines.append(f"  No proof (ran but no metrics/artifacts): {counts.get('no_proof', 0)}")
+            lines.append(f"  Unknown (ran but tools_success missing): {counts.get('unknown', 0)}")
             lines.append(f"  Failed: {counts.get('failures', 0)}")
             lines.append(f"  Optional (configured but not required): {counts.get('optional', 0)}")
             lines.append(f"  Skipped (not configured): {counts.get('skipped', 0)}")
@@ -378,6 +404,7 @@ def format_verify_tools_output(verify_result: dict[str, Any]) -> list[str]:
     lines.append(f"  Passed: {counts.get('passed', 0)}")
     lines.append(f"  Drift (configured but didn't run): {counts.get('drift', 0)}")
     lines.append(f"  No proof (ran but no metrics/artifacts): {counts.get('no_proof', 0)}")
+    lines.append(f"  Unknown (ran but tools_success missing): {counts.get('unknown', 0)}")
     lines.append(f"  Failed: {counts.get('failures', 0)}")
     lines.append(f"  Optional (configured but not required): {counts.get('optional', 0)}")
     lines.append(f"  Skipped (not configured): {counts.get('skipped', 0)}")
@@ -392,6 +419,12 @@ def format_verify_tools_output(verify_result: dict[str, Any]) -> list[str]:
         lines.append("")
         lines.append("NO PROOF - Tools ran but no metrics/artifacts:")
         for item in verify_result["no_proof"]:
+            lines.append(f"  - {item['tool']}: {item['message']}")
+
+    if verify_result.get("unknown"):
+        lines.append("")
+        lines.append("UNKNOWN - Tools ran but tools_success missing:")
+        for item in verify_result["unknown"]:
             lines.append(f"  - {item['tool']}: {item['message']}")
 
     if verify_result.get("optional"):

@@ -107,7 +107,7 @@ class GitHubRunClient:
                 return None
             url = result.stdout.strip()
             # Parse owner/repo from various git URL formats
-            match = re.search(r"github\.com[:/]([^/]+/[^/.]+)", url)
+            match = re.search(r"github\.com[:/]([^/]+/[^/]+)", url)
             if match:
                 return match.group(1).removesuffix(".git")
         except (CommandNotFoundError, CommandTimeoutError):

@@ -216,6 +216,7 @@ class TestInitCommand:
                 "--branch",
                 "main",
                 "--apply",
+                "--no-set-hub-vars",
             ]
         )
 

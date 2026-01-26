@@ -162,6 +162,7 @@ class TestRunPythonTools:
         output_dir.mkdir()
 
         config = {
+            "thresholds": {"max_high_vulns": 2},
             "python": {
                 "tools": {
                     "bandit": {
@@ -171,7 +172,7 @@ class TestRunPythonTools:
                         "fail_on_low": False,
                     }
                 }
-            }
+            },
         }
         problems: list = []
 
@@ -179,14 +180,69 @@ class TestRunPythonTools:
             tool="bandit",
             ran=True,
             success=False,
-            metrics={"bandit_high": 0, "bandit_medium": 0, "bandit_low": 5, "parse_error": False},
+            metrics={"bandit_high": 1, "bandit_medium": 0, "bandit_low": 5, "parse_error": False},
         )
         mock_runners = dict(PYTHON_RUNNERS)
         mock_runners["bandit"] = lambda *args, **kwargs: mock_result
-        _, ran, success = _run_python_tools(config, tmp_path, "repo", output_dir, problems, mock_runners)
+        outputs, ran, success = _run_python_tools(config, tmp_path, "repo", output_dir, problems, mock_runners)
 
         assert ran.get("bandit") is True
         assert success.get("bandit") is True
+        assert outputs["bandit"]["success"] is True
+
+    def test_pip_audit_success_respects_thresholds(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import ToolResult
+
+        workdir = tmp_path / "repo"
+        workdir.mkdir()
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        config = {
+            "thresholds": {"max_pip_audit_vulns": 2},
+            "python": {"tools": {"pip_audit": {"enabled": True, "fail_on_vuln": True}}},
+        }
+        problems: list = []
+
+        mock_result = ToolResult(
+            tool="pip_audit",
+            ran=True,
+            success=False,
+            metrics={"pip_audit_vulns": 1, "parse_error": False},
+        )
+        mock_runners = dict(PYTHON_RUNNERS)
+        mock_runners["pip_audit"] = lambda *args, **kwargs: mock_result
+        outputs, ran, success = _run_python_tools(config, tmp_path, "repo", output_dir, problems, mock_runners)
+
+        assert ran.get("pip_audit") is True
+        assert success.get("pip_audit") is True
+        assert outputs["pip_audit"]["success"] is True
+
+    def test_mutmut_success_respects_thresholds(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import ToolResult
+
+        workdir = tmp_path / "repo"
+        workdir.mkdir()
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        config = {"thresholds": {"mutation_score_min": 50}, "python": {"tools": {"mutmut": {"enabled": True}}}}
+        problems: list = []
+
+        mock_result = ToolResult(
+            tool="mutmut",
+            ran=True,
+            success=False,
+            returncode=1,
+            metrics={"mutation_score": 80, "mutation_killed": 8, "mutation_survived": 2},
+        )
+        mock_runners = dict(PYTHON_RUNNERS)
+        mock_runners["mutmut"] = lambda *args, **kwargs: mock_result
+        outputs, ran, success = _run_python_tools(config, tmp_path, "repo", output_dir, problems, mock_runners)
+
+        assert ran.get("mutmut") is True
+        assert success.get("mutmut") is True
+        assert outputs["mutmut"]["success"] is True
 
     def test_raises_for_missing_workdir(self, tmp_path: Path) -> None:
         output_dir = tmp_path / "output"

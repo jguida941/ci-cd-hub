@@ -20,6 +20,7 @@ class ToolStatus(Enum):
 
     PASSED = "passed"  # Ran successfully, met thresholds
     FAILED = "failed"  # Ran but failed (threshold or execution error)
+    UNKNOWN = "unknown"  # Ran but success not reported in tools_success
     SKIPPED = "skipped"  # Configured but didn't run (soft skip)
     REQUIRED_NOT_RUN = "required_not_run"  # require_run=true but didn't run (hard fail)
     NOT_CONFIGURED = "not_configured"  # Tool not enabled in config

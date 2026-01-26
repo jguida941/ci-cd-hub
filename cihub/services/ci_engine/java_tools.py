@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from cihub.ci_runner import ToolResult, run_java_build, run_maven_install
+from cihub.core.ci_report import resolve_thresholds
+from cihub.core.gate_specs import evaluate_threshold, get_threshold_spec_by_key
 from cihub.tools.registry import (
     JAVA_TOOLS,
     get_custom_tools_from_config,
@@ -22,7 +24,15 @@ from cihub.utils.exec_utils import (
 from cihub.utils.paths import hub_root
 from cihub.utils.project import detect_java_project_type
 
-from .helpers import _parse_env_bool, _tool_enabled
+from .helpers import _parse_env_bool, _tool_enabled, _tool_gate_enabled
+
+
+def _threshold_passed(language: str, key: str, value: int | float, threshold: int | float) -> bool:
+    spec = get_threshold_spec_by_key(language, key)
+    if not spec:
+        return True
+    passed, _ = evaluate_threshold(spec, value, threshold)
+    return passed
 
 
 def _checkstyle_config_candidates(
@@ -108,6 +118,9 @@ def _run_java_tools(
 
     tool_output_dir = output_dir / "tool-outputs"
     tool_output_dir.mkdir(parents=True, exist_ok=True)
+    thresholds = resolve_thresholds(config, "java")
+    max_high_vulns = int(thresholds.get("max_high_vulns", 0) or 0)
+    max_critical_vulns = int(thresholds.get("max_critical_vulns", 0) or 0)
 
     if _tool_enabled(config, "checkstyle", "java"):
         _ensure_checkstyle_config(config, repo_path, workdir_path, problems)
@@ -202,9 +215,189 @@ def _run_java_tools(
             )
             result = ToolResult(tool=tool, ran=False, success=False)
 
-        tool_outputs[tool] = result.to_payload()
         tools_ran[tool] = result.ran
-        tools_success[tool] = result.success
+        if tool == "jacoco":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                report_found = bool(result.metrics.get("report_found", False))
+                coverage_min = float(thresholds.get("coverage_min", 0) or 0)
+                coverage = float(result.metrics.get("coverage", 0))
+                tools_success[tool] = report_found and _threshold_passed(
+                    "java",
+                    "coverage_min",
+                    coverage,
+                    coverage_min,
+                )
+            result.success = tools_success[tool]
+        elif tool == "pitest":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                report_found = bool(result.metrics.get("report_found", False))
+                mut_min = float(thresholds.get("mutation_score_min", 0) or 0)
+                mut_score = float(result.metrics.get("mutation_score", 0))
+                tools_success[tool] = report_found and _threshold_passed(
+                    "java",
+                    "mutation_score_min",
+                    mut_score,
+                    mut_min,
+                )
+            result.success = tools_success[tool]
+        elif tool == "checkstyle":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                report_found = bool(result.metrics.get("report_found", False))
+                if not _tool_gate_enabled(config, "checkstyle", "java"):
+                    tools_success[tool] = report_found
+                else:
+                    max_checkstyle = int(thresholds.get("max_checkstyle_errors", 0) or 0)
+                    issues = int(result.metrics.get("checkstyle_issues", 0))
+                    tools_success[tool] = report_found and _threshold_passed(
+                        "java",
+                        "max_checkstyle_errors",
+                        issues,
+                        max_checkstyle,
+                    )
+            result.success = tools_success[tool]
+        elif tool == "spotbugs":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                report_found = bool(result.metrics.get("report_found", False))
+                if not _tool_gate_enabled(config, "spotbugs", "java"):
+                    tools_success[tool] = report_found
+                else:
+                    max_spotbugs = int(thresholds.get("max_spotbugs_bugs", 0) or 0)
+                    issues = int(result.metrics.get("spotbugs_issues", 0))
+                    tools_success[tool] = report_found and _threshold_passed(
+                        "java",
+                        "max_spotbugs_bugs",
+                        issues,
+                        max_spotbugs,
+                    )
+            result.success = tools_success[tool]
+        elif tool == "pmd":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                report_found = bool(result.metrics.get("report_found", False))
+                if not _tool_gate_enabled(config, "pmd", "java"):
+                    tools_success[tool] = report_found
+                else:
+                    max_pmd = int(thresholds.get("max_pmd_violations", 0) or 0)
+                    issues = int(result.metrics.get("pmd_violations", 0))
+                    tools_success[tool] = report_found and _threshold_passed(
+                        "java",
+                        "max_pmd_violations",
+                        issues,
+                        max_pmd,
+                    )
+            result.success = tools_success[tool]
+        elif tool == "owasp":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                report_found = bool(result.metrics.get("report_found", False))
+                fatal_errors = bool(result.metrics.get("owasp_fatal_errors", False))
+                if not report_found or fatal_errors:
+                    tools_success[tool] = False
+                else:
+                    critical = int(result.metrics.get("owasp_critical", 0))
+                    high = int(result.metrics.get("owasp_high", 0))
+                    max_critical = int(thresholds.get("max_critical_vulns", max_critical_vulns) or 0)
+                    max_high = int(thresholds.get("max_high_vulns", max_high_vulns) or 0)
+                    success = _threshold_passed("java", "max_critical_vulns", critical, max_critical)
+                    success = success and _threshold_passed("java", "max_high_vulns", high, max_high)
+                    owasp_cvss_fail = float(thresholds.get("owasp_cvss_fail", 0) or 0)
+                    if owasp_cvss_fail:
+                        max_cvss = float(result.metrics.get("owasp_max_cvss", 0))
+                        success = success and _threshold_passed(
+                            "java",
+                            "owasp_cvss_fail",
+                            max_cvss,
+                            owasp_cvss_fail,
+                        )
+                    tools_success[tool] = success
+            result.success = tools_success[tool]
+        elif tool == "semgrep":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                parse_error = bool(result.metrics.get("parse_error", False))
+                if parse_error:
+                    tools_success[tool] = False
+                elif not _tool_gate_enabled(config, "semgrep", "java"):
+                    tools_success[tool] = True
+                else:
+                    max_semgrep = int(thresholds.get("max_semgrep_findings", 0) or 0)
+                    findings = int(result.metrics.get("semgrep_findings", 0))
+                    tools_success[tool] = _threshold_passed(
+                        "java",
+                        "max_semgrep_findings",
+                        findings,
+                        max_semgrep,
+                    )
+            result.success = tools_success[tool]
+        elif tool == "trivy":
+            if not result.ran:
+                tools_success[tool] = False
+            else:
+                parse_error = bool(result.metrics.get("parse_error", False))
+                if parse_error:
+                    tools_success[tool] = False
+                else:
+                    trivy_cfg = config.get("java", {}).get("tools", {}).get("trivy", {}) or {}
+                    if not _tool_gate_enabled(config, "trivy", "java"):
+                        tools_success[tool] = True
+                    else:
+                        critical = int(result.metrics.get("trivy_critical", 0))
+                        high = int(result.metrics.get("trivy_high", 0))
+                        max_critical = int(thresholds.get("max_trivy_critical", max_critical_vulns) or 0)
+                        max_high = int(thresholds.get("max_trivy_high", max_high_vulns) or 0)
+                        success = True
+                        if bool(trivy_cfg.get("fail_on_critical", True)):
+                            success = success and _threshold_passed(
+                                "java",
+                                "max_trivy_critical",
+                                critical,
+                                max_critical,
+                            )
+                        if bool(trivy_cfg.get("fail_on_high", True)):
+                            success = success and _threshold_passed(
+                                "java",
+                                "max_trivy_high",
+                                high,
+                                max_high,
+                            )
+                        trivy_cvss_fail = float(thresholds.get("trivy_cvss_fail", 0) or 0)
+                        if trivy_cvss_fail:
+                            max_cvss = float(result.metrics.get("trivy_max_cvss", 0))
+                            success = success and _threshold_passed(
+                                "java",
+                                "trivy_cvss_fail",
+                                max_cvss,
+                                trivy_cvss_fail,
+                            )
+                        tools_success[tool] = success
+            result.success = tools_success[tool]
+        elif tool == "docker":
+            if not result.ran:
+                docker_cfg = config.get("java", {}).get("tools", {}).get("docker", {}) or {}
+                fail_on_missing = bool(docker_cfg.get("fail_on_missing_compose", False))
+                tools_success[tool] = not fail_on_missing
+            else:
+                docker_cfg = config.get("java", {}).get("tools", {}).get("docker", {}) or {}
+                fail_on_error = bool(docker_cfg.get("fail_on_error", True))
+                if not fail_on_error:
+                    tools_success[tool] = True
+                else:
+                    tools_success[tool] = result.success
+            result.success = tools_success[tool]
+        else:
+            tools_success[tool] = result.success
+        tool_outputs[tool] = result.to_payload()
         if tool == "owasp" and result.metrics.get("owasp_data_missing"):
             problems.append(
                 {

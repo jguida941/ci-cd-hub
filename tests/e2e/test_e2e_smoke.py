@@ -49,6 +49,7 @@ class TestPythonProjectWorkflow:
                 "--branch",
                 "main",
                 "--apply",
+                "--no-set-hub-vars",
             ]
         )
         assert result == EXIT_SUCCESS
@@ -103,6 +104,7 @@ class TestJavaProjectWorkflow:
                 "--branch",
                 "main",
                 "--apply",
+                "--no-set-hub-vars",
             ]
         )
         assert result == EXIT_SUCCESS
@@ -139,6 +141,7 @@ class TestScaffoldAndInitWorkflow:
                 "--branch",
                 "main",
                 "--apply",
+                "--no-set-hub-vars",
             ]
         )
         assert result == EXIT_SUCCESS
@@ -168,6 +171,7 @@ class TestScaffoldAndInitWorkflow:
                 "--branch",
                 "main",
                 "--apply",
+                "--no-set-hub-vars",
             ]
         )
         assert result == EXIT_SUCCESS
@@ -231,6 +235,7 @@ class TestUpdateWorkflow:
                 "--branch",
                 "main",
                 "--apply",
+                "--no-set-hub-vars",
             ]
         )
         assert result == EXIT_SUCCESS
@@ -356,6 +361,7 @@ class TestErrorRecoveryWorkflow:
                 "--branch",
                 "main",
                 "--apply",
+                "--no-set-hub-vars",
             ]
         )
 
@@ -421,6 +427,7 @@ class TestMultiLanguageWorkflow:
                 "--branch",
                 "main",
                 "--apply",
+                "--no-set-hub-vars",
             ]
         )
         assert result == EXIT_SUCCESS

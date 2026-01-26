@@ -3,8 +3,8 @@
 **Status:** active  
 **Owner:** Development Team  
 **Source-of-truth:** manual   
-**Last-reviewed:** 2026-01-19  
-**Last Updated:** 2026-01-19 (TypeScript CLI Phase 7 configuration complete)  
+**Last-reviewed:** 2026-01-26  
+**Last Updated:** 2026-01-26 (Tool success alignment expanded; audit execution in progress)  
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
 
@@ -15,7 +15,7 @@
 See [AI_CI_LOOP_PROPOSAL.md](docs/development/active/AI_CI_LOOP_PROPOSAL.md). This is a draft internal initiative now tracked in the active priority list.
 
 **Status update:** CLI_WIZARD_SYNC_AUDIT archived; TEST_REORGANIZATION + DOC_AUTOMATION_AUDIT archived.
-**Current focus:** TYPESCRIPT_CLI_DESIGN Phase 8 (AI Enhancement).
+**Current focus:** TYPESCRIPT_CLI_DESIGN Phase 8 (AI Enhancement), tool audit execution, and architecture audit.
 
 ---
 
@@ -30,7 +30,7 @@ See [AI_CI_LOOP_PROPOSAL.md](docs/development/active/AI_CI_LOOP_PROPOSAL.md). Th
 | **#3 **  | [TEST_REORGANIZATION.md](docs/development/archive/TEST_REORGANIZATION.md)         | ARCHIVED | Complete (Phase 4 property tests + Phase 5 docs) |
 | **#4 **  | [DOC_AUTOMATION_AUDIT.md](docs/development/archive/DOC_AUTOMATION_AUDIT.md)        | ARCHIVED | Complete (archived)                              |
 | **#5 **  | CLI_WIZARD_SYNC_AUDIT.md                                                          | Archived | Phase 5 cleanup complete (archived 2026-01-19)  |
-| **#6 **  | TYPESCRIPT_CLI_DESIGN.md                                                          | In Progress | Start Phase 8 (AI Enhancement)                  |
+| **#6 **  | TYPESCRIPT_CLI_DESIGN.md                                                          | In Progress | Execute tool audit per `TOOL_TEST_AUDIT_PLAN.md` |
 | **#7 **  | AI_CI_LOOP_PROPOSAL.md                                                            | Draft    | Define scope and sequencing                      |
 | **#8 **  | PYQT_PLAN.md                                                                      | DEFERRED | Wait for TypeScript CLI                          |
 
@@ -463,6 +463,12 @@ Property tests verify invariants that must hold for all inputs. All critical mod
 3. **Metrics**: Run `cihub hub-ci test-metrics --write` to regenerate `tests/README.md`
 4. **Coverage**: Targets defined in `config/defaults.yaml` under `thresholds`
 
+### Tool Audit Plan
+
+See `TOOL_TEST_AUDIT_PLAN.md` for the CLI-first tool testing plan. Audit execution
+is logged in `docs/development/research/CIHUB_TOOL_RUN_AUDIT.md` and
+`docs/development/research/TS_CLI_FULL_AUDIT_2026-01-19.md`.
+
 ## References (Background Only)
 
 **Design Docs (Active + Archived references):**
@@ -478,6 +484,7 @@ Property tests verify invariants that must hold for all inputs. All critical mod
 **Architecture:**
 - `docs/development/architecture/ARCH_OVERVIEW.md` (current architecture overview)
 - `docs/development/archive/ARCHITECTURE_PLAN.md` (archived deep-dive plan)
+- `ARCHITECTURE_AUDIT.md` (current architecture audit and fix plan)
 
 These are references, not competing plans.
 

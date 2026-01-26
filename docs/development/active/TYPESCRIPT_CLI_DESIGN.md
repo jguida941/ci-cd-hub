@@ -118,6 +118,9 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Harden Java CI gates and verify-tools proofing (require report evidence; inject default checkstyle config)
 - [x] Dispatch/triage use `gh auth token` fallback when env tokens are missing (ADR-0065)
 - [x] Mirror CI outputs to `GITHUB_WORKSPACE` for reusable workflow artifacts (ADR-0066)
+- [x] Stabilize triage summary semantics (pass/fail counts, optional skips, per-repo aggregation)
+- [x] Make triage offline-friendly (use existing artifacts on run info/download failures) and align triage fixtures with report schema
+- [x] Treat missing `tools_success` as unknown in triage/verify-tools (schema compatibility)
 - [x] OWASP writes reports to `.cihub` and `cihub ci` fails fast on hub ref/version mismatch
 - [x] OWASP disables NVD updates and enables OSS Index when no key is present; PITest/OWASP Maven runners use explicit plugin coordinates
 - [x] `cihub run` supports Java tool runners (OWASP/PITest/Checkstyle/etc) alongside Python
@@ -131,6 +134,11 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Fail OWASP when no real report is produced; no placeholder reports on NVD errors
 - [x] Cross-check report claims against tool-outputs (returncode, placeholders, mismatches)
 - [x] Auto-disable OWASP updates when NVD key is missing (no config required)
+- [x] Align bandit tool-outputs success with gate-derived `tools_success` to avoid report validator mismatches
+- [x] Align pip_audit/mutmut tool-outputs success with gate-derived `tools_success`
+- [x] Report validator warns (not fails) on non-zero returncodes when success is gate-based
+- [x] Align tool-outputs success with gate semantics across Python/Java tools (ruff/black/isort/semgrep/trivy/jacoco/pitest/checkstyle/spotbugs/pmd/owasp)
+- [x] Fix pip-audit JSON parsing (dependency dict format) so vuln counts are accurate
 
 ### Phase 9: Testing
 - [ ] Write unit tests for parser (`test/unit/parser.test.ts`)
@@ -140,10 +148,11 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [ ] Write E2E tests (`test/e2e/`)
 - [ ] Achieve 80% code coverage
 - [ ] Set up CI workflow for TypeScript CLI
+- [x] Publish tool test audit plan (`TOOL_TEST_AUDIT_PLAN.md`) and reference audit logs
 - [x] Validate `cihub setup/init` auto-sets `HUB_REPO/HUB_REF` on a real repo
 - [x] Allow `cihub init` to use `.ci-hub.yml` language when repo markers are missing
 - [x] Add headless Qt defaults (xvfb + env + qprocess skip) for GUI repo CI
-- [ ] Run full manual command audit across repo shapes; log in `docs/development/research/TS_CLI_FULL_AUDIT_2026-01-19.md`
+- [ ] Run full manual command audit across repo shapes per `TOOL_TEST_AUDIT_PLAN.md`; log in `docs/development/research/TS_CLI_FULL_AUDIT_2026-01-19.md` and `docs/development/research/CIHUB_TOOL_RUN_AUDIT.md`
 
 ### Phase 10: Accessibility (Critical)
 - [ ] Honor `NO_COLOR` environment variable

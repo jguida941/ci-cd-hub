@@ -24,7 +24,7 @@ def test_init_creates_config(shape: str, repo_shape) -> None:
     path = repo_shape(shape)
 
     # Run init
-    result = run_cihub("init", "--repo", str(path), "--apply")
+    result = run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars")
     assert result.returncode == 0, f"init failed for {shape}: {result.stderr}"
 
     # Verify config file exists
@@ -37,7 +37,7 @@ def test_init_config_is_valid_yaml(shape: str, repo_shape) -> None:
     """Init should create valid YAML."""
     path = repo_shape(shape)
 
-    run_cihub("init", "--repo", str(path), "--apply")
+    run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars")
     config_path = path / ".ci-hub.yml"
 
     # Should parse without error
@@ -53,7 +53,7 @@ def test_init_sets_correct_language(shape: str, repo_shape) -> None:
     path = repo_shape(shape)
     expected_lang = SHAPE_LANGUAGES[shape]
 
-    run_cihub("init", "--repo", str(path), "--apply")
+    run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars")
     config_path = path / ".ci-hub.yml"
 
     with open(config_path) as f:
@@ -67,7 +67,7 @@ def test_init_enables_python_tools(shape: str, repo_shape) -> None:
     """Init should enable Python tools for Python projects."""
     path = repo_shape(shape)
 
-    run_cihub("init", "--repo", str(path), "--apply")
+    run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars")
     config_path = path / ".ci-hub.yml"
 
     with open(config_path) as f:
@@ -84,7 +84,7 @@ def test_init_enables_java_tools(shape: str, repo_shape) -> None:
     """Init should enable Java tools for Java projects."""
     path = repo_shape(shape)
 
-    run_cihub("init", "--repo", str(path), "--apply")
+    run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars")
     config_path = path / ".ci-hub.yml"
 
     with open(config_path) as f:
@@ -101,7 +101,7 @@ def test_init_with_language_override(repo_shape) -> None:
     path = repo_shape("python-pyproject")
 
     # Override to java
-    result = run_cihub("init", "--repo", str(path), "--language", "java", "--apply")
+    result = run_cihub("init", "--repo", str(path), "--language", "java", "--apply", "--no-set-hub-vars")
     assert result.returncode == 0
 
     config_path = path / ".ci-hub.yml"
@@ -126,11 +126,11 @@ def test_init_second_run_needs_force(repo_shape) -> None:
     path = repo_shape("python-pyproject")
 
     # First init creates config
-    run_cihub("init", "--repo", str(path), "--apply")
+    run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars")
     assert (path / ".ci-hub.yml").exists()
 
     # Second init with --apply but no --force should fail (guardrail)
-    result = run_cihub("init", "--repo", str(path), "--apply")
+    result = run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars")
     # Should fail with repo_side_execution error
     assert result.returncode != 0 or "force" in result.stderr.lower() or "repo_side" in result.stderr.lower()
 
@@ -140,12 +140,12 @@ def test_init_force_overrides_guardrails(repo_shape) -> None:
     path = repo_shape("python-pyproject")
 
     # First init
-    run_cihub("init", "--repo", str(path), "--apply")
+    run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars")
     config_path = path / ".ci-hub.yml"
     assert config_path.exists()
 
     # Second init with --apply --force should work
-    result = run_cihub("init", "--repo", str(path), "--apply", "--force")
+    result = run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars", "--force")
     assert result.returncode == 0
 
 
@@ -155,7 +155,7 @@ def test_validate_passes_after_init(shape: str, repo_shape) -> None:
     path = repo_shape(shape)
 
     # Init
-    run_cihub("init", "--repo", str(path), "--apply")
+    run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars")
 
     # Validate
     result = run_cihub("validate", "--repo", str(path))

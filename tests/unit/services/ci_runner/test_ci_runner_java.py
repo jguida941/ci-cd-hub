@@ -334,6 +334,35 @@ class TestRunOwasp:
         assert result.metrics["report_found"] is False
         assert result.metrics["owasp_data_missing"] is True
 
+    def test_nvd_403_falls_back_to_ossindex(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import run_owasp
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        captured_cmds: list[list[str]] = []
+
+        def _fake_run(tool, cmd, workdir, output_dir, timeout=None, env=None):
+            captured_cmds.append(cmd)
+            mock_proc = MagicMock()
+            mock_proc.returncode = 1
+            mock_proc.stdout = ""
+            mock_proc.stderr = "Error updating the NVD Data; the NVD returned a 403 or 404 error"
+            return mock_proc
+
+        with patch.dict(os.environ, {"NVD_API_KEY": "test-key"}, clear=True):
+            with patch("cihub.core.ci_runner.shared._run_tool_command", side_effect=_fake_run):
+                result = run_owasp(tmp_path, output_dir, "maven", use_nvd_api_key=True)
+
+        assert len(captured_cmds) == 2
+        assert any("test-key" in part for part in captured_cmds[0])
+        assert "-Danalyzer.nvdcve.enabled=false" in captured_cmds[1]
+        assert "-Dupdater.nvdcve.enabled=false" in captured_cmds[1]
+        assert "-Danalyzer.cpe.enabled=false" in captured_cmds[1]
+        assert "-Danalyzer.npm.cpe.enabled=false" in captured_cmds[1]
+        assert "-DossindexAnalyzerEnabled=true" in captured_cmds[1]
+        assert result.success is False
+
     def test_fatal_errors_mark_failure(self, tmp_path: Path) -> None:
         from cihub.ci_runner import run_owasp
 
@@ -352,6 +381,42 @@ class TestRunOwasp:
 
         assert result.success is False
         assert result.metrics["owasp_fatal_errors"] is True
+
+    def test_corrupt_db_triggers_purge_and_retry(self, tmp_path: Path) -> None:
+        from cihub.ci_runner import run_owasp
+
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+        report_dir = tmp_path / "target"
+        report_dir.mkdir(parents=True)
+        (report_dir / "dependency-check-report.json").write_text(
+            '{"dependencies": []}', encoding="utf-8"
+        )
+
+        def _make_proc(stdout: str) -> MagicMock:
+            mock_proc = MagicMock()
+            mock_proc.returncode = 0
+            mock_proc.stdout = stdout
+            mock_proc.stderr = ""
+            return mock_proc
+
+        procs = [
+            _make_proc(
+                "Incompatible or corrupt database found. To resolve this issue please remove "
+                "the existing database by running purge"
+            ),
+            _make_proc("purge complete"),
+            _make_proc("analysis complete"),
+        ]
+
+        with patch(
+            "cihub.core.ci_runner.shared._run_tool_command", side_effect=procs
+        ) as run_mock:
+            result = run_owasp(tmp_path, output_dir, "maven", use_nvd_api_key=False)
+
+        assert run_mock.call_count == 3
+        assert result.metrics["owasp_db_purged"] is True
+        assert result.success is True
 
     def test_missing_nvd_key_allows_update(self, tmp_path: Path) -> None:
         from cihub.ci_runner import run_owasp
@@ -378,7 +443,10 @@ class TestRunOwasp:
             with patch("cihub.core.ci_runner.shared._run_tool_command", side_effect=_fake_run):
                 result = run_owasp(tmp_path, output_dir, "maven", use_nvd_api_key=True)
 
-        assert "-DautoUpdate=false" in captured["cmd"]
+        assert "-Danalyzer.nvdcve.enabled=false" in captured["cmd"]
+        assert "-Dupdater.nvdcve.enabled=false" in captured["cmd"]
+        assert "-Danalyzer.cpe.enabled=false" in captured["cmd"]
+        assert "-Danalyzer.npm.cpe.enabled=false" in captured["cmd"]
         assert "-DossindexAnalyzerEnabled=true" in captured["cmd"]
         assert result.success is True
 
@@ -406,7 +474,10 @@ class TestRunOwasp:
         with patch("cihub.core.ci_runner.shared._run_tool_command", side_effect=_fake_run):
             result = run_owasp(tmp_path, output_dir, "maven", use_nvd_api_key=False)
 
-        assert "-DautoUpdate=false" in captured["cmd"]
+        assert "-Danalyzer.nvdcve.enabled=false" in captured["cmd"]
+        assert "-Dupdater.nvdcve.enabled=false" in captured["cmd"]
+        assert "-Danalyzer.cpe.enabled=false" in captured["cmd"]
+        assert "-Danalyzer.npm.cpe.enabled=false" in captured["cmd"]
         assert "-DossindexAnalyzerEnabled=true" in captured["cmd"]
         assert result.success is True
 

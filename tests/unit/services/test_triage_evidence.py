@@ -548,6 +548,21 @@ class TestBuildToolEvidence:
         assert ruff.status == ToolStatus.FAILED
         assert "failed" in ruff.explanation.lower()
 
+    def test_unknown_status(self) -> None:
+        """Ran but missing tools_success gets UNKNOWN status."""
+        report = {
+            "tools_configured": {"ruff": True},
+            "tools_ran": {"ruff": True},
+            "tools_success": {},
+        }
+
+        result = build_tool_evidence(report)
+
+        ruff = next(e for e in result if e.tool == "ruff")
+        assert ruff.status == ToolStatus.UNKNOWN
+        assert ruff.success is None
+        assert "tools_success" in ruff.explanation.lower()
+
     def test_detects_java_language(self) -> None:
         """Detects Java from java_version key."""
         report = {

@@ -23,7 +23,7 @@ def test_ci_runs_on_shape(shape: str, repo_shape) -> None:
     path = repo_shape(shape)
 
     # Initialize first
-    init_result = run_cihub("init", "--repo", str(path), "--apply")
+    init_result = run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars")
     assert init_result.returncode == 0, f"init failed for {shape}"
 
     # Run CI (minimal, just validate config works)
@@ -47,7 +47,7 @@ def test_ci_produces_report(shape: str, repo_shape) -> None:
     path = repo_shape(shape)
 
     # Initialize
-    run_cihub("init", "--repo", str(path), "--apply")
+    run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars")
 
     # Run CI
     run_cihub(
@@ -95,7 +95,7 @@ def test_ci_output_dir_custom(repo_shape) -> None:
     path = repo_shape("python-pyproject")
     output_dir = path / "custom_output"
 
-    run_cihub("init", "--repo", str(path), "--apply")
+    run_cihub("init", "--repo", str(path), "--apply", "--no-set-hub-vars")
     run_cihub(
         "ci",
         "--repo",
@@ -116,7 +116,7 @@ def test_ci_with_workdir_override(repo_shape) -> None:
     # Init the python subdir
     python_subdir = path / "python"
     if python_subdir.exists():
-        run_cihub("init", "--repo", str(python_subdir), "--apply")
+        run_cihub("init", "--repo", str(python_subdir), "--apply", "--no-set-hub-vars")
 
         # Run CI with workdir
         result = run_cihub(

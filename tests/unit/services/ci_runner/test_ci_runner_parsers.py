@@ -192,6 +192,15 @@ class TestCountPipAuditVulns:
         ]
         assert _count_pip_audit_vulns(data) == 3
 
+    def test_counts_vulns_dependency_dict_format(self) -> None:
+        data = {
+            "dependencies": [
+                {"name": "package1", "vulns": [{"id": "CVE-1"}]},
+                {"name": "package2", "vulnerabilities": [{"id": "CVE-2"}, {"id": "CVE-3"}]},
+            ]
+        }
+        assert _count_pip_audit_vulns(data) == 3
+
     def test_returns_zero_for_non_list(self) -> None:
         assert _count_pip_audit_vulns({"some": "dict"}) == 0
         assert _count_pip_audit_vulns(None) == 0

@@ -292,30 +292,40 @@ def run_owasp(
     nvd_key = env.get("NVD_API_KEY") if use_nvd_api_key else None
     if not use_nvd_api_key:
         env.pop("NVD_API_KEY", None)
-    nvd_flags: list[str] = []
+    base_nvd_flags: list[str] = []
     use_nvd_update = use_nvd_api_key and bool(nvd_key)
     if use_nvd_update:
-        nvd_flags.append(f"-DnvdApiKey={nvd_key}")
+        base_nvd_flags.append(f"-DnvdApiKey={nvd_key}")
     else:
-        # Missing key: disable updates and use OSS Index to avoid NVD fetches.
-        nvd_flags.append("-DautoUpdate=false")
-        nvd_flags.append("-DossindexAnalyzerEnabled=true")
+        # Missing key: disable NVD/CPE analysis and rely on other analyzers (OSS Index).
+        base_nvd_flags.append("-Danalyzer.nvdcve.enabled=false")
+        base_nvd_flags.append("-Dupdater.nvdcve.enabled=false")
+        base_nvd_flags.append("-Danalyzer.cpe.enabled=false")
+        base_nvd_flags.append("-Danalyzer.npm.cpe.enabled=false")
+        base_nvd_flags.append("-DossindexAnalyzerEnabled=true")
+    fallback_nvd_flags = [
+        "-Danalyzer.nvdcve.enabled=false",
+        "-Dupdater.nvdcve.enabled=false",
+        "-Danalyzer.cpe.enabled=false",
+        "-Danalyzer.npm.cpe.enabled=false",
+        "-DossindexAnalyzerEnabled=true",
+    ]
     format_flag = "-Dformat=JSON"
     output_dir_flag = f"-DoutputDirectory={output_dir.resolve()}"
     data_dir_flag = f"-DdataDirectory={data_dir.resolve()}"
-    if build_tool == "gradle":
-        cmd = _gradle_cmd(workdir) + [
-            "dependencyCheckAnalyze",
-            "--continue",
-            format_flag,
-            output_dir_flag,
-            data_dir_flag,
-            "-DfailOnError=false",
-            *nvd_flags,
-        ]
-    else:
+    def _build_check_cmd(extra_flags: list[str]) -> list[str]:
+        if build_tool == "gradle":
+            return _gradle_cmd(workdir) + [
+                "dependencyCheckAnalyze",
+                "--continue",
+                format_flag,
+                output_dir_flag,
+                data_dir_flag,
+                "-DfailOnError=false",
+                *extra_flags,
+            ]
         owasp_goal = f"org.owasp:dependency-check-maven:{DEFAULT_OWASP_VERSION}:check"
-        cmd = _maven_cmd(workdir) + [
+        return _maven_cmd(workdir) + [
             "-B",
             "-ntp",
             owasp_goal,
@@ -327,14 +337,84 @@ def run_owasp(
             format_flag,
             output_dir_flag,
             data_dir_flag,
-            *nvd_flags,
+            *extra_flags,
         ]
-    proc = shared._run_tool_command("owasp", cmd, workdir, output_dir, env=env, timeout=1800)
-    log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
-    output_text = f"{proc.stdout}\n{proc.stderr}".lower()
-    nvd_access_failed = "nvd returned a 403" in output_text or "nvd returned a 404" in output_text
-    fatal_errors = "fatal exception(s) analyzing" in output_text or "fatal exception" in output_text
+    if build_tool == "gradle":
+        purge_cmd = _gradle_cmd(workdir) + [
+            "dependencyCheckPurge",
+            "--continue",
+            data_dir_flag,
+        ]
+    else:
+        purge_goal = f"org.owasp:dependency-check-maven:{DEFAULT_OWASP_VERSION}:purge"
+        purge_cmd = _maven_cmd(workdir) + [
+            "-B",
+            "-ntp",
+            purge_goal,
+            data_dir_flag,
+        ]
+
+    def _run_check(check_cmd: list[str]) -> tuple[object, str, str, str, bool]:
+        proc = shared._run_tool_command(
+            "owasp",
+            check_cmd,
+            workdir,
+            output_dir,
+            env=env,
+            timeout=1800,
+        )
+        stdout = proc.stdout or ""
+        stderr = proc.stderr or ""
+        output_text = f"{stdout}\n{stderr}".lower()
+        nvd_failed = "nvd returned a 403" in output_text or "nvd returned a 404" in output_text
+        return proc, stdout, stderr, output_text, nvd_failed
+
+    def _append_logs(current: str, addition: str) -> str:
+        if not addition:
+            return current
+        return f"{current}\n{addition}" if current else addition
+
+    cmd = _build_check_cmd(base_nvd_flags)
+    proc, stdout, stderr, output_text, nvd_failed = _run_check(cmd)
+    log_stdout = _append_logs("", stdout)
+    log_stderr = _append_logs("", stderr)
+    nvd_access_failed = (not use_nvd_update) or nvd_failed
+    corrupt_db = "incompatible or corrupt database found" in output_text
+    purged = False
+    if corrupt_db:
+        purge_proc = shared._run_tool_command(
+            "owasp",
+            purge_cmd,
+            workdir,
+            output_dir,
+            env=env,
+            timeout=900,
+        )
+        log_stdout = _append_logs(log_stdout, purge_proc.stdout or "")
+        log_stderr = _append_logs(log_stderr, purge_proc.stderr or "")
+        purged = True
+        proc, stdout, stderr, output_text, nvd_failed = _run_check(cmd)
+        log_stdout = _append_logs(log_stdout, stdout)
+        log_stderr = _append_logs(log_stderr, stderr)
+        nvd_access_failed = nvd_access_failed or nvd_failed
+        corrupt_db = "incompatible or corrupt database found" in output_text
+
+    if use_nvd_update and nvd_access_failed:
+        fallback_cmd = _build_check_cmd(fallback_nvd_flags)
+        proc, stdout, stderr, output_text, nvd_failed = _run_check(fallback_cmd)
+        log_stdout = _append_logs(log_stdout, stdout)
+        log_stderr = _append_logs(log_stderr, stderr)
+        nvd_access_failed = True
+        corrupt_db = "incompatible or corrupt database found" in output_text
+
+    log_path.write_text(log_stdout + log_stderr, encoding="utf-8")
+
+    fatal_errors = (
+        "fatal exception(s) analyzing" in output_text
+        or "fatal exception" in output_text
+        or corrupt_db
+    )
 
     report_paths = shared._find_files(
         workdir,
@@ -359,6 +439,7 @@ def run_owasp(
     metrics["report_found"] = report_found
     metrics["owasp_data_missing"] = nvd_access_failed
     metrics["owasp_fatal_errors"] = fatal_errors
+    metrics["owasp_db_purged"] = purged
     return ToolResult(
         tool="owasp",
         ran=True,
@@ -366,6 +447,6 @@ def run_owasp(
         returncode=proc.returncode,
         metrics=metrics,
         artifacts={"report": str(report_paths[0])} if report_paths else {},
-        stdout=proc.stdout,
-        stderr=proc.stderr,
+        stdout=log_stdout,
+        stderr=log_stderr,
     )

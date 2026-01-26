@@ -185,18 +185,34 @@ def cmd_triage(args: argparse.Namespace) -> CommandResult:
     # Handle --verify-tools mode (standalone analysis)
     verify_tools = getattr(args, "verify_tools", False)
     if verify_tools:
-        return _maybe_enhance(
-            args,
-            _handle_verify_tools(
-                args=args,
-                output_dir=output_dir,
-                run_id=run_id,
-                latest_mode=latest_mode,
-                repo=repo,
-                workflow_filter=workflow_filter,
-                branch_filter=branch_filter,
-            ),
-        )
+        try:
+            return _maybe_enhance(
+                args,
+                _handle_verify_tools(
+                    args=args,
+                    output_dir=output_dir,
+                    run_id=run_id,
+                    latest_mode=latest_mode,
+                    repo=repo,
+                    workflow_filter=workflow_filter,
+                    branch_filter=branch_filter,
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001 - surface error in CLI
+            return _maybe_enhance(
+                args,
+                CommandResult(
+                    exit_code=EXIT_FAILURE,
+                    summary=f"Failed to verify tools: {exc}",
+                    problems=[
+                        {
+                            "severity": "error",
+                            "message": str(exc),
+                            "code": "CIHUB-VERIFY-ERROR",
+                        }
+                    ],
+                ),
+            )
 
     try:
         # Multi-report mode

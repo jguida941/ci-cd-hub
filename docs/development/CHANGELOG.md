@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-26 - Tool Test Audit Plan
+
+### Docs
+
+- Added `TOOL_TEST_AUDIT_PLAN.md` to define the CLI-first tool testing audit.
+- Updated status/plan references to queue the audit execution.
+- Added `ARCHITECTURE_AUDIT.md` to capture architecture gaps and fix plan.
+
+### Fix: Bandit tool output consistency
+
+- Bandit tool-outputs now align `success` with gate-derived `tools_success` and respect `max_high_vulns` thresholds.
+- Tool-outputs success now matches gate semantics across Python/Java lint/security/coverage tools.
+- pip_audit/mutmut tool-outputs now align `success` with gate-derived `tools_success`.
+- pip-audit JSON parsing now supports dependency dict output so vuln counts are accurate.
+- Report validation now warns (not fails) on non-zero returncodes when success is gate-based.
+
+## 2026-01-25 - Triage Correctness Fixes
+
+### Fix: Triage summary semantics
+
+- Optional skipped tools no longer mark runs as failed; summaries now follow actual failure counts.
+
+### Fix: Triage aggregation and per-repo counts
+
+- Multi-report/per-repo triage now treats `success` as pass and uses summary status for counts.
+
+### Fix: Triage robustness
+
+- `cihub triage --verify-tools` returns structured errors on remote failures instead of crashing.
+- Watch mode now uses the GitHub client auth path for `gh` calls.
+- Repo auto-detection preserves dotted repo names.
+- Remote triage now uses existing artifacts when `gh` downloads or run-info lookups fail (offline support).
+- Missing `tools_success` now yields "unknown" status with warnings instead of false failures.
+
+### Fix: Gate history coverage
+
+- Gate history now includes all triage categories and missing-report failures.
+
 ## 2026-01-23 - TS CLI Passthrough + Gradle Target Fixes
 
 ### Fix: TypeScript CLI passthrough
@@ -23,9 +61,13 @@ All notable changes to this project will be documented in this file.
 
 ### Fix: OWASP runs without NVD key
 
-- OWASP runner now disables NVD updates and enables OSS Index when no key is present, avoiding NVD 403s while still producing evidence.
+- OWASP runner now disables NVD/CPE analyzers and enables OSS Index when no key is present, avoiding NVD 403s while still producing evidence.
+- OWASP runner now auto-purges corrupt dependency-check databases and retries once before failing.
 - OWASP and PITest Maven runners now use explicit plugin coordinates to avoid missing plugin-prefix errors in multi-module repos.
 - `cihub fix-pom` now applies missing plugin snippets to module POMs in multi-module Maven layouts.
+### Fix: setup-nvd supports env fallback
+
+- `cihub setup-nvd` now reads `NVD_API_KEY` from env when `--nvd-key` is not provided, enabling non-interactive runs without leaking secrets.
 
 ### Fix: Hub vars verification on init/setup
 

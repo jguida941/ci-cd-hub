@@ -17,24 +17,58 @@ from cihub.commands.triage import cmd_triage
 from cihub.exit_codes import EXIT_FAILURE, EXIT_SUCCESS
 
 
+def _make_report(
+    *,
+    repo: str = "test/repo",
+    tools_configured: dict[str, bool] | None = None,
+    tools_ran: dict[str, bool] | None = None,
+    tools_success: dict[str, bool] | None = None,
+    tool_metrics: dict[str, int | float | None] | None = None,
+    results: dict[str, int | float | None] | None = None,
+) -> dict[str, object]:
+    """Build a schema-valid report.json payload for triage tests."""
+    return {
+        "schema_version": "2.0",
+        "metadata": {
+            "workflow_version": "0.0.0-test",
+            "workflow_ref": "test",
+            "generated_at": "2024-01-01T00:00:00Z",
+        },
+        "repository": repo,
+        "run_id": "123",
+        "run_number": "1",
+        "commit": "a" * 40,
+        "branch": "main",
+        "timestamp": "2024-01-01T00:00:00Z",
+        "python_version": "3.12",
+        "tools_configured": tools_configured or {},
+        "tools_ran": tools_ran or {},
+        "tools_success": tools_success or {},
+        "tool_metrics": tool_metrics or {},
+        "results": results
+        or {
+            "coverage": 0,
+            "mutation_score": 0,
+            "tests_passed": 0,
+            "tests_failed": 0,
+            "critical_vulns": 0,
+            "high_vulns": 0,
+            "medium_vulns": 0,
+        },
+    }
+
+
 class TestTriageLocalMode:
     """Integration tests for local triage mode."""
 
     def test_triage_with_local_report(self, tmp_path: Path) -> None:
         """Test triage from a local report.json file."""
         # Create a minimal report.json
-        report = {
-            "schema_version": "2.0",
-            "timestamp": "2024-01-01T00:00:00Z",
-            "overall_status": "failure",
-            "tools_configured": {"pytest": True, "ruff": True},
-            "tools_ran": {"pytest": True, "ruff": True},
-            "tools_success": {"pytest": False, "ruff": True},
-            "tool_metrics": {
-                "pytest": {"tests_passed": 10, "tests_failed": 2},
-                "ruff": {"issues": 0},
-            },
-        }
+        report = _make_report(
+            tools_configured={"pytest": True, "ruff": True},
+            tools_ran={"pytest": True, "ruff": True},
+            tools_success={"pytest": False, "ruff": True},
+        )
         report_path = tmp_path / "report.json"
         report_path.write_text(json.dumps(report), encoding="utf-8")
 
@@ -108,16 +142,12 @@ class TestTriageMultiMode:
         for repo_name in ["repo-a", "repo-b"]:
             repo_dir = tmp_path / "reports" / repo_name
             repo_dir.mkdir(parents=True)
-            report = {
-                "schema_version": "2.0",
-                "timestamp": "2024-01-01T00:00:00Z",
-                "overall_status": "success" if repo_name == "repo-a" else "failure",
-                "repository": f"test-org/{repo_name}",  # String format expected by triage service
-                "tools_configured": {"pytest": True},
-                "tools_ran": {"pytest": True},
-                "tools_success": {"pytest": repo_name == "repo-a"},
-                "tool_metrics": {"pytest": {"tests_passed": 10, "tests_failed": 0 if repo_name == "repo-a" else 2}},
-            }
+            report = _make_report(
+                repo=f"test-org/{repo_name}",
+                tools_configured={"pytest": True},
+                tools_ran={"pytest": True},
+                tools_success={"pytest": repo_name == "repo-a"},
+            )
             (repo_dir / "report.json").write_text(json.dumps(report), encoding="utf-8")
 
         args = argparse.Namespace(
@@ -150,18 +180,72 @@ class TestTriageMultiMode:
         assert (tmp_path / "output" / "multi-triage.json").exists()
 
 
+class TestTriageRemotePerRepo:
+    """Integration tests for remote per-repo triage mode."""
+
+    def test_triage_per_repo_counts(self, tmp_path: Path) -> None:
+        """Remote per-repo mode should count pass/fail correctly."""
+        run_id = "12345"
+        output_dir = tmp_path / "output"
+        artifacts_dir = output_dir / "runs" / run_id / "artifacts"
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
+
+        reports = {"repo-a": True, "repo-b": False}
+        for repo_name, success in reports.items():
+            repo_dir = artifacts_dir / repo_name
+            repo_dir.mkdir(parents=True, exist_ok=True)
+            report = _make_report(
+                repo=f"test-org/{repo_name}",
+                tools_configured={"pytest": True},
+                tools_ran={"pytest": True},
+                tools_success={"pytest": success},
+            )
+            (repo_dir / "report.json").write_text(json.dumps(report), encoding="utf-8")
+
+        args = argparse.Namespace(
+            output_dir=str(output_dir),
+            report=None,
+            summary=None,
+            run=run_id,
+            artifacts_dir=None,
+            repo="owner/repo",
+            multi=False,
+            reports_dir=None,
+            detect_flaky=False,
+            gate_history=False,
+            workflow=None,
+            branch=None,
+            aggregate=False,
+            per_repo=True,
+            latest=False,
+            watch=False,
+            interval=30,
+            min_severity=None,
+            category=None,
+            verify_tools=False,
+        )
+
+        with patch("cihub.commands.triage.remote.download_artifacts", return_value=False), patch(
+            "cihub.commands.triage.remote.fetch_run_info",
+            side_effect=RuntimeError("offline"),
+        ):
+            result = cmd_triage(args)
+
+        assert result.exit_code == EXIT_SUCCESS
+        assert result.data["passed_count"] == 1
+        assert result.data["failed_count"] == 1
+
+
 class TestTriageFiltering:
     """Integration tests for triage filtering."""
 
     def test_triage_with_severity_filter(self, tmp_path: Path) -> None:
         """Test --min-severity filters failures correctly."""
-        report = {
-            "schema_version": "2.0",
-            "overall_status": "failure",
-            "tools_configured": {"pytest": True, "ruff": True, "bandit": True},
-            "tools_ran": {"pytest": True, "ruff": True, "bandit": True},
-            "tools_success": {"pytest": False, "ruff": False, "bandit": False},
-        }
+        report = _make_report(
+            tools_configured={"pytest": True, "ruff": True, "bandit": True},
+            tools_ran={"pytest": True, "ruff": True, "bandit": True},
+            tools_success={"pytest": False, "ruff": False, "bandit": False},
+        )
         report_path = tmp_path / "report.json"
         report_path.write_text(json.dumps(report), encoding="utf-8")
 
@@ -201,11 +285,11 @@ class TestTriageVerifyTools:
 
     def test_verify_tools_detects_drift(self, tmp_path: Path) -> None:
         """Test --verify-tools detects configured but not run tools."""
-        report = {
-            "tools_configured": {"pytest": True, "mypy": True},
-            "tools_ran": {"pytest": True, "mypy": False},  # mypy didn't run
-            "tools_success": {"pytest": True, "mypy": False},
-        }
+        report = _make_report(
+            tools_configured={"pytest": True, "mypy": True},
+            tools_ran={"pytest": True, "mypy": False},
+            tools_success={"pytest": True, "mypy": False},
+        )
         report_path = tmp_path / "report.json"
         report_path.write_text(json.dumps(report), encoding="utf-8")
 
@@ -399,13 +483,11 @@ class TestTriageArtifacts:
 
     def test_triage_generates_all_artifacts(self, tmp_path: Path) -> None:
         """Test that triage generates all expected artifact files."""
-        report = {
-            "schema_version": "2.0",
-            "overall_status": "failure",
-            "tools_configured": {"pytest": True},
-            "tools_ran": {"pytest": True},
-            "tools_success": {"pytest": False},
-        }
+        report = _make_report(
+            tools_configured={"pytest": True},
+            tools_ran={"pytest": True},
+            tools_success={"pytest": False},
+        )
         report_path = tmp_path / "report.json"
         report_path.write_text(json.dumps(report), encoding="utf-8")
 

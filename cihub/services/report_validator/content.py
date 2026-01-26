@@ -239,7 +239,7 @@ def _validate_tool_outputs(
             )
 
         if output_success and isinstance(output_returncode, int) and output_returncode != 0:
-            errors.append(
+            warnings.append(
                 f"tool '{tool}' marked success but returncode={output_returncode} in tool-outputs"
             )
 

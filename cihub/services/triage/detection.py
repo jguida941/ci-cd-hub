@@ -54,7 +54,7 @@ def detect_test_count_regression(history_path: Path, current_count: int) -> list
                     "drop_percentage": round(drop_pct * 100, 1),
                     "hint": (
                         "Check if tests were deleted or excluded. "
-                        "Use 'cihub triage --history' to view test count trends."
+                        "Inspect history.jsonl to review recent test count trends."
                     ),
                 }
             )

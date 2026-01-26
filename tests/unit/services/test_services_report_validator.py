@@ -281,6 +281,22 @@ class TestValidateReport:
         result = validate_report(report, reports_dir=reports_dir)
         assert any("ran mismatch" in e for e in result.errors)
 
+    def test_tool_outputs_nonzero_returncode_warns(self, tmp_path: Path) -> None:
+        report = make_valid_python_report()
+        report["tools_ran"]["ruff"] = True
+        report["tools_success"]["ruff"] = True
+
+        reports_dir = tmp_path / "reports"
+        tool_outputs = reports_dir / "tool-outputs"
+        tool_outputs.mkdir(parents=True)
+        (tool_outputs / "ruff.json").write_text(
+            '{"tool": "ruff", "ran": true, "success": true, "returncode": 1, "metrics": {"ruff_errors": 1}}'
+        )
+
+        result = validate_report(report, reports_dir=reports_dir)
+        assert not any("returncode=1" in e for e in result.errors)
+        assert any("returncode=1" in w for w in result.warnings)
+
     def test_tool_outputs_placeholder_triggers_error(self, tmp_path: Path) -> None:
         report = make_valid_python_report()
         report["tools_ran"]["ruff"] = True

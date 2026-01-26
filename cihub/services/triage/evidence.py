@@ -172,7 +172,7 @@ def build_tool_evidence(
         configured = bool(tools_configured.get(tool, False))
         ran = bool(tools_ran.get(tool, False))
         require_run = bool(tools_require_run.get(tool, False))
-        success = tools_success.get(tool) if ran else None
+        success = tools_success.get(tool) if tool in tools_success else None
 
         # Determine status and explanation
         if not configured:
@@ -184,6 +184,9 @@ def build_tool_evidence(
         elif configured and not ran:
             status = ToolStatus.SKIPPED
             explanation = f"Tool '{tool}' was configured but skipped (optional, no require_run)"
+        elif ran and success is None:
+            status = ToolStatus.UNKNOWN
+            explanation = f"Tool '{tool}' ran but did not report success in tools_success"
         elif ran and success:
             status = ToolStatus.PASSED
             explanation = f"Tool '{tool}' ran successfully and passed all thresholds"

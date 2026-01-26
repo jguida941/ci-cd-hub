@@ -256,11 +256,21 @@ def run_bandit(workdir: Path, output_dir: Path) -> ToolResult:
 
 
 def _count_pip_audit_vulns(data: Any) -> int:
+    if isinstance(data, dict):
+        dependencies = data.get("dependencies")
+        if isinstance(dependencies, list):
+            return _count_pip_audit_vulns(dependencies)
+        return 0
     if isinstance(data, list):
         total = 0
         for item in data:
-            vulns = item.get("vulns") or item.get("vulnerabilities") or []
-            total += len(vulns)
+            if not isinstance(item, dict):
+                continue
+            vulns = item.get("vulns")
+            if vulns is None:
+                vulns = item.get("vulnerabilities")
+            if isinstance(vulns, list):
+                total += len(vulns)
         return total
     return 0
 

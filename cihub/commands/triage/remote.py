@@ -59,8 +59,12 @@ def generate_remote_triage_bundle(
         TriageBundle for single-report or log-fallback mode.
         tuple[dict, dict] for multi-report mode (artifacts, result_data).
     """
-    run_info = fetch_run_info(run_id, repo)
+    run_info: dict[str, Any] = {}
     notes: list[str] = [f"Analyzed from remote run: {run_id}"]
+    try:
+        run_info = fetch_run_info(run_id, repo)
+    except Exception as exc:  # noqa: BLE001 - allow offline artifacts usage
+        notes.append(f"Run info unavailable: {exc}")
 
     # Persistent artifact storage
     run_dir = output_dir / "runs" / run_id
@@ -68,6 +72,11 @@ def generate_remote_triage_bundle(
     artifacts_dir.mkdir(parents=True, exist_ok=True)
 
     has_artifacts = download_artifacts(run_id, repo, artifacts_dir)
+    if not has_artifacts:
+        existing_reports = find_all_reports_in_artifacts(artifacts_dir)
+        if existing_reports:
+            has_artifacts = True
+            notes.append(f"Using existing artifacts from {artifacts_dir}")
 
     if has_artifacts:
         # Find ALL report.json files (may be multiple for orchestrator runs)
@@ -121,11 +130,20 @@ def generate_remote_triage_bundle(
                     "artifacts_dir": artifacts_dir,
                     **{f"triage_{name}": path for name, path in per_repo_paths.items()},
                 }
+                passed_count = 0
+                failed_count = 0
+                for bundle in bundles:
+                    summary = bundle.triage.get("summary", {}) if isinstance(bundle.triage, dict) else {}
+                    status = summary.get("overall_status")
+                    if status in {"passed", "success"}:
+                        passed_count += 1
+                    else:
+                        failed_count += 1
                 result_data = {
                     "mode": "per-repo",
                     "repo_count": len(bundles),
-                    "passed_count": sum(1 for b in bundles if b.triage.get("status") == "success"),
-                    "failed_count": sum(1 for b in bundles if b.triage.get("status") == "failure"),
+                    "passed_count": passed_count,
+                    "failed_count": failed_count,
                     "bundles": list(per_repo_paths.keys()),
                 }
                 return artifacts_out, result_data
