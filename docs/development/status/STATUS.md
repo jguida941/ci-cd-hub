@@ -3,7 +3,7 @@
 **Status:** reference  
 **Owner:** Development Team  
 **Source-of-truth:** manual  
-**Last-reviewed:** 2026-01-19  
+**Last-reviewed:** 2026-01-26  
 
 > **Status snapshot** for active docs only. The authoritative plan is [MASTER_PLAN.md](../MASTER_PLAN.md).
 > This file may be stale and will be audited later; it remains because automation scripts may reference it.
@@ -12,7 +12,7 @@
 > **Architecture:** See [ARCH_OVERVIEW.md](../architecture/ARCH_OVERVIEW.md)
 > **Test Counts:** Refresh via `cihub hub-ci test-metrics --write` after verified pytest+coverage (no manual edits).
 >
-> **Last Updated:** 2026-01-26 (Tool success alignment expanded across Python/Java; audit execution in progress)  
+> **Last Updated:** 2026-01-26 (Added hub workflow ref override for audit branches; real repo audit blocked on artifacts)  
 > **Version Target:** v1.0.0
 >
 > **Current focus:** TYPESCRIPT_CLI_DESIGN (Phase 8 AI enhancement), tool audit execution, and architecture audit.

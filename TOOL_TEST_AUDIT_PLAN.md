@@ -52,6 +52,19 @@ codeql, sbom, docker.
   ci-cd-hub-canary-java.
 - Hub: jguida941/ci-cd-hub (self-check).
 
+## Real repo audit (owner inventory)
+
+- Inventory with `gh repo list jguida941 --limit 200 --json name,defaultBranchRef,isArchived,isPrivate,visibility`.
+- Exclude archived or fork-only repos; prioritize active repos with CI signals.
+- For each repo:
+  - Create an audit branch (e.g., `audit/cihub-audit-YYYY-MM-DD`).
+  - Regenerate via `cihub init --apply --force` (no manual YAML edits).
+  - Use `--hub-workflow-ref <audit-ref>` (and `--hub-ref`) when validating
+    workflow changes before a release tag is updated.
+  - Dispatch and triage (`cihub dispatch trigger/watch`, `cihub triage --verify-tools`).
+  - If no artifacts, treat as a failure and fix the workflow/CLI before moving on.
+- Log every run in `docs/development/research/CIHUB_TOOL_RUN_AUDIT.md`.
+
 ## Evidence rules
 
 - `tools_ran` means the command executed.

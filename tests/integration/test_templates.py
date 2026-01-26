@@ -291,6 +291,14 @@ class TestRenderCallerWorkflow:
         # Should contain hub-ci.yml (the replacement)
         assert "hub-ci.yml" in rendered
 
+    @pytest.mark.parametrize("language", ["java", "python"])
+    def test_render_hub_ci_overrides_workflow_ref(self, language: str):
+        """render_dispatch_workflow should allow overriding the hub workflow ref."""
+        from cihub.services.templates import render_dispatch_workflow
+
+        rendered = render_dispatch_workflow(language, "hub-ci.yml", hub_workflow_ref="audit/test-ref")
+        assert "hub-ci.yml@audit/test-ref" in rendered
+
 
 class TestLegacyDispatchTemplates:
     """Ensure legacy dispatch templates stay archived."""

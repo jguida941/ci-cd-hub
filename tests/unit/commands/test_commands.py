@@ -382,6 +382,30 @@ class TestCmdInit:
         assert (tmp_path / ".ci-hub.yml").exists()
         assert (tmp_path / ".github" / "workflows" / "hub-ci.yml").exists()
 
+    def test_init_hub_workflow_ref_override(self, tmp_path: Path) -> None:
+        """Init pins hub workflow ref when provided."""
+        (tmp_path / "pyproject.toml").write_text("[project]\nname='example'\n", encoding="utf-8")
+        args = argparse.Namespace(
+            repo=str(tmp_path),
+            language=None,
+            owner="testowner",
+            name="testrepo",
+            branch="main",
+            subdir="",
+            wizard=False,
+            dry_run=False,
+            apply=True,
+            force=False,
+            fix_pom=False,
+            hub_workflow_ref="audit/test-ref",
+        )
+        result = cmd_init(args)
+        assert result.exit_code == 0
+        config = yaml.safe_load((tmp_path / ".ci-hub.yml").read_text(encoding="utf-8"))
+        assert config["repo"]["hub_workflow_ref"] == "audit/test-ref"
+        workflow = (tmp_path / ".github" / "workflows" / "hub-ci.yml").read_text(encoding="utf-8")
+        assert "hub-ci.yml@audit/test-ref" in workflow
+
     def test_init_fails_when_hub_vars_unverified(self, tmp_path: Path) -> None:
         """Init fails when hub vars cannot be verified and set_hub_vars is true."""
         (tmp_path / "pyproject.toml").write_text("[project]\nname='example'\n", encoding="utf-8")

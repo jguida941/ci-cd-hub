@@ -506,6 +506,7 @@ These are references, not competing plans.
 - **Monorepo targets** use `repo.targets` for multi-language/subdir runs with per-target summaries (ADR-0069).
 - **Tool evidence is explicit** via `tool_evidence` in reports for proofed tool runs (ADR-0070).
 - **Hub repo vars are verified on init/setup**; failure blocks setup to prevent drift (ADR-0072).
+- **Caller workflows can pin a reusable workflow ref per repo** via `repo.hub_workflow_ref` and `--hub-workflow-ref` (ADR-0073).
 - **Workflow dispatch/watch lives in the CLI** (`cihub dispatch`) with wizard wrappers (ADR-0055).
 - **Schema is the source of truth for defaults**; defaults.yaml and fallbacks.py are generated and audited in `cihub check --audit`.
 - **Canonical install default is PyPI**; align CLI defaults and templates to schema `install.source`.

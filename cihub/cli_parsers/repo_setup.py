@@ -120,6 +120,10 @@ def add_repo_setup_commands(
         help="Hub ref (tag/sha/branch) for setting HUB_REF (default: CIHUB_HUB_REF or template)",
     )
     init.add_argument(
+        "--hub-workflow-ref",
+        help="Hub workflow ref to pin in generated hub-ci.yml (default: template ref)",
+    )
+    init.add_argument(
         "--set-hub-vars",
         action=argparse.BooleanOptionalAction,
         default=True,
@@ -156,6 +160,10 @@ def add_repo_setup_commands(
         "--force",
         action="store_true",
         help="Override repo_side_execution guardrails",
+    )
+    update.add_argument(
+        "--hub-workflow-ref",
+        help="Hub workflow ref to pin in generated hub-ci.yml (writes repo.hub_workflow_ref)",
     )
     update.add_argument(
         "--dry-run",
@@ -207,6 +215,10 @@ def add_repo_setup_commands(
     setup.add_argument(
         "--hub-ref",
         help="Hub ref (tag/sha/branch) for setting HUB_REF (default: CIHUB_HUB_REF or template)",
+    )
+    setup.add_argument(
+        "--hub-workflow-ref",
+        help="Hub workflow ref to pin in generated hub-ci.yml (default: template ref)",
     )
     setup.add_argument(
         "--set-hub-vars",

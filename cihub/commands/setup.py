@@ -319,6 +319,7 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
                 subdir="",
                 fix_pom=False,
                 force=False,
+                hub_workflow_ref=getattr(args, "hub_workflow_ref", None),
                 json=False,
             )
             init_result = cmd_init(init_args)
@@ -517,7 +518,13 @@ def cmd_setup(args: argparse.Namespace) -> CommandResult:
             if github_choice in {"create", "existing"} and getattr(args, "set_hub_vars", True):
                 template_repo, template_ref = resolve_hub_repo_ref(language)
                 hub_repo_value = getattr(args, "hub_repo", None) or os.environ.get("CIHUB_HUB_REPO") or template_repo
-                hub_ref_value = getattr(args, "hub_ref", None) or os.environ.get("CIHUB_HUB_REF") or template_ref
+                hub_workflow_ref = getattr(args, "hub_workflow_ref", None)
+                hub_ref_value = (
+                    getattr(args, "hub_ref", None)
+                    or os.environ.get("CIHUB_HUB_REF")
+                    or hub_workflow_ref
+                    or template_ref
+                )
                 remote = get_git_remote(repo_path)
                 target_repo = ""
                 if remote:

@@ -83,6 +83,7 @@ Source: `schema/ci-hub-config.schema.json`
 | `repo.default_branch` | string | no | main |  |
 | `repo.dispatch_enabled` | boolean | no | true | Allow orchestrator dispatch (default true) |
 | `repo.dispatch_workflow` | string | no | hub-ci.yml | Workflow file to dispatch to (hub-ci.yml for single-language, hub-java-ci.yml or hub-python-ci.yml for monorepos) |
+| `repo.hub_workflow_ref` | string | no |  | Optional ref for the reusable hub-ci workflow used by generated caller workflows |
 | `repo.force_all_tools` | boolean | no | false | Force-enable all tools for this repo (overrides tool.enabled toggles) |
 | `repo.language` | string | no |  |  |
 | `repo.name` | string | yes |  |  |

@@ -67,6 +67,13 @@ behavior, then define a fix plan for the gaps found during tool audits.
    - Fix: document the requirement in audit steps and keep failure as
      designed (ADR-0072).
 
+5. Real repo audits can complete without downloadable artifacts.
+   - Evidence: `java-spring-tutorials` run 21353926655 produced no artifacts;
+     triage fell back to log parsing and `--verify-tools` could not run.
+   - Impact: tool evidence cannot be verified, blocking the audit contract.
+   - Fix: identify why artifacts are missing (workflow upload, permissions,
+     or ref mismatch) and add regression coverage for real-repo artifact upload.
+
 ## Fix Plan (phased)
 
 ### Phase A: Tool success alignment
@@ -99,12 +106,19 @@ behavior, then define a fix plan for the gaps found during tool audits.
 - Re-run repo matrix with `cihub dispatch` + `cihub triage --verify-tools`.
 - Log all runs in `docs/development/research/CIHUB_TOOL_RUN_AUDIT.md`.
 
+### Phase E: Real repo artifact verification
+
+- Re-triage `java-spring-tutorials` after confirming workflow artifact upload.
+- Add a regression check that `report.json` exists for real repo runs.
+
 ## Open Decisions
 
 - Should tool output artifacts be stored as relative paths or mapped during
   report validation?
 - Should `pip_audit` treat exit code 1 as non-fatal when `fail_on_vuln=false`?
 - Should fixtures allow vulnerabilities by default or pin dependencies?
+- Workflow ref override is accepted via `repo.hub_workflow_ref` and
+  `--hub-workflow-ref` for audit branches (ADR-0073).
 
 ## Verification
 

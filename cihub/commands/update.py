@@ -100,6 +100,12 @@ def cmd_update(args: argparse.Namespace) -> CommandResult:
 
     base = build_repo_config(language, owner, name, branch, subdir=subdir)
     merged = deep_merge(base, existing)
+    repo_block = merged.get("repo", {}) if isinstance(merged.get("repo"), dict) else {}
+    cli_hub_workflow_ref = getattr(args, "hub_workflow_ref", None)
+    if cli_hub_workflow_ref:
+        repo_block["hub_workflow_ref"] = cli_hub_workflow_ref
+    merged["repo"] = repo_block
+    hub_workflow_ref = repo_block.get("hub_workflow_ref")
     install_warnings: list[dict[str, str]] = []
     if ensure_git_install_source(merged):
         install_warnings.append(
@@ -121,7 +127,7 @@ def cmd_update(args: argparse.Namespace) -> CommandResult:
         save_yaml_file(config_path, merged, dry_run=False)
         items.append(f"Wrote: {config_path}")
 
-    workflow_content = render_caller_workflow(language)
+    workflow_content = render_caller_workflow(language, hub_workflow_ref=hub_workflow_ref)
     write_text(workflow_path, workflow_content, dry_run, emit=False)
     if dry_run:
         items.append(f"Would write: {workflow_path}")

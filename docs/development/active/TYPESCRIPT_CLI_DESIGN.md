@@ -139,6 +139,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Report validator warns (not fails) on non-zero returncodes when success is gate-based
 - [x] Align tool-outputs success with gate semantics across Python/Java tools (ruff/black/isort/semgrep/trivy/jacoco/pitest/checkstyle/spotbugs/pmd/owasp)
 - [x] Fix pip-audit JSON parsing (dependency dict format) so vuln counts are accurate
+- [x] Add hub workflow ref override for audit branches (`repo.hub_workflow_ref`, `--hub-workflow-ref`)
 
 ### Phase 9: Testing
 - [ ] Write unit tests for parser (`test/unit/parser.test.ts`)

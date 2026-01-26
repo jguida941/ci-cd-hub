@@ -138,6 +138,43 @@ Commands and results:
 Notes:
 - Override is now merged to `main` for the test repo; re-evaluate when a protobuf fix is available.
 
+## 2026-01-26 - java-spring-tutorials (real repo audit)
+
+Repo type: Java (multi-module)
+Repo path: `/tmp/cihub-audit/java-spring-tutorials`
+Goal: Regenerate workflow, dispatch, triage, verify tools.
+
+Commands and results:
+- `git clone https://github.com/jguida941/java-spring-tutorials /tmp/cihub-audit/java-spring-tutorials` -> ok
+- `git checkout -b audit/cihub-audit-2026-01-26` -> ok
+- `git rm -f .github/workflows/hub-ci.yml` -> ok
+- `git commit -m "chore: remove hub-ci workflow for regen"` -> ok
+- `python -m cihub init --repo /tmp/cihub-audit/java-spring-tutorials --apply --force --config-file /tmp/cihub-audit/java-spring-tutorials/.ci-hub.yml --hub-repo jguida941/ci-cd-hub --hub-ref audit/owasp-no-key` -> ok; warnings about missing Maven plugins (spotbugs/pmd/owasp/pitest) and multi-module config; suggests `cihub fix-pom --apply`
+- `git add .ci-hub.yml .github/workflows/hub-ci.yml` -> ok
+- `git commit -m "chore: regenerate hub-ci workflow via cihub"` -> ok
+- `git push -u origin audit/cihub-audit-2026-01-26` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo java-spring-tutorials --ref audit/cihub-audit-2026-01-26 --workflow hub-ci.yml` -> ok; run ID 21353926655
+- `python -m cihub dispatch watch --owner jguida941 --repo java-spring-tutorials --run-id 21353926655` -> hung locally (killed watch after no output)
+- `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21353926655` -> ok; 0 failures; no artifacts found (log parsing only)
+- `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21353926655 --verify-tools` -> failed; no report.json found
+
+Notes:
+- Triage reports no artifacts (`report_path` empty); `--verify-tools` cannot run.
+- Follow-up: confirm workflow artifact upload for real repos and re-triage once artifacts are available.
+- POM plugin warnings indicate required tool plugins are missing; consider `cihub fix-pom --apply` on the audit branch.
+
+Re-run (hub_ref + hub_workflow_ref: audit/owasp-no-key):
+- `python -m cihub init --repo /tmp/cihub-audit/java-spring-tutorials --apply --force --config-file /tmp/cihub-audit/java-spring-tutorials/.ci-hub.yml --hub-repo jguida941/ci-cd-hub --hub-ref audit/owasp-no-key --hub-workflow-ref audit/owasp-no-key` -> ok; added `repo.hub_workflow_ref`, regenerated hub-ci.yml
+- `git commit -m "chore: pin hub workflow ref for audit"` -> ok
+- `git push` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo java-spring-tutorials --ref audit/cihub-audit-2026-01-26 --workflow hub-ci.yml` -> ok; run ID 21354997138
+- `python -m cihub dispatch watch --owner jguida941 --repo java-spring-tutorials --run-id 21354997138` -> completed; conclusion failure
+- `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21354997138` -> failed; config validation error during "Emit config outputs"
+
+Notes:
+- Failure reason: "Failed to load config: Validation failed for merged-config" (likely because hub branch does not yet include schema update for `repo.hub_workflow_ref`).
+- Next: push hub-release changes to `audit/owasp-no-key` and re-run to validate artifacts + `--verify-tools`.
+
 ## 2026-01-22 - Full Audit Plan (CLI/Wizard/TS CLI + Repo Matrix)
 
 Goal: Prove every command surface works (Python CLI, TS CLI, wizard), and

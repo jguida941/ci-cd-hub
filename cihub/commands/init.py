@@ -217,6 +217,11 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
             existing_targets = existing_repo.get("targets")
             if isinstance(existing_targets, list) and existing_targets:
                 repo_config["targets"] = existing_targets
+    hub_workflow_ref = repo_config.get("hub_workflow_ref") if isinstance(repo_config, dict) else None
+    cli_hub_workflow_ref = getattr(args, "hub_workflow_ref", None)
+    if cli_hub_workflow_ref:
+        hub_workflow_ref = cli_hub_workflow_ref
+        repo_config["hub_workflow_ref"] = cli_hub_workflow_ref
     # Keep repo metadata aligned with the final language.
     if language:
         repo_config["language"] = language
@@ -263,7 +268,7 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
     else:
         save_yaml_file(config_path, config, dry_run=False)
 
-    workflow_content = render_caller_workflow(language)
+    workflow_content = render_caller_workflow(language, hub_workflow_ref=hub_workflow_ref)
     write_text(workflow_path, workflow_content, dry_run, emit=False)
 
     hub_vars_set = False
@@ -275,7 +280,12 @@ def cmd_init(args: argparse.Namespace) -> CommandResult:
     if hub_vars_required:
         template_repo, template_ref = resolve_hub_repo_ref(language)
         hub_repo_value = getattr(args, "hub_repo", None) or os.environ.get("CIHUB_HUB_REPO") or template_repo
-        hub_ref_value = getattr(args, "hub_ref", None) or os.environ.get("CIHUB_HUB_REF") or template_ref
+        hub_ref_value = (
+            getattr(args, "hub_ref", None)
+            or os.environ.get("CIHUB_HUB_REF")
+            or hub_workflow_ref
+            or template_ref
+        )
         if not hub_repo_value or not hub_ref_value:
             hub_vars_problems.append(
                 {

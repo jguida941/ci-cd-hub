@@ -2246,7 +2246,8 @@ usage: cihub init [-h] [--json] --repo REPO [--language {java,python}]
                   [--force] [--wizard] [--config-json CONFIG_JSON |
                   --config-file CONFIG_FILE] [--dry-run]
                   [--install-from {pypi,git,local}] [--hub-repo HUB_REPO]
-                  [--hub-ref HUB_REF] [--set-hub-vars | --no-set-hub-vars]
+                  [--hub-ref HUB_REF] [--hub-workflow-ref HUB_WORKFLOW_REF]
+                  [--set-hub-vars | --no-set-hub-vars]
 
 options:
   -h, --help            show this help message and exit
@@ -2278,6 +2279,9 @@ options:
                         CIHUB_HUB_REPO or template)
   --hub-ref HUB_REF     Hub ref (tag/sha/branch) for setting HUB_REF (default:
                         CIHUB_HUB_REF or template)
+  --hub-workflow-ref HUB_WORKFLOW_REF
+                        Hub workflow ref to pin in generated hub-ci.yml
+                        (default: template ref)
   --set-hub-vars, --no-set-hub-vars
                         Set HUB_REPO/HUB_REF repo variables via gh (default:
                         true)
@@ -2291,7 +2295,8 @@ See also: detect, scaffold, update, setup
 usage: cihub update [-h] [--json] --repo REPO [--language {java,python}]
                     [--owner OWNER] [--name NAME] [--branch BRANCH]
                     [--subdir SUBDIR] [--workdir SUBDIR] [--fix-pom] [--apply]
-                    [--force] [--dry-run]
+                    [--force] [--hub-workflow-ref HUB_WORKFLOW_REF]
+                    [--dry-run]
 
 options:
   -h, --help            show this help message and exit
@@ -2308,6 +2313,9 @@ options:
                         plugins/dependencies)
   --apply               Write files (default: dry-run)
   --force               Override repo_side_execution guardrails
+  --hub-workflow-ref HUB_WORKFLOW_REF
+                        Hub workflow ref to pin in generated hub-ci.yml
+                        (writes repo.hub_workflow_ref)
   --dry-run             Print output instead of writing
 
 See also: init, validate
@@ -2332,6 +2340,7 @@ See also: init, check
 ```
 usage: cihub setup [-h] [--json] [--repo REPO] [--new] [--skip-github]
                    [--hub-repo HUB_REPO] [--hub-ref HUB_REF]
+                   [--hub-workflow-ref HUB_WORKFLOW_REF]
                    [--set-hub-vars | --no-set-hub-vars] [--hub-mode]
                    [--tier {strict,standard,relaxed}]
 
@@ -2348,6 +2357,9 @@ options:
                         CIHUB_HUB_REPO or template)
   --hub-ref HUB_REF     Hub ref (tag/sha/branch) for setting HUB_REF (default:
                         CIHUB_HUB_REF or template)
+  --hub-workflow-ref HUB_WORKFLOW_REF
+                        Hub workflow ref to pin in generated hub-ci.yml
+                        (default: template ref)
   --set-hub-vars, --no-set-hub-vars
                         Set HUB_REPO/HUB_REF repo variables via gh (default:
                         true)

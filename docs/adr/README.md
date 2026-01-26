@@ -71,6 +71,9 @@ Existing:
 - [ADR-0068: Maven Multi-Module Tool Prep](0068-maven-multi-module-install.md)
 - [ADR-0069: Monorepo Targets in .ci-hub.yml](0069-monorepo-targets.md)
 - [ADR-0070: Tool Evidence in CI Reports](0070-tool-evidence-reporting.md)
+- [ADR-0071: Require Run Defaults](0071-require-run-defaults.md)
+- [ADR-0072: Hub Vars Verification](0072-hub-vars-verification.md)
+- [ADR-0073: Hub Workflow Ref Override for Audit Branches](0073-hub-workflow-ref-override.md)
 
 Template starter:
 ```markdown

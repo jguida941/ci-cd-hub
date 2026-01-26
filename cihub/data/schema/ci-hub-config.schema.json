@@ -1614,6 +1614,10 @@
           ],
           "type": "string"
         },
+        "hub_workflow_ref": {
+          "description": "Optional ref for the reusable hub-ci workflow used by generated caller workflows",
+          "type": "string"
+        },
         "force_all_tools": {
           "default": false,
           "description": "Force-enable all tools for this repo (overrides tool.enabled toggles)",

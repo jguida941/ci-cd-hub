@@ -18,6 +18,10 @@ All notable changes to this project will be documented in this file.
 - pip-audit JSON parsing now supports dependency dict output so vuln counts are accurate.
 - Report validation now warns (not fails) on non-zero returncodes when success is gate-based.
 
+### Change: Hub workflow ref override for audits
+
+- Added `repo.hub_workflow_ref` and `--hub-workflow-ref` to pin reusable workflow refs in generated `hub-ci.yml` for audit branches (ADR-0073).
+
 ## 2026-01-25 - Triage Correctness Fixes
 
 ### Fix: Triage summary semantics
