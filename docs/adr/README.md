@@ -74,6 +74,7 @@ Existing:
 - [ADR-0071: Require Run Defaults](0071-require-run-defaults.md)
 - [ADR-0072: Hub Vars Verification](0072-hub-vars-verification.md)
 - [ADR-0073: Hub Workflow Ref Override for Audit Branches](0073-hub-workflow-ref-override.md)
+- [ADR-0074: Artifact Guarantees for Failure Reports](0074-artifact-guarantee-failure-reports.md)
 
 Template starter:
 ```markdown

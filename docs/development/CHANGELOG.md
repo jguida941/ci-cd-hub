@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2026-01-27 - Artifact Guarantee
+
+### CLI
+- Always emit a minimal schema-valid `report.json`/summary on config or tool execution failures.
+
+### Workflows
+- Default `hub_repo`/`hub_ref` in hub workflows and caller templates to prevent empty inputs from skipping installs.
+
 ## 2026-01-26 - Tool Test Audit Plan
 
 ### Docs

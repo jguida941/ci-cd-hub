@@ -144,8 +144,8 @@ jobs:
 
       - name: Install cihub
         env:
-          HUB_REPO: ${{ inputs.hub_repo || vars.HUB_REPO }}
-          HUB_REF: ${{ inputs.hub_ref || vars.HUB_REF }}
+          HUB_REPO: ${{ inputs.hub_repo || vars.HUB_REPO || 'jguida941/ci-cd-hub' }}
+          HUB_REF: ${{ inputs.hub_ref || vars.HUB_REF || 'v1' }}
         run: python -m pip install "git+https://github.com/${HUB_REPO}.git@${HUB_REF}"
 
       - name: Emit config outputs
@@ -165,8 +165,8 @@ jobs:
       workdir: ${{ needs.config.outputs.python_workdir }}
       artifact_prefix: 'python-'
       hub_correlation_id: ${{ inputs.hub_correlation_id }}
-      hub_repo: ${{ inputs.hub_repo || vars.HUB_REPO }}
-      hub_ref: ${{ inputs.hub_ref || vars.HUB_REF }}
+      hub_repo: ${{ inputs.hub_repo || vars.HUB_REPO || 'jguida941/ci-cd-hub' }}
+      hub_ref: ${{ inputs.hub_ref || vars.HUB_REF || 'v1' }}
       cihub_debug: ${{ inputs.cihub_debug }}
       cihub_verbose: ${{ inputs.cihub_verbose }}
       cihub_debug_context: ${{ inputs.cihub_debug_context }}
@@ -222,8 +222,8 @@ jobs:
       workdir: ${{ needs.config.outputs.java_workdir }}
       artifact_prefix: 'java-'
       hub_correlation_id: ${{ inputs.hub_correlation_id }}
-      hub_repo: ${{ inputs.hub_repo || vars.HUB_REPO }}
-      hub_ref: ${{ inputs.hub_ref || vars.HUB_REF }}
+      hub_repo: ${{ inputs.hub_repo || vars.HUB_REPO || 'jguida941/ci-cd-hub' }}
+      hub_ref: ${{ inputs.hub_ref || vars.HUB_REF || 'v1' }}
       cihub_debug: ${{ inputs.cihub_debug }}
       cihub_verbose: ${{ inputs.cihub_verbose }}
       cihub_debug_context: ${{ inputs.cihub_debug_context }}

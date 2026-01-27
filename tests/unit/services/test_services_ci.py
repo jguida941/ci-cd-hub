@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from argparse import Namespace
+import json
 from dataclasses import FrozenInstanceError, replace
 from pathlib import Path
 from unittest import mock
@@ -20,6 +21,12 @@ def test_run_ci_handles_load_error(tmp_path: Path) -> None:
     assert result.success is False
     assert result.exit_code == EXIT_FAILURE
     assert result.errors
+    assert result.report_path and result.report_path.exists()
+    assert result.summary_path and result.summary_path.exists()
+    report = json.loads(result.report_path.read_text(encoding="utf-8"))
+    assert report.get("schema_version") == "2.0"
+    assert isinstance(report.get("tools_ran"), dict)
+    assert report.get("commit") and len(report.get("commit")) == 40
 
 
 def test_run_ci_writes_report_and_summary(tmp_path: Path) -> None:

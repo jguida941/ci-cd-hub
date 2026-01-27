@@ -26,6 +26,8 @@ surface across representative repo shapes before fixing tool failures.
 ## Definition of "works"
 
 - CLI commands run end-to-end without manual YAML edits.
+- Every run uploads `.cihub/report.json` (failure reports are acceptable) so
+  triage/verify-tools can always operate on artifacts.
 - For each configured tool: `tools_ran`, `tools_success`, and `tool_evidence`
   are consistent and resolvable.
 - `cihub triage --verify-tools` reports zero unknown and zero no-report for

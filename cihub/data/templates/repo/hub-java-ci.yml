@@ -51,6 +51,6 @@ jobs:
     uses: jguida941/ci-cd-hub/.github/workflows/hub-ci.yml@v1
     with:
       hub_correlation_id: ${{ github.event.inputs.hub_correlation_id || '' }}
-      hub_repo: ${{ vars.HUB_REPO }}
+      hub_repo: ${{ vars.HUB_REPO || 'jguida941/ci-cd-hub' }}
       hub_ref: ${{ vars.HUB_REF || 'v1' }}
     secrets: inherit

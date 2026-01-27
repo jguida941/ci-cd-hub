@@ -155,6 +155,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Add headless Qt defaults (xvfb + env + qprocess skip) for GUI repo CI
 - [ ] Run full manual command audit across repo shapes per `TOOL_TEST_AUDIT_PLAN.md`; log in `docs/development/research/TS_CLI_FULL_AUDIT_2026-01-19.md` and `docs/development/research/CIHUB_TOOL_RUN_AUDIT.md`
 - [x] Start real repo audit batch (audit/cihub-audit-2026-01-26) with branch-pinned workflows; log in `docs/development/research/CIHUB_TOOL_RUN_AUDIT.md`
+- [x] Guarantee report artifacts on CI failures (minimal reports + hub repo/ref defaults)
 
 ### Phase 10: Accessibility (Critical)
 - [ ] Honor `NO_COLOR` environment variable

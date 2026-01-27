@@ -73,8 +73,12 @@ behavior, then define a fix plan for the gaps found during tool audits.
      run 21356273903 also lacked report artifacts.
      triage fell back to log parsing and `--verify-tools` could not run.
    - Impact: tool evidence cannot be verified, blocking the audit contract.
-   - Fix: identify why artifacts are missing (workflow upload, permissions,
-     or ref mismatch) and add regression coverage for real-repo artifact upload.
+   - Root cause (most likely): caller workflows pass empty `hub_repo`/`hub_ref`
+     when `HUB_REPO/HUB_REF` vars are unset, so the hub workflow cannot
+     install `cihub` and never writes `.cihub/report.json`.
+   - Fix: default `hub_repo`/`hub_ref` in hub workflows and caller templates,
+     and ensure `cihub ci` always writes a minimal failure report when config
+     or tool execution fails (so artifacts exist even on failures).
 
 6. `cihub dispatch trigger` fails (404) when workflow exists only on an audit branch.
    - Evidence: `cs320-orig-contact-service`, `contact-suite-spring-react`,
@@ -120,8 +124,10 @@ behavior, then define a fix plan for the gaps found during tool audits.
 
 ### Phase E: Real repo artifact verification
 
-- Re-triage `java-spring-tutorials` after confirming workflow artifact upload.
-- Add a regression check that `report.json` exists for real repo runs.
+- Re-triage `java-spring-tutorials` after enforcing hub repo/ref defaults and
+  failure report emission.
+- Add a regression check that `report.json` exists for real repo runs, even
+  when `cihub ci` fails early.
 
 ### Phase F: Dispatch fallback for audit branches
 

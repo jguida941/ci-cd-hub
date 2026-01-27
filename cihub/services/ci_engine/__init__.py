@@ -6,14 +6,17 @@ maintaining backward compatibility by re-exporting all public symbols.
 
 from __future__ import annotations
 
+import copy
 import json
 import os
+import re
 import shutil
-import copy
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
 
+from cihub import __version__
 from cihub.ci_config import load_ci_config, load_hub_config
 from cihub.ci_runner import run_java_build  # Keep for backward compat re-export
 from cihub.core.languages import get_strategy
@@ -203,6 +206,201 @@ def _empty_results() -> dict[str, Any]:
     }
 
 
+def _timestamp() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _normalize_commit(commit: str | None) -> str:
+    if not commit:
+        return "0" * 40
+    commit = commit.strip()
+    if re.fullmatch(r"[a-fA-F0-9]{40}", commit):
+        return commit.lower()
+    return "0" * 40
+
+
+def _detect_failure_language(repo_path: Path, config: dict[str, Any] | None) -> str:
+    if config:
+        language = config.get("language") or ""
+        repo_cfg = config.get("repo", {}) if isinstance(config.get("repo"), dict) else {}
+        if not language:
+            language = repo_cfg.get("language") or ""
+        if language in {"python", "java"}:
+            return language
+    try:
+        from cihub.services.detection import detect_language
+
+        detected, _reasons = detect_language(repo_path)
+        if detected in {"python", "java"}:
+            return detected
+    except Exception:
+        pass
+    return "python"
+
+
+def _build_failure_tool_state(
+    config: dict[str, Any] | None,
+    language: str,
+) -> tuple[dict[str, bool], dict[str, bool], dict[str, bool], dict[str, bool]]:
+    if not config:
+        return (
+            {"x-cihub": True},
+            {"x-cihub": True},
+            {"x-cihub": False},
+            {"x-cihub": True},
+        )
+    all_tools = get_all_tools_from_config(config, language)
+    if not all_tools:
+        return (
+            {"x-cihub": True},
+            {"x-cihub": True},
+            {"x-cihub": False},
+            {"x-cihub": True},
+        )
+    tools_configured = {
+        tool: _tool_enabled(config, tool, language, default=is_custom_tool(tool))
+        for tool in all_tools
+    }
+    tools_ran = {tool: False for tool in all_tools}
+    tools_success: dict[str, bool] = {}
+    tools_require_run = {
+        tool: _tool_requires_run_or_fail(tool, config, language) for tool in all_tools
+    }
+    return tools_configured, tools_ran, tools_success, tools_require_run
+
+
+def _build_failure_report(
+    repo_path: Path,
+    *,
+    config: dict[str, Any] | None,
+    workdir: str | None,
+    correlation_id: str | None,
+) -> dict[str, Any]:
+    base_config = config or {}
+    try:
+        run_workdir = _resolve_workdir(repo_path, base_config, workdir)
+    except Exception:
+        run_workdir = workdir or "."
+    context = _build_context(repo_path, base_config, run_workdir, correlation_id)
+    language = _detect_failure_language(repo_path, config)
+    tools_configured, tools_ran, tools_success, tools_require_run = _build_failure_tool_state(
+        config,
+        language,
+    )
+    report: dict[str, Any] = {
+        "schema_version": "2.0",
+        "metadata": {
+            "workflow_version": __version__,
+            "workflow_ref": context.workflow_ref or "",
+            "generated_at": _timestamp(),
+        },
+        "repository": context.repository or "",
+        "run_id": context.run_id or "",
+        "run_number": context.run_number or "",
+        "commit": _normalize_commit(context.commit),
+        "branch": context.branch or "",
+        "hub_correlation_id": context.correlation_id or "",
+        "timestamp": _timestamp(),
+        "results": _empty_results(),
+        "tool_metrics": {},
+        "tools_ran": tools_ran,
+        "tools_configured": tools_configured,
+        "tools_success": tools_success,
+        "tools_require_run": tools_require_run,
+        "environment": {
+            "workdir": run_workdir,
+            "retention_days": base_config.get("reports", {}).get("retention_days")
+            if isinstance(base_config.get("reports"), dict)
+            else None,
+            "build_tool": None,
+            "project_type": None,
+            "docker_compose_file": None,
+            "docker_health_endpoint": None,
+        },
+    }
+
+    if language == "python":
+        version = ""
+        if config:
+            version = str(config.get("python", {}).get("version") or "")
+        report["python_version"] = version
+    elif language == "java":
+        version = ""
+        if config:
+            version = str(config.get("java", {}).get("version") or "")
+        report["java_version"] = version
+
+    return report
+
+
+def _write_failure_report(
+    repo_path: Path,
+    *,
+    config: dict[str, Any] | None,
+    output_dir: Path,
+    report_path: Path | None,
+    summary_path: Path | None,
+    workdir: str | None,
+    correlation_id: str | None,
+    no_summary: bool,
+    write_github_summary: bool | None,
+    env_map: Mapping[str, str],
+    problems: list[dict[str, Any]],
+) -> tuple[dict[str, Any], str, Path, Path | None, Path]:
+    report = _build_failure_report(
+        repo_path,
+        config=config,
+        workdir=workdir,
+        correlation_id=correlation_id,
+    )
+
+    if config and isinstance(config.get("reports"), dict):
+        github_summary_cfg = config.get("reports", {}).get("github_summary", {}) or {}
+        include_metrics = bool(github_summary_cfg.get("include_metrics", True))
+        if write_github_summary is None:
+            write_summary = bool(github_summary_cfg.get("enabled", True))
+        else:
+            write_summary = bool(write_github_summary)
+    else:
+        include_metrics = True
+        write_summary = bool(write_github_summary) if write_github_summary is not None else True
+
+    summary_text = render_summary(report, include_metrics=include_metrics)
+
+    resolved_report_path = report_path or output_dir / "report.json"
+    if not resolved_report_path.is_absolute():
+        resolved_report_path = repo_path / resolved_report_path
+    resolved_report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+    resolved_summary_path: Path | None = None
+    if not no_summary:
+        resolved_summary_path = summary_path or output_dir / "summary.md"
+        if not resolved_summary_path.is_absolute():
+            resolved_summary_path = repo_path / resolved_summary_path
+        resolved_summary_path.write_text(summary_text, encoding="utf-8")
+
+    github_summary_env = env_map.get("GITHUB_STEP_SUMMARY")
+    if write_summary and github_summary_env:
+        Path(github_summary_env).write_text(summary_text, encoding="utf-8")
+
+    _self_validate_report(report, summary_text, output_dir, problems, env_map)
+
+    mirror_dir = _mirror_output_dir_to_workspace(output_dir, env_map, problems)
+    if mirror_dir:
+        try:
+            resolved_report_path = mirror_dir / resolved_report_path.relative_to(output_dir)
+        except ValueError:
+            pass
+        if resolved_summary_path:
+            try:
+                resolved_summary_path = mirror_dir / resolved_summary_path.relative_to(output_dir)
+            except ValueError:
+                pass
+        output_dir = mirror_dir
+
+    return report, summary_text, resolved_report_path, resolved_summary_path, output_dir
+
+
 def _run_ci_with_config(
     repo_path: Path,
     config: dict[str, Any],
@@ -230,12 +428,36 @@ def _run_ci_with_config(
     except ValueError:
         message = f"cihub ci supports python or java (got '{language}')"
         problems = [{"severity": "error", "message": message, "code": "CIHUB-CI-LANGUAGE"}]
+        report, summary_text, report_path_resolved, summary_path_resolved, _output_dir = _write_failure_report(
+            repo_path,
+            config=config,
+            output_dir=output_dir,
+            report_path=report_path,
+            summary_path=summary_path,
+            workdir=workdir,
+            correlation_id=correlation_id,
+            no_summary=no_summary,
+            write_github_summary=write_github_summary,
+            env_map=env_map,
+            problems=problems,
+        )
         errors, warnings = _split_problems(problems)
+        artifacts: dict[str, str] = {"report": str(report_path_resolved)}
+        data: dict[str, Any] = {"report_path": str(report_path_resolved)}
+        if summary_path_resolved:
+            artifacts["summary"] = str(summary_path_resolved)
+            data["summary_path"] = str(summary_path_resolved)
         return CiRunResult(
             success=False,
             errors=errors,
             warnings=warnings,
             exit_code=EXIT_FAILURE,
+            report_path=report_path_resolved,
+            summary_path=summary_path_resolved,
+            report=report,
+            summary_text=summary_text,
+            artifacts=artifacts,
+            data=data,
             problems=problems,
         )
 
@@ -264,12 +486,36 @@ def _run_ci_with_config(
                 "code": "CIHUB-CI-TOOL-FAILURE",
             }
         )
+        report, summary_text, report_path_resolved, summary_path_resolved, _output_dir = _write_failure_report(
+            repo_path,
+            config=config,
+            output_dir=output_dir,
+            report_path=report_path,
+            summary_path=summary_path,
+            workdir=run_workdir,
+            correlation_id=correlation_id,
+            no_summary=no_summary,
+            write_github_summary=write_github_summary,
+            env_map=env_map,
+            problems=problems,
+        )
         errors, warnings = _split_problems(problems)
+        artifacts: dict[str, str] = {"report": str(report_path_resolved)}
+        data: dict[str, Any] = {"report_path": str(report_path_resolved)}
+        if summary_path_resolved:
+            artifacts["summary"] = str(summary_path_resolved)
+            data["summary_path"] = str(summary_path_resolved)
         return CiRunResult(
             success=False,
             errors=errors,
             warnings=warnings,
             exit_code=EXIT_INTERNAL_ERROR,
+            report_path=report_path_resolved,
+            summary_path=summary_path_resolved,
+            report=report,
+            summary_text=summary_text,
+            artifacts=artifacts,
+            data=data,
             problems=problems,
         )
 
@@ -662,12 +908,36 @@ def run_ci(
     except Exception as exc:
         message = f"Failed to load config: {exc}"
         config_problems = [{"severity": "error", "message": message, "code": "CIHUB-CI-CONFIG"}]
+        report, summary_text, report_path_resolved, summary_path_resolved, _output_dir = _write_failure_report(
+            repo_path,
+            config=None,
+            output_dir=output_dir,
+            report_path=report_path,
+            summary_path=summary_path,
+            workdir=workdir,
+            correlation_id=correlation_id,
+            no_summary=no_summary,
+            write_github_summary=write_github_summary,
+            env_map=env_map,
+            problems=config_problems,
+        )
         errors, warnings = _split_problems(config_problems)
+        artifacts: dict[str, str] = {"report": str(report_path_resolved)}
+        data: dict[str, Any] = {"report_path": str(report_path_resolved)}
+        if summary_path_resolved:
+            artifacts["summary"] = str(summary_path_resolved)
+            data["summary_path"] = str(summary_path_resolved)
         return CiRunResult(
             success=False,
             errors=errors,
             warnings=warnings,
             exit_code=EXIT_FAILURE,
+            report_path=report_path_resolved,
+            summary_path=summary_path_resolved,
+            report=report,
+            summary_text=summary_text,
+            artifacts=artifacts,
+            data=data,
             problems=config_problems,
         )
 

@@ -5,6 +5,11 @@ Owner: Development Team
 Source-of-truth: manual
 Last-reviewed: 2026-01-26
 
+## 2026-01-27 - Artifact guarantee fixes
+
+- Defaulted `hub_repo`/`hub_ref` in hub workflows + caller templates to prevent empty inputs.
+- `cihub ci` now emits a minimal schema-valid report on config/tool failures, so artifacts exist.
+
 ## 2026-01-26 - cihub-test-python-pyproject (tool audit)
 
 Repo type: Python (pyproject)
