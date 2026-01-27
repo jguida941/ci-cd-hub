@@ -240,6 +240,18 @@ Re-run (hub_ref: audit/owasp-no-key, aggregate fix):
   - `python -m cihub triage --run 21384532249 --verify-tools` -> no report
     found (artifacts missing).
 
+Re-run (hub_ref: audit/owasp-no-key, report discovery fix):
+- `java-spring-tutorials`:
+  - Dispatch ok; run ID 21384711080.
+  - `python -m cihub triage --run 21384711080` -> ok (0 failures).
+  - `python -m cihub triage --run 21384711080 --verify-tools` -> no report
+    found (artifacts missing).
+- `cs320-orig-contact-service`:
+  - Dispatch ok; run ID 21384709928.
+  - `python -m cihub triage --run 21384709928` -> ok (0 failures).
+  - `python -m cihub triage --run 21384709928 --verify-tools` -> no report
+    found (artifacts missing).
+
 ## 2026-01-22 - Full Audit Plan (CLI/Wizard/TS CLI + Repo Matrix)
 
 Goal: Prove every command surface works (Python CLI, TS CLI, wizard), and
