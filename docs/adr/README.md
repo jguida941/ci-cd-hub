@@ -75,6 +75,7 @@ Existing:
 - [ADR-0072: Hub Vars Verification](0072-hub-vars-verification.md)
 - [ADR-0073: Hub Workflow Ref Override for Audit Branches](0073-hub-workflow-ref-override.md)
 - [ADR-0074: Artifact Guarantees for Failure Reports](0074-artifact-guarantee-failure-reports.md)
+- [ADR-0075: Java Tool Env, Timeouts, and Plugin Version Alignment](0075-java-tool-env-timeouts.md)
 
 Template starter:
 ```markdown

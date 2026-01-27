@@ -3,7 +3,7 @@
 **Status:** active  
 **Owner:** Development Team  
 **Source-of-truth:** manual  
-**Last-reviewed:** 2026-01-19  
+**Last-reviewed:** 2026-01-27  
 
 **Date:** 2026-01-05  
 **Status:** In Progress  
@@ -109,6 +109,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [x] Define `~/.cihubrc` schema
 - [x] Implement environment variable overrides
 - [x] Create `src/components/FirstRunSetup.tsx`
+- [x] Sync schema-driven Java tool timeout settings (OWASP timeout + PITest timeout multiplier) for CLI/wizard parity
 
 ### Phase 8: AI Enhancement (TypeScript Inherits from Python)
 - [ ] Verify `--ai` flag passes through to Python CLI correctly

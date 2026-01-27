@@ -491,6 +491,11 @@
                 "use_nvd_api_key": {
                   "default": true,
                   "type": "boolean"
+                },
+                "timeout_seconds": {
+                  "default": 1800,
+                  "minimum": 60,
+                  "type": "integer"
                 }
               },
               "type": "object"

@@ -503,6 +503,7 @@ These are references, not competing plans.
 - **CI outputs are mirrored to `GITHUB_WORKSPACE`** when needed for reusable workflow artifacts (ADR-0066).
 - **Hidden `.cihub` artifacts are uploaded** in reusable workflows (ADR-0067).
 - **Failure reports are always emitted** and hub workflows default `hub_repo`/`hub_ref` when missing (ADR-0074).
+- **Java tool env/timeouts align with repo config** (`NVD_API_KEY` propagation, OWASP timeout config, and POM plugin versions) (ADR-0075).
 - **Maven multi-module tool prep** runs `mvn -DskipTests install` before plugin tools (ADR-0068).
 - **Monorepo targets** use `repo.targets` for multi-language/subdir runs with per-target summaries (ADR-0069).
 - **Tool evidence is explicit** via `tool_evidence` in reports for proofed tool runs (ADR-0070).

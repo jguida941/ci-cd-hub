@@ -329,6 +329,7 @@ jobs:
           CIHUB_RUN_DOCKER: ${{ inputs.run_docker }}
           CIHUB_CODEQL_RAN: ${{ inputs.run_codeql }}
           CIHUB_CODEQL_SUCCESS: ${{ steps.codeql_analyze.outcome == 'success' }}
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: cihub ci --workdir "$WORKDIR" --correlation-id "$CORRELATION_ID" --output-dir .cihub
 
       - name: Read report outputs

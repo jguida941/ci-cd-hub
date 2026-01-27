@@ -3,12 +3,87 @@
 Status: active
 Owner: Development Team
 Source-of-truth: manual
-Last-reviewed: 2026-01-26
+Last-reviewed: 2026-01-27
 
 ## 2026-01-27 - Artifact guarantee fixes
 
 - Defaulted `hub_repo`/`hub_ref` in hub workflows + caller templates to prevent empty inputs.
 - `cihub ci` now emits a minimal schema-valid report on config/tool failures, so artifacts exist.
+
+## 2026-01-27 - java-spring-tutorials (real repo audit)
+
+Repo type: Java (multi-module)
+Branch: audit/cihub-audit-2026-01-27
+
+Commands and results:
+- `python -m cihub init --repo .cihub-audit/java-spring-tutorials --apply --force --hub-repo jguida941/ci-cd-hub --hub-ref audit/owasp-no-key --hub-workflow-ref audit/owasp-no-key --install-from git --set-hub-vars` -> ok; hub vars set
+- `git commit -m "chore: refresh hub-ci for audit"` -> ok
+- `git push -u origin audit/cihub-audit-2026-01-27` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo java-spring-tutorials --ref audit/cihub-audit-2026-01-27 --workflow hub-ci.yml` -> ok; run ID 21385940702
+- `python -m cihub dispatch watch --owner jguida941 --repo java-spring-tutorials --run-id 21385940702` -> completed; conclusion failure
+- `python -m cihub triage --repo jguida941/java-spring-tutorials --run 21385940702 --verify-tools` -> failed; owasp ran but failed, no report evidence
+
+Notes:
+- Artifacts were present (no "no artifacts found" fallback).
+- Remaining failure is tool-level (OWASP report/evidence).
+- `owasp.json` shows `returncode=0`, `report_found=false`, `owasp_fatal_errors=true`.
+
+## 2026-01-27 - cs320-orig-contact-service (real repo audit)
+
+Repo type: Java
+Branch: audit/cihub-audit-2026-01-27
+
+Commands and results:
+- `python -m cihub init --repo .cihub-audit/cs320-orig-contact-service --apply --force --hub-repo jguida941/ci-cd-hub --hub-ref audit/owasp-no-key --hub-workflow-ref audit/owasp-no-key --install-from git --set-hub-vars` -> ok; hub vars set; warning: missing pmd plugin (suggested fix-pom)
+- `git commit -m "chore: add cihub audit workflow"` -> ok
+- `git push -u origin audit/cihub-audit-2026-01-27` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo cs320-orig-contact-service --ref audit/cihub-audit-2026-01-27 --workflow hub-ci.yml` -> ok; run ID 21386049818
+- `python -m cihub dispatch watch --owner jguida941 --repo cs320-orig-contact-service --run-id 21386049818 --timeout 600` -> timed out; run still in progress
+- `python -m cihub triage --repo jguida941/cs320-orig-contact-service --run 21386049818 --verify-tools` -> failed; owasp ran but failed and no report evidence
+
+Notes:
+- OWASP timed out after 1800s (returncode 124); no report generated.
+- `owasp.json` shows `report_found=false`, `owasp_data_missing=true`.
+
+## 2026-01-27 - contact-suite-spring-react (real repo audit)
+
+Repo type: Java (Spring + React)
+Branch: audit/cihub-audit-2026-01-27
+
+Commands and results:
+- `python -m cihub init --repo .cihub-audit/contact-suite-spring-react --apply --force --hub-repo jguida941/ci-cd-hub --hub-ref audit/owasp-no-key --hub-workflow-ref audit/owasp-no-key --install-from git --set-hub-vars` -> ok; warning: missing pmd plugin
+- `git commit -m "chore: add cihub audit workflow"` -> ok
+- `git push -u origin audit/cihub-audit-2026-01-27` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo contact-suite-spring-react --ref audit/cihub-audit-2026-01-27 --workflow hub-ci.yml` -> ok; run ID 21387042878
+- `python -m cihub dispatch watch --owner jguida941 --repo contact-suite-spring-react --run-id 21387042878` -> completed; conclusion failure
+- `python -m cihub triage --repo jguida941/contact-suite-spring-react --run 21387042878 --verify-tools` -> failed; owasp + pitest failed
+
+Notes:
+- OWASP timed out after 1800s (returncode 124); no report generated.
+- PIT timed out after 600s (returncode 124); report_found=true but tool failed.
+- Reference run 21349153722 ("Java CI" workflow on master) succeeds by running
+  dependency-check with NVD_API_KEY and re-running with skips enabled after
+  failures. The cihub workflow does not export NVD_API_KEY to env, so OWASP
+  runs without NVD and times out; this is an architecture gap, not a repo bug.
+- cihub pinned OWASP 9.0.9 and PITest 1.15.3, while the repo uses 12.1.9 and
+  1.22.0 in `pom.xml`; version drift contributed to compatibility risk.
+
+## 2026-01-27 - dijkstra-dashboard (real repo audit)
+
+Repo type: Python
+Branch: audit/cihub-audit-2026-01-27
+
+Commands and results:
+- `python -m cihub init --repo .cihub-audit/dijkstra-dashboard --apply --force --hub-repo jguida941/ci-cd-hub --hub-ref audit/owasp-no-key --hub-workflow-ref audit/owasp-no-key --install-from git --set-hub-vars` -> ok
+- `git commit -m "chore: add cihub audit workflow"` -> ok
+- `git push -u origin audit/cihub-audit-2026-01-27` -> ok
+- `python -m cihub dispatch trigger --owner jguida941 --repo dijkstra-dashboard --ref audit/cihub-audit-2026-01-27 --workflow hub-ci.yml` -> ok; run ID 21387347834
+- `python -m cihub dispatch watch --owner jguida941 --repo dijkstra-dashboard --run-id 21387347834` -> completed; conclusion failure
+- `python -m cihub triage --repo jguida941/dijkstra-dashboard --run 21387347834 --verify-tools` -> failed; pip_audit + ruff failed
+
+Notes:
+- `pip_audit` reported 1 vulnerability.
+- `ruff` reported 16 lint errors.
 
 ## 2026-01-26 - cihub-test-python-pyproject (tool audit)
 

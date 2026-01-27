@@ -10,6 +10,16 @@ All notable changes to this project will be documented in this file.
 ### Workflows
 - Default `hub_repo`/`hub_ref` in hub workflows and caller templates to prevent empty inputs from skipping installs.
 
+## 2026-01-27 - Java Tool Alignment
+
+### CLI
+- OWASP timeout is now schema-configurable (`java.tools.owasp.timeout_seconds`).
+- PITest now honors `pitest.timeout_multiplier` for longer-running mutation tests.
+- OWASP/PITest runners use POM-declared plugin versions when present, falling back to pinned defaults otherwise.
+
+### Workflows
+- Hub Java workflow now exports `NVD_API_KEY` to the CLI when provided.
+
 ## 2026-01-26 - Tool Test Audit Plan
 
 ### Docs

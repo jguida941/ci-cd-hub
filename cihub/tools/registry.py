@@ -349,6 +349,7 @@ def _owasp_config(config: dict, language: str) -> dict[str, Any]:
     return {
         "needs_build_tool": True,
         "use_nvd_api_key": bool(cfg.get("use_nvd_api_key", True)),
+        "timeout_seconds": cfg.get("timeout_seconds"),
     }
 
 
@@ -356,6 +357,16 @@ def _build_tool_config(config: dict, language: str) -> dict[str, Any]:
     """Extract build-tool-dependent runner arguments (pitest, checkstyle, etc.)."""
     # Build tool is passed separately, not from config
     return {"needs_build_tool": True}
+
+
+def _pitest_config(config: dict, language: str) -> dict[str, Any]:
+    """Extract PITest-specific runner arguments."""
+    cfg = _extract_tool_config(config, language, "pitest")
+    timeout_multiplier = cfg.get("timeout_multiplier", 2)
+    return {
+        "needs_build_tool": True,
+        "timeout_multiplier": timeout_multiplier,
+    }
 
 
 # -----------------------------------------------------------------------------
@@ -448,7 +459,7 @@ TOOL_ADAPTERS: dict[tuple[str, str], ToolAdapter] = {
     ("pitest", "java"): ToolAdapter(
         name="pitest",
         language="java",
-        config_extractor=_build_tool_config,
+        config_extractor=_pitest_config,
     ),
     ("checkstyle", "java"): ToolAdapter(
         name="checkstyle",

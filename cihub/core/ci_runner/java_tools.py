@@ -16,6 +16,7 @@ from .parsers import (
     _parse_pmd_files,
     _parse_spotbugs_files,
 )
+from cihub.utils.java_pom import JAVA_TOOL_PLUGINS, parse_pom_plugins
 
 DEFAULT_OWASP_VERSION = "9.0.9"
 DEFAULT_PITEST_VERSION = "1.15.3"
@@ -35,6 +36,19 @@ def _gradle_cmd(workdir: Path) -> list[str]:
         gradlew.chmod(gradlew.stat().st_mode | 0o111)
         return ["./gradlew"]
     return ["gradle"]
+
+
+def _has_maven_plugin(workdir: Path, tool: str) -> bool:
+    pom_path = workdir / "pom.xml"
+    if not pom_path.exists():
+        return False
+    plugin_id = JAVA_TOOL_PLUGINS.get(tool)
+    if not plugin_id:
+        return False
+    plugins, plugins_mgmt, _, error = parse_pom_plugins(pom_path)
+    if error:
+        return False
+    return plugin_id in plugins or plugin_id in plugins_mgmt
 
 
 def run_java_build(
@@ -133,12 +147,21 @@ def run_jacoco(workdir: Path, output_dir: Path) -> ToolResult:
     )
 
 
-def run_pitest(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
+def run_pitest(
+    workdir: Path,
+    output_dir: Path,
+    build_tool: str,
+    timeout_seconds: int | None = None,
+) -> ToolResult:
     log_path = output_dir / "pitest-output.txt"
     if build_tool == "gradle":
         cmd = _gradle_cmd(workdir) + ["pitest", "--continue", "-Dpitest.outputFormats=XML,HTML"]
     else:
-        pitest_goal = f"org.pitest:pitest-maven:{DEFAULT_PITEST_VERSION}:mutationCoverage"
+        use_plugin = _has_maven_plugin(workdir, "pitest")
+        if use_plugin:
+            pitest_goal = "org.pitest:pitest-maven:mutationCoverage"
+        else:
+            pitest_goal = f"org.pitest:pitest-maven:{DEFAULT_PITEST_VERSION}:mutationCoverage"
         cmd = _maven_cmd(workdir) + [
             "-B",
             "-ntp",
@@ -146,7 +169,13 @@ def run_pitest(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
             "-DoutputFormats=XML,HTML",
             "-DfailWhenNoMutations=false",
         ]
-    proc = shared._run_tool_command("pitest", cmd, workdir, output_dir)
+    proc = shared._run_tool_command(
+        "pitest",
+        cmd,
+        workdir,
+        output_dir,
+        timeout=timeout_seconds,
+    )
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
     report_paths = shared._find_files(
@@ -283,6 +312,7 @@ def run_owasp(
     output_dir: Path,
     build_tool: str,
     use_nvd_api_key: bool,
+    timeout_seconds: int | None = None,
 ) -> ToolResult:
     log_path = output_dir / "owasp-output.txt"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -331,7 +361,11 @@ def run_owasp(
                 *extra_flags,
             ]
         goal = "aggregate" if multi_module else "check"
-        owasp_goal = f"org.owasp:dependency-check-maven:{DEFAULT_OWASP_VERSION}:{goal}"
+        use_plugin = _has_maven_plugin(workdir, "owasp")
+        if use_plugin:
+            owasp_goal = f"org.owasp:dependency-check-maven:{goal}"
+        else:
+            owasp_goal = f"org.owasp:dependency-check-maven:{DEFAULT_OWASP_VERSION}:{goal}"
         return _maven_cmd(workdir) + [
             "-B",
             "-ntp",
@@ -354,7 +388,11 @@ def run_owasp(
             data_dir_flag,
         ]
     else:
-        purge_goal = f"org.owasp:dependency-check-maven:{DEFAULT_OWASP_VERSION}:purge"
+        use_plugin = _has_maven_plugin(workdir, "owasp")
+        if use_plugin:
+            purge_goal = "org.owasp:dependency-check-maven:purge"
+        else:
+            purge_goal = f"org.owasp:dependency-check-maven:{DEFAULT_OWASP_VERSION}:purge"
         purge_cmd = _maven_cmd(workdir) + [
             "-B",
             "-ntp",
@@ -363,13 +401,14 @@ def run_owasp(
         ]
 
     def _run_check(check_cmd: list[str]) -> tuple[object, str, str, str, bool]:
+        effective_timeout = timeout_seconds or 1800
         proc = shared._run_tool_command(
             "owasp",
             check_cmd,
             workdir,
             output_dir,
             env=env,
-            timeout=1800,
+            timeout=effective_timeout,
         )
         stdout = proc.stdout or ""
         stderr = proc.stderr or ""

@@ -190,6 +190,31 @@ export const BASE_CONFIG_STEPS: WizardStep[] = [
     condition: (c) => c.language === "java"
   },
   {
+    id: "java.tools.pitest",
+    type: "confirm",
+    question: "Enable PITest mutation testing?",
+    key: "java.tools.pitest.enabled",
+    default: true,
+    condition: (c) => c.language === "java"
+  },
+  {
+    id: "java.tools.pitest.timeout_multiplier",
+    type: "text",
+    question: "PITest timeout multiplier (default 2):",
+    key: "java.tools.pitest.timeout_multiplier",
+    default: "2",
+    parse: (value) => {
+      const parsed = Number.parseInt(value, 10);
+      if (Number.isNaN(parsed) || parsed < 1) {
+        throw new Error("Enter a whole number >= 1");
+      }
+      return parsed;
+    },
+    condition: (c) =>
+      c.language === "java" &&
+      getNestedValue(c, "java.tools.pitest.enabled") !== false
+  },
+  {
     id: "java.tools.checkstyle",
     type: "confirm",
     question: "Enable Checkstyle?",
@@ -212,6 +237,23 @@ export const BASE_CONFIG_STEPS: WizardStep[] = [
     key: "java.tools.owasp.enabled",
     default: true,
     condition: (c) => c.language === "java"
+  },
+  {
+    id: "java.tools.owasp.timeout_seconds",
+    type: "text",
+    question: "OWASP timeout in seconds (default 1800):",
+    key: "java.tools.owasp.timeout_seconds",
+    default: "1800",
+    parse: (value) => {
+      const parsed = Number.parseInt(value, 10);
+      if (Number.isNaN(parsed) || parsed < 60) {
+        throw new Error("Enter a whole number >= 60");
+      }
+      return parsed;
+    },
+    condition: (c) =>
+      c.language === "java" &&
+      getNestedValue(c, "java.tools.owasp.enabled") !== false
   },
   {
     id: "security.gitleaks",

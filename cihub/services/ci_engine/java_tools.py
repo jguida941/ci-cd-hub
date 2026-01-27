@@ -190,7 +190,28 @@ def _run_java_tools(
             if tool_args.get("needs_build_tool"):
                 # Tools that need build_tool parameter: pitest, checkstyle, spotbugs, pmd
                 if tool == "owasp":
-                    result = runner(workdir_path, output_dir, build_tool, tool_args.get("use_nvd_api_key", True))
+                    timeout_seconds = tool_args.get("timeout_seconds")
+                    if isinstance(timeout_seconds, str) and timeout_seconds.strip().isdigit():
+                        timeout_seconds = int(timeout_seconds.strip())
+                    elif isinstance(timeout_seconds, float):
+                        timeout_seconds = int(timeout_seconds)
+                    result = runner(
+                        workdir_path,
+                        output_dir,
+                        build_tool,
+                        tool_args.get("use_nvd_api_key", True),
+                        timeout_seconds=timeout_seconds,
+                    )
+                elif tool == "pitest":
+                    timeout_multiplier = tool_args.get("timeout_multiplier", 2)
+                    try:
+                        timeout_multiplier = int(timeout_multiplier)
+                    except (TypeError, ValueError):
+                        timeout_multiplier = 2
+                    if timeout_multiplier < 1:
+                        timeout_multiplier = 1
+                    timeout_seconds = int(TIMEOUT_BUILD * timeout_multiplier)
+                    result = runner(workdir_path, output_dir, build_tool, timeout_seconds=timeout_seconds)
                 else:
                     result = runner(workdir_path, output_dir, build_tool)
             elif tool == "sbom":

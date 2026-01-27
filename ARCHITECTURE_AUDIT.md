@@ -3,7 +3,7 @@
 **Status:** active
 **Owner:** Development Team
 **Source-of-truth:** manual
-**Last-reviewed:** 2026-01-26
+**Last-reviewed:** 2026-01-27
 
 ## Purpose
 
@@ -88,6 +88,34 @@ behavior, then define a fix plan for the gaps found during tool audits.
    - Fix: CLI should detect 404 and fall back to watching latest runs on the
      audit branch (push-triggered), or surface a clear remediation path.
 
+7. OWASP dependency-check fails to produce reports in real repos.
+   - Evidence: `java-spring-tutorials` reported fatal errors with no report
+     and `cs320-orig-contact-service` timed out after 1800s; both runs
+     returned `report_found=false` and failed `--verify-tools`.
+   - Impact: OWASP evidence is missing even though the tool ran; triage
+     correctly flags failures but tooling lacks reliable diagnostics.
+   - Fix: decide whether to introduce a configurable OWASP timeout and/or
+     additional fallback logging to capture error context (ADR + schema if
+     adding new config surface).
+
+8. Hub Java workflow does not export `NVD_API_KEY` to the CLI.
+   - Evidence: `contact-suite-spring-react` repo has `NVD_API_KEY` in its
+     Java CI workflow, but the reusable hub workflow does not map the secret
+     into env; `cihub` logs show OWASP runs without NVD (uses OSS Index) and
+     times out.
+   - Impact: real repos with NVD secrets still behave like “no key” in the
+     CLI, causing slow scans and timeouts.
+   - Fix: pass `NVD_API_KEY` into the hub Java workflow env (requires approval
+     to modify `.github/workflows/`).
+
+9. Java tool runners ignore repo plugin versions.
+   - Evidence: `contact-suite-spring-react` uses dependency-check 12.1.9 and
+     pitest 1.22.0 in `pom.xml`, but `cihub` runs 9.0.9 and 1.15.3.
+   - Impact: repo CI succeeds with newer plugins while hub runs older ones,
+     increasing incompatibility and timeouts.
+   - Fix: use POM-declared plugin versions when present; fall back to pinned
+     defaults otherwise.
+
 ## Fix Plan (phased)
 
 ### Phase A: Tool success alignment
@@ -135,6 +163,16 @@ behavior, then define a fix plan for the gaps found during tool audits.
   `cihub dispatch watch --latest --workflow hub-ci.yml --branch <audit>`.
 - Optionally add an automatic fallback to "watch latest" when dispatch fails.
 
+### Phase G: OWASP reliability in real repos
+
+- Collect failure modes (fatal errors, timeouts) with `--verify-tools` runs.
+- Decide on mitigation:
+  - Add optional OWASP timeout + debug logging flags (ADR + schema change), or
+  - Require NVD API key for strict runs, or
+  - Skip OWASP when no NVD key and document the gap.
+- Re-run `java-spring-tutorials`, `cs320-orig-contact-service`, and
+  `contact-suite-spring-react` after the change to confirm report evidence.
+
 ## Audit execution (architecture-aligned)
 
 - Execution plan lives in `TOOL_TEST_AUDIT_PLAN.md`, including real repo
@@ -148,6 +186,8 @@ behavior, then define a fix plan for the gaps found during tool audits.
   report validation?
 - Should `pip_audit` treat exit code 1 as non-fatal when `fail_on_vuln=false`?
 - Should fixtures allow vulnerabilities by default or pin dependencies?
+- Should OWASP add a configurable timeout or debug logging mode in schema to
+  avoid silent timeouts/fatal errors in large repos?
 - Workflow ref override is accepted via `repo.hub_workflow_ref` and
   `--hub-workflow-ref` for audit branches (ADR-0073).
 
