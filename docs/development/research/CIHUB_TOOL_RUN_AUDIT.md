@@ -188,6 +188,46 @@ Notes:
 - Artifacts available under `.cihub/runs/21355250807/artifacts/java-ci-report/`.
 - Next: inspect tool outputs for checkstyle/owasp and fix CLI runners to emit evidence for codeql/owasp.
 
+## 2026-01-26 - Real repo audit batch (audit/cihub-audit-2026-01-26)
+
+Repos: java-spring-tutorials, cs-320-portfolio, cs320-orig-contact-service,
+contact-suite-spring-react, dijkstra-dashboard.
+
+Baseline:
+- `python -m cihub init --apply --force --hub-repo jguida941/ci-cd-hub --hub-ref audit/owasp-no-key --hub-workflow-ref audit/owasp-no-key --install-from git`
+- `python -m cihub validate --repo <path>`
+
+Dispatch + triage:
+- `java-spring-tutorials`:
+  - Dispatch ok; run ID 21356261771.
+  - `python -m cihub triage --run 21356261771 --verify-tools` -> failed:
+    checkstyle failed; owasp failed + no-report evidence.
+- `cs-320-portfolio`:
+  - Detect failed; fallback used: `--language java --subdir project-1`.
+  - Dispatch ok; run ID 21356266495.
+  - `python -m cihub triage --run 21356266495` -> ok (0 failures).
+  - `python -m cihub triage --run 21356266495 --verify-tools` -> no report
+    found (artifacts missing).
+- `cs320-orig-contact-service`:
+  - Dispatch failed (404); workflow not on default branch.
+  - Push-triggered run ID 21356271750 (audit branch).
+  - `python -m cihub triage --run 21356271750 --verify-tools` -> failed:
+    owasp failed + no-report evidence.
+- `contact-suite-spring-react`:
+  - Dispatch failed (404); workflow not on default branch.
+  - Push-triggered run ID 21356273903 (audit branch).
+  - `python -m cihub triage --run 21356273903 --verify-tools` -> no report found
+    (artifacts missing).
+- `dijkstra-dashboard`:
+  - Dispatch failed (404); workflow not on default branch.
+  - Push-triggered run ID 21356280738 (audit branch).
+  - `python -m cihub triage --run 21356280738 --verify-tools` -> failed:
+    pip_audit failed; ruff failed.
+
+Notes:
+- Dispatch 404 is a GitHub workflow discovery constraint when the workflow
+  exists only on the audit branch; see ARCHITECTURE_AUDIT.md for fallback plan.
+
 ## 2026-01-22 - Full Audit Plan (CLI/Wizard/TS CLI + Repo Matrix)
 
 Goal: Prove every command surface works (Python CLI, TS CLI, wizard), and

@@ -286,6 +286,12 @@ def run_owasp(
 ) -> ToolResult:
     log_path = output_dir / "owasp-output.txt"
     output_dir.mkdir(parents=True, exist_ok=True)
+    multi_module = False
+    if build_tool == "maven":
+        from cihub.utils.project import detect_java_project_type
+
+        project_type = detect_java_project_type(workdir)
+        multi_module = project_type.startswith("Multi-module")
     data_dir = output_dir / "dependency-check-data"
     data_dir.mkdir(parents=True, exist_ok=True)
     env = os.environ.copy()
@@ -324,7 +330,8 @@ def run_owasp(
                 "-DfailOnError=false",
                 *extra_flags,
             ]
-        owasp_goal = f"org.owasp:dependency-check-maven:{DEFAULT_OWASP_VERSION}:check"
+        goal = "aggregate" if multi_module else "check"
+        owasp_goal = f"org.owasp:dependency-check-maven:{DEFAULT_OWASP_VERSION}:{goal}"
         return _maven_cmd(workdir) + [
             "-B",
             "-ntp",

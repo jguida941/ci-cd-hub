@@ -68,11 +68,21 @@ behavior, then define a fix plan for the gaps found during tool audits.
      designed (ADR-0072).
 
 5. Real repo audits can complete without downloadable artifacts.
-   - Evidence: `java-spring-tutorials` run 21353926655 produced no artifacts;
+   - Evidence: `java-spring-tutorials` run 21353926655 and `cs-320-portfolio`
+     run 21356266495 produced no artifacts; `contact-suite-spring-react`
+     run 21356273903 also lacked report artifacts.
      triage fell back to log parsing and `--verify-tools` could not run.
    - Impact: tool evidence cannot be verified, blocking the audit contract.
    - Fix: identify why artifacts are missing (workflow upload, permissions,
      or ref mismatch) and add regression coverage for real-repo artifact upload.
+
+6. `cihub dispatch trigger` fails (404) when workflow exists only on an audit branch.
+   - Evidence: `cs320-orig-contact-service`, `contact-suite-spring-react`,
+     `dijkstra-dashboard` audit branches return 404 for `hub-ci.yml`.
+   - Impact: CLI cannot dispatch audit-branch workflows on repos that lack
+     the workflow file on the default branch; audits stall despite push runs.
+   - Fix: CLI should detect 404 and fall back to watching latest runs on the
+     audit branch (push-triggered), or surface a clear remediation path.
 
 ## Fix Plan (phased)
 
@@ -86,6 +96,8 @@ behavior, then define a fix plan for the gaps found during tool audits.
 - Status: implemented (tool-outputs success now gate-derived across Python/Java;
   validator warns on non-zero returncodes when success is gate-based).
 - Follow-up: add regression tests for ruff/black/isort/semgrep/trivy/jacoco/pitest/checkstyle/spotbugs/pmd/owasp.
+- Additional fix: OWASP Maven runner uses `aggregate` for multi-module projects
+  to improve report generation reliability.
 
 ### Phase B: Artifact path normalization
 
@@ -110,6 +122,19 @@ behavior, then define a fix plan for the gaps found during tool audits.
 
 - Re-triage `java-spring-tutorials` after confirming workflow artifact upload.
 - Add a regression check that `report.json` exists for real repo runs.
+
+### Phase F: Dispatch fallback for audit branches
+
+- Detect 404 from GitHub workflow dispatch and guide users to
+  `cihub dispatch watch --latest --workflow hub-ci.yml --branch <audit>`.
+- Optionally add an automatic fallback to "watch latest" when dispatch fails.
+
+## Audit execution (architecture-aligned)
+
+- Execution plan lives in `TOOL_TEST_AUDIT_PLAN.md`, including real repo
+  inventory, ref strategy, and evidence rules.
+- "Works" means tools run with evidence and triage/verify-tools has zero
+  unknown or no-report statuses; failures reflect true repo issues.
 
 ## Open Decisions
 

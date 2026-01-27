@@ -23,6 +23,27 @@ surface across representative repo shapes before fixing tool failures.
 - Adding new tools or changing CLI surface area (tracked via ADR + schema).
 - Replacing the existing audit logs (this plan drives them).
 
+## Definition of "works"
+
+- CLI commands run end-to-end without manual YAML edits.
+- For each configured tool: `tools_ran`, `tools_success`, and `tool_evidence`
+  are consistent and resolvable.
+- `cihub triage --verify-tools` reports zero unknown and zero no-report for
+  audited runs.
+- Failures represent real repo issues (code/config) rather than CLI or report
+  mismatches.
+- TypeScript CLI and wizard flows produce the same CommandResult JSON as the
+  Python CLI for audited commands.
+
+## Audit ref strategy (avoid stale tags)
+
+- Audit branches pin reusable workflow ref via `repo.hub_workflow_ref` or
+  `--hub-workflow-ref`.
+- Audits install the CLI from git (`--install-from git`) so workflow and CLI
+  match the audit branch.
+- Default tag-based behavior remains until audits are green; then cut a tag and
+  re-run canaries.
+
 ## Source lists and logs
 
 - Tool registry: `docs/reference/TOOLS.md` and `cihub tools list --json`.
@@ -51,6 +72,7 @@ codeql, sbom, docker.
 - Orchestrator: ci-cd-hub-fixtures, ci-cd-hub-canary-python,
   ci-cd-hub-canary-java.
 - Hub: jguida941/ci-cd-hub (self-check).
+- Real repos: jguida941 inventory (non-archived, non-fork, active CI).
 
 ## Real repo audit (owner inventory)
 
@@ -63,8 +85,21 @@ codeql, sbom, docker.
     workflow changes before a release tag is updated.
   - Use `--install-from git` to ensure the audit branch CLI is installed.
   - Dispatch and triage (`cihub dispatch trigger/watch`, `cihub triage --verify-tools`).
+  - If dispatch returns 404 (workflow not on default branch), rely on the
+    push-triggered run and use:
+    `cihub dispatch watch --latest --workflow hub-ci.yml --branch <audit-branch>`
+    followed by `cihub triage --run <id>` or `cihub triage --latest --workflow hub-ci.yml --branch <audit-branch>`.
   - If no artifacts, treat as a failure and fix the workflow/CLI before moving on.
 - Log every run in `docs/development/research/CIHUB_TOOL_RUN_AUDIT.md`.
+
+## Failure classification (what to fix)
+
+- CLI/tooling bug: tool did not run, evidence missing, or report mismatch.
+  Fix the CLI, add tests, then re-run the same repo/tool before advancing.
+- Repo code debt: tool ran with evidence and failed gates. Log it as repo debt;
+  do not relax CLI behavior to mask real failures.
+- Config/schema gap: required behavior cannot be expressed. Propose an ADR and
+  schema change, then re-run the affected repo(s).
 
 ## Evidence rules
 

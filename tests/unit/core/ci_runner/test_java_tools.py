@@ -1,0 +1,45 @@
+from __future__ import annotations
+
+from types import SimpleNamespace
+
+from cihub.core.ci_runner import java_tools
+
+
+def _stub_run_tool_command(calls: list[list[str]]):
+    def _run(tool: str, cmd: list[str], workdir, output_dir, env=None, timeout=None):
+        calls.append(cmd)
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    return _run
+
+
+def test_run_owasp_uses_aggregate_for_multi_module(monkeypatch, tmp_path):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(java_tools.shared, "_run_tool_command", _stub_run_tool_command(calls))
+    monkeypatch.setattr(java_tools.shared, "_find_files", lambda *args, **kwargs: [])
+    monkeypatch.setattr("cihub.utils.project.detect_java_project_type", lambda _: "Multi-module (2 modules)")
+
+    workdir = tmp_path / "repo"
+    workdir.mkdir()
+    output_dir = tmp_path / "out"
+
+    result = java_tools.run_owasp(workdir, output_dir, "maven", use_nvd_api_key=False)
+
+    assert result.ran is True
+    assert any("dependency-check-maven:9.0.9:aggregate" in " ".join(cmd) for cmd in calls)
+
+
+def test_run_owasp_uses_check_for_single_module(monkeypatch, tmp_path):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(java_tools.shared, "_run_tool_command", _stub_run_tool_command(calls))
+    monkeypatch.setattr(java_tools.shared, "_find_files", lambda *args, **kwargs: [])
+    monkeypatch.setattr("cihub.utils.project.detect_java_project_type", lambda _: "Single module")
+
+    workdir = tmp_path / "repo"
+    workdir.mkdir()
+    output_dir = tmp_path / "out"
+
+    result = java_tools.run_owasp(workdir, output_dir, "maven", use_nvd_api_key=False)
+
+    assert result.ran is True
+    assert any("dependency-check-maven:9.0.9:check" in " ".join(cmd) for cmd in calls)

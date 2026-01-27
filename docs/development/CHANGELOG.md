@@ -22,6 +22,10 @@ All notable changes to this project will be documented in this file.
 
 - Added `repo.hub_workflow_ref` and `--hub-workflow-ref` to pin reusable workflow refs in generated `hub-ci.yml` for audit branches (ADR-0073).
 
+### Fix: OWASP multi-module execution
+
+- OWASP Maven runner now uses the `aggregate` goal for multi-module projects to improve report generation reliability.
+
 ## 2026-01-25 - Triage Correctness Fixes
 
 ### Fix: Triage summary semantics

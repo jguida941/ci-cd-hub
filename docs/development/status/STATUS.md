@@ -12,7 +12,7 @@
 > **Architecture:** See [ARCH_OVERVIEW.md](../architecture/ARCH_OVERVIEW.md)
 > **Test Counts:** Refresh via `cihub hub-ci test-metrics --write` after verified pytest+coverage (no manual edits).
 >
-> **Last Updated:** 2026-01-26 (Real repo audit progressed; java-spring-tutorials failing checkstyle/owasp with missing evidence)  
+> **Last Updated:** 2026-01-26 (Audit batch running; OWASP multi-module aggregate fix added)  
 > **Version Target:** v1.0.0
 >
 > **Current focus:** TYPESCRIPT_CLI_DESIGN (Phase 8 AI enhancement), tool audit execution, and architecture audit.
