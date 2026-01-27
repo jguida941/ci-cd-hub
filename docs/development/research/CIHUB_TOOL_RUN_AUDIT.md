@@ -16,6 +16,31 @@ Last-reviewed: 2026-01-27
   `hub_workflow_ref` when overrides are used, preventing workflow/CLI drift
   during audit runs (ADR-0076).
 
+## 2026-01-27 - Test matrix run (audit/cihub-audit-2026-01-27)
+
+Branch: audit/cihub-audit-2026-01-27  
+Hub workflow ref: audit/owasp-no-key  
+Install source: git  
+Note: generated hub-ci.yml now uses `hub_ref: ${{ vars.HUB_REF || 'audit/owasp-no-key' }}`.
+
+Runs and results (`cihub triage --verify-tools`):
+
+- `cihub-test-python-setup` run 21390617132 → pip_audit failed; all other configured tools passed.
+- `cihub-test-python-src-layout` run 21390620795 → pip_audit failed; all other configured tools passed.
+- `cihub-test-python-pyproject` run 21390624972 → pip_audit failed; all other configured tools passed.
+- `cihub-test-monorepo` run 21390628735 → Java: checkstyle failed; OWASP failed with no report; Python: pip_audit failed.
+- `cihub-test-java-maven` run 21390633162 → checkstyle failed; OWASP failed with no report.
+- `cihub-test-java-gradle` run 21390637346 → OWASP/PITest/PMD failed; all three missing reports.
+- `cihub-test-java-multi-module` run 21390641446 → checkstyle + jacoco failed; OWASP failed with no report.
+- `ci-cd-hub-fixtures` run 21390645857 → bandit/hypothesis/pip_audit/pytest/ruff failed (fixture failures).
+- `ci-cd-hub-canary-java-fail` run 21390650374 → checkstyle/jacoco/owasp/pitest/spotbugs failed; OWASP missing report.
+- `java-spring-tutorials` run 21390654906 → checkstyle failed; OWASP failed with no report.
+- `contact-suite-spring-react` run 21390659015 → in progress at time of log update.
+
+Notes:
+- OWASP still produces `report_found=false` across Java repos; tool output logs show fatal errors without report artifacts.
+- pip_audit failures persist in the Python test repos (real vulnerability still present).
+
 ## 2026-01-27 - java-spring-tutorials (real repo audit)
 
 Repo type: Java (multi-module)
