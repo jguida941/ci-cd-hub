@@ -22,6 +22,23 @@ Last-reviewed: 2026-01-27
   `autoUpdate=false` to use cached data before disabling NVD analyzers.
 - Tests updated; re-run pending on Java audit repos to confirm report emission.
 
+## 2026-01-27 - Round 3 re-dispatch (OWASP cache + fix-pom/gradle)
+
+Dispatched after:
+- OWASP no-key `autoUpdate=false` retry added.
+- Hub Java workflow caches `.cihub/dependency-check-data`.
+- `cihub fix-gradle --with-configs` applied to cihub-test-java-gradle.
+- `cihub fix-pom --apply` applied to cihub-test-java-multi-module and contact-suite-spring-react.
+
+Runs (in progress):
+- `cihub-test-java-gradle` run 21392474551
+- `cihub-test-java-multi-module` run 21392478719
+- `cihub-test-java-maven` run 21392482964
+- `cihub-test-monorepo` run 21392487168
+- `java-spring-tutorials` run 21392491053
+- `contact-suite-spring-react` run 21392494517
+- `ci-cd-hub-canary-java-fail` run 21392498178
+
 ## 2026-01-27 - Test matrix run (audit/cihub-audit-2026-01-27)
 
 Branch: audit/cihub-audit-2026-01-27  
