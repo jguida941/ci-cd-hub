@@ -43,3 +43,28 @@ def test_run_owasp_uses_check_for_single_module(monkeypatch, tmp_path):
 
     assert result.ran is True
     assert any("dependency-check-maven:9.0.9:check" in " ".join(cmd) for cmd in calls)
+
+
+def test_run_owasp_uses_output_dir_report(monkeypatch, tmp_path):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(java_tools.shared, "_run_tool_command", _stub_run_tool_command(calls))
+
+    workdir = tmp_path / "repo"
+    workdir.mkdir()
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    report_path = output_dir / "dependency-check-report.json"
+    report_path.write_text("{\"dependencies\": []}", encoding="utf-8")
+
+    def _fake_find_files(search_dir, patterns):
+        if search_dir == output_dir:
+            return [report_path]
+        return []
+
+    monkeypatch.setattr(java_tools.shared, "_find_files", _fake_find_files)
+    monkeypatch.setattr("cihub.utils.project.detect_java_project_type", lambda _: "Single module")
+
+    result = java_tools.run_owasp(workdir, output_dir, "maven", use_nvd_api_key=False)
+
+    assert result.metrics.get("report_found") is True
+    assert result.artifacts.get("report") == str(report_path)

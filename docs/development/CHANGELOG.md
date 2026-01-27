@@ -25,6 +25,7 @@ All notable changes to this project will be documented in this file.
 ### Fix: OWASP multi-module execution
 
 - OWASP Maven runner now uses the `aggregate` goal for multi-module projects to improve report generation reliability.
+- OWASP report detection now includes the configured output directory (e.g., `.cihub`).
 
 ## 2026-01-25 - Triage Correctness Fixes
 

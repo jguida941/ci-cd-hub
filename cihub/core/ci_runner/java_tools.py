@@ -431,6 +431,8 @@ def run_owasp(
             "build/reports/dependency-check-report.json",
         ],
     )
+    # dependency-check writes to outputDirectory; search there explicitly.
+    report_paths.extend(shared._find_files(output_dir, ["dependency-check-report.json"]))
     report_found = bool(report_paths)
     metrics = (
         _parse_dependency_check(report_paths[0])
