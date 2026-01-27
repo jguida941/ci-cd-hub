@@ -347,6 +347,7 @@ def run_owasp(
     use_nvd_update = bool(nvd_key)
     if nvd_key:
         base_nvd_flags.append(f"-DnvdApiKey={nvd_key}")
+    auto_update_flags = ["-DautoUpdate=false"]
     fallback_nvd_flags = [
         "-Danalyzer.nvdcve.enabled=false",
         "-Dupdater.nvdcve.enabled=false",
@@ -440,6 +441,19 @@ def run_owasp(
             return current
         return f"{current}\n{addition}" if current else addition
 
+    def _find_report_paths() -> list[Path]:
+        report_paths = shared._find_files(
+            workdir,
+            [
+                "dependency-check-report.json",
+                "target/dependency-check-report.json",
+                "build/reports/dependency-check-report.json",
+            ],
+        )
+        # dependency-check writes to outputDirectory; search there explicitly.
+        report_paths.extend(shared._find_files(output_dir, ["dependency-check-report.json"]))
+        return report_paths
+
     cmd = _build_check_cmd(base_nvd_flags)
     proc, stdout, stderr, output_text, nvd_failed = _run_check(cmd)
     log_stdout = _append_logs("", stdout)
@@ -465,8 +479,21 @@ def run_owasp(
         nvd_access_failed = nvd_access_failed or nvd_failed
         corrupt_db = "incompatible or corrupt database found" in output_text
 
-    if nvd_access_failed:
-        fallback_cmd = _build_check_cmd(fallback_nvd_flags)
+    report_paths = _find_report_paths()
+    report_found = bool(report_paths)
+
+    if nvd_access_failed and not report_found:
+        auto_update_cmd = _build_check_cmd(base_nvd_flags + auto_update_flags)
+        proc, stdout, stderr, output_text, nvd_failed = _run_check(auto_update_cmd)
+        log_stdout = _append_logs(log_stdout, stdout)
+        log_stderr = _append_logs(log_stderr, stderr)
+        nvd_access_failed = True
+        corrupt_db = "incompatible or corrupt database found" in output_text
+        report_paths = _find_report_paths()
+        report_found = bool(report_paths)
+
+    if nvd_access_failed and not report_found:
+        fallback_cmd = _build_check_cmd(fallback_nvd_flags + auto_update_flags)
         proc, stdout, stderr, output_text, nvd_failed = _run_check(fallback_cmd)
         log_stdout = _append_logs(log_stdout, stdout)
         log_stderr = _append_logs(log_stderr, stderr)
@@ -481,16 +508,7 @@ def run_owasp(
         or corrupt_db
     )
 
-    report_paths = shared._find_files(
-        workdir,
-        [
-            "dependency-check-report.json",
-            "target/dependency-check-report.json",
-            "build/reports/dependency-check-report.json",
-        ],
-    )
-    # dependency-check writes to outputDirectory; search there explicitly.
-    report_paths.extend(shared._find_files(output_dir, ["dependency-check-report.json"]))
+    report_paths = _find_report_paths()
     report_found = bool(report_paths)
     metrics = (
         _parse_dependency_check(report_paths[0])

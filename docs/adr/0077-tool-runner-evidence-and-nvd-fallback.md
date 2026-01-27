@@ -19,9 +19,10 @@ These are CLI/tooling defaults, not repo-specific issues.
 ## Decision
 
 1. **OWASP NVD without key:** When no NVD API key is present, the CLI will
-   still attempt a full NVD run (slower) and only fall back to a reduced
-   analyzer set if the output indicates explicit NVD access errors (403/404/429
-   or key-required messages). Timeouts are increased for no-key runs.
+   attempt a full NVD run (slower). On explicit NVD access errors (403/404/429
+   or key-required messages), it retries with `autoUpdate=false` to use any
+   cached database before falling back to a reduced analyzer set. Timeouts are
+   increased for no-key runs.
 2. **pip-audit project scope:** pip-audit now audits the project itself
    (requirements files if present, otherwise the project path) rather than the
    ambient environment.

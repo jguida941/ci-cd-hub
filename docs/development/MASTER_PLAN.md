@@ -4,7 +4,7 @@
 **Owner:** Development Team  
 **Source-of-truth:** manual   
 **Last-reviewed:** 2026-01-26  
-**Last Updated:** 2026-01-26 (Real-repo audit batch running; OWASP multi-module aggregate fix added)  
+**Last Updated:** 2026-01-27 (Real-repo audit batch running; OWASP no-key autoUpdate fallback added)  
 
 > This is THE plan. All action items live here. STATUS.md tracks current state.
 
@@ -505,7 +505,7 @@ These are references, not competing plans.
 - **Failure reports are always emitted** and hub workflows default `hub_repo`/`hub_ref` when missing (ADR-0074).
 - **Java tool env/timeouts align with repo config** (`NVD_API_KEY` propagation, OWASP timeout config, and POM plugin versions) (ADR-0075).
 - **Audit workflow refs align CLI install refs** by syncing `hub_ref` fallback to `hub_workflow_ref` in generated workflows (ADR-0076).
-- **Tool runners prefer project-scoped audits and log evidence** (pip-audit project path, OWASP no-key NVD attempt, log artifacts as proof) (ADR-0077).
+- **Tool runners prefer project-scoped audits and log evidence** (pip-audit project path, OWASP no-key NVD attempt with autoUpdate retry, log artifacts as proof) (ADR-0077).
 - **Maven multi-module tool prep** runs `mvn -DskipTests install` before plugin tools (ADR-0068).
 - **Monorepo targets** use `repo.targets` for multi-language/subdir runs with per-target summaries (ADR-0069).
 - **Tool evidence is explicit** via `tool_evidence` in reports for proofed tool runs (ADR-0070).

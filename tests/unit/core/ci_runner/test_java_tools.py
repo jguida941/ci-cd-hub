@@ -13,6 +13,20 @@ def _stub_run_tool_command(calls: list[list[str]]):
     return _run
 
 
+def _stub_run_tool_command_sequence(calls: list[list[str]], outputs: list[dict[str, str | int]]):
+    def _run(tool: str, cmd: list[str], workdir, output_dir, env=None, timeout=None):
+        calls.append(cmd)
+        index = min(len(calls) - 1, len(outputs) - 1)
+        payload = outputs[index]
+        return SimpleNamespace(
+            returncode=payload.get("returncode", 0),
+            stdout=payload.get("stdout", ""),
+            stderr=payload.get("stderr", ""),
+        )
+
+    return _run
+
+
 def test_run_owasp_uses_aggregate_for_multi_module(monkeypatch, tmp_path):
     calls: list[list[str]] = []
     monkeypatch.setattr(java_tools.shared, "_run_tool_command", _stub_run_tool_command(calls))
@@ -162,6 +176,89 @@ def test_run_owasp_without_key_keeps_nvd_enabled(monkeypatch, tmp_path):
     command = " ".join(calls[0]) if calls else ""
     assert "analyzer.nvdcve.enabled=false" not in command
     assert "analyzer.cpe.enabled=false" not in command
+
+
+def test_run_owasp_nvd_failure_retries_with_auto_update(monkeypatch, tmp_path):
+    calls: list[list[str]] = []
+    outputs = [
+        {"stderr": "NVD returned a 403"},
+        {"stderr": ""},
+    ]
+    monkeypatch.setattr(
+        java_tools.shared,
+        "_run_tool_command",
+        _stub_run_tool_command_sequence(calls, outputs),
+    )
+    monkeypatch.setattr("cihub.utils.project.detect_java_project_type", lambda _: "Single module")
+
+    workdir = tmp_path / "repo"
+    workdir.mkdir()
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    report_path = output_dir / "dependency-check-report.json"
+    report_path.write_text("{\"dependencies\": []}", encoding="utf-8")
+
+    find_calls = {"count": 0}
+
+    def _fake_find_files(search_dir, patterns):
+        if search_dir == output_dir:
+            find_calls["count"] += 1
+            if find_calls["count"] >= 2:
+                return [report_path]
+        return []
+
+    monkeypatch.setattr(java_tools.shared, "_find_files", _fake_find_files)
+
+    result = java_tools.run_owasp(workdir, output_dir, "maven", use_nvd_api_key=False)
+
+    assert result.metrics.get("report_found") is True
+    assert len(calls) >= 2
+    first_cmd = " ".join(calls[0])
+    second_cmd = " ".join(calls[1])
+    assert "-DautoUpdate=false" not in first_cmd
+    assert "-DautoUpdate=false" in second_cmd
+    assert "analyzer.nvdcve.enabled=false" not in second_cmd
+
+
+def test_run_owasp_nvd_failure_falls_back_to_disable_nvd(monkeypatch, tmp_path):
+    calls: list[list[str]] = []
+    outputs = [
+        {"stderr": "NVD returned a 403"},
+        {"stderr": ""},
+        {"stderr": ""},
+    ]
+    monkeypatch.setattr(
+        java_tools.shared,
+        "_run_tool_command",
+        _stub_run_tool_command_sequence(calls, outputs),
+    )
+    monkeypatch.setattr("cihub.utils.project.detect_java_project_type", lambda _: "Single module")
+
+    workdir = tmp_path / "repo"
+    workdir.mkdir()
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    report_path = output_dir / "dependency-check-report.json"
+    report_path.write_text("{\"dependencies\": []}", encoding="utf-8")
+
+    find_calls = {"count": 0}
+
+    def _fake_find_files(search_dir, patterns):
+        if search_dir == output_dir:
+            find_calls["count"] += 1
+            if find_calls["count"] >= 3:
+                return [report_path]
+        return []
+
+    monkeypatch.setattr(java_tools.shared, "_find_files", _fake_find_files)
+
+    result = java_tools.run_owasp(workdir, output_dir, "maven", use_nvd_api_key=False)
+
+    assert result.metrics.get("report_found") is True
+    assert len(calls) >= 3
+    fallback_cmd = " ".join(calls[2])
+    assert "-DautoUpdate=false" in fallback_cmd
+    assert "analyzer.nvdcve.enabled=false" in fallback_cmd
 
 
 def test_run_checkstyle_maven_uses_config_location(monkeypatch, tmp_path):

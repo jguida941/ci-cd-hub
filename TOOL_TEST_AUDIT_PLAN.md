@@ -145,7 +145,10 @@ codeql, sbom, docker.
 ## Prereqs
 
 - GitHub auth via env token or `gh auth token`.
-- Optional NVD API key for OWASP (absence should still produce evidence).
+- Optional NVD API key for OWASP. Without a key, the CLI retries with
+  `autoUpdate=false` to use cached data, then falls back to reduced analyzers
+  to still emit a report. For reliable CI runs, cache the data directory or
+  provide a key.
 - Required tool binaries available on the runner (or installed by cihub).
 
 ## Exit criteria

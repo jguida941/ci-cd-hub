@@ -16,6 +16,12 @@ Last-reviewed: 2026-01-27
   `hub_workflow_ref` when overrides are used, preventing workflow/CLI drift
   during audit runs (ADR-0076).
 
+## 2026-01-27 - OWASP no-key autoUpdate fallback
+
+- When OWASP reports explicit NVD access errors, the runner now retries with
+  `autoUpdate=false` to use cached data before disabling NVD analyzers.
+- Tests updated; re-run pending on Java audit repos to confirm report emission.
+
 ## 2026-01-27 - Test matrix run (audit/cihub-audit-2026-01-27)
 
 Branch: audit/cihub-audit-2026-01-27  
