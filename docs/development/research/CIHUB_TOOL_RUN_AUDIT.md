@@ -190,7 +190,7 @@ Notes:
 
 ## 2026-01-26 - Real repo audit batch (audit/cihub-audit-2026-01-26)
 
-Repos: java-spring-tutorials, cs-320-portfolio, cs320-orig-contact-service,
+Repos: java-spring-tutorials, cs-320-portfolio (deferred), cs320-orig-contact-service,
 contact-suite-spring-react, dijkstra-dashboard.
 
 Baseline:
@@ -208,6 +208,7 @@ Dispatch + triage:
   - `python -m cihub triage --run 21356266495` -> ok (0 failures).
   - `python -m cihub triage --run 21356266495 --verify-tools` -> no report
     found (artifacts missing).
+  - Deferred from further audits per owner request (repo appears to lack tests).
 - `cs320-orig-contact-service`:
   - Dispatch failed (404); workflow not on default branch.
   - Push-triggered run ID 21356271750 (audit branch).
@@ -227,6 +228,17 @@ Dispatch + triage:
 Notes:
 - Dispatch 404 is a GitHub workflow discovery constraint when the workflow
   exists only on the audit branch; see ARCHITECTURE_AUDIT.md for fallback plan.
+
+Re-run (hub_ref: audit/owasp-no-key, aggregate fix):
+- `java-spring-tutorials`:
+  - Dispatch ok; run ID 21384528499.
+  - `python -m cihub triage --run 21384528499 --verify-tools` -> failed:
+    checkstyle failed; owasp failed + no-report evidence (aggregate goal used).
+- `cs320-orig-contact-service`:
+  - Dispatch ok; run ID 21384532249.
+  - `python -m cihub triage --run 21384532249` -> ok (0 failures).
+  - `python -m cihub triage --run 21384532249 --verify-tools` -> no report
+    found (artifacts missing).
 
 ## 2026-01-22 - Full Audit Plan (CLI/Wizard/TS CLI + Repo Matrix)
 
