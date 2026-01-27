@@ -50,3 +50,21 @@ def test_run_pip_audit_uses_project_path_when_no_requirements(monkeypatch, tmp_p
     assert result.ran is True
     command = " ".join(calls[0]) if calls else ""
     assert str(workdir) in command
+
+
+def test_run_pip_audit_setup_py_falls_back_to_empty_requirements(monkeypatch, tmp_path):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(python_tools.shared, "_run_tool_command", _stub_run_tool_command(calls))
+
+    workdir = tmp_path / "repo"
+    workdir.mkdir()
+    (workdir / "setup.py").write_text("from setuptools import setup\nsetup(name='demo')\n", encoding="utf-8")
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+
+    result = python_tools.run_pip_audit(workdir, output_dir)
+
+    assert result.ran is True
+    cmd = calls[0] if calls else []
+    assert "-r" in cmd
+    assert any(str(output_dir) in arg and "pip-audit-requirements.txt" in arg for arg in cmd)

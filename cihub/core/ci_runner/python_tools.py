@@ -297,7 +297,16 @@ def run_pip_audit(workdir: Path, output_dir: Path) -> ToolResult:
         for path in requirements:
             cmd.extend(["-r", str(path)])
     else:
-        cmd.append(str(workdir))
+        supported_project = any(
+            (workdir / name).exists()
+            for name in ("pyproject.toml", "setup.cfg", "Pipfile", "Pipfile.lock")
+        )
+        if not supported_project:
+            empty_req = output_dir / "pip-audit-requirements.txt"
+            empty_req.write_text("", encoding="utf-8")
+            cmd.extend(["-r", str(empty_req)])
+        else:
+            cmd.append(str(workdir))
     proc = shared._run_tool_command("pip_audit", cmd, workdir, output_dir)
     data = shared._parse_json(report_path)
     parse_ok = data is not None
