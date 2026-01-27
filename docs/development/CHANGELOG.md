@@ -17,6 +17,9 @@ All notable changes to this project will be documented in this file.
 - OWASP timeout is now schema-configurable (`java.tools.owasp.timeout_seconds`).
 - PITest now honors `pitest.timeout_multiplier` for longer-running mutation tests.
 - OWASP/PITest runners use POM-declared plugin versions when present, falling back to pinned defaults otherwise.
+- OWASP now attempts NVD analysis without a key (slower) and only falls back on explicit NVD access errors.
+- pip-audit now audits project dependencies (requirements or project path) instead of the global environment.
+- Tool evidence now treats log artifacts as proof of execution even when reports are missing (ADR-0077).
 
 ### Workflows
 - Hub Java workflow now exports `NVD_API_KEY` to the CLI when provided.

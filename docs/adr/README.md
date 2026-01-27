@@ -77,6 +77,7 @@ Existing:
 - [ADR-0074: Artifact Guarantees for Failure Reports](0074-artifact-guarantee-failure-reports.md)
 - [ADR-0075: Java Tool Env, Timeouts, and Plugin Version Alignment](0075-java-tool-env-timeouts.md)
 - [ADR-0076: Align hub_ref Fallback with hub_workflow_ref in Generated Workflows](0076-hub-ref-alignment-for-audits.md)
+- [ADR-0077: Tool Runner Evidence and NVD Fallback Defaults](0077-tool-runner-evidence-and-nvd-fallback.md)
 
 Template starter:
 ```markdown

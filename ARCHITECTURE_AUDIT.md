@@ -102,9 +102,9 @@ behavior, then define a fix plan for the gaps found during tool audits.
      returned `report_found=false` and failed `--verify-tools`.
    - Impact: OWASP evidence is missing even though the tool ran; triage
      correctly flags failures but tooling lacks reliable diagnostics.
-   - Fix: decide whether to introduce a configurable OWASP timeout and/or
-     additional fallback logging to capture error context (ADR + schema if
-     adding new config surface).
+   - Fix: allow OWASP to attempt NVD analysis without a key (slower) and
+     fall back only on explicit NVD access errors; include log artifacts as
+     evidence when reports are missing (ADR-0077).
 
 9. Hub Java workflow does not export `NVD_API_KEY` to the CLI.
    - Evidence: `contact-suite-spring-react` repo has `NVD_API_KEY` in its
@@ -200,6 +200,7 @@ behavior, then define a fix plan for the gaps found during tool audits.
   `--hub-workflow-ref` for audit branches (ADR-0073).
 - Generated workflows align `hub_ref` fallback to the pinned workflow ref
   for audit runs (ADR-0076).
+- Tool evidence accepts log artifacts as proof of execution (ADR-0077).
 
 ## Verification
 

@@ -194,7 +194,10 @@ def run_pitest(
         success=proc.returncode == 0 and report_found,
         returncode=proc.returncode,
         metrics=metrics,
-        artifacts={"report": str(report_paths[0])} if report_paths else {},
+        artifacts={
+            "report": str(report_paths[0]) if report_paths else "",
+            "log": str(log_path),
+        },
         stdout=proc.stdout,
         stderr=proc.stderr,
     )
@@ -205,12 +208,15 @@ def run_checkstyle(workdir: Path, output_dir: Path, build_tool: str) -> ToolResu
     if build_tool == "gradle":
         cmd = _gradle_cmd(workdir) + ["checkstyleMain", "--continue"]
     else:
+        config_path = workdir / "config" / "checkstyle" / "checkstyle.xml"
         cmd = _maven_cmd(workdir) + [
             "-B",
             "-ntp",
             "-DskipTests",
+            f"-Dcheckstyle.config.location={config_path}" if config_path.exists() else "",
             "checkstyle:checkstyle",
         ]
+        cmd = [arg for arg in cmd if arg]
     proc = shared._run_tool_command("checkstyle", cmd, workdir, output_dir)
     log_path.write_text(proc.stdout + proc.stderr, encoding="utf-8")
 
@@ -233,7 +239,10 @@ def run_checkstyle(workdir: Path, output_dir: Path, build_tool: str) -> ToolResu
         success=proc.returncode == 0 and report_found,
         returncode=proc.returncode,
         metrics=metrics,
-        artifacts={"report": str(report_paths[0])} if report_paths else {},
+        artifacts={
+            "report": str(report_paths[0]) if report_paths else "",
+            "log": str(log_path),
+        },
         stdout=proc.stdout,
         stderr=proc.stderr,
     )
@@ -267,7 +276,10 @@ def run_spotbugs(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult
         success=proc.returncode == 0 and report_found,
         returncode=proc.returncode,
         metrics=metrics,
-        artifacts={"report": str(report_paths[0])} if report_paths else {},
+        artifacts={
+            "report": str(report_paths[0]) if report_paths else "",
+            "log": str(log_path),
+        },
         stdout=proc.stdout,
         stderr=proc.stderr,
     )
@@ -301,7 +313,10 @@ def run_pmd(workdir: Path, output_dir: Path, build_tool: str) -> ToolResult:
         success=proc.returncode == 0 and report_found,
         returncode=proc.returncode,
         metrics=metrics,
-        artifacts={"report": str(report_paths[0])} if report_paths else {},
+        artifacts={
+            "report": str(report_paths[0]) if report_paths else "",
+            "log": str(log_path),
+        },
         stdout=proc.stdout,
         stderr=proc.stderr,
     )
@@ -329,16 +344,9 @@ def run_owasp(
     if not use_nvd_api_key:
         env.pop("NVD_API_KEY", None)
     base_nvd_flags: list[str] = []
-    use_nvd_update = use_nvd_api_key and bool(nvd_key)
-    if use_nvd_update:
+    use_nvd_update = bool(nvd_key)
+    if nvd_key:
         base_nvd_flags.append(f"-DnvdApiKey={nvd_key}")
-    else:
-        # Missing key: disable NVD/CPE analysis and rely on other analyzers (OSS Index).
-        base_nvd_flags.append("-Danalyzer.nvdcve.enabled=false")
-        base_nvd_flags.append("-Dupdater.nvdcve.enabled=false")
-        base_nvd_flags.append("-Danalyzer.cpe.enabled=false")
-        base_nvd_flags.append("-Danalyzer.npm.cpe.enabled=false")
-        base_nvd_flags.append("-DossindexAnalyzerEnabled=true")
     fallback_nvd_flags = [
         "-Danalyzer.nvdcve.enabled=false",
         "-Dupdater.nvdcve.enabled=false",
@@ -402,6 +410,8 @@ def run_owasp(
 
     def _run_check(check_cmd: list[str]) -> tuple[object, str, str, str, bool]:
         effective_timeout = timeout_seconds or 1800
+        if not nvd_key:
+            effective_timeout = max(effective_timeout, 3600)
         proc = shared._run_tool_command(
             "owasp",
             check_cmd,
@@ -413,7 +423,16 @@ def run_owasp(
         stdout = proc.stdout or ""
         stderr = proc.stderr or ""
         output_text = f"{stdout}\n{stderr}".lower()
-        nvd_failed = "nvd returned a 403" in output_text or "nvd returned a 404" in output_text
+        nvd_failed = any(
+            marker in output_text
+            for marker in (
+                "nvd returned a 403",
+                "nvd returned a 404",
+                "nvd returned a 429",
+                "nvd api key is required",
+                "nvd api key required",
+            )
+        )
         return proc, stdout, stderr, output_text, nvd_failed
 
     def _append_logs(current: str, addition: str) -> str:
@@ -425,7 +444,7 @@ def run_owasp(
     proc, stdout, stderr, output_text, nvd_failed = _run_check(cmd)
     log_stdout = _append_logs("", stdout)
     log_stderr = _append_logs("", stderr)
-    nvd_access_failed = (not use_nvd_update) or nvd_failed
+    nvd_access_failed = nvd_failed
     corrupt_db = "incompatible or corrupt database found" in output_text
     purged = False
     if corrupt_db:
@@ -446,7 +465,7 @@ def run_owasp(
         nvd_access_failed = nvd_access_failed or nvd_failed
         corrupt_db = "incompatible or corrupt database found" in output_text
 
-    if use_nvd_update and nvd_access_failed:
+    if nvd_access_failed:
         fallback_cmd = _build_check_cmd(fallback_nvd_flags)
         proc, stdout, stderr, output_text, nvd_failed = _run_check(fallback_cmd)
         log_stdout = _append_logs(log_stdout, stdout)
@@ -494,7 +513,10 @@ def run_owasp(
         success=proc.returncode == 0 and report_found and not fatal_errors,
         returncode=proc.returncode,
         metrics=metrics,
-        artifacts={"report": str(report_paths[0])} if report_paths else {},
+        artifacts={
+            "report": str(report_paths[0]) if report_paths else "",
+            "log": str(log_path),
+        },
         stdout=log_stdout,
         stderr=log_stderr,
     )

@@ -275,9 +275,29 @@ def _count_pip_audit_vulns(data: Any) -> int:
     return 0
 
 
+def _find_requirements_files(workdir: Path) -> list[Path]:
+    patterns = [
+        "requirements.txt",
+        "requirements-*.txt",
+        "requirements/*.txt",
+        "requirements/**/requirements*.txt",
+    ]
+    files: list[Path] = []
+    for pattern in patterns:
+        files.extend(workdir.rglob(pattern))
+    unique = {path.resolve() for path in files if path.is_file()}
+    return sorted(unique, key=lambda path: str(path))
+
+
 def run_pip_audit(workdir: Path, output_dir: Path) -> ToolResult:
     report_path = output_dir / "pip-audit-report.json"
     cmd = ["pip-audit", "--format=json", "--output", str(report_path)]
+    requirements = _find_requirements_files(workdir)
+    if requirements:
+        for path in requirements:
+            cmd.extend(["-r", str(path)])
+    else:
+        cmd.append(str(workdir))
     proc = shared._run_tool_command("pip_audit", cmd, workdir, output_dir)
     data = shared._parse_json(report_path)
     parse_ok = data is not None

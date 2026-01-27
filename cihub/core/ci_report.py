@@ -289,8 +289,10 @@ def _derive_tool_evidence(tool_results: dict[str, dict[str, Any]]) -> dict[str, 
                 evidence[tool] = False
                 continue
             if "report_found" in metrics:
-                evidence[tool] = bool(metrics.get("report_found"))
-                continue
+                if bool(metrics.get("report_found")):
+                    evidence[tool] = True
+                    continue
+                # Fall through to allow other evidence (logs/artifacts/metrics)
             has_signal = any(key != "parse_error" for key in metrics)
             if has_signal:
                 evidence[tool] = True

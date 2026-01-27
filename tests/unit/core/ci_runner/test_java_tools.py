@@ -143,3 +143,42 @@ def test_run_pitest_uses_pom_plugin_version(monkeypatch, tmp_path):
     command = " ".join(calls[0]) if calls else ""
     assert "pitest-maven:mutationCoverage" in command
     assert ":1.15.3:" not in command
+
+
+def test_run_owasp_without_key_keeps_nvd_enabled(monkeypatch, tmp_path):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(java_tools.shared, "_run_tool_command", _stub_run_tool_command(calls))
+    monkeypatch.setattr(java_tools.shared, "_find_files", lambda *args, **kwargs: [])
+    monkeypatch.setattr("cihub.utils.project.detect_java_project_type", lambda _: "Single module")
+
+    workdir = tmp_path / "repo"
+    workdir.mkdir()
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+
+    result = java_tools.run_owasp(workdir, output_dir, "maven", use_nvd_api_key=False)
+
+    assert result.ran is True
+    command = " ".join(calls[0]) if calls else ""
+    assert "analyzer.nvdcve.enabled=false" not in command
+    assert "analyzer.cpe.enabled=false" not in command
+
+
+def test_run_checkstyle_maven_uses_config_location(monkeypatch, tmp_path):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(java_tools.shared, "_run_tool_command", _stub_run_tool_command(calls))
+    monkeypatch.setattr(java_tools.shared, "_find_files", lambda *args, **kwargs: [])
+
+    workdir = tmp_path / "repo"
+    workdir.mkdir()
+    config_path = workdir / "config" / "checkstyle"
+    config_path.mkdir(parents=True)
+    (config_path / "checkstyle.xml").write_text("<module name=\"Checker\"/>", encoding="utf-8")
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+
+    result = java_tools.run_checkstyle(workdir, output_dir, "maven")
+
+    assert result.ran is True
+    command = " ".join(calls[0]) if calls else ""
+    assert "checkstyle.config.location" in command
