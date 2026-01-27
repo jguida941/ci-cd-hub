@@ -10,6 +10,12 @@ Last-reviewed: 2026-01-27
 - Defaulted `hub_repo`/`hub_ref` in hub workflows + caller templates to prevent empty inputs.
 - `cihub ci` now emits a minimal schema-valid report on config/tool failures, so artifacts exist.
 
+## 2026-01-27 - Audit ref alignment
+
+- Generated caller workflows now align `hub_ref` fallback to the pinned
+  `hub_workflow_ref` when overrides are used, preventing workflow/CLI drift
+  during audit runs (ADR-0076).
+
 ## 2026-01-27 - java-spring-tutorials (real repo audit)
 
 Repo type: Java (multi-module)

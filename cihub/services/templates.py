@@ -15,6 +15,11 @@ _HUB_USES_PATTERN = re.compile(
     re.MULTILINE,
 )
 
+_HUB_REF_FALLBACK_PATTERN = re.compile(
+    r"^(?P<prefix>\s*hub_ref:\s*\${{\s*vars\.HUB_REF\s*\|\|\s*')(?P<ref>[^']+)(?P<suffix>'\s*}})\s*$",
+    re.MULTILINE,
+)
+
 
 def detect_java_build_tool(repo_path: Path | None) -> str:
     """Detect Java build tool from repo structure.
@@ -90,6 +95,11 @@ def render_caller_workflow(language: str, hub_workflow_ref: str | None = None) -
                 f"{match.group('indent')}uses: "
                 f"{match.group('repo')}/.github/workflows/hub-ci.yml@{hub_workflow_ref}"
             ),
+            content,
+            count=1,
+        )
+        content = _HUB_REF_FALLBACK_PATTERN.sub(
+            lambda match: f"{match.group('prefix')}{hub_workflow_ref}{match.group('suffix')}",
             content,
             count=1,
         )

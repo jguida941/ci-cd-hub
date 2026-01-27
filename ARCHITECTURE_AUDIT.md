@@ -80,7 +80,15 @@ behavior, then define a fix plan for the gaps found during tool audits.
      and ensure `cihub ci` always writes a minimal failure report when config
      or tool execution fails (so artifacts exist even on failures).
 
-6. `cihub dispatch trigger` fails (404) when workflow exists only on an audit branch.
+6. Audit branches can run the wrong CLI even when the workflow ref is pinned.
+   - Evidence: generated caller workflows used `hub-ci.yml@audit/<ref>` but
+     still defaulted `hub_ref` to `v1` when `HUB_REF` was unset.
+   - Impact: audits install a release CLI even when the workflow comes from an
+     audit branch, masking fixes and causing “old version” behavior.
+   - Fix: align the `hub_ref` fallback in generated workflows to the pinned
+     `hub_workflow_ref` (ADR-0076).
+
+7. `cihub dispatch trigger` fails (404) when workflow exists only on an audit branch.
    - Evidence: `cs320-orig-contact-service`, `contact-suite-spring-react`,
      `dijkstra-dashboard` audit branches return 404 for `hub-ci.yml`.
    - Impact: CLI cannot dispatch audit-branch workflows on repos that lack
@@ -88,7 +96,7 @@ behavior, then define a fix plan for the gaps found during tool audits.
    - Fix: CLI should detect 404 and fall back to watching latest runs on the
      audit branch (push-triggered), or surface a clear remediation path.
 
-7. OWASP dependency-check fails to produce reports in real repos.
+8. OWASP dependency-check fails to produce reports in real repos.
    - Evidence: `java-spring-tutorials` reported fatal errors with no report
      and `cs320-orig-contact-service` timed out after 1800s; both runs
      returned `report_found=false` and failed `--verify-tools`.
@@ -98,7 +106,7 @@ behavior, then define a fix plan for the gaps found during tool audits.
      additional fallback logging to capture error context (ADR + schema if
      adding new config surface).
 
-8. Hub Java workflow does not export `NVD_API_KEY` to the CLI.
+9. Hub Java workflow does not export `NVD_API_KEY` to the CLI.
    - Evidence: `contact-suite-spring-react` repo has `NVD_API_KEY` in its
      Java CI workflow, but the reusable hub workflow does not map the secret
      into env; `cihub` logs show OWASP runs without NVD (uses OSS Index) and
@@ -108,7 +116,7 @@ behavior, then define a fix plan for the gaps found during tool audits.
    - Fix: pass `NVD_API_KEY` into the hub Java workflow env (requires approval
      to modify `.github/workflows/`).
 
-9. Java tool runners ignore repo plugin versions.
+10. Java tool runners ignore repo plugin versions.
    - Evidence: `contact-suite-spring-react` uses dependency-check 12.1.9 and
      pitest 1.22.0 in `pom.xml`, but `cihub` runs 9.0.9 and 1.15.3.
    - Impact: repo CI succeeds with newer plugins while hub runs older ones,
@@ -190,6 +198,8 @@ behavior, then define a fix plan for the gaps found during tool audits.
   avoid silent timeouts/fatal errors in large repos?
 - Workflow ref override is accepted via `repo.hub_workflow_ref` and
   `--hub-workflow-ref` for audit branches (ADR-0073).
+- Generated workflows align `hub_ref` fallback to the pinned workflow ref
+  for audit runs (ADR-0076).
 
 ## Verification
 

@@ -405,6 +405,7 @@ class TestCmdInit:
         assert config["repo"]["hub_workflow_ref"] == "audit/test-ref"
         workflow = (tmp_path / ".github" / "workflows" / "hub-ci.yml").read_text(encoding="utf-8")
         assert "hub-ci.yml@audit/test-ref" in workflow
+        assert "hub_ref: ${{ vars.HUB_REF || 'audit/test-ref' }}" in workflow
 
     def test_init_fails_when_hub_vars_unverified(self, tmp_path: Path) -> None:
         """Init fails when hub vars cannot be verified and set_hub_vars is true."""

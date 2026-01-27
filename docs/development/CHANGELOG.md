@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 
 ### Workflows
 - Default `hub_repo`/`hub_ref` in hub workflows and caller templates to prevent empty inputs from skipping installs.
+- When `hub_workflow_ref` is overridden, generated caller workflows align the `hub_ref` fallback to the same ref to keep CLI installs in sync (ADR-0076).
 
 ## 2026-01-27 - Java Tool Alignment
 

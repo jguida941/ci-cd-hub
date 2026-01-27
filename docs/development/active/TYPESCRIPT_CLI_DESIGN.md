@@ -118,6 +118,7 @@ This checklist tracks ALL implementation tasks. Check items off as they're compl
 - [ ] Show loading state during AI processing
 - [x] Harden Java CI gates and verify-tools proofing (require report evidence; inject default checkstyle config)
 - [x] Dispatch/triage use `gh auth token` fallback when env tokens are missing (ADR-0065)
+- [x] Align `hub_ref` fallback with `hub_workflow_ref` in generated workflows for audit stability (ADR-0076)
 - [x] Mirror CI outputs to `GITHUB_WORKSPACE` for reusable workflow artifacts (ADR-0066)
 - [x] Stabilize triage summary semantics (pass/fail counts, optional skips, per-repo aggregation)
 - [x] Make triage offline-friendly (use existing artifacts on run info/download failures) and align triage fixtures with report schema

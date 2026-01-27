@@ -298,6 +298,7 @@ class TestRenderCallerWorkflow:
 
         rendered = render_dispatch_workflow(language, "hub-ci.yml", hub_workflow_ref="audit/test-ref")
         assert "hub-ci.yml@audit/test-ref" in rendered
+        assert "hub_ref: ${{ vars.HUB_REF || 'audit/test-ref' }}" in rendered
 
 
 class TestLegacyDispatchTemplates:

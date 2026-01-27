@@ -41,6 +41,9 @@ surface across representative repo shapes before fixing tool failures.
 
 - Audit branches pin reusable workflow ref via `repo.hub_workflow_ref` or
   `--hub-workflow-ref`.
+- When `hub_workflow_ref` is set, generated caller workflows align the
+  `hub_ref` fallback to the same ref so the CLI install matches the workflow
+  even if `HUB_REF` repo vars are unset (ADR-0076).
 - Audits install the CLI from git (`--install-from git`) so workflow and CLI
   match the audit branch.
 - Default tag-based behavior remains until audits are green; then cut a tag and
