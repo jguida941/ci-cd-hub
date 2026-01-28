@@ -39,6 +39,15 @@ Runs (in progress):
 - `contact-suite-spring-react` run 21392494517
 - `ci-cd-hub-canary-java-fail` run 21392498178
 
+Results:
+- `cihub-test-java-gradle` 21392474551 → OWASP failed (NVD 403/404, no report). All other configured tools passed.
+- `cihub-test-java-multi-module` 21392478719 → OWASP failed (NVD 403/404, no report). JaCoCo failed (67% < 70% threshold).
+- `cihub-test-java-maven` 21392482964 → OWASP failed (NVD 403/404, no report). All other configured tools passed.
+- `cihub-test-monorepo` 21392487168 → Java OWASP failed; Python tools all verified.
+- `java-spring-tutorials` 21392491053 → OWASP failed (NVD 403/404). Checkstyle failed (repo code warnings).
+- `contact-suite-spring-react` 21392494517 → OWASP failed (NVD 403/404). All other configured tools passed.
+- `ci-cd-hub-canary-java-fail` 21392498178 → Expected failures: checkstyle/jacoco/owasp/pitest/spotbugs.
+
 ## 2026-01-27 - Test matrix run (audit/cihub-audit-2026-01-27)
 
 Branch: audit/cihub-audit-2026-01-27  
